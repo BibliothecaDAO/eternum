@@ -11,7 +11,11 @@ vi.hoisted(() => Object.assign(globalThis, { AnimationEvent: globalThis.Event })
 const PLAYER = "0x1";
 
 /** The game's history as each story read serves it: by story, and by every player a story names. */
-const history = vi.hoisted(() => [] as { id: string; story: string; owner: string; participants: string[] }[]);
+const history = vi.hoisted(
+  () => [] as { id: string; story: string; owner: string; participants: string[]; at?: number; tx?: string }[],
+);
+/** The client's own sends, as the transaction store reports them. */
+const sent = vi.hoisted(() => [] as unknown[]);
 
 // Chain time is the real store's: anchored, ticked and corrected as the game's heads do. The stories are stamped at 100 s.
 vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
@@ -30,14 +34,14 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
       .map((event) => ({
         ...event,
         event_id: event.id,
-        tx_hash: `0x${event.id}`,
+        tx_hash: event.tx ?? `0x${event.id}`,
         timestamp: "100",
-        timestampMs: 100_000,
+        timestampMs: event.at ?? 100_000,
         storyPayload: {},
       })),
   }),
 }));
-vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], arrived: [], recent: [] }) }));
+vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], arrived: [], recent: sent }) }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60 } }));
 vi.mock("./feed-row-line", () => ({
   FEED_ROW_CLASS: "",
@@ -72,6 +76,7 @@ it("brings the player's opened crate into Events among every battle, without the
 /** The card's quick rows, mounted, over this history; returns what it draws and how to end a row's fade. */
 const mountQuickFeed = (ids: string[]) => {
   history.length = 0;
+  sent.length = 0;
   history.push(...ids.map((id) => ({ id, story: "BattleEvent", owner: "0x5", participants: ["0x5"] })));
   const host = document.createElement("div");
   document.body.append(host);
@@ -126,6 +131,57 @@ it("gives a row hidden behind the five newest its own full time once a slot free
       .find((id) => !["story:r0", "story:r1", "story:r2", "story:r3", "story:r4"].includes(id!));
     expect(sixth).toBeDefined();
     expect(feed.wrapper(sixth!).style.animation).toBe("quickFeedFade 3000ms linear 17000ms forwards");
+  } finally {
+    feed.unmount();
+    useChainTimeStore.setState(prior);
+  }
+});
+
+it("never lets a newer row push a drawn one off or move it: the drawn rows keep their elements and their fades", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const prior = useChainTimeStore.getState();
+  useChainTimeStore.getState().anchor({ timestamp: 100_000 });
+  const feed = mountQuickFeed(["r0", "r1", "r2", "r3", "r4"]);
+  try {
+    const before = feed.drawn();
+    const elements = before.map((id) => feed.wrapper(id!));
+    // Another player's battle lands while five rows are drawn.
+    history.push({ id: "newer", story: "BattleEvent", owner: "0x7", participants: ["0x7"], at: 101_000 });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(before);
+    expect(before.map((id) => feed.wrapper(id!))).toEqual(elements);
+    // When one fade ends, the newcomer comes in on top with its own full time.
+    feed.endFade(before[1]!);
+    expect(feed.drawn()).toEqual(["story:newer", ...before.filter((id) => id !== before[1])]);
+    expect(feed.wrapper("story:newer").style.animation).toBe("quickFeedFade 3000ms linear 17000ms forwards");
+  } finally {
+    feed.unmount();
+    useChainTimeStore.setState(prior);
+  }
+});
+
+it("keeps a send and the story that tells it as one row: the same element, its fade running on", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const prior = useChainTimeStore.getState();
+  useChainTimeStore.getState().anchor({ timestamp: 100_000 });
+  const feed = mountQuickFeed([]);
+  try {
+    sent.push({ kind: "transaction", id: "0x0abc", at: 100_000, transaction: { hash: "0x0abc", status: "success" } });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["0x0abc"]);
+    const row = feed.wrapper("0x0abc");
+    // The send's story arrives, its hash written without the leading zero: it takes the send's row.
+    history.push({
+      id: "fight",
+      story: "BattleEvent",
+      owner: PLAYER,
+      participants: [PLAYER],
+      at: 101_000,
+      tx: "0xabc",
+    });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:fight"]);
+    expect(feed.wrapper("story:fight")).toBe(row);
   } finally {
     feed.unmount();
     useChainTimeStore.setState(prior);

@@ -62,7 +62,7 @@ export function selectImportantFeedRows(
     event,
   }));
   if (filter !== "combat") {
-    const told = new Set(shown.map((event) => event.tx_hash));
+    const told = new Set(shown.map((event) => sendKey(event.tx_hash)));
     rows.push(
       ...[...feed.arrived, ...feed.inFlight, ...feed.recent].filter(
         (row) => isImportantPersonalRow(row) && !isToldByStory(row, told),
@@ -83,7 +83,7 @@ const oneRowPerId = (rows: ImportantFeedRow[]): ImportantFeedRow[] => {
 
 /** A completed send whose story history holds: the story shows instead. */
 const isToldByStory = (row: FeedRow, told: Set<string>): boolean =>
-  row.kind === "transaction" && row.transaction.status === "success" && told.has(row.transaction.hash);
+  row.kind === "transaction" && row.transaction.status === "success" && told.has(sendKey(row.transaction.hash));
 
 /** A battle or raid, anyone's unless the filter asks for the player's; a realm's news only when it is the player's. */
 const isEventsStory = (event: ProcessedStoryEvent, filter: ImportantFeedFilter, address: string | null): boolean => {
@@ -96,19 +96,47 @@ export const formatFeedTime = (atMs: number): string =>
   new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
 /**
- * The quick feed shows what just happened, newest first, capped. A row on screen stays until its own fade ends
- * (`ended`), whatever the chain clock does meanwhile; a row not on screen comes in only while its event is within the
- * window of now, on the chain clock its stamp is on. A hidden row starts nothing: its time begins when it is drawn.
+ * What a quick-feed row is to the player: one action, whichever row tells it. A story of a send this client made is
+ * that send told better, so it shares the send's key and takes over its place and its time on screen.
+ */
+export const quickFeedKey = (row: ImportantFeedRow, sends: ReadonlySet<string>): string => {
+  if (row.kind === "transaction") return sendKey(row.transaction.hash);
+  if (row.kind === "story" && sends.has(sendKey(row.event.tx_hash))) return sendKey(row.event.tx_hash);
+  return row.id;
+};
+
+/** A send's key, the same however its hash is written (case, leading zeros). */
+export const sendKey = (hash: string): string => `send:${hash.toLowerCase().replace(/^0x0*/, "")}`;
+
+/** The quick feed's screen: the keys drawn, top first, and the keys whose fade has ended. */
+export interface QuickFeedScreen {
+  shown: readonly string[];
+  ended: ReadonlySet<string>;
+}
+
+/**
+ * The quick feed, one rule: a row stays on screen 20 s from when it is first drawn, its fade being its clock. So a
+ * drawn row keeps its slot and its place until its fade ends: no newer row pushes it off, and no re-sort moves it,
+ * which would restart its fade. New rows come in on top, newest first, only into free slots and only while their event
+ * is within the window of now (the chain clock their stamps are on). Returns the rows to draw by key, top first.
  */
 export function selectQuickFeedRows(
   rows: ImportantFeedRow[],
   nowMs: number,
-  screen: { showing: ReadonlySet<string>; ended: ReadonlySet<string> },
+  screen: QuickFeedScreen,
+  sends: ReadonlySet<string>,
   windowMs: number,
   maxRows: number,
-): ImportantFeedRow[] {
-  return rows
-    .filter((row) => !screen.ended.has(row.id) && (screen.showing.has(row.id) || Math.abs(nowMs - row.at) < windowMs))
-    .toSorted((left, right) => right.at - left.at)
-    .slice(0, maxRows);
+): Array<{ key: string; row: ImportantFeedRow }> {
+  const byKey = new Map<string, ImportantFeedRow>();
+  for (const row of rows.toSorted((left, right) => right.at - left.at)) {
+    const key = quickFeedKey(row, sends);
+    if (!byKey.has(key)) byKey.set(key, row);
+  }
+  const kept = screen.shown.filter((key) => byKey.has(key) && !screen.ended.has(key));
+  const fresh = [...byKey]
+    .filter(([key, row]) => !kept.includes(key) && !screen.ended.has(key) && Math.abs(nowMs - row.at) < windowMs)
+    .slice(0, Math.max(0, maxRows - kept.length))
+    .map(([key]) => key);
+  return [...fresh, ...kept].map((key) => ({ key, row: byKey.get(key)! }));
 }

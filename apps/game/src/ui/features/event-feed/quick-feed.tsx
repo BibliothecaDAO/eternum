@@ -12,7 +12,13 @@ import { useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
-import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
+import {
+  type ImportantFeedRow,
+  quickFeedKey,
+  selectImportantFeedRows,
+  selectQuickFeedRows,
+  sendKey,
+} from "./important-feed-rows";
 import { useFeedRows } from "./use-feed-rows";
 
 const QUICK_FEED_WINDOW_MS = 20_000;
@@ -20,33 +26,33 @@ const QUICK_FEED_MAX_ROWS = 5;
 const QUICK_FEED_FADE_MS = 3_000;
 
 /**
- * The feed's pinned notices and its latest rows. A row's time on screen is its own: drawn, it fades over the last
- * seconds of its 20 s and leaves when that fade ends, one clock for both, started only for a row actually drawn.
+ * The feed's pinned notices and its latest rows, each on screen 20 s from when it is first drawn: it fades over its
+ * last seconds and leaves when the fade ends (`selectQuickFeedRows` holds the one rule).
  */
 export const QuickFeedRows = () => {
-  const { nowMs, rows, pinned } = useImportantFeed();
-  const [showing, setShowing] = useState<ReadonlySet<string>>(() => new Set());
+  const { nowMs, rows, pinned, sends } = useImportantFeed();
+  const [shown, setShown] = useState<readonly string[]>([]);
   const [ended, setEnded] = useState<ReadonlySet<string>>(() => new Set());
-  const visible = selectQuickFeedRows(rows, nowMs, { showing, ended }, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
-  const drawn = new Set(visible.map((row) => row.id));
+  const drawn = selectQuickFeedRows(rows, nowMs, { shown, ended }, sends, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
+  const keys = drawn.map(({ key }) => key);
   // What is on screen is remembered by setting it during render, as React advises: it converges at once.
-  if (!sameIds(drawn, showing)) setShowing(drawn);
-  const endRow = (id: string) =>
-    setEnded((previous) => new Set([...previous, id].filter((kept) => rowIds(rows).has(kept))));
+  if (!sameOrder(keys, shown)) setShown(keys);
+  const endRow = (key: string) => {
+    const live = new Set(rows.map((row) => quickFeedKey(row, sends)));
+    setEnded((previous) => new Set([...previous, key].filter((kept) => live.has(kept))));
+  };
   return (
     <>
       <FeedNotices pinned={pinned} />
-      {visible.map((row) => (
-        <QuickFeedRow key={row.id} row={row} onFaded={() => endRow(row.id)} />
+      {drawn.map(({ key, row }) => (
+        <QuickFeedRow key={key} row={row} onFaded={() => endRow(key)} />
       ))}
     </>
   );
 };
 
-const rowIds = (rows: ImportantFeedRow[]): Set<string> => new Set(rows.map((row) => row.id));
-
-const sameIds = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean =>
-  a.size === b.size && [...a].every((id) => b.has(id));
+const sameOrder = (a: readonly string[], b: readonly string[]): boolean =>
+  a.length === b.length && a.every((key, index) => b[index] === key);
 
 /** A drawn row: its fade starts with it on the compositor, and its end takes the row off the card. */
 const QuickFeedRow = ({ row, onFaded }: { row: ImportantFeedRow; onFaded: () => void }) => (
@@ -72,7 +78,12 @@ export function useImportantFeed() {
   const stories = useEventsStories(address);
   const feed = useFeedRows();
   const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
-  return { nowMs, rows, pinned: headlineFeed.pinned };
+  const sends = new Set(
+    [...feed.inFlight, ...feed.recent].flatMap((row) =>
+      row.kind === "transaction" ? [sendKey(row.transaction.hash)] : [],
+    ),
+  );
+  return { nowMs, rows, pinned: headlineFeed.pinned, sends };
 }
 
 /**
