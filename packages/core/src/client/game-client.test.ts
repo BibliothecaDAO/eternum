@@ -1,5 +1,6 @@
 // @vitest-environment node
 
+import { TransactionType } from "@bibliothecadao/provider";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import bindings from "../../../../contracts/l3/world-native/schema/bindings.json";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -184,7 +185,13 @@ describe("createGameClient", () => {
       }),
     };
     const send = () =>
-      harness.settle(client.setup.network.provider.submitCommand(account as unknown as AccountInterface, explore));
+      harness.settle(
+        client.setup.network.provider.submitCommand(
+          account as unknown as AccountInterface,
+          explore,
+          TransactionType.EXPLORE,
+        ),
+      );
     try {
       await send();
       // A second tab signs at the chain's next nonce, outside this client's local submission registry.
@@ -219,7 +226,7 @@ describe("createGameClient", () => {
     const harness = createHarness({ actor: "0x111" });
     const client = await bootClient(harness);
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
     expect(execute.mock.calls[0]![0]).toMatchObject({ contractAddress: "0x1", entrypoint: "play" });
     expect(playCalldata(execute).slice(0, 3)).toEqual(["54", "1", String(0x789n)]);
@@ -279,8 +286,8 @@ describe("createGameClient", () => {
     provider.on("transactionComplete", complete);
     provider.on("transactionFailed", failed);
     try {
-      const first = provider.submitCommand(account, explore);
-      const next = provider.submitCommand(account, explore);
+      const first = provider.submitCommand(account, explore, TransactionType.EXPLORE);
+      const next = provider.submitCommand(account, explore, TransactionType.EXPLORE);
       await vi.advanceTimersByTimeAsync(299);
       expect(nonces).toEqual(["0x7", "0x8"]);
       expect(complete).not.toHaveBeenCalled();
@@ -323,7 +330,7 @@ describe("createGameClient", () => {
     for (const message of [rulesSnapshot, releaseSnapshot, snapshotEnd]) socket.receive(message);
     const client = await harness.settle(creation);
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await vi.waitFor(() => expect(execute).toHaveBeenCalledOnce());
     expect(playCalldata(execute)[1]).toBe("1");
     expect(harness.fetchManifest).toHaveBeenCalledOnce();
@@ -354,7 +361,7 @@ describe("createGameClient", () => {
     ]);
     await flushMicrotasks(30);
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await flushMicrotasks();
     expect(execute).not.toHaveBeenCalled();
     expect(socket.closed).toBe(false);
@@ -400,7 +407,7 @@ describe("createGameClient", () => {
     await harness.settle(Promise.resolve());
     await vi.waitFor(() => expect(harness.fetchManifest).toHaveBeenCalledOnce());
     const { account, execute } = playerAccount();
-    void client.setup.network.provider.submitCommand(account, explore).catch(() => undefined);
+    void client.setup.network.provider.submitCommand(account, explore, TransactionType.EXPLORE).catch(() => undefined);
     await flushMicrotasks();
     expect(execute).not.toHaveBeenCalled();
     finishRefresh();
