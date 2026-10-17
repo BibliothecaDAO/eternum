@@ -1,19 +1,22 @@
-import { RELIC_PACKS, RELICS, RelicRecipientType, relicName, LUCKY_CHEST_PERCENT } from "@bibliothecadao/types";
+import {
+  RELIC_PACKS,
+  RELICS,
+  RelicRecipientType,
+  relicName,
+  LUCKY_CHEST_PERCENT,
+  ResourcesIds,
+} from "@bibliothecadao/types";
+import { blitzPreset } from "../../../../../config/source/blitz/native";
 import { colors, section, table } from "../styles";
 
-// The Essence an activation costs by relic level, as the Blitz preset sets it. The game reads it from its rules.
-const ESSENCE_COST_PER_LEVEL: Record<number, number> = {
-  1: 250,
-  2: 500,
-};
-
-// Every row reads the game's own relic table: its name, level, effect and recipient, and the Essence an activation costs.
+// Every row reads the game's own relic table (its name, level, effect and recipient) and the Essence an activation
+// costs from the relic rules a Blitz game is created with, listed from the first relic.
 const RELIC_DATA = RELICS.map((relic) => ({
   relic: relic.name.replace(/ (I|II)$/, ""),
   level: relic.level,
   effect: relic.effect,
   activatedBy: relic.recipientType === RelicRecipientType.Explorer ? "Army" : "Realm",
-  essenceCost: ESSENCE_COST_PER_LEVEL[relic.level],
+  essenceCost: blitzPreset.relics[relic.id - ResourcesIds.StaminaRelic1].essence_cost,
 }));
 
 // Component styles
