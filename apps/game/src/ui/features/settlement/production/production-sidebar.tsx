@@ -14,7 +14,6 @@ import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities"
 import { REALM_PRESETS, RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { ProductionStatusBadge } from "@/ui/shared";
-import { formatTimeRemaining } from "../../economy/resources/entity-resource-table/utils";
 
 interface ProductionSidebarProps {
   realms: RealmInfo[];
@@ -172,28 +171,12 @@ const SidebarRealm = ({
                 return a.resourceId - b.resourceId;
               })
               .map((summary) => {
-                const resourceLabel = ResourcesIds[summary.resourceId];
                 const effectiveRemainingSeconds = summary.timeRemainingSeconds;
-                const formattedRemaining =
-                  summary.isProducing && effectiveRemainingSeconds !== null
-                    ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
-                    : null;
-                const tooltipParts = summary.isProducing
-                  ? [
-                      resourceLabel,
-                      `${summary.activeBuildings}/${summary.totalBuildings} producing`,
-                      formattedRemaining ? `${formattedRemaining} left` : null,
-                    ]
-                  : [
-                      resourceLabel,
-                      `Idle (${summary.totalBuildings} building${summary.totalBuildings !== 1 ? "s" : ""})`,
-                    ];
 
                 return (
                   <ProductionStatusBadge
                     key={summary.resourceId}
                     resource={summary.resourceId}
-                    tooltipText={tooltipParts.filter(Boolean).join(" • ")}
                     isProducing={summary.isProducing}
                     timeRemainingSeconds={effectiveRemainingSeconds}
                     buildings={summary.totalBuildings}

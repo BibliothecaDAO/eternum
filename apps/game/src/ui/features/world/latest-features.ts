@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Production time back on the rings",
+    description:
+      'Each resource ring shows its production time left on its right (∞ when it never runs out), beside the building count and the amount. Hovering a ring now just names the resource. When fewer troops fit than you hold, the troop amount reads "of 500 that fit", so Max and +500 are clear.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Captures tell both sides",
     description:
       "A realm's owner now learns who took it: Events and the Log tell the capture to both sides, even after time away, and a notification reaches them. Both are told that the realm's armies and incoming deliveries went with it.",

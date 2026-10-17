@@ -205,7 +205,6 @@ const ResourceRings = ({
         <li key={reading.resourceId} aria-label={describeResource(reading)}>
           <ProductionStatusBadge
             resource={reading.resourceId}
-            tooltipText={describeResource(reading)}
             isProducing={reading.producing}
             timeRemainingSeconds={reading.secondsLeft}
             buildings={reading.buildings}

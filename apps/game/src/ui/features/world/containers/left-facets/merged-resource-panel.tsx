@@ -10,7 +10,6 @@ import { ProductionStatusBadge } from "@/ui/shared";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
-import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import {
   buildRealmBuilding,
@@ -174,13 +173,6 @@ export const MergedResourcePanel = memo(
 
         const label = ResourcesIds[resourceId];
         const effectiveRemaining = item?.timeRemainingSeconds ?? null;
-        // Whole minutes only: automation refills inputs every minute, so seconds are noise and anything
-        // under a minute is the normal state of a topped-up resource, not a warning.
-        const timer =
-          item?.isProducing && effectiveRemaining !== null && effectiveRemaining >= 60
-            ? formatTimeRemaining(Math.ceil(effectiveRemaining / 60) * 60)
-            : undefined;
-        const count = item && item.totalBuildings > 0 ? `${item.totalBuildings}` : undefined;
         const balanceLabel = balance > 0 ? formatInventoryAmount(balance) : undefined;
 
         let buildEnabled = false;
@@ -199,20 +191,10 @@ export const MergedResourcePanel = memo(
           buildEnabled = buildability.canSubmit;
         }
 
-        const tooltipParts = [label];
-        if (item?.isProducing) {
-          tooltipParts.push(`${item.activeBuildings}/${item.totalBuildings} producing`);
-          if (timer) tooltipParts.push(`${timer} left`);
-        } else if (count) {
-          tooltipParts.push(`Idle (${item?.totalBuildings} building${item && item.totalBuildings !== 1 ? "s" : ""})`);
-        }
-        if (balanceLabel) tooltipParts.push(`${balanceLabel} held`);
-
         return (
           <div key={resourceId} className="relative inline-flex h-12 w-12 shrink-0">
             <ProductionStatusBadge
               resource={resourceId}
-              tooltipText={tooltipParts.join(" • ")}
               isProducing={Boolean(item?.isProducing)}
               timeRemainingSeconds={effectiveRemaining}
               size="sm"

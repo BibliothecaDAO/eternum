@@ -3,6 +3,7 @@ import { type FC } from "react";
 import clsx from "clsx";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 
@@ -16,11 +17,11 @@ const IDLE_COLOR: [number, number, number] = [251, 191, 36]; // amber
 /**
  * The one resource ring, wherever a resource shows with its production (the holding card, the structure details, the
  * Production and Build windows): its painting in a ring that glows and empties as production runs, how many buildings
- * make it on the top-left badge, and how much is held on the bottom rim. Time left is in its tooltip, never a badge.
+ * make it on the top-left badge, how much is held on the bottom rim, and while it produces, the time left on the right.
+ * Its hover names the resource only; the badges say the rest.
  */
 interface ProductionStatusBadgeProps {
   resource: ResourcesIds;
-  tooltipText: string;
   isProducing: boolean;
   timeRemainingSeconds: number | null;
   /** How many buildings make it: the top-left badge, none at zero. */
@@ -38,7 +39,6 @@ interface ProductionStatusBadgeProps {
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   resource,
-  tooltipText,
   isProducing,
   timeRemainingSeconds,
   buildings = 0,
@@ -172,7 +172,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
             : "0 0 8px rgba(0,0,0,0.45)",
         }}
       >
-        <ResourceIcon resource={resource} size={preset.icon} tooltipText={tooltipText} withTooltip={showTooltip} />
+        <ResourceIcon resource={resource} size={preset.icon} withTooltip={showTooltip} />
       </div>
       {buildings > 0 && (
         <span className="absolute -left-1 -top-1 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-gold/40 bg-black/85 px-1 text-[10px] font-semibold leading-none text-gold/90 shadow-md">
@@ -185,6 +185,13 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
           aria-hidden
           className={clsx("absolute pointer-events-none rounded-full accrual-sweep", preset.progressOffset)}
         />
+      )}
+      {/* Whole minutes only: automation refills inputs every minute, so under a minute is a topped-up resource's
+          normal state, not a warning, and shows no badge. */}
+      {isProducing && effectiveRemaining !== null && effectiveRemaining >= 60 && (
+        <span className="absolute -right-2 top-1/2 z-10 flex h-4 -translate-y-1/2 items-center justify-center whitespace-nowrap rounded-full border border-gold/40 bg-black/85 px-1 text-[10px] font-semibold leading-none tabular-nums text-gold/90 shadow-md">
+          {formatTimeRemaining(Math.ceil(effectiveRemaining / 60) * 60)}
+        </span>
       )}
       {amount && (
         <span className="absolute -bottom-1.5 left-1/2 z-10 flex h-4 -translate-x-1/2 items-center justify-center whitespace-nowrap rounded-full border border-gold/40 bg-black/85 px-1 text-[10px] font-semibold leading-none tabular-nums text-gold/90 shadow-md">

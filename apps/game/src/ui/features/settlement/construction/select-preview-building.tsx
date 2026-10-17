@@ -1194,13 +1194,6 @@ export const BuildingCard = ({
     productionStatus && resource !== undefined ? (
       <ProductionStatusBadge
         resource={resource}
-        tooltipText={
-          productionStatus.isProducing
-            ? `${activeProductionBuildings}/${totalProductionBuildings} producing${
-                formattedRemaining ? ` • ${formattedRemaining} left` : ""
-              }`
-            : `Idle (${totalProductionBuildings} building${totalProductionBuildings !== 1 ? "s" : ""})`
-        }
         isProducing={productionStatus.isProducing}
         timeRemainingSeconds={effectiveRemainingSeconds}
         size="md"
