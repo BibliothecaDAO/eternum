@@ -1,7 +1,7 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import type { EventsFilter } from "./important-feed-rows";
+import type { EventsFilter } from "./event-stories";
 
 /** Each filter's word, and what it shows, on its hover. */
 const FILTERS: { id: EventsFilter; word: string; tip: string }[] = [

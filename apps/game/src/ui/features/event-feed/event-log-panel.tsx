@@ -1,22 +1,17 @@
-import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { configManager } from "@bibliothecadao/eternum";
-import { TickIds } from "@bibliothecadao/types";
-
-import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { FeedRowLine } from "./feed-row-line";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { EventsFilterSwitch } from "./events-filter-switch";
-import { oneStoryPerAction, selectImportantFeedRows } from "./important-feed-rows";
+import { oneStoryPerAction, selectEventStories } from "./event-stories";
+import { useIsHyperstructure } from "./quick-feed";
 import { StoryFeedRow } from "./story-feed-row";
-import { useFeedRows } from "./use-feed-rows";
 
 /**
- * The full history: the rows behind the player's filter (Important, Mine or All, the same as Events), newest first,
- * then every world story.
+ * The full history: Events' stories behind the player's filter (Important, Mine or All, the same as the strip), newest
+ * first, then every world story.
  */
 export const EventLogPanel = ({
   onDismiss,
@@ -26,16 +21,9 @@ export const EventLogPanel = ({
   isInsideAnchor: (target: EventTarget | null) => boolean;
 }) => {
   const [filter] = useEventsFilter();
-  const tickSeconds = Number(configManager.getTick(TickIds.Armies));
   const address = useAccountStore((state) => state.account?.address ?? null);
-  const headlines = useHeadlineFeedStore((state) => state.headlines);
-  const headlineFeed = orderHeadlineFeed(headlines, useNowMs(), tickSeconds);
   const { data: stories, isError, refetch } = useStoryEvents(350);
-  const feed = useFeedRows();
-  const rows = selectImportantFeedRows(stories, feed, filter, address, [
-    ...headlineFeed.pinned,
-    ...headlineFeed.recent,
-  ]);
+  const told = selectEventStories(stories, filter, address, useIsHyperstructure());
 
   return (
     <PopoverPanel
@@ -56,10 +44,10 @@ export const EventLogPanel = ({
             </button>
           </p>
         )}
-        {!isError && rows.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">Nothing here yet.</p>}
+        {!isError && told.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">Nothing here yet.</p>}
         <div className="flex flex-col gap-1 px-2 py-2">
-          {rows.map((row) => (
-            <FeedRowLine key={row.id} row={row} />
+          {told.map((event) => (
+            <FeedRowLine key={event.id} event={event} />
           ))}
         </div>
         <section aria-label="World history">

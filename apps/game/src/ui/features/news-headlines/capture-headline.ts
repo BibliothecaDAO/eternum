@@ -34,14 +34,9 @@ export function buildCaptureHeadline(capture: Capture): Headline {
     title: captureTitle(capture.isHyperstructure, isViewerOwner(capture.newOwner, capture.viewer), playerLost),
     description: capture.previousOwner === 0n ? taken : `${taken}. ${CAPTURE_AFTERMATH}.`,
     location: capture.site ? { ...capture.site, entityId: capture.structureId } : undefined,
-    action: captureIdentity(capture.structureId, capture.previousOwner, capture.newOwner),
     timestamp: capture.at,
   };
 }
-
-/** One capture, however it is told: its structure, who held it, who took it; its story and its headline share it. */
-export const captureIdentity = (structureId: unknown, previousOwner: unknown, newOwner: unknown): string =>
-  `capture:${BigInt(String(structureId))}:${BigInt(String(previousOwner))}:${BigInt(String(newOwner))}`;
 
 const captureTitle = (isHyperstructure: boolean, playerTook: boolean, playerLost: boolean) => {
   if (isHyperstructure) return "Hyperstructure seized";

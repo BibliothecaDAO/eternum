@@ -2,19 +2,13 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
-import {
-  type ImportantFeedRow,
-  matchesEventsFilter,
-  nextStripRows,
-} from "@/ui/features/event-feed/important-feed-rows";
+import { selectEventStories } from "@/ui/features/event-feed/event-stories";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
-import type { Headline } from "@/ui/features/news-headlines/headline-types";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { PlayerLabel } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
@@ -25,7 +19,6 @@ import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
 import { relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
-import { TransactionType } from "@bibliothecadao/provider";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
@@ -77,34 +70,13 @@ const story = (
     ),
   }) as unknown as ProcessedStoryEvent;
 
-const storyRow = (event: ProcessedStoryEvent): ImportantFeedRow => ({
-  kind: "story",
-  id: `story:${event.id}`,
-  at: event.timestampMs,
-  event,
-});
-
-const headlineRow = (id: string, type: Headline["type"], description: string, at: number): ImportantFeedRow => ({
-  kind: "headline",
-  id,
-  at,
-  headline: { id, type, title: description, description, icon: type, timestamp: at },
-});
-
 /**
- * What a newcomer's first minutes write to Events, newest last: the game's start, an explore with no find, one that
- * found Essence, a level-up, a crate, a fight lost, a tier-three building, another player's fight, a refused order.
+ * What a newcomer's first minutes write to the game's history, oldest first: an explore's find, a level-up, a crate, a
+ * fight lost, another player's fight.
  */
-const eventsRows = (store: NativeFactStore): ImportantFeedRow[] => {
+const labStories = (store: NativeFactStore): ProcessedStoryEvent[] => {
   const chest = { pack: "War", lucky: false } as const;
   const scaledPoints = (points: number) => BigInt(points) * 1_000_000n;
-  const send = (hash: string, status: Transaction["status"], at: number, type: TransactionType, description: string) =>
-    ({
-      kind: "transaction",
-      id: hash,
-      at,
-      transaction: { hash, type, status, submittedAt: at, confirmedAt: at, description } satisfies Transaction,
-    }) as const;
   const side = (player: string, category: string, before: string, after: string) => ({
     player,
     category,
@@ -114,89 +86,69 @@ const eventsRows = (store: NativeFactStore): ImportantFeedRow[] => {
     roll: 0,
   });
   return [
-    headlineRow(
-      "start",
-      "game-start",
-      "Most points in 1h wins: explore, open crates, take camps and Hyperstructures.",
-      300_000,
+    story(
+      store,
+      "found",
+      "ExplorationReward",
+      {
+        explorer_id: 70,
+        receiver: 7,
+        coord: { x: 2147483650, y: 2147483652 },
+        resource_type: ResourcesIds.Essence,
+        amount: "200000000000",
+      },
+      341_000,
     ),
-    send("0xe1", "success", 340_000, TransactionType.EXPLORE, "Scouts sent to explore new lands"),
-    storyRow(
-      story(
-        store,
-        "found",
-        "ExplorationReward",
-        {
-          explorer_id: 70,
-          receiver: 7,
-          coord: { x: 2147483650, y: 2147483652 },
-          resource_type: ResourcesIds.Essence,
-          amount: "200000000000",
-        },
-        341_000,
-      ),
+    story(store, "up", "StructureLevelUpStory", { new_level: 1 }, 345_000),
+    story(
+      store,
+      "crate",
+      "RelicChestOpened",
+      {
+        explorer_id: 70,
+        coord: { x: 2147483651, y: 2147483652 },
+        chest,
+        relics: relicChestRelics(chest),
+        points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
+      },
+      346_000,
     ),
-    storyRow(story(store, "up", "StructureLevelUpStory", { new_level: 1 }, 345_000)),
-    storyRow(
-      story(
-        store,
-        "crate",
-        "RelicChestOpened",
-        {
-          explorer_id: 70,
-          coord: { x: 2147483651, y: 2147483652 },
-          chest,
-          relics: relicChestRelics(chest),
-          points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
-        },
-        346_000,
-      ),
+    story(
+      store,
+      "fight",
+      "BattleEvent",
+      {
+        attacker_id: 70,
+        defender_id: 900,
+        attacker: side(PLAYER, "Paladin", "1000000000000", "0"),
+        defender: side("0x0", "Knight", "5066000000000", "4800000000000"),
+      },
+      348_000,
     ),
-    storyRow(
-      story(
-        store,
-        "fight",
-        "BattleEvent",
-        {
-          attacker_id: 70,
-          defender_id: 900,
-          attacker: side(PLAYER, "Paladin", "1000000000000", "0"),
-          defender: side("0x0", "Knight", "5066000000000", "4800000000000"),
-        },
-        348_000,
-      ),
+    story(
+      store,
+      "theirs",
+      "BattleEvent",
+      {
+        attacker_id: 71,
+        defender_id: 72,
+        attacker: side("0x5", "Knight", "2000000000000", "1500000000000"),
+        defender: side("0x6", "Crossbowman", "1000000000000", "0"),
+      },
+      355_000,
+      "0x5",
     ),
-    headlineRow("t3", "t3-building", "uxplay built a tier-three barracks.", 352_000),
-    storyRow(
-      story(
-        store,
-        "theirs",
-        "BattleEvent",
-        {
-          attacker_id: 71,
-          defender_id: 72,
-          attacker: side("0x5", "Knight", "2000000000000", "1500000000000"),
-          defender: side("0x6", "Crossbowman", "1000000000000", "0"),
-        },
-        355_000,
-        "0x5",
-      ),
-    ),
-    send("0xr1", "reverted", 360_000, TransactionType.EXPLORE, "Scouts sent to explore new lands"),
   ];
 };
 
-/**
- * Events as the rail draws it, on the lab's rows: the player's filter (its switch works here) and the newest three
- * rows through it.
- */
+/** Events as the rail draws it, on the lab's stories: the player's filter (its switch works here) and the newest three. */
 const LabEvents = ({ store }: { store: NativeFactStore }) => {
   const [filter] = useEventsFilter();
-  const shown = nextStripRows([], eventsRows(store), (row) => matchesEventsFilter(row, filter, PLAYER), 3);
+  const told = selectEventStories(labStories(store), filter, PLAYER, () => false).slice(0, 3);
   return (
     <InfoBubble label="Events" title="Events" cue={<EventsFilterSwitch />} bodyClassName="flex flex-col gap-1">
-      {shown.map(({ key, row }) => (
-        <FeedRowLine key={key} row={row} />
+      {told.map((event) => (
+        <FeedRowLine key={event.id} event={event} />
       ))}
     </InfoBubble>
   );

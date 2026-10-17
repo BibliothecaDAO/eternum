@@ -1,7 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { TransactionType } from "@bibliothecadao/provider";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 
@@ -53,7 +52,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 }));
 
 import { FeedRowLine } from "./feed-row-line";
-import { selectImportantFeedRows, type ImportantFeedRow } from "./important-feed-rows";
+import { selectEventStories } from "./event-stories";
 import { relicChestRelics } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
@@ -82,7 +81,6 @@ const crateOf = (pack: "War" | "Produce" | "Fortress", title: string) =>
     title,
   );
 const crate = crateOf("War", "Crate opened: 3 relics to the army Stolsli T1");
-const noFeed = { inFlight: [], recent: [] };
 
 let host: HTMLDivElement;
 beforeEach(() => {
@@ -96,52 +94,25 @@ beforeEach(() => {
 });
 afterEach(() => host.remove());
 
-/** The Events rows for these stories, as the card composes them. */
-const eventsRows = (stories: ProcessedStoryEvent[]) => selectImportantFeedRows(stories, noFeed, "all", PLAYER);
+/** The Events stories among these, as the card selects them under All. */
+const eventsRows = (stories: ProcessedStoryEvent[]) => selectEventStories(stories, "all", PLAYER, () => false);
 
-const clickRow = async (row: ImportantFeedRow) => {
+const clickRow = async (event: ProcessedStoryEvent) => {
   const root = createRoot(host);
-  await act(async () => root.render(<FeedRowLine row={row} />));
+  await act(async () => root.render(<FeedRowLine event={event} />));
   await act(async () => host.querySelector("button")!.click());
   await act(async () => root.unmount());
 };
-
-describe("Transfer in the event feed", () => {
-  it.each(["pending", "checking", "success", "reverted", "not_sent"] as const)(
-    "keeps the donkey while %s",
-    (status) => {
-      const html = renderToStaticMarkup(
-        <FeedRowLine
-          row={{
-            kind: "transaction",
-            id: "transfer",
-            at: 0,
-            transaction: {
-              hash: "0x1",
-              type: TransactionType.SEND,
-              status,
-              submittedAt: 0,
-              description: "Transfer resources",
-            },
-          }}
-        />,
-      );
-      expect(html).toContain('data-icon="transfer"');
-      expect(html).toContain("/icons/facets/64/donkey.webp");
-      expect(html).toContain(status === "success" ? "Caravan sent" : "Transfer resources");
-    },
-  );
-});
 
 describe("An opened crate in Events", () => {
   it("holds the player's opened crate, but not another player's, nor routine production", () => {
     const theirs = story("theirs", "RelicChestOpened", "0x2", { explorer_id: 7 }, "Crate opened: 3 relics to North T1");
     const production = story("made", "ProductionStory", PLAYER, {}, "Wheat produced");
-    expect(eventsRows([crate, theirs, production]).map((row) => row.id)).toEqual(["story:crate-War"]);
+    expect(eventsRows([crate, theirs, production]).map((event) => event.id)).toEqual(["crate-War"]);
   });
 
   it("names where the crate's relics went", () => {
-    expect(renderToStaticMarkup(<FeedRowLine row={eventsRows([crate])[0]} />)).toContain(
+    expect(renderToStaticMarkup(<FeedRowLine event={eventsRows([crate])[0]} />)).toContain(
       "Crate opened: 3 relics to the army Stolsli T1",
     );
   });
@@ -175,33 +146,6 @@ describe("A structure pack's row", () => {
   });
 });
 
-describe("A delivery in Events", () => {
-  it("is one row, the story of what landed where, once the unloading transaction has written it", () => {
-    const unloading = {
-      kind: "transaction" as const,
-      id: "0x0off",
-      at: 99_000,
-      transaction: {
-        hash: "0x0off",
-        type: TransactionType.ARRIVALS_OFFLOAD,
-        status: "success" as const,
-        submittedAt: 99_000,
-        confirmedAt: 99_000,
-        description: "Arrivals unloaded",
-      },
-    };
-    const landed = {
-      ...story("landed", "ResourceReceiveArrivalStory", PLAYER, {}, "Wheat ×900 arrived at Stolsli"),
-      tx_hash: "0xoff",
-    } as ProcessedStoryEvent;
-    const rows = selectImportantFeedRows([landed], { ...noFeed, recent: [unloading] }, "all", PLAYER);
-    expect(rows.map((row) => row.id)).toEqual(["story:landed"]);
-    const html = renderToStaticMarkup(<FeedRowLine row={rows[0]} />);
-    expect(html).toContain("Wheat ×900 arrived at Stolsli");
-    expect(html).toContain('data-icon="transfer"');
-  });
-});
-
 describe("A capture in Events", () => {
   it("tells the player who lost a structure who took it from them, and what went with it, under Mine", async () => {
     const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
@@ -221,8 +165,8 @@ describe("A capture in Events", () => {
       participants: ["0xc1", PLAYER],
       presentation,
     } as ProcessedStoryEvent;
-    const [row] = selectImportantFeedRows([taken], noFeed, "mine", PLAYER);
-    expect(renderToStaticMarkup(<FeedRowLine row={row} />)).toContain(
+    const [event] = selectEventStories([taken], "mine", PLAYER, () => false);
+    expect(renderToStaticMarkup(<FeedRowLine event={event} />)).toContain(
       "clientlane took a structure from you. Its armies and incoming deliveries went with it",
     );
   });
@@ -247,7 +191,7 @@ describe("A fight in Events", () => {
       (address) => (BigInt(address) === BigInt(PLAYER) ? "clientlane" : null),
     );
     const battle = { ...story("fight", "BattleEvent", PLAYER, payload, presentation.title), presentation };
-    return renderToStaticMarkup(<FeedRowLine row={eventsRows([battle])[0]} />);
+    return renderToStaticMarkup(<FeedRowLine event={eventsRows([battle])[0]} />);
   };
 
   it("names a fight both sides survive a draw, which no one wins", async () => {

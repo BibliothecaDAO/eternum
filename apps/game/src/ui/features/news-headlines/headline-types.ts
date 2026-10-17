@@ -14,8 +14,6 @@ export interface Headline {
   description: string;
   icon: HeadlineType;
   location?: { x: number; y: number; entityId: number };
-  /** The action it tells when a story tells it too (a capture), so the two are one row. */
-  action?: string;
   timestamp: number;
 }
 

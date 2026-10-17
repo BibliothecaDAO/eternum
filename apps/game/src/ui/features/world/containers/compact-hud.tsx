@@ -9,12 +9,7 @@ import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
-import {
-  FeedNotices,
-  UnreadFeedBadge,
-  useImportantFeed,
-  useUnreadFeedCount,
-} from "@/ui/features/event-feed/quick-feed";
+import { FeedToasts, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -111,8 +106,8 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const tileDetails = useSelectedTileDetails();
   const { open, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
-  const { rows, pinned } = useImportantFeed();
-  const unread = useUnreadFeedCount(rows, open === "log");
+  const { stories } = useEventsFeed();
+  const unread = useUnreadFeedCount(stories, open === "log");
   const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const logTab = useRef<HTMLButtonElement>(null);
 
@@ -145,7 +140,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                 Tap to select · Hold to move
               </p>
             )}
-            <FeedNotices pinned={pinned} />
+            <FeedToasts />
           </div>
           {/* The chat window stays mounted so the client keeps its connection; its strip only shows while open. */}
           <div className={open === "chat" ? "px-2 pb-1" : "hidden"}>

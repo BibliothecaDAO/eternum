@@ -2,7 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
-import { involvesPlayer, storyActionIdentity } from "@/ui/features/event-feed/important-feed-rows";
+import { involvesPlayer, storyActionIdentity } from "@/ui/features/event-feed/event-stories";
 import { useEffect, useRef } from "react";
 
 /** Combat feedback is sound only; the persistent battle row belongs to Events. */

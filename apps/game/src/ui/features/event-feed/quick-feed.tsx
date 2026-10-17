@@ -1,113 +1,82 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { useGame } from "@/hooks/context/game-context";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
-import { useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
+import { type ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
-import { TickIds } from "@bibliothecadao/types";
+import { StructureType, TickIds } from "@bibliothecadao/types";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
-import type { Headline } from "../news-headlines/headline-types";
-import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
-import {
-  type ImportantFeedRow,
-  matchesEventsFilter,
-  nextStripRows,
-  selectImportantFeedRows,
-  type ShownRow,
-} from "./important-feed-rows";
-import { useFeedRows } from "./use-feed-rows";
-import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
+import type { HeadlineType } from "../news-headlines/headline-types";
+import { useEventFeedStore } from "./event-feed-store";
+import { type IsHyperstructure, selectEventStories } from "./event-stories";
+import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon, ToastRow } from "./feed-row-line";
 
-/** How many rows the Events strip keeps: the owner's three. */
+/** How many rows the Events strip shows: the owner's three. */
 const STRIP_ROWS = 3;
 
-/**
- * The strip's rows: the last three actions the player's filter admits (`nextStripRows` holds its one rule), which stay
- * until newer ones it admits replace them, whatever the bounded sources drop meanwhile. What it showed is remembered for
- * each player and filter, three rows apiece, by the Events card, which stays mounted while its body is collapsed.
- */
-export const useStripRows = (): ShownRow[] => {
-  const { allRows, filter, address } = useImportantFeed();
-  const memoryKey = `${address ?? "anyone"}:${filter}`;
-  const [memory, setMemory] = useState<Record<string, ShownRow[]>>({});
-  const remembered = memory[memoryKey] ?? NOTHING_SHOWN;
-  const shown = nextStripRows(remembered, allRows, (row) => matchesEventsFilter(row, filter, address), STRIP_ROWS);
-  // What the strip shows is remembered by setting it during render, as React advises: it converges at once.
-  if (!sameShown(shown, remembered)) setMemory((current) => ({ ...current, [memoryKey]: shown }));
-  return shown;
+/** The strip: the client's toasts, then the game's three newest stories through the player's filter. */
+export const QuickFeedRows = () => {
+  const { stories } = useEventsFeed();
+  return (
+    <>
+      <FeedToasts />
+      {stories.slice(0, STRIP_ROWS).map((event) => (
+        <FeedRowLine key={event.id} event={event} />
+      ))}
+    </>
+  );
 };
-const NOTHING_SHOWN: ShownRow[] = [];
 
-/** The strip: the offline row, then its rows. */
-export const QuickFeedRows = ({ shown }: { shown: readonly ShownRow[] }) => (
-  <>
-    <FeedNotices pinned={[]} />
-    {shown.map(({ key, row }) => (
-      <FeedRowLine key={key} row={row} />
-    ))}
-  </>
-);
-
-/** The same rows, in the same order, telling the same: only then is there nothing new to remember. */
-const sameShown = (a: readonly ShownRow[], b: readonly ShownRow[]): boolean =>
-  a.length === b.length &&
-  a.every((entry, index) => entry.key === b[index].key && rowWords(entry.row) === rowWords(b[index].row));
-
-/** What a row says, for telling whether it changed: its source and, for a send, how it stands. */
-const rowWords = (row: ImportantFeedRow): string =>
-  `${row.id}:${row.kind === "transaction" ? row.transaction.status : ""}`;
-
-/**
- * Every row Events holds and those the player's filter admits, with the game's headlines among them; and, for the
- * phone, the headlines of this tick, which it shows on their own.
- */
-export function useImportantFeed() {
-  const nowMs = useNowMs();
-  const tickSeconds = Number(configManager.getTick(TickIds.Armies));
+/** Events' stories through the player's filter, newest first: the strip shows the first three, the Log them all. */
+export function useEventsFeed() {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const [filter] = useEventsFilter();
-  const headlines = useHeadlineFeedStore((state) => state.headlines);
-  const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
+  const isHyperstructure = useIsHyperstructure();
   const stories = useEventsStories(address);
-  const feed = useFeedRows();
-  const allRows = selectImportantFeedRows(stories, feed, "all", address, [
-    ...headlineFeed.pinned,
-    ...headlineFeed.recent,
-  ]);
-  const admitted = (row: ImportantFeedRow) => matchesEventsFilter(row, filter, address);
-  const pinned = headlineFeed.pinned.filter((headline) =>
-    admitted({ kind: "headline", id: headline.id, at: headline.timestamp, headline }),
-  );
-  return { nowMs, rows: allRows.filter(admitted), allRows, pinned, filter, address };
+  return { stories: selectEventStories(stories, filter, address, isHyperstructure), filter, address };
 }
 
+/** Whether a structure is a Hyperstructure, read from the game's facts as they change. */
+export const useIsHyperstructure = (): IsHyperstructure => {
+  const { setup } = useGame();
+  useNativeRevision(["Structure"]);
+  return (structureId) =>
+    setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId })?.base
+      .category === StructureType.Hyperstructure;
+};
+
 /**
- * The stories the Events card tells, each from a read that holds them: every battle, raid and capture, and every story
- * of the player's own, so each of their actions is told by the story it wrote (a crate's relics, a delivery, an
- * explore's find, a building, a level-up, a send) in the Log's words, whatever that story's level.
+ * The stories the Events card tells, each from a read that holds them, so what one read leaves out never pushes
+ * another's off: every battle, raid and capture, the crates the player opened, and every story of the player's own.
  */
 function useEventsStories(address: string | null) {
   const { data: battles } = useStoryEvents(350, "BattleEvent");
   const { data: raids } = useStoryEvents(100, "RaidEvent");
   const { data: captures } = useStoryEvents(100, "StructureCapturedStory");
+  const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
   const { data: own } = useStoryEvents(150, undefined, address ?? undefined);
   return useMemo(() => {
-    const told = [...battles, ...raids, ...captures];
-    const ids = new Set(told.map(({ id }) => id));
-    return [...told, ...(address ? own.filter(({ id }) => !ids.has(id)) : [])];
-  }, [battles, raids, captures, own, address]);
+    const read = [...battles, ...raids, ...captures, ...(address ? [...crates, ...own] : [])];
+    const seen = new Set<string>();
+    return read.filter(({ id }) => !seen.has(id) && seen.add(id) !== undefined);
+  }, [battles, raids, captures, crates, own, address]);
 }
 
-/** Rows that arrived since the log was last open; zero while it is open. */
-export function useUnreadFeedCount(rows: ImportantFeedRow[], logOpen: boolean): number {
+/** Stories that arrived since the log was last open; zero while it is open. */
+export function useUnreadFeedCount(stories: ProcessedStoryEvent[], logOpen: boolean): number {
   const [seen, setSeen] = useState(() => ({ logOpen, at: Date.now() }));
-  // Opening or closing the log marks every row it holds as seen.
-  if (seen.logOpen !== logOpen) setSeen({ logOpen, at: Math.max(seen.at, ...rows.map((row) => row.at)) });
-  return logOpen ? 0 : rows.filter((row) => row.at > seen.at).length;
+  // Opening or closing the log marks every story it holds as seen.
+  if (seen.logOpen !== logOpen) {
+    setSeen({ logOpen, at: Math.max(seen.at, ...stories.map((event) => event.timestampMs)) });
+  }
+  return logOpen ? 0 : stories.filter((event) => event.timestampMs > seen.at).length;
 }
 
 export const UnreadFeedBadge = ({ count }: { count: number }) =>
@@ -117,17 +86,64 @@ export const UnreadFeedBadge = ({ count }: { count: number }) =>
     </span>
   ) : null;
 
-/** The notices no layout hides: the red offline row, then the headlines pinned for this tick. */
-export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
-  <>
-    <OfflineRow />
-    {pinned.map((headline) => (
-      <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "border border-gold/60")}>
-        <HeadlineIcon type={headline.type} />
-        <span className="min-w-0 flex-1 break-words">{headline.description}</span>
-      </div>
-    ))}
-  </>
+/** The game's capture headlines: a story tells each capture, so only the other milestones show as toasts. */
+const TOLD_BY_STORIES = new Set<HeadlineType>(["hyper-capture", "realm-fall"]);
+
+/**
+ * The client's own toasts, which no layout hides and no story tells: the red offline row, the notices still within
+ * their time (a refusal, a warning), and the game clock's milestones in their tick (its start and what scores, its last
+ * five minutes, its end).
+ */
+export const FeedToasts = () => {
+  const notices = useLiveNotices();
+  const nowMs = useNowMs();
+  const headlines = useHeadlineFeedStore((state) => state.headlines);
+  const milestones = orderHeadlineFeed(headlines, nowMs, Number(configManager.getTick(TickIds.Armies))).pinned.filter(
+    (headline) => !TOLD_BY_STORIES.has(headline.type),
+  );
+  return (
+    <>
+      <OfflineRow />
+      {milestones.map((headline) => (
+        <ToastRow
+          key={headline.id}
+          icon={<HeadlineIcon type={headline.type} />}
+          text={headline.description}
+          place={headline.location ?? null}
+        />
+      ))}
+      {notices.map((notice) => (
+        <ToastRow
+          key={notice.id}
+          icon={<NoticeIcon kind={notice.kind} />}
+          text={notice.title}
+          place={notice.location ?? null}
+        />
+      ))}
+    </>
+  );
+};
+
+/** The notices still within their time, newest first; the list redraws as the next one's time ends. */
+const useLiveNotices = () => {
+  const notices = useEventFeedStore((state) => state.notices);
+  const [now, setNow] = useState(Date.now);
+  const live = notices.filter((notice) => now - notice.at < notice.ttlMs);
+  const nextEnd = Math.min(...live.map((notice) => notice.at + notice.ttlMs));
+  useEffect(() => {
+    if (!Number.isFinite(nextEnd)) return;
+    const timer = window.setTimeout(() => setNow(Date.now()), Math.max(0, nextEnd - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [nextEnd]);
+  useEffect(() => setNow(Date.now()), [notices]);
+  return live;
+};
+
+const NoticeIcon = ({ kind }: { kind: "info" | "success" | "error" | "warning" }) => (
+  <SemanticIcon
+    name={kind === "error" || kind === "warning" ? "warning" : kind === "success" ? "check" : "info"}
+    className={cn("h-4 w-4 shrink-0", kind === "error" && "text-danger")}
+  />
 );
 
 function OfflineRow() {

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import type { EventsFilter } from "@/ui/features/event-feed/important-feed-rows";
+import type { EventsFilter } from "@/ui/features/event-feed/event-stories";
 
 /** What a player has not chosen yet: the important events. */
 const DEFAULT_FILTER: EventsFilter = "important";

@@ -2,25 +2,17 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
-import {
-  QuickFeedRows,
-  UnreadFeedBadge,
-  useImportantFeed,
-  useStripRows,
-  useUnreadFeedCount,
-} from "@/ui/features/event-feed/quick-feed";
+import { QuickFeedRows, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { useRef } from "react";
 
 /**
- * The rail's events: the offline row, then the last three actions through the player's filter (Important by default,
- * Mine or All, the Log's own filter too), the game's headlines among them, kept until newer ones replace them; the card
- * remembers them while its body is collapsed. With nothing to show it is its header band alone. "Log" opens the full
- * history, with what arrived since it was read.
+ * The rail's events: the client's toasts (offline, notices, the clock's milestones), then the game's three newest
+ * stories through the player's filter (Important by default, Mine or All, the Log's own filter too). With nothing to
+ * show it is its header band alone. "Log" opens the full history, with what arrived since it was read.
  */
 export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogToggle: () => void }) => {
-  const { rows } = useImportantFeed();
-  const shown = useStripRows();
-  const unread = useUnreadFeedCount(rows, logOpen);
+  const { stories } = useEventsFeed();
+  const unread = useUnreadFeedCount(stories, logOpen);
   const button = useRef<HTMLButtonElement>(null);
   return (
     <>
@@ -54,7 +46,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
         }
         bodyClassName="flex flex-col gap-1 empty:hidden"
       >
-        <QuickFeedRows shown={shown} />
+        <QuickFeedRows />
       </InfoBubble>
     </>
   );

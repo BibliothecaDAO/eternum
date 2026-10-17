@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Events keep the last three, and filter",
     description:
-      "The Events strip keeps your three latest events until newer ones replace them. It shows the important ones by default (your fights and captures, armies lost, crates you opened, refused orders and the game's milestones); switch to Mine or All in its header. The Log uses the same filter, and it is remembered for you.",
+      "The Events strip shows the game's three latest events. It shows the important ones by default (your fights and captures, armies lost, crates you opened, and any Hyperstructure taken); switch to Mine or All in its header. The Log uses the same filter, and it is remembered for you. Notices and the game's milestones show above it as they happen.",
     type: "improvement",
   },
   {
