@@ -14,8 +14,17 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { HexPosition, TileOccupier } from "@bibliothecadao/types";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 export interface MinimapTile {
@@ -139,13 +148,9 @@ type CenteredTileEntry = {
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
-type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
-
 type CenteredIndex = {
   byCol: Map<number, CenteredTileEntry[]>;
-  bounds: Bounds;
-  /** The revealed terrain's bounds (tiles with a biome), without known structures standing on unrevealed hexes. */
-  explored: Bounds | null;
+  bounds: { minX: number; maxX: number; minY: number; maxY: number };
 };
 
 const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
@@ -155,7 +160,6 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
   let maxX = -Infinity;
   let minY = Infinity;
   let maxY = -Infinity;
-  const explored = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
 
   for (const tile of tiles) {
     const centeredCol = tile.col - center;
@@ -172,12 +176,6 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
     maxX = Math.max(maxX, tileMaxX);
     minY = Math.min(minY, tileMinY);
     maxY = Math.max(maxY, tileMaxY);
-    if (tile.biome !== undefined) {
-      explored.minX = Math.min(explored.minX, tileMinX);
-      explored.maxX = Math.max(explored.maxX, tileMaxX);
-      explored.minY = Math.min(explored.minY, tileMinY);
-      explored.maxY = Math.max(explored.maxY, tileMaxY);
-    }
 
     const entry: CenteredTileEntry = {
       tile,
@@ -211,17 +209,20 @@ const buildCenteredIndex = (tiles: MinimapTile[]): CenteredIndex => {
       minY: Number.isFinite(minY) ? minY : 0,
       maxY: Number.isFinite(maxY) ? maxY : 0,
     },
-    explored: Number.isFinite(explored.minX) ? explored : null,
   };
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-/** The minimap's zoom follows the world camera distance; unknown (not yet published) means the reference scale. */
-const resolveMinimapScaleForCameraDistance = (cameraDistance: number | null | undefined): number =>
-  cameraDistance
-    ? clamp((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / cameraDistance, 0.4, 4)
-    : MINIMAP_SCALE_REFERENCE;
+/**
+ * The minimap's zoom follows the world camera distance (unknown, not yet published, means the reference distance),
+ * scaled by the look and held at its closest, so the minimap always shows more of the world than the camera does.
+ */
+const resolveMinimapScale = (cameraDistance: number | null | undefined, look: MinimapLook): number => {
+  const { zoom, closest } = LOOKS[look];
+  const distance = cameraDistance || WORLD_CAMERA_DISTANCE_REFERENCE;
+  return clamp(((MINIMAP_SCALE_REFERENCE * WORLD_CAMERA_DISTANCE_REFERENCE) / distance) * zoom, 0.4 * zoom, closest);
+};
 
 /** Sites the world places with no entity of their own: the tile's occupier alone names them. */
 const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
@@ -258,39 +259,12 @@ const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, Minim
 type MinimapLook = "classic" | "badges";
 
 /**
- * "badges" fits the map to what the player has explored (`fitExplored`), so a small early world fills the box; once it
- * no longer fits at FIT_MIN_SCALE it holds that scale and follows the camera, as "classic" always does.
+ * "badges" draws closer than "classic", so each badge fills its hex at a readable size; `closest` is the largest scale,
+ * where a minimap about 320 px wide still shows some seven hexes across, more than the closest camera.
  */
-const LOOKS: Record<MinimapLook, { zoom: number; terrainOpacity: number; fitExplored: boolean }> = {
-  classic: { zoom: 1, terrainOpacity: 0.92, fitExplored: false },
-  badges: { zoom: 1.75, terrainOpacity: 0.5, fitExplored: true },
-};
-
-const FIT_MIN_SCALE = 0.75;
-const FIT_MAX_SCALE = 6;
-/** The margin kept around the explored area when it is fitted, in minimap pixels. */
-const FIT_MARGIN = HEX_SIZE * 2;
-
-/** The scale and centre that show every explored tile in the box, or null once they no longer fit at a readable size. */
-/**
- * The shape the fitted map takes, width over height: the revealed terrain's bounds with their margin, as the fit draws
- * them; null before any terrain is revealed. A panel of this shape shows the fitted map without empty bands.
- */
-export const fittedMapAspect = (tiles: MinimapTile[]): number | null => {
-  const explored = buildCenteredIndex(tiles).explored;
-  if (!explored) return null;
-  return (explored.maxX - explored.minX + FIT_MARGIN * 2) / (explored.maxY - explored.minY + FIT_MARGIN * 2);
-};
-
-const fitExploredView = (
-  bounds: Bounds,
-  viewport: { width: number; height: number },
-): { x: number; y: number; scale: number } | null => {
-  const width = bounds.maxX - bounds.minX + FIT_MARGIN * 2;
-  const height = bounds.maxY - bounds.minY + FIT_MARGIN * 2;
-  const scale = Math.min(viewport.width / width, viewport.height / height, FIT_MAX_SCALE);
-  if (!(scale >= FIT_MIN_SCALE)) return null;
-  return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2, scale };
+const LOOKS: Record<MinimapLook, { zoom: number; closest: number; terrainOpacity: number }> = {
+  classic: { zoom: 1, closest: 4, terrainOpacity: 0.92 },
+  badges: { zoom: 1.75, closest: 3.5, terrainOpacity: 0.5 },
 };
 
 interface HexMinimapProps {
@@ -308,7 +282,7 @@ export const HexMinimap = ({
   cameraTargetHex,
   look = "classic",
 }: HexMinimapProps) => {
-  const { zoom, terrainOpacity, fitExplored } = LOOKS[look];
+  const { terrainOpacity } = LOOKS[look];
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [viewport, setViewport] = useState<{ width: number; height: number }>({ width: 800, height: 600 });
   const markers = useFactView(minimapMarkersView);
@@ -318,7 +292,7 @@ export const HexMinimap = ({
 
   // Mount reads the camera's current state (position and distance); the store subscription carries updates.
   const initialView = useMemo(() => {
-    const scale = resolveMinimapScaleForCameraDistance(cameraDistance) * zoom;
+    const scale = resolveMinimapScale(cameraDistance, look);
     if (!tiles.length) {
       return { x: 0, y: 0, scale };
     }
@@ -336,19 +310,14 @@ export const HexMinimap = ({
       y: (centeredIndex.bounds.minY + centeredIndex.bounds.maxY) / 2,
       scale,
     };
-  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds, zoom]);
+  }, [tiles.length, cameraTargetHex, cameraDistance, navigationTarget, selectedHex, centeredIndex.bounds, look]);
 
-  // Fitted to the revealed terrain, the box holds all of it, wherever the camera is and however far it is: the fit is
-  // the view shown, not a copy kept in state. The camera and drags move the free view behind it, which keeps following
-  // the camera and settles there, so the view is already in place when the explored area outgrows the fit.
-  const fitted = useMemo(
-    () => (fitExplored && centeredIndex.explored ? fitExploredView(centeredIndex.explored, viewport) : null),
-    [fitExplored, centeredIndex.explored, viewport],
-  );
-  const [freeView, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
-  const view = fitted ?? freeView;
-  const viewRef = useRef(freeView);
-  viewRef.current = freeView;
+  // The view follows the camera: centred on its hex, its zoom scaled with the camera's distance. A drag moves both.
+  const [view, setView] = useState<{ x: number; y: number; scale: number }>(initialView);
+  const viewRef = useRef(view);
+  useLayoutEffect(() => {
+    viewRef.current = view;
+  }, [view]);
   const isDraggingRef = useRef(false);
 
   const followTargetRef = useRef<{ x: number; y: number } | null>(null);
@@ -410,11 +379,11 @@ export const HexMinimap = ({
 
   useEffect(() => {
     if (!cameraDistance) return;
-    const nextScale = fitExplored ? FIT_MIN_SCALE : resolveMinimapScaleForCameraDistance(cameraDistance) * zoom;
+    const nextScale = resolveMinimapScale(cameraDistance, look);
     const current = viewRef.current;
     if (Math.abs(current.scale - nextScale) < 0.01) return;
     scheduleViewUpdate({ ...current, scale: nextScale });
-  }, [cameraDistance, scheduleViewUpdate, zoom, fitExplored]);
+  }, [cameraDistance, scheduleViewUpdate, look]);
 
   const dispatchCameraMove = useCallback((centerX: number, centerY: number) => {
     if (typeof window === "undefined") return;

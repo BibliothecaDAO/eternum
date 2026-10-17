@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Minimap follows the camera again",
+    description:
+      "The minimap centres on the camera and zooms with it, closer than the whole map it showed before. Names shown on hover, such as a resource ring's, now draw above every panel instead of under the next row.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "Transfer, Arrivals, Automation, Balances: one window, four tabs",
     description:
       "The Transfer window's views are tabs again, and switching away keeps what you were about to send. Send from, Send to and the goods each sit in their own panel, and each list leads with its kinds as tabs (Realms, Camps, Essence Rifts).",

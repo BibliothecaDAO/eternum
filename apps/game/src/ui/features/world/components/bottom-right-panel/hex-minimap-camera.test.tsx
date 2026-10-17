@@ -2,6 +2,7 @@ import { act, Profiler } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HexMinimap, type MinimapTile } from "./hex-minimap";
 
 // The minimap's markers and the game's synchronized configuration are not this test's business.
@@ -72,75 +73,51 @@ const shown = () => {
 };
 
 const revealed = (cols: number[], row = 0): MinimapTile[] => cols.map((col) => ({ col, row, biome: 11 }));
-/** A known structure standing on a hex the player has not revealed: a marker, not terrain. */
-const knownStructure = (col: number, row: number): MinimapTile => ({
-  col,
-  row,
-  occupier_id: "123",
-  occupier_type: 3,
-  occupier_is_structure: true,
-});
 const EXPLORED = revealed([-6, -4, -2, 0, 2, 4, 6]);
 
-it("fits the revealed terrain once it loads after mount, and settles while the camera stands elsewhere", async () => {
-  await show([], { col: 6, row: 0 });
-  await step();
-  await show(EXPLORED, { col: 6, row: 0 });
-  await step(100);
-  expect(shown().x).toBeCloseTo(0, 0);
-  expect(shown().y).toBeCloseTo(0, 0);
-  expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
+/** The world camera's distance, as the world map publishes it. */
+const cameraAt = (distance: number) => act(async () => useUIStore.setState({ cameraDistance: distance }));
 
-  const fitted = host.querySelector("svg")!.getAttribute("viewBox");
-  await show(EXPLORED, { col: -6, row: 0 });
-  await step(100);
-  expect(host.querySelector("svg")!.getAttribute("viewBox")).toBe(fitted);
-  expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
-});
-
-it("does not zoom out to a known structure on unrevealed terrain", async () => {
-  await show(EXPLORED, { col: 0, row: 0 });
-  await step(100);
-  const fitted = host.querySelector("svg")!.getAttribute("viewBox");
-  await show([...EXPLORED, knownStructure(30, 20)], { col: 0, row: 0 });
-  await step(100);
-  expect(host.querySelector("svg")!.getAttribute("viewBox")).toBe(fitted);
-});
-
-it("takes in remote terrain once it is revealed", async () => {
-  await show(EXPLORED, { col: 0, row: 0 });
-  await step(100);
-  const before = shown();
-  await show([...EXPLORED, ...revealed([20])], { col: 0, row: 0 });
-  await step(100);
-  expect(shown().width).toBeGreaterThan(before.width);
-  expect(shown().x).toBeGreaterThan(before.x);
-});
-
-it("leaves the fit for the camera once the revealed terrain needs less than the readable scale, already there", async () => {
-  // Where the camera is on the minimap: a classic minimap, which never fits, follows it there.
+it("follows the camera, centred on its hex, and settles there", async () => {
+  await cameraAt(10);
   await show(EXPLORED, { col: 6, row: 0 }, "classic");
   await step(100);
-  const camera = shown();
+  const east = shown();
   await act(async () => root.unmount());
   root = createRoot(host);
 
+  await show(EXPLORED, { col: -6, row: 0 });
+  await step(100);
+  expect(shown().x).toBeCloseTo(-east.x, 0);
   await show(EXPLORED, { col: 6, row: 0 });
   await step(100);
-  expect(shown().x).toBeCloseTo(0, 0);
-  await show([...EXPLORED, ...revealed([-400, 400])], { col: 6, row: 0 });
-  await step();
-  expect(shown().x).toBeCloseTo(camera.x, 0);
-  expect(shown().y).toBeCloseTo(camera.y, 0);
+  expect(shown().x).toBeCloseTo(east.x, 0);
+  expect(shown().y).toBeCloseTo(east.y, 0);
   expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
 });
 
-it("gives the panel the fitted map's shape: wide for a wide revealed area, square-ish for a cross, none before any", async () => {
-  const { fittedMapAspect } = await import("./hex-minimap");
-  const wide = fittedMapAspect(revealed([-8, -6, -4, -2, 0, 2, 4, 6, 8]))!;
-  const cross = fittedMapAspect(EXPLORED)!;
-  expect(wide).toBeGreaterThan(cross);
-  expect(wide).toBeGreaterThan(1);
-  expect(fittedMapAspect([...EXPLORED, knownStructure(30, 20)])).toBe(cross);
-  expect(fittedMapAspect([knownStructure(30, 20)])).toBeNull();
+it("zooms with the camera: closer shows fewer hexes, down to its closest", async () => {
+  const widthAt = async (distance: number) => {
+    await cameraAt(distance);
+    await step(2);
+    return shown().width;
+  };
+  await show(EXPLORED, { col: 0, row: 0 });
+  const far = await widthAt(20);
+  const middle = await widthAt(16);
+  const close = await widthAt(8);
+  expect(far).toBeGreaterThan(middle);
+  expect(middle).toBeGreaterThan(close);
+  // Closer still, it holds: some seven hexes across a 320 px plate, more than the closest camera shows.
+  expect(await widthAt(5)).toBe(close);
+});
+
+it("keeps the camera's zoom when remote terrain is revealed", async () => {
+  await cameraAt(10);
+  await show(EXPLORED, { col: 0, row: 0 });
+  await step(100);
+  const before = shown();
+  await show([...EXPLORED, ...revealed([-400, 400])], { col: 0, row: 0 });
+  await step(100);
+  expect(shown()).toEqual(before);
 });
