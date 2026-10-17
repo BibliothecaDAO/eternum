@@ -281,7 +281,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "Big Blitz armies eat on the march",
     description:
-      "In Blitz, every troop now costs 0.05 wheat per hex it moves and 0.10 per hex it explores, up from 0.03. A 1,000-troop army pays 50 wheat a step; a 20,000-troop army pays 1,000, so moving a big army needs farms behind it.",
+      "In Blitz, moving and exploring each cost 0.05 wheat per troop per hex. A 1,000-troop army pays 50 wheat a step; a 20,000-troop army pays 1,000, so moving a big army needs farms behind it.",
     type: "balance",
   },
   {

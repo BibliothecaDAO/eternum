@@ -102,13 +102,12 @@ function buildBlitzResourceOutputs() {
   };
 }
 
-// Wheat per troop per step, so a big army's march needs a wheat economy behind it while scouts stay cheap. Exploring
-// costs more than moving: its reward grows with the army.
+// Moving and exploring cost the same wheat per troop, so big armies need farms while scouts stay cheap.
 const blitzStaminaConfig = {
   staminaInitial: 30,
   staminaGainPerTick: 30,
   staminaTravelWheatCost: 0.05,
-  staminaExploreWheatCost: 0.1,
+  staminaExploreWheatCost: 0.05,
 };
 
 const blitzVictoryPointConfig = {
