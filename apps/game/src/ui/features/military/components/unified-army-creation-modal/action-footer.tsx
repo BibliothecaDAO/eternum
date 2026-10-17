@@ -23,6 +23,7 @@ export const ActionFooter = ({
   onSubmit,
   embedded = false,
 }: ActionFooterProps) => {
+  const reason = isDisabled ? blockedReason : null;
   const button = (
     <Button
       variant="gold"
@@ -51,11 +52,10 @@ export const ActionFooter = ({
   const action = (
     <>
       {button}
-      {isDisabled && blockedReason && (
-        <p className="mt-1 px-1 text-xs text-gold/70" role="status">
-          {blockedReason}
-        </p>
-      )}
+      {/* Always one line tall, empty when the button can go: the button never moves as its reason comes and goes. */}
+      <p className="mt-1 h-5 truncate px-1 text-xs leading-5 text-gold/70" role="status" title={reason ?? undefined}>
+        {reason}
+      </p>
     </>
   );
 
