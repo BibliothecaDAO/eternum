@@ -28,10 +28,17 @@ const sameStep = (left: ActionPath, right: ActionPath): boolean =>
   left.staminaCost === right.staminaCost;
 
 /**
- * Why the rules gave an actor no order at a tile they looked at: the stamina the order needs (the smallest any route
- * there needs), the food an explore needs, or a structure the game lets no army attack.
+ * Why the rules gave an actor no order at a tile they looked at, as the planner established it: the stamina the order
+ * needs (the smallest any route there needs), the owner's food for it, a structure the game lets no army attack, a
+ * holding the game allows no transfer with, a site that holds its tile, or a target beyond the army's step.
  */
-export type OrderRefusal = { reason: "stamina"; need: number } | { reason: "food" } | { reason: "off-limits" };
+export type OrderRefusal =
+  | { reason: "stamina"; need: number }
+  | { reason: "food" }
+  | { reason: "off-limits" }
+  | { reason: "no-transfer" }
+  | { reason: "occupied" }
+  | { reason: "too-far" };
 
 export class ActionPaths {
   private readonly paths: Map<string, ActionPath[]>;
@@ -67,6 +74,11 @@ export class ActionPaths {
   /** Why each tile the rules looked at has no order; a tile some route reaches has none to give. */
   getRefusals(): Map<string, OrderRefusal> {
     return new Map([...this.refusals].filter(([key]) => !this.paths.has(key)));
+  }
+
+  /** Whether the rules gave the tile an order or a reason. */
+  decided(key: string): boolean {
+    return this.paths.has(key) || this.refusals.has(key);
   }
 
   has(key: string): boolean {
