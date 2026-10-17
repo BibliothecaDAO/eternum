@@ -129,8 +129,7 @@ export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; l
       <SemanticIcon name="person" size={large ? 56 : 40} />
       <span className="flex flex-col gap-1">
         <span className="flex items-baseline gap-2">
-          {/* No leading of its own: the line's, as it has always drawn (a size class dropped its leading-none). */}
-          <Figure size={large ? "figure" : "title-lg"} tone="cream">
+          <Figure size={large ? "figure" : "title-lg"} tone="cream" className="leading-none">
             {registered === undefined ? "—" : formatAmount(registered)}
           </Figure>
           <span className="font-body text-base text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>

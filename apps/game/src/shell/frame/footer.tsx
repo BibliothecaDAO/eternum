@@ -37,7 +37,7 @@ export const AppFooter = () => (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
       {COLUMNS.map((column) => (
         <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2">
-          <b className="mb-1 font-body text-sm text-kit-gold">{column.title}</b>
+          <b className="mb-1 font-ui text-sm text-kit-gold">{column.title}</b>
           {column.links.map((link) => (
             <FooterAnchor key={link.to} link={link} />
           ))}
@@ -50,7 +50,7 @@ export const AppFooter = () => (
 
 /** The app's own pages open in place; other sites in a new tab. */
 const FooterAnchor = ({ link }: { link: FooterLink }) => {
-  const className = "flex min-h-8 items-center text-sm text-kit-cream hover:text-kit-gold2";
+  const className = "flex min-h-8 items-center font-ui text-sm text-kit-cream hover:text-kit-gold2";
   return link.to.startsWith("/") ? (
     <Link to={link.to} className={className}>
       {link.word}

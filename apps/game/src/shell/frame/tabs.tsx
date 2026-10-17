@@ -85,7 +85,7 @@ export const TabBar = () => {
             data-role="tab"
             aria-current={current ? "page" : undefined}
             className={cn(
-              "flex min-h-12 flex-1 flex-col items-center justify-center gap-[3px] font-body text-sm font-semibold",
+              "flex min-h-12 flex-1 flex-col items-center justify-center gap-[3px] font-ui text-sm font-semibold",
               current ? "text-kit-peach" : "text-kit-muted",
             )}
           >
@@ -130,7 +130,7 @@ export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode 
                 data-role="tab"
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "flex h-12 items-center gap-2.5 rounded-control pl-3.5 pr-3 font-body text-base transition-colors",
+                  "flex h-12 items-center gap-2.5 rounded-control pl-3.5 pr-3 font-ui text-base transition-colors",
                   current
                     ? "bg-kit-gold/[.14] text-kit-cream"
                     : "text-kit-muted hover:bg-kit-gold/[.06] hover:text-kit-cream",

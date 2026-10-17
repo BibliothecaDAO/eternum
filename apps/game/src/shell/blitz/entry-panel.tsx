@@ -281,7 +281,7 @@ export const SignInToJoin = () => {
 };
 
 const EntryLine = ({ icon, line }: { icon: IconMeaning; line: string }) => (
-  <p className="flex min-h-16 items-center gap-3 rounded-well border border-dashed border-kit-line2 px-3.5 font-body text-[15px] text-kit-muted">
+  <p className="flex min-h-16 items-center gap-3 rounded-well border border-dashed border-kit-line2 px-3.5 font-body text-caption text-kit-muted">
     <SemanticIcon name={icon} size={36} />
     {line}
   </p>
@@ -291,7 +291,7 @@ const EntryLine = ({ icon, line }: { icon: IconMeaning; line: string }) => (
 const Registered = ({ terms, closed }: { terms: EntryTerms; closed: boolean }) => (
   <Plate icon="check" title={ENTRY_WORDS.registered}>
     <PaidReceipt terms={terms} />
-    <p className="font-body text-[15px] text-kit-muted">
+    <p className="font-body text-caption text-kit-muted">
       {closed ? ENTRY_WORDS.drawingLine : ENTRY_WORDS.registeredLine}
     </p>
   </Plate>
@@ -433,7 +433,7 @@ const Receipt = ({
     {rows.map(({ icon, word, value }) => (
       <div
         key={word}
-        className="flex h-12 items-center gap-3 border-b border-kit-line px-3.5 font-ui text-[17px] text-kit-cream last:border-b-0"
+        className="flex h-12 items-center gap-3 border-b border-kit-line px-3.5 font-ui text-body text-kit-cream last:border-b-0"
       >
         <SemanticIcon name={icon} size={24} />
         {word}
@@ -441,7 +441,7 @@ const Receipt = ({
       </div>
     ))}
     {total !== undefined && (
-      <div className="flex h-12 items-center gap-3 bg-kit-gold/10 px-3.5 font-ui text-[17px] text-kit-cream">
+      <div className="flex h-12 items-center gap-3 bg-kit-gold/10 px-3.5 font-ui text-body text-kit-cream">
         {ENTRY_WORDS.paid}
         <span className="ml-auto">
           <Lords amount={total} size={20} />
@@ -482,5 +482,5 @@ const WalletChip = ({ address }: { address: string }) => (
 
 /** The entry's plates: a line-ruled Panel inside the lobby's plate, its title 19px until the type scale's snap. */
 const Plate = (props: Omit<ComponentProps<typeof Panel>, "rule" | "surface" | "titleClassName">) => (
-  <Panel rule="line" surface="bare" titleClassName="font-ui text-[19px]" {...props} />
+  <Panel rule="line" surface="bare" {...props} />
 );

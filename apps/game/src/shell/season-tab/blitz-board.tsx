@@ -70,7 +70,7 @@ const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
         <b className="font-body text-base text-kit-cream">{tierOf(ratingPoints(self.rating)).name}</b>
         <span className="text-sm text-kit-muted">{RATING_WORDS.blitzRating}</span>
       </span>
-      <Figure as="span" tone="cream" className="ml-auto text-[34px]">
+      <Figure as="span" size="title" tone="cream" className="ml-auto">
         {formatExact(ratingPoints(self.rating))}
       </Figure>
     </div>

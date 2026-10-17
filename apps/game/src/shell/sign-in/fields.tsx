@@ -40,7 +40,7 @@ export const CodeBoxes = ({
         key={index}
         aria-hidden
         className={cn(
-          "flex h-16 w-12 items-center justify-center rounded-control border-2 bg-kit-plate font-body text-[30px] font-extrabold text-kit-cream",
+          "flex h-16 w-12 items-center justify-center rounded-control border-2 bg-kit-plate font-body text-title font-extrabold text-kit-cream",
           refused ? "border-kit-red" : index === code.length ? "border-kit-peach" : "border-kit-line",
           disabled && "opacity-50",
         )}
