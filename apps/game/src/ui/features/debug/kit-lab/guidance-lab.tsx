@@ -15,9 +15,10 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
-import { configManager } from "@bibliothecadao/eternum";
+import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
+import { relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { TransactionType } from "@bibliothecadao/provider";
-import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
 /** The fixture's player, who holds its realm (entity 7) and has no army in the field. */
@@ -39,7 +40,8 @@ const installFixtureGame = () => {
   return store;
 };
 
-const story = (id: string, kind: string, payload: Record<string, unknown>, title: string, description = "") =>
+/** A story of the player's, worded by the game's one story formatter as the Log and Events both read it. */
+const story = (store: NativeFactStore, id: string, kind: string, payload: Record<string, unknown>) =>
   ({
     id,
     event_id: id,
@@ -50,52 +52,79 @@ const story = (id: string, kind: string, payload: Record<string, unknown>, title
     timestamp: "350",
     timestampMs: 350_000,
     storyPayload: payload,
-    presentation: { title, description },
+    presentation: buildStoryEventPresentation(
+      {
+        storyType: kind,
+        storyPayload: payload,
+        ownerAddress: PLAYER,
+        viewerAddress: PLAYER,
+        timestamp: 350_000,
+      } as never,
+      store,
+      (address) => (BigInt(address) === BigInt(PLAYER) ? "clientlane" : null),
+    ),
   }) as unknown as ProcessedStoryEvent;
 
+const storyRow = (event: ProcessedStoryEvent): ImportantFeedRow => ({
+  kind: "story",
+  id: `story:${event.id}`,
+  at: 350_000,
+  event,
+});
+
 /** What a newcomer's first minutes write to Events: an explore with no find, one that found Essence, a crate, a fight lost. */
-const ROWS: ImportantFeedRow[] = [
-  {
-    kind: "transaction",
-    id: "0xe1",
-    at: 350_000,
-    transaction: {
-      hash: "0xe1",
-      type: TransactionType.EXPLORE,
-      status: "success",
-      submittedAt: 350_000,
-      confirmedAt: 350_000,
-      description: "Scouts sent to explore new lands",
-    } satisfies Transaction,
-  },
-  {
-    kind: "story",
-    id: "story:found",
-    at: 350_000,
-    event: story("found", "ExplorationReward", { coord: { x: 2147483650, y: 2147483652 } }, "+200 Essence"),
-  },
-  {
-    kind: "story",
-    id: "story:crate",
-    at: 350_000,
-    event: story("crate", "RelicChestOpened", {}, "Crate opened: 3 relics to the army Stolsli T1"),
-  },
-  {
-    kind: "story",
-    id: "story:fight",
-    at: 350_000,
-    event: story(
-      "fight",
-      "BattleEvent",
-      {
-        attacker: { player: PLAYER, category: "Knight", before: "1000000000000", after: "0" },
-        defender: { player: "0x0", category: "Knight", before: "5066000000000", after: "4800000000000" },
-      },
-      "Battle resolved",
-      "Attacker [clientlane] · Defender [The Vanguard] · Outcome: The Vanguard wins",
+const eventsRows = (store: NativeFactStore): ImportantFeedRow[] => {
+  const chest = { pack: "War", lucky: false } as const;
+  const scaledPoints = (points: number) => BigInt(points) * 1_000_000n;
+  return [
+    {
+      kind: "transaction",
+      id: "0xe1",
+      at: 350_000,
+      transaction: {
+        hash: "0xe1",
+        type: TransactionType.EXPLORE,
+        status: "success",
+        submittedAt: 350_000,
+        confirmedAt: 350_000,
+        description: "Scouts sent to explore new lands",
+      } satisfies Transaction,
+    },
+    storyRow(
+      story(store, "found", "ExplorationReward", {
+        explorer_id: 70,
+        receiver: 7,
+        coord: { x: 2147483650, y: 2147483652 },
+        resource_type: ResourcesIds.Essence,
+        amount: "200000000000",
+      }),
     ),
-  },
-];
+    storyRow(
+      story(store, "crate", "RelicChestOpened", {
+        explorer_id: 70,
+        coord: { x: 2147483651, y: 2147483652 },
+        chest,
+        relics: relicChestRelics(chest),
+        points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
+      }),
+    ),
+    storyRow(
+      story(store, "fight", "BattleEvent", {
+        attacker_id: 70,
+        defender_id: 900,
+        attacker: { player: PLAYER, category: "Paladin", tier: "T1", before: "1000000000000", after: "0", roll: 0 },
+        defender: {
+          player: "0x0",
+          category: "Knight",
+          tier: "T2",
+          before: "5066000000000",
+          after: "4800000000000",
+          roll: 0,
+        },
+      }),
+    ),
+  ];
+};
 
 /** The fixture realm's army, standing at (10, 10). */
 const ARMY: CoachArmy = {
@@ -130,8 +159,8 @@ const labStep = ({ key, line, verb, act }: CoachStep): NextStep =>
     ? { key, kind: "level-up", realmId: act.realmId, name: act.name, why: line }
     : { key, kind: "order", line, verb, busy: false, run: act ? () => undefined : null };
 
-/** Next up in each state the coach reads, the step it puts first named above it. */
-const NEXT_UP_STATES: { label: string; steps: NextStep[]; refusal?: string }[] = [
+/** Next up in each state the coach reads, the step it puts first named above it; read once the fixture game is in. */
+const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[] => [
   { label: "Before play opens", steps: coached({}), refusal: "Starts in 2m 42s" },
   {
     label: "Army lost: raise where troops are",
@@ -178,7 +207,7 @@ export const GuidanceLab = () => {
           <PlayerLabel name="clientlane" standing={{ rank: 1, points: 310 }} />
         </div>
         <div data-lab="next-up" className="grid grid-cols-4 gap-4">
-          {NEXT_UP_STATES.map(({ label, steps, refusal }) => (
+          {nextUpStates().map(({ label, steps, refusal }) => (
             <div key={label} className="flex w-[320px] flex-col gap-1">
               <span className="text-xs text-gold/60">{label}</span>
               <NextUpView steps={steps} refusal={refusal} />
@@ -186,7 +215,7 @@ export const GuidanceLab = () => {
           ))}
         </div>
         <div data-lab="events" className="flex w-[320px] flex-col gap-1">
-          {ROWS.map((row) => (
+          {eventsRows(store).map((row) => (
             <FeedRowLine key={row.id} row={row} />
           ))}
         </div>
