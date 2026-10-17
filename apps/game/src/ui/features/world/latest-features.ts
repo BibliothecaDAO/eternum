@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Map labels you can read at a glance",
+    description:
+      "Every army, realm, camp and rift on the map wears a small label in the HUD's panel style: an army's player over its troops and stamina, a realm's player and rank (City, Kingdom, Empire) over its name and guard, or Undefended, and a camp or rift's reward (\"Essence Rift | 1,200 Essence\", \"Camp | 250 points\") over its guard. Hover a tile, or select it, to open its label: an army's home realm, a structure's guards in the order an attacker meets them, and troops on their way.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Advice you can follow",
     description:
       "A certain-loss forecast now asks only for an army your realm can hold, and when it cannot, says to level the realm up, which of your realms can raise it now (troops on hand, a free army slot, the cap), or the troops to train there first. After raising an army the Military window stays on Attack, and a full army cap reads as a note, not an error. The leaderboard's held hyperstructures read points/second.",
