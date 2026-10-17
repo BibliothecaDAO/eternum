@@ -410,3 +410,115 @@ export const SCREENS = {
   /** Past the desktop: wider gutters and columns from here. */
   wide: "1800px",
 } as const;
+
+/**
+ * The HUD's style sheet: the scope of this file every in-game element reads (/lab/kit shows each one), written as
+ * `--hud-*` CSS variables (tailwind.config.js). One sheet for Blitz, Eternum and Frontier, on desktop and phone: a mode
+ * changes only its surface (HUD_MODES), a phone only its sizes (HUD_PHONE).
+ *
+ * The type scale (owner, 17 October 2026: "font sizes are all over the place"): a handful of sizes and weights, each
+ * named by its role. A HUD text takes a role (`text-hud-body`), never a size.
+ */
+export const HUD_TYPE = {
+  /** A window's title, a figure that is the point of its panel. */
+  display: { size: "20px", line: "26px", weight: "700" },
+  /** A panel's or a tab's title, a place's own name. */
+  title: { size: "16px", line: "22px", weight: "600" },
+  /** Everything read: text, rows, a tooltip's line, a field's value, a player's name. */
+  body: { size: "14px", line: "20px", weight: "500" },
+  /** A number or a word that must stand out in its line: a count, a total, a button's verb. */
+  strong: { size: "14px", line: "20px", weight: "700" },
+  /** Labels, chips, cues, ids and times: what names or qualifies the text beside it. */
+  label: { size: "12px", line: "16px", weight: "600" },
+  /** A ring's rim badge, fitted to its ring: nothing else. */
+  badge: { size: "11px", line: "14px", weight: "700" },
+} as const;
+
+/** The HUD's colours, sizes, lines, shadows and motion, by role; the HUD's gold and ink are the kit's. */
+export const HUD_SHEET = {
+  /** The gold of every line, title and label, as channels: its strengths below are built from it. */
+  gold: channels(HUD_COLORS.gold),
+  /** What is read on a HUD surface. */
+  ink: channels(HUD_COLORS.cream),
+  /** Text on a gold face. */
+  dark: channels(HUD_COLORS.ink),
+  /** An input's or a map's recess. */
+  well: "rgb(0 0 0 / 0.4)",
+  /** Whose a thing is: yours, an ally's, an enemy's, nobody's. */
+  own: HUD_COLORS.gold2,
+  ally: "#7fd6cf",
+  enemy: "#ff7b6b",
+  neutral: "#b9b1a1",
+  /** How a thing stands: good (ready, gained), bad (refused, lost), warn (costly, waiting). */
+  good: "#66ddab",
+  bad: "#ff7b6b",
+  warn: "#f0b35a",
+  /** Troop tiers, as channels: T1 blue, T2 green, T3 purple. */
+  t1: "96 165 250",
+  t2: "52 211 153",
+  t3: "147 51 234",
+  /** A control's height; a touch target's is HUD_PHONE's. */
+  control: "36px",
+  /** Corners: a chip's, a control's, a panel's, a round thing's. */
+  "radius-chip": "4px",
+  "radius-control": "8px",
+  "radius-panel": "12px",
+  "radius-round": "9999px",
+  /** One speed for every hover and press. */
+  fast: "120ms",
+  ease: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+} as const;
+
+/** The HUD's values built from others, declared again on every mode's root so a changed gold reaches each of them. */
+export const HUD_DERIVED = {
+  line: "rgb(var(--hud-gold) / 0.25)",
+  "line-strong": "rgb(var(--hud-gold) / 0.5)",
+  divider: "rgb(var(--hud-gold) / 0.15)",
+  label: "rgb(var(--hud-gold) / 0.75)",
+  cue: "rgb(var(--hud-gold) / 0.6)",
+  hover: "rgb(var(--hud-gold) / 0.1)",
+  chosen: "rgb(var(--hud-gold) / 0.18)",
+  "shadow-panel": "0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(var(--hud-gold) / 0.18)",
+  "shadow-control": "0 1px 2px rgb(0 0 0 / 0.4)",
+  focus: "0 0 0 2px rgb(var(--hud-gold) / 0.65)",
+} as const;
+
+/**
+ * What a game mode changes: its surface only, so the three read as one HUD with their own air. Blitz keeps the War
+ * room's teal glass, Eternum a deeper night of it, Frontier the warm ink every mode's sheets share.
+ */
+export const HUD_MODES = {
+  blitz: { "surface-from": "#192930", "surface-to": "#101c23" },
+  eternum: { "surface-from": "#18222e", "surface-to": "#0e141d" },
+  frontier: { "surface-from": "rgb(38 29 17 / 0.98)", "surface-to": "rgb(16 12 8 / 0.99)" },
+} as const;
+
+export type HudMode = keyof typeof HUD_MODES;
+
+/** What a phone changes: touch targets, and the reading roles a step up; every element keeps its shape. */
+export const HUD_PHONE = {
+  control: "44px",
+  "text-title": "17px",
+  "text-body": "15px",
+  "text-strong": "15px",
+  "text-label": "13px",
+} as const;
+
+/** The HUD sheet's CSS variables: `--hud-<name>`, and each type role as `--hud-text-<role>`, `--hud-line-<role>`, `--hud-weight-<role>`. */
+export const hudVariables = (): Record<string, string> => ({
+  ...Object.fromEntries(Object.entries(HUD_SHEET).map(([name, value]) => [`--hud-${name}`, value])),
+  ...Object.fromEntries(
+    Object.entries(HUD_TYPE).flatMap(([role, { size, line, weight }]) => [
+      [`--hud-text-${role}`, size],
+      [`--hud-line-${role}`, line],
+      [`--hud-weight-${role}`, weight],
+    ]),
+  ),
+  "--hud-font": CLASSIC_HUD_FONTS.ui,
+});
+
+/** Each mode's variables, and the derived values again, so a mode root (and the lab's editor on it) restyles them. */
+export const hudModeVariables = (mode: HudMode): Record<string, string> => ({
+  ...Object.fromEntries(Object.entries(HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value])),
+  ...Object.fromEntries(Object.entries(HUD_DERIVED).map(([name, value]) => [`--hud-${name}`, value])),
+});

@@ -18,20 +18,21 @@ import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
-  AmountField,
-  Button,
-  Chip,
-  EventRow,
-  IconButton,
-  MinimapFrame,
-  Panel,
-  Ring,
-  Row,
-  TierChip,
-  Tabs,
-  Tip,
-  Window,
-} from "@/ui/design-system/sheet/elements";
+  HudAmountField,
+  HudButton,
+  HudChip,
+  HudEventRow,
+  HudIconButton,
+  HudMinimapFrame,
+  HudPanel,
+  HudRing,
+  HudRow,
+  HudTabs,
+  HudTierChip,
+  HudTip,
+  HudWindow,
+} from "@/ui/design-system/kit/hud-elements";
+import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { TroopAmount } from "@/ui/features/military/components/unified-army-creation-modal/troop-amount";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
@@ -43,44 +44,63 @@ import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-mod
 import "@/three/map-plates/map-plates.css";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { type ReactNode, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { eventsRows, installFixtureGame, PLAYER } from "./fixture-game";
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
+
+type Device = "desktop" | "phone";
+/** Which device the lab draws the sheet for: on a phone, the sheet's column alone, at a phone's width and sizes. */
+const DeviceContext = createContext<Device>("desktop");
 type State = (typeof STATES)[number];
 
 /**
- * Dev only: the client's one style sheet at /lab/kit: its tokens, editable here, and every element built from them in
- * every state, each beside the versions the game draws today. The owner iterates on the sheet here; the game takes it
- * once approved.
+ * Dev only: the HUD's style sheet at /lab/kit: the HUD scope of the token file (src/tokens.ts), editable here, its type
+ * scale first, then every element built from it in every state, in each game mode and on a phone, each beside the
+ * versions the game draws today. The owner iterates on the sheet here; the game takes it once approved.
  */
 export const StyleSheetLab = () => {
   useDocumentClass("classic-hud");
   const [store] = useState(installFixtureGame);
-  const [skin, setSkin] = useState<"war-room" | "frontier">("war-room");
+  const [mode, setMode] = useState<HudMode>("blitz");
+  const [device, setDevice] = useState<Device>("desktop");
   const sheetRef = useRef<HTMLDivElement>(null);
   return (
     <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
       <div
         ref={sheetRef}
-        data-ui-root
-        data-ui-skin={skin === "frontier" ? "frontier" : undefined}
+        data-hud-mode={mode}
+        data-hud-device={device === "phone" ? "phone" : undefined}
         className="ui min-h-screen bg-[#0b1418] p-6"
       >
         <header data-lab-chrome className="mb-6 flex flex-wrap items-center gap-4 text-sm text-white/80">
           <h1 className="text-xl font-bold text-white">Style sheet</h1>
-          <span>Tokens on the left; each element in every state, beside what the game draws today.</span>
+          <span>The HUD scope of src/tokens.ts on the left; the type scale, then each element in every state.</span>
           <label className="flex items-center gap-2">
-            Skin
+            Mode
             <select
-              value={skin}
-              onChange={(event) => setSkin(event.target.value as typeof skin)}
+              value={mode}
+              onChange={(event) => setMode(event.target.value as HudMode)}
               className="rounded bg-black/60 px-2 py-1"
             >
-              <option value="war-room">War room (Blitz, Eternum)</option>
-              <option value="frontier">Frontier</option>
+              {(Object.keys(HUD_MODES) as HudMode[]).map((key) => (
+                <option key={key} value={key}>
+                  {key[0].toUpperCase() + key.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            Device
+            <select
+              value={device}
+              onChange={(event) => setDevice(event.target.value as Device)}
+              className="rounded bg-black/60 px-2 py-1"
+            >
+              <option value="desktop">Desktop</option>
+              <option value="phone">Phone (390 wide, touch)</option>
             </select>
           </label>
           <nav className="ml-auto flex gap-3 underline">
@@ -92,21 +112,30 @@ export const StyleSheetLab = () => {
           </nav>
         </header>
         <div className="flex items-start gap-6">
-          <TokenEditor target={sheetRef} />
-          <main className="flex min-w-0 flex-1 flex-col gap-6">
-            <ButtonsSection />
-            <AmountSection />
-            <TooltipSection />
-            <PanelSection />
-            <TabsSection />
-            <ChipsSection />
-            <RingSection />
-            <RowsSection />
-            <EventsSection store={store} />
-            <WindowSection />
-            <PlatesSection />
-            <MinimapSection />
-          </main>
+          <TokenEditor key={mode} target={sheetRef} mode={mode} />
+          <DeviceContext.Provider value={device}>
+            <main
+              className={
+                device === "phone"
+                  ? "flex w-[390px] flex-none flex-col gap-4 rounded-[28px] border border-white/20 p-3"
+                  : "flex min-w-0 flex-1 flex-col gap-6"
+              }
+            >
+              <TypeSection />
+              <ButtonsSection />
+              <AmountSection />
+              <TooltipSection />
+              <PanelSection />
+              <TabsSection />
+              <ChipsSection />
+              <RingSection />
+              <RowsSection />
+              <EventsSection store={store} />
+              <WindowSection />
+              <PlatesSection />
+              <MinimapSection />
+            </main>
+          </DeviceContext.Provider>
         </div>
         <Tooltip />
       </div>
@@ -115,28 +144,35 @@ export const StyleSheetLab = () => {
 };
 
 /** One element: what it is for, the sheet's version in its states, and what the game draws today. */
-const Element = ({ name, rule, sheet, today }: { name: string; rule: string; sheet: ReactNode; today: ReactNode }) => (
-  <section data-sheet-element={name} className="rounded-lg border border-white/10 bg-black/20 p-4">
-    <header data-lab-chrome className="mb-3 flex items-baseline gap-3">
-      <h2 className="text-lg font-bold text-white">{name}</h2>
-      <p className="text-sm text-white/60">{rule}</p>
-    </header>
-    <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-6">
-      <div>
-        <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-emerald-300/80">
-          Sheet
-        </p>
-        {sheet}
-      </div>
-      <div className="border-l border-white/10 pl-6">
-        <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-red-300/80">
-          Today in the game
-        </p>
-        <div className="flex flex-wrap items-start gap-3">{today}</div>
-      </div>
-    </div>
-  </section>
-);
+const Element = ({ name, rule, sheet, today }: { name: string; rule: string; sheet: ReactNode; today: ReactNode }) => {
+  const phone = useContext(DeviceContext) === "phone";
+  return (
+    <section data-sheet-element={name} className="rounded-lg border border-white/10 bg-black/20 p-4">
+      <header data-lab-chrome className="mb-3 flex flex-wrap items-baseline gap-3">
+        <h2 className="text-lg font-bold text-white">{name}</h2>
+        <p className="text-sm text-white/60">{rule}</p>
+      </header>
+      {phone ? (
+        <div className="overflow-x-auto">{sheet}</div>
+      ) : (
+        <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-6">
+          <div>
+            <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-emerald-300/80">
+              Sheet
+            </p>
+            {sheet}
+          </div>
+          <div className="border-l border-white/10 pl-6">
+            <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-red-300/80">
+              Today in the game
+            </p>
+            <div className="flex flex-wrap items-start gap-3">{today}</div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+};
 
 /** A row of one element drawn in each state the lab can force. */
 const StateRow = ({ label, render }: { label: string; render: (state: State) => ReactNode }) => (
@@ -161,6 +197,59 @@ const StateHeads = () => (
   </div>
 );
 
+/** Today's HUD text sizes (Tailwind classes and stylesheets across the HUD's code), smallest first. */
+const TODAY_SIZES = [8, 9, 10, 11, 12, 13, 13.2, 14, 15, 15.6, 16, 17, 18, 20, 22, 24, 34] as const;
+/** Each role's class, written out so Tailwind generates it. */
+const ROLE_CLASS: Record<keyof typeof HUD_TYPE, string> = {
+  display: "text-hud-display",
+  title: "text-hud-title",
+  body: "text-hud-body",
+  strong: "text-hud-strong",
+  label: "text-hud-label",
+  badge: "text-hud-badge",
+};
+const ROLE_SAMPLES: Record<keyof typeof HUD_TYPE, string> = {
+  display: "Military",
+  title: "Structure Tile · Guards",
+  body: "Sacred Hyperstructure of Destiny, held by The Vanguard",
+  strong: "1,576 · Deploy",
+  label: "points/s · 3/4 · 13m · 0·103",
+  badge: "1.2K",
+};
+
+const TypeSection = () => (
+  <Element
+    name="Type scale"
+    rule="A handful of sizes and weights, each named by its role; a HUD text takes a role, never a size."
+    sheet={
+      <div className="flex flex-col gap-3">
+        {(Object.keys(HUD_TYPE) as (keyof typeof HUD_TYPE)[]).map((role) => (
+          <div key={role} className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-3">
+            <span data-lab-chrome className="font-mono text-xs text-white/60">
+              {role} {HUD_TYPE[role].size}/{HUD_TYPE[role].weight}
+            </span>
+            <span className={ROLE_CLASS[role]} style={{ color: "rgb(var(--hud-ink))" }}>
+              {ROLE_SAMPLES[role]}
+            </span>
+          </div>
+        ))}
+      </div>
+    }
+    today={
+      <div className="flex flex-col gap-1">
+        <span data-lab-chrome className="text-xs text-white/50">
+          {TODAY_SIZES.length} sizes and 5 weights in the HUD's code today (text-xs is 15.6px there, text-sm 14px):
+        </span>
+        {TODAY_SIZES.map((size) => (
+          <span key={size} style={{ fontSize: `${size}px` }} className="font-ui leading-tight text-gold">
+            {size}px · Guards 1,576
+          </span>
+        ))}
+      </div>
+    }
+  />
+);
+
 const forced = (state: State) => (state === "rest" || state === "disabled" ? undefined : state);
 
 const ButtonsSection = () => (
@@ -175,32 +264,37 @@ const ButtonsSection = () => (
             key={kind}
             label={kind}
             render={(state) => (
-              <Button kind={kind} data-state={forced(state)} disabled={state === "disabled"}>
+              <HudButton kind={kind} data-state={forced(state)} disabled={state === "disabled"}>
                 {kind === "primary" ? "Deploy" : kind === "secondary" ? "Transfer" : "Cancel"}
-              </Button>
+              </HudButton>
             )}
           />
         ))}
         <StateRow
           label="with icon"
           render={(state) => (
-            <Button kind="primary" icon="military" data-state={forced(state)} disabled={state === "disabled"}>
+            <HudButton kind="primary" icon="military" data-state={forced(state)} disabled={state === "disabled"}>
               Deploy
-            </Button>
+            </HudButton>
           )}
         />
         <StateRow
           label="icon"
           render={(state) => (
-            <IconButton icon="transfer" label="Transfer" data-state={forced(state)} disabled={state === "disabled"} />
+            <HudIconButton
+              icon="transfer"
+              label="Transfer"
+              data-state={forced(state)}
+              disabled={state === "disabled"}
+            />
           )}
         />
         <StateRow
           label="small"
           render={(state) => (
-            <Button kind="secondary" size="sm" data-state={forced(state)} disabled={state === "disabled"}>
+            <HudButton kind="secondary" size="sm" data-state={forced(state)} disabled={state === "disabled"}>
               Max
-            </Button>
+            </HudButton>
           )}
         />
       </>
@@ -241,10 +335,10 @@ const AmountSection = () => {
       rule="How many: the field, 'of N', and its quick buttons at one height; full, the quick buttons rest disabled."
       sheet={
         <div className="flex flex-col gap-3">
-          <AmountField value={value} of={500} step={500} onChange={setValue} />
-          <AmountField value={500} of={500} step={500} onChange={() => undefined} />
-          <AmountField value={200} of={500} step={500} onChange={() => undefined} state="focus" />
-          <AmountField value={0} of={0} step={500} onChange={() => undefined} disabled />
+          <HudAmountField value={value} of={500} step={500} onChange={setValue} />
+          <HudAmountField value={500} of={500} step={500} onChange={() => undefined} />
+          <HudAmountField value={200} of={500} step={500} onChange={() => undefined} state="focus" />
+          <HudAmountField value={0} of={0} step={500} onChange={() => undefined} disabled />
         </div>
       }
       today={
@@ -280,10 +374,10 @@ const TooltipSection = () => (
     rule="One tooltip; its words are its own. A line, why not (and when), and how, as a cue."
     sheet={
       <div className="flex flex-wrap items-start gap-4">
-        <Tip line="Wheat, 1,200 held" />
-        <Tip line="Deploy an army here" how="Right-click" />
-        <Tip line="Explore" why="Needs 30 stamina, ready in under a minute" />
-        <Tip line="Move here · 2 wheat" how="Right-click to move, Shift to queue" />
+        <HudTip line="Wheat, 1,200 held" />
+        <HudTip line="Deploy an army here" how="Right-click" />
+        <HudTip line="Explore" why="Needs 30 stamina, ready in under a minute" />
+        <HudTip line="Move here · 2 wheat" how="Right-click to move, Shift to queue" />
       </div>
     }
     today={
@@ -321,14 +415,14 @@ const PanelSection = () => (
     sheet={
       <div className="flex gap-4">
         <div className="w-80">
-          <Panel title="Structure Tile · (-4, -3)" cue="1/1">
-            <Row title="djizus" detail="Egonal" />
-          </Panel>
+          <HudPanel title="Structure Tile · (-4, -3)" cue="1/1">
+            <HudRow title="djizus" detail="Egonal" />
+          </HudPanel>
         </div>
         <div className="w-80">
-          <Panel>
+          <HudPanel>
             <p className="ui-row__detail">A panel with no header (the minimap's).</p>
-          </Panel>
+          </HudPanel>
         </div>
       </div>
     }
@@ -355,7 +449,7 @@ const TabsSection = () => {
       rule="A strip of choices; the chosen one in gold over a gold rule, a count as a chip."
       sheet={
         <div className="flex flex-col gap-4">
-          <Tabs
+          <HudTabs
             tabs={[
               { key: "realms", label: "Realms", count: 3 },
               { key: "camps", label: "Camps", count: 1 },
@@ -364,7 +458,7 @@ const TabsSection = () => {
             value={tab}
             onChange={setTab}
           />
-          <Tabs
+          <HudTabs
             tabs={[
               { key: "realms", label: "rest" },
               { key: "camps", label: "hover" },
@@ -413,14 +507,14 @@ const ChipsSection = () => (
     rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour."
     sheet={
       <div className="flex flex-wrap items-center gap-3">
-        <Chip>3</Chip>
-        <Chip>1,455</Chip>
-        <Chip tone="good">Ready</Chip>
-        <Chip tone="warn">2m left</Chip>
-        <Chip tone="bad">Under attack</Chip>
-        <TierChip tier={1} />
-        <TierChip tier={2} />
-        <TierChip tier={3} />
+        <HudChip>3</HudChip>
+        <HudChip>1,455</HudChip>
+        <HudChip tone="good">Ready</HudChip>
+        <HudChip tone="warn">2m left</HudChip>
+        <HudChip tone="bad">Under attack</HudChip>
+        <HudTierChip tier={1} />
+        <HudTierChip tier={2} />
+        <HudTierChip tier={3} />
       </div>
     }
     today={
@@ -443,9 +537,9 @@ const RingSection = () => (
     rule="A painting in a round well; buildings top left, the amount on the foot, the time left on the right; an arc for production."
     sheet={
       <div className="flex items-center gap-6 pb-2">
-        <Ring icon="wheat" label="Wheat" corner={3} foot="1.2K" side="17m" progress={0.6} />
-        <Ring icon="essence" label="Essence" foot="6.4K" />
-        <Ring icon="labor" label="Labor" corner={1} foot="240" progress={0.2} side="3m" />
+        <HudRing icon="wheat" label="Wheat" corner={3} foot="1.2K" side="17m" progress={0.6} />
+        <HudRing icon="essence" label="Essence" foot="6.4K" />
+        <HudRing icon="labor" label="Labor" corner={1} foot="240" progress={0.2} side="3m" />
       </div>
     }
     today={
@@ -479,9 +573,9 @@ const RowsSection = () => (
     rule="One thing of a list: what it is, what it says, its value; hover lights it, the chosen one carries a gold bar."
     sheet={
       <div className="flex w-80 flex-col gap-1">
-        <Row title="Egonal" detail="Settlement · 1,000 guarding" trail="2" selected />
-        <Row title="Noykkuynoyk" detail="City · Undefended" trail="1" state="hover" />
-        <Row title="'oak Leukue" detail="Kingdom · 1,455 guarding" trail="3" />
+        <HudRow title="Egonal" detail="Settlement · 1,000 guarding" trail="2" selected />
+        <HudRow title="Noykkuynoyk" detail="City · Undefended" trail="1" state="hover" />
+        <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" trail="3" />
       </div>
     }
     today={
@@ -498,18 +592,18 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
     rule="What happened, said once: its time, a mark in its tone, the words; a notice is one too (no separate toast)."
     sheet={
       <div className="flex w-96 flex-col">
-        <EventRow time="12:04">
+        <HudEventRow time="12:04">
           Explored · <strong>+5 points</strong>
-        </EventRow>
-        <EventRow time="12:05" tone="good">
+        </HudEventRow>
+        <HudEventRow time="12:05" tone="good">
           Found <strong>+200 Essence</strong>
-        </EventRow>
-        <EventRow time="12:07" tone="bad">
+        </HudEventRow>
+        <HudEventRow time="12:07" tone="bad">
           Army lost: <strong>1,000 Knights</strong> to The Vanguard
-        </EventRow>
-        <EventRow time="12:08" tone="warn">
+        </HudEventRow>
+        <HudEventRow time="12:08" tone="warn">
           Not sent: the army needs 30 stamina
-        </EventRow>
+        </HudEventRow>
       </div>
     }
     today={
@@ -528,15 +622,15 @@ const WindowSection = () => (
     rule="A panel the size of a task (Military, Transfer): its title bar with a way out, then its body."
     sheet={
       <div className="w-[34rem]">
-        <Window title="Military" icon="military" onClose={() => undefined}>
-          <AmountField value={200} of={500} step={500} onChange={() => undefined} />
+        <HudWindow title="Military" icon="military" onClose={() => undefined}>
+          <HudAmountField value={200} of={500} step={500} onChange={() => undefined} />
           <div className="mt-4 flex justify-end gap-2">
-            <Button kind="quiet">Cancel</Button>
-            <Button kind="primary" icon="military">
+            <HudButton kind="quiet">Cancel</HudButton>
+            <HudButton kind="primary" icon="military">
               Deploy
-            </Button>
+            </HudButton>
           </div>
-        </Window>
+        </HudWindow>
       </div>
     }
     today={
@@ -641,7 +735,7 @@ const MinimapSection = () => (
     rule="A panel with no header, its map in a well."
     sheet={
       <div className="w-80">
-        <MinimapFrame>
+        <HudMinimapFrame>
           <svg viewBox="0 0 280 180" className="block h-44 w-full">
             {MINIMAP_HEXES.map((index) => (
               <circle
@@ -653,7 +747,7 @@ const MinimapSection = () => (
               />
             ))}
           </svg>
-        </MinimapFrame>
+        </HudMinimapFrame>
       </div>
     }
     today={
@@ -666,62 +760,32 @@ const MinimapSection = () => (
   />
 );
 
-/** The sheet's tokens, editable: a change applies at once to the sheet's elements here; Copy gives the changed lines. */
-const TOKEN_GROUPS: readonly { group: string; names: readonly string[] }[] = [
+/** The HUD scope's tokens, read from src/tokens.ts and editable: a change applies at once to the sheet's elements here; Copy gives the changed values. */
+const tokenGroups = (mode: HudMode): readonly { group: string; names: readonly string[] }[] => [
   {
-    group: "Colour",
-    names: [
-      "--ui-gold",
-      "--ui-ink",
-      "--ui-dark",
-      "--ui-surface-from",
-      "--ui-surface-to",
-      "--ui-well",
-      "--ui-own",
-      "--ui-ally",
-      "--ui-enemy",
-      "--ui-neutral",
-      "--ui-good",
-      "--ui-bad",
-      "--ui-warn",
-      "--ui-t1",
-      "--ui-t2",
-      "--ui-t3",
-    ],
+    group: "Type (HUD_TYPE)",
+    names: Object.keys(HUD_TYPE).flatMap((role) => [`--hud-text-${role}`, `--hud-weight-${role}`]),
   },
-  {
-    group: "Gold strengths",
-    names: ["--ui-line", "--ui-line-strong", "--ui-divider", "--ui-label", "--ui-cue", "--ui-hover", "--ui-chosen"],
-  },
-  {
-    group: "Type",
-    names: [
-      "--ui-font",
-      "--ui-text-xs",
-      "--ui-text-sm",
-      "--ui-text-md",
-      "--ui-text-lg",
-      "--ui-text-xl",
-      "--ui-weight",
-      "--ui-weight-strong",
-      "--ui-weight-bold",
-    ],
-  },
-  {
-    group: "Space and size",
-    names: ["--ui-space-2", "--ui-space-3", "--ui-space-4", "--ui-space-5", "--ui-space-6", "--ui-control", "--ui-row"],
-  },
-  { group: "Corners", names: ["--ui-radius-chip", "--ui-radius-control", "--ui-radius-panel"] },
-  { group: "Shadow and motion", names: ["--ui-shadow-panel", "--ui-focus", "--ui-fast"] },
+  { group: `Surface (HUD_MODES.${mode})`, names: Object.keys(HUD_MODES[mode]).map((name) => `--hud-${name}`) },
+  { group: "Sheet (HUD_SHEET)", names: Object.keys(HUD_SHEET).map((name) => `--hud-${name}`) },
+  { group: "Built from gold (HUD_DERIVED)", names: Object.keys(HUD_DERIVED).map((name) => `--hud-${name}`) },
 ];
 
-const TokenEditor = ({ target }: { target: React.RefObject<HTMLDivElement | null> }) => {
-  // The tokens as the sheet sets them; its stylesheet is loaded with this module, before the first render.
+const TokenEditor = ({ target, mode }: { target: React.RefObject<HTMLDivElement | null>; mode: HudMode }) => {
+  const groups = tokenGroups(mode);
+  // The tokens as this mode sets them, read where the mode applies (the editor mounts again with each mode).
   const [values, setValues] = useState<Record<string, string>>(() => {
-    const style = getComputedStyle(document.documentElement);
-    return Object.fromEntries(
-      TOKEN_GROUPS.flatMap(({ names }) => names).map((name) => [name, style.getPropertyValue(name).trim()]),
+    const probe = document.createElement("div");
+    probe.dataset.hudMode = mode;
+    document.body.append(probe);
+    const style = getComputedStyle(probe);
+    const read = Object.fromEntries(
+      tokenGroups(mode)
+        .flatMap(({ names }) => names)
+        .map((name) => [name, style.getPropertyValue(name).trim()]),
     );
+    probe.remove();
+    return read;
   });
   const [changed, setChanged] = useState<Record<string, string>>({});
   const set = (name: string, value: string) => {
@@ -746,7 +810,7 @@ const TokenEditor = ({ target }: { target: React.RefObject<HTMLDivElement | null
           Copy {Object.keys(changed).length} changed
         </button>
       </div>
-      {TOKEN_GROUPS.map(({ group, names }) => (
+      {groups.map(({ group, names }) => (
         <div key={group} className="flex flex-col gap-1">
           <h3 className="font-sans text-xs font-semibold text-white/60">{group}</h3>
           {names.map((name) => (
@@ -755,7 +819,7 @@ const TokenEditor = ({ target }: { target: React.RefObject<HTMLDivElement | null
                 className="size-4 flex-none rounded border border-white/20"
                 style={{ background: /^\d+ \d+ \d+$/.test(values[name] ?? "") ? `rgb(${values[name]})` : values[name] }}
               />
-              <span className="w-32 flex-none truncate font-mono">{name.replace("--ui-", "")}</span>
+              <span className="w-32 flex-none truncate font-mono">{name.replace("--hud-", "")}</span>
               <input
                 value={values[name] ?? ""}
                 onChange={(event) => set(name, event.target.value)}

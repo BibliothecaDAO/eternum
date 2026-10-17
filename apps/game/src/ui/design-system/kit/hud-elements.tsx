@@ -1,18 +1,19 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 
-import "./sheet.css";
+import "./hud-sheet.css";
 
 /**
- * The style sheet's elements: every button, field, tooltip, panel, tab, chip, ring, row and window the client draws,
- * each built only from the sheet's tokens (tokens.css) by its classes (sheet.css). A screen takes these and gives them
- * words and values, never a look of its own. /lab/kit shows each in every state.
+ * The HUD's elements: every button, field, tooltip, panel, tab, chip, ring, row and window the game draws, each built only
+ * from the HUD scope of the token file (src/tokens.ts: HUD_TYPE, HUD_SHEET, HUD_MODES) by its classes (hud-sheet.css).
+ * A screen takes these and gives them words and values, never a look of its own. /lab/kit shows each in every state,
+ * mode and device.
  */
 
 type ButtonKind = "primary" | "secondary" | "quiet";
 
 /** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
-export const Button = ({
+export const HudButton = ({
   kind,
   size = "md",
   icon,
@@ -31,7 +32,7 @@ export const Button = ({
 );
 
 /** A button that is only its painting, named for assistive technology and the app's tooltip. */
-export const IconButton = ({
+export const HudIconButton = ({
   icon,
   label,
   kind = "secondary",
@@ -46,7 +47,7 @@ export const IconButton = ({
  * How many: the field, "of N" beside it, and its quick buttons (+500 adds, Max fills), all at one height. The quick
  * buttons stop when the field is full; that is their disabled state, not another look.
  */
-export const AmountField = ({
+export const HudAmountField = ({
   value,
   of,
   step,
@@ -75,12 +76,12 @@ export const AmountField = ({
         />
       </label>
       <span className="ui-amount__of">of {of.toLocaleString("en-US")}</span>
-      <Button kind="secondary" disabled={disabled || full} onClick={() => onChange(Math.min(of, value + step))}>
+      <HudButton kind="secondary" disabled={disabled || full} onClick={() => onChange(Math.min(of, value + step))}>
         +{step.toLocaleString("en-US")}
-      </Button>
-      <Button kind="secondary" disabled={disabled || full} onClick={() => onChange(of)}>
+      </HudButton>
+      <HudButton kind="secondary" disabled={disabled || full} onClick={() => onChange(of)}>
         Max
-      </Button>
+      </HudButton>
     </div>
   );
 };
@@ -89,7 +90,7 @@ export const AmountField = ({
  * The app's one tooltip: a line, and when the thing cannot be done, why and when it can; how to do it as a cue. The map's
  * order line is one ("Deploy an army here" / "Right-click").
  */
-export const Tip = ({ line, why, how }: { line: string; why?: string; how?: string }) => (
+export const HudTip = ({ line, why, how }: { line: string; why?: string; how?: string }) => (
   <span className="ui-tip" role="tooltip">
     <span className="ui-tip__line">{line}</span>
     {why && <span className="ui-tip__why">{why}</span>}
@@ -98,7 +99,7 @@ export const Tip = ({ line, why, how }: { line: string; why?: string; how?: stri
 );
 
 /** The HUD's one panel (the InfoBubble look): a header band naming it, a cue at its end, then its body. */
-export const Panel = ({
+export const HudPanel = ({
   title,
   cue,
   children,
@@ -116,7 +117,7 @@ export const Panel = ({
 );
 
 /** A strip of choices; the chosen one in gold. */
-export const Tabs = <K extends string>({
+export const HudTabs = <K extends string>({
   tabs,
   value,
   onChange,
@@ -141,21 +142,21 @@ export const Tabs = <K extends string>({
         onClick={() => onChange(tab.key)}
       >
         {tab.label}
-        {tab.count !== undefined && <Chip>{tab.count}</Chip>}
+        {tab.count !== undefined && <HudChip>{tab.count}</HudChip>}
       </button>
     ))}
   </div>
 );
 
 /** A small tag: a count in gold, or a state in its tone. */
-export const Chip = ({ tone, children }: { tone?: "good" | "bad" | "warn"; children: ReactNode }) => (
+export const HudChip = ({ tone, children }: { tone?: "good" | "bad" | "warn"; children: ReactNode }) => (
   <span className="ui-chip" data-tone={tone}>
     {children}
   </span>
 );
 
 /** A troop tier: T1 blue, T2 green, T3 purple. */
-export const TierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
+export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
   <span className="ui-chip" data-tier={tier}>
     T{tier}
   </span>
@@ -165,7 +166,7 @@ export const TierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
  * A painting in a round well with its numbers on the rim: buildings top left, the amount on the foot, the time left on
  * the right, and how far production has come as an arc.
  */
-export const Ring = ({
+export const HudRing = ({
   icon,
   label,
   corner,
@@ -184,7 +185,7 @@ export const Ring = ({
     {progress !== undefined && (
       <span
         className="ui-ring__arc"
-        style={{ "--ui-ring": `${Math.round(Math.min(1, Math.max(0, progress)) * 360)}deg` } as React.CSSProperties}
+        style={{ "--ring-arc": `${Math.round(Math.min(1, Math.max(0, progress)) * 360)}deg` } as React.CSSProperties}
       />
     )}
     <span className="ui-ring__face">
@@ -209,7 +210,7 @@ export const Ring = ({
 );
 
 /** One thing of a list: what it is, what it says, its value; the chosen one carries a gold bar. */
-export const Row = ({
+export const HudRow = ({
   lead,
   title,
   detail,
@@ -235,7 +236,7 @@ export const Row = ({
 );
 
 /** What happened, said once: its time, a mark in its tone, the words (a name or a gain in gold). A notice is one too. */
-export const EventRow = ({
+export const HudEventRow = ({
   time,
   tone,
   children,
@@ -252,7 +253,7 @@ export const EventRow = ({
 );
 
 /** A panel the size of a task: its title bar with a way out, then its body. */
-export const Window = ({
+export const HudWindow = ({
   title,
   icon,
   onClose,
@@ -267,14 +268,14 @@ export const Window = ({
     <header className="ui-window__bar">
       {icon && <Icon name={icon} size={22} />}
       <span>{title}</span>
-      <IconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
+      <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
     </header>
     <div className="ui-window__body">{children}</div>
   </section>
 );
 
 /** The minimap's frame: a panel with no header, its map in a well. */
-export const MinimapFrame = ({ children }: { children: ReactNode }) => (
+export const HudMinimapFrame = ({ children }: { children: ReactNode }) => (
   <section className="ui ui-panel ui-minimap" aria-label="Minimap">
     <div className="ui-minimap__well">{children}</div>
   </section>

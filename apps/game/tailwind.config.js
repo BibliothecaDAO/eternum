@@ -7,6 +7,11 @@ import {
   GUTTERS,
   HUD_COLORS,
   HUD_FINISH,
+  HUD_MODES,
+  HUD_PHONE,
+  HUD_TYPE,
+  hudModeVariables,
+  hudVariables,
   RADII,
   SCREENS,
   SHELL_COLORS,
@@ -38,7 +43,21 @@ export default {
       boxShadow: finishTheme("shadow", "shadow"),
       // The shell's named sizes, radii, widths, gutters and wide screen (src/tokens.ts); the spacing scale is theme.spacing.
       // The Blitz and Eternum HUD keeps its own small sizes (a7b72331e56).
-      fontSize: { ...TYPE, xs: ".975rem", xxs: ".825rem" },
+      fontSize: {
+        ...TYPE,
+        xs: ".975rem",
+        xxs: ".825rem",
+        // The HUD's type roles (src/tokens.ts HUD_TYPE): `text-hud-body` sets its size, leading and weight together.
+        ...Object.fromEntries(
+          Object.keys(HUD_TYPE).map((role) => [
+            `hud-${role}`,
+            [
+              `var(--hud-text-${role})`,
+              { lineHeight: `var(--hud-line-${role})`, fontWeight: `var(--hud-weight-${role})` },
+            ],
+          ]),
+        ),
+      },
       borderRadius: RADII,
       maxWidth: WIDTHS,
       width: WIDTHS,
@@ -389,6 +408,17 @@ export default {
           color: "var(--gold)",
           textShadow: "var(--text-shadow-ambient)",
         },
+      });
+      // The HUD's style sheet (src/tokens.ts): its values on :root in Blitz's surface, each mode's surface on its root,
+      // and a phone's sizes on a coarse pointer (and on the lab's phone frame).
+      const phone = Object.fromEntries(Object.entries(HUD_PHONE).map(([name, value]) => [`--hud-${name}`, value]));
+      addBase({
+        ":root": { ...hudVariables(), ...hudModeVariables("blitz") },
+        ...Object.fromEntries(
+          Object.keys(HUD_MODES).map((mode) => [`[data-hud-mode="${mode}"]`, hudModeVariables(mode)]),
+        ),
+        '[data-hud-device="phone"]': phone,
+        "@media (pointer: coarse)": { ":root": phone },
       });
     }),
     plugin(function ({ addUtilities, theme }) {
