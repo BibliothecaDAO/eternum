@@ -102,7 +102,7 @@ const Mark = ({ back, onClose }: { back: boolean; onClose: () => void }) => (
     aria-label={back ? BACK : CLOSE}
     onClick={onClose}
     className={cn(
-      "absolute -top-2.5 right-3.5 z-10 hidden size-8 items-center justify-center rounded-full border-[1.5px] border-kit-line2 bg-kit-ink shadow-[0_2px_8px_rgba(0,0,0,0.6)] hover:border-kit-gold lg:flex",
+      "absolute -top-2.5 right-3.5 z-10 hidden size-8 items-center justify-center rounded-full border-[1.5px] border-kit-line2 bg-kit-ink shadow-mark hover:border-kit-gold lg:flex",
       !back &&
         "before:absolute before:h-[2.5px] before:w-3.5 before:rotate-45 before:rounded-sm before:bg-kit-gold before:content-[''] after:absolute after:h-[2.5px] after:w-3.5 after:-rotate-45 after:rounded-sm after:bg-kit-gold after:content-['']",
     )}

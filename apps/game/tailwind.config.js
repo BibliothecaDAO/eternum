@@ -1,18 +1,41 @@
 const plugin = require("tailwindcss/plugin");
 
-import { COLORS, FONT_FACES, FONTS, GUTTERS, RADII, SCREENS, TEXT_SHADOWS, TYPE, WIDTHS } from "./src/tokens";
+import {
+  FONT_FACES,
+  FONTS,
+  GUTTERS,
+  HUD_COLORS,
+  HUD_FINISH,
+  RADII,
+  SCREENS,
+  SHELL_COLORS,
+  SHELL_FINISH,
+  SPACING,
+  surfaceVariables,
+  TYPE,
+  WIDTHS,
+} from "./src/tokens";
+
+/**
+ * A finish group as theme values that read the surface's variable (`var(--shadow-mark)`), so one class draws the HUD's
+ * value on :root and the shell's under `data-surface="shell"`.
+ */
+const finishTheme = (group, prefix) =>
+  Object.fromEntries(Object.keys(HUD_FINISH[group]).map((name) => [name, `var(--${prefix}-${name})`]));
 
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
+    spacing: SPACING,
     extend: {
       textShadow: {
         "glow-yellow-xs": "0 0 5px rgba(250, 204, 21, 0.7)", // yellow-400 with 70% opacity
         "glow-brilliance-xs": "0 0 5px rgba(125, 255, 186, 0.7)", // brilliance (#7DFFBA) with 70% opacity
-        ...TEXT_SHADOWS,
+        ...finishTheme("textShadow", "text-shadow"),
       },
-      // The shell's named sizes, radii, widths, gutters and wide screen (src/tokens.ts).
+      boxShadow: finishTheme("shadow", "shadow"),
+      // The shell's named sizes, radii, widths, gutters and wide screen (src/tokens.ts); the spacing scale is theme.spacing.
       fontSize: TYPE,
       borderRadius: RADII,
       maxWidth: WIDTHS,
@@ -58,8 +81,11 @@ export default {
         },
       }),
       colors: {
-        kit: COLORS,
-        gold: COLORS.gold,
+        // Each kit colour reads its surface's channels, so opacity modifiers (`/10`, `theme(colors.kit.gold / 7%)`) work.
+        kit: Object.fromEntries(
+          Object.keys(HUD_COLORS).map((name) => [name, `rgb(var(--kit-${name}) / <alpha-value>)`]),
+        ),
+        gold: HUD_COLORS.gold,
         crimson: "#582C4D",
         relic: "#a78bfa", // purple-300
         relic2: "#c084f5", // purple-400
@@ -165,6 +191,7 @@ export default {
         map: "url(/images/map.svg)",
         "old-map": "url(public/textures/paper/worldmap-bg.png)",
         "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
+        ...finishTheme("gradient", "gradient"),
       },
       fontFamily: FONTS,
       cursor: {
@@ -340,14 +367,21 @@ export default {
   ],
   plugins: [
     require("@tailwindcss/typography"),
-    // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class.
+    // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class: the
+    // HUD's palette and finish on :root, the shell's under data-surface="shell".
     plugin(function ({ addBase }) {
       addBase({ "@font-face": FONT_FACES });
       addBase({
         ":root": {
-          ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
+          ...surfaceVariables(HUD_COLORS, HUD_FINISH),
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
           ...Object.fromEntries(Object.entries(RADII).map(([name, value]) => [`--radius-${name}`, value])),
+        },
+        '[data-surface="shell"]': {
+          ...surfaceVariables(SHELL_COLORS, SHELL_FINISH),
+          // What the shell inherits from html and body, restated so it resolves to the shell's own values.
+          color: "var(--gold)",
+          textShadow: "var(--text-shadow-ambient)",
         },
       });
     }),

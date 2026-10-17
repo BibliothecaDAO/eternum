@@ -13,7 +13,7 @@ import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-asset
 import { createPwaReleasePlugin } from "./build/pwa-release";
 import { isDevEnvironment } from "./src/shell/frame/environment";
 import { l2EnvironmentProblem } from "./src/runtime/l2-environment";
-import { COLORS } from "./src/tokens";
+import { SHELL_COLORS } from "./src/tokens";
 
 /**
  * The environment's one L2 RPC: the team's https Alchemy endpoint for the L2 the build's environment names in its
@@ -121,8 +121,8 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           name: identity.name,
           short_name: identity.name,
           description: "Fully onchain strategy: Frontier expeditions and Blitz battles",
-          theme_color: COLORS.ground,
-          background_color: COLORS.ground,
+          theme_color: SHELL_COLORS.ground,
+          background_color: SHELL_COLORS.ground,
           display: "standalone",
           scope: "/",
           start_url: "/",

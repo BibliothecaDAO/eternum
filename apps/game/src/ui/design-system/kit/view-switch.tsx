@@ -57,11 +57,11 @@ export const ViewSwitch = <Id extends string>({
             className={
               variant === "joined"
                 ? cn(
-                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 text-base font-semibold transition-colors",
+                    "flex min-w-0 flex-1 items-center justify-center gap-1.5 font-ui text-base font-semibold transition-colors",
                     on ? "bg-kit-line2 text-kit-gold2" : "text-kit-muted hover:text-kit-cream",
                   )
                 : cn(
-                    "relative min-h-12 flex-1 rounded-control border px-3 font-body text-base font-bold text-kit-cream",
+                    "relative min-h-12 flex-1 rounded-control border px-3 font-ui text-base font-bold text-kit-cream",
                     on ? "border-kit-gold bg-kit-plate2" : "border-kit-line2 bg-kit-plate hover:border-kit-gold",
                   )
             }

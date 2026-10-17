@@ -43,7 +43,9 @@ type PageFrameProps = {
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
  * notices directly above it on a phone and in the desktop's top bar (covering nothing, pushing nothing down), the tabs
  * at the phone's foot or in the desktop's top bar, with the desktop's keys (1–3 the places, Esc Back). Every page's
- * content starts at the top of its body: a painting is the ground behind it, never a space above it.
+ * content starts at the top of its body: a painting is the ground behind it, never a space above it. Its root is the
+ * shell's surface: everything under it, fixed layers and sheets included, draws the shell's palette and finish
+ * (src/tokens.ts), never the HUD's.
  */
 export const PageFrame = (props: PageFrameProps) => {
   const layout = useLayout();
@@ -51,7 +53,7 @@ export const PageFrame = (props: PageFrameProps) => {
   const appNotice = useAppNotice({ offersInstall: props.offersInstall ?? false });
   const framed = { ...props, notice: props.notice ?? appNotice };
   return (
-    <div data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
+    <div data-surface="shell" data-layout={layout} className="bg-kit-ground font-body text-kit-cream">
       <EnvEdge />
       {layout === "phone" ? <PhoneFrame {...framed} /> : <DesktopFrame {...framed} />}
     </div>
@@ -160,7 +162,7 @@ const Backdrop = ({ painting, stage }: { painting: Painting; stage: boolean }) =
     className={cn("grain pointer-events-none absolute inset-x-0 top-0 -z-10", stage ? "h-screen" : "h-[42rem]")}
   >
     <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
-    <span className="absolute inset-0 bg-[radial-gradient(120%_90%_at_55%_38%,transparent_40%,theme(colors.kit.ground/85%)_100%),linear-gradient(0deg,theme(colors.kit.ground)_0%,transparent_55%)]" />
+    <span className="absolute inset-0 bg-grade" />
   </div>
 );
 

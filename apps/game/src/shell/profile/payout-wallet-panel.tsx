@@ -391,7 +391,7 @@ const ChoiceTile = ({
 
 const ReadyName = ({ line }: { line: string }) => (
   <p className="flex items-baseline gap-2.5">
-    <span className="font-body text-[30px] font-bold text-kit-cream">{WALLET_WORDS.ready}</span>
+    <span className="font-body text-title font-bold text-kit-cream">{WALLET_WORDS.ready}</span>
     <span className="font-body text-base text-kit-muted">{line}</span>
   </p>
 );

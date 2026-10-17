@@ -31,7 +31,7 @@ export const Notice = ({
     role={ember ? "alert" : "status"}
     className={cn(
       "pointer-events-auto flex min-h-12 items-center gap-2 rounded-control border-2 bg-kit-ground pl-2.5",
-      ember ? "border-light-red" : "border-kit-line2",
+      ember ? "border-kit-ember" : "border-kit-line2",
     )}
   >
     <SemanticIcon name={icon} size={22} />

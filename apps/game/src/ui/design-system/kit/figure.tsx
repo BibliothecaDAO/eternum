@@ -14,7 +14,7 @@ const TONES = { gold: "text-kit-gold", gold2: "text-kit-gold2", cream: "text-kit
 /**
  * A number read at a glance, large: a rank, a rating, a count, a multiple. A bold figure has tabular numerals, and
  * index.css `.tabular-nums` sets every tabular figure at 700 (an extrabold class under it never shows), so a figure
- * drawn heavier, at 800, keeps proportional numerals. A size off the scale, and any leading, come in `className`.
+ * drawn heavier, at 800, keeps proportional numerals. Any leading comes in `className`, after the size.
  */
 export const Figure = ({
   size,

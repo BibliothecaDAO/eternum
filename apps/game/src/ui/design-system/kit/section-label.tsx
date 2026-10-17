@@ -19,7 +19,7 @@ export const SectionLabel = ({
 }) => (
   <h2
     className={cn(
-      "font-body font-bold",
+      "font-ui font-bold",
       size === "caption" ? "text-caption" : "text-body",
       tone === "peach" ? "text-kit-peach" : "text-kit-gold",
       className,

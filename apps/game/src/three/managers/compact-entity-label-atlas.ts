@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { CompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { STAMINA_SEGMENTS } from "@/lib/army-stamina/segments";
-import { COLORS, FONTS } from "@/tokens";
+import { FONTS, HUD_COLORS } from "@/tokens";
 
 export interface CompactLabelAtlasRecord {
   geometry: THREE.PlaneGeometry;
@@ -84,7 +84,7 @@ const METER_SEGMENT_GAP = 2;
 const METER_SEGMENT_HEIGHT = 8;
 /** The meter's fill is drawn in these many steps, so one bar costs a handful of atlas plates, not one per value. */
 const METER_STEPS = 20;
-const METER_STYLE = { track: COLORS.line, fill: COLORS.sage };
+const METER_STYLE = { track: HUD_COLORS.line, fill: HUD_COLORS.sage };
 
 /** A fill from 0 to 1 as the step the atlas draws it at; undefined stays undefined (the plate has no meter). */
 const meterStep = (fill: number | undefined): number | undefined =>

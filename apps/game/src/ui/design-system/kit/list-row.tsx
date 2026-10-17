@@ -79,7 +79,7 @@ export const ListRow = ({
       {lead}
       {title !== undefined && (
         <span className={cn("flex min-w-0 flex-1 flex-col", spaced && "gap-1.5")}>
-          <span className="truncate font-body text-base font-bold text-kit-cream">{title}</span>
+          <span className="truncate font-ui text-base font-bold text-kit-cream">{title}</span>
           {line}
         </span>
       )}

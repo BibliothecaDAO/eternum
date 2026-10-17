@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-17",
+    title: "Tidier text sizes",
+    description:
+      "Titles, figures and labels outside a game now share one set of sizes: page titles, profile names, reward figures, the sign-in code and the lobby's entry rows moved by a few pixels, and Play's headline and a reward's multiple grew slightly.",
+    type: "improvement",
+  },
+  {
     date: "2026-10-16",
     title: "The command sidebar is back",
     description:
