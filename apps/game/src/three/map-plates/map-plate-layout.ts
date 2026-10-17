@@ -43,14 +43,14 @@ const OPEN_LINE = 24;
 /** The widest opened army that still reads as one line. */
 const ONE_LINE_WIDTH = 360;
 
-/** A text's drawn width: in the plate's face, or as a title (a place's name in Cinzel). */
+/** A text's drawn width: in the plate's face, or as a title (a place's name, a step larger and bold). */
 const measure = (() => {
   let context: CanvasRenderingContext2D | null | undefined;
   return (text: string, title = false) => {
     if (context === undefined)
       context = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
     if (!context) return text.length * (title ? 10 : 8);
-    context.font = title ? '700 16px "Cinzel"' : '600 15px "Exo 2"';
+    context.font = title ? '700 16px "Exo 2"' : '600 15px "Exo 2"';
     return context.measureText(text).width;
   };
 })();

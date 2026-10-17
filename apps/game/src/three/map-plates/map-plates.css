@@ -80,9 +80,9 @@
   border-radius: 2px;
   background: #66ddab;
 }
-/* A place's name is a title (the War room's Cinzel); a player's name reads in the side's colour; ids and levels muted. */
+/* A place's name is a title, as a HUD panel's is (Exo 2, a step larger, bold, gold); a player's name reads in the side's
+   colour; ids and levels muted. */
 .mp-title {
-  font-family: "Cinzel", serif;
   font-size: 16px;
   font-weight: 700;
   color: #f1dfb0;

@@ -136,7 +136,7 @@ const ArmyPlateView = ({ plate, open }: { plate: ArmyPlate; open: boolean }) => 
         </>
       )}
       {plate.stamina !== undefined && (
-        <span className="mp-plate__meter" title="Stamina">
+        <span className="mp-plate__meter" aria-label="Stamina">
           <i style={{ width: `${100 * plate.stamina}%` }} />
         </span>
       )}
