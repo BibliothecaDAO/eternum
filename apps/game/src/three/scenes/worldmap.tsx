@@ -259,7 +259,7 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "./worldmap-army-select-request";
+import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
@@ -906,11 +906,20 @@ export default class WorldmapScene extends WarpTravel {
     this.minimapCameraMoveThrottled?.();
   };
   private stopChestOpenRequests?: () => void;
-  private armySelectRequestHandler = (event: Event) => {
-    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const request = readArmySelectRequest(event);
-    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
+  private armySelectRequestHandler = () => {
+    if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
+
+  /** Shown, the map takes the army selection asked while another view was showing. */
+  public override activateInputSurface(): void {
+    super.activateInputSurface();
+    this.selectAwaitedArmy();
+  }
+
+  private selectAwaitedArmy(): void {
+    const request = takeArmySelectRequest();
+    if (request) void this.selectRequestedArmy(request.entityId, request.forSite);
+  }
   private orderRequestHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     if (!canIssueOrders()) return;

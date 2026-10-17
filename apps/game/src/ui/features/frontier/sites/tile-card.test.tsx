@@ -19,7 +19,7 @@ vi.mock("@/sync/active-game-client", async (original) => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { ARMY_SELECT_REQUEST_EVENT, readArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
+import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -463,7 +463,7 @@ describe("an army picked from a site's card", () => {
   it("asks the map for that army and names the site's tile, so the card stays open with the army as its actor", () => {
     const { host, unmount } = renderCard("beside");
     const asked: unknown[] = [];
-    const hear = (event: Event) => asked.push(readArmySelectRequest(event));
+    const hear = () => asked.push(takeArmySelectRequest());
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
     const rows = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Army']")];
     expect(rows.length).toBeGreaterThan(0);

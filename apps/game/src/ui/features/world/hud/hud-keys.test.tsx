@@ -21,7 +21,7 @@ vi.mock("@/ui/features/world/containers/left-facets/use-structure-actions", () =
     })),
 }));
 
-import { ARMY_SELECT_REQUEST_EVENT } from "@/three/scenes/worldmap-army-select-request";
+import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { useHudKeys } from "./hud-keys";
 import { IdleArmiesButton, idleArmiesRefusal, idleArmyIds, nextIdleArmy } from "./idle-armies";
@@ -45,7 +45,7 @@ const Keys = ({ idle = [], onWorldMap = true }: { idle?: number[]; onWorldMap?: 
 /** The armies the HUD asks the world map to select, heard until `stop`. */
 const hearSelections = () => {
   const ids: number[] = [];
-  const hear = (event: Event) => ids.push((event as CustomEvent<{ entityId: number }>).detail.entityId);
+  const hear = () => ids.push(takeArmySelectRequest()!.entityId);
   window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
   return { ids, stop: () => window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, hear) };
 };

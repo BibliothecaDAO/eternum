@@ -33,9 +33,9 @@ vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0,
 vi.mock("@/hooks/helpers/use-navigate", () => ({
   useNavigateToMapView: () => game.navigate,
   useGoToStructure: () => game.goToStructure,
+  useSelectArmyOnMap: () => game.selectArmy,
 }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: game.mapView }) }));
-vi.mock("@/three/scenes/worldmap-army-select-request", () => ({ requestArmySelection: game.selectArmy }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: {
@@ -144,22 +144,19 @@ describe("An opened crate in Events", () => {
     );
   });
 
-  it("selects the army holding the relics when its row is clicked on the world map", async () => {
+  it("selects the army holding the relics when its row is clicked, from the world map or the realm view", async () => {
     await clickRow(eventsRows([crate])[0]);
-    expect(game.selectArmy).toHaveBeenCalledWith(9);
+    game.mapView = false;
+    await clickRow(eventsRows([crate])[0]);
+    expect(game.selectArmy.mock.calls).toEqual([[9], [9]]);
     expect(game.navigate).not.toHaveBeenCalled();
   });
 
-  it("flies to the army from the realm view, and to the crate's tile once the army is gone", async () => {
-    game.mapView = false;
-    await clickRow(eventsRows([crate])[0]);
-    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 50, y: 60 });
-
+  it("flies to the crate's tile once the army is gone", async () => {
     game.armies = new Set();
-    game.mapView = true;
     await clickRow(eventsRows([crate])[0]);
     expect(game.selectArmy).not.toHaveBeenCalled();
-    expect(game.navigate.mock.calls[1][0].getContract()).toEqual({ x: 3, y: 4 });
+    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
   });
 });
 
