@@ -5,12 +5,10 @@ interface ReconcileVisibleArmySetInput<TArmy extends { entityId: TEntityId }, TM
   modelTypesByEntity: Map<TEntityId, TModelType>;
   forceRefresh?: boolean;
   currentVisibleOrder: TEntityId[];
-  forEachTrackedLabel: (visit: (entityId: TEntityId) => void) => void;
   getVisibleArmySlot: (entityId: TEntityId) => number | undefined;
   removeVisibleArmy: (entityId: TEntityId) => number | null;
   addVisibleArmy: (army: TArmy, modelType: TModelType) => void;
   refreshVisibleArmy: (army: TArmy, slot: number, modelType: TModelType) => void;
-  removeEntityIdLabel: (entityId: TEntityId) => void;
   commitVisibleArmyOrder: (entityIds: TEntityId[]) => void;
   markVisibleArmyPresentationDirty: (buffersDirty: boolean) => void;
   sortEntityIds: (entityIds: TEntityId[]) => TEntityId[];
@@ -56,13 +54,6 @@ export function reconcileVisibleArmySet<TArmy extends { entityId: TEntityId }, T
       buffersDirty = true;
     });
   }
-
-  const visibleArmySet = new Set(input.currentVisibleOrder);
-  input.forEachTrackedLabel((entityId) => {
-    if (!visibleArmySet.has(entityId)) {
-      input.removeEntityIdLabel(entityId);
-    }
-  });
 
   input.commitVisibleArmyOrder(desiredOrder.filter((entityId) => input.getVisibleArmySlot(entityId) !== undefined));
   input.markVisibleArmyPresentationDirty(buffersDirty);

@@ -1,5 +1,4 @@
 import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
-import type { StructureInfo } from "../types";
 import { getBattleTimerLeft } from "../utils/combat-directions";
 
 const serializeIncomingTroopArrivals = (incomingTroopArrivals?: IncomingTroopArrival[]): string =>
@@ -11,14 +10,6 @@ export const filterPendingIncomingTroopArrivals = (
   incomingTroopArrivals: IncomingTroopArrival[] | undefined,
   nowSeconds: number,
 ): IncomingTroopArrival[] => (incomingTroopArrivals ?? []).filter((arrival) => Number(arrival.arrivesAt) > nowSeconds);
-
-const buildIncomingTroopKey = (incomingTroopArrivals: IncomingTroopArrival[] | undefined, nowSeconds: number): string =>
-  filterPendingIncomingTroopArrivals(incomingTroopArrivals, nowSeconds)
-    .map(
-      (arrival) =>
-        `${arrival.resourceId}:${arrival.troopTier}:${arrival.count}:${Math.max(0, Number(arrival.arrivesAt) - nowSeconds)}`,
-    )
-    .join(",");
 
 export const resolveStructureIncomingTroopArrivals = (input: {
   currentIncomingTroopArrivals?: IncomingTroopArrival[];
@@ -67,29 +58,4 @@ export const resolveTimedStructureLabelState = (input: {
     incomingTroopArrivals: incomingTroopArrivalsChanged ? normalizedIncomingTroopArrivals : input.incomingTroopArrivals,
     isActive: battleTimerLeft !== undefined || filteredIncomingTroopArrivals.length > 0,
   };
-};
-
-export const buildStructureLabelDataKey = (structure: StructureInfo, nowSeconds: number): string => {
-  const guardKey =
-    structure.guardArmies
-      ?.map((guardArmy) => `${guardArmy.slot}:${guardArmy.category ?? ""}:${guardArmy.tier}:${guardArmy.count}`)
-      .join(",") ?? "";
-  const productionKey =
-    structure.activeProductions
-      ?.map((production) => `${production.buildingType}:${production.buildingCount}`)
-      .join(",") ?? "";
-  const incomingTroopKey = buildIncomingTroopKey(structure.incomingTroopArrivals, nowSeconds);
-
-  return [
-    structure.isMine,
-    structure.owner?.ownerName ?? "",
-    guardKey,
-    structure.battleTimerLeft ?? 0,
-    structure.attackedFromDegrees ?? "",
-    structure.attackedTowardDegrees ?? "",
-    productionKey,
-    incomingTroopKey,
-    structure.level,
-    structure.stage,
-  ].join("|");
 };

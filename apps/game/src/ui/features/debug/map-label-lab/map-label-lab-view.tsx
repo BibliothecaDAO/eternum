@@ -8,7 +8,6 @@ import {
   mountProceduralTerrainBenchmarkRenderer,
   type TerrainBenchmarkStage,
 } from "@/three/debug/procedural-terrain-benchmark-renderer";
-import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
 import { MapPlateLayer, type MapPlateScope } from "@/three/map-plates/map-plate-layer";
 import { buildArmyPlate, buildStructurePlate, type MapPlate } from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
@@ -21,10 +20,8 @@ type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
  * on the real map renderer, over a fixture world: 48 real realms in a dense block and real camp, rift, hyperstructure
  * and knight models between them. The address holds the view, so a capture is reproducible: `zoom` (play or close),
  * `hover` or `select` an entity by its id, `focus` one to centre the camera on it (a hovered one is centred too),
- * `busy=1` for an army beside every realm (a full Blitz in one view), `rendererMode=webgpu-force-webgl` for WebGL,
- * `labels=atlas` for the plates as they shipped before (measurement only), and
- * `measure=1` to pan the camera for eight seconds and publish its frame times on `window.__mapLabelPerf`. Pointer hover
- * on a tile and click work too; Escape clears the selection.
+ * `busy=1` for an army beside every realm (a full Blitz in one view), and `rendererMode=webgpu-force-webgl` for WebGL.
+ * Pointer hover on a tile and click work too; Escape clears the selection.
  */
 export const MapLabelLabView = () => {
   const [params, setParams] = useSearchParams();
@@ -41,10 +38,7 @@ export const MapLabelLabView = () => {
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
-  const atlas = params.get("labels") === "atlas";
-  const layer = usePlates(atlas ? null : world, overlayRef, canvasRef, hovered, selected, setCounts);
-  useAtlasPlates(atlas ? world : null);
-  useMeasure(world, canvasRef, layer, params.get("measure") === "1");
+  usePlates(world, overlayRef, canvasRef, hovered, selected, setCounts);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);
@@ -172,7 +166,7 @@ const usePlates = (
     const overlay = overlayRef.current;
     const canvas = canvasRef.current;
     if (!world || !overlay || !canvas) return;
-    const plates = new MapPlateLayer(overlay);
+    const plates = new MapPlateLayer(() => overlay);
     const scopes = { army: plates.createScope("army"), structure: plates.createScope("structure") };
     for (const entity of world.entities) {
       scopes[entity.kind === "army" ? "army" : "structure"].setLabel({
@@ -183,9 +177,7 @@ const usePlates = (
     }
     let frame = 0;
     const tick = () => {
-      const start = performance.now();
       plates.update(world.stage.camera, canvas.clientWidth, canvas.clientHeight);
-      recordLabelWork(performance.now() - start);
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
@@ -208,41 +200,6 @@ const usePlates = (
   useEffect(() => {
     layer?.layer.setSelected(selected === null ? null : (Number(selected) as ID));
   }, [layer, selected]);
-  return layer?.layer;
-};
-
-/**
- * `labels=atlas`: the plates as they shipped before (one canvas-atlas quad per thing, its title text only), on the same
- * scene and camera, for the before/after measurement. Removed with the atlas renderer.
- */
-const useAtlasPlates = (world: World | null) => {
-  useEffect(() => {
-    if (!world) return;
-    const renderer = new CompactEntityLabelRenderer(world.stage.scene);
-    const scope = renderer.createScope("lab");
-    for (const entity of world.entities) {
-      const own = entity.relation === "own";
-      scope.setLabel({
-        entityId: entity.entityId,
-        position: entity.anchor,
-        text: entity.kind === "army" ? (entity.owner ?? "Army") : entity.name || entity.kind,
-        variant: ({ own: "mine", ally: "ally", enemy: "enemy", neutral: "neutral" } as const)[entity.relation],
-        ...(own && entity.army ? { front: true, meter: entity.army.stamina / entity.army.staminaMax } : {}),
-      });
-    }
-    let frame = 0;
-    const tick = () => {
-      const start = performance.now();
-      renderer.updateCamera(world.stage.camera, window.innerHeight);
-      recordLabelWork(performance.now() - start);
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(frame);
-      renderer.dispose();
-    };
-  }, [world]);
 };
 
 const STRUCTURE_TYPES = {
@@ -342,68 +299,4 @@ const tileUnder = (world: World | null, canvas: HTMLCanvasElement | null, x: num
       best = { key: String(entity.entityId), distance };
   }
   return best?.key ?? null;
-};
-
-/** Each frame's label work (the layer's layout, or the atlas renderer's camera pass), in milliseconds, for `measure=1`. */
-const labelWork: number[] = [];
-const recordLabelWork = (ms: number) => {
-  labelWork.push(ms);
-  if (labelWork.length > 4096) labelWork.shift();
-};
-
-/**
- * `measure=1`: pans the camera across the block and back for eight seconds at play zoom (every frame re-lays the plates)
- * and publishes the frame intervals' spread, each frame's label work and what was on screen, on `window.__mapLabelPerf`.
- */
-const useMeasure = (
-  world: World | null,
-  canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  layer: MapPlateLayer | undefined,
-  enabled: boolean,
-) => {
-  useEffect(() => {
-    if (!enabled || !world) return;
-    const center = centerOf(world.entities);
-    const intervals: number[] = [];
-    let frame = 0;
-    let started = 0;
-    let last = 0;
-    const publish = () => {
-      const sorted = [...intervals].sort((a, b) => a - b);
-      const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
-      const work = [...labelWork].sort((a, b) => a - b);
-      const workAt = (q: number) => work[Math.min(work.length - 1, Math.floor(q * work.length))] ?? 0;
-      (window as unknown as { __mapLabelPerf: unknown }).__mapLabelPerf = {
-        frames: sorted.length,
-        p50: at(0.5),
-        p95: at(0.95),
-        p99: at(0.99),
-        max: sorted[sorted.length - 1],
-        labelWorkP50: workAt(0.5),
-        labelWorkP95: workAt(0.95),
-        plates: layer?.plateCount ?? null,
-        domNodes: layer?.domNodeCount ?? 0,
-        width: canvasRef.current?.clientWidth,
-        height: canvasRef.current?.clientHeight,
-      };
-    };
-    const tick = (now: number) => {
-      if (started === 0) started = now;
-      else intervals.push(now - last);
-      last = now;
-      const phase = ((now - started) / 8000) * Math.PI * 2;
-      const pan = new Vector3(Math.sin(phase) * 8, 0, Math.sin(phase * 2) * 3);
-      aimCamera(world, center.clone().add(pan), ZOOM_DISTANCE.play);
-      if (now - started < 8000) frame = requestAnimationFrame(tick);
-      else publish();
-    };
-    const settle = window.setTimeout(() => {
-      labelWork.length = 0;
-      frame = requestAnimationFrame(tick);
-    }, 1500);
-    return () => {
-      window.clearTimeout(settle);
-      cancelAnimationFrame(frame);
-    };
-  }, [enabled, world, layer, canvasRef]);
 };

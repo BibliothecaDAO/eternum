@@ -227,10 +227,14 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 - **A selected structure that moves takes the selection with it**: when a Frontier realm is raised on its next day's
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
-- **Labels**: a plate over each realm, structure and army, and a card on hover. An unnamed army or structure is called
-  by its kind ("Camp", "Army"), never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`), the
-  same name the attack toast uses. The new plates (the owner's pick, in progress) are in the dev build's lab,
-  `/lab/map-labels` (`zoom`, `hover`, `select`, `focus` in the address).
+- **Plates**: a plate over each realm, structure and army at gameplay zoom (only the selected, hovered and top ones in
+  the mid band, none when zoomed out): a realm by its name and one guard number, a nameless thing by its painting, an
+  army by its owner over its troops and stamina. Hover a tile, or select it, to open its plate: owner, level or short id
+  ("19·21"), troops on their way, guard slots in the order an attacker meets them; for an army, its home realm and id.
+  Crowded plates stack up two steps, then shrink to a pin (`src/three/map-plates/`). An unnamed army or structure is
+  called by its kind ("Camp", "Army"), never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`),
+  the same name the attack toast uses. The dev build's lab draws the same plates over a fixture world, `/lab/map-labels`
+  (`zoom`, `hover`, `select`, `focus`, `busy=1` in the address).
 
 ## Outposts
 

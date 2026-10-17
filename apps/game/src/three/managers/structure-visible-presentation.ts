@@ -2,7 +2,7 @@ import { StructureType } from "@bibliothecadao/types";
 import { Euler, Object3D, Vector3 } from "three";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
-/** Structures sit just above the terrain sample; the compact label floats above the roofline. */
+/** Structures sit just above the terrain sample; the plate floats above the roofline. */
 export const STRUCTURE_SURFACE_LIFT = 0.05;
 /**
  * How far over its model's top a structure's plate sits: just over the roof of whatever is drawn, a camp or a tower,
@@ -15,10 +15,6 @@ export function sitsDirectlyOnTerrain(structureType: unknown): boolean {
   return structureType === StructureType.BitcoinMine || structureType === StructureType.Realm;
 }
 
-interface VisibleStructureLabel {
-  position: Vector3;
-}
-
 interface ApplyVisibleStructurePresentationInput<
   TStructure extends {
     entityId: TEntityId;
@@ -28,19 +24,15 @@ interface ApplyVisibleStructurePresentationInput<
   TEntityId extends string | number | bigint,
   TAttachmentTemplate,
   TMountTransforms,
-  TLabel extends VisibleStructureLabel = VisibleStructureLabel,
 > {
   structure: TStructure;
   rotationY: number;
   dummy: Object3D;
   scratchPosition: Vector3;
-  scratchLabelPosition: Vector3;
   scratchCompactLabelPosition: Vector3;
   tempCosmeticPosition: Vector3;
   tempCosmeticRotation: Euler;
   getWorldPositionForHexCoordsInto: (col: number, row: number, target: Vector3) => void;
-  getLabel: (entityId: TEntityId) => TLabel | undefined;
-  updateLabel: (structure: TStructure, label: TLabel) => void;
   /** How high the structure's model stands over its tile; its plate sits just over that. */
   resolveModelHeight: (structure: TStructure) => number;
   syncCompactLabel?: (structure: TStructure, position: Vector3) => void;
@@ -71,24 +63,13 @@ export function applyVisibleStructurePresentation<
   TEntityId extends string | number | bigint,
   TAttachmentTemplate,
   TMountTransforms,
-  TLabel extends VisibleStructureLabel = VisibleStructureLabel,
->(
-  input: ApplyVisibleStructurePresentationInput<TStructure, TEntityId, TAttachmentTemplate, TMountTransforms, TLabel>,
-): void {
+>(input: ApplyVisibleStructurePresentationInput<TStructure, TEntityId, TAttachmentTemplate, TMountTransforms>): void {
   const { col, row } = input.structure.hexCoords;
   input.getWorldPositionForHexCoordsInto(col, row, input.scratchPosition);
   input.scratchPosition.y += sitsDirectlyOnTerrain(input.structure.structureType) ? 0 : STRUCTURE_SURFACE_LIFT;
   input.dummy.position.copy(input.scratchPosition);
   input.dummy.rotation.y = input.rotationY;
   input.dummy.updateMatrix();
-
-  const label = input.getLabel(input.structure.entityId);
-  if (label) {
-    input.updateLabel(input.structure, label);
-    input.getWorldPositionForHexCoordsInto(col, row, input.scratchLabelPosition);
-    input.scratchLabelPosition.y += 2;
-    label.position.copy(input.scratchLabelPosition);
-  }
 
   input.scratchCompactLabelPosition.copy(input.scratchPosition);
   input.scratchCompactLabelPosition.y += input.resolveModelHeight(input.structure) + PLATE_CLEARANCE;

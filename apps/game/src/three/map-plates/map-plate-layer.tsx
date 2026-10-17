@@ -63,12 +63,17 @@ export class MapPlateLayer {
   private lastViewport = "";
   private readonly point = new Vector3();
 
-  constructor(container: HTMLElement) {
+  /** `container` is where the layer draws: resolved again each frame until it exists (the world UI mounts late). */
+  constructor(private readonly container: () => HTMLElement | null) {
     this.element = document.createElement("div");
     this.element.className = "mp";
     this.element.dataset.role = "map-plates";
-    container.appendChild(this.element);
     this.root = createRoot(this.element);
+  }
+
+  /** The world map shows its plates while it is the scene on screen; another scene hides them. */
+  public setVisible(visible: boolean): void {
+    this.element.style.display = visible ? "" : "none";
   }
 
   public createScope(namespace: string): MapPlateScope {
@@ -100,6 +105,11 @@ export class MapPlateLayer {
 
   /** Places every plate for this frame's camera; a frame whose camera and plates did not change costs nothing. */
   public update(camera: Camera, width: number, height: number): void {
+    if (!this.element.isConnected) {
+      const container = this.container();
+      if (!container) return;
+      container.appendChild(this.element);
+    }
     const viewport = `${width}x${height}`;
     camera.updateMatrixWorld();
     if (!this.layoutDirty && viewport === this.lastViewport && this.lastView.equals(camera.matrixWorld)) return;

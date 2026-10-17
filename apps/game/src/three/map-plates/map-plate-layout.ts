@@ -24,7 +24,7 @@ const overlaps = (a: PlateBox, b: PlateBox) =>
 export const stack = (boxes: readonly PlateBox[], maxSteps = 2): Map<string, number> => {
   const kept: PlateBox[] = [];
   const lifts = new Map<string, number>();
-  for (const box of [...boxes].sort((a, b) => b.priority - a.priority)) {
+  for (const box of boxes.toSorted((a, b) => b.priority - a.priority)) {
     for (let step = 0; step <= maxSteps; step++) {
       const lifted = { ...box, y: box.y - step * (box.height + GAP) };
       if (kept.some((other) => overlaps(other, lifted))) continue;
@@ -36,9 +36,9 @@ export const stack = (boxes: readonly PlateBox[], maxSteps = 2): Map<string, num
   return lifts;
 };
 
-export const ROW_HEIGHT = 30;
-export const NAME_LINE = 24;
-export const OPEN_LINE = 24;
+const ROW_HEIGHT = 30;
+const NAME_LINE = 24;
+const OPEN_LINE = 24;
 
 /** The widest opened army that still reads as one line. */
 const ONE_LINE_WIDTH = 360;
@@ -98,8 +98,13 @@ export const openedSize = (plate: MapPlate): { width: number; height: number } =
       : { width: Math.ceil(Math.max(first, second) + 20), height: ROW_HEIGHT + NAME_LINE };
   }
   const slots = plate.guards.length > 1 ? 1 : 0;
+  const arrivals = plate.arrivals.length > 0 ? 1 : 0;
   return {
-    width: Math.max(resting.width, slots ? plate.guards.length * 96 : 0),
-    height: resting.height + OPEN_LINE * (1 + slots),
+    width: Math.max(
+      resting.width,
+      slots ? plate.guards.length * 96 : 0,
+      arrivals ? 24 + plate.arrivals.length * 130 : 0,
+    ),
+    height: resting.height + OPEN_LINE * (1 + slots + arrivals),
   };
 };

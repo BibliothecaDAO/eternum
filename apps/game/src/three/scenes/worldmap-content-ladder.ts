@@ -10,7 +10,7 @@ export type WorldmapTextLabelTier = "full" | "priority" | "none";
  * deciding per surface.
  *
  * - near: everything.
- * - mid: models and FX, text only for priority entities, armies as tier glyphs.
+ * - mid: models and FX, plates only for priority entities.
  * - far: the strategic map — atlas icons and markers only; no models, no
  *   procedural characters, no FX, no text. Parked: wheel zoom-out stops at the
  *   top of the mid band until a map-mode key asks for this band.
@@ -27,7 +27,6 @@ export interface WorldmapContentLadder {
   readonly fx: boolean;
   readonly textLabels: WorldmapTextLabelTier;
   readonly entityIcons: boolean;
-  readonly armyTierGlyphs: boolean;
 }
 
 const PROCEDURAL_CHARACTERS_ENABLED = resolveProceduralCharactersOverride();
@@ -40,7 +39,6 @@ const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
   fx: true,
   textLabels: "full",
   entityIcons: false,
-  armyTierGlyphs: false,
 });
 
 const MID_LADDER: WorldmapContentLadder = Object.freeze({
@@ -51,7 +49,6 @@ const MID_LADDER: WorldmapContentLadder = Object.freeze({
   fx: true,
   textLabels: "priority",
   entityIcons: false,
-  armyTierGlyphs: true,
 });
 
 const FAR_LADDER: WorldmapContentLadder = Object.freeze({
@@ -62,7 +59,6 @@ const FAR_LADDER: WorldmapContentLadder = Object.freeze({
   fx: false,
   textLabels: "none",
   entityIcons: true,
-  armyTierGlyphs: false,
 });
 
 function resolveProceduralCharactersOverride(): boolean {

@@ -58,9 +58,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
-import * as THREE from "three";
-import { Box3, Euler, Group, Object3D, Scene, Sphere, Vector3 } from "three";
-import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { Box3, Euler, Object3D, Scene, Sphere, Vector3 } from "three";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
@@ -76,9 +74,6 @@ import { getWorldPositionForHex, getWorldPositionForHexCoordsInto, hashCoordinat
 import { CentralizedVisibilityManager } from "../utils/centralized-visibility-manager";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getBattleTimerLeft } from "../utils/combat-directions";
-import { createStructureLabel, updateStructureLabel } from "../utils/labels/label-factory";
-import { LabelPool } from "../utils/labels/label-pool";
-import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { presentOrSkip } from "@/utils/presentation-miss";
 import { FXManager } from "./fx-manager";
@@ -99,12 +94,8 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
-import type { CompactEntityLabelScope } from "./compact-entity-label-renderer";
-import {
-  resolveCompactEntityLabelVariant,
-  resolveStructureCompactEntityLabel,
-  type CompactEntityLabelVariant,
-} from "./compact-entity-label-policy";
+import type { MapPlateScope } from "../map-plates/map-plate-layer";
+import { buildStructurePlate } from "../map-plates/map-plate-model";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
   applyVisibleStructurePresentation,
@@ -119,12 +110,10 @@ import {
 } from "./manager-visibility-diff";
 import { buildStructureModelPreloadPlan, type StructureModelPreloadPlan } from "./structure-model-preload-plan";
 import {
-  buildStructureLabelDataKey,
   resolveStructureIncomingTroopArrivals,
   resolveTimedStructureLabelState,
   shouldTrackTimedStructureLabel,
 } from "./structure-label-state";
-import { removeStructureLabels, syncStructureLabelVisibility } from "./structure-label-visibility";
 import { normalizeStructureEntityId as normalizeEntityId } from "./structure-entity-id";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -253,12 +242,9 @@ export class StructureManager {
   private structureInstanceFreeSlots: Map<StructureModel, number> = new Map();
   private hasWarnedStructureCapacityOverflow = false;
   private structureModelDrawCounts: Map<StructureModel, number> = new Map();
-  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
-  private labelPool = new LabelPool();
   private dummy: Object3D = new Object3D();
   private currentChunk: string = MANAGER_UNCOMMITTED_CHUNK;
   private renderChunkSize: RenderChunkSize;
-  private labelsGroup: Group;
   private currentCameraView: CameraView;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
@@ -284,25 +270,19 @@ export class StructureManager {
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   // Scratch vectors for performVisibleStructuresUpdate to avoid allocations
   private readonly scratchPosition: Vector3 = new Vector3();
-  private readonly scratchLabelPosition: Vector3 = new Vector3();
   private readonly scratchCompactLabelPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
   private animationCullDistance = 140;
-  private labelRenderDistance = Infinity;
   private animationCameraPosition: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
-  private compactLabelRenderer: CompactEntityLabelScope;
+  private plates: MapPlateScope;
   // Ids the manager has asked the compact renderer to show; the label tier gate is re-evaluated against it.
   private readonly compactLabelIds = new Set<ID>();
   private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
-  private frustumVisibilityDirty = false;
-  private lastLabelVisibilityUpdate = 0;
-  private labelVisibilityIntervalMs = 66;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private chunkAssetPrewarmPromises: Map<string, Promise<void>> = new Map();
-  private unsubscribeVisibility?: () => void;
   private chunkStride: number;
   private hasPendingModelBounds = false;
   private visibleStructureCount = 0;
@@ -335,8 +315,7 @@ export class StructureManager {
     scene: Scene,
     renderChunkSize: { width: number; height: number },
     worldSpatialProjection: WorldSpatialProjection,
-    compactLabelRenderer: CompactEntityLabelScope,
-    labelsGroup?: Group,
+    plates: MapPlateScope,
     hexagonScene?: HexagonScene,
     fxManager?: FXManager,
     gameContext?: SetupResult,
@@ -351,20 +330,12 @@ export class StructureManager {
       this.flushPendingVisibleStructureRefresh(),
     );
     this.renderChunkSize = renderChunkSize;
-    this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.currentCameraView = hexagonScene?.getCurrentCameraView() ?? CameraView.Medium;
-    this.labelsGroup.visible = this.contentLadder.textLabels !== "none";
     this.fxManager = fxManager || new FXManager(scene);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
     this.store = gameContext?.store as NativeFactStore | undefined;
     this.visibilityManager = visibilityManager;
-    if (this.visibilityManager) {
-      this.frustumVisibilityDirty = true;
-      this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
-        this.frustumVisibilityDirty = true;
-      });
-    }
     this.mode = getGameModeConfig();
     this.structureModelPaths = this.mode.assets.structureModelPaths;
     // Keep chunk stride aligned with the world chunk size so visibility/fetch math matches.
@@ -392,9 +363,9 @@ export class StructureManager {
         this.requestVisibleStructuresRefresh({ refreshExisting: true });
       });
 
-    this.compactLabelRenderer = compactLabelRenderer;
+    this.plates = plates;
 
-    // Start timed label updates
+    // Arrival countdowns and battle cooldowns tick on the plates once a second.
     this.startTimedLabelUpdates();
   }
 
@@ -408,7 +379,6 @@ export class StructureManager {
     this.structuresWithActiveTimedLabels.delete(entityId);
     this.incomingTroopArrivalsByStructure.delete(entityId);
     this.battleDirectionsByStructure.delete(entityId);
-    this.removeEntityIdLabel(entityId);
     this.removeStructureCompactLabel(entityId);
   }
 
@@ -516,7 +486,7 @@ export class StructureManager {
     this.invalidateStructureInfo(entityId);
     const structure = this.resolveStructureInfoByEntityId(entityId);
     if (structure) {
-      this.refreshStructureLabelIfTracked(entityId, structure);
+      this.refreshStructurePlate(structure);
     } else {
       this.removeStructurePresentation(entityId);
     }
@@ -705,20 +675,7 @@ export class StructureManager {
       return;
     }
 
-    // If we're moving away from Medium view, clean up transition state
-    if (this.currentCameraView === CameraView.Medium) {
-      transitionManager.clearMediumViewTransition();
-    }
-
     this.currentCameraView = view;
-
-    // If we're switching to Medium view, store timestamp
-    if (view === CameraView.Medium) {
-      transitionManager.setMediumViewTransition();
-    }
-
-    // Use the centralized label transition function
-    applyLabelTransitions(this.entityIdLabels, view);
     this.updateShadowFlags();
     this.applyContentLadder();
   };
@@ -733,14 +690,11 @@ export class StructureManager {
   private applyContentLadder(): void {
     const ladder = this.contentLadder;
     this.setStructureModelsVisible(ladder.structureModels);
-    this.labelsGroup.visible = ladder.textLabels !== "none";
     if (ladder.textLabels === "none") {
       this.clearStructureCompactLabels();
     } else {
       this.syncVisibleStructureTextLabels();
-      this.entityIdLabels.forEach((_label, entityId) => this.refreshTrackedStructureLabelOrPrune(entityId));
     }
-    this.frustumVisibilityDirty = true;
   }
 
   private setStructureModelsVisible(visible: boolean): void {
@@ -835,7 +789,6 @@ export class StructureManager {
         binding.model.setMatrixAt(binding.instanceIndex, this.dummy.matrix);
         binding.terrainHeight = height;
       }
-      this.frustumVisibilityDirty = true;
     }
   }
 
@@ -899,19 +852,10 @@ export class StructureManager {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
     }
 
-    // Clean up timed label interval
     if (this.timedLabelInterval) {
       clearInterval(this.timedLabelInterval);
       this.timedLabelInterval = null;
     }
-
-    this.entityIdLabels.forEach((label) => {
-      this.labelsGroup.remove(label);
-      this.labelPool.release(label);
-    });
-    this.entityIdLabels.clear();
-
-    this.labelPool.clear();
 
     this.attachmentManager.clear();
     this.activeStructureAttachmentEntities.clear();
@@ -942,13 +886,8 @@ export class StructureManager {
     this.visibleStructureWindow = undefined;
     this.pendingHyperstructureBuilds.clear();
 
-    this.compactLabelRenderer.dispose();
+    this.plates.dispose();
     this.compactLabelIds.clear();
-
-    if (this.unsubscribeVisibility) {
-      this.unsubscribeVisibility();
-      this.unsubscribeVisibility = undefined;
-    }
   }
 
   getTotalStructures() {
@@ -1139,16 +1078,6 @@ export class StructureManager {
       stage: input.stage,
       defaultModelKey,
     });
-  }
-
-  private refreshTrackedStructureLabelOrPrune(entityId: ID): void {
-    const structure = this.resolveStructureInfoByEntityId(entityId);
-    if (!structure) {
-      this.removeStructurePresentation(entityId);
-      return;
-    }
-
-    this.refreshStructureLabelIfTracked(entityId, structure);
   }
 
   /** Contract-space bounds of the structures presented for a chunk, matching the projection's coordinates. */
@@ -1499,7 +1428,6 @@ export class StructureManager {
       rotationY,
       dummy: this.dummy,
       scratchPosition: this.scratchPosition,
-      scratchLabelPosition: this.scratchLabelPosition,
       scratchCompactLabelPosition: this.scratchCompactLabelPosition,
       tempCosmeticPosition: this.tempCosmeticPosition,
       tempCosmeticRotation: this.tempCosmeticRotation,
@@ -1507,8 +1435,6 @@ export class StructureManager {
         getWorldPositionForHexCoordsInto(col, row, out);
         return placePositionOnTerrain(out, this.resolveTerrainSurface());
       },
-      getLabel: (entityId) => this.entityIdLabels.get(safeInteger(entityId) as ID),
-      updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
       resolveModelHeight: (structure) => this.resolveStructureModelHeight(structure),
       syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
@@ -1794,50 +1720,38 @@ export class StructureManager {
       activeAttachmentEntities: this.activeStructureAttachmentEntities,
       attachmentSignatures: this.structureAttachmentSignatures,
       removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
-      trackedLabelEntityIds: this.entityIdLabels.keys(),
       visibleStructureIds,
-      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
       removeStructureCompactLabel: (entityId) => this.removeStructureCompactLabel(entityId),
       previousVisibleIds: this.previousVisibleIds,
     });
-    this.frustumVisibilityDirty = true;
   }
 
-  /** The one place a compact label is created: the band's text tier gates it for every caller. */
+  /** The one place a plate is set: the band's text tier gates it for every caller. */
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
     if (!this.shouldShowStructureTextLabel(structure)) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }
 
-    this.compactLabelRenderer.setLabel({
+    this.plates.setLabel({
       entityId: structure.entityId,
       position,
-      text: resolveStructureCompactEntityLabel(structure),
-      variant: this.resolveStructureCompactLabelVariant(structure),
+      plate: buildStructurePlate(structure, useChainTimeStore.getState().getNowSeconds()),
     });
     this.compactLabelIds.add(structure.entityId);
     this.metrics.compactLabelsShown = this.compactLabelIds.size;
   }
 
   private removeStructureCompactLabel(entityId: ID): void {
-    this.compactLabelRenderer.removeLabel(entityId);
+    this.plates.removeLabel(entityId);
     this.compactLabelIds.delete(entityId);
     this.metrics.compactLabelsShown = this.compactLabelIds.size;
   }
 
   private clearStructureCompactLabels(): void {
-    this.compactLabelRenderer.clear();
+    this.plates.clear();
     this.compactLabelIds.clear();
     this.metrics.compactLabelsShown = 0;
-  }
-
-  private resolveStructureCompactLabelVariant(structure: StructureInfo): CompactEntityLabelVariant {
-    if (structure.owner.address === 0n) {
-      return "neutral";
-    }
-
-    return resolveCompactEntityLabelVariant(structure);
   }
 
   private resolveVisibleStructuresForChunk(chunkKey: string): StructureInfo[] {
@@ -1932,18 +1846,6 @@ export class StructureManager {
         model.updateAnimations(deltaTime, context);
       });
     }
-
-    if (this.frustumVisibilityDirty) {
-      const now = performance.now();
-      if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
-        this.applyFrustumVisibilityToLabels();
-        this.frustumVisibilityDirty = false;
-        this.lastLabelVisibilityUpdate = now;
-      }
-    }
-
-    // Flush batched label pool operations to minimize layout thrashing
-    this.labelPool.flushBatch();
   }
 
   private resolveAnimationVisibilityContext(
@@ -1985,188 +1887,33 @@ export class StructureManager {
     this.animationVisibilityContext = undefined;
   }
 
-  public setLabelRenderDistance(distance: number): void {
-    this.labelRenderDistance = distance;
-    // Re-evaluate label visibility on the next update cycle.
-    this.frustumVisibilityDirty = true;
-  }
-
-  private applyFrustumVisibilityToLabels() {
-    syncStructureLabelVisibility<ID>({
-      labels: this.entityIdLabels.values(),
-      setLabelVisible: (label) => this.isStructureLabelVisible(label),
-      revealLabel: (entityId, label) => this.revealStructureLabel(entityId, label),
-    });
-  }
-
-  // Label Management Methods
-  private addEntityIdLabel(structure: StructureInfo, position: Vector3) {
-    const { label } = this.labelPool.acquire(() => {
-      const element = createStructureLabel(structure, this.currentCameraView);
-      const cssLabel = new CSS2DObject(element);
-      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
-      return cssLabel;
-    });
-
-    label.position.copy(position);
-    label.position.y += 2;
-    label.userData.entityId = structure.entityId;
-    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
-    label.userData.lastDataKey = null;
-
-    this.configureStructureLabelInteractions(label);
-
-    this.entityIdLabels.set(structure.entityId, label);
-    this.labelsGroup.add(label);
-    this.updateStructureLabelData(structure, label);
-    this.frustumVisibilityDirty = true;
-  }
-
-  private removeEntityIdLabel(entityId: ID) {
-    const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
-      return;
-    }
-
-    const label = this.entityIdLabels.get(normalizedEntityId);
-    if (label) {
-      this.labelsGroup.remove(label);
-      this.labelPool.release(label);
-      this.entityIdLabels.delete(normalizedEntityId);
-      this.frustumVisibilityDirty = true;
-    }
-  }
-
-  private configureStructureLabelInteractions(label: CSS2DObject): void {
-    const element = label.element as HTMLElement;
-    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
-    label.userData.baseRenderOrder = baseRenderOrder;
-
-    element.onmouseenter = () => {
-      label.renderOrder = Infinity;
-    };
-
-    element.onmouseleave = () => {
-      label.renderOrder = baseRenderOrder;
-    };
-  }
-
+  /** A scene leaving the map leaves no plate open; the next hover opens one again. */
   public removeLabelsFromScene() {
-    removeStructureLabels({
-      trackedLabelEntityIds: this.entityIdLabels.keys(),
-      shouldRetainLabel: () => false,
-      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
-    });
-    this.removeOrphanedStructureSceneLabels();
-    this.frustumVisibilityDirty = true;
+    this.plates.clearHover();
   }
 
-  public removeLabelsExcept(entityId?: ID) {
-    const normalizedEntityId = entityId !== undefined ? normalizeEntityId(entityId) : undefined;
-    removeStructureLabels({
-      trackedLabelEntityIds: this.entityIdLabels.keys(),
-      shouldRetainLabel: (labelEntityId) => labelEntityId === normalizedEntityId,
-      removeEntityIdLabel: (labelEntityId) => this.removeEntityIdLabel(labelEntityId),
-    });
-    this.frustumVisibilityDirty = true;
-  }
-
-  public showLabels() {
-    this.frustumVisibilityDirty = true;
-    this.applyFrustumVisibilityToLabels();
-  }
-
+  /** Opens the structure's plate: the pointer is on its tile. */
   public showLabel(entityId: ID): HoverLabelShowResult {
     const normalizedEntityId = normalizeEntityId(entityId);
-    if (normalizedEntityId === undefined) {
+    if (normalizedEntityId === undefined || !this.resolveStructureInfoByEntityId(normalizedEntityId)) {
       return { status: "missing" };
     }
-
-    const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
-    // A site has no second label: its plate carries its kind and strength, and its card the rest. The wide label
-    // covered the units beside it.
-    if (!structure || structure.siteKind !== undefined) {
-      return { status: "missing" };
-    }
-
-    const existingLabel = this.entityIdLabels.get(normalizedEntityId);
-    if (existingLabel) {
-      const wasDetached = existingLabel.parent !== this.labelsGroup;
-      const wasHidden = existingLabel.visible !== true || existingLabel.element.style.display === "none";
-      if (wasDetached) {
-        this.labelsGroup.add(existingLabel);
-      }
-      existingLabel.visible = true;
-      existingLabel.element.style.display = "";
-      this.refreshExistingStructureLabel(structure, existingLabel);
-      this.compactLabelRenderer.setHover(normalizedEntityId);
-      if (wasDetached || wasHidden) {
-        this.frustumVisibilityDirty = true;
-        return { status: "reattached" };
-      }
-      return { status: "unchanged" };
-    }
-
-    this.addEntityIdLabel(structure, this.resolveStructureLabelPosition(structure));
-    this.compactLabelRenderer.setHover(normalizedEntityId);
-    this.frustumVisibilityDirty = true;
+    this.plates.setHover(normalizedEntityId);
     return { status: "shown" };
   }
 
-  public hideLabel(entityId: ID): void {
-    this.removeEntityIdLabel(entityId);
-    this.compactLabelRenderer.clearHover();
-    this.frustumVisibilityDirty = true;
+  public hideLabel(_entityId: ID): void {
+    this.plates.clearHover();
   }
 
   public hideAllLabels(): void {
-    removeStructureLabels({
-      trackedLabelEntityIds: Array.from(this.entityIdLabels.keys()),
-      shouldRetainLabel: () => false,
-      removeEntityIdLabel: (structureId) => this.removeEntityIdLabel(structureId),
-    });
-    this.compactLabelRenderer.clearHover();
-    this.frustumVisibilityDirty = true;
+    this.plates.clearHover();
   }
 
-  private isStructureLabelVisible(label: CSS2DObject): boolean {
-    if (this.labelRenderDistance < Infinity) {
-      const camera = this.hexagonScene?.getCamera();
-      if (camera && camera.position.distanceTo(label.position) > this.labelRenderDistance) {
-        return false;
-      }
-    }
-    return this.visibilityManager?.isPointVisible(label.position) ?? true;
-  }
-
-  private revealStructureLabel(entityId: ID, label: CSS2DObject) {
-    if (label.parent !== this.labelsGroup) {
-      this.labelsGroup.add(label);
-    }
-
-    const structure = this.resolveStructureInfoByEntityId(entityId);
-    if (structure) {
-      updateStructureLabel(label.element, structure, this.currentCameraView);
-    }
-  }
-
-  private resolveStructureLabelPosition(structure: StructureInfo): Vector3 {
-    const position = getWorldPositionForHex(structure.hexCoords);
-    return placePositionOnTerrain(position, this.resolveTerrainSurface(), STRUCTURE_SURFACE_LIFT);
-  }
-
-  private refreshExistingStructureLabel(structure: StructureInfo, label: CSS2DObject) {
-    const position = this.resolveStructureLabelPosition(structure);
-    position.y += 1.95;
-    label.position.copy(position);
-    this.updateStructureLabelData(structure, label);
-  }
-
-  private removeOrphanedStructureSceneLabels() {
-    const remainingLabels = this.labelsGroup.children.filter((child) => child instanceof CSS2DObject);
-    remainingLabels.forEach((label) => {
-      this.labelsGroup.remove(label);
-    });
+  /** Redraws a structure's plate from fresh facts, where it has one. */
+  private refreshStructurePlate(structure: StructureInfo): void {
+    if (!this.compactLabelIds.has(structure.entityId)) return;
+    this.updateStructureCompactLabel(structure, this.resolveStructureCompactLabelPosition(structure));
   }
 
   /**
@@ -2194,7 +1941,7 @@ export class StructureManager {
     this.invalidateStructureInfo(normalizedEntityId);
 
     const structure = this.resolveStructureInfoByEntityId(normalizedEntityId);
-    if (structure) this.refreshStructureLabelIfTracked(normalizedEntityId, structure);
+    if (structure) this.refreshStructurePlate(structure);
   }
 
   private playStructureGuardDifferenceFx(entityId: ID, previousGuards: GuardArmy[], currentGuards: GuardArmy[]) {
@@ -2214,13 +1961,6 @@ export class StructureManager {
       const worldPos = getWorldPositionForHex(structure.hexCoords);
       placePositionOnTerrain(worldPos, this.resolveTerrainSurface());
       this.fxManager.playTroopDiffFx(diff, worldPos.x, worldPos.y + 3, worldPos.z);
-    }
-  }
-
-  private refreshStructureLabelIfTracked(entityId: ID, structure: StructureInfo) {
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.updateStructureLabelData(structure, label);
     }
   }
 
@@ -2265,11 +2005,7 @@ export class StructureManager {
       this.incomingTroopArrivalsByStructure.delete(structure.entityId);
     }
     structure.incomingTroopArrivals = arrivalUpdate.incomingTroopArrivals;
-
-    const label = this.entityIdLabels.get(structure.entityId);
-    if (label) {
-      this.updateStructureLabelData(structure, label);
-    }
+    this.refreshStructurePlate(structure);
   }
 
   /**
@@ -2334,33 +2070,11 @@ export class StructureManager {
         this.syncStructureCompactLabel(structure);
       }
 
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        this.updateStructureLabelData(structure, label);
-      }
+      this.refreshStructurePlate(structure);
     }
 
     for (const entityId of inactiveTimedLabels) {
       this.structuresWithActiveTimedLabels.delete(entityId);
     }
-  }
-
-  /**
-   * Update a structure label with fresh data
-   */
-  private updateStructureLabelData(structure: StructureInfo, existingLabel: CSS2DObject): void {
-    const dataKey = buildStructureLabelDataKey(structure, useChainTimeStore.getState().getNowSeconds());
-    const isVisible = this.labelsGroup.parent !== null && this.labelsGroup.visible && existingLabel.visible === true;
-    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
-      return;
-    }
-
-    if (!isVisible) {
-      existingLabel.userData.lastDataKey = null;
-      return;
-    }
-
-    existingLabel.userData.lastDataKey = dataKey;
-    updateStructureLabel(existingLabel.element, structure, this.currentCameraView);
   }
 }

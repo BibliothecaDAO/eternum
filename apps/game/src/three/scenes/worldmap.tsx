@@ -146,7 +146,7 @@ import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/t
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
-import { CompactEntityLabelRenderer } from "@/three/managers/compact-entity-label-renderer";
+import { MapPlateLayer } from "@/three/map-plates/map-plate-layer";
 import { StrategicMarkerLayer, type StrategicArmyMarkerTier } from "@/three/managers/strategic-marker-layer";
 import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
@@ -741,7 +741,7 @@ export default class WorldmapScene extends WarpTravel {
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
-  private compactEntityLabelRenderer!: CompactEntityLabelRenderer;
+  private mapPlates!: MapPlateLayer;
   private readonly terrainMovementInteractionBuffer: TerrainMovementInteraction[] = [];
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
@@ -1023,8 +1023,6 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRecoveryProgress = createWorldmapChunkRecoveryProgress();
 
   // Label groups
-  private armyLabelsGroup!: Group;
-  private structureLabelsGroup!: Group;
   private chestLabelsGroup!: Group;
   private reservedHyperstructureManager!: ReservedHyperstructureManager;
   private spireManager!: SpireManager;
@@ -1190,18 +1188,12 @@ export default class WorldmapScene extends WarpTravel {
   private applyWorldmapVisualLimits(features: RenderVisualProfile): void {
     this.visibilityManager?.setAnimationMaxDistance(features.animationCullDistance);
     this.structureManager?.setAnimationCullDistance(features.animationCullDistance);
-    this.armyManager?.setLabelRenderDistance(features.labelRenderDistance);
-    this.structureManager?.setLabelRenderDistance(features.labelRenderDistance);
   }
 
   private initializeWorldmapManagers(): void {
     this.worldSpatialProjection = requireActiveGameSyncRuntime().requireWorldSpatialProjection();
     this.unbindMapSelection = bindMapSelection(this.worldSpatialProjection);
-    this.compactEntityLabelRenderer = new CompactEntityLabelRenderer(this.scene);
-    this.armyLabelsGroup = new Group();
-    this.armyLabelsGroup.name = "ArmyLabelsGroup";
-    this.structureLabelsGroup = new Group();
-    this.structureLabelsGroup.name = "StructureLabelsGroup";
+    this.mapPlates = new MapPlateLayer(() => document.getElementById("labelrenderer"));
     this.chestLabelsGroup = new Group();
     this.chestLabelsGroup.name = "ChestLabelsGroup";
     this.spireLabelsGroup = new Group();
@@ -1211,8 +1203,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.renderChunkSize,
       this.worldSpatialProjection,
-      this.compactEntityLabelRenderer.createScope("army"),
-      this.armyLabelsGroup,
+      this.mapPlates.createScope("army"),
       this,
       this.game,
       this.visibilityManager,
@@ -1251,8 +1242,7 @@ export default class WorldmapScene extends WarpTravel {
       this.scene,
       this.renderChunkSize,
       this.worldSpatialProjection,
-      this.compactEntityLabelRenderer.createScope("structure"),
-      this.structureLabelsGroup,
+      this.mapPlates.createScope("structure"),
       this,
       this.fxManager,
       this.game,
@@ -1704,6 +1694,7 @@ export default class WorldmapScene extends WarpTravel {
     const context = this.buildLabelPriorityContext();
     this.armyManager.setLabelPriorityContext(context);
     this.structureManager.setLabelPriorityContext(context);
+    this.mapPlates.setSelected(context.selectedEntityId);
   }
 
   private buildLabelPriorityContext(): WorldmapLabelPriorityContext {
@@ -4012,7 +4003,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getWorldmapLabelGroups(): Group[] {
-    return [this.armyLabelsGroup, this.structureLabelsGroup, this.chestLabelsGroup, this.spireLabelsGroup];
+    return [this.chestLabelsGroup, this.spireLabelsGroup];
   }
 
   private attachWorldmapLabelGroupsToScene(): void {
@@ -4069,6 +4060,7 @@ export default class WorldmapScene extends WarpTravel {
   public override async setup(setupContext?: SceneSetupContext): Promise<void> {
     if (!this.hasInitialized) await this.openOnEntryDestination();
     await super.setup(setupContext);
+    this.mapPlates.setVisible(true);
   }
 
   private async openOnEntryDestination(): Promise<void> {
@@ -4302,6 +4294,7 @@ export default class WorldmapScene extends WarpTravel {
       ...this.getInteractionDebugSnapshot(),
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
+    this.mapPlates.setVisible(false);
     this.invalidateWorldmapSwitchOffTransitions();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
@@ -7786,7 +7779,7 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
-    this.compactEntityLabelRenderer.updateCamera(this.camera, window.innerHeight);
+    this.mapPlates.update(this.camera, window.innerWidth, window.innerHeight);
     runWithFrameWorkOwner("armies:update", () =>
       this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
     );
@@ -8194,7 +8187,7 @@ export default class WorldmapScene extends WarpTravel {
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
     });
-    this.compactEntityLabelRenderer.dispose();
+    this.mapPlates.dispose();
     this.updateCameraTargetHexThrottled?.cancel();
     this.refreshVisualTerrainWindowThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();

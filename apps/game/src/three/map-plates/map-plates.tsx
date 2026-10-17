@@ -1,5 +1,6 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { formatDuration } from "@/ui/design-system/kit/time";
 import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 
 import { armyFitsOneLine } from "./map-plate-layout";
@@ -45,13 +46,27 @@ const StructurePlateView = ({ plate, open }: { plate: StructurePlate; open: bool
   </div>
 );
 
-/** What an opened structure adds: whose it is, its level or id, and its guard slots in the order an attacker meets them. */
+/**
+ * What an opened structure adds: whose it is, its level or id, troops on their way to it, and its guard slots in the
+ * order an attacker meets them.
+ */
 const StructureOpenLines = ({ plate }: { plate: StructurePlate }) => (
   <>
     <div className="mp-plate__more">
       <span className="mp-owner">{plate.owner ?? plate.nobody}</span>
       <span className="mp-muted">{plate.level !== undefined ? `Level ${plate.level}` : plate.code}</span>
     </div>
+    {plate.arrivals.length > 0 && (
+      <div className="mp-plate__more" aria-label="Arriving">
+        <Icon name="transfer" size={18} alt="Arriving" />
+        {plate.arrivals.map((arrival, index) => (
+          <span key={index} className="mp-troops">
+            <Troops troops={arrival.troops} />
+            <span className="mp-muted">{formatDuration(arrival.secondsLeft)}</span>
+          </span>
+        ))}
+      </div>
+    )}
     {plate.guards.length > 1 && (
       <div className="mp-plate__more" aria-label="Guards, first met first">
         {attackOrder(plate.guards).map((slot, index) => (

@@ -33,7 +33,6 @@ describe("resolveWorldmapContentLadder", () => {
       proceduralCharacters: false,
       textLabels: "priority",
       entityIcons: false,
-      armyTierGlyphs: true,
     });
     expect(resolveWorldmapContentLadder(CameraView.Far)).toMatchObject({
       structureModels: false,

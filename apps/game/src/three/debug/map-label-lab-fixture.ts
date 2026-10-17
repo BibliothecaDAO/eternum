@@ -11,7 +11,7 @@ import { gltfLoader } from "../utils/utils";
 export type MapLabelKind = "realm" | "camp" | "rift" | "hyperstructure" | "army";
 export type MapLabelRelation = "own" | "ally" | "enemy" | "neutral";
 
-export type MapLabelTroopType = "crossbowman" | "knight" | "paladin";
+type MapLabelTroopType = "crossbowman" | "knight" | "paladin";
 
 /** A troop stack: a guard slot, or an army's troops. */
 export interface MapLabelTroops {

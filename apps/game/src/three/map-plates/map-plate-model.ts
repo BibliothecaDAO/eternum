@@ -46,6 +46,8 @@ export interface StructurePlate {
   yields?: ResourcesIds;
   /** Guard slots in slot order; empty when it stands open. */
   guards: PlateTroops[];
+  /** Troops on their way to it (the player's own reinforcements), soonest first, at most three. */
+  arrivals: { troops: PlateTroops; secondsLeft: number }[];
 }
 
 export type MapPlate = ArmyPlate | StructurePlate;
@@ -89,7 +91,9 @@ export const buildStructurePlate = (
     | "isAlly"
     | "owner"
     | "guardArmies"
+    | "incomingTroopArrivals"
   >,
+  nowSeconds = 0,
 ): StructurePlate => {
   const named = NAMED.has(structure.structureType) && structure.structureName.trim().length > 0;
   const isRift = structure.structureType === StructureType.Rift || structure.mineKind === 1;
@@ -108,8 +112,15 @@ export const buildStructurePlate = (
     yields: isRift ? ResourcesIds.Essence : undefined,
     guards: (structure.guardArmies ?? [])
       .filter((guard) => guard.count > 0)
-      .sort((a, b) => a.slot - b.slot)
+      .toSorted((a, b) => a.slot - b.slot)
       .map((guard) => ({ type: troopType(guard.category), tier: tierOf(guard.tier), count: guard.count })),
+    arrivals: (structure.incomingTroopArrivals ?? [])
+      .map((arrival) => ({
+        troops: { type: troopType(arrival.troopType), tier: tierOf(arrival.troopTier), count: arrival.count },
+        secondsLeft: Math.max(0, Number(arrival.arrivesAt) - nowSeconds),
+      }))
+      .toSorted((a, b) => a.secondsLeft - b.secondsLeft)
+      .slice(0, 3),
   };
 };
 

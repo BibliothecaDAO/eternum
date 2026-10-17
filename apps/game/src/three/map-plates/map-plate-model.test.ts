@@ -57,6 +57,27 @@ describe("a map plate's facts", () => {
     expect(rift).toMatchObject({ icon: "rift", yields: ResourcesIds.Essence, title: undefined });
   });
 
+  it("lists troops on their way to a structure, soonest first, with the time left", () => {
+    const arrival = (count: number, arrivesAt: bigint) => ({
+      structureEntityId: 29,
+      resourceId: 0,
+      troopType: "Paladin",
+      troopTier: "T2",
+      count,
+      arrivesAt,
+      day: 0,
+      slot: 0n,
+    });
+    const plate = buildStructurePlate(
+      structure({ incomingTroopArrivals: [arrival(300, 1_200n), arrival(150, 1_060n)] as never }),
+      1_000,
+    );
+    expect(plate.arrivals).toEqual([
+      { troops: { type: "paladin", tier: 2, count: 150 }, secondsLeft: 60 },
+      { troops: { type: "paladin", tier: 2, count: 300 }, secondsLeft: 200 },
+    ]);
+  });
+
   it("gives an army its owner, the realm it comes from, its short id, troops and stamina", () => {
     const plate = buildArmyPlate(
       {
