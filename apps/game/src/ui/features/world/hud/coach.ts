@@ -7,11 +7,11 @@ export interface CoachHex {
   row: number;
 }
 
-/** One of the player's armies in the field: where it stands and the stamina it has now. */
+/** One of the player's armies in the field: where it stands, and whether an explore order would go now. */
 export interface CoachArmy {
   entityId: number;
   hex: CoachHex;
-  stamina: number;
+  canExplore: boolean;
 }
 
 /** Something on the map that scores when an army takes it: a relic crate, a camp or rift, or a Hyperstructure. */
@@ -25,12 +25,14 @@ export interface CoachTarget {
 interface CoachState {
   armies: readonly CoachArmy[];
   targets: readonly CoachTarget[];
-  exploreStaminaCost: number;
   grants: PointsGrants;
 }
 
-/** What a coach step does: open Military to raise an army, or select an army and show the hex it should go for. */
-export type CoachAct = { kind: "raise" } | { kind: "go"; armyId: number; hex: CoachHex };
+/**
+ * What a coach step does: open Military to raise an army, or select an army on the map, with the card of the target
+ * it should go for open (none for exploring).
+ */
+export type CoachAct = { kind: "raise" } | { kind: "go"; armyId: number; target: CoachHex | null };
 
 export interface CoachStep {
   key: string;
@@ -45,7 +47,7 @@ export interface CoachStep {
  * holds while the game state offers it, so a lost army brings back "Raise an army", and a step the map does not offer
  * yet (no crate in sight) is left out.
  */
-export const coachSteps = ({ armies, targets, exploreStaminaCost, grants }: CoachState): CoachStep[] => {
+export const coachSteps = ({ armies, targets, grants }: CoachState): CoachStep[] => {
   if (armies.length === 0) {
     return [
       {
@@ -56,14 +58,14 @@ export const coachSteps = ({ armies, targets, exploreStaminaCost, grants }: Coac
       },
     ];
   }
-  const explorer = armies.find((army) => army.stamina >= exploreStaminaCost);
+  const explorer = armies.find((army) => army.canExplore);
   const steps: CoachStep[] = explorer
     ? [
         {
           key: `coach:explore:${explorer.entityId}`,
           line: `Your army can explore: +${grants.exploreTile.toLocaleString()} points a tile.`,
           verb: "Select the army",
-          act: { kind: "go", armyId: explorer.entityId, hex: explorer.hex },
+          act: { kind: "go", armyId: explorer.entityId, target: null },
         },
       ]
     : [];
@@ -84,7 +86,7 @@ export const coachSteps = ({ armies, targets, exploreStaminaCost, grants }: Coac
   ];
 };
 
-/** The nearest target of a kind to any of the armies, as a step that selects that army and shows the target. */
+/** The nearest target of a kind to any of the armies, as a step that selects that army with the target's card open. */
 const goFor = (
   kind: CoachTarget["kind"],
   armies: readonly CoachArmy[],
@@ -105,7 +107,7 @@ const goFor = (
       key: `coach:${kind}:${nearest.target.hex.col}:${nearest.target.hex.row}`,
       line,
       verb,
-      act: { kind: "go", armyId: nearest.army.entityId, hex: nearest.target.hex },
+      act: { kind: "go", armyId: nearest.army.entityId, target: nearest.target.hex },
     },
   ];
 };

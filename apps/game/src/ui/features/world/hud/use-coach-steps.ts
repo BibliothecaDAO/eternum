@@ -1,18 +1,16 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowMs } from "@/hooks/helpers/use-block-timestamp";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView, selectableArmiesView } from "@/sync/fact-views";
-import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { LeftView } from "@/types";
 import { lostArmyLine } from "@/ui/features/event-feed/row-outcomes";
-import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
+import { ArmyActionManager, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { type CoachAct, type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "./coach";
@@ -34,16 +32,11 @@ export const useCoachSteps = (): CoachNextStep[] => {
   const armies = useCoachArmies();
   const targets = useCoachTargets();
   const act = useCoachAct();
-  return useMemo(
-    () =>
-      coachSteps({
-        armies,
-        targets,
-        exploreStaminaCost: configManager.getExploreStaminaCost(),
-        grants: configManager.getVictoryPointGrants(),
-      }).map((step) => toNextStep(step, act)),
-    [armies, targets, act],
+  const steps = useMemo(
+    () => coachSteps({ armies, targets, grants: configManager.getVictoryPointGrants() }),
+    [armies, targets],
   );
+  return steps.map((step) => toNextStep(step, act));
 };
 
 /**
@@ -56,24 +49,26 @@ export const useLostArmyAlert = (): CoachNextStep[] => {
   const { data: battles } = useStoryEvents(20, "BattleEvent", address ?? undefined);
   const nowMs = useNowMs();
   const act = useCoachAct();
-  return useMemo(() => {
-    const lost = battles
-      .filter((battle) => nowMs - battle.timestampMs < LOST_ARMY_ALERT_MS)
-      .map((battle) => ({ battle, line: lostArmyLine(battle.storyPayload, address) }))
-      .find(({ line }) => line !== null);
-    if (!lost?.line) return [];
-    return [
-      toNextStep(
-        {
-          key: `lost:${lost.battle.id}`,
-          line: `${lost.line}. Raise another.`,
-          verb: "Raise an army",
-          act: { kind: "raise" },
-        },
-        act,
-      ),
-    ];
-  }, [battles, nowMs, address, act]);
+  const lost = useMemo(
+    () =>
+      battles
+        .filter((battle) => nowMs - battle.timestampMs < LOST_ARMY_ALERT_MS)
+        .map((battle) => ({ battle, line: lostArmyLine(battle.storyPayload, address) }))
+        .find(({ line }) => line !== null),
+    [battles, nowMs, address],
+  );
+  if (!lost?.line) return [];
+  return [
+    toNextStep(
+      {
+        key: `lost:${lost.battle.id}`,
+        line: `${lost.line}. Raise another.`,
+        verb: "Raise an army",
+        act: { kind: "raise" },
+      },
+      act,
+    ),
+  ];
 };
 
 const toNextStep = (step: CoachStep, act: (action: CoachAct) => void): CoachNextStep => ({
@@ -83,44 +78,40 @@ const toNextStep = (step: CoachStep, act: (action: CoachAct) => void): CoachNext
   run: () => act(step.act),
 });
 
-/** What a coach step's verb does: open Military on the selected holding, or select the army and show the hex. */
+/**
+ * What a coach step's verb does: open Military on the selected holding, or select the army on the map (from any view)
+ * with its target's card open.
+ */
 const useCoachAct = () => {
-  const navigate = useNavigateToMapView();
-  return useMemo(
-    () => (action: CoachAct) => {
-      if (action.kind === "raise") {
-        useUIStore.getState().setLeftNavigationView(LeftView.MilitaryView);
-        return;
-      }
-      requestArmySelection(action.armyId);
-      navigate(Position.fromContract({ x: action.hex.col, y: action.hex.row }));
-    },
-    [navigate],
-  );
+  const selectArmy = useSelectArmyOnMap();
+  return (action: CoachAct) => {
+    if (action.kind === "raise") {
+      useUIStore.getState().setLeftNavigationView(LeftView.MilitaryView);
+      return;
+    }
+    selectArmy(action.armyId, action.target);
+  };
 };
 
-/** The player's armies in the field, where they stand on the shown layer and the stamina each has now. */
+/**
+ * The player's armies in the field, where they stand on the shown layer and whether an explore order would go now, by
+ * the order's own rule (the army's stamina and its home's food).
+ */
 const useCoachArmies = (): CoachArmy[] => {
   const { setup } = useGame();
   const armies = useFactView(selectableArmiesView);
   const timestamp = useCurrentDefaultTick();
+  const facts = useNativeRevision(["ExplorerTroops", "ResourceBalance", "ResourceProduction"]);
   const { projection, revision } = useProjectionRevision();
   return useMemo(
     () =>
       armies.flatMap(({ entityId }) => {
         const placed = projection?.getArmy(entityId);
-        const explorer = setup.store.get("ExplorerTroops", {
-          game_id: configManager.getActiveGameId(),
-          explorer_id: entityId,
-        });
-        if (!placed || !explorer) return [];
-        const snapshot = getExplorerStaminaSnapshot({
-          timestamp,
-          liveTroops: resolveExplorerTroops(setup.store, explorer),
-        });
-        return [{ entityId, hex: placed.hexCoords, stamina: snapshot?.current ?? 0 }];
+        if (!placed) return [];
+        const canExplore = new ArmyActionManager(setup.store, setup.systemCalls, entityId).canExplore(timestamp);
+        return [{ entityId, hex: placed.hexCoords, canExplore }];
       }),
-    [armies, setup.store, timestamp, projection, revision],
+    [armies, setup.store, setup.systemCalls, timestamp, facts, projection, revision],
   );
 };
 

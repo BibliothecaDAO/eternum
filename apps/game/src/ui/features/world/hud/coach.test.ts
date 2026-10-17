@@ -2,18 +2,17 @@ import { expect, it } from "vitest";
 import { coachSteps, type CoachArmy, type CoachTarget } from "./coach";
 
 const grants = { exploreTile: 5, openRelicCrate: 250, claimCampFromBandits: 250, claimHyperstructureFromBandits: 1000 };
-const army = (entityId: number, col: number, stamina: number): CoachArmy => ({
+const army = (entityId: number, col: number, canExplore: boolean): CoachArmy => ({
   entityId,
   hex: { col, row: 0 },
-  stamina,
+  canExplore,
 });
 const target = (kind: CoachTarget["kind"], name: string, col: number): CoachTarget => ({
   kind,
   name,
   hex: { col, row: 0 },
 });
-const steps = (armies: CoachArmy[], targets: CoachTarget[] = []) =>
-  coachSteps({ armies, targets, exploreStaminaCost: 20, grants });
+const steps = (armies: CoachArmy[], targets: CoachTarget[] = []) => coachSteps({ armies, targets, grants });
 
 it("starts a player with no army in the field by raising one, and nothing else", () => {
   expect(steps([], [target("crate", "the relic crate", 3)])).toEqual([
@@ -28,7 +27,7 @@ it("starts a player with no army in the field by raising one, and nothing else",
 
 it("ranks the route by what scores: explore, then a crate, a camp or rift, a Hyperstructure", () => {
   const route = steps(
-    [army(1, 0, 30)],
+    [army(1, 0, true)],
     [
       target("hyperstructure", "Obsidian Hyperstructure", 9),
       target("site", "Camp", 6),
@@ -41,11 +40,12 @@ it("ranks the route by what scores: explore, then a crate, a camp or rift, a Hyp
     "Take Camp from The Vanguard: +250 points.",
     "Take Obsidian Hyperstructure: +1,000 points, then points every second.",
   ]);
-  expect(route[1].act).toEqual({ kind: "go", armyId: 1, hex: { col: 3, row: 0 } });
+  expect(route[0].act).toEqual({ kind: "go", armyId: 1, target: null });
+  expect(route[1].act).toEqual({ kind: "go", armyId: 1, target: { col: 3, row: 0 } });
 });
 
-it("asks an army to explore only while it has the stamina, and sends the nearest army to each target", () => {
-  const route = steps([army(1, 0, 10), army(2, 10, 15)], [target("crate", "the relic crate", 8)]);
+it("asks an army to explore only while an explore order would go, and sends the nearest army to each target", () => {
+  const route = steps([army(1, 0, false), army(2, 10, false)], [target("crate", "the relic crate", 8)]);
   expect(route.map(({ key }) => key)).toEqual(["coach:crate:8:0"]);
-  expect(route[0].act).toEqual({ kind: "go", armyId: 2, hex: { col: 8, row: 0 } });
+  expect(route[0].act).toEqual({ kind: "go", armyId: 2, target: { col: 8, row: 0 } });
 });

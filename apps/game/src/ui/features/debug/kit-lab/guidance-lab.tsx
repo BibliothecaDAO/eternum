@@ -97,18 +97,17 @@ const ROWS: ImportantFeedRow[] = [
 ];
 
 /**
- * The coach's route for an army in the field with stamina, a crate, a camp and a Hyperstructure in sight, as Next up
+ * The coach's route for an army in the field that can explore, a crate, a camp and a Hyperstructure in sight, as Next up
  * shows it (its verbs do nothing here).
  */
 const coachRoute = (): NextStep[] =>
   coachSteps({
-    armies: [{ entityId: 1, hex: { col: 10, row: 10 }, stamina: 120 }],
+    armies: [{ entityId: 1, hex: { col: 10, row: 10 }, canExplore: true }],
     targets: [
       { kind: "crate", name: "the relic crate", hex: { col: 12, row: 10 } },
       { kind: "site", name: "Camp", hex: { col: 14, row: 10 } },
       { kind: "hyperstructure", name: "Obsidian Hyperstructure", hex: { col: 18, row: 10 } },
     ],
-    exploreStaminaCost: configManager.getExploreStaminaCost(),
     grants: configManager.getVictoryPointGrants(),
   }).map(({ key, line, verb }) => ({ key, kind: "order", line, verb, busy: false, run: () => undefined }));
 
