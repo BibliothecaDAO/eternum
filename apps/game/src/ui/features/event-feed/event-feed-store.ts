@@ -6,7 +6,7 @@ export type FeedNoticeKind = "info" | "success" | "error" | "warning";
  * A transient notice: something that happened that no entity or transaction row carries. Ephemera, never a fact. Its
  * words are text, so it is one row like every other, never a layout of its own drawn into the feed.
  */
-export interface FeedNotice {
+interface FeedNotice {
   id: string;
   kind: FeedNoticeKind;
   title: string;

@@ -60,7 +60,7 @@ const isImportantStory = (event: ProcessedStoryEvent, address: string | null, is
   (event.story === "StructureCapturedStory" && event.entity_id !== null && isHyperstructure(event.entity_id));
 
 /** Whether a story shows under the filter: all of Events' under All, the player's under Mine, the important under Important. */
-export const matchesEventsFilter = (
+const matchesEventsFilter = (
   event: ProcessedStoryEvent,
   filter: EventsFilter,
   address: string | null,

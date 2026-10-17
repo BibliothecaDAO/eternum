@@ -135,7 +135,9 @@ const useLiveNotices = () => {
     const timer = window.setTimeout(() => setNow(Date.now()), Math.max(0, nextEnd - Date.now()));
     return () => window.clearTimeout(timer);
   }, [nextEnd]);
-  useEffect(() => setNow(Date.now()), [notices]);
+  useEffect(() => {
+    setNow(Date.now());
+  }, [notices]);
   return live;
 };
 

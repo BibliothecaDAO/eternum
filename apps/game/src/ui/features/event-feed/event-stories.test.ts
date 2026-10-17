@@ -83,6 +83,15 @@ it("tells a capture and the fight that won it, one transaction, as one row by it
   expect(ids([taken, { ...won, ...tx }], "all")).toEqual(["taken"]);
 });
 
+it("tells each capture of a structure on its own, however often it changes the same hands", () => {
+  const stories = [
+    capture("again", 300, "0xb", "0xc"),
+    capture("back", 200, "0xc", "0xb"),
+    capture("first", 100, "0xb", "0xc"),
+  ];
+  expect(ids(stories, "all")).toEqual(["again", "back", "first"]);
+});
+
 it("tells the player's own actions their stories write, and leaves routine production and others' news out", () => {
   const stories = [
     story("paid", 60, "BuildingPaymentStory", "0x1", { coord: { x: 1, y: 1 } }),
