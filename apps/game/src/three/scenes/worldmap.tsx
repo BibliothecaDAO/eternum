@@ -1699,7 +1699,11 @@ export default class WorldmapScene extends WarpTravel {
 
   private buildLabelPriorityContext(): WorldmapLabelPriorityContext {
     const hovered = this.currentHoverLabelHex ? this.getHexagonEntity(this.currentHoverLabelHex) : undefined;
-    const selectedEntityId = getLiveWorldmapEntityActions().selectedEntityId;
+    // The army taking orders, else what stands on the selected hex: a structure is selected by its hex alone.
+    const selectedHex = useUIStore.getState().selectedHex;
+    const onSelectedHex = selectedHex ? this.getHexagonEntity(sceneHexOf(selectedHex)) : undefined;
+    const selectedEntityId =
+      getLiveWorldmapEntityActions().selectedEntityId ?? onSelectedHex?.army?.id ?? onSelectedHex?.structure?.id;
     return {
       isSpectator: isExplicitSpectateSession(),
       topOwnerAddresses: this.resolveTopOwnerAddresses(),
@@ -8577,6 +8581,7 @@ export default class WorldmapScene extends WarpTravel {
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
+        this.refreshLabelPriorityContext();
       },
     });
     this.storeSubscriptions.push(
@@ -8723,6 +8728,7 @@ export default class WorldmapScene extends WarpTravel {
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
+        this.refreshLabelPriorityContext();
       },
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {
