@@ -11,7 +11,6 @@ import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terr
 
 import "./map-label-lab.css";
 import { MapPlates, PLATE_RULES, type MapZoom, type ProjectedEntity } from "./map-label-plates";
-import { formatCount, strongestOwnArmy } from "./map-label-reading";
 
 /**
  * The map label lab (`/lab/map-labels`): the owner's pick (plates that open, short code names) on the real map renderer,
@@ -29,7 +28,6 @@ export const MapLabelLabView = () => {
   const [pointerHover, setPointerHover] = useState<string | null>(null);
   const hovered = pointerHover ?? params.get("hover");
   const items = useProjectedEntities(world, canvasRef.current);
-  const mine = world ? strongestOwnArmy(world.entities) : 0;
   useMapWorld(canvasRef, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
   const set = (key: string, value: string | null) => {
@@ -53,9 +51,9 @@ export const MapLabelLabView = () => {
         onClick={() => set("select", pointerHover)}
       />
       <div className="mll">
-        <MapPlates items={items} hovered={hovered} selected={selected} mine={mine} />
+        <MapPlates items={items} hovered={hovered} selected={selected} />
       </div>
-      <LabPanel zoom={zoom} mine={mine} items={items} set={set} />
+      <LabPanel zoom={zoom} items={items} set={set} />
       {error && <p className="absolute left-4 top-4 z-10 rounded bg-black/80 p-3 text-red-300">{error}</p>}
       {!world && !error && (
         <p role="status" className="absolute left-4 top-4 z-10 rounded bg-black/70 p-3 text-white">
@@ -66,15 +64,13 @@ export const MapLabelLabView = () => {
   );
 };
 
-/** The zoom, the system's rules, the yardstick, and how many things are on screen now. */
+/** The zoom, the system's rules, and how many things are on screen now. */
 const LabPanel = ({
   zoom,
-  mine,
   items,
   set,
 }: {
   zoom: MapZoom;
-  mine: number;
   items: readonly ProjectedEntity[];
   set: (key: string, value: string | null) => void;
 }) => {
@@ -89,10 +85,6 @@ const LabPanel = ({
       <dl className="mt-2 flex flex-col gap-1.5 leading-snug">
         <dt className="font-bold">At rest</dt>
         <dd>{PLATE_RULES.rest}</dd>
-        <dt className="font-bold">At a glance</dt>
-        <dd>
-          {PLATE_RULES.standing} Your strongest army: {formatCount(mine)} (troops × 1 / 3 / 9 by tier).
-        </dd>
         <dt className="font-bold">Hover</dt>
         <dd>{PLATE_RULES.hover}</dd>
         <dt className="font-bold">Selected</dt>
@@ -212,12 +204,15 @@ const centerOf = (entities: readonly MapLabelEntity[]) => {
   return sum.divideScalar(Math.max(1, realms.length)).setY(0);
 };
 
+/** An entity on screen with the tile it stands on (its centre and inner radius in pixels), which hover reads. */
+type HoverTarget = ProjectedEntity & { tile: { x: number; y: number; radius: number } };
+
 /** Each entity's anchor projected to the canvas, refreshed on every frame the camera moved. */
 const useProjectedEntities = (
   world: { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] } | null,
   canvas: HTMLCanvasElement | null,
-): ProjectedEntity[] => {
-  const [items, setItems] = useState<ProjectedEntity[]>([]);
+): HoverTarget[] => {
+  const [items, setItems] = useState<HoverTarget[]>([]);
   useEffect(() => {
     if (!world || !canvas) return;
     let frame = 0;
@@ -232,11 +227,17 @@ const useProjectedEntities = (
         last = signature;
         setItems(
           world.entities.flatMap((entity) => {
-            point.copy(entity.anchor).project(camera);
-            const x = ((point.x + 1) / 2) * width;
-            const y = ((1 - point.y) / 2) * height;
-            const onScreen = point.z < 1 && x > -40 && x < width + 40 && y > -40 && y < height + 40;
-            return onScreen ? [{ key: String(entity.entityId), entity, x, y }] : [];
+            const toScreen = (at: Vector3) => {
+              point.copy(at).project(camera);
+              return { x: ((point.x + 1) / 2) * width, y: ((1 - point.y) / 2) * height, z: point.z };
+            };
+            const { x, y, z } = toScreen(entity.anchor);
+            const onScreen = z < 1 && x > -40 && x < width + 40 && y > -40 && y < height + 40;
+            if (!onScreen) return [];
+            const tile = toScreen(entity.ground);
+            const edge = toScreen(entity.ground.clone().add(TILE_EDGE));
+            const tileRadius = Math.hypot(edge.x - tile.x, edge.y - tile.y);
+            return [{ key: String(entity.entityId), entity, x, y, tile: { x: tile.x, y: tile.y, radius: tileRadius } }];
           }),
         );
       }
@@ -248,12 +249,15 @@ const useProjectedEntities = (
   return items;
 };
 
-/** The entity whose label anchor is nearest the pointer, within a hex's reach on screen. */
-const nearest = (items: readonly ProjectedEntity[], x: number, y: number): string | null => {
+/** A hex's inner radius in world units: the pointer within it is on the tile. */
+const TILE_EDGE = new Vector3(Math.sqrt(3) / 2, 0, 0);
+
+/** The entity whose tile the pointer is over: its hex on screen, not its plate. */
+const nearest = (items: readonly HoverTarget[], x: number, y: number): string | null => {
   let best: { key: string; distance: number } | null = null;
   for (const item of items) {
-    const distance = Math.hypot(item.x - x, item.y + 18 - y);
-    if (distance < 40 && (!best || distance < best.distance)) best = { key: item.key, distance };
+    const distance = Math.hypot(item.tile.x - x, item.tile.y - y);
+    if (distance < item.tile.radius && (!best || distance < best.distance)) best = { key: item.key, distance };
   }
   return best?.key ?? null;
 };

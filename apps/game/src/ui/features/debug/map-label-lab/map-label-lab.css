@@ -1,7 +1,6 @@
-/* The map plates (owner's pick, round 2), in the War room HUD's look (hud/hud.css, index.css under classic-hud): Exo 2
-   text, the teal glass surface, gold hairlines. The side reads as the plate's left bar: yours gold, an ally teal, an
-   enemy red, an unowned thing stone. A strength reads as its chip's colour and glyph against the viewer's strongest
-   army: stronger red ▲, even amber =, weaker green ▼, open green. Every word is 14 px or more. */
+/* The map plates (owner's pick, rounds 2 and 3), in the War room HUD's look (hud/hud.css, index.css under
+   classic-hud): Exo 2 text, the teal glass surface, gold hairlines. The side reads as the plate's left bar: yours gold,
+   an ally teal, an enemy red, an unowned thing stone. Every word is 14 px or more; the row reads at 15. */
 .mll {
   --mll-glass: linear-gradient(180deg, rgba(25, 41, 48, 0.94), rgba(16, 28, 35, 0.96));
   --mll-hairline: rgba(223, 170, 84, 0.5);
@@ -45,32 +44,32 @@
   white-space: nowrap;
   border: 1px solid var(--mll-hairline);
   border-left: 3px solid var(--mll-side);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--mll-glass);
-  padding: 0 6px 0 4px;
-  font-size: 14px;
+  padding: 0 8px 0 6px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 .mll-plate__row {
   display: flex;
-  height: 22px;
+  height: 28px;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 .mll-plate__more {
   display: flex;
-  height: 20px;
+  height: 24px;
   align-items: center;
   gap: 6px;
   border-bottom: 1px solid rgba(223, 170, 84, 0.25);
 }
 .mll-plate__meter {
   position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 1px;
+  left: 6px;
+  right: 6px;
+  bottom: 2px;
   height: 3px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.14);
@@ -97,38 +96,36 @@
   font-weight: 700;
 }
 
-/* The guard: its tiers, the total, and its standing. */
+/* A troop stack: its painting (type and tier), the tier, the count. */
+.mll-troops {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* The guard's one number, set apart from the owner or the reward before it. */
 .mll-guard {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 4px;
+  gap: 4px;
+  border-left: 1px solid rgba(223, 170, 84, 0.3);
+  padding-left: 6px;
   font-weight: 700;
 }
-.mll-guard__tier {
-  color: var(--mll-own);
-}
-.mll-guard[data-standing="stronger"] {
-  background: rgba(255, 92, 72, 0.28);
-  color: #ffb3a8;
-}
-.mll-guard[data-standing="even"] {
-  background: rgba(227, 144, 1, 0.3);
-  color: #ffd27a;
-}
-.mll-guard[data-standing="weaker"],
-.mll-guard[data-standing="open"] {
-  background: rgba(102, 221, 171, 0.22);
-  color: #9ff0c9;
+/* Where an army comes from. */
+.mll-from {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-left: 1px solid rgba(223, 170, 84, 0.3);
+  padding-left: 6px;
+  color: rgba(244, 235, 220, 0.85);
 }
 
 /* A plate that found no room: the kind's painting in a disk ringed in the side's colour. */
 .mll-pin {
   display: flex;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   align-items: center;
   justify-content: center;
   border: 2px solid var(--mll-side);

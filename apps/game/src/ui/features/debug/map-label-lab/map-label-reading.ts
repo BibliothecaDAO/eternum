@@ -1,4 +1,4 @@
-import type { MapLabelEntity, MapLabelTroops } from "@/three/debug/map-label-lab-fixture";
+import type { MapLabelEntity, MapLabelTroops, MapLabelTroopType } from "@/three/debug/map-label-lab-fixture";
 
 const LOCAL_RANGE = 2 ** 32;
 
@@ -19,35 +19,22 @@ export const codeName = (entity: MapLabelEntity): string =>
     ? entity.name
     : `${KIND_WORD[entity.kind]} ${Math.floor(entity.entityId / LOCAL_RANGE)}·${entity.entityId % LOCAL_RANGE}`;
 
-/** Strength per troop by tier, as the game's troop limits read it (`tierStrength`, Frontier 1 / 3 / 9). */
-const TIER_STRENGTH = { 1: 1, 2: 3, 3: 9 } as const;
-
-export const troopStrength = (troops: readonly MapLabelTroops[]): number =>
-  troops.reduce((total, stack) => total + stack.count * TIER_STRENGTH[stack.tier], 0);
-
-/** What a thing's strength is to the viewer, against their strongest army: the one glance the map must answer. */
-export type Standing = "stronger" | "even" | "weaker" | "open";
-
-export const standingOf = (strength: number, mine: number): Standing => {
-  if (strength === 0) return "open";
-  const ratio = strength / Math.max(1, mine);
-  if (ratio >= 1.25) return "stronger";
-  if (ratio >= 0.8) return "even";
-  return "weaker";
+export const TROOP_WORD: Record<MapLabelTroopType, string> = {
+  crossbowman: "Crossbowman",
+  knight: "Knight",
+  paladin: "Paladin",
 };
 
-/** The viewer's strongest army: what every other thing is weighed against. */
-export const strongestOwnArmy = (entities: readonly MapLabelEntity[]): number =>
-  Math.max(0, ...entities.filter((e) => e.relation === "own" && e.army).map((e) => troopStrength([e.army!.troops])));
-
 /**
- * A guard on the plate, tier always before number: one slot as "T3 1,500"; several as their tiers in slot order, then
- * the total ("T1 T1 T1 T3", "2,400"); none, open.
+ * A guard at rest, one number (round 3): a single slot as that slot (its troop type, tier and count); several as the
+ * total count only, their slots left to the opened plate; none, open.
  */
-export const guardLine = (guards: readonly MapLabelTroops[]): { tiers: string[]; total: string } | null => {
-  if (guards.length === 0) return null;
-  const total = formatCount(guards.reduce((sum, slot) => sum + slot.count, 0));
-  return { tiers: guards.map((slot) => `T${slot.tier}`), total };
+export const restingGuard = (
+  guards: readonly MapLabelTroops[],
+): { kind: "slot"; slot: MapLabelTroops } | { kind: "total"; total: number } | { kind: "open" } => {
+  if (guards.length === 0) return { kind: "open" };
+  if (guards.length === 1) return { kind: "slot", slot: guards[0] };
+  return { kind: "total", total: guards.reduce((sum, slot) => sum + slot.count, 0) };
 };
 
 export const formatCount = (count: number) => count.toLocaleString("en-US");

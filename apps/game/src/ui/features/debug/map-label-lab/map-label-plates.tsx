@@ -1,22 +1,20 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import type { MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
+import type { MapLabelEntity, MapLabelTroops } from "@/three/debug/map-label-lab-fixture";
 
 import { stack, type LabelBox } from "./map-label-layout";
-import { codeName, formatCount, guardLine, standingOf, troopStrength, type Standing } from "./map-label-reading";
+import { codeName, formatCount, restingGuard, TROOP_WORD } from "./map-label-reading";
 
 /**
- * The owner's pick (round 2): plates that open, compact. At rest each plate answers one glance: an army's tier, troops
- * and stamina; a structure's owner and guard; a camp's or rift's reward and guard. Every guard and every other army is
- * weighed against the viewer's strongest army (stronger, even, weaker, open). A hover opens the plate by one line: whose
- * it is and its short name. Plates that meet stack upward, two steps at most, then drop to a pin.
+ * The owner's pick (rounds 2 and 3): plates that open. At rest a plate holds one row: an army's troops, stamina and
+ * home realm; a structure's owner and one guard number; a camp's or rift's reward and guard. Hovering the tile a thing
+ * stands on opens its plate upward, adding only what the row does not say. Plates that meet stack upward, two steps at
+ * most, then drop to a pin.
  */
 export const PLATE_RULES = {
-  rest: "Army: tier, troops, stamina bar. Realm and hyperstructure: owner, then the guard (one slot “T3 1,500”; several “T1 T1 T1 T3 2,000”), or Open. Camp and rift: its reward, then its guard.",
-  standing:
-    "Each guard and each other army is weighed against your strongest army: ▲ stronger (red), = even (amber), ▼ weaker (green), Open (green).",
+  rest: "Army: its troops (type, tier, count), stamina bar, and the realm it comes from. Realm and hyperstructure: owner and one guard number: a single slot as its troop type, tier and count; several as their total; none, Open. Camp and rift: its reward and its guard.",
   hover:
-    "The plate opens by one line: whose it is and its short name (“Camp 19·21”); a structure with several guard slots, each slot's count.",
+    "Hover the tile: the plate opens with its name (a realm's level), whose it is where the row does not say, and each guard slot's troop type, tier and count when there are several.",
   selected: "Stays open, ringed in gold.",
 } as const;
 
@@ -34,13 +32,10 @@ export const MapPlates = ({
   items,
   hovered,
   selected,
-  mine,
 }: {
   items: readonly ProjectedEntity[];
   hovered: string | null;
   selected: string | null;
-  /** The viewer's strongest army: the yardstick of every standing. */
-  mine: number;
 }) => {
   const boxes = items.map((item) => plateBox(item, hovered, selected));
   const lifts = stack(boxes);
@@ -74,13 +69,14 @@ export const MapPlates = ({
             data-yields={yields.has(item.key)}
             style={{
               transform: `translate(${item.x}px, ${item.y - (lift ?? 0)}px) translate(-50%, ${lift === undefined ? "-50%" : "-100%"})`,
-              zIndex: item.key === open?.key ? 5 : undefined,
+              // A pin sits under the plates around it; an opened plate over everything.
+              zIndex: item.key === open?.key ? 5 : lift === undefined ? 0 : 1,
             }}
           >
             {lift === undefined ? (
               <Pin entity={item.entity} />
             ) : (
-              <Plate entity={item.entity} mine={mine} open={item.key === open?.key} />
+              <Plate entity={item.entity} open={item.key === open?.key} />
             )}
           </div>
         );
@@ -89,16 +85,14 @@ export const MapPlates = ({
   );
 };
 
-const PLATE_HEIGHT = 24;
-const OPEN_LINE = 20;
+const PLATE_HEIGHT = 30;
+const OPEN_LINE = 24;
 
-/** The plate: its one-glance facts; opened, one line more above them (two for several guard slots). */
-const Plate = ({ entity, mine, open }: { entity: MapLabelEntity; mine: number; open: boolean }) => (
+/** The plate: its row of facts; opened, the lines the row does not hold stand above it. */
+const Plate = ({ entity, open }: { entity: MapLabelEntity; open: boolean }) => (
   <div className="mll-plate" data-open={open}>
     {open && <OpenLines entity={entity} />}
-    <div className="mll-plate__row">
-      {entity.army ? <ArmyFacts entity={entity} mine={mine} /> : <StructureFacts entity={entity} mine={mine} />}
-    </div>
+    <div className="mll-plate__row">{entity.army ? <ArmyRow entity={entity} /> : <StructureRow entity={entity} />}</div>
     {entity.army && (
       <span className="mll-plate__meter" title="Stamina">
         <i style={{ width: `${(100 * entity.army.stamina) / entity.army.staminaMax}%` }} />
@@ -107,70 +101,67 @@ const Plate = ({ entity, mine, open }: { entity: MapLabelEntity; mine: number; o
   </div>
 );
 
-const ArmyFacts = ({ entity, mine }: { entity: MapLabelEntity; mine: number }) => {
-  const troops = entity.army!.troops;
-  return (
-    <>
-      <Icon name={`knight-t${troops.tier}` as IconMeaning} size={18} />
-      <span className="mll-tier">T{troops.tier}</span>
-      <span className="tabular-nums">{formatCount(troops.count)}</span>
-      {entity.relation !== "own" && <StandingMark standing={standingOf(troopStrength([troops]), mine)} />}
-    </>
-  );
-};
-
-const StructureFacts = ({ entity, mine }: { entity: MapLabelEntity; mine: number }) => (
+/** An army: its troops, then the realm it comes from. */
+const ArmyRow = ({ entity }: { entity: MapLabelEntity }) => (
   <>
-    <Icon name={kindIcon(entity)} size={18} />
+    <Troops troops={entity.army!.troops} />
+    <span className="mll-from">
+      <Icon name="realm" size={16} />
+      {entity.homeName}
+    </span>
+  </>
+);
+
+/** A structure: its reward (a camp or a rift) or its owner, then one guard number. */
+const StructureRow = ({ entity }: { entity: MapLabelEntity }) => (
+  <>
+    <Icon name={kindIcon(entity)} size={20} />
     {entity.reward ? (
       <span className="mll-reward">
-        <Icon name={resourceMeaning(entity.reward.resource)} size={16} />
+        <Icon name={resourceMeaning(entity.reward.resource)} size={18} />
         <span className="tabular-nums">{formatCount(entity.reward.amount)}</span>
       </span>
     ) : (
       <span className="mll-owner">{entity.owner ?? "Unclaimed"}</span>
     )}
-    <GuardChip entity={entity} mine={mine} />
+    <RestingGuard entity={entity} />
   </>
 );
 
-/** The guard, tier before number, in the colour of its standing (yours plain). */
-const GuardChip = ({ entity, mine }: { entity: MapLabelEntity; mine: number }) => {
-  const line = guardLine(entity.guards);
-  const standing = entity.relation === "own" ? null : standingOf(troopStrength(entity.guards), mine);
-  if (!line)
-    return (
-      <span className="mll-guard" data-standing="open">
-        Open
-      </span>
-    );
-  return (
-    <span className="mll-guard" data-standing={standing ?? undefined}>
-      {line.tiers.map((tier, index) => (
-        <span key={index} className="mll-guard__tier">
-          {tier}
+const RestingGuard = ({ entity }: { entity: MapLabelEntity }) => {
+  const guard = restingGuard(entity.guards);
+  switch (guard.kind) {
+    case "open":
+      return <span className="mll-guard">Open</span>;
+    case "slot":
+      return (
+        <span className="mll-guard">
+          <Troops troops={guard.slot} />
         </span>
-      ))}
-      <span className="tabular-nums">{line.total}</span>
-      {standing && <Glyph standing={standing} />}
-    </span>
-  );
+      );
+    case "total":
+      return (
+        <span className="mll-guard">
+          <Icon name="defend" size={16} />
+          <span className="tabular-nums">{formatCount(guard.total)}</span>
+        </span>
+      );
+  }
 };
 
-const StandingMark = ({ standing }: { standing: Standing }) => (
-  <span className="mll-guard" data-standing={standing}>
-    <Glyph standing={standing} />
+/** A troop stack, its type shown by its painting: "[crossbow] T3 1,500"; spelled out, "Crossbowman T3 1,500". */
+const Troops = ({ troops, spelled = false }: { troops: MapLabelTroops; spelled?: boolean }) => (
+  <span className="mll-troops">
+    <Icon name={`${troops.type}-t${troops.tier}` as IconMeaning} size={20} />
+    {spelled && <span>{TROOP_WORD[troops.type]}</span>}
+    <span className="mll-tier">T{troops.tier}</span>
+    <span className="tabular-nums">{formatCount(troops.count)}</span>
   </span>
 );
 
-const GLYPH: Record<Standing, string> = { stronger: "▲", even: "=", weaker: "▼", open: "" };
-
-const Glyph = ({ standing }: { standing: Standing }) =>
-  GLYPH[standing] ? <span aria-label={standing}>{GLYPH[standing]}</span> : null;
-
 /**
- * What a hover adds: whose it is (an army's; a structure's row already says) and its name; for several guard slots,
- * each slot's count.
+ * What the opened plate adds, never what its row says: its name (a realm's level); whose it is where the row shows a
+ * reward or an army's home instead of the owner; each guard slot, spelled out, when the row showed only their total.
  */
 const OpenLines = ({ entity }: { entity: MapLabelEntity }) => (
   <>
@@ -178,18 +169,19 @@ const OpenLines = ({ entity }: { entity: MapLabelEntity }) => (
       {(entity.army || entity.reward) && (
         <span className="mll-owner">{entity.owner ?? (entity.kind === "rift" ? "Unclaimed" : "Bandits")}</span>
       )}
-      <span className="opacity-85">{codeName(entity)}</span>
+      <span>{codeName(entity)}</span>
       {entity.kind === "realm" && <span className="opacity-85">· Level {entity.level + 1}</span>}
     </div>
-    {entity.guards.length > 1 && (
-      <div className="mll-plate__more tabular-nums opacity-90">
-        {entity.guards.map((slot) => `T${slot.tier} ${formatCount(slot.count)}`).join(" · ")}
-      </div>
-    )}
+    {entity.guards.length > 1 &&
+      entity.guards.map((slot, index) => (
+        <div key={index} className="mll-plate__more">
+          <Troops troops={slot} spelled />
+        </div>
+      ))}
   </>
 );
 
-const openLines = (entity: MapLabelEntity) => 1 + (entity.guards.length > 1 ? 1 : 0);
+const openLines = (entity: MapLabelEntity) => 1 + (entity.guards.length > 1 ? entity.guards.length : 0);
 
 const Pin = ({ entity }: { entity: MapLabelEntity }) => (
   <div className="mll-pin">
@@ -223,24 +215,26 @@ const measure = (() => {
   return (text: string) => {
     context ??= document.createElement("canvas").getContext("2d");
     if (!context) return text.length * 8;
-    context.font = '600 14px "Exo 2"';
+    context.font = '600 15px "Exo 2"';
     return context.measureText(text).width;
   };
 })();
 
-/** A plate's box, from the words it will draw (icons and chips at their fixed widths). */
+/** A plate's box, from the words it will draw and its icons at their fixed widths. */
 const plateBox = (item: ProjectedEntity, hovered: string | null, selected: string | null): LabelBox => {
   const { entity } = item;
-  const icons = 18 + (entity.reward ? 16 : 0);
-  const line = guardLine(entity.guards);
+  const guard = restingGuard(entity.guards);
+  const guardWords =
+    guard.kind === "open"
+      ? "Open"
+      : guard.kind === "slot"
+        ? `T${guard.slot.tier} ${formatCount(guard.slot.count)}`
+        : formatCount(guard.total);
   const words = entity.army
-    ? `T${entity.army.troops.tier} ${formatCount(entity.army.troops.count)} ▲`
-    : [
-        entity.reward ? formatCount(entity.reward.amount) : (entity.owner ?? "Unclaimed"),
-        line ? `${line.tiers.join(" ")} ${line.total} ▲` : "Open",
-      ].join(" ");
-  const chips = entity.army ? 14 : 10 + (line?.tiers.length ?? 0) * 8;
-  const width = Math.ceil(measure(words) + icons + chips + 26);
+    ? `T${entity.army.troops.tier} ${formatCount(entity.army.troops.count)} ${entity.homeName}`
+    : `${entity.reward ? formatCount(entity.reward.amount) : (entity.owner ?? "Unclaimed")} ${guardWords}`;
+  const icons = entity.army ? 20 + 16 : 20 + (entity.reward ? 18 : 0) + (guard.kind === "open" ? 0 : 20);
+  const width = Math.ceil(measure(words) + icons + 48);
   return {
     id: item.key,
     x: item.x - width / 2,
