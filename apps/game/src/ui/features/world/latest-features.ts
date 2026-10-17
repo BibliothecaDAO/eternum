@@ -38,7 +38,7 @@ const allLatestFeatures: LatestFeature[] = [
     type: "feature",
     title: "The mist returns",
     description:
-      "At game end, spires contract their orbs and release a fractured veil across the map. Frontier keeps your realm clear. Results stays available; Escape skips the animation.",
+      "At game end, spires contract their orbs and release a fractured veil across the map. Frontier keeps your realm clear. Results stays available; Escape skips the animation from either map or realm view, then works as usual.",
   },
   {
     date: "2026-10-17",

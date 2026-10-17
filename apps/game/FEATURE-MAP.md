@@ -390,7 +390,9 @@ the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture
 
 A live game ending starts the nine-second spire-orb contraction, burst and fractured mist. Blitz freezes the whole map;
 Frontier spares the signed-in player's expedition realm. **See the results** opens Results immediately; **Escape** skips
-the cosmetic event. Opening an already-ended game shows the frozen state. Terrain and game facts stay intact.
+the cosmetic event through the scene shortcuts on both map and realm views. The next Escape resumes normal back-out;
+live games keep normal Escape behavior. Opening an already-ended game shows the frozen state. Terrain and game facts
+stay intact.
 
 The client uses at most two discovered/rule-defined spires. With none, it materialises on two actual unoccupied observed
 hexes, on opposite sides of the explored map. It never claims to know hidden spire coordinates. A map with no empty

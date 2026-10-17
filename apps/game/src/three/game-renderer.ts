@@ -1,6 +1,6 @@
 import { getGameModeId } from "@/config/game-modes";
 import { configManager } from "@bibliothecadao/eternum";
-import { resetGameEnd, skipGameEnd } from "./effects/endgame/state";
+import { resetGameEnd } from "./effects/endgame/state";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { GRAPHICS_DEV_GUI_ENABLED, createGraphicsGuiLifetime, createGuiFolder } from "@/three/utils/gui-manager";
@@ -315,23 +315,6 @@ export default class GameRenderer {
 
   public resolvePixelRatio(pixelRatio: number): number {
     return Math.min(pixelRatio, resolveRendererPixelRatioCap());
-  }
-
-  handleKeyEvent(event: KeyboardEvent): void {
-    const { key } = event;
-    if (key === "Escape" && skipGameEnd()) return;
-
-    switch (key) {
-      case "e":
-        break;
-      case "Escape":
-        if (this.sceneManager?.getCurrentScene() === SceneName.Hexception) {
-          this.sceneManager.switchScene(SceneName.WorldMap);
-        }
-        break;
-      default:
-        break;
-    }
   }
 
   onWindowResize() {
