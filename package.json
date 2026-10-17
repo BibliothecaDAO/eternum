@@ -79,6 +79,7 @@
     "typecheck": "pnpm --dir ./apps/game typecheck",
     "test": "pnpm --recursive run test",
     "check:forbidden-hosts": "node --test scripts/check-forbidden-hosts.test.mjs && node scripts/check-forbidden-hosts.mjs",
+    "check:test-scripts": "node --test scripts/check-test-scripts-run-once.test.mjs && node scripts/check-test-scripts-run-once.mjs",
     "lab:deploy-gameplay": "bun deploy/athanor/scripts/deploy-gameplay-contracts.ts",
     "lab:harness": "bun --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness/run.ts",
     "lab:harness:test": "bun test --tsconfig-override deploy/athanor/harness/tsconfig.json deploy/athanor/harness",

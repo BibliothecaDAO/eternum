@@ -200,7 +200,8 @@ If a required command fails or is unavailable, say so explicitly in the final ha
 
 - Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it.
 - In `apps/game`, use `pnpm test [files]` (the wrapper script).
-- In `packages/core`, use `pnpm exec vitest run` — bare `pnpm test` there is watch mode and never exits.
+- Every package's `pnpm test` runs once and exits (`vitest run`); `pnpm test:watch` watches. CI's static job fails a
+  `test` script that watches (`scripts/check-test-scripts-run-once.mjs`), so an unattended run never hangs on one.
 - Three load-sensitive files (`instanced-model.material-semantics`, `game-entry-preload`, `hyperstructure-model`) carry
   a 30s `vi.setConfig` test timeout because full-suite contention starves them past the 5s default on green code. If one
   trips anyway, verify it in isolation before blaming your change.
