@@ -310,6 +310,26 @@ export const GAME_TASKS = {
     ],
     ...TRANSFER_SENT,
   },
+  "blitz-order-hint": {
+    goal: "Blitz: with an army selected, a tile says what a right-click does there, its cost and its payoff",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "the next army", key: "Tab" },
+      { name: "a tile it has an order on, hovered", hover: "Right-click · (Explore|Move)" },
+    ],
+    done: `/Right-click · (Explore|Move) · \\d+ stamina/.test(document.body.innerText)`,
+  },
+  "blitz-order-refusal": {
+    goal: "Blitz: with an army selected, a tile with no order says why",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "the next army", key: "Tab" },
+      { name: "a tile it cannot order, hovered", hover: "Too far: move next to it|Needs \\d+ stamina" },
+    ],
+    done: `/Too far: move next to it|Needs \\d+ stamina/.test(document.body.innerText)`,
+  },
   "blitz-standings": {
     goal: "Blitz: see the standings, in a window as large as its table and rows",
     layouts: PHONE_AND_DESKTOP,

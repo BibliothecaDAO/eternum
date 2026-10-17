@@ -510,7 +510,7 @@ describe("a full modal opened from the map", () => {
     proveTask(
       liveMapBrowser({
         page: () =>
-          `<p>Troops / Resources</p><section data-popover-panel="help" data-box="${box}">Transfer Troops &amp; Relics</section>`,
+          `<p>Right-click · Transfer troops</p><section data-popover-panel="help" data-box="${box}">Transfer Troops &amp; Relics</section>`,
       }),
       "blitz-transfer",
     );

@@ -27,7 +27,8 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
 /**
  * Presses the first visible control inside `within` (or matched by it) whose words match `text`, scrolled to and clicked as a player
  * would; for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
- * clicks there (with `button`, right for an order sent at once); for `holdingTile`, moves it out until it rests on
+ * clicks there (with `button`, right for an order sent at once); for `hover`, moves it out until the page shows words
+ * matching that pattern and stops there, clicking nothing; for `holdingTile`, moves it out until it rests on
  * another of the player's holdings than the one selected, and clicks there; for `fill`, types `value` into that
  * field; for `key`, presses that key; for `word`, clicks the element showing that word, as agent-browser finds it.
  * False when nothing matched.
@@ -58,6 +59,15 @@ const pressStep = async (b, press, layout) => {
       `document.body.innerText.includes(${JSON.stringify(press.tile)})`,
     );
   if (press.holdingTile) return clickTileWhere(b, layout, HOLDING_SEARCH, press.button, ANOTHER_HOLDING_HOVERED);
+  if (press.hover)
+    return (
+      (await pointAtTileWhere(
+        b,
+        layout,
+        HOLDING_SEARCH,
+        `new RegExp(${JSON.stringify(press.hover)}).test(document.body.innerText)`,
+      )) !== null
+    );
   const selector = await b.evaluate(`(() => {
     const CONTROL = "button, a[href], [role=button], [role=tab]";
     const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})];
@@ -87,20 +97,25 @@ const ANOTHER_HOLDING_HOVERED = `(() => {
   return Boolean(hovered?.ownedByViewer && !hovered.selectedHolding);
 })()`;
 
-/** Moves the pointer out from the screen's centre until `found` holds, and clicks there with `button`. */
-const clickTileWhere = async (b, layout, search, button = "left", found) => {
+/** Moves the pointer out from the screen's centre until `found` holds, and leaves it there; null when it never does. */
+const pointAtTileWhere = async (b, layout, search, found) => {
   const centre = VIEWPORTS[layout].map((side) => side / 2);
   for (const point of spiralPoints(centre, search)) {
     await b.run("mouse", "move", String(point[0]), String(point[1]));
     await sleep(150);
-    if (await b.evaluate(found)) {
-      await b.run("mouse", "move", ...point.map(String));
-      await b.run("mouse", "down", button);
-      await b.run("mouse", "up", button);
-      return true;
-    }
+    if (await b.evaluate(found)) return point;
   }
-  return false;
+  return null;
+};
+
+/** Points at the first tile where `found` holds, and clicks there with `button`. */
+const clickTileWhere = async (b, layout, search, button = "left", found) => {
+  const point = await pointAtTileWhere(b, layout, search, found);
+  if (point === null) return false;
+  await b.run("mouse", "move", ...point.map(String));
+  await b.run("mouse", "down", button);
+  await b.run("mouse", "up", button);
+  return true;
 };
 
 /** One task from its view at rest: each press with the screenshot after it, then whether its end state shows. */
