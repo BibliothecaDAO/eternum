@@ -93,7 +93,8 @@ export function useImportantFeed() {
 
 /**
  * The stories the Events card tells, each from a read that holds them: every battle, raid and capture, the crates the
- * player opened (where its relics went) and the deliveries they unloaded (what landed where).
+ * player opened (where its relics went), the deliveries they unloaded (what landed where) and what their explores
+ * found (each explore's outcome).
  */
 function useEventsStories(address: string | null) {
   const { data: battles } = useStoryEvents(350, "BattleEvent");
@@ -101,9 +102,10 @@ function useEventsStories(address: string | null) {
   const { data: captures } = useStoryEvents(100, "StructureCapturedStory");
   const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
   const { data: deliveries } = useStoryEvents(50, "ResourceReceiveArrivalStory", address ?? undefined);
+  const { data: finds } = useStoryEvents(50, "ExplorationReward", address ?? undefined);
   return useMemo(
-    () => [...battles, ...raids, ...captures, ...crates, ...deliveries],
-    [battles, raids, captures, crates, deliveries],
+    () => [...battles, ...raids, ...captures, ...crates, ...deliveries, ...finds],
+    [battles, raids, captures, crates, deliveries, finds],
   );
 }
 

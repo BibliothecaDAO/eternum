@@ -57,11 +57,11 @@ describe("the leaderboard's columns", () => {
     );
     const header = html.slice(0, html.indexOf("Unseen player"));
     for (const [column, grant] of [
-      ["Tiles", "5 VP each"],
-      ["Crates", "250 VP each"],
-      ["Rifts/Camps", "300 VP each"],
-      ["HS Taken", "1.5K VP each"],
-      ["HS Held", "x VP/s"],
+      ["Tiles", "5 points each"],
+      ["Crates", "250 points each"],
+      ["Rifts/Camps", "300 points each"],
+      ["Hyperstructures taken", "1.5K points each"],
+      ["Hyperstructures held", "x points/s"],
     ]) {
       expect(header).toContain(`<span>${column}</span><span class="text-xs font-normal text-gold/55">${grant}</span>`);
     }
@@ -81,7 +81,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(html).toContain(
-      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 VP each · Crates 250 VP each · Rifts/Camps 300 VP each · HS Taken 1.5K VP each · HS Held x VP/s</p>',
+      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 points each · Crates 250 points each · Rifts/Camps 300 points each · Hyperstructures taken 1.5K points each · Hyperstructures held x points/s</p>',
     );
   });
 });

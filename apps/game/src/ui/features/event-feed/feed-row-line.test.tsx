@@ -38,7 +38,15 @@ vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: game
 vi.mock("@/three/scenes/worldmap-army-select-request", () => ({ requestArmySelection: game.selectArmy }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
-  configManager: { getActiveGameId: () => 1 },
+  configManager: {
+    getActiveGameId: () => 1,
+    getVictoryPointGrants: () => ({
+      exploreTile: 5,
+      openRelicCrate: 250,
+      claimCampFromBandits: 250,
+      claimHyperstructureFromBandits: 1000,
+    }),
+  },
   entityMapPosition: () => ({ x: 50, y: 60 }),
   structureMapPosition: (_store: unknown, structure: { entity_id: bigint }) =>
     structure.entity_id === 5n ? { x: 70, y: 80 } : null,

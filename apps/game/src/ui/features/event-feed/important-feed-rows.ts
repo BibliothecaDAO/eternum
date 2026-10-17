@@ -45,7 +45,8 @@ function isImportantPersonalRow(row: FeedRow): boolean {
  * What Events holds: battles and raids (anyone's, or only the player's under Mine), the news of the player's own
  * realms (level-ups, buildings, deliveries received), their caravans, and this session's sends and notices. Every
  * story comes from the game's history, so it is back after a reload; a send the history has a story for shows as
- * that story. Routine moves and point accrual remain in the world history.
+ * that story, whatever the story's notification level, so a send's row tells its outcome (what an explore found).
+ * Routine moves and point accrual remain in the world history.
  */
 export function selectImportantFeedRows(
   stories: ProcessedStoryEvent[],
@@ -54,7 +55,13 @@ export function selectImportantFeedRows(
   address: string | null,
   headlines: Headline[] = [],
 ): ImportantFeedRow[] {
-  const shown = oneStoryPerAction(stories.filter((event) => isEventsStory(event, filter, address)));
+  const shown = oneStoryPerAction(
+    withSendOutcomes(
+      stories.filter((event) => isEventsStory(event, filter, address)),
+      stories,
+      filter === "combat" ? [] : [...feed.inFlight, ...feed.recent],
+    ),
+  );
   const rows: ImportantFeedRow[] = shown.map((event) => ({
     kind: "story",
     id: `story:${event.id}`,
@@ -80,6 +87,30 @@ const oneRowPerId = (rows: ImportantFeedRow[]): ImportantFeedRow[] => {
 };
 
 /** A completed send whose story history holds: the story shows instead. */
+/**
+ * The Events stories, and for each of this session's shown, done sends that none of them tells, the stories that send
+ * wrote, whatever their level: what an explore found is its row's outcome. A routine send stays out, stories and all.
+ */
+const withSendOutcomes = (
+  told: ProcessedStoryEvent[],
+  stories: ProcessedStoryEvent[],
+  sends: FeedRow[],
+): ProcessedStoryEvent[] => {
+  const toldKeys = new Set(told.map((event) => sendKey(event.tx_hash)));
+  const shownSends = new Set(
+    sends.flatMap((row) =>
+      row.kind === "transaction" && row.transaction.status === "success" && isImportantPersonalRow(row)
+        ? [sendKey(row.transaction.hash)]
+        : [],
+    ),
+  );
+  const outcomes = stories.filter((event) => {
+    const key = sendKey(event.tx_hash);
+    return shownSends.has(key) && !toldKeys.has(key);
+  });
+  return [...told, ...outcomes];
+};
+
 const isToldByStory = (row: FeedRow, told: Set<string>): boolean =>
   row.kind === "transaction" && row.transaction.status === "success" && told.has(sendKey(row.transaction.hash));
 
@@ -134,7 +165,8 @@ const ENDED_MEMORY = 200;
  * Events' own short list, one rule: a row stays on screen 20 s from when it is first shown (its fade is its clock), in
  * its place, with its action's latest words, even once its sources drop it. Never more than `maxRows` at once. A row
  * about the player comes in on top when it arrives; with every slot taken, it takes the slot of the oldest shown row
- * not about the player, whose time on screen ends there. A row not about the player comes in only to a free slot, so
+ * not about the player (or, when all are the player's, the oldest), whose time on screen ends there, so none of the
+ * player's actions is lost to a full card. A row not about the player comes in only to a free slot, so
  * it never displaces one of the player's. A row comes in only while its event is within the window of now, and an
  * action whose time on screen is over never comes back.
  */
@@ -164,7 +196,10 @@ export function nextQuickFeed(
   for (const [key, row] of arriving) {
     if (admitted.length + shown.length >= context.maxRows) {
       if (!isAboutPlayer(row, context.address)) continue;
-      const displaced = shown.findLast((entry) => !isAboutPlayer(entry.row, context.address));
+      // The oldest row not about the player gives way; with every slot the player's own, the oldest of those does, so
+      // no action of the player's waits for a slot until its time to show has passed.
+      const displaced =
+        shown.findLast((entry) => !isAboutPlayer(entry.row, context.address)) ?? shown[shown.length - 1];
       if (!displaced) continue;
       shown = shown.filter((entry) => entry !== displaced);
       ended.push(displaced.key);

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Points first",
+    description:
+      'The top bar says how to win ("Most points in 1h wins") beside your points, and the start banner says what scores. Next up walks a first game by points: raise an army, explore, open a crate, take a camp or rift, then a Hyperstructure, and says when an army falls. Events rows say what came of each action, and the game says points everywhere.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Build cards say what they cost and make",
     description:
       "Each building in the Build window shows what it makes, named and per minute (+360 Wheat / min, +6 population cap), and what it costs with what you have (10 Labor (you have 1,574)). The switch reads Pay with Resources or Labor.",
@@ -49,9 +56,9 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-17",
-    title: "Leaderboard points, in VP",
+    title: "Leaderboard scoring",
     description:
-      "The leaderboard's columns say what each action earns in VP, read from the game: 5 VP a tile, 250 VP a crate or camp, 1K VP a hyperstructure taken, and x VP/s for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
+      "The leaderboard's columns say what each action earns in points, read from the game: 5 points a tile, 250 points a crate or camp, 1K points a hyperstructure taken, and x points/s for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
     type: "fix",
   },
   {

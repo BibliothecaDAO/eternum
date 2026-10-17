@@ -139,6 +139,27 @@ it("shows a completed send once its history story arrives as that story, which a
   expect(selectImportantFeedRows([story], empty, "all", "0x1").map((row) => row.id)).toEqual(["story:up"]);
 });
 
+it("tells a done send by the story it wrote, whatever its level, but leaves a routine send out with its stories", () => {
+  const send = (hash: string, type: TransactionType) => ({
+    kind: "transaction",
+    id: hash,
+    at: 25,
+    transaction: { hash, status: "success", type },
+  });
+  const feed = {
+    ...empty,
+    recent: [
+      send("0xe1", TransactionType.EXPLORE),
+      send("0xb1", TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION),
+    ],
+  } as unknown as FeedRows;
+  const found = { ...levelUp("found", 30, "0x1", "0xe1"), story: "ExplorationReward" } as ProcessedStoryEvent;
+  const made = { ...levelUp("made", 30, "0x1", "0xb1"), story: "ProductionStory" } as ProcessedStoryEvent;
+  expect(selectImportantFeedRows([found, made], feed, "all", "0x1").map((row) => row.id)).toEqual(["story:found"]);
+  // Without the send (a reload), the find is world history, not Events.
+  expect(selectImportantFeedRows([found], empty, "all", "0x1")).toEqual([]);
+});
+
 it("holds each event once, however many sources reach it", () => {
   const send = { kind: "transaction", id: "0xexplore", at: 25, transaction: { hash: "0xexplore", status: "pending" } };
   const feed = { ...empty, inFlight: [send], recent: [send] } as unknown as FeedRows;
@@ -220,6 +241,15 @@ it("keeps one row per action across send, story and the sources dropping it, and
   // Its fade ends; it never returns, whatever source brings it back while it is still recent.
   const over = endQuickFeedRow(dropped, keysOf(dropped)[0]);
   expect(keysOf(quick(over, eventsRows([story]), 112_000))).toEqual([]);
+});
+
+it("never loses one of the player's actions to a card full of their own: the oldest gives way", () => {
+  const mine = Array.from({ length: 5 }, (_, index) => battle(`m${index}`, 100_000 - index));
+  const full = quick(empty_, eventsRows(mine), 100_000);
+  const sixth = battle("m5", 101_000);
+  const next = quick(full, eventsRows([sixth, ...mine]), 101_000);
+  expect(keysOf(next)).toEqual([sendKey(sixth.tx_hash), ...keysOf(full).slice(0, 4)]);
+  expect(next.ended).toEqual([keysOf(full)[4]]);
 });
 
 it("stays bounded and never starves the player's news under a sustained flood of other battles", () => {

@@ -69,7 +69,7 @@ function ProfileHeader() {
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [
-    standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} VP`,
+    standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} points`,
     guild,
     spectating && name && `as ${name}`,
   ].filter(Boolean);

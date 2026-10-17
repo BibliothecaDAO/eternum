@@ -101,6 +101,13 @@ it.each([
   const card = (await open(width)).querySelector("svg[role=img]")!;
   expect(card.getAttribute("viewBox")).toBe(viewBox);
   // The same parts either way: the place, the points and the five ways they were scored.
-  for (const label of ["Points Secured", "Tiles Explored", "Crates Opened", "Rifts & Camps", "HS Taken", "HS Held"])
+  for (const label of [
+    "Points Secured",
+    "Tiles Explored",
+    "Crates Opened",
+    "Rifts & Camps",
+    "Hyperstructures taken",
+    "Hyperstructures held",
+  ])
     expect(card.textContent).toContain(label);
 });

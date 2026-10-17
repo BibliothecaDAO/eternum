@@ -27,7 +27,7 @@ import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
 
 /**
  * A player's detail beside the leaderboard: only what earns them points. Their points by activity, and the
- * hyperstructures paying them now, each with its share, its VP a second and a way to go to it.
+ * hyperstructures paying them now, each with its share, its points a second and a way to go to it.
  */
 export const PlayerId = ({
   selectedPlayer,
@@ -58,7 +58,7 @@ export const PlayerId = ({
         <span className={`min-w-0 flex-1 truncate ${HUD_HEADLINE}`}>{name || "Unknown player"}</span>
         {standing && (
           <span className={HUD_VALUE}>
-            #{standing.rank} · {currencyIntlFormat(standing.points)} VP
+            #{standing.rank} · {currencyIntlFormat(standing.points)} points
           </span>
         )}
       </header>
@@ -101,7 +101,7 @@ export const PointsByActivity = ({ breakdown }: { breakdown: PlayerActivityBreak
             {label}
             {stat.count > 0 && <span className="text-gold/60"> · {stat.count.toLocaleString()}</span>}
           </dt>
-          <dd className={HUD_VALUE}>{currencyIntlFormat(stat.points)} VP</dd>
+          <dd className={HUD_VALUE}>{currencyIntlFormat(stat.points)} points</dd>
         </div>
       ))}
     </dl>
@@ -125,7 +125,7 @@ const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
     <li className="flex items-center gap-2">
       <span className={`min-w-0 flex-1 truncate ${HUD_BODY}`}>{holding.name}</span>
       <span className="text-sm tabular-nums text-gold/70">{Math.round(holding.share * 100)}%</span>
-      <span className={HUD_VALUE}>{currencyIntlFormat(holding.perSecond)} VP/s</span>
+      <span className={HUD_VALUE}>{currencyIntlFormat(holding.perSecond)} points/s</span>
       {at && (
         <button
           type="button"

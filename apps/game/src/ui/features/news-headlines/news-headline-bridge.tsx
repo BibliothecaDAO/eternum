@@ -22,6 +22,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
+import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
@@ -41,6 +42,7 @@ export function NewsHeadlineBridge() {
 
   const address = useAccountStore((state) => state.account?.address);
   const startAt = useFactView(seasonClockView).gameStartMainAt;
+  const goal = usePointsGoal();
   const nowSeconds = useCurrentBlockTimestamp();
   const wasBeforeStart = useRef(false);
 
@@ -135,10 +137,10 @@ export function NewsHeadlineBridge() {
       type: "game-start",
       icon: "game-start",
       title: "The game has begun",
-      description: "The world is open. Let the campaign begin.",
+      description: goal.sentence,
       timestamp: Date.now(),
     });
-  }, [startAt, nowSeconds, enqueue]);
+  }, [startAt, nowSeconds, enqueue, goal.sentence]);
 
   useEffect(() => {
     const resolveMilestone = createBuildingMilestones([...setup.store.inGame("Building", getScopedGameId())]);

@@ -1,0 +1,20 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { expect, it } from "vitest";
+
+/** A word a player reads, in a string or between tags, that names points or Hyperstructures by an abbreviation. */
+const ABBREVIATED = /(?:["'`>])[^"'`<\n]*\b(?:VP|pts|HS)\b/g;
+
+const sources = (directory: string): string[] =>
+  readdirSync(directory).flatMap((name) => {
+    const path = join(directory, name);
+    if (statSync(path).isDirectory()) return name === "debug" ? [] : sources(path);
+    return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
+  });
+
+it("names the score one way, points, and spells Hyperstructure out, wherever a player reads it", () => {
+  const abbreviated = sources(join(__dirname, ".."))
+    .flatMap((path) => [...readFileSync(path, "utf8").matchAll(ABBREVIATED)].map((match) => `${path}: ${match[0]}`))
+    .toSorted();
+  expect(abbreviated).toEqual([]);
+});

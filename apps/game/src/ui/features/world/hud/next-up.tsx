@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { useStructureAttention } from "@/ui/features/world/containers/top-header/use-structure-attention";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { useNextUpShows } from "./next-up-shows";
+import { type CoachNextStep, useCoachSteps, useLostArmyAlert } from "./use-coach-steps";
 
 /** Tells the screen whether Next up shows a step, and that it shows none once it unmounts. */
 const usePublishShown = (step: NextStep | undefined) => {
@@ -33,17 +34,21 @@ const usePublishShown = (step: NextStep | undefined) => {
 };
 
 /** A realm's level-up, read and sent by the realm's own hook; or any other step, with its line and its one verb. */
-type NextStep =
+export type NextStep =
   | { key: string; kind: "level-up"; realmId: ID; name: string }
   | { key: string; kind: "order"; line: string; verb: string; busy: boolean; run: () => void };
 
 /**
- * The one thing to do next, with the others a tap away: the selected realm's level-up step when it can be taken (or
- * is in flight), then the structures under attack or with arrivals, then the suggested moves, where another realm's
- * level-up is that realm's own step. Its button is the screen's one primary action.
+ * The one thing to do next, with the others a tap away. First the alerts: structures under attack or with arrivals,
+ * and an army just lost. Then, as tips, the coach's route ranked by what scores (raise an army, explore, open a crate,
+ * take a camp or rift, take a Hyperstructure), then the selected realm's level-up and the suggested moves, where
+ * another realm's level-up is that realm's own step. Tips off (Settings) leaves the alerts alone. Its button is the
+ * screen's one primary action.
  */
-export const NextUp = () => {
-  const steps = useNextSteps();
+export const NextUp = () => <NextUpView steps={useNextSteps()} />;
+
+/** Next up as it draws a list of steps: the one shown, its verb, and the cursor to the others. */
+export const NextUpView = ({ steps }: { steps: NextStep[] }) => {
   const [cursor, setCursor] = useState(0);
   const index = steps.length === 0 ? 0 : cursor % steps.length;
   const step = steps[index] as NextStep | undefined;
@@ -138,6 +143,8 @@ function useNextSteps(): NextStep[] {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const levelUp = useRealmLevelUp(structureEntityId);
   const attention = useAttentionSteps();
+  const lostArmy = useLostArmyAlert();
+  const coach = useCoachSteps();
   const suggestions = useSuggestionSteps(structureEntityId);
   const tips = useWorldAppearanceStore((state) => state.nextUpTips);
   const structures = useFactView(playerStructuresView);
@@ -156,9 +163,20 @@ function useNextSteps(): NextStep[] {
         },
       ]
     : [];
+  const alerts = [...attention, ...lostArmy.map(orderStep)];
   // With tips off (Settings), Next up holds the alerts alone, and shows nothing without one.
-  return tips ? [...levelUpStep, ...attention, ...suggestions] : attention;
+  return tips ? [...alerts, ...coach.map(orderStep), ...levelUpStep, ...suggestions] : alerts;
 }
+
+/** A coach step or alert as Next up's own step: its line, its verb, and what the verb does. */
+const orderStep = (step: CoachNextStep): NextStep => ({
+  key: step.key,
+  kind: "order",
+  line: step.line,
+  verb: step.verb,
+  busy: false,
+  run: step.run,
+});
 
 /** Structures under attack or with arrivals waiting, each as a step that shows it. */
 function useAttentionSteps(): NextStep[] {

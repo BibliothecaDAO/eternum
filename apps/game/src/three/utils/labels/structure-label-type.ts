@@ -175,10 +175,10 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
       if (isOwned) {
         vpLabel.classList.add("text-order-brilliance/80");
-        vpLabel.textContent = "VP/s";
+        vpLabel.textContent = "points/s";
       } else {
         vpLabel.classList.add("text-muted-foreground/80");
-        vpLabel.textContent = "VP/s (unclaimed)";
+        vpLabel.textContent = "points/s (unclaimed)";
       }
 
       realmCountDisplay.appendChild(vpLabel);
@@ -380,10 +380,10 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
           vpLabel.className = "text-xxs font-normal";
           if (isOwned) {
             vpLabel.classList.add("text-order-brilliance/80");
-            vpLabel.textContent = "VP/s";
+            vpLabel.textContent = "points/s";
           } else {
             vpLabel.classList.add("text-muted-foreground/80");
-            vpLabel.textContent = "VP/s (unclaimed)";
+            vpLabel.textContent = "points/s (unclaimed)";
           }
 
           realmCountDisplay.className =
@@ -454,10 +454,10 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
         if (isOwned) {
           vpLabel.classList.add("text-order-brilliance/80");
-          vpLabel.textContent = "VP/s";
+          vpLabel.textContent = "points/s";
         } else {
           vpLabel.classList.add("text-muted-foreground/80");
-          vpLabel.textContent = "VP/s (unclaimed)";
+          vpLabel.textContent = "points/s (unclaimed)";
         }
 
         newRealmCountDisplay.appendChild(vpLabel);

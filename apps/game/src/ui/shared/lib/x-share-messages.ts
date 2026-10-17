@@ -57,7 +57,7 @@ export const twitterTemplates = {
   createdTribe: `⚔️ A NEW POWER RISES! ⚔️\n\nI, {addressName}, have founded the {tribeName} tribe!\n\n${tweetFooter}`,
 };
 
-const blitzShareTemplate = `Secured {placement} on {eventLabel} with {pointsLabel} pts 👑\n\n${tweetFooter}`;
+const blitzShareTemplate = `Secured {placement} on {eventLabel} with {pointsLabel} points 👑\n\n${tweetFooter}`;
 
 export const buildBlitzShareMessageText = ({
   placement,
@@ -165,7 +165,7 @@ export const buildGameReviewStepShareMessage = ({
 
   if (step === "leaderboard") {
     const podiumLines = data.topPlayers.map((entry) => {
-      return `#${entry.rank} ${getPlayerDisplayName(entry.address)} - ${formatReviewValue(entry.points)} pts`;
+      return `#${entry.rank} ${getPlayerDisplayName(entry.address)} - ${formatReviewValue(entry.points)} points`;
     });
     return [
       `Final standings for ${worldLabel} on Realms Blitz`,

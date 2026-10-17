@@ -26,12 +26,14 @@ import { useNavigate } from "react-router-dom";
 import {
   countOwnedStructures,
   type IdentityChipState,
+  type IdentityStanding,
   NO_OWNED_STRUCTURES,
   resolveIdentityChipState,
 } from "./identity-chip-state";
 import { LEADERBOARD_POPOVER_ID, LeaderboardSurface } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { TOP_PILL } from "./top-pill";
+import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 
 const formatPoints = (points: number): string => Math.round(points).toLocaleString();
 
@@ -171,17 +173,28 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
         </>
       );
     case "player":
-      return (
-        <>
-          <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-          <span className="max-w-[140px] truncate">{state.name}</span>
-          {state.standing && <Separator />}
-          {state.standing && <span>#{state.standing.rank}</span>}
-          {state.standing && <Separator />}
-          {state.standing && <span>{formatPoints(state.standing.points)} VP</span>}
-        </>
-      );
+      return <PlayerLabel name={state.name} standing={state.standing} />;
   }
+};
+
+/**
+ * The player's name, rank and points, then the game's goal, always on screen: the chip opens the leaderboard, where
+ * the scoring is.
+ */
+export const PlayerLabel = ({ name, standing }: { name: string; standing: IdentityStanding | null }) => {
+  const goal = usePointsGoal();
+  return (
+    <>
+      <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+      <span className="max-w-[140px] truncate">{name}</span>
+      {standing && <Separator />}
+      {standing && <span>#{standing.rank}</span>}
+      {standing && <Separator />}
+      {standing && <span>{formatPoints(standing.points)} points</span>}
+      <Separator />
+      <span className="text-gold/70">{goal.line}</span>
+    </>
+  );
 };
 
 const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): string => {

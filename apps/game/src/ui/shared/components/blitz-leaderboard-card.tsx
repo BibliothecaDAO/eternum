@@ -193,7 +193,7 @@ const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry;
         {rankSuffix && <span className="podium-rank-suffix">{rankSuffix}</span>}
       </div>
       <div className="podium-name">{name}</div>
-      <div className="podium-points">{formatValue(entry.points)} pts</div>
+      <div className="podium-points">{formatValue(entry.points)} points</div>
     </div>
   );
 };

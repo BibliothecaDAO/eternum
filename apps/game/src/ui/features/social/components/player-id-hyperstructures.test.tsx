@@ -30,7 +30,7 @@ import { PlayerId } from "./player-id";
 const PLAYER = 123n;
 const put = (model: string, keys: number[], value: object) =>
   fixture.store.applyFacts([{ model, key: hash.computePoseidonHashOnElements(keys), value }] as never);
-/** Hyperstructure 7: 1 VP a second times 2, a quarter of it the player's, last checkpointed at `startAt`. */
+/** Hyperstructure 7: 1 points a second times 2, a quarter of it the player's, last checkpointed at `startAt`. */
 const allocation = (startAt = 100n) => ({
   game_id: 23,
   entity_id: 7,
@@ -114,7 +114,7 @@ describe("the hyperstructures giving a player points", () => {
     draw();
     expect(host.textContent).toContain("Tower 7");
     expect(host.textContent).toContain("25%");
-    expect(host.textContent).toContain("0.5 VP/s");
+    expect(host.textContent).toContain("0.5 points/s");
   });
 
   it("keeps a still-paying hyperstructure listed through a checkpoint", () => {

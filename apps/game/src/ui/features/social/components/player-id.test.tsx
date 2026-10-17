@@ -12,7 +12,7 @@ const lines = (html: string) =>
   );
 
 describe("a player's points, beside the leaderboard", () => {
-  it("lists only the activities that earned points, each with its count and VP", () => {
+  it("lists only the activities that earned points, each with its count and points", () => {
     const html = renderToStaticMarkup(
       <PointsByActivity
         breakdown={{
@@ -25,10 +25,10 @@ describe("a player's points, beside the leaderboard", () => {
       />,
     );
     expect(lines(html)).toEqual([
-      "Tiles explored · 123 = 615 VP",
-      "Rifts and camps taken · 3 = 750 VP",
-      "Hyperstructures taken · 2 = 2K VP",
-      "Hyperstructures held = 2K VP",
+      "Tiles explored · 123 = 615 points",
+      "Rifts and camps taken · 3 = 750 points",
+      "Hyperstructures taken · 2 = 2K points",
+      "Hyperstructures held = 2K points",
     ]);
   });
 

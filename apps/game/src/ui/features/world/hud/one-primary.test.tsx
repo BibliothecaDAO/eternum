@@ -7,6 +7,8 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
     select({ structureEntityId: 1, arrivedArrivalStructureIds: [1] }),
 }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
+// The coach's route reads the map and the history; coach.test.ts covers it. Here Next up holds the realm's own steps.
+vi.mock("./use-coach-steps", () => ({ useCoachSteps: () => [], useLostArmyAlert: () => [] }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: { inGame: () => [] } } }) }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1, useNowMs: () => 1000 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
@@ -100,9 +102,10 @@ describe("one filled gold action at a time", () => {
       shown.push(nextUp().querySelector("p")!.textContent!);
       advance();
     }
+    // Alerts lead, then the tips: the selected realm's step, then another realm's.
     expect(shown).toEqual([
-      "Realm is ready to be provisioned.",
       "Resources arrived at Realm.",
+      "Realm is ready to be provisioned.",
       "North is ready to be provisioned.",
     ]);
   });

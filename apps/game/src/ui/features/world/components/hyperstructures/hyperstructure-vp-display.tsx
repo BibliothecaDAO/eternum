@@ -28,7 +28,7 @@ export const HyperstructureVPDisplay = ({
       {formatPointsPerSecond(pointsPerSecond)}
     </span>
     <span className={`text-xxs font-normal ${isOwned ? "text-order-brilliance/80" : ""}`}>
-      {isOwned ? "VP/s" : "VP/s (unclaimed)"}
+      {isOwned ? "points/s" : "points/s (unclaimed)"}
     </span>
     <span className="ml-auto text-xxs text-gold/50">{realmCount} realms</span>
   </div>

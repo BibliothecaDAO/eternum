@@ -405,12 +405,12 @@ const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
         points: highlight?.riftPoints,
       },
       {
-        label: "HS Taken",
+        label: "Hyperstructures taken",
         count: highlight?.hyperstructuresConquered,
         points: highlight?.hyperstructurePoints,
       },
       {
-        label: "HS Held",
+        label: "Hyperstructures held",
         count: highlight?.hyperstructuresHeld,
         points: highlight?.hyperstructuresHeldPoints,
       },
@@ -465,12 +465,12 @@ const BlitzHighlightCard = forwardRef<SVGSVGElement, BlitzHighlightCardProps>(
             </div>
 
             <div className="stat stat-hs-taken">
-              <div className="stat-label">HS Taken</div>
+              <div className="stat-label">Hyperstructures taken</div>
               <div className="stat-value">{statBreakdown[3].combinedValue}</div>
             </div>
 
             <div className="stat stat-hs-held">
-              <div className="stat-label">HS Held</div>
+              <div className="stat-label">Hyperstructures held</div>
               <div className="stat-value">{statBreakdown[4].combinedValue}</div>
             </div>
           </div>

@@ -49,7 +49,7 @@ function StandingsRows() {
       <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-[10px] text-gold/50">
         <span>#</span>
         <span>Player</span>
-        <span className="text-right">VP</span>
+        <span className="text-right">Points</span>
         <span className="text-right">Δ tick</span>
       </div>
       {rows.map((row) => {

@@ -54,11 +54,11 @@ interface PlayerWithActivityStats extends PlayerCustom {
 
 const formatActivityValue = (count: number, points: number): string => {
   if (count > 0 && points > 0) {
-    return `${COUNT_FORMATTER.format(count)} · ${currencyIntlFormat(points)} pts`;
+    return `${COUNT_FORMATTER.format(count)} · ${currencyIntlFormat(points)} points`;
   }
 
   if (count > 0) return COUNT_FORMATTER.format(count);
-  if (points > 0) return `${currencyIntlFormat(points)} pts`;
+  if (points > 0) return `${currencyIntlFormat(points)} points`;
   return "—";
 };
 
@@ -286,7 +286,7 @@ const resolveColumns = (
   grants: VictoryPointGrants,
   mmr: MmrForecast["status"],
 ): PlayerListColumn[] => {
-  const each = (points: number) => `${currencyIntlFormat(points)} VP each`;
+  const each = (points: number) => `${currencyIntlFormat(points)} points each`;
   const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
   return [
     { label: "Rank", align: "justify-center text-center" },
@@ -301,13 +301,13 @@ const resolveColumns = (
       rule: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
     },
     {
-      label: "HS Taken",
+      label: "Hyperstructures taken",
       align: activity,
       grant: each(grants.claimHyperstructureFromBandits),
       rule: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
     },
     {
-      label: "HS Held",
+      label: "Hyperstructures held",
       align: activity,
       ...describeHyperstructureHold(grants),
     },
