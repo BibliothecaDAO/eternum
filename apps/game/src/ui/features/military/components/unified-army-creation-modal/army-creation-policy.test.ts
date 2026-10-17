@@ -156,15 +156,13 @@ describe("how many can go, and where troops come from", () => {
   });
 
   it("names the barracks that trains a troop and what it is made from, per troop", () => {
-    expect(describeTroopSource("Knight T1", [{ resource: ResourcesIds.Wheat, perTroop: 2 }])).toBe(
-      "Knight T1 are trained by a Knight T1 barracks on the realm board, from 2 wheat each.",
-    );
+    // Blitz's Knight T1 recipe, per troop: ten from 2 wheat and 0.8 copper.
     expect(
-      describeTroopSource("Paladin T2", [
-        { resource: ResourcesIds.Wheat, perTroop: 2 },
-        { resource: ResourcesIds.Paladin, perTroop: 1 },
+      describeTroopSource("Knight T1", [
+        { resource: ResourcesIds.Wheat, perTroop: 0.2 },
+        { resource: ResourcesIds.Copper, perTroop: 0.08 },
       ]),
-    ).toBe("Paladin T2 are trained by a Paladin T2 barracks on the realm board, from 2 wheat and 1 paladin each.");
+    ).toBe("Knight T1 are trained by a Knight T1 barracks on the realm board, from 0.2 wheat and 0.08 copper each.");
     expect(describeTroopSource("Knight T1", [])).toBe(
       "Knight T1 are trained by a Knight T1 barracks on the realm board.",
     );

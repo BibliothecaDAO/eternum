@@ -560,16 +560,24 @@ function resolveOpeningTroop(options: TroopSelectionOption[], mode: GameModeConf
 
 /** The selected troop's barracks output now, read the way the resource bar reads production. */
 /** What the structure trains of this troop; with no structure nothing is read and nothing trains. */
-/** A troop's recipe inputs, per troop: what its barracks trains it from. */
+/**
+ * What a troop's barracks trains it from, per troop: its resource recipe (complex inputs, the arena games' only path),
+ * else its labor-paid one (simple inputs). Deployment charges are a separate cost and never part of this.
+ */
 function readTroopRecipe(store: ReturnType<typeof useGame>["setup"]["store"], troop: SelectedTroopCombo) {
   const recipe = store.get("ProductionRecipe", {
     game_id: configManager.getActiveGameId(),
     resource_type: getTroopResourceId(troop.type, troop.tier),
   });
-  if (!recipe || recipe.simple_output === 0n) return [];
-  return recipe.simple_inputs.map((input) => ({
+  if (!recipe) return [];
+  const [inputs, output] =
+    recipe.complex_output > 0n
+      ? [recipe.complex_inputs, recipe.complex_output]
+      : [recipe.simple_inputs, recipe.simple_output];
+  if (output === 0n) return [];
+  return inputs.map((input) => ({
     resource: input.resource_type as ResourcesIds,
-    perTroop: Number(input.amount) / Number(recipe.simple_output),
+    perTroop: Number(input.amount) / Number(output),
   }));
 }
 
