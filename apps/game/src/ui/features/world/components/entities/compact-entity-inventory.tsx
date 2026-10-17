@@ -1,4 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { useRelicPayerEssence } from "@/ui/features/relics/hooks/use-relic-activation";
+import { coversRelicCost, relicLine, relicShortName } from "@/ui/features/relics/relic-words";
 
 import { memo, useCallback, useMemo } from "react";
 
@@ -8,7 +10,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
+import type { RelicHolderPreview } from "@/ui/features/relics/components/relic-activation-selector";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
 import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
 import {
@@ -186,6 +188,10 @@ const getResourceItemClass = (variant: InventoryItemVariant) =>
     ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
     : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
 
+/** A relic reads at a glance wherever its chip shows: its painting large, its count at 14 px, its name beneath. */
+const RELIC_ICON_SIZE = "lg";
+const RELIC_COUNT_CLASS = "text-sm";
+
 const getRelicItemClass = (item: DisplayItem) => {
   if (item.isActive) {
     return "border-relic2/70 bg-[linear-gradient(180deg,rgba(165,124,255,0.2),rgba(14,10,22,0.92))] shadow-[inset_0_1px_0_rgba(210,185,255,0.18),0_0_12px_rgba(165,124,255,0.16)]";
@@ -195,7 +201,7 @@ const getRelicItemClass = (item: DisplayItem) => {
     return "border-gold/80 bg-[linear-gradient(180deg,rgba(166,117,34,0.22),rgba(22,12,30,0.94))] shadow-[inset_0_1px_0_rgba(255,214,102,0.22),0_0_14px_rgba(223,170,84,0.16)]";
   }
 
-  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-kit-muted";
+  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-gold/65";
 };
 
 const getInventoryItemClass = (item: DisplayItem, variant: InventoryItemVariant) =>
@@ -222,6 +228,10 @@ export const CompactEntityInventory = memo(
     const closeSurface = usePopoverStore((state) => state.closeSurface);
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
+    const payerEssence = useRelicPayerEssence(
+      allowRelicActivation ? entityId : undefined,
+      recipientType === RelicRecipientType.Explorer,
+    );
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
     const items = useMemo(
       () => buildDisplayItems(resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers),
@@ -262,7 +272,7 @@ export const CompactEntityInventory = memo(
     );
 
     if (displayItems.length === 0) {
-      return <p className="text-sm text-kit-muted">{emptyMessage}</p>;
+      return <p className="text-xxs text-gold/60 italic">{emptyMessage}</p>;
     }
 
     // Tight tiles are a fixed width in a wrapping row so they stay the same size
@@ -275,7 +285,7 @@ export const CompactEntityInventory = memo(
 
     const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
-    const amountClass = variant === "tight" ? "text-sm" : "text-sm";
+    const amountClass = variant === "tight" ? "text-xs" : "text-xxs";
 
     const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
     const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
@@ -287,6 +297,8 @@ export const CompactEntityInventory = memo(
       const itemName = relicInfo?.name ?? resourceDef?.trait ?? ResourcesIds[item.resourceId] ?? "resource";
       const isActivatableRelic = item.isRelic && item.canActivate && !item.isActive;
       const isClickableRelic = allowRelicActivation && isActivatableRelic && entityId && entityType != null;
+      // A relic its holder cannot pay to activate stays clickable (its activation says what is missing) but not ready.
+      const isAffordable = isClickableRelic && coversRelicCost(item.resourceId, payerEssence);
 
       const heroPadding = "px-2.5 py-2";
       const heroIconSize = "sm";
@@ -294,29 +306,42 @@ export const CompactEntityInventory = memo(
       const itemVariant = options.hero ? "hero" : "default";
 
       // Tight (non-hero) tiles get a fixed width; grid/hero tiles fill their cell.
-      const widthClass = variant === "tight" && !options.hero ? "w-14" : "w-full";
+      const widthClass = variant === "tight" && !options.hero ? (item.isRelic ? "w-auto min-w-14" : "w-14") : "w-full";
 
       const itemClasses = cn(
-        "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        "flex appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        // Grid cells share a row's height; a tight row's chips are as tall as what they hold.
+        variant === "tight" && !options.hero ? undefined : "h-full",
         widthClass,
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
         isClickableRelic &&
-          "animate-relic-ready cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+        isClickableRelic && (isAffordable ? "animate-relic-ready" : "opacity-60"),
       );
 
       const itemContent = (
         <>
           <ResourceIcon
-            resource={ResourcesIds[item.resourceId]}
-            size={options.hero ? heroIconSize : iconSize}
+            resource={item.resourceId}
+            size={options.hero ? heroIconSize : item.isRelic ? RELIC_ICON_SIZE : iconSize}
             withTooltip={false}
           />
-          <span className={cn(options.hero ? heroAmountClass : amountClass, "font-semibold leading-none text-gold/95")}>
+          <span
+            className={cn(
+              options.hero ? heroAmountClass : item.isRelic ? RELIC_COUNT_CLASS : amountClass,
+              "font-semibold leading-none text-gold/95",
+            )}
+          >
             {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>
+          {relicInfo && !options.hero && (
+            <span className="mt-1 max-w-full truncate text-xs leading-none text-gold/80">
+              {relicShortName(item.resourceId)}
+            </span>
+          )}
           {showLabels && resourceDef && (
-            <span className="mt-0.5 text-sm text-kit-muted truncate" title={resourceDef.trait}>
+            <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
               {resourceDef.ticker ?? resourceDef.trait}
             </span>
           )}
@@ -332,7 +357,7 @@ export const CompactEntityInventory = memo(
             className={itemClasses}
             onClick={() => handleRelicClick(item)}
             aria-label={`Activate ${itemName}`}
-            title={`Activate ${itemName}`}
+            data-tip={`Activate · ${relicLine(item.resourceId, payerEssence)}`}
           >
             {itemContent}
           </button>
@@ -343,7 +368,13 @@ export const CompactEntityInventory = memo(
         <div
           key={`inventory-item-${item.resourceId}`}
           className={itemClasses}
-          title={item.isRelic && !item.canActivate ? `${itemName} cannot be used by this entity` : itemName}
+          data-tip={
+            item.isRelic
+              ? item.canActivate
+                ? relicLine(item.resourceId)
+                : `${relicLine(item.resourceId)} It cannot be used by this holder.`
+              : itemName
+          }
         >
           {itemContent}
         </div>
@@ -359,7 +390,7 @@ export const CompactEntityInventory = memo(
           <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
         )}
         {showHiddenCount && hiddenCount > 0 && (
-          <span className="text-sm text-kit-muted">
+          <span className="text-[10px] text-gold/60">
             Showing {visibleItems.length} of {displayItems.length}
           </span>
         )}

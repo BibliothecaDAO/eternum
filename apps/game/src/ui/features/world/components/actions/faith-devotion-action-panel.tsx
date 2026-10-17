@@ -143,17 +143,14 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       return currentWonderEntry.wonderName;
     }
 
-    return `Wonder #${devotionStatus.wonderId.toString()}`;
+    return "Wonder";
   }, [currentWonderEntry, devotionStatus]);
 
   const openDevotionModal = useCallback(() => {
     openSurface({
       id: "faith-devotion",
       content: (
-        <FaithDevotionModal
-          structureEntityId={structureEntityId}
-          structureLabel={structureName ?? `Structure #${String(structureEntityId)}`}
-        />
+        <FaithDevotionModal structureEntityId={structureEntityId} structureLabel={structureName ?? "Structure"} />
       ),
     });
   }, [structureEntityId, structureName, openSurface]);
@@ -164,7 +161,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       content: (
         <WonderFaithDetailModal
           wonderId={structureEntityId}
-          fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+          fallbackWonderName={structureName ?? "Wonder"}
           onClose={closeSurface}
         />
       ),
@@ -211,7 +208,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
       <div className={cn("flex flex-col gap-2", className)}>
         <WonderFaithDetailPanel
           wonderId={structureEntityId}
-          fallbackWonderName={structureName ?? `Wonder #${String(structureEntityId)}`}
+          fallbackWonderName={structureName ?? "Wonder"}
           compact
           className="min-h-0 flex-none"
         />
@@ -375,7 +372,6 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         wonder_id: selectedWonderId,
       });
 
-      toast.success("Devotion updated.");
       closeModal();
     } catch (error) {
       toast.failed(error, "Failed to update devotion.");
@@ -392,34 +388,36 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
       bodyClassName="overflow-auto"
     >
       <div className="flex flex-col gap-3 p-4">
-        <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-sm text-gold/75">
+        <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xxs text-gold/75">
           <p>
             Structure: <span className="font-semibold text-gold">{structureLabel}</span>
           </p>
           <p className="mt-1">
             Current devotion:{" "}
             <span className="font-semibold text-gold">
-              {devotionStatus ? `Wonder #${devotionStatus.wonderId.toString()}` : "None"}
+              {devotionStatus
+                ? (wonderEntries.find((entry) => entry.wonderId === devotionStatus.wonderId)?.wonderName ?? "Wonder")
+                : "None"}
             </span>
           </p>
         </div>
 
         {isLoadingWonders ? (
-          <div className="flex items-center justify-center py-8 text-sm text-gold/70">
+          <div className="flex items-center justify-center py-8 text-xs text-gold/70">
             <SemanticIcon name="refresh" className="mr-2 h-4 w-4 animate-spin" />
             Loading wonders...
           </div>
         ) : wondersError ? (
-          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-sm text-red-200/90">
+          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-xs text-red-200/90">
             {getErrorMessage(wondersError, "Failed to load wonders.")}
           </div>
         ) : wonderEntries.length === 0 ? (
-          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-sm text-gold/75">
+          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xs text-gold/75">
             No wonders available in this world yet.
           </div>
         ) : (
           <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto rounded-md border border-gold/20 bg-black/25">
-            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-sm text-gold/70">
+            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-xxs uppercase tracking-[0.2em] text-gold/70">
               <span>Wonder</span>
               <span className="text-right">FP/sec</span>
               <span className="text-right">Followers</span>
@@ -439,13 +437,13 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
                     onClick={() => setSelectedWonderId(entry.wonderId)}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-gold">{entry.wonderName}</span>
-                      <span className="block truncate text-sm text-kit-muted">{buildWonderOwnerLabel(entry)}</span>
+                      <span className="block truncate text-xs font-semibold text-gold">{entry.wonderName}</span>
+                      <span className="block truncate text-xxs text-gold/65">{buildWonderOwnerLabel(entry)}</span>
                     </span>
-                    <span className="text-right font-mono text-sm text-gold/85">
+                    <span className="text-right font-mono text-xs text-gold/85">
                       {entry.faithPointsPerSecond.toLocaleString()}
                     </span>
-                    <span className="text-right font-mono text-sm text-gold/85">
+                    <span className="text-right font-mono text-xs text-gold/85">
                       {entry.followerCount.toLocaleString()}
                     </span>
                   </button>
@@ -456,7 +454,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         )}
 
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 text-sm text-kit-muted">
+          <div className="min-w-0 text-xxs text-gold/65">
             {selectedWonder ? (
               <span className="truncate">
                 Selected: <span className="font-semibold text-gold">{selectedWonder.wonderName}</span>
@@ -466,12 +464,13 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Button size="xs" variant="outline" onClick={closeModal} disabled={isSubmitting}>
+            <Button size="xs" variant="outline" forceUppercase={false} onClick={closeModal} disabled={isSubmitting}>
               Cancel
             </Button>
             <Button
               size="xs"
               variant="gold"
+              forceUppercase={false}
               isLoading={isSubmitting}
               disabled={!selectedWonderId || alreadyDevotedToSelection}
               onClick={() => {

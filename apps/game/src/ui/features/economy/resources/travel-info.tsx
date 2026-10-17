@@ -1,25 +1,41 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { formatArrivalTime } from "@/ui/utils/utils";
+import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useGame } from "@/hooks/context/game-context";
 
-import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeightKg } from "@bibliothecadao/eternum";
+import {
+  bankPickupTravelSeconds,
+  calculateDonkeysNeeded,
+  deliveryLandsAt,
+  divideByPrecision,
+  getTotalResourceWeightKg,
+  isMilitaryResource,
+} from "@bibliothecadao/eternum";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
+/**
+ * A bank pickup's carriage: when the goods land at the structure, their weight, and the donkeys it burns. The landing
+ * is the chain's: the donkeys' round trip from the bank, at the troops' pace when troops are among the goods, landing
+ * at the end of the delivery tick it ends in.
+ */
 export const TravelInfo = ({
   entityId,
+  bankId,
   resources,
-  travelTime,
   setCanCarry,
   isAmm,
 }: {
   entityId: ID;
+  bankId: ID;
+  /** The goods the donkeys bring back from the bank. */
   resources: Resource[];
-  travelTime?: number;
   setCanCarry?: (canContinue: boolean) => void;
   isAmm?: boolean;
 }) => {
+  const { setup } = useGame();
+  const now = useNowSeconds();
   const resourceManager = useResourceManager(entityId);
   const currentDefaultTick = useCurrentDefaultTick();
   const resourceWeightKg = getTotalResourceWeightKg(resources);
@@ -34,7 +50,15 @@ export const TravelInfo = ({
     (resource) => resource.resourceId === ResourcesIds.Donkey || resource.resourceId === ResourcesIds.Lords,
   );
   const canCarry = onlyWeightlessResources || (donkeyBalance !== undefined && donkeyBalance >= neededDonkeys);
-  const formattedArrivalTime = formatArrivalTime(calculateArrivalTime(travelTime));
+  const road = bankPickupTravelSeconds(
+    bankId,
+    entityId,
+    setup.store,
+    resources.some((resource) => isMilitaryResource(resource.resourceId)),
+  );
+  const formattedArrivalTime = formatArrivalTime(
+    road === undefined ? null : new Date(deliveryLandsAt(now, road) * 1000),
+  );
 
   useEffect(() => {
     setCanCarry?.(canCarry);
@@ -65,62 +89,62 @@ export const TravelInfo = ({
           </tr>
         </tbody>
       </table>
-      <ResourceWeight className="mt-2 text-sm opacity-75" />
+      <ResourceWeight className="mt-2 text-xs opacity-75" />
     </>
   );
 };
 
 const ResourceWeight = ({ className }: { className?: string }) => {
   return (
-    <div className={`text-sm text-gray-200 mx-auto ${className}`}>
-      <p className="text-sm">Resource weights per unit:</p>
+    <div className={`text-xs text-gray-200 mx-auto ${className}`}>
+      <p className="italic text-xs">Resource weights per unit:</p>
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 my-1">
         {/* Zero weight resources (Lords and Donkey) */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-sm font-medium">0 kg/unit</div>
+          <div className="text-center text-gold/90 text-xs font-medium">0 kg/unit</div>
           <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Lords]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Donkey]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Donkey} size="sm" />
           </div>
         </div>
 
         {/* Ancient Fragments */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-sm font-medium">0.1 kg/unit</div>
+          <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
           <div className="flex items-center justify-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.AncientFragment]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.AncientFragment} size="sm" />
             <span className="ml-1 text-2xs">(Fragment)</span>
           </div>
         </div>
 
         {/* Food resources */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-sm font-medium">0.1 kg/unit</div>
+          <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
           <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wheat]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Fish]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Wheat} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Fish} size="sm" />
             <span className="ml-1 text-2xs">(Food)</span>
           </div>
         </div>
 
         {/* Resource materials */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-sm font-medium">1 kg/unit</div>
+          <div className="text-center text-gold/90 text-xs font-medium">1 kg/unit</div>
           <div className="flex items-center justify-center">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Wood]} size="xs" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Stone]} size="xs" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Gold]} size="xs" />
+            <ResourceIcon resource={ResourcesIds.Wood} size="xs" />
+            <ResourceIcon resource={ResourcesIds.Stone} size="xs" />
+            <ResourceIcon resource={ResourcesIds.Gold} size="xs" />
             <span className="ml-1 text-2xs">(Resources)</span>
           </div>
         </div>
 
         {/* Troops */}
         <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30 col-span-2">
-          <div className="text-center text-gold/90 text-sm font-medium">5 kg/unit (All Troops)</div>
+          <div className="text-center text-gold/90 text-xs font-medium">5 kg/unit (All Troops)</div>
           <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Knight]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Crossbowman]} size="sm" />
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Paladin]} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Knight} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Crossbowman} size="sm" />
+            <ResourceIcon resource={ResourcesIds.Paladin} size="sm" />
           </div>
         </div>
       </div>

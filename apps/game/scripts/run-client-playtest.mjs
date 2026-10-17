@@ -276,16 +276,19 @@ async function playRun(context) {
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     record.rpcSends = await recordRpcSends(devTools);
     record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
+    // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
+    // kept whole (the browser records into a ring buffer, and the boot is overwritten first) and costs gigabytes.
+    if (context.trace) browser.run(["trace", "start"]);
     // A player is signed in first, on the sign-in page, then opens the home page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
     else browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
+    if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
-    if (context.trace) browser.run(["trace", "start"]);
 
     for (const [index, step] of steps.entries()) {
       owner.throwIfCancelled();
@@ -294,7 +297,6 @@ async function playRun(context) {
       record.steps.push(played);
       if (played.cancelled) throw played.cancelled;
     }
-    if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
   } catch (error) {
     record.error = error.message;
     record.cancelled = error instanceof Cancelled;

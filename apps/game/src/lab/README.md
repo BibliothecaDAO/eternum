@@ -1,6 +1,6 @@
 # Lab tools
 
-Open `/lab` in the dev environment. The Tool selector groups 13 tools by their users' work. Switching tools unmounts the
+Open `/lab` in the dev environment. The Tool selector groups 14 tools by their users' work. Switching tools unmounts the
 previous view and remembers its full URL for the next visit. The Eternum Lab link exits to the game home page.
 `capture=1` keeps the tool's full viewport and removes the shared header.
 
@@ -19,12 +19,14 @@ former `/debug` tools now live under `/lab`. Their runners and links use the new
 | Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                              |
 | Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                |
 | Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                               |
+| Endgame mist        | `/lab/endgame`             | World: production end trigger, orb event, spared realm and busy-map cost proof                    |
 | World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                           |
 | Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                 |
 | Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                    |
 | World integration   | `/lab/world`               | Performance and character integration: world gym smoke runner                                     |
 | Chunk fixtures      | `/lab/chunks`              | Renderer: baseline, dense and stress fixtures, renderer smoke runner                              |
 | Terrain benchmark   | `/lab/terrain-benchmark`   | Performance: terrain benchmark runner                                                             |
+| Map labels          | `/lab/map-labels`          | UI: map plates on the real terrain and models (`zoom`, `hover`, `select`, `focus`)                |
 | Motion primitives   | `/lab/motion`              | UI: motion intensity, reduced motion and site-clear demo                                          |
 | UI kit & HUD        | `/lab/kit/*`               | UI: component states, `/lab/kit/hud/:state` fixtures and `/lab/kit/icons` production icon catalog |
 | App fixtures        | `/lab/app/:screen/*`       | UI: game, lobby, profile and account states                                                       |
@@ -109,3 +111,49 @@ The driver closes its page on success or failure.
 The Facets catalog at `/lab/kit/icons` uses production artwork and the shared renderer. It includes size, family and
 search controls, action buttons, all nine soldier portraits and interactive hex minimap badges. Run
 `pnpm icons:prove <evidence-dir> https://127.0.0.1:<port>` to exercise it alongside the HUD and shell fixtures.
+
+## T1 Knight production review
+
+`/lab/models?family=knight&source=comparison&tier=1&compare=0&detail=crowd` shows the previous default GLB beside the
+production Knight, at a common inspection height. Choose **Skin detail → Near** to inspect the near export; only the
+selected LOD is requested. **Current character runtime** shows the production model alone; **Move** and **Run** inspect
+its procedural motion. Orbit and RTS scale share the environment and lighting. The terrain lab's **Army model →
+knight1** uses the actual map scale and automatic camera-distance LOD through the production character layer.
+
+## Endgame production smoke fixture
+
+`/lab/endgame` exercises the production **Fractured veil** with offline native facts. **End game** changes the fixture's
+GameRegistry settled fact; the production SpireManager and shared timeline render the event. **Reset map** restores a
+live fixture. **Inspect orb** focuses a source and **Whole map** restores the camera. **See the results** immediately
+skips to a labelled Results fixture; **Escape** or **Skip** goes straight to the frozen map. The real Results route is
+covered by its component test and remains accessible immediately in production.
+
+The nine-second sequence materialises in place (0–0.8 s), contracts the existing orb into a singularity (1–2 s), bursts
+at 2 s, spreads the fractured mist (2–7.5 s), then settles and holds (7.5–9 s). The spire never changes its hex's
+terrain. Orb origins use the model's authored spherical-core transform. There is one production end path; the old global
+frost, variation selector, alternate material library and timeline seeking are deleted.
+
+- `gameMode=frontier` spares the central fixture realm and uses production Frontier lighting. Blitz spares no hex.
+- `spires=materialise` (default) supplies no native spires. Production chooses two actual empty Tile rows on opposite
+  sides of the observed map. `spires=awaken` supplies discovered dormant spires. Both have identical terrain.
+- `busy=1` uses 1,008 hexes, 25 realms and 50 armies; the smaller fixture uses 320 hexes, 5 realms and 10 armies.
+- `rendererMode=webgpu-force-webgl` selects WebGL. Default is WebGPU.
+
+Start and exercise the app with one command (the port must be free):
+
+```sh
+flock /tmp/eternum-lanes-heavy.lock pnpm --dir apps/game prove:endgame --port 4199 --mode gallery --out <fresh-output-directory>
+flock /tmp/eternum-lanes-heavy.lock pnpm --dir apps/game prove:endgame --port 4199 --mode cost --iterations 3 --out <fresh-output-directory>
+```
+
+The runner owns its server and browser/profile. It drives visible controls, records full-map and orb videos plus stage
+frames, and stops what it starts. Gallery covers both entrances in both worlds; `--spires awaken|materialise` narrows
+it. For a client already served by you, pass `--base-url https://127.0.0.1:4199`. The separate showcase on 4198 is
+rebuilt manually.
+
+Cost mode asserts a 1920×1080 drawing buffer, distinct sites, hardware backend and load; it records raw live, active and
+frozen frame intervals and draw snapshots. Frame intervals include refresh pacing; submission cost measures CPU work,
+not GPU duration. This fixture is not a live match or a phone profile.
+
+For an entry stall, add `--trace` to cost mode to retain a browser timeline and CPU profile beside the raw intervals.
+Tracing runs are diagnostic evidence; compare ordinary runs for the frame budget.

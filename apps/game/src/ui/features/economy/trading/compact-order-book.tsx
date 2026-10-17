@@ -75,8 +75,8 @@ const SideToggle = ({ side, onSelect }: { side: TradeSide; onSelect: (side: Trad
           aria-selected={isSelected}
           onClick={() => onSelect(option.key)}
           className={cn(
-            "min-h-11 rounded-md border font-sans text-sm font-semibold transition-colors",
-            isSelected ? option.selectedClass : "border-gold/20 text-kit-muted",
+            "min-h-11 rounded-md border font-sans text-sm font-semibold uppercase tracking-[0.16em] transition-colors",
+            isSelected ? option.selectedClass : "border-gold/20 text-gold/65",
           )}
         >
           {option.label}
@@ -165,7 +165,7 @@ const OffersDisclosure = ({
             <button
               type="button"
               onClick={() => setReveal(reveal === "all" ? "top" : "all")}
-              className="min-h-11 w-full border-t border-gold/15 font-sans text-sm text-gold transition-colors hover:bg-gold/10"
+              className="min-h-11 w-full border-t border-gold/15 font-sans text-xs text-gold transition-colors hover:bg-gold/10"
             >
               {reveal === "all" ? "Show less" : `See all ${offers.length}`}
             </button>

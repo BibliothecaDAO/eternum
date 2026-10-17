@@ -25,6 +25,12 @@ payment authority, result commitments and shard conservation, and pauses only on
 verification makes health red. Later wallet changes cannot rewrite an earlier payment decision. It never uses the
 relay's queue as proof and never unpauses the ledger.
 
+Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
+checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them
+from canonical events. Old cursors without a hash also replay once. Each tick still reads at most one 100-event page. A
+head that changes during a read fails that tick without advancing its cursor. These checks recover event discovery; they
+do not make `ACCEPTED_ON_L2` irreversible or reconcile relay payments already acknowledged before an L2 rewrite.
+
 The ledger address and chain come from `contracts/common/addresses/dev.json` or `mainnet.json` through the shared
 environment reader. The ledger runtime settings are the secret `L2_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
 `LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through

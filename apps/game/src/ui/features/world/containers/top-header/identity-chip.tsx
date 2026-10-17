@@ -15,7 +15,7 @@ import { getActiveGame } from "@/runtime/world";
 import Button from "@/ui/design-system/atoms/button";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Popover, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { Popover } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
@@ -26,12 +26,14 @@ import { useNavigate } from "react-router-dom";
 import {
   countOwnedStructures,
   type IdentityChipState,
+  type IdentityStanding,
   NO_OWNED_STRUCTURES,
   resolveIdentityChipState,
 } from "./identity-chip-state";
-import { LEADERBOARD_POPOVER_ID, SocialBoard } from "@/ui/features/social/components/social-board";
+import { LEADERBOARD_POPOVER_ID, LeaderboardSurface } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { TOP_PILL } from "./top-pill";
+import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 
 const formatPoints = (points: number): string => Math.round(points).toLocaleString();
 
@@ -65,40 +67,37 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
   const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
   const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
 
-  if (state.kind === "player" || state.kind === "unnamed") {
-    return <IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />;
+  if (state.kind === "player") return <PlayerChipTrigger state={state} isOpen={isOpen} compact={compact} />;
+  if (state.kind === "unnamed") {
+    return <IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} label="Account" />;
   }
   return (
     <Popover
       id={popoverId}
-      ariaLabel="Identity"
-      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />}
+      ariaLabel="Account"
+      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} label="Account" />}
     >
       <IdentityChipPanelBody state={state} />
     </Popover>
   );
 };
 
-/** The leaderboard hangs from the top centre as a framed, draggable surface instead of a side panel. */
-const LeaderboardSurface = () => (
-  <SurfaceFrame
-    title="Leaderboard"
-    icon={"victory" as const}
-    onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
-    className={SURFACE_WORKSPACE_CLASS}
-  >
-    <SocialBoard focusOwnPlayer />
-  </SurfaceFrame>
-);
+/** A player's chip: its hover says how the game is won and scored, and it opens the leaderboard. */
+const PlayerChipTrigger = (props: { state: IdentityChipState; isOpen: boolean; compact: boolean }) => {
+  const goal = usePointsGoal();
+  return <IdentityChipTrigger {...props} label={`${goal.sentence} Open the leaderboard for every score.`} />;
+};
 
 const IdentityChipTrigger = ({
   state,
   isOpen,
   compact,
+  label,
 }: {
   state: IdentityChipState;
   isOpen: boolean;
   compact: boolean;
+  label: string;
 }) => {
   const togglePopover = usePopoverStore((popovers) => popovers.toggle);
   const requestSignIn = useRequestSignIn();
@@ -107,7 +106,7 @@ const IdentityChipTrigger = ({
     <button
       type="button"
       aria-expanded={isOpen}
-      aria-label="Identity"
+      aria-label={label}
       onClick={() => {
         if (state.kind === "unnamed") {
           requestSignIn();
@@ -123,7 +122,7 @@ const IdentityChipTrigger = ({
         TOP_PILL,
         HUD_LABEL_BRIGHT,
         "identity-chip min-w-0 max-w-full whitespace-nowrap transition-colors hover:bg-gold/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold",
-        compact && "gap-1.5 px-2 font-sans text-sm ",
+        compact && "gap-1.5 px-2 font-sans text-xs normal-case tracking-normal",
         isOpen && "border-gold/60 bg-gold/15",
       )}
     >
@@ -183,17 +182,28 @@ const IdentityChipLabel = ({ state }: { state: IdentityChipState }) => {
         </>
       );
     case "player":
-      return (
-        <>
-          <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
-          <span className="max-w-[140px] truncate">{state.name}</span>
-          {state.standing && <Separator />}
-          {state.standing && <span>#{state.standing.rank}</span>}
-          {state.standing && <Separator />}
-          {state.standing && <span>{formatPoints(state.standing.points)} VP</span>}
-        </>
-      );
+      return <PlayerLabel name={state.name} standing={state.standing} />;
   }
+};
+
+/**
+ * The player's name, rank and points, then the game's goal, always on screen: the chip opens the leaderboard, where
+ * the scoring is.
+ */
+export const PlayerLabel = ({ name, standing }: { name: string; standing: IdentityStanding | null }) => {
+  const goal = usePointsGoal();
+  return (
+    <>
+      <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+      <span className="max-w-[140px] truncate">{name}</span>
+      {standing && <Separator />}
+      {standing && <span>#{standing.rank}</span>}
+      {standing && <Separator />}
+      {standing && <span>{formatPoints(standing.points)} points</span>}
+      <Separator />
+      <span className="text-gold/70">{goal.line}</span>
+    </>
+  );
 };
 
 const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): string => {
@@ -209,7 +219,7 @@ const compactLabel = (kind: Exclude<IdentityChipState["kind"], "player">): strin
   }
 };
 
-const Separator = () => <span className="text-kit-muted">·</span>;
+const Separator = () => <span className="text-gold/50">·</span>;
 
 const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { kind: "player" | "unnamed" }> }) => {
   switch (state.kind) {
@@ -227,7 +237,7 @@ const IdentityChipPanelBody = ({ state }: { state: Exclude<IdentityChipState, { 
           {isAccountStatePrompt(state.error) ? (
             <AccountStatePrompt />
           ) : (
-            state.error && <span className="text-sm text-danger">{state.error}</span>
+            state.error && <span className="text-xs text-danger">{state.error}</span>
           )}
         </div>
       );

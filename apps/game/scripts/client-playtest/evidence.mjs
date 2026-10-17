@@ -96,7 +96,7 @@ export function hasEntryFinished(snapshot) {
 
 /**
  * One step's numbers, from the probe read when the step ended: frame intervals, draws, long animation frames, inputs,
- * heap, and Herald messages to the frame after them. A step whose page reloaded is measured on the new page, with what
+ * heap, the map labels' element count, and Herald messages to the frame after them. A step whose page reloaded is measured on the new page, with what
  * the reload cost. Frame intervals and long animation frames are different records: a missed frame need not be long.
  */
 export function summarizeStep(probe, { name, startedOn }) {
@@ -152,6 +152,7 @@ export function summarizeStep(probe, { name, startedOn }) {
       retainedDeltaMb: !reloaded && end ? toMb(end.heapBytes - startedOn.heapBytes) : null,
       peakMb: toMb(Math.max(...probe.heap.filter(([t]) => t >= from && t < to).map(([, bytes]) => bytes))),
     },
+    labelNodes: distribution((probe.labelNodes ?? []).filter(([t]) => t >= from && t < to).map(([, count]) => count)),
     herald: {
       count: messages.length,
       kb: round(sum(messages.map((message) => message.bytes)) / 1024),
@@ -210,18 +211,19 @@ export function judgeExplore(played, clientActions) {
 
 /**
  * A burst is evidence only when at least two armies took an order back to back and every order was sent, confirmed and
- * started its army moving. Each order is timed from the right-click the client recorded (`move_requested`) to its
- * send's answer, Herald's status and the army moving on screen, in the page's clock.
+ * shown: a move by its army starting to move, an explore (which may leave the army where it stood) by the client's
+ * record of its reveal rendered. Each order is timed from the right-click the client recorded (`move_requested`) to
+ * its send's answer, Herald's status and that visible moment, in the page's clock.
  */
-export function judgeBurst(played, armyMovement) {
+export function judgeBurst(played, { armyMovement, clientActions }) {
   if ((played.targets?.length ?? 0) < 2) {
     return blocked(`${played.targets?.length ?? 0} armies offered an order: a burst needs two`, {
       targets: played.targets,
     });
   }
-  const orders = played.burst.map(({ army }) => timeOrder(army, played.startedAt, armyMovement));
-  const unfinished = orders.find((order) => order.confirmedMs === undefined || order.movingMs === undefined);
-  if (unfinished) return failed(`army ${unfinished.army}'s order never moved it on screen`, { orders });
+  const orders = played.burst.map(({ army }) => timeOrder(army, played.startedAt, armyMovement, clientActions));
+  const unfinished = orders.find((order) => order.confirmedMs === undefined || order.visibleMs === undefined);
+  if (unfinished) return failed(`army ${unfinished.army}'s order never showed on screen`, { orders });
   if (orders.length < played.targets.length) {
     return failed(`${orders.length} of ${played.targets.length} armies took their order`, { orders });
   }
@@ -230,7 +232,7 @@ export function judgeBurst(played, armyMovement) {
 }
 
 /** One army's order in the burst, from its right-click to each phase after it; a phase missing stays undefined. */
-function timeOrder(army, since, armyMovement) {
+function timeOrder(army, since, armyMovement, clientActions) {
   const entries = armyMovement.filter((entry) => entry.entityId === army && entry.wallTimeMs >= since);
   const requested = entries.find((entry) => entry.phase === "move_requested");
   const after = (phase) => {
@@ -238,12 +240,26 @@ function timeOrder(army, since, armyMovement) {
       requested && entries.find((candidate) => candidate.phase === phase && candidate.sequence > requested.sequence);
     return entry ? round(entry.wallTimeMs - requested.wallTimeMs) : undefined;
   };
+  const explore = requested?.details?.actionType === "explore";
+  const reveal =
+    explore &&
+    clientActions.find(
+      (action) =>
+        action.operation === "explore_reveal" &&
+        action.entityId === army &&
+        action.phases.click >= requested.wallTimeMs - 5,
+    );
   return {
     army,
+    order: explore ? "explore" : "move",
     requestedAt: requested?.wallTimeMs,
     answeredMs: after("tx_response_received"),
     confirmedMs: after("tx_confirmed"),
-    movingMs: after("movement_started"),
+    visibleMs: explore
+      ? reveal?.phases.rendered === undefined
+        ? undefined
+        : round(reveal.phases.rendered - requested.wallTimeMs)
+      : after("movement_started"),
   };
 }
 

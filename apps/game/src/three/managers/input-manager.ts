@@ -10,7 +10,7 @@ import * as THREE from "three";
 import { SceneName } from "../types";
 import type { TouchNavigation } from "./touch-camera-navigation";
 
-type ListenerTypes = "click" | "mousemove" | "contextmenu" | "dblclick" | "mousedown";
+type ListenerTypes = "click" | "mousemove" | "mouseleave" | "contextmenu" | "dblclick" | "mousedown";
 type InputCallback = (event: MouseEvent, raycaster: THREE.Raycaster) => void;
 
 interface InputListener {
@@ -123,6 +123,10 @@ export class InputManager {
   private processImmediateEvent(event: ListenerTypes, mouseEvent: MouseEvent, callback: InputCallback): void {
     if (event === "contextmenu") {
       mouseEvent.preventDefault();
+    }
+    // The pointer left the surface: a move still queued for the next frame would bring the hover back.
+    if (event === "mouseleave") {
+      this.cancelPendingMouseMove();
     }
 
     this.updatePointerRaycaster(mouseEvent);

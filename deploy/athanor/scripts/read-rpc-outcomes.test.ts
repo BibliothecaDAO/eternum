@@ -95,6 +95,43 @@ test("a failed stamp or private preflight refuses before any write reaches the n
   }
 });
 
+test("every refusal is logged once with its reason, and an accepted play logs nothing", async () => {
+  // Earlier tests' refusals are written on a later turn of the event loop; let them go before listening.
+  await Bun.sleep(20);
+  const logged = spyOn(console, "log").mockImplementation(() => undefined);
+  const refusals = () =>
+    logged.mock.calls.flatMap(([line]) =>
+      String(line)
+        .split("\n")
+        .map((entry) => JSON.parse(entry)),
+    );
+  const refused = await fixture({ accountClass: "0x999" });
+  const accepted = await fixture();
+  try {
+    await accepted.call("starknet_addInvokeTransaction", [invoke()]);
+    await refused.call("starknet_addInvokeTransaction", [invoke()]);
+    const invalid = await originalFetch(refused.proxy.url, { method: "POST", body: "{" }).then((reply) => reply.json());
+    expect(invalid.error.code).toBe(-32700);
+    // Refusals are written on a later turn of the event loop, after their answers.
+    for (const deadline = Date.now() + 1000; refusals().length < 2 && Date.now() < deadline; ) await Bun.sleep(1);
+    expect(refusals()).toEqual([
+      {
+        event: "rpc_refused",
+        code: -32010,
+        message: "Transaction refused",
+        method: "starknet_addInvokeTransaction",
+        sender: invoke().sender_address,
+        reason: "validation",
+      },
+      { event: "rpc_refused", code: -32700, message: "Invalid JSON", status: 400 },
+    ]);
+  } finally {
+    logged.mockRestore();
+    refused.close();
+    accepted.close();
+  }
+});
+
 for (const [name, answer] of [
   [
     "lost response",

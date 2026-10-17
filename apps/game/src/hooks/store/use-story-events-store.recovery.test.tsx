@@ -27,6 +27,7 @@ import {
   resetGameSyncStoryEvents,
   useSeasonWinner,
   useStoryEvents,
+  useStoryReads,
 } from "./use-story-events-store";
 
 const scope = { chainId: "0x1", worldAddress: "0xabc", gameId: 1 };
@@ -94,7 +95,124 @@ beforeEach(async () => {
 
 afterEach(() => act(() => root.unmount()));
 
+/** A streamed battle: `striker`'s army against `holder`'s structure 7. */
+const battleStreamed = (index: number, striker: string, holder: string) =>
+  acceptGameSyncStoryEvent(
+    {
+      model: "BattleEvent",
+      key: `0xbattle${index}`,
+      value: {
+        game_id: "0x1",
+        attacker_id: "0x384",
+        defender_id: "0x7",
+        attacker: { player: striker },
+        defender: { player: holder },
+        timestamp: `0x${(100 + index).toString(16)}`,
+        event_position: {
+          block_number: index,
+          transaction_hash: `0xb${index.toString(16)}`,
+          transaction_index: 0,
+          event_index: 0,
+        },
+      },
+    },
+    scope,
+    { block: index, preconfirmed: false },
+  );
+
+const PlayerBattles = () => (
+  <ol>
+    {useStoryEvents(10, "BattleEvent", "0x0a").data.map((event) => (
+      <li key={event.id}>{String((event.storyPayload.attacker as { player: string }).player)}</li>
+    ))}
+  </ol>
+);
+
+/** A streamed capture of structure `structure`, block `index`. */
+const captureStreamed = (index: number, structure: number) =>
+  acceptGameSyncStoryEvent(
+    {
+      model: "StoryEvent",
+      key: `0xcapture${index}`,
+      value: {
+        game_id: "0x1",
+        order: `0x${index.toString(16)}`,
+        index: "0x0",
+        owner: "0x0e",
+        entity_id: `0x${structure.toString(16)}`,
+        tx_hash: `0xc${index.toString(16)}`,
+        story: { StructureCapturedStory: { previous_owner: "0x0f", new_owner: "0x0e" } },
+        timestamp: `0x${(100 + index).toString(16)}`,
+        event_position: {
+          block_number: index,
+          transaction_hash: `0xc${index.toString(16)}`,
+          transaction_index: 0,
+          event_index: 0,
+        },
+      },
+    },
+    scope,
+    { block: index, preconfirmed: false },
+  );
+
+const PlayerFightsAndStructureCaptures = () => (
+  <ol>
+    {useStoryReads([
+      { limit: 2, story: "BattleEvent", owner: "0x0a" },
+      { limit: 2, story: "StructureCapturedStory", entityId: 7 },
+    ]).data.map((event) => (
+      <li key={event.id}>{`${event.story}@${event.position.block}`}</li>
+    ))}
+  </ol>
+);
+
+describe("several story reads", () => {
+  it("keep each its own newest, so what one leaves out never takes another's room, all newest on the chain first", async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerFightsAndStructureCaptures />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => {
+      battleStreamed(1, "0x0a", "0x0b");
+      captureStreamed(2, 7);
+      battleStreamed(3, "0x0c", "0x0a");
+      for (let index = 10; index < 40; index++) battleStreamed(index, "0x0c", "0x0d");
+      for (let index = 40; index < 70; index++) captureStreamed(index, 8);
+    });
+    expect([...log.querySelectorAll("li")].map((item) => item.textContent)).toEqual([
+      "BattleEvent@3",
+      "StructureCapturedStory@2",
+      "BattleEvent@1",
+    ]);
+    await act(async () => logRoot.unmount());
+  });
+});
+
 describe("a story read", () => {
+  it("keeps, for a player's read, each streamed story naming the player, as their attacker or their defender", async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerBattles />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => {
+      battleStreamed(1, "0x0a", "0x0b");
+      battleStreamed(2, "0x0c", "0x0a");
+      battleStreamed(3, "0x0c", "0x0d");
+    });
+    expect([...log.querySelectorAll("li")].map((item) => item.textContent)).toEqual(["0x0c", "0x0a"]);
+    await act(async () => logRoot.unmount());
+  });
+
   it("reads Herald's history once per handshake, never once per confirmed block", async () => {
     expect(history).toHaveBeenCalledTimes(1);
     for (let block = 1; block <= 30; block++) {

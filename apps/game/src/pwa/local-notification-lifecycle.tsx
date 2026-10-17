@@ -24,15 +24,13 @@ export function LocalNotificationLifecycle() {
       reportNotificationDeliveryError(error);
     }
   };
-  useEffect(
-    () =>
-      useIdentitySessionStore.subscribe((next, previous) => {
-        const oldOwner = notificationOwnerOf(previous.session);
-        if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
-        void detach(oldOwner);
-      }),
-    [],
-  );
+  useEffect(() => {
+    return useIdentitySessionStore.subscribe((next, previous) => {
+      const oldOwner = notificationOwnerOf(previous.session);
+      if (!oldOwner || oldOwner === notificationOwnerOf(next.session) || !("serviceWorker" in navigator)) return;
+      void detach(oldOwner);
+    });
+  }, []);
   useEffect(() => {
     if (status === "loading") return;
     void reconcilePushAccount().catch((error) => {

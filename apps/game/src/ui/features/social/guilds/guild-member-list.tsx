@@ -44,7 +44,7 @@ export const GuildMemberList = ({
             removeGuildMember={removeGuildMember}
           />
         ))}
-        {!guildMembers.length && <p className="py-4 text-center text-gold/70">No Tribe Members</p>}
+        {!guildMembers.length && <p className="py-4 text-center italic text-gold/70">No Tribe Members</p>}
       </div>
     </div>
   );
@@ -76,7 +76,7 @@ const GuildMemberRow = ({
         {guildMember.isGuildMaster && <SemanticIcon name="crown" className="h-4 w-4 shrink-0 " />}
         <span className="truncate text-sm font-semibold text-gold">{guildMember.name}</span>
         {guildMember.isUser && (
-          <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-sm font-semibold text-amber-200">
+          <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
             You
           </span>
         )}
@@ -86,7 +86,7 @@ const GuildMemberRow = ({
         <SemanticIcon
           name="trash"
           onClick={() => removeGuildMember(guildMember.address)}
-          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:scale-110 hover:opacity-100", {
+          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:opacity-100", {
             "pointer-events-none opacity-50": isLoading,
             "cursor-pointer": !isLoading,
           })}

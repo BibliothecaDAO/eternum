@@ -162,6 +162,7 @@ class ModelReviewScene implements ModelLabRenderer {
       previous.family !== settings.family ||
       previous.camera !== settings.camera ||
       previous.compare !== settings.compare ||
+      previous.source !== settings.source ||
       previous.action !== settings.action
     )
       this.resetCamera();
@@ -169,6 +170,7 @@ class ModelReviewScene implements ModelLabRenderer {
       settings.family,
       settings.army,
       settings.source,
+      settings.detail,
       settings.compare,
       settings.compare ? "all" : settings.tier,
     ].join(":");
@@ -180,7 +182,14 @@ class ModelReviewScene implements ModelLabRenderer {
     }
 
     const tiers: ShipTier[] = settings.compare ? [1, 2, 3] : [settings.tier];
-    const results = await Promise.allSettled(tiers.map((tier) => this.createSlot(settings, tier)));
+    const requests =
+      settings.source === "comparison"
+        ? [
+            this.createSlot({ ...settings, source: "default" }, settings.tier),
+            this.createSlot({ ...settings, source: "current" }, settings.tier),
+          ]
+        : tiers.map((tier) => this.createSlot(settings, tier));
+    const results = await Promise.allSettled(requests);
     const next = results.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
     const failed = results.find((result) => result.status === "rejected");
     if (this.disposed || generation !== this.generation || failed) {
@@ -198,8 +207,8 @@ class ModelReviewScene implements ModelLabRenderer {
       slot.group.position.x =
         settings.family === "ships"
           ? terrainHexToWorld(settings.compare ? (1 - index) * 2 : 0, 2).x
-          : settings.compare
-            ? (1 - index) * 5.5
+          : next.length > 1
+            ? ((next.length - 1) / 2 - index) * 3.5
             : 0;
       this.stage.add(slot.group);
     });
@@ -226,7 +235,13 @@ class ModelReviewScene implements ModelLabRenderer {
   }
   resetCamera(): void {
     const naval = this.settings.family === "ships";
-    const scale = naval ? (this.settings.compare ? 0.46 : 0.18) : this.settings.compare ? 0.86 : 0.43;
+    const scale = naval
+      ? this.settings.compare
+        ? 0.46
+        : 0.18
+      : this.settings.compare || this.settings.source === "comparison"
+        ? 0.86
+        : 0.43;
     const poses = { orbit: [10, 9, -18], rts: [4, 26, 22], side: [20, 5, 2], top: [0, 28, 0.01] };
     const targetZ = naval ? 2.4 : 0;
     this.controls.target.set(0, naval ? 0.3 : 0.8, targetZ);
@@ -319,7 +334,7 @@ class ModelReviewScene implements ModelLabRenderer {
 
   private async createSlot(settings: ModelLabSettings, tier: ShipTier): Promise<Slot> {
     if (settings.family === "ships" && settings.source === "study") return this.createShipSlot(settings, tier);
-    if (settings.source === "current" || settings.source === "t1-knight-default") {
+    if (settings.source === "current") {
       return this.createCurrentSlot(settings, tier);
     }
     return this.loadArchivedSlot(settings, tier);
@@ -346,10 +361,21 @@ class ModelReviewScene implements ModelLabRenderer {
     };
   }
 
-  private createCurrentSlot(settings: ModelLabSettings, tier: ShipTier): Slot {
+  private async createCurrentSlot(settings: ModelLabSettings, tier: ShipTier): Promise<Slot> {
     const group = new Group();
-    const actor = this.runtime.createActor(unitConfig(settings, tier));
+    const config = unitConfig(settings, tier);
+    await this.runtime.prepareAssets(config);
+    if (this.disposed) throw new Error("Model review was closed");
+    const actor = this.runtime.createActor(config);
     if (settings.family === "ships") fitShipToHex(actor.object);
+    else {
+      const bounds = new Box3();
+      actor.object.updateMatrixWorld(true);
+      actor.object.traverseVisible((object) => {
+        if (object instanceof Mesh) bounds.expandByObject(object, true);
+      });
+      actor.object.scale.setScalar(2.1 / bounds.getSize(new Vector3()).y);
+    }
     group.add(actor.object);
     const stats = actor.getStats();
     return {
@@ -568,8 +594,7 @@ function unitConfig(settings: ModelLabSettings, tier: ShipTier) {
       tier,
       seed: 731,
       animationMode: kind === "paladin" ? "mounted" : resolveFootAnimationMode(settings.action),
-      renderDetail: "crowd",
-      ...(settings.source === "t1-knight-default" && { appearanceId: "t1-knight-default" }),
+      renderDetail: settings.detail,
     },
     horse: { tier, gait: moving ? "walk" : "idle", speed: moving ? 1.4 : 0 },
     dragon: { tier, locomotionMode: moving ? "flight" : "idle", speed: moving ? 3.2 : 0, renderDetail: "crowd" },
@@ -590,7 +615,7 @@ function assetPath(settings: ModelLabSettings, tier: ShipTier): string {
 
 function countTriangles(group: Group): number {
   let triangles = 0;
-  group.traverse((object) => {
+  group.traverseVisible((object) => {
     if (object instanceof Mesh)
       triangles += (object.geometry.index?.count ?? object.geometry.attributes.position.count) / 3;
   });

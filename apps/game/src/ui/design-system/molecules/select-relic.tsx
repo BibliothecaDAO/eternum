@@ -133,7 +133,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
         {selectedRelics.length > 0 && (
           <SemanticIcon
             name="close"
-            className="my-auto w-8 hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all cursor-pointer"
+            className="my-auto w-8 hover:opacity-50 hover:animate-pulse duration-300 transition-all cursor-pointer"
             onClick={clearSelection}
           />
         )}
@@ -181,15 +181,15 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
                     >
                       <div className="flex items-center justify-between w-full gap-2">
                         <div className="flex items-center gap-2">
-                          <ResourceIcon resource={ResourcesIds[relic.id]} size="sm" />
+                          <ResourceIcon resource={relic.id} size="sm" />
                           <div className="flex flex-col">
                             <span className="font-medium">{relic.name}</span>
-                            <span className={clsx("text-sm", getRelicTypeColor(relic.type))}>{relic.effect}</span>
+                            <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>{relic.effect}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <span
-                            className={clsx("px-2 py-1 rounded text-sm", getRecipientTypeColor(relic.recipientType))}
+                            className={clsx("px-2 py-1 rounded text-xs", getRecipientTypeColor(relic.recipientType))}
                           >
                             {relic.recipientType}
                           </span>
@@ -213,9 +213,9 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
               key={relic.id}
               className="flex items-center gap-1 px-2 py-1 bg-gold/10 border border-gold/20 rounded text-sm"
             >
-              <ResourceIcon resource={ResourcesIds[relic.id]} size="xs" />
+              <ResourceIcon resource={relic.id} size="xs" />
               <span>{relic.name}</span>
-              <span className={clsx("text-sm", getRelicTypeColor(relic.type))}>
+              <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>
                 (
                 {relic.bonus > 1
                   ? `+${Math.round((relic.bonus - 1) * 100)}%`

@@ -1,7 +1,7 @@
 import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import { CapacityConfig, ContractAddress, ID, StructureType } from "@bibliothecadao/types";
+import { CapacityConfig, ContractAddress, ID, NEUTRAL_OWNER_NAME, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
@@ -78,7 +78,7 @@ export const getEntityInfo = (
 
 export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: armyEntityId });
-  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : `Army ${armyEntityId}`;
+  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : unnamedEntityName("Army");
 };
 
 const getRealmName = (structure: NativeRows["Structure"]) => {
@@ -97,10 +97,27 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
   } else {
     const structureTypeName =
       getStructureTypeName(structure.base.category as StructureType, presentedMineKind(structure)) || "Structure";
-    originalName = `${structureTypeName} ${structure.entity_id}`;
+    originalName = unnamedEntityName(structureTypeName);
   }
 
   return { name: cachedName || originalName, originalName };
+};
+
+/**
+ * What an army or a structure without a given name is called, wherever a player reads it (its map label, event text):
+ * its kind. Never its entity id, which is a storage key, not a name.
+ */
+const unnamedEntityName = (kind: string): string => kind;
+
+/**
+ * The one name a player reads for an army or a structure, on the map and in event text: its given name, else what
+ * `unnamedEntityName` calls it. Undefined when the store holds neither (an army already gone): the caller words that.
+ */
+export const getEntityName = (entityId: ID, store: NativeFactStore, isBlitz: boolean): string | undefined => {
+  const game_id = configManager.getActiveGameId();
+  if (store.get("ExplorerTroops", { game_id, explorer_id: entityId })) return getArmyName(entityId, store);
+  const structure = store.get("Structure", { game_id, entity_id: entityId });
+  return structure ? getStructureName(structure, isBlitz).name : undefined;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {
@@ -118,9 +135,12 @@ const getEntityNameFromLocalStorage = (entityId: ID) => {
 export const unclaimedPlayerName = (address: ContractAddress | string): string =>
   `Lord ${BigInt(address).toString(16).padStart(4, "0").slice(-4)}`;
 
-/** The one display rule for a player: the claimed name, else the unclaimed one, never an address. */
+/**
+ * The one display rule for an owner: the Vanguard for the zero address, which holds what no player does; else the
+ * player's claimed name, else the unclaimed one; never an address.
+ */
 export const displayPlayerName = (address: ContractAddress | string, name: string | null | undefined): string =>
-  name || unclaimedPlayerName(address);
+  BigInt(address) === 0n ? NEUTRAL_OWNER_NAME : name || unclaimedPlayerName(address);
 
 /**
  * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the

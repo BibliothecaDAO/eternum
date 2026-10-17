@@ -34,6 +34,285 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-17",
+    type: "feature",
+    title: "The mist returns",
+    description:
+      "At game end, spires contract their orbs and release a fractured veil across the map. Frontier keeps your realm clear. Results stays available; Escape skips the animation from either map or realm view, then works as usual.",
+  },
+  {
+    date: "2026-10-17",
+    title: "Events keep the last three, and filter",
+    description:
+      "The Events strip shows the game's three latest events. It shows the important ones by default (your fights and captures, armies lost, crates you opened, and any Hyperstructure taken); switch to Mine or All in its header. The Log uses the same filter, and it is remembered for you. Notices and the game's milestones show above it as they happen.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Leaderboard headers on two lines",
+    description:
+      "Each leaderboard column reads its short name on one line and its points under it on the next: Tiles 5 each, Crates 250 each, Camps & Rifts 250 each, HS taken 1K each, HS held x/s. Hover a column for its full rule.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Next up: the one step that scores now",
+    description:
+      "Next up shows the step that scores most for where you are: open a crate your army stands beside, explore, go for a crate or a camp, or level up first when an attack would wipe your army out. After a loss it raises the next army where your troops are. Paging to other steps is a look: it comes back to the current one. The camera frames what it shows clear of the side panels, and Events and the Log tell every event in the same sentence, with what came of it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Map labels you can read at a glance",
+    description:
+      "Every army, realm, camp and rift on the map wears a small label in the HUD's panel style: an army's player over its troops and stamina, a realm's player and rank (City, Kingdom, Empire) over its name and guard, or Undefended, and a camp or rift's reward (\"Essence Rift | 1,200 Essence\", \"Camp | 250 points\") over its guard. Hover a tile, or select it, to open its label: an army's home realm, a structure's guards in the order an attacker meets them, and troops on their way.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Advice you can follow",
+    description:
+      "A certain-loss forecast now asks only for an army your realm can hold, and when it cannot, says to level the realm up, which of your realms can raise it now (troops on hand, a free army slot, the cap), or the troops to train there first. After raising an army the Military window stays on Attack, and a full army cap reads as a note, not an error. ",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Hovers that explain",
+    description:
+      "A realm's level-up says why it waits, what it costs (or that it is free) and what the level gives, and every window shows the same level number. The realm card's numbers, automation and the order buttons explain themselves on hover, and relics say what they do, for how long and for how much Essence. An army standing on an opened crate shows first.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Points first",
+    description:
+      'The top bar says how to win ("Most points in 1h wins") beside your points, and the start banner says what scores. Next up walks a first game by points: raise an army, explore, open a crate, take a camp or rift, then a Hyperstructure, and says when an army falls. Events rows say what came of each action, and the game says points everywhere.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Build cards say what they cost and make",
+    description:
+      "Each building in the Build window shows what it makes, named and per minute (+360 Wheat / min, +6 population cap), and what it costs with what you have (10 Labor (you have 1,574)). The switch reads Pay with Resources or Labor.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Clearer armies and attacks",
+    description:
+      "A resource you find mid-game (your first Essence) now joins the end of your realm's rings instead of moving them all. The Military window says what you have on hand and which army cap applies, and when you have none, which barracks trains the troop and from what. A forecast that your army would be wiped out at any roll now says so in red, with about how many more troops would survive, and Attack steps back.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Leaderboard scoring",
+    description:
+      "The leaderboard's columns say what each action earns in points, read from the game: 5 points a tile, 250 points a crate or camp, 1K points a hyperstructure taken, and points every second for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "One panel style",
+    description:
+      "Every HUD panel now looks like the picked tile's: the holdings, the selected realm, the minimap, Next up, the events and the standings share one frame and one title band, and their text reads a step larger in the same space.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "The map says what a right-click does",
+    description:
+      "With an army selected, hover a tile: it says what a right-click does there, what it costs and what it scores (Explore · 21 stamina · +5 points, Open crate · +250 points). Every food an order burns is listed as it is charged, fish too where the game charges it. Where no order is possible it says the rules' reason: the stamina it needs and when it is ready, the food, a structure no army may attack, or a target too far. The line keeps up when that changes under a resting pointer.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Production time back on the rings",
+    description:
+      'Each resource ring shows its production time left on its right (∞ when it never runs out), beside the building count and the amount. Hovering a ring now just names the resource. When fewer troops fit than you hold, the troop amount reads "of 500 that fit", so Max and +500 are clear.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Captures tell both sides",
+    description:
+      "A realm's owner now learns who took it: Events and the Log tell the capture to both sides, even after time away, and a notification reaches them. Both are told that the realm's armies and incoming deliveries went with it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Minimap follows the camera again",
+    description:
+      "The minimap centres on the camera and zooms with it, closer than the whole map it showed before. Names shown on hover, such as a resource ring's, now draw above every panel instead of under the next row.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Transfer, Arrivals, Automation, Balances: one window, four tabs",
+    description:
+      "The Transfer window's views are tabs again, and switching away keeps what you were about to send. Send from, Send to and the goods each sit in their own panel, and each list leads with its kinds as tabs (Realms, Camps, Essence Rifts).",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "+500 is back",
+    description:
+      "Wherever you choose how many troops go (deploying an army, the Military window, transferring troops), +500 adds 500 with each press, up to what you can send, beside Max.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Transfers say when they land",
+    description:
+      "The Transfer window, bank swaps and the Log's delivery rows now tell when goods land, as the game delivers them: at the end of the 3-minute delivery window their road ends in, troops riding slower. Essence Rifts are listed as Essence Rifts.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Transfer from the map",
+    description:
+      "With a holding chosen in the holdings list or on the map, right-click another of yours: the Transfer window opens between the two. Its holding lists show long names in full, and donkeys are called donkeys.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Fights end the way they did",
+    description:
+      "A fight's line in Events and World history now names its winner exactly as the battle decided it, a guard's win included. A fight both sides survive reads Draw, and one neither survives reads Both sides fall.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Create field army stays put",
+    description:
+      "The deploy and Military buttons keep their place when their reason (such as Choose a troop count.) comes and goes, so pressing Max no longer moves the button out from under your click.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Clearer events and log",
+    description:
+      "Each event stays its full 20 s on screen before it fades and leaves, and each action is one row. An opened crate's row takes you to what holds its relics, the army or the realm. The log tells each action once and names what it is about in plain words. The minimap takes the shape of the map it shows, the realm card shows all its relics, and labels on the map stay clear of the side panels.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
+    title: "Transfers open without errors",
+    description:
+      "Transfer windows no longer greet you with a red error. What is still to choose is the button's own words (Choose an amount, Choose where to send), and what keeps a transfer closed, such as a full guard slot, is said calmly. Red is kept for an action that failed.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "Troop kinds named when deploying",
+    description:
+      "The deploy picker names Crossbow, Knight and Paladin over their columns, as the Military window does, and your row on the leaderboard shows your name like everyone else's, without an address under it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
+    title: "A simpler deploy",
+    description:
+      "Deploying an army takes one row: type the amount or press Max, beside how many can go. Deploy shows what it costs, and when it cannot go it says why in a few words.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Attack forecast names both sides",
+    description:
+      "The attack forecast's title now reads you against the target's owner (or the Vanguard), in full. What each side loses and who survives stays in the casualty lines, with the exchanges and stamina the fight takes just below them.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Official LORDS token mark",
+    description:
+      "LORDS amounts use the official vector token symbol, sharp at every size, in your purse, entry fees, rewards and resource transfers.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
+    title: "Your MMR if the game ended now",
+    description:
+      "In a paid, rated Blitz the leaderboard shows each player's rating gain or loss if the game ended with the standings as they are, worked out by the ledger exactly as it settles the result. Free games show no MMR.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
+    title: "A leaderboard that fits",
+    description:
+      "The leaderboard window is as large as its table and rows, in the HUD's teal and type. Each activity column shows the points it grants under its name; hover it for the rule in full.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "One Transfer window",
+    description:
+      "Transfer (T) lists your holdings as the holdings list does, sends any goods to several holdings at once with each total split evenly, and opens from the map: select a holding, right-click another of yours. Arrivals, Automation and Balances are a click away.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
+    title: "A tighter HUD",
+    description:
+      "Panels fit their contents and read at the top bar's size, the minimap is taller and fits what you have explored, and every resource ring shows its buildings top-left and its amount below. The picked tile shows its structure and biome together, events take two lines and fade, an opened crate's event selects the army holding its relics, relics read larger, the clock shows only the game's time left, and Next up's tips can be turned off in Settings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Keys for the HUD",
+    description:
+      "B, P, M and T open Build, Production, Military and Transfer, Space takes Next up's step, and I selects your next idle army (full stamina, no order), as does the new Idle button on the minimap. No key fires while you type.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
+    title: "A new HUD for Blitz and Eternum",
+    description:
+      "Your holdings sit on the left, one kind at a time under tabs. Star a realm to pin it to the top, and provision or level it up from its row. The selected realm's card shows its resources five to a row, its relics, population and automation, with a taller minimap under it. On the right, Next up tells you what to do next, the events stay on, and a picked tile shows its structure or army and its biome as tabs. The four orders are round buttons at the bottom. It reads in Exo 2 with Cinzel titles on teal glass, nothing smaller than 14 px.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-16",
+    title: "Trade opens again",
+    description:
+      "Opening Trade in an Eternum game no longer stops the game: every resource and relic in the market shows its painting.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-16",
+    title: "A leaner leaderboard",
+    description:
+      "The in-game leaderboard is one ranked list of every player, kept current as points land: the search field, the refresh button and the Results tab are gone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "New T1 Knight model",
+    description: "T1 Knights now carry the new armour, sword and shield, with lighter geometry at gameplay distance.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Blitz guards and spire jackpots",
+    description:
+      "Camps and Essence Rifts have one T1 guard of 999–1,499 troops, with equal chances of Knight, Paladin or Crossbowman. Each Hyperstructure has three T2 guards of 1,499–1,999 troops each. Dormant spires still appear on one explored hex in two hundred and pay a flat 1,000 Essence, plus your active Exploration relic bonus, regardless of army size or tier.",
+    type: "balance",
+    gameSlug: "blitz",
+  },
+  {
+    date: "2026-10-16",
+    title: "Larger realm minimap emblems",
+    description: "Realm paintings fill more of their minimap hex, with ownership colours and level numbers kept clear.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-16",
+    title: "Recognize each realm level",
+    description:
+      "Realm portraits and minimap badges now follow each level’s buildings: canvas and thatch, the city forum, twin towers and the imperial spire.",
+    type: "improvement",
+  },
+  {
     date: "2026-10-16",
     title: "The command sidebar is back",
     description:
@@ -93,7 +372,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "Big Blitz armies eat on the march",
     description:
-      "In Blitz, every troop now costs 0.05 wheat per hex it moves and 0.10 per hex it explores, up from 0.03. A 1,000-troop army pays 50 wheat a step; a 20,000-troop army pays 1,000, so moving a big army needs farms behind it.",
+      "In Blitz, moving and exploring each cost 0.05 wheat per troop per hex. A 1,000-troop army pays 50 wheat a step; a 20,000-troop army pays 1,000, so moving a big army needs farms behind it.",
     type: "balance",
   },
   {
@@ -169,7 +448,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-15",
     title: "Bigger armies find more",
     description:
-      "In Blitz, what a reveal finds now grows with the army that explores: a share of its troops times their tier (1 for T1, 3 for T2, 9 for T3), so a 1,000-troop T1 army finds what every army found before. One reveal in two hundred finds a dormant spire: your realm receives three times the army's strength in Essence, and the spire stays on its hex, blocking it and doing nothing else.",
+      "In Blitz, what a reveal finds now grows with the army that explores: a share of its troops times their tier (1 for T1, 3 for T2, 9 for T3), so a 1,000-troop T1 army finds what every army found before. One reveal in two hundred finds a dormant spire: your realm receives a flat 1,000 Essence plus any active Exploration relic bonus, and the spire stays on its hex, blocking it and doing nothing else.",
     type: "balance",
   },
   {

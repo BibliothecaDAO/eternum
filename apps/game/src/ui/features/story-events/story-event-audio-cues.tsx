@@ -2,7 +2,7 @@ import { AudioManager } from "@/audio/core/AudioManager";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
-import { battleIdentity, involvesPlayer } from "@/ui/features/event-feed/important-feed-rows";
+import { involvesPlayer, storyActionIdentity } from "@/ui/features/event-feed/event-stories";
 import { useEffect, useRef } from "react";
 
 /** Combat feedback is sound only; the persistent battle row belongs to Events. */
@@ -12,11 +12,11 @@ export function StoryEventAudioCues() {
   useEffect(() => {
     const previous = seen.current;
     const battles = events.filter((event) => event.story === "BattleEvent");
-    seen.current = new Set(battles.map(battleIdentity));
+    seen.current = new Set(battles.map(storyActionIdentity));
     if (!previous) return;
     const address = useAccountStore.getState().account?.address ?? null;
     for (const event of battles) {
-      const key = battleIdentity(event);
+      const key = storyActionIdentity(event);
       if (previous.has(key)) continue;
       previous.add(key);
       if (Date.now() - event.timestampMs > 20_000 || !involvesPlayer(event, address)) continue;

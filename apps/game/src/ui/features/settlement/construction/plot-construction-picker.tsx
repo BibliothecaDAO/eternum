@@ -20,7 +20,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-semibold">Build on this plot</span>
         {form.allowSimpleCost && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2 text-xs">
             Simple cost
             <input
               type="checkbox"
@@ -32,13 +32,13 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
         )}
       </div>
       {form.error && (
-        <p role="status" className="text-sm">
+        <p role="status" className="text-xs">
           {form.error}
         </p>
       )}
       {form.groups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h3 className="mb-1 text-sm font-semibold">{group.label}</h3>
+          <h3 className="mb-1 text-xs font-semibold">{group.label}</h3>
           <div className="grid grid-cols-3 gap-2">
             {group.buildings
               .toSorted((a, b) => Number(a.disabled) - Number(b.disabled))
@@ -57,11 +57,11 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
                     setTooltip({ content: <RequirementChips requirements={building.requirements} />, position: "top" })
                   }
                   onMouseLeave={() => setTooltip(null)}
-                  className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-sm"
+                  className="relative min-w-0 overflow-hidden rounded border border-gold/25 p-1 text-center text-xs"
                 >
                   <BuildingThumbnail building={building.type} alt="" className="h-16 w-full object-contain" />
                   <span className="block font-semibold">{building.label}</span>
-                  <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-sm tabular-nums">
+                  <span className="flex flex-wrap justify-center gap-x-2 gap-y-1 py-1 text-[10px] tabular-nums">
                     {building.requirements === undefined && "—"}
                     {building.requirements?.map((cost) => (
                       <span

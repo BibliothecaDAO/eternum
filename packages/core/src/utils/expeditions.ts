@@ -56,14 +56,16 @@ export const siteKindOf = (category: number): SiteKind => {
 };
 
 /**
- * What clearing a site pays home in resources, as the contract's site_reward computes it from the guard it started
- * with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. Stragglers pay
- * only XP; a ruin pays its chest.
+ * What clearing a site still pays home in resources, as the contract's site_reward computes it from the guard it
+ * started with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. A cleared
+ * site has paid and pays nothing again (the contract refuses a second payout); stragglers pay only XP; a ruin pays its
+ * chest.
  */
 export const siteReward = (
   kind: SiteKind,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">,
+  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "cleared">,
 ): { resourceType: ResourcesIds; amount: bigint } | null => {
+  if (site.cleared) return null;
   if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
   if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
   return null;

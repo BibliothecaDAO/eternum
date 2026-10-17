@@ -9,7 +9,7 @@ import {
   ResourcesIds,
 } from "@bibliothecadao/types";
 
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resourceMeaning, type IconMeaning } from "@/ui/design-system/icon-meaning";
 
 // Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
 // preference: heavier infantry / cavalry surface first in the military tab.
@@ -20,7 +20,7 @@ type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type RealmBuildingSummaryItem = {
   buildingId: BuildingType;
   label: string;
-  iconResource: string;
+  icon: IconMeaning;
   count: number;
 };
 
@@ -82,17 +82,12 @@ const resolveRealmBuildingSummaryOrder = (realmResourceIds: ResourcesIds[], allo
 
 const toSummaryLabel = (buildingType: BuildingType) => BuildingTypeToString[buildingType] ?? "Building";
 
-const toSummaryIconResource = (buildingType: BuildingType) => {
-  if (buildingType === BuildingType.WorkersHut) return "House";
-  if (buildingType === BuildingType.Storehouse) return "Silo";
-  if (buildingType === BuildingType.ResourceDonkey) return "Donkey";
-
+/** A building's painting in the summary: the resource it makes, else its own (a hut is a home, a storehouse a granary). */
+const toSummaryIcon = (buildingType: BuildingType): IconMeaning => {
+  if (buildingType === BuildingType.Storehouse) return "granary";
+  if (buildingType === BuildingType.ResourceDonkey) return resourceMeaning(ResourcesIds.Donkey);
   const producedResource = getProducedResource(buildingType);
-  if (producedResource !== undefined) {
-    return ResourcesIds[producedResource];
-  }
-
-  return "House";
+  return producedResource !== undefined ? resourceMeaning(producedResource) : "home";
 };
 
 export const buildRealmBuildingSummary = ({
@@ -108,7 +103,7 @@ export const buildRealmBuildingSummary = ({
       items.push({
         buildingId: buildingType,
         label: toSummaryLabel(buildingType),
-        iconResource: toSummaryIconResource(buildingType),
+        icon: toSummaryIcon(buildingType),
         count,
       });
       return items;
@@ -136,8 +131,8 @@ export const RealmBuildingSummary = ({
   return (
     <section className={clsx("realm-summary-selector", containerClassName, className)}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-kit-muted">{headline}</p>
-        <p className="text-sm text-kit-muted">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold/60">{headline}</p>
+        <p className="text-[10px] text-gold/45">{totalBuildings > 0 ? `${totalBuildings} total` : "Empty realm"}</p>
       </div>
 
       {items.length > 0 ? (
@@ -150,18 +145,18 @@ export const RealmBuildingSummary = ({
               <div
                 key={item.buildingId}
                 className={clsx(
-                  "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-sm text-gold/90",
+                  "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-[11px] text-gold/90",
                   buildAction && "pr-8 max-lg:pr-12 max-lg:min-h-12",
                 )}
                 title={item.label}
                 aria-label={`${item.label}: ${item.count}`}
               >
                 {military && (
-                  <span className="rounded border border-gold/30 bg-black/40 px-1 text-sm font-semibold text-gold/80">
+                  <span className="rounded border border-gold/30 bg-black/40 px-1 text-[9px] font-semibold uppercase tracking-wide text-gold/80">
                     T{military.tier}
                   </span>
                 )}
-                <ResourceIcon resource={item.iconResource} size="xs" withTooltip={false} />
+                <SemanticIcon name={item.icon} size={16} className="h-4 w-4" />
                 <span className="font-semibold tabular-nums text-gold">{item.count}</span>
                 {buildAction && (
                   <button
@@ -185,7 +180,7 @@ export const RealmBuildingSummary = ({
           })}
         </div>
       ) : (
-        <p className="mt-2 text-sm text-kit-muted">No buildings yet.</p>
+        <p className="mt-2 text-xs italic text-gold/55">No buildings yet.</p>
       )}
     </section>
   );

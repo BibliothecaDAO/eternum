@@ -1,7 +1,12 @@
 // @vitest-environment node
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getBlockTimestamp, setBlockTimestampSource, setChainProvenTimestampSource } from "./timestamp";
+import {
+  formatClockTime,
+  getBlockTimestamp,
+  setBlockTimestampSource,
+  setChainProvenTimestampSource,
+} from "./timestamp";
 
 import { configManager } from "../managers/config-manager";
 beforeEach(() => {
@@ -31,5 +36,12 @@ describe("chain time", () => {
     setBlockTimestampSource(() => SOURCE_SECONDS);
     setChainProvenTimestampSource(() => null);
     expect(() => getBlockTimestamp().currentDefaultTick).toThrow("No chain-proven timestamp");
+  });
+});
+
+describe("a moment on a feed row", () => {
+  it("reads as the viewer's 24-hour clock, HH:MM", () => {
+    expect(formatClockTime(new Date(2026, 8, 9, 14, 5).getTime())).toBe("14:05");
+    expect(formatClockTime(new Date(2026, 8, 9, 9, 7).getTime())).toBe("09:07");
   });
 });

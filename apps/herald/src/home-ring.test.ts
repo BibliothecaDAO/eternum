@@ -4,7 +4,7 @@ import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import { GameSubscription } from "./game-subscription";
 import { describe, expect, it, vi } from "vitest";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
+import { gameSyncScopeKeys, rowInGameSyncScope, isClientGameSyncModel } from "@bibliothecadao/eternum/game-sync-models";
 import { GameSyncRuntime, type GameSyncSubscriptionHandlers } from "@bibliothecadao/eternum/game-sync";
 
 import { HomeRing, decodeHomeRing, homeRingTileData, type HomeRingTile, type HomeRingView } from "./home-ring";
@@ -644,9 +644,11 @@ describe("client and Herald subscription scope parity", () => {
     for (const row of rebase[0].set) {
       expect(rowInGameSyncScope(row.model, row.value, afterScope)).toBe(true);
     }
-    for (const model of ["Structure", "ResourceWeight", "ResourceBalance", "StructureBuildings", "Building"] as const) {
+    // The muster's own rows go out; the home rows the client already holds are not sent again.
+    for (const model of ["ArmySlot", "ExplorerTroops", "TileOccupancy"] as const)
       expect(rebase[0].set.some((row) => row.model === model)).toBe(true);
-    }
+    for (const model of ["Structure", "ResourceWeight", "ResourceBalance", "StructureBuildings", "Building"] as const)
+      expect(rebase[0].set.some((row) => row.model === model)).toBe(false);
 
     if (!runtimeHandlers) throw new Error("Game sync did not subscribe");
     runtimeHandlers.onFacts({
@@ -655,8 +657,6 @@ describe("client and Herald subscription scope parity", () => {
       transactionHash: "0x57",
     });
     await musterApplied;
-
-    expect(await runtimeHandlers.onScope(rebase[0].set, true)).toBe(true);
 
     expect(store.require("Structure", { game_id: 1, entity_id: 1 }).owner).toBe(10n);
     expect(store.require("ResourceWeight", { game_id: 1, entity_id: 1 }).weight).toBe(2_000n);
@@ -705,6 +705,86 @@ describe("client and Herald subscription scope parity", () => {
     }
     expect(fold.subscriptionScope("1", "0xa", MID_DAY).expedition?.entities.has("20")).toBe(false);
     expect(overlay.subscriptionScope("1", "0xa", MID_DAY).expedition?.entities.has("20")).toBe(true);
+  });
+
+  it("leaves a subscriber holding exactly a fresh snapshot's rows after each scope change it is sent", () => {
+    const { native, decoder, fold } = frontierWorld();
+    const persistent = new Set(decoder.registry.persistent.map(({ definition }) => definition.name));
+    const subscriber = () =>
+      new GameSubscription(
+        "1",
+        "0xa",
+        () => fold,
+        () => 10,
+        () => MID_DAY,
+        decoder.registry,
+      );
+    const rowsOf = (snapshot: ReturnType<GameSubscription["snapshot"]>) =>
+      new Map(
+        snapshot.models.flatMap(({ model, rows }) =>
+          rows.map((row) => [`${model}:${row.key}`, JSON.stringify(row.value)]),
+        ),
+      );
+    const subscription = subscriber();
+    const held = rowsOf(subscription.snapshot());
+    const occupy = (col: string, entityId: number) =>
+      rowEvent("TileOccupancy", ["1", "0", col, "50"], {
+        entity_id: entityId,
+        category: entityId === 0 ? 0 : 15,
+        is_structure: false,
+      });
+    const army = explorerValue("1", 10_000_000_000n);
+    const steps = [
+      [
+        rowEvent("ArmySlot", ["1", "1", String(TODAY.index), "0"], {
+          epoch: TODAY.index,
+          explorer_id: 20,
+          stamina: { amount: 30, settled_at: 1, remainder: 0 },
+        }),
+        rowEvent("ExplorerTroops", ["1", "20"], {
+          ...army,
+          troops: { ...(army.troops as Record<string, unknown>), stamina: new CairoCustomEnum({ Slot: 0 }) },
+        }),
+        occupy("51", 20),
+        // A tile in the region the army visits next: only that region's keys reach it.
+        rowEvent("TileOpt", ["1", "0", "160", "50"], { data: 2n }),
+      ],
+      [occupy("51", 0), occupy("151", 20)],
+      [occupy("151", 0), occupy("52", 20)],
+    ];
+    const scopeKeys = () => [...gameSyncScopeKeys(fold.subscriptionScope("1", "0xa", MID_DAY))].sort();
+    const wholeScopes = vi.spyOn(fold, "subscriptionSnapshot");
+    const tileHeld: boolean[] = [];
+    let farTile = "";
+    steps.forEach((events, index) => {
+      const keysBefore = scopeKeys();
+      const block = 11 + index;
+      const changes = native
+        .applyReceipt(fold, receipt(events, `0x${(0x60 + index).toString(16)}`), block, 0)
+        .changes.flatMap(({ change }) => (change ? [change] : []));
+      if (index === 0)
+        farTile = `TileOpt:${fold.gameRows("TileOpt", "1").find((row) => Number(row.value.col) === 160)!.key}`;
+      for (const body of subscription.project({
+        type: "diff",
+        block,
+        preconfirmed: false,
+        set: changes.flatMap(({ set }) => (set ? [set] : [])),
+        del: changes.flatMap(({ del }) => (del ? [del] : [])),
+      })) {
+        if (body.type !== "diff") continue;
+        for (const row of body.set)
+          if (persistent.has(row.model)) held.set(`${row.model}:${row.key}`, JSON.stringify(row.value));
+        for (const row of body.del) held.delete(`${row.model}:${row.key}`);
+      }
+      // Each step moves the scope, and its change was sent without rebuilding the whole scope.
+      expect(scopeKeys()).not.toEqual(keysBefore);
+      expect(wholeScopes).not.toHaveBeenCalled();
+      expect(held).toEqual(rowsOf(subscriber().snapshot()));
+      wholeScopes.mockClear();
+      tileHeld.push([...held.keys()].some((key) => key.startsWith("TileOpt:") && key === farTile));
+    });
+    // The far tile arrives with the region the army enters, and goes when the army leaves it.
+    expect(tileHeld).toEqual([false, true, false]);
   });
 
   it("keeps Frontier absence unknown across actor, overlay and day boundaries", () => {

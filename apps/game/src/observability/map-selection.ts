@@ -1,4 +1,7 @@
-/** The world map's selection as the page shows it: the selected hex, the structure on it, the hexes ringed and the army. */
+/**
+ * The world map's selection as the page shows it: the selected hex, the structure on it, the hexes ringed, the army,
+ * and the structure under the pointer.
+ */
 interface MapSelectionSnapshot {
   hex: { col: number; row: number } | null;
   structure: { id: number; owner: string; realm: boolean; ownedByViewer: boolean } | null;
@@ -6,6 +9,11 @@ interface MapSelectionSnapshot {
   ringedHexes: number;
   /** The selected army, its hex, and how many tiles it is offered an order on (none while its order is in flight). */
   army: { id: number; hex: { col: number; row: number }; orders: number } | null;
+  /**
+   * The structure under the pointer, whether it is the viewer's, and whether it is the holding the HUD has selected
+   * (the proof's transfer gesture right-clicks another of the viewer's).
+   */
+  hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
 }
 
 interface MapSelectionWindow {

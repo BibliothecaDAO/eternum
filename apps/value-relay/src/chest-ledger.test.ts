@@ -103,7 +103,7 @@ it.each([
     { kind: "finished", tokenId: "7" },
   ]);
   expect(rpc.events.mock.calls[0]![0]).toMatchObject({
-    from_block: { block_number: 90 },
+    from_block: { block_number: 0 },
     to_block: { block_number: 111 },
   });
 });

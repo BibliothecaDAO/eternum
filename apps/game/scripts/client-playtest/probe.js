@@ -1,6 +1,6 @@
 // Registered by run-client-playtest.mjs as an init script, so it runs before any page code. It only observes: frame
-// times, long animation frames, input-to-paint latency, every input's time, draw calls, heap, and each Herald socket
-// message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
+// times, long animation frames, input-to-paint latency, every input's time, draw calls, heap, the map labels' DOM size,
+// and each Herald socket message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
 (() => {
   if (window.__playtest) return;
 
@@ -12,8 +12,10 @@
     frames: [],
     heap: [],
     inputs: [],
+    labelNodes: [],
     loafs: [],
     messages: [],
+    models: [],
     steps: [],
   };
   let drawsThisFrame = 0;
@@ -53,7 +55,13 @@
   };
   requestAnimationFrame(onFrame);
 
-  setInterval(() => push(state.heap, [performance.now(), usedHeapBytes()]), HEAP_SAMPLE_MS);
+  // Every map label is drawn inside #labelrenderer, whichever renderer draws it; its element count is what they cost the
+  // page's layout and style work.
+  const labelNodes = () => document.getElementById("labelrenderer")?.getElementsByTagName("*").length ?? null;
+  setInterval(() => {
+    push(state.heap, [performance.now(), usedHeapBytes()]);
+    push(state.labelNodes, [performance.now(), labelNodes()]);
+  }, HEAP_SAMPLE_MS);
 
   const observe = (type, options, record) => {
     try {
@@ -66,6 +74,11 @@
       // An entry type this browser does not ship is reported as absent, not as zero.
     }
   };
+  observe("resource", {}, (entry) => {
+    if (new URL(entry.name).pathname.startsWith("/models/")) {
+      push(state.models, { url: new URL(entry.name).pathname, bytes: entry.encodedBodySize, start: entry.startTime });
+    }
+  });
   observe("long-animation-frame", {}, (entry) =>
     push(state.loafs, {
       blockingMs: entry.blockingDuration,
@@ -186,8 +199,10 @@
         frames: state.frames.slice(fromFrame),
         heap: after(state.heap, ([t]) => t),
         inputs: after(state.inputs, (entry) => entry.t),
+        labelNodes: after(state.labelNodes, ([t]) => t),
         loafs: after(state.loafs, (entry) => entry.start),
         messages: after(state.messages, (entry) => entry.arrived),
+        models: state.models,
         now: performance.now(),
         steps: after(state.steps, (entry) => entry.t),
         timeOrigin: performance.timeOrigin,

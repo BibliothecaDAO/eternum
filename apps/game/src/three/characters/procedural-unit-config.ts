@@ -2,6 +2,7 @@ import {
   DEFAULT_PROCEDURAL_CHARACTER_APPEARANCE_ID,
   isProceduralCharacterAppearanceCompatibleWithKind,
   resolveProceduralCharacterAppearance,
+  resolveDefaultUnitAppearance,
 } from "./procedural-character-appearance";
 import {
   applyProceduralCharacterConfigPatch,
@@ -97,6 +98,12 @@ export function applyProceduralUnitConfigPatch(
 ): ProceduralUnitConfig {
   const kind = patch.kind ?? current.kind;
   const humanoidPatch = { ...patch.humanoid };
+  if (
+    humanoidPatch.appearanceId === undefined &&
+    (kind !== current.kind || (humanoidPatch.tier !== undefined && humanoidPatch.tier !== current.humanoid.tier))
+  ) {
+    humanoidPatch.appearanceId = resolveDefaultUnitAppearance(kind, humanoidPatch.tier ?? current.humanoid.tier);
+  }
   if (kind === "paladin") humanoidPatch.animationMode = "mounted";
   else if (current.kind === "paladin" && !humanoidPatch.animationMode) humanoidPatch.animationMode = "walk";
   const humanoid = applyProceduralCharacterConfigPatch(keepAppearanceThatServes(current.humanoid, kind), humanoidPatch);

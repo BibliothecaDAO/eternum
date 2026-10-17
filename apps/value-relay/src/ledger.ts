@@ -14,7 +14,8 @@ import {
   type ChestChange,
   type ChestPage,
   type BlitzResult,
-  type Page,
+  type LedgerPage,
+  type LedgerAnchor,
   type PaidClaim,
   type RelayPorts,
   type MonitorPorts,
@@ -109,26 +110,34 @@ export const ledgerMonitorReads = (
           ),
         ).pool;
       }),
-    paidClaims: (cursor, fromBlock = 0) =>
+    paidClaims: (cursor, fromBlock = 0, anchor) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
         const times = new Map<number, number>();
-        return ledgerEventPage(provider, address, ["WithdrawalPaid"], cursor, fromBlock, async (event) => {
-          if (typeof event.block_number !== "number" || typeof event.block_hash !== "string")
-            throw new Error("payment_block_missing");
-          let time = times.get(event.block_number);
-          if (time === undefined) {
-            const block = await readConfirmedLedgerHead(provider, event.block_number);
-            if (BigInt(block.hash) !== BigInt(event.block_hash)) throw new Error("payment_block_unconfirmed");
-            time = block.time;
-            times.set(event.block_number, time);
-          }
-          return { ...decodePayment(event), paidAt: time };
-        });
+        return ledgerEventPage(
+          provider,
+          address,
+          ["WithdrawalPaid"],
+          cursor,
+          fromBlock,
+          async (event) => {
+            if (typeof event.block_number !== "number" || typeof event.block_hash !== "string")
+              throw new Error("payment_block_missing");
+            let time = times.get(event.block_number);
+            if (time === undefined) {
+              const block = await readConfirmedLedgerHead(provider, event.block_number);
+              if (BigInt(block.hash) !== BigInt(event.block_hash)) throw new Error("payment_block_unconfirmed");
+              time = block.time;
+              times.set(event.block_number, time);
+            }
+            return { ...decodePayment(event), paidAt: time };
+          },
+          anchor,
+        );
       }),
-    postedResults: (cursor, fromBlock = 0) =>
+    postedResults: (cursor, fromBlock = 0, anchor) =>
       relayOperation("read ledger posted results", () =>
-        ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult),
+        ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
       ),
   };
 };
@@ -140,11 +149,13 @@ const ledgerEventPage = async <A>(
   after: string | null,
   fromBlock: number,
   decode: (event: EmittedEvent, index: number, position: string) => A | Promise<A>,
-): Promise<Page<A> & { head: number }> => {
+  previous?: LedgerAnchor,
+): Promise<LedgerPage<A>> => {
   const selectors = names.map((name) => hash.getSelectorFromName(name));
-  const cursor =
-    after === null ? { head: (await readConfirmedLedgerHead(provider)).number, token: undefined } : readCursor(after);
-  if (fromBlock > cursor.head) return { rows: [], head: cursor.head, next: null };
+  const { cursor, rewind } = await eventCheckpoint(provider, after, fromBlock, previous);
+  if (rewind) fromBlock = 0;
+  const anchor = { number: cursor.head, hash: cursor.hash };
+  if (fromBlock > cursor.head) return { rows: [], head: cursor.head, next: null, anchor, rewind };
   const page = await provider.getEvents({
     address,
     from_block: { block_number: fromBlock },
@@ -163,17 +174,47 @@ const ledgerEventPage = async <A>(
     const position = `${fromBlock}:${cursor.head}:${hash.starknetKeccak(cursor.token ?? "").toString(16)}`;
     rows.push(await decode(event, index, position));
   }
+  if (BigInt((await readConfirmedLedgerHead(provider, cursor.head)).hash) !== BigInt(cursor.hash))
+    throw new Error("ledger_event_head_changed");
   return {
     rows,
     head: cursor.head,
-    next: page.continuation_token ? JSON.stringify({ head: cursor.head, token: page.continuation_token }) : null,
+    anchor,
+    rewind,
+    next: page.continuation_token ? JSON.stringify({ ...cursor, token: page.continuation_token }) : null,
   };
 };
-const readCursor = (value: string): { head: number; token: string } => {
-  const cursor = JSON.parse(value) as { head?: unknown; token?: unknown };
+const eventCheckpoint = async (
+  provider: RpcProvider,
+  after: string | null,
+  fromBlock: number,
+  previous?: LedgerAnchor,
+) => {
+  const latest = await readConfirmedLedgerHead(provider);
+  const page = after === null ? null : readCursor(after);
+  const saved = previous ?? (page?.hash ? { number: page.head, hash: page.hash } : undefined);
+  const fresh = { head: latest.number, hash: latest.hash, token: "" };
+  if (!saved) return { cursor: fresh, rewind: fromBlock > 0 || page !== null };
+  if (
+    saved.number > latest.number ||
+    BigInt((await readConfirmedLedgerHead(provider, saved.number)).hash) !== BigInt(saved.hash)
+  )
+    return { cursor: fresh, rewind: true };
+  if (!page) return { cursor: fresh, rewind: false };
+  if (page.head !== saved.number || page.hash !== saved.hash) throw new Error("ledger_cursor_anchor_differs");
+  return { cursor: { head: page.head, hash: saved.hash, token: page.token }, rewind: false };
+};
+const readCursor = (value: string): { head: number; token: string; hash?: string } => {
+  const cursor = JSON.parse(value) as { head?: unknown; token?: unknown; hash?: unknown };
   if (!Number.isSafeInteger(cursor.head) || Number(cursor.head) < 0 || typeof cursor.token !== "string")
     throw new Error("invalid_ledger_cursor");
-  return { head: Number(cursor.head), token: cursor.token };
+  if (cursor.hash !== undefined && (typeof cursor.hash !== "string" || !/^0x[0-9a-f]+$/i.test(cursor.hash)))
+    throw new Error("invalid_ledger_cursor");
+  return {
+    head: Number(cursor.head),
+    token: cursor.token,
+    ...(typeof cursor.hash === "string" ? { hash: cursor.hash } : {}),
+  };
 };
 const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
   if (
@@ -198,11 +239,25 @@ const decodeResult = (event: EmittedEvent): BlitzCommitment => {
   return { chainId: event.keys[1]!, gameId: ledgerInteger(event.keys[2]!), commitment: event.data[2]! };
 };
 /** Requested and opened events share one ordered cursor, so historical completed chests leave no polling debt. */
-export const ledgerChestChanges = (rpcUrl: string, address: string, fromBlock: number, cursor: string | null) =>
+export const ledgerChestChanges = (
+  rpcUrl: string,
+  address: string,
+  fromBlock: number,
+  cursor: string | null,
+  anchor?: LedgerAnchor,
+) =>
   relayOperation(
     "read chest requests",
     (): Promise<ChestPage> =>
-      ledgerEventPage(rpcAt(rpcUrl), address, ["ChestRequested", "ChestOpened"], cursor, fromBlock, decodeChestChange),
+      ledgerEventPage(
+        rpcAt(rpcUrl),
+        address,
+        ["ChestRequested", "ChestOpened"],
+        cursor,
+        fromBlock,
+        decodeChestChange,
+        anchor,
+      ),
   );
 
 const decodeChestChange = (event: EmittedEvent): ChestChange => {

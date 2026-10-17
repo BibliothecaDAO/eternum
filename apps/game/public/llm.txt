@@ -2538,6 +2538,10 @@ manage their positioning and engagement opportunities.
 
 ## Structure Guards and Claims
 
+Discovered Camps and Essence Rifts each start with one T1 guard of 999–1,499 troops. Its type is chosen with equal
+chances from Knight, Paladin and Crossbowman, independently of its troop count. Hyperstructures start with three T2
+guards: one Paladin, one Knight and one Crossbowman, each with 1,499–1,999 troops.
+
 Structure guards defend Camps, Essence Rifts, Hyperstructures, and Realms from their guard slots. Crossbowman armies and
 Crossbowman guards can use Combat v3 range-2 attacks to clear or threaten enemies from a distance, but a ranged attack
 never claims a structure. Once guards are cleared, the claiming army must move adjacent and use an adjacent attack/claim
@@ -4146,7 +4150,7 @@ troops within the army. The table below details biome-specific stamina costs for
 <BiomeStamina mode="blitz" />
 
 Troops also require Wheat to move. This is consumed from their home Realm when a movement order is executed. Each unit
-consumes **0.05** Wheat to move into an explored tile or **0.10** Wheat to explore a new tile.
+consumes **0.05** Wheat to move into an explored tile or explore a new tile.
 
 ## Exploring
 
@@ -4165,9 +4169,9 @@ its bonus after that cap. The reward chances for any explored hex are as follows
 
 <ExplorationRewards />
 
-One explored hex in two hundred holds a dormant spire. Its finder's realm receives Essence equal to three times the
-army's capped reward strength, once, with an active Exploration relic's bonus applied afterward. The spire then stands
-on its hex for the rest of the game, blocking it and doing nothing else.
+One explored hex in two hundred holds a dormant spire. Its finder's realm receives a flat 1,000 Essence, once, with an
+active Exploration relic's bonus applied afterward. Army size and tier do not change the base grant. The spire then
+stands on its hex for the rest of the game, blocking it and doing nothing else.
 
 Exploration rewards are automatically sent back to the home Realm of the exploring army, so armies aren't limited by
 their carry capacity in Blitz. However, the mist is a scary place and troops don't like to delve into it alone, so a

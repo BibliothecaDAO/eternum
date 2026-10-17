@@ -5,10 +5,13 @@ import { readGameEntry } from "./shard-directory";
 import { saveGameProfile } from "./store";
 import type { GameProfile } from "./types";
 
-/** A game's preset and name come from its own shard's directory, so a stale local copy never boots it. */
+/**
+ * A game's preset and name come from its own shard's directory, so a stale local copy never boots it. They never change,
+ * so any answer this page already read will do: the boot asks the shard once.
+ */
 export const buildGameProfile = async (game: GameRef): Promise<GameProfile> => {
   const startedAt = performance.now();
-  const entry = await readGameEntry(game, null);
+  const entry = await readGameEntry(game, null, Infinity);
   recordGameEntryDuration("game-profile-directory-fetch", performance.now() - startedAt);
   const profile: GameProfile = {
     chainId: game.chainId,

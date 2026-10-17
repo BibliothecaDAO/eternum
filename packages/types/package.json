@@ -24,7 +24,8 @@
     "gen:docs": "typedoc --plugin typedoc-plugin-markdown",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "starknet": "catalog:game",

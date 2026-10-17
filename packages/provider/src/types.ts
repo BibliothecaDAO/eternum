@@ -60,9 +60,12 @@ export enum TransactionType {
   PROVISION_REALM = "provision_realm",
   BITCOIN_MINE_CONTRIBUTE_LABOR = "bitcoin_mine_contribute_labor",
   BITCOIN_MINE_CLAIM_PHASE_REWARD = "bitcoin_mine_claim_phase_reward",
+  BITCOIN_MINE_CLOSE_PHASE = "bitcoin_mine_close_phase",
+  BITCOIN_MINE_BIND_PHASE = "bitcoin_mine_bind_phase",
   // Exploration & Movement
   EXPLORE = "explore",
   TRAVEL_HEX = "travel_hex",
+  TOGGLE_ALTERNATE = "toggle_alternate",
   ENTER_DEPTH = "enter_depth",
   RESEARCH = "research",
   BUY_TIER = "buy_tier",
@@ -109,6 +112,9 @@ export enum TransactionType {
   BUY = "buy",
   SELL = "sell",
   REMOVE = "remove",
+  ADD_LIQUIDITY = "add_liquidity",
+  BRIDGE_DEPOSIT = "bridge_deposit",
+  BRIDGE_WITHDRAW = "bridge_withdraw",
 
   // Orders & Marketplace
   CREATE_ORDER = "create_order",
@@ -125,9 +131,15 @@ export enum TransactionType {
 
   // Structures & Ownership
   SET_ENTITY_NAME = "set_entity_name",
+  TRANSFER_STRUCTURE_OWNERSHIP = "transfer_structure_ownership",
+  STRUCTURE_BURN = "structure_burn",
 
   // Hyperstructures
+  CREATE_HYPERSTRUCTURE = "create_hyperstructure",
+  INITIALIZE_HYPERSTRUCTURE = "initialize_hyperstructure",
   CONTRIBUTE = "contribute",
+  CLAIM_WONDER_POINTS = "claim_wonder_points",
+  CLAIM_PLAYER_FAITH_POINTS = "claim_player_faith_points",
   PLEDGE_FAITH = "pledge_faith",
   REMOVE_FAITH = "remove_faith",
   UPDATE_WONDER_OWNERSHIP = "update_wonder_ownership",
@@ -148,9 +160,7 @@ export enum TransactionType {
   OPEN_CHEST = "open_chest",
   INTERACT_SITE = "interact_site",
   BURN_RESEARCH_FOR_RELIC = "burn_research_for_relic",
-
-  // Config (Admin)
-  INITIALIZE = "initialize",
+  APPLY_RELIC = "apply_relic",
 
   // Legacy (kept for compatibility)
 }

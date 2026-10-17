@@ -28,13 +28,14 @@ export const ArmyTypeToggle = ({
 }: ArmyTypeToggleProps) => {
   const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
 
+  // A full cap is where the realm stands, not a mistake: said plainly, with what lifts it.
   const limitMessage = armyType
     ? maxExplorers === undefined
       ? "This structure's army limit is unknown."
-      : `Maximum attack armies (${maxExplorers}) created. Delete an existing army to create a new one.`
+      : `All ${maxExplorers} field army slots are in use. Level up the realm or disband an army to raise another.`
     : hasDefenseArmies
-      ? `All defense slots (${maxGuards}) are occupied. Reinforce an existing slot or delete one to free space.`
-      : `This structure does not have available defense slots.`;
+      ? `All ${maxGuards} defense slots hold troops. Pick one to reinforce it.`
+      : `This structure has no defense slots.`;
 
   const shouldShowLimitWarning = (armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy);
 
@@ -44,21 +45,20 @@ export const ArmyTypeToggle = ({
       <div className="flex border-b border-gold/20">
         <button
           onClick={() => onSelect(true)}
-          disabled={!canCreateAttackArmy}
+          title={`Field armies: ${currentExplorersCount} of ${maxExplorers ?? "—"}`}
           className={clsx(
             "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
             "border-b-2 -mb-[1px]",
             armyType
               ? "border-gold text-gold bg-gold/5"
-              : "border-transparent text-kit-muted hover:text-gold/80 hover:bg-gold/5",
-            !canCreateAttackArmy && "opacity-40 cursor-not-allowed",
+              : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
           )}
         >
           <SemanticIcon name="people" className="w-3.5 h-3.5" />
-          <span className="text-sm font-bold">Attack</span>
+          <span className="text-xs font-bold uppercase">Attack</span>
           <span
             className={clsx(
-              "text-sm px-1 py-0.5 rounded font-bold",
+              "text-xxs px-1 py-0.5 rounded font-bold",
               armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70",
             )}
           >
@@ -68,20 +68,21 @@ export const ArmyTypeToggle = ({
         <button
           onClick={() => onSelect(false)}
           disabled={!canInteractWithDefense}
+          title={`Guard slots filled: ${currentGuardsCount ?? "—"} of ${maxGuards}`}
           className={clsx(
             "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
             "border-b-2 -mb-[1px]",
             !armyType
               ? "border-gold text-gold bg-gold/5"
-              : "border-transparent text-kit-muted hover:text-gold/80 hover:bg-gold/5",
+              : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
             !canInteractWithDefense && "opacity-40 cursor-not-allowed",
           )}
         >
           <SemanticIcon name="defend" className="w-3.5 h-3.5" />
-          <span className="text-sm font-bold">Defense</span>
+          <span className="text-xs font-bold uppercase">Defense</span>
           <span
             className={clsx(
-              "text-sm px-1 py-0.5 rounded font-bold",
+              "text-xxs px-1 py-0.5 rounded font-bold",
               !armyType ? "bg-gold/20 text-gold" : "bg-brown/30 text-gold/70",
             )}
           >
@@ -92,9 +93,9 @@ export const ArmyTypeToggle = ({
 
       {/* Warning Message */}
       {shouldShowLimitWarning && (
-        <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
-          <SemanticIcon name="warning" className="w-3.5 h-3.5 text-danger flex-shrink-0" />
-          <span className="text-sm text-danger font-semibold">{limitMessage}</span>
+        <div role="status" className="flex items-center gap-1.5 rounded border-l-2 border-gold/40 bg-gold/5 px-2 py-1">
+          <SemanticIcon name="info" className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />
+          <span className="text-xs text-gold/80">{limitMessage}</span>
         </div>
       )}
     </div>

@@ -24,8 +24,9 @@ import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { resolveBuildingRequirements } from "./construction-groups";
-import { RequirementChips, type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
+import { type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
+import { describeBuildingGives, describeCostLine } from "./building-gives";
 import {
   buildRealmBuildingSummary,
   getMilitaryBuildingInfo,
@@ -39,7 +40,6 @@ import {
   getBalance,
   getBuildingCosts,
   getBuildingCount,
-  getConsumedBy,
   getRealmInfo,
   ResourceManager,
   resolveUseSimpleCost,
@@ -78,7 +78,7 @@ type ArmyGroup = {
 // T2 troop resources in Paladin/Knight/Crossbow order, then T3 in the same
 // order. Each entry carries the troop hint we render on the card so the
 // player sees "this resource feeds Paladin T2" at a glance.
-type ResourceTroopHint = { tier: 2 | 3; troopResource: string; troopLabel: string };
+type ResourceTroopHint = { tier: 2 | 3; troopResource: ResourcesIds; troopLabel: string };
 type ResourceTierSlot = {
   resourceId: ResourcesIds;
   troopHint?: ResourceTroopHint;
@@ -101,15 +101,15 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
     slots: [
       {
         resourceId: ResourcesIds.Gold,
-        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Paladin], troopLabel: "Paladin" },
+        troopHint: { tier: 2, troopResource: ResourcesIds.Paladin, troopLabel: "Paladin" },
       },
       {
         resourceId: ResourcesIds.ColdIron,
-        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Knight], troopLabel: "Knight" },
+        troopHint: { tier: 2, troopResource: ResourcesIds.Knight, troopLabel: "Knight" },
       },
       {
         resourceId: ResourcesIds.Ironwood,
-        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Crossbowman], troopLabel: "Crossbowman" },
+        troopHint: { tier: 2, troopResource: ResourcesIds.Crossbowman, troopLabel: "Crossbowman" },
       },
     ],
   },
@@ -119,15 +119,15 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
     slots: [
       {
         resourceId: ResourcesIds.Dragonhide,
-        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Paladin], troopLabel: "Paladin" },
+        troopHint: { tier: 3, troopResource: ResourcesIds.Paladin, troopLabel: "Paladin" },
       },
       {
         resourceId: ResourcesIds.Mithral,
-        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Knight], troopLabel: "Knight" },
+        troopHint: { tier: 3, troopResource: ResourcesIds.Knight, troopLabel: "Knight" },
       },
       {
         resourceId: ResourcesIds.Adamantine,
-        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Crossbowman], troopLabel: "Crossbowman" },
+        troopHint: { tier: 3, troopResource: ResourcesIds.Crossbowman, troopLabel: "Crossbowman" },
       },
     ],
   },
@@ -165,6 +165,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const { isMapView } = useQuery();
 
   const structure = useNativeRow("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId });
+  // What one more of each building gives, from the one output source (building-gives.ts).
+  const givesOf = (building: BuildingType) =>
+    structure
+      ? describeBuildingGives(
+          game.setup.store,
+          structure,
+          building,
+          configManager.getBuildingCategoryConfig(building).capacity_grant,
+        )
+      : null;
   const structureBuildings = useNativeRow("StructureBuildings", {
     game_id: configManager.getActiveGameId(),
     entity_id: entityId,
@@ -592,7 +602,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <div key={group.tier} className="rounded-md border border-gold/15">
                     <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-sm font-semibold text-gold/80">{group.label}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
+                        {group.label}
+                      </span>
                     </div>
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                       {slots.map(({ resourceId, troopHint }) => {
@@ -625,6 +637,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildLoading={isBuildPending}
                             key={`${entityId}:${resourceId}`}
                             buildingId={building}
+                            gives={givesOf(building)}
                             requirements={resolveBuildingRequirements(
                               entityId,
                               game.setup.store,
@@ -640,7 +653,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             }}
                             active={previewBuilding?.resource === resourceId}
                             buildingName={resource?.trait}
-                            resourceName={resource?.trait}
+                            resource={resourceId}
                             productionStatus={productionStatus}
                             troopHint={troopHint}
                             toolTip={
@@ -681,7 +694,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <div className="rounded-md border border-gold/15">
                     <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-sm font-semibold text-gold/80">Other</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">Other</span>
                     </div>
                     <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
                       {others.map((resourceId) => {
@@ -711,6 +724,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             buildLoading={isBuildPending}
                             key={`${entityId}:${resourceId}`}
                             buildingId={building}
+                            gives={givesOf(building)}
                             requirements={resolveBuildingRequirements(
                               entityId,
                               game.setup.store,
@@ -726,7 +740,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             }}
                             active={previewBuilding?.resource === resourceId}
                             buildingName={resource?.trait}
-                            resourceName={resource?.trait}
+                            resource={resourceId}
                             productionStatus={productionStatus}
                             toolTip={
                               <ResourceInfo
@@ -827,6 +841,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     })}
                     key={`${entityId}:${index}`}
                     buildingId={building}
+                    gives={givesOf(building)}
                     requirements={resolveBuildingRequirements(
                       entityId,
                       game.setup.store,
@@ -843,11 +858,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     }}
                     active={previewBuilding?.type === building}
                     buildingName={BuildingTypeToString[building]}
-                    resourceName={
-                      configManager.getResourceBuildingProduced(building)
-                        ? (getProducedResourceName(building) as keyof typeof ResourcesIds)
-                        : undefined
-                    }
+                    resource={configManager.getResourceBuildingProduced(building)}
                     isWorkersHut={isWorkersHut}
                     productionStatus={productionStatus}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
@@ -878,7 +889,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         ),
         component: () => {
           if (armyGroups.length === 0) {
-            return <div className="p-2 text-sm text-kit-muted">No military buildings available.</div>;
+            return <div className="p-2 text-xs text-gold/60">No military buildings available.</div>;
           }
 
           // With the wider Build modal all three tiers fit in one row, so we
@@ -903,7 +914,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       )}
                     >
                       <div className="flex items-center justify-between gap-2 border-b border-gold/10 px-3 py-2">
-                        <span className="text-sm font-semibold text-gold/85">{group.armyType}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold/85">
+                          {group.armyType}
+                        </span>
                         <span
                           className={clsx(
                             "rounded-md border px-2 py-0.5 text-sm font-bold tabular-nums",
@@ -965,6 +978,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 })}
                                 key={`${entityId}:${index}`}
                                 buildingId={building}
+                                gives={givesOf(building)}
                                 requirements={resolveBuildingRequirements(
                                   entityId,
                                   game.setup.store,
@@ -978,7 +992,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 }}
                                 active={previewBuilding?.type === building}
                                 buildingName={`${BuildingTypeToString[building]}`}
-                                resourceName={getProducedResourceName(building) as keyof typeof ResourcesIds}
+                                resource={configManager.getResourceBuildingProduced(building)}
                                 productionStatus={productionStatus}
                                 toolTip={
                                   <BuildingInfo
@@ -1047,11 +1061,14 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   return (
     <div className={`${className}`}>
       <div className="flex flex-wrap justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
-        <h6>Building Costs</h6>
         <div className="flex items-center gap-2">
           {configManager.buildingCostMode === "choice" && (
-            <label className="inline-flex min-h-11 items-center cursor-pointer">
-              <span className={`mr-2 text-sm ${useSimpleCost ? "text-kit-muted" : ""}`}>Resource</span>
+            <label
+              className="inline-flex min-h-11 items-center cursor-pointer"
+              title="Pay for buildings with resources or with labor; each card shows its cost in the one chosen"
+            >
+              <span className="mr-2 text-xs text-gold/70">Pay with</span>
+              <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resources</span>
               <div className="relative">
                 <input
                   type="checkbox"
@@ -1061,7 +1078,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 />
                 <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
               </div>
-              <span className={`ml-2 text-sm ${useSimpleCost ? "" : "text-kit-muted"}`}>Labor</span>
+              <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
             </label>
           )}
         </div>
@@ -1114,7 +1131,7 @@ export const BuildingCard = ({
   onClick,
   active,
   buildingName,
-  resourceName,
+  resource,
   isWorkersHut,
   productionStatus,
   toolTip,
@@ -1135,13 +1152,14 @@ export const BuildingCard = ({
   pauseResumeAllLoading,
   allPaused,
   troopHint,
+  gives,
 }: {
   canPlaceOnMap?: boolean;
   buildingId: BuildingType;
   onClick: () => void;
   active: boolean;
   buildingName: string;
-  resourceName?: string;
+  resource?: ResourcesIds;
   isWorkersHut?: boolean;
   productionStatus?: ResourceProductionStatus;
   toolTip: React.ReactElement;
@@ -1152,7 +1170,7 @@ export const BuildingCard = ({
    * resource cards. Rendered as a tiny chip in the corner so the player
    * can tell at a glance which troop the resource unlocks.
    */
-  troopHint?: { tier: 2 | 3; troopResource: string; troopLabel: string };
+  troopHint?: ResourceTroopHint;
   className?: string;
   disabled?: boolean;
   disabledReason?: string;
@@ -1168,6 +1186,8 @@ export const BuildingCard = ({
   pauseResumeAllDisabled?: boolean;
   pauseResumeAllLoading?: boolean;
   allPaused?: boolean;
+  /** What one more gives, named and per unit of time ("+360 Wheat / min"); null when it gives neither. */
+  gives?: string | null;
 }) => {
   const lane = useCompactLane();
   const setTooltip = useTooltipStore((state) => state.setTooltip);
@@ -1191,23 +1211,15 @@ export const BuildingCard = ({
       ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
       : null;
   const productionBadge =
-    productionStatus && resourceName ? (
+    productionStatus && resource !== undefined ? (
       <ProductionStatusBadge
-        resourceLabel={resourceName}
-        tooltipText={
-          productionStatus.isProducing
-            ? `${activeProductionBuildings}/${totalProductionBuildings} producing${
-                formattedRemaining ? ` • ${formattedRemaining} left` : ""
-              }`
-            : `Idle (${totalProductionBuildings} building${totalProductionBuildings !== 1 ? "s" : ""})`
-        }
+        resource={resource}
         isProducing={productionStatus.isProducing}
         timeRemainingSeconds={effectiveRemainingSeconds}
         size="md"
         showTooltip={false}
-        cornerTopLeft={totalProductionBuildings > 0 ? `${totalProductionBuildings}` : undefined}
-        cornerTopRight={outputLabel}
-        cornerBottomRight={formattedRemaining ?? undefined}
+        buildings={totalProductionBuildings}
+        amount={outputLabel}
       />
     ) : null;
 
@@ -1220,7 +1232,7 @@ export const BuildingCard = ({
         status={
           productionStatus
             ? productionStatus.isProducing
-              ? `Producing${formattedRemaining ? ` · ${formattedRemaining} left` : ""}`
+              ? `Producing${producingFor(formattedRemaining, effectiveRemainingSeconds)}`
               : "Idle"
             : undefined
         }
@@ -1249,10 +1261,8 @@ export const BuildingCard = ({
   return (
     <div
       onClick={handleClick}
-      onMouseEnter={() => setTooltip({ content: <RequirementChips requirements={requirements} />, position: "top" })}
-      onMouseLeave={() => setTooltip(null)}
       className={clsx(
-        "overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 rounded border border-gold/20 bg-black/20 transition-colors hover:border-gold/50 hover:bg-gold/15",
+        "overflow-hidden text-ellipsis cursor-pointer relative h-48 min-w-20 rounded border border-gold/20 bg-black/20 transition-colors hover:border-gold/50 hover:bg-gold/15",
         {
           "!border-gold": active,
           "cursor-not-allowed hover:bg-gold/10 hover:border-gold/20": isDisabled,
@@ -1280,14 +1290,14 @@ export const BuildingCard = ({
             }}
             className={clsx(
               "inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition",
-              !buildDisabled && !isDisabled && "hover:translate-y-[-1px] hover:bg-amber-300",
+              !buildDisabled && !isDisabled && "hover:bg-amber-300",
               (buildDisabled || isDisabled) && "opacity-60 cursor-not-allowed",
             )}
             title="Build"
             aria-label="Build"
           >
             {buildLoading ? (
-              <span className="text-sm font-bold">…</span>
+              <span className="text-[10px] font-bold">…</span>
             ) : (
               <SemanticIcon name="build" className="h-3.5 w-3.5" />
             )}
@@ -1306,14 +1316,13 @@ export const BuildingCard = ({
                 allPaused
                   ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
                   : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-                !pauseResumeAllDisabled && "hover:translate-y-[-1px]",
                 pauseResumeAllDisabled && "opacity-60 cursor-not-allowed",
               )}
               title={allPaused ? "Resume all" : "Pause all"}
               aria-label={allPaused ? "Resume all" : "Pause all"}
             >
               {pauseResumeAllLoading ? (
-                <span className="text-sm font-bold">…</span>
+                <span className="text-[10px] font-bold">…</span>
               ) : allPaused ? (
                 <SemanticIcon name="play" className="h-3.5 w-3.5" />
               ) : (
@@ -1332,14 +1341,14 @@ export const BuildingCard = ({
               }}
               className={clsx(
                 "inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 text-white shadow transition",
-                !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
+                !destroyDisabled && "hover:bg-red-800",
                 destroyDisabled && "opacity-60 cursor-not-allowed",
               )}
               title="Destroy building"
               aria-label="Destroy building"
             >
               {destroyLoading ? (
-                <span className="text-sm font-bold">…</span>
+                <span className="text-[10px] font-bold">…</span>
               ) : (
                 <SemanticIcon name="trash" className="h-3.5 w-3.5" />
               )}
@@ -1348,31 +1357,31 @@ export const BuildingCard = ({
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isWorkersHut && (
-            <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-sm font-semibold text-gold/90 shadow-md border border-gold/30">
+            <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/30">
               {count}
             </span>
           )}
           {productionBadge ||
-            (resourceName && (
+            (resource !== undefined && (
               <div className="rounded p-1 bg-brown/40">
-                <ResourceIcon withTooltip={false} resource={resourceName} size="lg" />
+                <ResourceIcon withTooltip={false} resource={resource} size="lg" />
               </div>
             ))}
           {badge && <div>{badge}</div>}
         </div>
       </div>
       {showDisabledMessage && (
-        <div className="absolute inset-0 bg-brown/60 p-4 text-sm flex justify-center text-center">
+        <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
           <div className="self-center text-gold/90 leading-tight">{disabledReason}</div>
         </div>
       )}
-      <div className="absolute inset-x-0 bottom-0 p-2 space-y-2">
+      <div className="absolute inset-x-0 bottom-0 space-y-0.5 bg-gradient-to-t from-black/85 via-black/70 to-transparent p-2 pt-6">
         <div className="flex items-center justify-between gap-2">
           <h6 className="truncate text-left">{buildingName}</h6>
           <div className="flex items-center gap-1.5">
             {troopHint && (
               <span
-                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-sm font-semibold text-gold/90 shadow-md"
+                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/90 shadow-md"
                 title={`T${troopHint.tier} ${troopHint.troopLabel}`}
                 aria-label={`T${troopHint.tier} ${troopHint.troopLabel}`}
               >
@@ -1395,8 +1404,28 @@ export const BuildingCard = ({
             />
           </div>
         </div>
+        {gives && <p className="truncate text-left text-xs font-semibold text-emerald-300">{gives}</p>}
+        <BuildingCostLines requirements={requirements} />
       </div>
     </div>
+  );
+};
+
+/** A card's cost, named, a line per resource: "10 Labor (you have 1,574)", red while short. */
+const BuildingCostLines = ({ requirements }: { requirements: ResourceRequirement[] | undefined }) => {
+  if (requirements === undefined) return <p className="text-left text-xs text-gold/60">Cost unknown</p>;
+  if (requirements.length === 0) return <p className="text-left text-xs text-gold/60">Free</p>;
+  return (
+    <ul className="text-left text-xs">
+      {requirements.map(({ resource, amount, current }) => (
+        <li
+          key={resource}
+          className={clsx("truncate", current !== undefined && current < amount ? "text-red-300" : "text-gold/85")}
+        >
+          {describeCostLine(resource, amount, current)}
+        </li>
+      ))}
+    </ul>
   );
 };
 
@@ -1440,11 +1469,7 @@ const ResourceInfo = ({
   const population = buildingPopCapacityConfig.population_cost;
   const capacity = buildingPopCapacityConfig.capacity_grant;
 
-  const amountProducedPerTick = divideByPrecision(configManager.getResourceOutputs(resourceId));
-
-  const consumedBy = useMemo(() => {
-    return getConsumedBy(resourceId);
-  }, [resourceId]);
+  const gives = structure ? describeBuildingGives(game.setup.store, structure, buildingId, capacity) : null;
 
   const resourceById = useMemo(() => {
     return findResourceById(resourceId)?.trait;
@@ -1469,25 +1494,24 @@ const ResourceInfo = ({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {resourceById && (
           <div>
-            <h6 className="text-gold/70 text-sm mb-1">Produces</h6>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
             <div className="flex items-center gap-2 mt-1">
-              <h6 className="text-lg font-semibold text-green-400">+{amountProducedPerTick}</h6>
               <ResourceIcon className="self-center" resource={resourceId} size="xl" />
-              <h6 className="text-gold/80">{resourceById || ""}</h6>
+              <h6 className="text-lg font-semibold text-green-400">{gives ?? "—"}</h6>
             </div>
           </div>
         )}
         <div>
           {population !== 0 && (
             <div className="mb-2">
-              <h6 className="text-gold/70 text-sm mb-1">Population Cost</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
               <h6 className="text-gold text-lg font-semibold">+{population}</h6>
             </div>
           )}
 
           {capacity !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-sm mb-1">Max Pop. Capacity Grant</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Pop. Capacity Grant</h6>
               <h6 className="text-gold text-lg font-semibold">+{capacity}</h6>
             </div>
           )}
@@ -1496,13 +1520,13 @@ const ResourceInfo = ({
 
       {cost === undefined ? (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <p className="text-gold/70">—</p>
         </>
       ) : (
         cost.length > 0 && (
           <>
-            <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Cost</h6>
+            <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
             <div className="grid grid-cols-2 gap-2">
               {Object.keys(cost).map((resourceId) => {
                 const balance = getBalance(
@@ -1530,7 +1554,9 @@ const ResourceInfo = ({
       {buildingCost === undefined && <p>Building Creation Cost: —</p>}
       {buildingCost && buildingCost.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Building Creation Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Building Creation Cost
+          </h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
@@ -1550,19 +1576,6 @@ const ResourceInfo = ({
                 />
               );
             })}
-          </div>
-        </>
-      )}
-
-      {consumedBy.length > 0 && (
-        <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10 flex items-center gap-2">
-            <ResourceIcon className="self-center" resource={resourceId} size="lg" /> Consumed By
-          </h6>
-          <div className="flex flex-row space-x-2 mt-1">
-            {React.Children.toArray(
-              consumedBy.map((resourceId) => <ResourceIcon key={resourceId} resource={resourceId} size="sm" />),
-            )}
           </div>
         </>
       )}
@@ -1590,7 +1603,6 @@ const BuildingInfo = ({
   const currentDefaultTick = useCurrentDefaultTick();
 
   const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
-  const resourceProducedName = resourceProduced ? findResourceById(resourceProduced)?.trait : undefined;
 
   const buildingCost = getBuildingCosts(entityId, game.setup.store, buildingId, useSimpleCost);
 
@@ -1621,12 +1633,10 @@ const BuildingInfo = ({
     ongoingCost = adjustWonderLordsCost(ongoingCost);
   }
 
-  const perTick =
-    resourceProduced !== undefined ? divideByPrecision(configManager.getResourceOutputs(resourceProduced)) || 0 : 0;
-
-  const usedIn = useMemo(() => {
-    return resourceProduced === undefined ? [] : getConsumedBy(resourceProduced);
-  }, [resourceProduced]);
+  const gives =
+    structure && resourceProduced !== undefined
+      ? describeBuildingGives(game.setup.store, structure, buildingId, 0)
+      : null;
 
   return (
     <div className="flex flex-col p-3 space-y-3 text-sm">
@@ -1647,25 +1657,24 @@ const BuildingInfo = ({
         <div>
           {population !== 0 && (
             <div className="mb-2">
-              <h6 className="text-gold/70 text-sm mb-1">Population Cost</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
               <span className="text-gold text-lg font-semibold">+{population}</span>
             </div>
           )}
           {capacity !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-sm mb-1">Max Population Grant</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Population Grant</h6>
               <span className="text-gold text-lg font-semibold">+{capacity}</span>
             </div>
           )}
         </div>
         <div>
-          {resourceProducedName && perTick !== 0 && (
+          {resourceProduced !== undefined && gives && (
             <div>
-              <h6 className="text-gold/70 text-sm mb-1">Produced</h6>
+              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-lg font-semibold text-green-400">+{perTick}</span>
-                <ResourceIcon withTooltip={false} className="self-center" resource={resourceProducedName} size="sm" />
-                <span className="text-gold/80">{resourceProducedName}</span>
+                <ResourceIcon withTooltip={false} className="self-center" resource={resourceProduced} size="sm" />
+                <span className="text-lg font-semibold text-green-400">{gives}</span>
               </div>
             </div>
           )}
@@ -1674,7 +1683,7 @@ const BuildingInfo = ({
 
       {Array.isArray(ongoingCost) && ongoingCost.length > 0 ? (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
@@ -1683,7 +1692,7 @@ const BuildingInfo = ({
                 <ResourceCost
                   key={`ongoing-cost-${index}`}
                   type="horizontal"
-                  className="!text-sm"
+                  className="!text-xs"
                   resourceId={costItem.resource}
                   amount={costItem.amount}
                   balance={balance.balance}
@@ -1693,13 +1702,17 @@ const BuildingInfo = ({
           </div>
         </>
       ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not labor mode
-        <div className="text-gold/70 text-sm pt-2 border-t border-gold/10">No ongoing resource costs in this mode.</div>
+        <div className="text-gold/70 italic text-xs pt-2 border-t border-gold/10">
+          No ongoing resource costs in this mode.
+        </div>
       ) : null}
 
       {buildingCost === undefined && <p>Building Creation Cost: —</p>}
       {buildingCost && buildingCost.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Building Creation Cost</h6>
+          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
+            Building Creation Cost
+          </h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
@@ -1712,7 +1725,7 @@ const BuildingInfo = ({
                 <ResourceCost
                   key={`fixed-cost-${index}`}
                   type="horizontal"
-                  className="!text-sm"
+                  className="!text-xs"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}
@@ -1722,22 +1735,12 @@ const BuildingInfo = ({
           </div>
         </>
       )}
-
-      {usedIn.length > 0 && (
-        <>
-          <h6 className="text-gold/70 text-sm pt-2 border-t border-gold/10">Consumed By</h6>
-          <div className="flex flex-row space-x-2 mt-1">
-            {React.Children.toArray(
-              usedIn.map((resourceId) => <ResourceIcon key={resourceId} resource={resourceId} size="sm" />),
-            )}
-          </div>
-        </>
-      )}
     </div>
   );
 };
 
-function getProducedResourceName(building: BuildingType): string | undefined {
-  const resource = configManager.getResourceBuildingProduced(building);
-  return resource === undefined ? undefined : ResourcesIds[resource];
-}
+/** How long a building keeps producing, after "Producing": " · 4h left", " · never runs out", or nothing unknown. */
+const producingFor = (formatted: string | null, seconds: number | null): string => {
+  if (seconds === Number.POSITIVE_INFINITY) return " · never runs out";
+  return formatted ? ` · ${formatted} left` : "";
+};

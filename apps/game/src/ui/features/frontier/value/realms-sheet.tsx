@@ -86,7 +86,7 @@ export const RealmsSheet = ({
     ) : (
       <>
         {plan.rows.map(({ realm, state }) => (
-          <RealmRow key={realm.realmId} name={realm.name} id={realm.realmId} order={realm.order} state={state}>
+          <RealmRow key={realm.realmId} name={realm.name} realmId={realm.realmId} order={realm.order} state={state}>
             {state === "ready" && <LaborChip amount={perRealm} />}
           </RealmRow>
         ))}
@@ -168,13 +168,13 @@ const ClaimStep = ({
 
 const RealmRow = ({
   name,
-  id,
+  realmId,
   order,
   state,
   children,
 }: {
   name: string;
-  id: number;
+  realmId: number;
   order: number;
   state: RealmLaborState;
   children?: ReactNode;
@@ -187,7 +187,7 @@ const RealmRow = ({
   >
     <OrderEmblem order={order} size={28} />
     <span className="min-w-0 flex-1 truncate text-base text-kit-cream">
-      {name} <span className="text-sm tabular-nums text-kit-muted">#{formatExact(id)}</span>
+      {name} <span className="text-sm tabular-nums text-kit-muted">#{formatExact(realmId)}</span>
     </span>
     {state === "claimed" && <SemanticIcon name="check" size={24} />}
     {state === "absent" && <span className="shrink-0 text-sm text-kit-muted">{REALM_NOT_IN_WALLET}</span>}

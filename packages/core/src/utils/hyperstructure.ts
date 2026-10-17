@@ -4,43 +4,103 @@ import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
 import { structureMapPosition } from "./expeditions";
+import { getTileAt } from "./tile";
 
-const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
+type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
 
-const getHyperstructureRealmCheckRadius = () => {
-  const { spacing, mode } = configManager.getSettlementConfig();
-  if (!Number.isSafeInteger(spacing) || spacing < 2) throw new Error("Invalid settlement spacing");
-  return spacing + (mode === "Single" ? 2 : 0);
-};
+/** A Hyperstructure's rate: the whole points a second it pays whoever holds it, and whether a player holds it now. */
+export interface HyperstructureRate {
+  pointsPerSecond: number;
+  taken: boolean;
+}
 
-const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {
-  const isTwoPlayerMode = configManager.getSettlementConfig().mode === "Duel";
-  return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
-};
-
-export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, number> => {
-  const structures = [...store.inGame("Structure", configManager.getActiveGameId())];
-  const realms = structures.filter((structure) => structure.base.category === StructureType.Realm);
-  const radiusSquared = getHyperstructureRealmCheckRadius() ** 2;
-  const realmCounts = new Map<ID, number>();
-
-  structures
-    .filter((structure) => structure.base.category === StructureType.Hyperstructure)
-    .forEach((hyperstructure) => {
-      const center = structureMapPosition(store, hyperstructure);
-      if (!center) return;
-      const count = realms.filter((realm) => {
-        const position = structureMapPosition(store, realm);
-        if (!position) return false;
-        const colDistance = position.x - center.x;
-        const rowDistance = position.y - center.y;
-        return colDistance ** 2 + rowDistance ** 2 <= radiusSquared;
-      }).length;
-      realmCounts.set(safeInteger(hyperstructure.entity_id), getEffectiveHyperstructureRealmCount(count));
+/**
+ * The one rate every surface shows for a Hyperstructure. A held one pays the game's rate times the multiplier its share
+ * allocation was struck at when it was taken, zero included, and has no rate until that allocation is known; an
+ * untaken one shows what taking it now would pay: the game's rate times 1, or, where the multiplier rule is on, 2 in a
+ * Duel or the realms the contract's scan counts around it.
+ */
+export const getHyperstructureRates = (store: NativeFactStore): Map<ID, HyperstructureRate> => {
+  const game_id = configManager.getActiveGameId();
+  const grants = configManager.getVictoryPointGrants();
+  const rates = new Map<ID, HyperstructureRate>();
+  for (const hyperstructure of store.inGame("Structure", game_id)) {
+    if (hyperstructure.base.category !== StructureType.Hyperstructure) continue;
+    const position = structureMapPosition(store, hyperstructure);
+    if (!position) continue;
+    const entity_id = safeInteger(hyperstructure.entity_id);
+    const shares = store.get("HyperstructureShares", { game_id, entity_id });
+    const rate = hyperstructureRate(grants, {
+      taken: hyperstructure.owner !== 0n,
+      struckMultiplier: shares ? Number(shares.multiplier) : null,
+      realmsInScan: realmsInMultiplierScan(store, position),
     });
-
-  return realmCounts;
+    if (rate) rates.set(entity_id, rate);
+  }
+  return rates;
 };
+
+/** One Hyperstructure's rate, by the rule above, from what the chain and the map say about it; null while unknown. */
+export const hyperstructureRate = (
+  grants: Pick<VictoryPointGrants, "hyperstructurePerSecond" | "hyperstructureScale">,
+  hyperstructure: { taken: boolean; struckMultiplier: number | null; realmsInScan: number },
+): HyperstructureRate | null => {
+  const { taken, struckMultiplier, realmsInScan } = hyperstructure;
+  if (taken) {
+    return struckMultiplier === null
+      ? null
+      : { pointsPerSecond: grants.hyperstructurePerSecond * struckMultiplier, taken };
+  }
+  const multiplier =
+    grants.hyperstructureScale === "flat" ? 1 : grants.hyperstructureScale === "double" ? 2 : realmsInScan;
+  return { pointsPerSecond: grants.hyperstructurePerSecond * multiplier, taken };
+};
+
+/** The six turns of the contract's scan: out one way, then half as far another, around the hexagon. */
+const SCAN_TURNS = [
+  [0, 4],
+  [1, 5],
+  [2, 0],
+  [3, 1],
+  [4, 2],
+  [5, 3],
+] as const;
+
+/**
+ * The realms the contract counts for a Hyperstructure's multiplier (hyperstructures.cairo `multiplier`): the six tiles
+ * reached by going the scan distance one way and half of it another, the scan distance being the game's settlement
+ * spacing, two more in a Single game (settlement_grid.cairo `hyperstructure_scan_distance`). A realm anywhere else,
+ * however near, is not counted.
+ */
+const realmsInMultiplierScan = (store: NativeFactStore, origin: { x: number; y: number }): number => {
+  const game_id = configManager.getActiveGameId();
+  const { spacing, mode } = configManager.getSettlementConfig();
+  const distance = Number(spacing) + (mode === "Single" ? 2 : 0);
+  return SCAN_TURNS.filter(([first, second]) => {
+    const tile = stepsFrom(stepsFrom(origin, first, distance), second, Math.floor(distance / 2));
+    const occupant = getTileAt(store, false, tile.x, tile.y, game_id);
+    if (!occupant?.occupier_is_structure) return false;
+    const structure = store.get("Structure", { game_id, entity_id: occupant.occupier_id });
+    return structure?.base.category === StructureType.Realm;
+  }).length;
+};
+
+/** A surface tile `distance` steps away in one of six directions, as geometry.cairo `checked_neighbor_at_distance`. */
+const stepsFrom = ({ x, y }: { x: number; y: number }, direction: number, distance: number) => {
+  const column = x - (y + (y % 2)) / 2;
+  const [stepped, row] = [
+    [column + distance, y],
+    [column, y + distance],
+    [column - distance, y + distance],
+    [column - distance, y],
+    [column, y - distance],
+    [column + distance, y - distance],
+  ][direction];
+  return { x: stepped + (row + (row % 2)) / 2, y: row };
+};
+
+/** The words after a Hyperstructure's rate, the same on its map label and its panel. */
+export const hyperstructureRateUnit = (taken: boolean): string => (taken ? "points/s" : "points/s once taken");
 
 export const getHyperstructureProgress = (hyperstructureId: number, store: NativeFactStore) => {
   const game = configManager.getActiveGameId();

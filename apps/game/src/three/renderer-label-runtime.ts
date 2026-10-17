@@ -3,6 +3,7 @@ import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
 import { runWithFrameWorkOwner } from "./frame-work-owner";
 import { resolveLabelRenderDecision, resolveLabelRenderIntervalMs } from "./game-renderer-policy";
 import { incrementWorldmapRenderCounter } from "./perf/worldmap-render-diagnostics";
+import { keepLabelsBesideHudColumns } from "./utils/labels/hud-clearance";
 
 export type RendererLabelCadenceView = "close" | "medium" | "far" | undefined;
 
@@ -120,7 +121,10 @@ class GameRendererLabelRuntime implements RendererLabelRuntime {
 
   public render(scene: Object3D<Object3DEventMap>, camera: Camera): void {
     incrementWorldmapRenderCounter("css2dLabelRenders");
-    runWithFrameWorkOwner("labels:css2d", () => this.renderer?.render(scene as never, camera as never));
+    runWithFrameWorkOwner("labels:css2d", () => {
+      this.renderer?.render(scene as never, camera as never);
+      if (this.labelRendererElement) keepLabelsBesideHudColumns(this.labelRendererElement);
+    });
   }
 
   public dispose(): void {

@@ -21,7 +21,7 @@ vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
 }));
 vi.mock("@/ui/features/social/components/social-board", () => ({
   LEADERBOARD_POPOVER_ID: "leaderboard",
-  SocialBoard: () => null,
+  LeaderboardSurface: () => null,
 }));
 
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -51,7 +51,7 @@ const openChip = async () => {
     ),
   );
   unmount = () => act(async () => root.unmount());
-  await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Identity"]')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Account"]')!.click());
   return document.body;
 };
 

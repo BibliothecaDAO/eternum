@@ -8,7 +8,7 @@ import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { RealmHexDeployMap } from "./realm-hex-deploy-map";
-import { TroopCountSelector } from "./troop-count-selector";
+import { TroopAmount } from "./troop-amount";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import { useArmyCreation } from "./use-army-creation";
 
@@ -129,36 +129,25 @@ export const UnifiedArmyCreationBody = ({
               bare
             />
             <div className="border-t border-gold/15" />
-            <TroopCountSelector
+            <TroopAmount
               troopCount={form.troopCount}
               maxAffordable={form.maxAffordable}
+              held={form.selectedAvailable}
               onChange={form.handleTroopCountChange}
-              capacityRemaining={form.capacityRemainingForSelector}
-              troopMaxSize={form.troopCapacityLimit ?? undefined}
-              unavailableReason={form.troopAvailabilityReason}
-              embedded
+              disabled={form.troopAvailabilityReason !== null}
             />
-            {form.troopCapacityLimit !== null && form.troopCapacityLimit !== undefined && (
-              <>
-                <div className="border-t border-gold/15" />
-                <div className="flex items-center justify-between px-1 py-0.5 text-sm">
-                  <span className="text-kit-muted">Max troops</span>
-                  <span className="font-semibold tabular-nums text-gold">
-                    {form.troopCapacityLimit.toLocaleString()}
-                  </span>
-                </div>
-              </>
-            )}
+            <p className="px-1 text-sm tabular-nums text-gold/75">{form.troopLimitLine}</p>
+            {form.troopSourceLine && <p className="px-1 text-sm text-gold/75">{form.troopSourceLine}</p>}
             {form.troopTrainingLine && (
               <>
                 <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-sm text-gold/70">{form.troopTrainingLine}</p>
+                <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
               </>
             )}
-            {form.raiseCostLine && (
+            {form.raiseCost && (
               <>
                 <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-sm text-gold/70">{form.raiseCostLine}</p>
+                <p className="px-1 py-1 text-[11px] text-gold/70">Deploying costs {form.raiseCost}.</p>
               </>
             )}
           </div>
@@ -212,7 +201,7 @@ export const UnifiedArmyCreationBody = ({
           label={form.actionLabel}
           isLoading={form.isLoading}
           isDisabled={form.isActionDisabled}
-          blockedReason={form.submitBlockedReason}
+          blockedReason={form.blockedReason}
           onSubmit={form.handleCreate}
           embedded
         />

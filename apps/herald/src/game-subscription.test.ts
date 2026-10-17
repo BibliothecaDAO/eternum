@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
+import { rowInGameSyncScope, type GameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
 
 import { setup } from "./native/fixtures";
 
@@ -107,6 +107,10 @@ describe("GameSubscription", () => {
       game_id: "2",
       models: [{ model: "Structure", rows: [structure] }],
     }));
+    const gained = { model: "Structure", key: "2:80", value: { game_id: "2", entity_id: "80" } };
+    const scopeKeyRows = vi.fn((_game: string, _spacing: number, keys: ReadonlySet<string>) =>
+      keys.has("entities:80") ? [gained] : [],
+    );
     const folds = new Map<boolean, WorldFold>(
       [false, true].map((preconfirmed) => [
         preconfirmed,
@@ -114,6 +118,7 @@ describe("GameSubscription", () => {
           subscriptionScope: () => laneScopes.get(preconfirmed)!,
           scopeValidUntil: () => 86_400,
           subscriptionSnapshot,
+          scopeKeyRows,
           currentRow: () => undefined,
         } as unknown as WorldFold,
       ]),
@@ -150,18 +155,18 @@ describe("GameSubscription", () => {
     rebase(true);
     rebase(false);
 
-    // Confirmation does not rebase a scope the overlay already published.
-    expect(subscriptionSnapshot).toHaveBeenCalledTimes(2);
+    // Confirmation does not rebase a scope the overlay already published; the rebase reads only the keys it gains.
+    expect(subscriptionSnapshot).toHaveBeenCalledTimes(1);
+    expect(scopeKeyRows.mock.calls.filter(([, , keys]) => keys.size > 0)).toHaveLength(1);
     const diffs = published.filter((body) => body.type === "diff");
     expect(diffs.flatMap((body) => (body.type === "diff" ? body.del : []))).toEqual([]);
-    expect(
-      diffs.some(
-        (body) => body.type === "diff" && body.set.some(({ model, key }) => model === "Structure" && key === "2:9"),
-      ),
-    ).toBe(true);
+    const structures = diffs.flatMap((body) =>
+      body.type === "diff" ? body.set.filter(({ model }) => model === "Structure").map(({ key }) => key) : [],
+    );
+    expect(structures).toEqual(["2:80"]);
   });
 
-  it("re-sends only the rows a scope decides when the scope changes, keeping the shared rows the subscriber holds", () => {
+  it("sends a scope change's gained rows and its diff's own rows, never a row the subscriber holds", () => {
     const initial = expeditionScope();
     let scope = initial;
     const rules = { key: "rules", value: { game_id: "2" } };
@@ -174,10 +179,18 @@ describe("GameSubscription", () => {
         { model: "Structure", rows: [structure] },
       ],
     }));
+    const gained = { model: "Structure", key: "2:80", value: { game_id: "2", entity_id: "80" } };
+    const scopeKeyRows = vi.fn((_game: string, _spacing: number, keys: ReadonlySet<string>, models: string[]) => {
+      expect(models).toContain("Structure");
+      expect(models).not.toContain("SliceRules");
+      // The held structure is reached again by a gained key; it is not sent twice.
+      return keys.has("entities:80") ? [{ model: "Structure", ...structure }, gained] : [];
+    });
     const fold = {
       subscriptionScope: () => scope,
       scopeValidUntil: () => 86_400,
       subscriptionSnapshot,
+      scopeKeyRows,
       currentRow: () => undefined,
     } as unknown as WorldFold;
     const subscription = new GameSubscription(
@@ -202,14 +215,50 @@ describe("GameSubscription", () => {
       set: [army("7", "70"), changedRules],
       del: [],
     });
-    const only = subscriptionSnapshot.mock.calls[1]![3]!;
-    expect(only).toContain("Structure");
-    expect(only).not.toContain("SliceRules");
+    expect(subscriptionSnapshot).toHaveBeenCalledTimes(1);
     expect(replaced).toMatchObject({ type: "diff", del: [] });
-    expect(replaced!.type === "diff" && replaced!.set.map(({ model, key }) => `${model}:${key}`)).toEqual([
-      "Structure:2:9",
+    expect(replaced!.type === "diff" && replaced!.set.map(({ model, key }) => `${model}:${key}`).sort()).toEqual([
+      "ExplorerTroops:0x70",
       "SliceRules:rules",
+      "Structure:2:80",
     ]);
+  });
+
+  it("deletes a held row that an ordinary diff moves out of the scope", () => {
+    const scope = expeditionScope();
+    const explorer = (owner: string, x: string) => ({
+      model: "ExplorerTroops",
+      key: "0x71",
+      value: { game_id: "1", explorer_id: "71", owner, coord: { alt: false, x, y: "3" } },
+    });
+    // Held through its owner and its region, not its entity.
+    const held = explorer("273", "3");
+    const fold = {
+      subscriptionScope: () => scope,
+      scopeValidUntil: () => 86_400,
+      subscriptionSnapshot: () => ({
+        confirmed_block: 1,
+        game_id: "2",
+        models: [{ model: held.model, rows: [{ key: held.key, value: held.value }] }],
+      }),
+      currentRow: () => undefined,
+    } as unknown as WorldFold;
+    const subscription = new GameSubscription(
+      "2",
+      "0x111",
+      () => fold,
+      () => 1,
+      () => 100,
+      setup().decoder.registry,
+    );
+    subscription.snapshot();
+    // The army changes hands and walks off the region; the scope, read again, is the same, but the army's keys no
+    // longer meet it.
+    const handedOver = explorer("999", "300");
+    expect(rowInGameSyncScope(handedOver.model, handedOver.value, scope)).toBe(false);
+    expect(
+      subscription.project({ type: "diff", block: 2, preconfirmed: false, set: [handedOver], del: [] }),
+    ).toMatchObject([{ type: "diff", set: [], del: [{ model: held.model, key: held.key }] }]);
   });
 
   it("shows a home-ring tile once, and the chain writing the same tile changes nothing until it differs", () => {

@@ -338,12 +338,6 @@
       "prompt": "prompts/dragonhide.txt"
     },
     {
-      "id": "lords",
-      "label": "Lords",
-      "family": "Resources",
-      "prompt": "prompts/lords.txt"
-    },
-    {
       "id": "stamina-relic-1",
       "label": "Stamina Relic1",
       "family": "Relics",
@@ -1422,6 +1416,36 @@
       "label": "Twitter",
       "family": "HUD",
       "prompt": "prompts/twitter.txt"
+    },
+    {
+      "id": "map-realm-0",
+      "label": "Settlement hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-0.txt"
+    },
+    {
+      "id": "map-realm-1",
+      "label": "City hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-1.txt"
+    },
+    {
+      "id": "realm-2",
+      "label": "Kingdom",
+      "family": "Structures",
+      "prompt": "prompts/realm-2.txt"
+    },
+    {
+      "id": "map-realm-2",
+      "label": "Kingdom hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-2.txt"
+    },
+    {
+      "id": "map-realm-3",
+      "label": "Empire hex emblem",
+      "family": "Minimap",
+      "prompt": "prompts/map-realm-3.txt"
     }
   ]
 }

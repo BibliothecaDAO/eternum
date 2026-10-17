@@ -420,7 +420,7 @@ export const TransferResourcesContainer = ({
               title={`Current Load: ${currentLoadKg.toLocaleString()} kg`}
             >
               {capacityPercentageForBar > 15 && (
-                <span className="text-sm text-white/90 truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
+                <span className="text-xs text-white/90 truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
               )}
             </div>
             {/* Weight that will be added with the current selection */}
@@ -430,7 +430,7 @@ export const TransferResourcesContainer = ({
               title={`Selected: ${selectedResourcesWeightKg.toLocaleString()} kg`}
             >
               {selectedPercentageForBar > 15 && (
-                <span className="text-sm text-white/90 truncate px-1">
+                <span className="text-xs text-white/90 truncate px-1">
                   {selectedResourcesWeightKg.toLocaleString()} kg
                 </span>
               )}
@@ -441,7 +441,7 @@ export const TransferResourcesContainer = ({
                 className="absolute top-0 right-0 h-full flex items-center justify-end px-2 "
                 style={{ width: `${100 - totalAfterSelectionPercentage}%`, left: `${totalAfterSelectionPercentage}%` }}
               >
-                <span className="text-sm text-gold/70">Empty</span>
+                <span className="text-xs text-gold/70">Empty</span>
               </div>
             )}
           </div>
@@ -490,7 +490,7 @@ export const TransferResourcesContainer = ({
       >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
-            <ResourceIcon resource={ResourcesIds[resource.resourceId]} size="sm" withTooltip={false} />
+            <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
             <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
           </div>
           <button
@@ -505,7 +505,7 @@ export const TransferResourcesContainer = ({
 
         <div className="flex items-center text-sm text-gold/80 mb-2 gap-2">
           <span>{resourceWeight} kg per unit</span>
-          <span className="text-kit-muted">•</span>
+          <span className="text-gold/50">•</span>
           <span>{displayAmount.toLocaleString()} available</span>
         </div>
 
@@ -516,11 +516,11 @@ export const TransferResourcesContainer = ({
                 max={() => 0}
                 label="None"
                 onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
+                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
                 size="xs"
               />
               <button
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md"
+                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
                 onClick={() =>
                   handleResourceAmountChange(
                     resource.resourceId,
@@ -539,7 +539,7 @@ export const TransferResourcesContainer = ({
                 className="w-24 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold text-center"
               />
               <button
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md"
+                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
                 onClick={() =>
                   handleResourceAmountChange(
                     resource.resourceId,
@@ -552,7 +552,7 @@ export const TransferResourcesContainer = ({
               <MaxButton
                 max={() => displayAmount}
                 onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                className="px-2 py-1 text-sm bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
+                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
                 size="xs"
               />
             </div>
@@ -564,10 +564,8 @@ export const TransferResourcesContainer = ({
 
   const formatActorLabel = (actorType?: ActorType, entityId?: ID, entityName?: string | null) => {
     if (actorType === undefined || !entityId) return "Unknown";
-    if (actorType === ActorType.Explorer) return `Explorer ${entityId}`;
-    if (actorType === ActorType.Structure && entityName) return entityName;
-    if (actorType === ActorType.Structure) return `Structure ${entityId}`;
-    return `Entity ${entityId}`;
+    if (actorType === ActorType.Structure) return entityName || "Structure";
+    return actorType === ActorType.Explorer ? "Army" : "Unknown";
   };
 
   const selectedStructureName = useMemo(() => {
@@ -607,13 +605,13 @@ export const TransferResourcesContainer = ({
             Unselect All
           </Button>
         </div>
-        <div className="text-sm text-gold/70 font-semibold whitespace-nowrap">
+        <div className="text-xs text-gold/70 font-semibold whitespace-nowrap">
           {fromLabel} → {toLabel}
         </div>
       </div>
 
       {availableResources.length === 0 ? (
-        <p className="text-kit-muted">No relics available to transfer.</p>
+        <p className="text-gold/60">No relics available to transfer.</p>
       ) : showExplorerCapacity ? (
         <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="sticky top-0 z-10 sm:col-span-1">{renderExplorerCapacity()}</div>

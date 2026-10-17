@@ -110,7 +110,8 @@ it("sends the planned payload once and records the confirmed transfer", async ()
   });
   expect(state.update).toHaveBeenCalledTimes(1);
   expect(state.update).toHaveBeenCalledWith("one", { lastRunAt: 100_000 });
-  expect(state.toast.success).toHaveBeenCalledTimes(1);
+  // The confirmed send is told by its own row in Events, never also by a notice.
+  expect(state.toast.success).not.toHaveBeenCalled();
 });
 it("keeps a canceled submission for the remounted runner without late updates or another send", async () => {
   let resolve!: () => void;
@@ -134,7 +135,7 @@ it("keeps a canceled submission for the remounted runner without late updates or
   expect(state.systemCalls.send_resources_multiple).toHaveBeenCalledTimes(1);
   expect(state.update).toHaveBeenCalledTimes(1);
   expect(state.update).toHaveBeenCalledWith("one", { lastRunAt: 100_000 });
-  expect(state.toast.success).toHaveBeenCalledWith("Transfer scheduled: 10 Wood");
+  expect(state.toast.success).not.toHaveBeenCalled();
   expect(state.systemCalls.send_resources_multiple.mock.calls[0][0].calls[0].resources).toEqual([
     ResourcesIds.Wood,
     BigInt(10 * RESOURCE_PRECISION),

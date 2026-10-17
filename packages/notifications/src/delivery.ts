@@ -70,8 +70,10 @@ export function parseNotificationPayload(value: unknown, now: number): LocalNoti
 }
 
 /**
- * A delayed transfer emits its two perspectives back to back (sender first, receiver second), so they are consecutive
- * events of one transaction: the story identity's last part is the event's index in the receipt.
+ * One action told by two stories is one logical story:
+ * - a delayed transfer emits its two perspectives back to back (sender first, receiver second), so they are
+ *   consecutive events of one transaction: the story identity's last part is the event's index in the receipt;
+ * - a new building is placed and paid for in one transaction, on one hex.
  */
 export function logicalStoryIdentity(
   sourceId: string,
@@ -79,6 +81,10 @@ export function logicalStoryIdentity(
   value: Record<string, unknown>,
   payload: Record<string, unknown>,
 ): string {
+  if (isNewBuildingStory(story, payload)) {
+    const coord = (payload.coord ?? {}) as { x?: unknown; y?: unknown };
+    return `${sourceId.slice(0, sourceId.lastIndexOf(":"))}:logical:building:${String(coord.x)},${String(coord.y)}`;
+  }
   const transferType =
     typeof payload.transfer_type === "string"
       ? payload.transfer_type
@@ -94,6 +100,12 @@ export function logicalStoryIdentity(
   if (id < (second ? 1n : 0n)) throw new Error("Invalid mirrored story UUID");
   return `${sourceId.slice(0, sourceId.lastIndexOf(":"))}:logical:${story}:0x${(id - (second ? 1n : 0n)).toString(16)}`;
 }
+
+const isNewBuildingStory = (story: string, payload: Record<string, unknown>): boolean =>
+  story === "BuildingPaymentStory" || (story === "BuildingPlacementStory" && enumName(payload.change) === "Created");
+
+const enumName = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : Object.keys((value ?? {}) as object)[0];
 
 function sameFelt(left: unknown, right: unknown): boolean {
   if (left === undefined || left === null || right === undefined || right === null) return false;

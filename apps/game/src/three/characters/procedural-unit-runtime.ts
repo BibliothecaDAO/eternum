@@ -25,7 +25,11 @@ import {
 } from "./procedural-character-runtime";
 import { type ProceduralUnitConfig, type ProceduralUnitKind } from "./procedural-unit-config";
 import { ProceduralUnitEquipment } from "./procedural-unit-equipment";
-import { prepareProceduralUnitAssembly } from "./procedural-unit-assembly";
+import {
+  prepareProceduralUnitAssembly,
+  rendersProceduralHumanoid,
+  rendersProceduralMelee,
+} from "./procedural-unit-assembly";
 import {
   resolveProceduralUnitPoseDiagnostics,
   type ProceduralUnitPoseDiagnostics,
@@ -127,55 +131,62 @@ export class ProceduralUnitRuntime {
   private readonly animationScheduler = new ProceduralCrowdUpdateScheduler<ProceduralUnitActor>();
   private disposed = false;
 
+  private physicsConfig = resolveJoltWorldConfig(createDefaultProceduralCharacterConfig());
+  private readonly physicsWorld = new UnitAssetRuntime(() => JoltRagdollWorld.create(this.physicsConfig));
+  private readonly characterRuntime: UnitAssetRuntime<ProceduralCharacterRuntime>;
+  private readonly horseRuntime = new UnitAssetRuntime(async () =>
+    ProceduralHorseRuntime.create(await this.physicsWorld.prepare()),
+  );
+  private readonly dragonRuntime = new UnitAssetRuntime(() => ProceduralDragonRuntime.create());
+  private readonly boatRuntime = new UnitAssetRuntime(() => ProceduralBoatRuntime.create());
+
   private constructor(
-    private readonly characterRuntime: ProceduralCharacterRuntime,
-    private readonly horseRuntime: ProceduralHorseRuntime,
-    private readonly dragonRuntime: ProceduralDragonRuntime,
-    private readonly boatRuntime: ProceduralBoatRuntime,
-    private readonly physicsWorld: JoltRagdollWorld,
+    options: ProceduralCharacterRuntimeOptions,
     private readonly meleeLibrary: ProceduralMeleeWeaponLibrary,
-  ) {}
+  ) {
+    this.characterRuntime = new UnitAssetRuntime(async () =>
+      ProceduralCharacterRuntime.create({ ...options, physicsWorld: await this.physicsWorld.prepare() }),
+    );
+  }
 
   public static async create(options: ProceduralCharacterRuntimeOptions = {}): Promise<ProceduralUnitRuntime> {
-    const physicsWorld = await JoltRagdollWorld.create(
-      resolveJoltWorldConfig(createDefaultProceduralCharacterConfig()),
-    );
-    const results = await Promise.allSettled([
-      ProceduralCharacterRuntime.create({ ...options, physicsWorld }),
-      ProceduralHorseRuntime.create(physicsWorld),
-      ProceduralDragonRuntime.create(),
-      ProceduralBoatRuntime.create(),
-      ProceduralMeleeWeaponLibrary.create({ includeT1KnightDefault: options.includeT1KnightDefault }),
-    ] as const);
-    const [characterResult, horseResult, dragonResult, boatResult, meleeResult] = results;
-    if (
-      characterResult.status === "rejected" ||
-      horseResult.status === "rejected" ||
-      dragonResult.status === "rejected" ||
-      boatResult.status === "rejected" ||
-      meleeResult.status === "rejected"
-    ) {
-      if (characterResult.status === "fulfilled") characterResult.value.dispose();
-      if (horseResult.status === "fulfilled") horseResult.value.dispose();
-      if (dragonResult.status === "fulfilled") dragonResult.value.dispose();
-      if (boatResult.status === "fulfilled") boatResult.value.dispose();
-      if (meleeResult.status === "fulfilled") meleeResult.value.dispose();
-      physicsWorld.dispose();
-      if (characterResult.status === "rejected") throw characterResult.reason;
-      if (horseResult.status === "rejected") throw horseResult.reason;
-      if (dragonResult.status === "rejected") throw dragonResult.reason;
-      if (boatResult.status === "rejected") throw boatResult.reason;
-      if (meleeResult.status === "rejected") throw meleeResult.reason;
-      throw new Error("Procedural unit runtime initialization failed");
+    return new ProceduralUnitRuntime(options, await ProceduralMeleeWeaponLibrary.create());
+  }
+
+  public areAssetsReady(config: ProceduralUnitConfig): boolean {
+    if (!this.requiredRuntimes(config).every((runtime) => runtime.current !== undefined)) return false;
+    if (rendersProceduralHumanoid(config.kind) && !this.characterRuntime.require().areAssetsReady(config.humanoid))
+      return false;
+    return !rendersProceduralMelee(config.kind) || this.meleeLibrary.areFittedAssetsReady(config.melee);
+  }
+
+  /** Load only the families, appearance LOD and equipment this unit displays. */
+  public async prepareAssets(config: ProceduralUnitConfig): Promise<void> {
+    if (this.disposed) throw new Error("Cannot prepare a disposed procedural unit runtime");
+    const normalized = prepareProceduralUnitAssembly(config);
+    await Promise.all(this.requiredRuntimes(normalized).map((runtime) => runtime.prepare()));
+    if (this.disposed) throw new Error("Procedural unit runtime closed during loading");
+    await Promise.all([
+      rendersProceduralHumanoid(normalized.kind) && this.characterRuntime.require().prepareAssets(normalized.humanoid),
+      rendersProceduralMelee(normalized.kind) && this.meleeLibrary.prepare(normalized.melee),
+    ]);
+  }
+
+  private requiredRuntimes(config: ProceduralUnitConfig): UnitAssetRuntime<{ dispose(): void }>[] {
+    switch (config.kind) {
+      case "boat":
+        return [this.boatRuntime];
+      case "horse":
+        return [this.horseRuntime];
+      case "dragon":
+        return [this.dragonRuntime];
+      case "paladin":
+        return [this.characterRuntime, config.dragon.tier === 3 ? this.dragonRuntime : this.horseRuntime];
+      case "knight":
+      case "archer":
+      case "crossbowman":
+        return [this.characterRuntime];
     }
-    return new ProceduralUnitRuntime(
-      characterResult.value,
-      horseResult.value,
-      dragonResult.value,
-      boatResult.value,
-      physicsWorld,
-      meleeResult.value,
-    );
   }
 
   public createActor(config: ProceduralUnitConfig): ProceduralUnitActor {
@@ -202,7 +213,7 @@ export class ProceduralUnitRuntime {
 
   public update(deltaSeconds: number): void {
     if (this.disposed) return;
-    this.physicsWorld.update(deltaSeconds);
+    this.physicsWorld.current?.update(deltaSeconds);
     this.animationScheduler.update(
       deltaSeconds,
       (actor) => actor.mode !== "animated",
@@ -222,22 +233,31 @@ export class ProceduralUnitRuntime {
     if (this.disposed || !this.actors.has(actor)) return;
     const normalized = prepareProceduralUnitAssembly(config);
     assertProceduralUnitAssetsAvailable(normalized, this.meleeLibrary);
+    if (!this.areAssetsReady(normalized)) throw new Error("Prepare unit assets before updating an actor");
     actor.updateConfig(normalized);
   }
 
   public updatePhysicsConfig(config: ProceduralCharacterConfig): void {
     if (this.disposed) return;
-    this.physicsWorld.updateConfig(resolveJoltWorldConfig(config));
+    this.physicsConfig = resolveJoltWorldConfig(config);
+    this.physicsWorld.current?.updateConfig(this.physicsConfig);
   }
 
   public stepOnce(): void {
     if (this.disposed) return;
-    this.physicsWorld.stepOnce();
+    this.physicsWorld.current?.stepOnce();
     this.actors.forEach((actor) => actor.stepOnce());
   }
 
   public getPhysicsStats() {
-    return this.physicsWorld.getStats();
+    return (
+      this.physicsWorld.current?.getStats() ?? {
+        activeBodyCount: 0,
+        bodyCount: 0,
+        constraintCount: 0,
+        wasmHeapBytes: 0,
+      }
+    );
   }
 
   public dispose(): void {
@@ -255,32 +275,71 @@ export class ProceduralUnitRuntime {
   }
 }
 
+/** A runtime is retained only after successful loading; failed loads can be retried. */
+class UnitAssetRuntime<T extends { dispose(): void }> {
+  public current?: T;
+  private pending?: Promise<T>;
+  private disposed = false;
+
+  public constructor(private readonly load: () => Promise<T>) {}
+
+  public require(): T {
+    if (!this.current) throw new Error("Prepare unit assets before creating an actor");
+    return this.current;
+  }
+
+  public async prepare(): Promise<T> {
+    if (this.disposed) throw new Error("Cannot prepare a disposed unit asset runtime");
+    if (this.current) return this.current;
+    this.pending ??= this.load()
+      .then((runtime) => {
+        if (this.disposed) {
+          runtime.dispose();
+          throw new Error("Unit asset runtime closed during loading");
+        }
+        this.current = runtime;
+        return runtime;
+      })
+      .finally(() => {
+        this.pending = undefined;
+      });
+    return this.pending;
+  }
+
+  public dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.current?.dispose();
+    this.current = undefined;
+  }
+}
+
 function assertProceduralUnitAssetsAvailable(
   config: ProceduralUnitConfig,
   meleeLibrary: ProceduralMeleeWeaponLibrary,
 ): void {
-  if (config.kind !== "knight" && config.kind !== "paladin") return;
+  if (!rendersProceduralMelee(config.kind)) return;
   meleeLibrary.assertFittedLoadoutAvailable(config.melee);
 }
 
 function createUnitActor(
-  characterRuntime: ProceduralCharacterRuntime,
-  horseRuntime: ProceduralHorseRuntime,
-  dragonRuntime: ProceduralDragonRuntime,
-  boatRuntime: ProceduralBoatRuntime,
+  characterRuntime: UnitAssetRuntime<ProceduralCharacterRuntime>,
+  horseRuntime: UnitAssetRuntime<ProceduralHorseRuntime>,
+  dragonRuntime: UnitAssetRuntime<ProceduralDragonRuntime>,
+  boatRuntime: UnitAssetRuntime<ProceduralBoatRuntime>,
   meleeLibrary: ProceduralMeleeWeaponLibrary,
   config: ProceduralUnitConfig,
   release: (actor: ProceduralUnitActor) => void,
 ): ProceduralUnitActor {
   if (config.kind === "boat") {
-    return new BoatUnitActor(boatRuntime.createActor(config.boat), config, release);
+    return new BoatUnitActor(boatRuntime.require().createActor(config.boat), config, release);
   }
   if (config.kind === "horse") {
-    return new HorseUnitActor(horseRuntime.createActor(config.horse, config.humanoid), config, release);
+    return new HorseUnitActor(horseRuntime.require().createActor(config.horse, config.humanoid), config, release);
   }
   if (config.kind === "dragon") {
     return new DragonUnitActor(
-      new ProceduralDragonMountActor(dragonRuntime.createActor(config.dragon)),
+      new ProceduralDragonMountActor(dragonRuntime.require().createActor(config.dragon)),
       config,
       release,
     );
@@ -288,14 +347,14 @@ function createUnitActor(
   if (config.kind === "paladin") {
     return new MountedUnitActor(
       createPaladinMount(horseRuntime, dragonRuntime, config),
-      characterRuntime.createActor(resolveMountedRiderConfig(config)),
+      characterRuntime.require().createActor(resolveMountedRiderConfig(config)),
       config,
       meleeLibrary,
       release,
     );
   }
   return new HumanoidUnitActor(
-    characterRuntime.createActor(resolveFootUnitCharacterConfig(config)),
+    characterRuntime.require().createActor(resolveFootUnitCharacterConfig(config)),
     config,
     meleeLibrary,
     release,
@@ -303,14 +362,14 @@ function createUnitActor(
 }
 
 function createPaladinMount(
-  horseRuntime: ProceduralHorseRuntime,
-  dragonRuntime: ProceduralDragonRuntime,
+  horseRuntime: UnitAssetRuntime<ProceduralHorseRuntime>,
+  dragonRuntime: UnitAssetRuntime<ProceduralDragonRuntime>,
   config: ProceduralUnitConfig,
 ): ProceduralMountActor {
   if (config.dragon.tier === 3) {
-    return new ProceduralDragonMountActor(dragonRuntime.createActor(config.dragon));
+    return new ProceduralDragonMountActor(dragonRuntime.require().createActor(config.dragon));
   }
-  return new ProceduralHorseMountActor(horseRuntime.createActor(config.horse, config.humanoid));
+  return new ProceduralHorseMountActor(horseRuntime.require().createActor(config.horse, config.humanoid));
 }
 
 class HumanoidUnitActor implements ProceduralUnitActor {
@@ -385,7 +444,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
     if (kindChanged) this.actor.setUpperBodyAction(undefined);
     this.actor.updateConfig(resolveFootUnitCharacterConfig(config));
     if (config.kind !== "archer") this.clearArcherAction();
-    if (!isMeleeUnitKind(config.kind)) this.clearMeleeAction();
+    if (!rendersProceduralMelee(config.kind)) this.clearMeleeAction();
     this.updateEquipment();
   }
 
@@ -430,7 +489,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
   }
 
   public fireMeleeAttack(targetWorld: Readonly<Vector3>): boolean {
-    return isMeleeUnitKind(this.kind) && this.mode === "animated" && this.melee.attack(targetWorld);
+    return rendersProceduralMelee(this.kind) && this.mode === "animated" && this.melee.attack(targetWorld);
   }
 
   public attack(targetWorld: Readonly<Vector3>): boolean {
@@ -500,7 +559,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
       ...(this.kind === "crossbowman" && { crossbow: this.equipment.getCrossbowPoseDiagnostics() }),
       humanoid: this.actor.getPoseDiagnostics(),
       kind: this.kind,
-      ...(isMeleeUnitKind(this.kind) && { melee: this.equipment.getMeleePoseDiagnostics() }),
+      ...(rendersProceduralMelee(this.kind) && { melee: this.equipment.getMeleePoseDiagnostics() }),
     });
   }
 
@@ -531,7 +590,7 @@ class HumanoidUnitActor implements ProceduralUnitActor {
       );
       return;
     }
-    if (isMeleeUnitKind(this.kind)) {
+    if (rendersProceduralMelee(this.kind)) {
       this.meleePose = this.melee.update(
         deltaSeconds,
         this.object,
@@ -1361,10 +1420,6 @@ function resolveFootUnitCharacterConfig(config: ProceduralUnitConfig): Procedura
     armSwing: config.humanoid.armSwing * equipmentSwingScale,
     secondaryMotion: config.humanoid.secondaryMotion * (isRanged ? 0.72 : 0.86),
   };
-}
-
-function isMeleeUnitKind(kind: ProceduralUnitKind): kind is "knight" | "paladin" {
-  return kind === "knight" || kind === "paladin";
 }
 
 const EMPTY_UNIT_STATS: ProceduralUnitActorStats = {

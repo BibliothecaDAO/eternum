@@ -5,7 +5,11 @@ import type { GameSyncHead, GameSyncSnapshotProgress } from "@bibliothecadao/ete
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { recordClientActionDiffReceived, recordClientActionStoreApplied } from "@/observability/client-action-latency";
+import {
+  recordClientActionDiffReceived,
+  recordClientActionSendStage,
+  recordClientActionStoreApplied,
+} from "@/observability/client-action-latency";
 import { dispatchLocalStoryNotification } from "@/pwa/local-story-notifications";
 import { publishSyncMetrics } from "@/observability/sync-metrics";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
@@ -77,35 +81,47 @@ const recordGamewideLiveUpdate = (): void => {
   connection.recordSpatialUpdate();
 };
 
+// Each game client numbers its sends from 1; a page may open several clients, one per game entry.
+let observedClients = 0;
+
 /** The web client's view of the game client: connection and chain-time stores, story events, entry timeline. */
-export const createGameSyncObserver = (input: GameSyncObserverInput): GameClientObserver => ({
-  onSetupCompleted: (setup) => {
-    markGameEntryMilestone("setup-completed");
-    input.onSetupCompleted(setup);
-    markGameEntryMilestone("initial-sync-started");
-  },
-  onSubscriptionActive: recordGamewideSubscriptionActive,
-  onConnection: (reachable) => useConnectionStore.getState().setGlobalStatus(reachable ? "connected" : "reconnecting"),
-  onLiveUpdate: recordGamewideLiveUpdate,
-  onLiveApplyFailed: () => useConnectionStore.getState().setGlobalStatus("failed"),
-  onHead: createHeraldHeadRecorder(),
-  onStoryEvent: (event, scope, confirmation) => {
-    acceptGameSyncStoryEvent(event, scope, confirmation);
-    dispatchLocalStoryNotification(event, scope, confirmation);
-  },
-  onStoryEventsReset: resetGameSyncStoryEvents,
-  onDiffReceived: recordClientActionDiffReceived,
-  onEntitiesApplied: recordClientActionStoreApplied,
-  onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
-  onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
-  onSnapshotPhaseStarted: (phase) => markGameEntryMilestone(`${snapshotPhaseMilestone(phase)}-started`),
-  onSnapshotPhaseCompleted: (phase, durationMs) => {
-    const milestone = snapshotPhaseMilestone(phase);
-    markGameEntryMilestone(`${milestone}-completed`);
-    recordGameEntryDuration(milestone, durationMs);
-  },
-  onSnapshotCoherent: (transfer) => {
-    recordGameEntryDuration("snapshot-coherent", transfer.coherentMs);
-    console.info(JSON.stringify({ event: "client_snapshot_coherent", ...transfer }));
-  },
-});
+export const createGameSyncObserver = (input: GameSyncObserverInput): GameClientObserver => {
+  const client = (observedClients += 1);
+  return {
+    onSetupCompleted: (setup) => {
+      markGameEntryMilestone("setup-completed");
+      input.onSetupCompleted(setup);
+      markGameEntryMilestone("initial-sync-started");
+    },
+    onSubscriptionActive: recordGamewideSubscriptionActive,
+    // A replacement snapshot starts the stream over as a reconnect does: history is read again, and what the earlier
+    // stream delivered no longer vouches for the facts.
+    onResynced: () => useConnectionStore.getState().recordGlobalHandshake(),
+    onConnection: (reachable) =>
+      useConnectionStore.getState().setGlobalStatus(reachable ? "connected" : "reconnecting"),
+    onLiveUpdate: recordGamewideLiveUpdate,
+    onLiveApplyFailed: () => useConnectionStore.getState().setGlobalStatus("failed"),
+    onHead: createHeraldHeadRecorder(),
+    onStoryEvent: (event, scope, confirmation) => {
+      acceptGameSyncStoryEvent(event, scope, confirmation);
+      dispatchLocalStoryNotification(event, scope, confirmation);
+    },
+    onStoryEventsReset: resetGameSyncStoryEvents,
+    onDiffReceived: recordClientActionDiffReceived,
+    onEntitiesApplied: recordClientActionStoreApplied,
+    onMetrics: DEV_MODE_ENABLED ? publishSyncMetrics : undefined,
+    onSnapshotProgress: (progress) => input.reportProgress(snapshotProgressPercentage(progress)),
+    onSnapshotPhaseStarted: (phase) => markGameEntryMilestone(`${snapshotPhaseMilestone(phase)}-started`),
+    onSnapshotPhaseCompleted: (phase, durationMs) => {
+      const milestone = snapshotPhaseMilestone(phase);
+      markGameEntryMilestone(`${milestone}-completed`);
+      recordGameEntryDuration(milestone, durationMs);
+    },
+    onSnapshotCoherent: (transfer) => {
+      recordGameEntryDuration("snapshot-coherent", transfer.coherentMs);
+      console.info(JSON.stringify({ event: "client_snapshot_coherent", ...transfer }));
+    },
+    onSendStage: (send, stage, detail, transactionHash) =>
+      recordClientActionSendStage(`${client}:${send}`, stage, detail, transactionHash),
+  };
+};

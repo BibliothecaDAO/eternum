@@ -123,7 +123,7 @@ export const MapSiteCard = ({
             word={MOVE}
             prices={[
               { of: "stamina", amount: approach.stamina.cost },
-              { of: "wheat", amount: Math.ceil(approach.wheat.cost) },
+              { of: "wheat", amount: approach.wheat.cost },
             ]}
             onClick={() => requestOrderAt(approach.target)}
           />

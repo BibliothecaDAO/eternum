@@ -41,25 +41,13 @@ export const ExplorationTable = () => {
                     <tr className="border-b border-gold/20">
                       <th className="text-left p-4 text-light-pink">Biome</th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Crossbowman]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Crossbowman} />
                       </th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Knight]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Knight} />
                       </th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Paladin]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Paladin} />
                       </th>
                     </tr>
                   </thead>
@@ -92,25 +80,13 @@ export const ExplorationTable = () => {
                   <thead className="bg-gold/5">
                     <tr className="border-b border-gold/20">
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Crossbowman]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Crossbowman} />
                       </th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Knight]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Knight} />
                       </th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Paladin]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Paladin} />
                       </th>
                       <th className="text-center p-4 text-light-pink"></th>
                     </tr>
@@ -127,7 +103,7 @@ export const ExplorationTable = () => {
                         {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelFishBurnAmount}
                       </td>
                       <td className="p-3 text-center">
-                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds.Fish} />
                       </td>
                     </tr>
                     <tr className="hover:bg-gold/10 transition-colors">
@@ -141,7 +117,7 @@ export const ExplorationTable = () => {
                         {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).travelWheatBurnAmount}
                       </td>
                       <td className="p-3 text-center">
-                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds.Wheat} />
                       </td>
                     </tr>
                   </tbody>
@@ -171,25 +147,13 @@ export const ExplorationTable = () => {
                   <thead className="bg-gold/5">
                     <tr className="border-b border-gold/20">
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Crossbowman]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Crossbowman} />
                       </th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Knight]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Knight} />
                       </th>
                       <th className="text-center p-4 text-light-pink">
-                        <ResourceIcon
-                          className="mr-1 text-gold"
-                          size="sm"
-                          resource={ResourcesIds[ResourcesIds.Paladin]}
-                        />
+                        <ResourceIcon className="mr-1 text-gold" size="sm" resource={ResourcesIds.Paladin} />
                       </th>
                       <th className="text-center p-4 text-light-pink"></th>
                     </tr>
@@ -206,7 +170,7 @@ export const ExplorationTable = () => {
                         {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreFishBurnAmount}
                       </td>
                       <td className="p-3 text-center">
-                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Fish]} />
+                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds.Fish} />
                       </td>
                     </tr>
                     <tr className="hover:bg-gold/10 transition-colors">
@@ -220,7 +184,7 @@ export const ExplorationTable = () => {
                         {configManager.getTravelFoodCostConfig(ResourcesIds.Paladin).exploreWheatBurnAmount}
                       </td>
                       <td className="p-3 text-center">
-                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds[ResourcesIds.Wheat]} />
+                        <ResourceIcon className="mr-1" size="sm" resource={ResourcesIds.Wheat} />
                       </td>
                     </tr>
                   </tbody>

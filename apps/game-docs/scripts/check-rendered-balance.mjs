@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Checks the built docs show each mode's own balance: on a page, a label must be followed by the value its mode's
- * generated config holds. Blitz and Eternum differ on these values, so a Blitz component that reads Eternum's config
- * (or a hard-coded number that drifted) fails the build. Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
+ * generated config holds, and the relic page each relic's cost as the Blitz preset's relic rules set it. Blitz and
+ * Eternum differ on these values, so a Blitz component that reads Eternum's config (or a hard-coded number that
+ * drifted) fails the build. Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
  */
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -56,6 +57,36 @@ export const expectedRuns = (blitz, eternum) => {
   ];
 };
 
+/**
+ * The relic page's runs: each relic's effect, who activates it, and the Essence it costs as the Blitz preset's relic
+ * rules (listed from the first relic) set it.
+ */
+export const relicRuns = (relics, rules, firstRelicId) => [
+  {
+    page: "blitz/materials/relics",
+    runs: relics.map((relic) => [
+      relic.effect,
+      relic.recipientType === "Explorer" ? "Army" : "Realm",
+      String(rules[relic.id - firstRelicId].essence_cost),
+    ]),
+  },
+];
+
+/** The relic table and the Blitz preset's relic rules, read from their TypeScript sources through Vite. */
+const loadRelicSources = async () => {
+  const { createServer } = await import("vite");
+  const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
+  try {
+    const { RELICS, ResourcesIds } = await server.ssrLoadModule(
+      join(here, "../../../packages/types/src/constants/index.ts"),
+    );
+    const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
+    return { relics: RELICS, rules: blitzPreset.relics, firstRelicId: ResourcesIds.StaminaRelic1 };
+  } finally {
+    await server.close();
+  }
+};
+
 /** A built page's visible text, one entry per text node, in order. */
 export const visibleText = (html) =>
   html
@@ -84,7 +115,11 @@ export const missingRuns = (dist, pages) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const missing = missingRuns(dist, expectedRuns(configOf("blitz"), configOf("eternum")));
+  const { relics, rules, firstRelicId } = await loadRelicSources();
+  const missing = missingRuns(dist, [
+    ...expectedRuns(configOf("blitz"), configOf("eternum")),
+    ...relicRuns(relics, rules, firstRelicId),
+  ]);
   for (const { page, run } of missing) console.error(`${page}: expected "${run.join(" | ")}"`);
   if (missing.length) process.exit(1);
   console.log("Rendered balance matches each mode's config.");

@@ -37,12 +37,14 @@ Install Bun 1.4, Node 22, pnpm 10.25, git, GitHub CLI and SSH. Before setup or s
 `pnpm install --frozen-lockfile --ignore-scripts`. Deploy and teardown need no local dependencies; Cloudflare deployment
 installs its dependencies in its temporary commit export. Authenticate `gh` with repository and Actions read permissions
 (plus permission to push the public address book). The Cloudflare token must be scoped to exactly one account. Required
-permissions: Account — Workers Scripts edit, D1 edit, Pages edit, Workers R2 Storage edit; Zone for the environment's
-zone — Zone read, DNS edit, Workers Routes edit, Cache Rules edit (shown as 'Cache Settings' in the token screen).
-Enable R2 on the account once. Prerequisites read D1, Pages, R2, the zone, Workers scripts and the zone’s rulesets list
-before any STRK is spent; these reads cannot verify write permissions. Refusals name the resource family, HTTP status
-and numeric Cloudflare codes, never the response text. The Resend key needs the environment's verified email sending
-domain. The one Alchemy URL is also used in the browser build and is therefore public to players.
+permissions: Account — Workers Scripts edit, D1 edit, Pages edit, Workers R2 Storage edit, Access: Apps and Policies
+edit, Access: Organizations, Identity Providers, and Groups edit; Zone for the environment's zone — Zone read, DNS edit,
+Workers Routes edit, Cache Rules edit (shown as 'Cache Settings' in the token screen). Turn on Cloudflare Zero Trust
+once for the account (its free plan; any team name): the admin page sits behind Access. Enable R2 on the account once.
+Prerequisites read D1, Pages, R2, the zone, Workers scripts and the zone’s rulesets list before any STRK is spent; these
+reads cannot verify write permissions. Refusals name the resource family, HTTP status and numeric Cloudflare codes,
+never the response text. The Resend key needs the environment's verified email sending domain. The one Alchemy URL is
+also used in the browser build and is therefore public to players.
 
 `environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
 SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public `mainnet.json` asset addresses and
@@ -82,15 +84,22 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
    original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
    already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
-8. Create missing D1 databases, the status R2 bucket, Pages project and domain. Refuse conflicting existing DNS.
-   First-install Worker placeholders have no routes and return 503; their named entrypoints break the binding cycle.
-   Existing Workers are preserved until their actual deployment step.
-9. Deliver each Worker's generated secrets directly to that Worker on standard input. An existing secret name alone
-   cannot prove its value: local upload fingerprints plus remote names determine which uploads need repeating. Guardian
-   is the exception: its existing key is always preserved. Nothing is uploaded to GitHub. The deployer and cold keys
-   stay on the owner's machine.
-10. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
-11. If the address book changed, commit and push **only** that file on the owner's current branch, then stop. Create a
+8. Create missing D1 databases (identity, launch, admin), the status R2 bucket, Pages project and domain. Refuse
+   conflicting existing DNS. First-install Worker placeholders have no routes and return 503; their named entrypoints
+   break the binding cycle. Existing Workers are preserved until their actual deployment step.
+9. Make Cloudflare Access hold the admin page's operators from the private directory's `admin-access.json`, written by
+   the owner (mode 0600): `{"operators": ["you@example.com"]}` on dev; production adds `"writers"` (each also an
+   operator), who alone may act there. It ensures the one-time PIN login, one allow policy and one application on the
+   environment's admin hostname. It reads every Access list to its last page, changes only what differs, and ends the
+   Access sessions, on every application of the account, of anyone removed from the operators. The team domain, the
+   application's audience and the writers are saved as `admin-access-applied.json`.
+10. Deliver each Worker's generated secrets directly to that Worker on standard input; the admin's are its environment's
+    operator token, the saved Access settings and, on production, its writers. An existing secret name alone cannot
+    prove its value: local upload fingerprints plus remote names determine which uploads need repeating. Guardian is the
+    exception: its existing key is always preserved. Nothing is uploaded to GitHub. The deployer and cold keys stay on
+    the owner's machine.
+11. Install the operator token on the box if absent. Its protected file is checked against the saved environment token.
+12. If the address book changed, commit and push **only** that file on the owner's current branch, then stop. Create a
     branch first if the checkout is detached or on `next`. Rerun from the new pushed commit; production requires merging
     it to `next` and successful push validation first. Unrelated staged changes stop publication.
 
@@ -143,6 +152,13 @@ python3 deploy/athanor/scripts/operator-command.py measure /opt/athanor/runs/dev
 
 When the launch Worker has created the game, add its `--game-id` to play that game. Funding, paid Blitz registration and
 payouts require the owner. The gameplay report never controls shard admission.
+
+## Alerts
+
+Setup asks for an alert email (`alertEmail` in `inputs.json`; add it there for a private directory set up before
+alerts). `deploy:cloudflare` gives it to the status monitor with the Resend key, and the monitor emails each component
+that stays down or degraded for two minutes, and its recovery. What each alert means and the first commands to run:
+[ON-CALL.md](./ON-CALL.md).
 
 ## Teardown
 

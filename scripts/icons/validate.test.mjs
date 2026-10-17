@@ -8,10 +8,13 @@ const { icons } = read("catalog");
 const meanings = read("semantic-map");
 const resources = read("resources");
 const verdicts = Object.fromEntries(
-  icons.map(({ id }) => [`faceted/${id}`, { verdict: "equal", reason: "Validation fixture" }]),
+  [...icons.map(({ id }) => `faceted/${id}`), "official/lords"].map((key) => [
+    key,
+    { verdict: "equal", reason: "Validation fixture" },
+  ]),
 );
 const valid = () => structuredClone({ icons, meanings, resources, verdicts });
-test("every semantic meaning and all 58 resources have a painting", () =>
+test("every semantic meaning and all 58 resources have reviewed artwork", () =>
   assert.doesNotThrow(() => validateIcons(valid())));
 for (const [meaning, wrongArt, expected] of [
   ["transfer", "move", "donkey"],
@@ -28,6 +31,16 @@ test("missing paintings fail validation", () => {
   input.icons = input.icons.filter(({ id }) => id !== "production");
   assert.throws(() => validateIcons(input), /Missing painting for production/);
 });
+test("realm levels reject the former shared castle and shared minimap emblem", () => {
+  for (const [name, art] of [
+    ["realm-2", "realm"],
+    ["map-realm-3", "map-realm"],
+  ]) {
+    const input = valid();
+    input.meanings[name].art = art;
+    assert.throws(() => validateIcons(input), new RegExp(`${name} must use its own level painting`));
+  }
+});
 test("missing resource meanings fail validation", () => {
   const input = valid();
   delete input.resources[58];
@@ -39,3 +52,22 @@ for (const verdict of [undefined, "worse"])
     input.verdicts["faceted/production"] = { verdict, reason: "Review rejected" };
     assert.throws(() => validateIcons(input), /Review production/);
   });
+
+test("LORDS rejects the former painted coin even when it has a passing review", () => {
+  const input = valid();
+  input.meanings.lords = { art: "lords", label: "LORDS", family: "Resources" };
+  input.icons.push({ id: "lords" });
+  input.verdicts["faceted/lords"] = { verdict: "equal", reason: "Old review" };
+  assert.throws(() => validateIcons(input), /LORDS must use the unmodified official token mark/);
+});
+test("LORDS rejects a rotated mark, a redirected resource and a leftover painting", () => {
+  const rotated = valid();
+  rotated.meanings.lords.rotation = 90;
+  assert.throws(() => validateIcons(rotated), /unmodified official token mark/);
+  const redirected = valid();
+  redirected.resources[37].meaning = "gold";
+  assert.throws(() => validateIcons(redirected), /Resource 37 must use the LORDS token meaning/);
+  const leftover = valid();
+  leftover.icons.push({ id: "lords" });
+  assert.throws(() => validateIcons(leftover), /Remove the painted LORDS asset/);
+});

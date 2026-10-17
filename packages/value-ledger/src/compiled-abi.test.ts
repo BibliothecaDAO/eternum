@@ -158,6 +158,7 @@ describe("committed contract readbacks", () => {
       decay: 4000,
       swordPrice: String(12n + (2n << 128n)),
       shieldPrice: String(13n + (3n << 128n)),
+      rated: true,
       dayUnit: 60,
       claimWindow: 3600,
     });

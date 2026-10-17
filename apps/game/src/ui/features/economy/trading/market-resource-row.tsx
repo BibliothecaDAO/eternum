@@ -19,7 +19,7 @@ interface MarketResourceRowProps {
   ammPrice: number;
 }
 
-const PRICE_CLASS = "text-right text-sm font-semibold tabular-nums";
+const PRICE_CLASS = "text-right text-[11px] font-semibold tabular-nums";
 
 export const MarketResourceRow = memo(
   ({ entityId, resourceId, active, onClick, buyPrice, sellPrice, ammPrice }: MarketResourceRowProps) => {
@@ -42,17 +42,17 @@ export const MarketResourceRow = memo(
         )}
       >
         <span className="flex min-w-0 items-center gap-1.5">
-          <ResourceIcon size="xs" resource={trait} withTooltip={false} />
-          <span className="truncate text-sm text-gold">{trait}</span>
-          <span className={cn(HUD_CUE, "shrink-0")}>{currencyFormat(balance, 0)}</span>
+          <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
+          <span className="truncate text-[11px] text-gold">{trait}</span>
+          <span className={cn(HUD_CUE, "shrink-0 tracking-normal")}>{currencyFormat(balance, 0)}</span>
         </span>
-        <span className={cn(PRICE_CLASS, buyPrice > 0 ? "text-green" : "text-kit-muted")}>
+        <span className={cn(PRICE_CLASS, buyPrice > 0 ? "text-green" : "text-gold/30")}>
           {formatNumber(buyPrice, 4)}
         </span>
-        <span className={cn(PRICE_CLASS, sellPrice > 0 ? "text-red" : "text-kit-muted")}>
+        <span className={cn(PRICE_CLASS, sellPrice > 0 ? "text-red" : "text-gold/30")}>
           {formatNumber(sellPrice, 4)}
         </span>
-        <span className={cn(PRICE_CLASS, ammPrice > 0 ? "text-blueish" : "text-kit-muted")}>
+        <span className={cn(PRICE_CLASS, ammPrice > 0 ? "text-blueish" : "text-gold/30")}>
           {formatNumber(ammPrice, 4)}
         </span>
       </button>

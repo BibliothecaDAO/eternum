@@ -43,22 +43,45 @@ const FITTED_GEAR_IDS: readonly FittedGearId[] = [...PROCEDURAL_MELEE_WEAPONS, .
  */
 export class ProceduralMeleeWeaponLibrary {
   private disposed = false;
+  private readonly pending = new Map<FittedGearId, Promise<void>>();
 
-  private constructor(private readonly fittedTemplates: ReadonlyMap<FittedGearId, GLTF>) {}
+  private constructor(private readonly fittedTemplates: Map<FittedGearId, GLTF>) {}
 
-  public static async create(
-    options: { includeT1KnightDefault?: boolean } = {},
-  ): Promise<ProceduralMeleeWeaponLibrary> {
-    const fittedTemplates = new Map<FittedGearId, GLTF>();
-    try {
-      if (options.includeT1KnightDefault) {
-        for (const id of FITTED_GEAR_IDS) fittedTemplates.set(id, await loadFittedGear(resolveFittedGearFile(id), id));
-      }
-      return new ProceduralMeleeWeaponLibrary(fittedTemplates);
-    } catch (error) {
-      disposeSkinnedSceneTemplates([...fittedTemplates.values()].map(({ scene }) => scene));
-      throw error;
+  public static async create(): Promise<ProceduralMeleeWeaponLibrary> {
+    return new ProceduralMeleeWeaponLibrary(new Map());
+  }
+
+  public areFittedAssetsReady(gear: {
+    weaponId: ProceduralMeleeWeaponId;
+    offhandId: ProceduralMeleeOffhandId;
+  }): boolean {
+    return [gear.weaponId, gear.offhandId].every((id) => !isFittedGearId(id) || this.fittedTemplates.has(id));
+  }
+
+  public async prepare(gear: {
+    weaponId: ProceduralMeleeWeaponId;
+    offhandId: ProceduralMeleeOffhandId;
+  }): Promise<void> {
+    this.assertActive();
+    await Promise.all([gear.weaponId, gear.offhandId].filter(isFittedGearId).map((id) => this.prepareFittedGear(id)));
+  }
+
+  private async prepareFittedGear(id: FittedGearId): Promise<void> {
+    if (this.fittedTemplates.has(id)) return;
+    let pending = this.pending.get(id);
+    if (!pending) {
+      pending = loadFittedGear(resolveFittedGearFile(id), id)
+        .then((gltf) => {
+          if (this.disposed) {
+            disposeSkinnedSceneTemplates([gltf.scene]);
+            throw new Error("Melee library closed during loading");
+          }
+          this.fittedTemplates.set(id, gltf);
+        })
+        .finally(() => this.pending.delete(id));
+      this.pending.set(id, pending);
     }
+    await pending;
   }
 
   public isWeaponReady(id: ProceduralMeleeWeaponId): boolean {

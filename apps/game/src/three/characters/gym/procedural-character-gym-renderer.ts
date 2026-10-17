@@ -155,7 +155,7 @@ export interface ProceduralCharacterGymRendererHandle {
   ): Promise<ProceduralAnimationFrameCapture>;
   startRagdoll(): Promise<void>;
   stepOnce(): void;
-  updateConfig(config: ProceduralUnitConfig): void;
+  updateConfig(config: ProceduralUnitConfig): Promise<void>;
   updateCollisionConfig(config: ProceduralCollisionGymConfig): void;
 }
 
@@ -164,6 +164,7 @@ interface MountProceduralCharacterGymRendererInput {
   config: ProceduralUnitConfig;
   container: HTMLElement;
   onStats?: (stats: ProceduralCharacterGymStats) => void;
+  onError: (error: unknown) => void;
 }
 
 interface AnimationLoopRenderer extends RendererSurfaceLike {
@@ -249,7 +250,12 @@ class ProceduralCharacterGymRuntime {
     this.boatStage = new ProceduralBoatGymStage(this.config.boat);
     this.meleeStage = new ProceduralMeleeGymStage(this.config.melee);
     this.projectiles = createArrowProjectileSystem(this.config);
-    this.collisionStage = new ProceduralCollisionGymStage(this.unitRuntime, this.config, this.collisionConfig);
+    this.collisionStage = new ProceduralCollisionGymStage(
+      this.unitRuntime,
+      this.config,
+      this.collisionConfig,
+      input.onError,
+    );
     this.movementEffects.setQuality(0, 1);
     this.stage.add(
       this.archerStage.group,
@@ -282,6 +288,7 @@ class ProceduralCharacterGymRuntime {
       preloadPhysics: true,
     });
     try {
+      await unitRuntime.prepareAssets(input.config);
       return new ProceduralCharacterGymRuntime(input, rendererRuntime, unitRuntime);
     } catch (error) {
       unitRuntime.dispose();
@@ -611,10 +618,12 @@ class ProceduralCharacterGymRuntime {
     }
   }
 
-  private updateConfig(config: ProceduralUnitConfig): void {
+  private async updateConfig(config: ProceduralUnitConfig): Promise<void> {
     if (this.disposed) return;
-    this.captureGeneration += 1;
+    const generation = ++this.captureGeneration;
     const normalized = applyProceduralUnitConfigPatch(this.config, config);
+    await this.unitRuntime.prepareAssets(normalized);
+    if (this.disposed || generation !== this.captureGeneration) return;
     const kindChanged = normalized.kind !== this.config.kind;
     const projectileCapacityChanged = normalized.archer.projectileCapacity !== this.config.archer.projectileCapacity;
     this.config = normalized;

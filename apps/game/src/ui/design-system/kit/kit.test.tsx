@@ -106,6 +106,8 @@ describe("stores and prices", () => {
 
   it("prices in a resource by its icon and in XP by its word; an unknown price is a dash", () => {
     expect(renderToStaticMarkup(<PriceChip of="wheat" amount={10_000} />)).toContain('aria-label="10,000 wheat"');
+    // A price is what the chain charges, to the unit: 30 troops' step at 0.02 wheat each is 0.6, never 1.
+    expect(renderToStaticMarkup(<PriceChip of="wheat" amount={0.6} />)).toContain('aria-label="0.6 wheat"');
     expect(text(renderToStaticMarkup(<PriceChip of="xp" amount={400} />))).toBe("400XP");
     expect(text(renderToStaticMarkup(<PriceChip of="lords" amount={undefined} />))).toBe("—");
   });

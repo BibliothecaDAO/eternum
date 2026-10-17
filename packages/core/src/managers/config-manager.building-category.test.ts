@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { BiomeType, BuildingType, CapacityConfig, TickIds, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BuildingType, CapacityConfig, ResourcesIds, TickIds, TroopType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
+import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { ClientConfigManager } from "./config-manager";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -35,6 +36,23 @@ describe("native immutable configuration", () => {
     });
   });
 
+  it("reads a relic's duration and whole-Essence cost from the Blitz preset's relic rules, in army ticks", () => {
+    const { manager, write } = fixture();
+    const armyTick = Number(preset.rules.tick_config.armies_tick_in_seconds);
+    // The rules the factory writes for a Blitz game, listed from the first relic (Stamina I, 39): the stamina relics
+    // last their uses, the others their duration.
+    write("RelicRules", [54], { game_id: 54, rules: nativePresetForId(nativePresetIdFor("blitz")).relics });
+    expect(manager.getRelicActivation(ResourcesIds.StaminaRelic1)).toEqual({
+      durationSeconds: 3 * armyTick,
+      essenceCost: 250,
+    });
+    expect(manager.getRelicActivation(ResourcesIds.DamageRelic2)).toEqual({
+      durationSeconds: 3 * armyTick,
+      essenceCost: 500,
+    });
+    expect(() => manager.getRelicActivation(39 + 18)).toThrow("No relic rule for relic 57");
+  });
+
   it("reads victory points in the units the game awards them", () => {
     const { manager, write } = fixture();
     write("SeasonWinThreshold", [54], { game_id: 54, points: 10_000_000_000n });
@@ -44,13 +62,30 @@ describe("native immutable configuration", () => {
       claimCampFromBandits: 500,
       claimHyperstructureFromBandits: 3_000,
       openRelicCrate: 1_000,
-      hyperstructurePerRealmPerSecond: 1,
+      hyperstructurePerSecond: 1,
+      // This preset runs without the hyperstructure multiplier: a held one earns its rate alone.
+      hyperstructureScale: "flat",
     });
     expect(manager.getHyperstructureConfig()).toEqual({
       timeBetweenSharesChange: 0,
       pointsPerCycle: 1,
       pointsForWin: 10_000,
     });
+  });
+
+  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on, and doubles in a Duel", () => {
+    const scale = (mode: "Single" | "Duel") => {
+      const { manager, write } = fixture();
+      write("SliceRules", [54], {
+        ...preset.rules,
+        game_id: 54,
+        mode_rules: preset.rules.mode_rules | nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS,
+      });
+      write("SettlementRules", [54], { game_id: 54, registration_start: 1, registration_limit: 2, spacing: 6, mode });
+      return manager.getVictoryPointGrants().hyperstructureScale;
+    };
+    expect(scale("Single")).toBe("per-realm");
+    expect(scale("Duel")).toBe("double");
   });
 
   it("throws for absent building rules instead of granting zero-cost population", () => {

@@ -15,6 +15,10 @@ const TROOP_RESOURCES = [
   { type: TroopType.Paladin, resourceId: ResourcesIds.Paladin },
 ];
 
+/** The troop's resource, for its painting, from the troop name the select holds. */
+const troopResource = (troop: string): ResourcesIds =>
+  TROOP_RESOURCES.find(({ type }) => TroopType[type] === troop)?.resourceId ?? ResourcesIds.Knight;
+
 const formatTroopName = (type: string) => {
   return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
 };
@@ -41,7 +45,7 @@ export const SelectTroop: React.FC<SelectTroopProps> = ({ onSelect, className, d
         <SelectValue placeholder="Select troop">
           {selectedTroop && (
             <div className="flex items-center">
-              <ResourceIcon resource={selectedTroop} size="md" />
+              <ResourceIcon resource={troopResource(selectedTroop)} size="md" />
               <span className="ml-2">{formatTroopName(selectedTroop)}</span>
             </div>
           )}

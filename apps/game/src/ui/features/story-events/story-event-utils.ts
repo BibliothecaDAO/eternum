@@ -50,13 +50,6 @@ export const normalizePresentationTroops = (value?: string): string | undefined 
   return undefined;
 };
 
-export const formatWinnerName = (value?: string): string | undefined => {
-  if (!value) return undefined;
-  const match = value.match(/\[(.*?)\]/);
-  if (match?.[1]) return match[1];
-  return value;
-};
-
 /** A battle's two d20 rolls as its description records them, or nothing for a battle without dice. */
 export const battleRollsOf = (description?: string): { attacker: string; defender: string } | undefined => {
   const segments = parsePresentationDescription(description);

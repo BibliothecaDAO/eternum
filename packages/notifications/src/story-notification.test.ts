@@ -50,6 +50,20 @@ it.each([
   };
   expect(storyNotificationCopy("BattleEvent", payload, {}, recipient).title).toBe(title);
 });
+it.each([
+  ["0xc1", "0xa1", "The stronghold is yours", "Its armies and incoming deliveries are yours too."],
+  ["0xa1", "0xa1", "A stronghold has fallen", "The enemy took it, with its armies and incoming deliveries."],
+  ["0xc1", "0x0", "The stronghold is yours", "Your banner now flies over the captured site."],
+] as const)("tells %s a capture from %s, and what changed hands with it", (recipient, previousOwner, title, body) => {
+  expect(
+    storyNotificationCopy(
+      "StructureCapturedStory",
+      { previous_owner: previousOwner, new_owner: "0xc1" },
+      {},
+      recipient,
+    ),
+  ).toEqual({ title, body });
+});
 it.each([undefined, null, "", "bad", -1, 9007199254740991])(
   "rejects malformed or unsafe timestamps %s",
   (timestamp) => {

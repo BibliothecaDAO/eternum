@@ -539,7 +539,7 @@ export const RealmAutomationPanel = ({
           </div>
         </div>
         {isOverallocated && (
-          <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger/80">
+          <div className="rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger/80">
             Resolve over-allocation for {overallocatedLabels.join(", ")} before saving.
           </div>
         )}
@@ -551,7 +551,7 @@ export const RealmAutomationPanel = ({
                 key={preset.id}
                 type="button"
                 className={clsx(
-                  "px-3 py-1 rounded border text-sm transition-colors",
+                  "px-3 py-1 rounded border text-xs transition-colors",
                   isActive
                     ? "border-gold text-gold bg-gold/10"
                     : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold",
@@ -571,8 +571,8 @@ export const RealmAutomationPanel = ({
                 type="button"
                 onClick={() => handlePresetSelect("custom")}
                 className={clsx(
-                  "px-3 py-1 rounded border text-sm transition-colors",
-                  isActive ? "border-gold text-gold bg-gold/10" : "border-gold/15 text-kit-muted",
+                  "px-3 py-1 rounded border text-xs transition-colors",
+                  isActive ? "border-gold text-gold bg-gold/10" : "border-gold/15 text-gold/40",
                 )}
                 title={preset.description}
               >
@@ -582,14 +582,14 @@ export const RealmAutomationPanel = ({
           })}
         </div>
         {hasLocalChanges && (
-          <span className="text-sm text-warning">Unsaved changes pending. Save to apply automation updates.</span>
+          <span className="text-[11px] text-warning">Unsaved changes pending. Save to apply automation updates.</span>
         )}
       </header>
 
       <section className="space-y-2">
         <h5 className={HUD_LABEL}>Resource usage</h5>
         {usageDisplayList.length === 0 ? (
-          <p className="text-sm text-kit-muted">No resources allocated yet.</p>
+          <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
@@ -600,13 +600,13 @@ export const RealmAutomationPanel = ({
                 <li
                   key={`usage-${resourceId}`}
                   className={clsx(
-                    "min-w-0 rounded border px-3 py-2 text-sm",
+                    "min-w-0 rounded border px-3 py-2 text-xs",
                     isOverBudget ? "border-danger/60 text-danger" : "border-gold/20 text-gold/80",
                   )}
                 >
                   <div className="flex items-start gap-2">
                     <div className="shrink-0">
-                      <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
+                      <ResourceIcon resource={resourceId as ResourcesIds} size="xs" />
                     </div>
                     <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex items-start justify-between gap-2">
@@ -615,7 +615,7 @@ export const RealmAutomationPanel = ({
                           {Math.round(percent)}%
                         </span>
                       </div>
-                      <div className="text-sm text-kit-muted">{perCycleLabel}</div>
+                      <div className="text-[11px] text-gold/50">{perCycleLabel}</div>
                     </div>
                   </div>
                 </li>
@@ -652,7 +652,7 @@ export const RealmAutomationPanel = ({
 
               return (
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between text-sm text-gold/80">
+                  <div className="flex items-center justify-between text-xs text-gold/80">
                     <span>{sliderLabel}</span>
                     <div className="flex items-center gap-1">
                       <input
@@ -662,7 +662,7 @@ export const RealmAutomationPanel = ({
                         step={sliderStep}
                         value={value}
                         onChange={handleInputChange}
-                        className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-sm text-gold focus:border-gold/60 focus:outline-none"
+                        className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-xs text-gold focus:border-gold/60 focus:outline-none"
                       />
                       <span className="font-semibold text-gold">%</span>
                     </div>
@@ -677,8 +677,8 @@ export const RealmAutomationPanel = ({
                     className="w-full accent-gold/80 bg-black/40"
                   />
                   {impactedResources.length > 0 && (
-                    <div className="space-y-1 text-sm text-kit-muted">
-                      <span className="font-semibold text-kit-muted">Inputs</span>
+                    <div className="space-y-1 text-xxs text-gold/60">
+                      <span className="font-semibold uppercase tracking-wide text-gold/50">Inputs</span>
                       <div className="grid grid-cols-4 gap-1">
                         {impactedResources.map((impacted) => (
                           <div
@@ -686,19 +686,19 @@ export const RealmAutomationPanel = ({
                             className="flex items-center justify-center rounded border border-gold/20 bg-black/10 p-2"
                             title={resolveResourceLabel(impacted)}
                           >
-                            <ResourceIcon resource={ResourcesIds[impacted as ResourcesIds]} size="sm" />
+                            <ResourceIcon resource={impacted as ResourcesIds} size="sm" />
                           </div>
                         ))}
                       </div>
                       {impactedTotals.length > 0 && (
-                        <span className="block text-right text-sm text-kit-muted">
+                        <span className="block text-right text-[10px] text-gold/50">
                           Peak usage {Math.round(Math.max(...impactedTotals))}%
                         </span>
                       )}
                     </div>
                   )}
                   {overBudgetResources.length > 0 && (
-                    <div className="text-sm text-danger/80">
+                    <div className="text-[10px] text-danger/80">
                       Over budget for {overBudgetResources.map((res) => resolveResourceLabel(res)).join(", ")}
                     </div>
                   )}
@@ -720,11 +720,11 @@ export const RealmAutomationPanel = ({
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="sm" />
+                    <ResourceIcon resource={resourceId as ResourcesIds} size="sm" />
                     <div>
                       <div className="text-sm font-semibold text-gold">{label}</div>
                       {resourceOverBudget && (
-                        <div className="text-sm text-danger/80">{Math.round(resourceUsage)}% allocated</div>
+                        <div className="text-[11px] text-danger/80">{Math.round(resourceUsage)}% allocated</div>
                       )}
                     </div>
                   </div>

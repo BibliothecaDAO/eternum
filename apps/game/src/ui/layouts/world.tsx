@@ -4,18 +4,18 @@ import { Leva } from "leva";
 import { env } from "../../../env";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
+import { ActionTimelineOverlay } from "../debug/action-timeline-overlay";
 import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
-import { ActionInfo } from "../features/world/components/actions/action-info";
-import { BottomRightPanel } from "../features/world/components/bottom-right-panel";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
 import { CompactHud } from "../features/world/containers/compact-hud";
-import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
+import { DesktopHud } from "../features/world/hud/desktop-hud";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
+import { useDocumentClass } from "@/hooks/use-document-class";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ActionRunners } from "../action-runners";
@@ -61,6 +61,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Tooltip />
         <VersionDisplay />
         <ArmyMovementLatencyOverlay />
+        <ActionTimelineOverlay />
         {DEV_MODE_ENABLED && <DevSyncOverlay />}
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
@@ -107,10 +108,9 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
 
 /**
  * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
- * Desktop layout:
- * - Top: TopHeader (player info, map toggle, clock and attention)
- * - Left: LeftCommandSidebar (structure selector and empire cockpit)
- * - Bottom: BottomRightPanel (minimap, feed, tile inspector, chat)
+ * Desktop layout: TopHeader (player, Realm / World, clock, settings), then DesktopHud: the holdings with the selected
+ * holding's card and the minimap on the left, the guided rail (Next up, events, the picked tile, chat) on the right,
+ * the orders as bubbles between them.
  * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
  * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
  * A Frontier game has its own HUD instead of these regions.
@@ -137,26 +137,19 @@ const HUD = () => {
 };
 
 const ArenaHud = () => {
+  // The Blitz and Eternum HUD keeps its own type: IM FELL labels and buttons, caps, the teal surfaces (index.css).
+  useDocumentClass("classic-hud");
   const lane = useCompactLane();
   return (
     <>
-      {/* The hovered order's costs; Frontier's action bar shows them in its own HUD. */}
-      <ActionInfo />
       <TopHeader />
-      {lane ? (
-        <CompactHud lane={lane} />
-      ) : (
-        <>
-          <LeftCommandSidebar />
-          <BottomRightPanel />
-        </>
-      )}
+      {lane ? <CompactHud lane={lane} /> : <DesktopHud />}
     </>
   );
 };
 
 const VersionDisplay = () => (
-  <div className="absolute bottom-4 right-6 text-sm text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
+  <div className="absolute bottom-4 right-6 text-xs text-white/60 hover:text-white pointer-events-auto bg-white/20 rounded-lg p-1 max-lg:hidden">
     <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
       {env.VITE_PUBLIC_GAME_VERSION}
     </a>

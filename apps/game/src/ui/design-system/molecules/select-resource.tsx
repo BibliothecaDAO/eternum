@@ -102,10 +102,9 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
     <div className="flex items-center">
       <SemanticIcon
         name="close"
-        className={clsx(
-          "my-auto w-8 mx-auto hover:opacity-50  hover:scale-125 hover:animate-pulse duration-300 transition-all",
-          { "pointer-events-none opacity-50": !selectedResource },
-        )}
+        className={clsx("my-auto w-8 mx-auto hover:opacity-50 hover:animate-pulse duration-300 transition-all", {
+          "pointer-events-none opacity-50": !selectedResource,
+        })}
         onClick={() => {
           setSelectedResource("");
           onSelect(null);
@@ -137,7 +136,7 @@ export const SelectResource: React.FC<SelectResourceProps> = ({
           {filteredResourceIds.map((resourceId) => (
             <SelectItem key={resourceId} value={resourceId.toString()}>
               <div className="flex items-center">
-                <ResourceIcon resource={ResourcesIds[resourceId]} size="md" />
+                <ResourceIcon resource={resourceId} size="md" />
                 <span className="ml-2">{ResourcesIds[resourceId]}</span>
               </div>
             </SelectItem>

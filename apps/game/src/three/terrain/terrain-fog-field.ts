@@ -1,6 +1,6 @@
 import type { GameModeId } from "@/config/game-modes";
 import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
-import { mapAnimationTime as time } from "../effects/game-end-freeze";
+import { mapAnimationTime as time } from "../effects/endgame/state";
 import {
   ClampToEdgeWrapping,
   DataTexture,

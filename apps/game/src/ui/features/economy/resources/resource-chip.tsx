@@ -1,16 +1,18 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { relicLine } from "@/ui/features/relics/relic-words";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ResourceTransferPopover } from "@/ui/features/economy/resources/resource-transfer-popover";
+import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-burn-popover";
+import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
 import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat, knownBalance } from "@/ui/utils/utils";
 import {
   bonusActive,
   configManager,
@@ -20,7 +22,14 @@ import {
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ID, RelicEffect, RelicRecipientType, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  findResourceById,
+  ID,
+  RelicEffect,
+  RelicRecipientType,
+  ResourcesIds,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
 export const ResourceChip = ({
@@ -59,6 +68,7 @@ export const ResourceChip = ({
 
   const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
+  const resourceName = findResourceById(resourceEnumId)?.trait ?? "resource";
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(
@@ -85,7 +95,7 @@ export const ResourceChip = ({
   }, [resourceManager, now]);
 
   const icon = useMemo(() => {
-    return <ResourceIcon withTooltip={false} resource={ResourcesIds[resourceId]} size="sm" className="self-center" />;
+    return <ResourceIcon withTooltip={false} resource={resourceId} size="sm" className="self-center" />;
   }, [resourceId, size]);
 
   const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
@@ -177,7 +187,7 @@ export const ResourceChip = ({
       />
       {relicEffectActivated && (
         <span
-          className="inline-flex items-center gap-1 text-sm font-semibold text-relic2"
+          className="inline-flex items-center gap-1 text-[10px] font-semibold text-relic2"
           onMouseEnter={(e) => {
             e.stopPropagation();
             setTooltip({
@@ -195,9 +205,11 @@ export const ResourceChip = ({
           {formatTime(relicTimeRemaining)}
         </span>
       )}
-      {ratePerHour && <span className="text-sm font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
-      {hasReachedMaxCap && amountProduced > 0n && <span className="text-sm font-semibold text-amber-300">Max</span>}
-      {timeLeft && <span className={cn(HUD_CUE, "")}>{timeLeft}</span>}
+      {ratePerHour && <span className="text-[10px] font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
+      {hasReachedMaxCap && amountProduced > 0n && (
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">Max</span>
+      )}
+      {timeLeft && <span className={cn(HUD_CUE, "tracking-normal")}>{timeLeft}</span>}
       <span className="ml-auto" />
       {canShowProductionShortcut && (
         <button
@@ -251,11 +263,31 @@ export const ResourceChip = ({
         </button>
       )}
       {showTransfer && (
-        <ResourceTransferPopover
-          resourceId={resourceId}
-          trigger={({ toggle }) => (
+        <button
+          data-tooltip-anchor
+          type="button"
+          aria-label={`Transfer ${resourceName}`}
+          title="Transfer"
+          onClick={(event) => {
+            event.stopPropagation();
+            openTransfer({ sourceId: resourceManager.entityId, destinationIds: [], resource: resourceId });
+          }}
+          disabled={disableButtons}
+          className={actionButton}
+        >
+          <SemanticIcon name="swap" className="h-4 w-4" />
+        </button>
+      )}
+      {showTransfer && (balance ?? 0) > 0 && (
+        <ResourceBurnPopover
+          structureId={resourceManager.entityId}
+          resourceId={resourceEnumId}
+          trigger={(toggle) => (
             <button
               data-tooltip-anchor
+              type="button"
+              aria-label={`Burn ${resourceName}`}
+              title="Burn"
               onClick={(event) => {
                 event.stopPropagation();
                 toggle();
@@ -263,20 +295,7 @@ export const ResourceChip = ({
               disabled={disableButtons}
               className={actionButton}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                />
-              </svg>
+              <SemanticIcon name="flame" className="h-4 w-4" />
             </button>
           )}
         />
@@ -306,7 +325,7 @@ export const ResourceChip = ({
           onMouseEnter={(event) =>
             setTooltip({
               anchorElement: event.currentTarget,
-              content: "Activate Relic",
+              content: `Activate · ${relicLine(resourceId, knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
               position: "bottom",
             })
           }

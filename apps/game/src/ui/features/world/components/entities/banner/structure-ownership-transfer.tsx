@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { validateAndParseAddress } from "starknet";
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -26,7 +27,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
   const mode = useResolvedWorldGameMode();
   const key = { game_id: configManager.getActiveGameId(), entity_id: structureId };
   const structure = useNativeRow("Structure", key);
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(structureId);
   const [recipient, setRecipient] = useState("");
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
@@ -53,9 +54,8 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
         structure_id: structureId,
         new_owner: address,
       });
-      setConfirming(false);
+      close();
       setRecipient("");
-      toast.success("Structure ownership transferred");
     } catch (error) {
       toast.failed(error, "Could not transfer ownership");
     } finally {
@@ -68,7 +68,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
     <div className="mt-2 space-y-2 border-t border-gold/20 pt-2">
       {confirming ? (
         <>
-          <label className="block text-sm">
+          <label className="block text-xs">
             Recipient gameplay account
             <input
               className="mt-1 w-full rounded border border-gold/30 bg-black/25 p-2"
@@ -79,11 +79,11 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
               disabled={pending}
             />
           </label>
-          <p className="text-sm">
+          <p className="text-xs">
             Transfer this structure and its inventory to this gameplay account. This cannot be undone.
           </p>
           {recipient && !validRecipient && (
-            <p role="alert" className="text-sm text-red-300">
+            <p role="alert" className="text-xs text-red-300">
               Enter a valid, nonzero gameplay account other than your own.
             </p>
           )}
@@ -91,13 +91,13 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
             <Button variant="danger" disabled={!validRecipient || pending} onClick={transfer}>
               Confirm transfer
             </Button>
-            <Button disabled={pending} onClick={() => setConfirming(false)}>
+            <Button disabled={pending} onClick={close}>
               Cancel
             </Button>
           </div>
         </>
       ) : (
-        <Button variant="outline" onClick={() => setConfirming(true)}>
+        <Button variant="outline" onClick={ask}>
           Transfer ownership
         </Button>
       )}

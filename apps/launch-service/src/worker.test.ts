@@ -249,7 +249,7 @@ beforeAll(async () => {
           BASE_URL: ORIGIN,
           LAUNCH_DEPLOYER_PRIVATE_KEY: "0x1",
           OPERATOR_TOKEN: "operator-test-token",
-          VERSION: { id: "workerd-test", tag: "", timestamp: "" },
+          VERSION: { id: "workerd-test", tag: "abc1234", timestamp: "" },
         },
         outboundService: async (request: Request) => {
           if (new URL(request.url).hostname === "redirect.test") {
@@ -392,11 +392,13 @@ it.each([1, 2, 25])(
       service: "launch",
       environment: "staging",
       version: "workerd-test",
+      revision: "abc1234",
     });
     expect(await (await mf.dispatchFetch(`${ORIGIN}/api/factory/version`)).json()).toEqual({
       service: "launch",
       environment: "staging",
       version: "workerd-test",
+      revision: "abc1234",
     });
 
     await setWorkerClock("2000-01-01T10:55:00Z");

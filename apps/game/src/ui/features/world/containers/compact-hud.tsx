@@ -9,13 +9,7 @@ import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
-import {
-  FeedNotices,
-  UnreadFeedBadge,
-  useConnectionNotices,
-  useImportantFeed,
-  useUnreadFeedCount,
-} from "@/ui/features/event-feed/quick-feed";
+import { FeedToasts, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -35,6 +29,7 @@ import { ActionTile } from "./left-facets/structure-actions-panel";
 import { StructureListColumn } from "./left-facets/structure-list-column";
 import { useStructureActions } from "./left-facets/use-structure-actions";
 import { resolveLeftViewSurface } from "./left-view-policy";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { SpectatorStandingsBody } from "./spectator-standings";
 
 type CompactTab = "empire" | "map" | "log" | "chat" | "details";
@@ -111,11 +106,10 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const tileDetails = useSelectedTileDetails();
   const { open, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
-  const { rows, pinned } = useImportantFeed();
-  const unread = useUnreadFeedCount(rows, open === "log");
+  const { stories } = useEventsFeed();
+  const unread = useUnreadFeedCount(stories, open === "log");
   const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const logTab = useRef<HTMLButtonElement>(null);
-  useConnectionNotices();
 
   if (showBlankOverlay) return null;
 
@@ -142,11 +136,11 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
         <div className={cn("flex min-h-0 flex-col justify-end", layout.panels)}>
           <div className="flex flex-col items-end gap-1 px-2 pb-1">
             {open === null && ordersAllowed && (
-              <p className="pointer-events-none self-center rounded-full bg-kit-plate px-3 py-1.5 font-sans text-sm text-kit-cream">
+              <p className="pointer-events-none self-center rounded-full bg-[#101c23] px-3 py-1.5 font-sans text-xs text-gold/85">
                 Tap to select · Hold to move
               </p>
             )}
-            <FeedNotices pinned={pinned} />
+            <FeedToasts />
           </div>
           {/* The chat window stays mounted so the client keeps its connection; its strip only shows while open. */}
           <div className={open === "chat" ? "px-2 pb-1" : "hidden"}>
@@ -167,7 +161,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
                   type="button"
                   aria-label="Close panel"
                   onClick={closeAndFocusTab}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg text-kit-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg text-gold/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15"
                 >
                   <SemanticIcon name="close" className="h-5 w-5" />
                 </button>
@@ -189,7 +183,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
           ref={navigation}
           aria-label="HUD tabs"
           className={cn(
-            "pointer-events-auto flex h-auto items-stretch gap-0.5 border-gold/20 bg-kit-plate",
+            "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[#101c23]",
             layout.tabBar,
           )}
           style={layout.tabBarStyle}
@@ -224,11 +218,11 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
       )}
       <nav
         aria-label="Structure actions"
-        className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-kit-plate", layout.actions)}
+        className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
         style={layout.actionsStyle}
       >
         {actions.map((action) => (
-          <ActionTile key={action.id} variant="compact" action={action} />
+          <ActionTile key={action.id} action={action} />
         ))}
       </nav>
     </>
@@ -256,16 +250,16 @@ const TabButton = ({
     <button
       ref={tab.ref}
       type="button"
+      aria-label={tab.label}
       aria-expanded={active}
       aria-controls={active && SHEET_TABS.has(tab.id) ? "compact-hud-sheet" : undefined}
       onClick={() => onToggle(tab.id)}
       className={cn(
-        "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
-        active ? "bg-gold/15 text-gold" : "text-kit-cream",
+        "relative flex min-h-14 min-w-0 flex-1 items-center justify-center rounded-lg p-2 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
+        active ? "bg-gold/15 text-gold" : "text-gold/75",
       )}
     >
-      <SemanticIcon name={tab.image} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
-      <span className="max-w-full truncate text-sm font-semibold">{tab.label}</span>
+      <SemanticIcon name={tab.image} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
       {tab.badge !== undefined && tab.badge > 0 && (
         <span className="absolute right-1/4 top-0">
           <UnreadFeedBadge count={tab.badge} />
@@ -287,13 +281,20 @@ const SheetContent = ({
   if (tab === "map") return <MinimapPanel compact />;
   if (tab === "details" && tileDetails === null)
     return (
-      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-kit-muted">
+      <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
         <img src={COMPACT_TAB_IMAGES.details} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
         <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
       </div>
     );
   if (tab === "details") return tileDetails;
-  if (tab === "empire") return ordersAllowed ? <EmpireColumn /> : <SpectatorStandingsBody />;
+  if (tab === "empire")
+    return ordersAllowed ? (
+      <EmpireColumn />
+    ) : (
+      <InfoBubble variant="section" title="Standings" collapsible={false} bodyClassName="p-0">
+        <SpectatorStandingsBody />
+      </InfoBubble>
+    );
   return null;
 };
 

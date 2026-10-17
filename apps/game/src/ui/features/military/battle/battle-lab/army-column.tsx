@@ -6,6 +6,7 @@ import { SelectRelic } from "@/ui/design-system/molecules/select-relic";
 import { SelectTier } from "@/ui/design-system/molecules/select-tier";
 import { SelectTroop } from "@/ui/design-system/molecules/select-troop";
 import { getTierStyle } from "@/ui/utils/tier-styles";
+import { StaminaManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
@@ -46,6 +47,8 @@ export const ArmyColumn = ({
   footer,
 }: ArmyColumnProps) => {
   const accent = side === "attacker" ? "bg-red-500" : "bg-blue-500";
+  // The army's own maximum where the chain gives it, else what its type and tier allow.
+  const maxStamina = StaminaManager.getMaxStamina(army.troopType, army.tier, army.maxStamina);
 
   return (
     <div className={cn("flex flex-col gap-3 rounded-xl p-4", OVERLAY_SURFACE_BASE)}>
@@ -54,7 +57,7 @@ export const ArmyColumn = ({
         <span className={HUD_LABEL_BRIGHT}>{label}</span>
         <span
           className={cn(
-            "ml-auto shrink-0 rounded border px-1.5 py-0.5 text-sm font-bold leading-none",
+            "ml-auto shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
             getTierStyle(String(army.tier)),
           )}
         >
@@ -72,7 +75,7 @@ export const ArmyColumn = ({
                 type="button"
                 onClick={() => onSelectGuard?.(guard.slot)}
                 className={cn(
-                  "rounded border px-2 py-1 text-sm font-semibold transition-colors",
+                  "rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
                   active
                     ? "border-gold bg-gold/20 text-gold"
                     : "border-gold/30 bg-black/30 text-gold/70 hover:border-gold/60",
@@ -87,8 +90,14 @@ export const ArmyColumn = ({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Stamina" hint={`${army.stamina}/200`}>
-          <NumberInput value={army.stamina} onChange={(stamina) => onChange({ stamina })} min={0} max={200} step={1} />
+        <Field label="Stamina" hint={`${army.stamina}/${maxStamina}`}>
+          <NumberInput
+            value={army.stamina}
+            onChange={(stamina) => onChange({ stamina })}
+            min={0}
+            max={maxStamina}
+            step={1}
+          />
         </Field>
         <Field label="Troops" hint={army.troopCount.toLocaleString()}>
           <NumberInput

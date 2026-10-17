@@ -6,7 +6,7 @@ import { RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { RelicInfoResult } from "../hooks/use-relic-activation";
 
 interface RelicSummaryProps {
-  resourceKey: string;
+  resourceId: ResourcesIds;
   title: string;
   subtitle?: string;
   description?: string;
@@ -17,7 +17,7 @@ interface RelicSummaryProps {
 }
 
 export const RelicSummary = ({
-  resourceKey,
+  resourceId,
   title,
   subtitle,
   description,
@@ -32,11 +32,11 @@ export const RelicSummary = ({
     <div
       className={cn(vertical ? "flex flex-col items-center gap-3 text-center" : "flex items-center gap-3", className)}
     >
-      <ResourceIcon resource={resourceKey} size={iconSize} withTooltip={false} className="shrink-0" />
+      <ResourceIcon resource={resourceId} size={iconSize} withTooltip={false} className="shrink-0" />
       <div className={cn("space-y-1", vertical ? "max-w-[280px]" : "")}>
         <p className="text-base font-semibold text-gold">{title}</p>
-        {subtitle && <p className="text-sm text-gold/70">{subtitle}</p>}
-        {description && <p className="text-sm text-kit-muted">{description}</p>}
+        {subtitle && <p className="text-xs text-gold/70">{subtitle}</p>}
+        {description && <p className="text-xs text-gold/60">{description}</p>}
         {children}
       </div>
     </div>
@@ -70,21 +70,21 @@ export const RelicEssenceRequirement = ({
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-semibold text-gold/80">{costLabel}:</span>
         <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Essence} size="sm" withTooltip={false} />
           <span className="text-sm font-bold">{essenceCost.toLocaleString()}</span>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-gold/80">{balanceLabel}:</span>
         <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Essence]} size="sm" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Essence} size="sm" withTooltip={false} />
           <span className={`text-sm font-bold ${hasEnoughEssence ? "text-emerald-300" : "text-red-400"}`}>
             {essenceBalance?.toLocaleString() ?? "—"}
           </span>
         </div>
       </div>
       {showWarning && !hasEnoughEssence && (
-        <div className="mt-2 rounded border border-red-600/40 bg-red-900/30 p-2 text-center text-sm font-semibold text-red-300">
+        <div className="mt-2 rounded border border-red-600/40 bg-red-900/30 p-2 text-center text-xs font-semibold text-red-300">
           {shortfall}
         </div>
       )}
@@ -109,7 +109,7 @@ export const RelicIncompatibilityNotice = ({
 
   return (
     <div
-      className={cn("rounded border border-red-600/30 bg-red-900/20 p-3 text-center text-sm text-red-300", className)}
+      className={cn("rounded border border-red-600/30 bg-red-900/20 p-3 text-center text-xs text-red-300", className)}
     >
       <p className="font-semibold text-red-400">
         ⚠️ This relic cannot be activated by{" "}

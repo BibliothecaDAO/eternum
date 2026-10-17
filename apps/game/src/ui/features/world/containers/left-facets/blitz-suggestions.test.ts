@@ -192,7 +192,7 @@ describe("buildBlitzRealmSuggestions", () => {
       // One below target -> still suggests wheat, labelled against the level target.
       expect(wheatReasonAt(level, target - 1)).toMatchObject({
         action: "build-wheat",
-        reason: `${target - 1}/${target} farms.`,
+        reason: `Build 1 farm for steady wheat (${target - 1} of ${target} built).`,
       });
       // At target -> wheat is satisfied, no longer the top suggestion.
       expect(wheatReasonAt(level, target)?.action).not.toBe("build-wheat");
@@ -287,7 +287,10 @@ describe("buildBlitzRealmSuggestions", () => {
         occupiedExplorers: 0,
       }),
     );
-    expect(first).toMatchObject({ action: "deploy-explorer", reason: "0/2 explorers deployed." });
+    expect(first).toMatchObject({
+      action: "deploy-explorer",
+      reason: "0 of 2 armies in the field: deploy another to explore.",
+    });
 
     // Explorers take priority over resource buildings once wheat is satisfied.
     expect(

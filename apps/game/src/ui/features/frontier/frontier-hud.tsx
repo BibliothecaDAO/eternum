@@ -50,6 +50,7 @@ import { DayDone } from "./rollover/day-done";
 import { RealmBuildingsRow } from "./realm/buildings-row";
 import { LastHourBubble } from "./rollover/last-hour";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useDocumentClass } from "@/hooks/use-document-class";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -59,6 +60,8 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
  * the season's top five and chat docked open. Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
+  // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
+  useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const realm = useFrontierRealm();
   // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.

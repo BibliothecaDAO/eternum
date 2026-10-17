@@ -6,16 +6,107 @@ import { runProof } from "../../apps/game/scripts/prove-run.mjs";
 const pages = [
   ["catalog", "/lab/kit/icons", ".icon-card"],
   ["hud", "/lab/kit/hud/selected", "[data-icon]"],
+  ["purse", "/lab/kit/hud/value-hud", "[data-icon=lords]"],
+  ["frontier", "/lab/kit/hud/season-over", "[data-icon=lords]"],
+  ["withdraw", "/lab/kit/hud/withdraw", "[data-icon=lords]"],
   ["hud-menu", "/lab/kit/hud/menu", "[data-icon]"],
   ["landing", "/lab/app/first-visit/?capture=1", "[data-layout]"],
   ["play", "/lab/app/home/?capture=1", "[data-layout]"],
   ["season", "/lab/app/season-running/season?capture=1", "[data-layout]"],
-  ["results", "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1", "[data-layout]"],
-  ["entry", "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1", "[data-layout]"],
+  ["results", "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1", "[data-icon=lords]"],
+  ["lords-prize", "/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1", 'img[data-icon=lords][width="96"]'],
+  ["entry", "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1", "[data-icon=lords]"],
   ["account", "/lab/app/home/profile?capture=1", "[data-layout]"],
   ["settings", "/lab/app/home/profile/settings?capture=1", "[data-layout]"],
   ["news", "/lab/app/home/scroll?capture=1", "[data-layout]"],
 ];
+
+async function readRealmEmblems(selector) {
+  const images = [...document.querySelectorAll(`${selector} image[data-icon^="map-realm-"]`)];
+  return Promise.all(
+    images.map(async (element) => {
+      const image = new Image();
+      image.src = element.getAttribute("href");
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      const style = getComputedStyle(element);
+      const size = parseFloat(style.width);
+      const x = parseFloat(style.x);
+      const y = parseFloat(style.y);
+      const marker = element.closest("[data-marker]");
+      const rim = marker.querySelector("polygon");
+      const radius = Math.max(...[...rim.points].map((point) => Math.hypot(point.x, point.y)));
+      const innerApothem = (radius * Math.sqrt(3)) / 2 - Number(rim.getAttribute("stroke-width")) / 2;
+      let clearance = Infinity;
+      let paintedPixels = 0;
+      for (let row = 0; row < canvas.height; row++) {
+        for (let col = 0; col < canvas.width; col++) {
+          if (data[(row * canvas.width + col) * 4 + 3] <= 8) continue;
+          paintedPixels++;
+          // Test all four corners of each visible source pixel against the six inner rim edges.
+          for (const dx of [0, 1])
+            for (const dy of [0, 1]) {
+              const px = x + ((col + dx) / canvas.width) * size;
+              const py = y + ((row + dy) / canvas.height) * size;
+              const edgeDistance = Math.max(Math.abs(px), Math.abs(px) / 2 + (Math.abs(py) * Math.sqrt(3)) / 2);
+              clearance = Math.min(clearance, innerApothem - edgeDistance);
+            }
+        }
+      }
+      const pip = marker.querySelector("text");
+      const overlays = [...marker.children].slice([...marker.children].indexOf(element) + 1);
+      return {
+        meaning: element.dataset.icon,
+        owner: marker.dataset.owner,
+        size,
+        x,
+        y,
+        screenPixels: element.getBoundingClientRect().width,
+        rimColor: rim.getAttribute("stroke"),
+        clearance,
+        paintedPixels,
+        value: pip?.textContent,
+        pipAboveArt: overlays.some((overlay) => overlay.contains(pip)),
+        ownershipAboveArt: overlays.some((overlay) => overlay.getAttribute("transform") === "translate(-7 8)"),
+      };
+    }),
+  );
+}
+
+export async function proveMinimapEmblems(b, out, records, url) {
+  mkdirSync(out, { recursive: true });
+  const record = { name: "live-minimap-emblems", ready: false, presses: [], checks: [] };
+  records.push(record);
+  await b.run("set", "viewport", "1440", "1000");
+  await b.run("open", url, "--ignore-https-errors");
+  await b.run("wait", '[aria-label="Minimap"] [data-marker^="map-realm-"]');
+  record.ready = true;
+  record.emblems = await b.evaluate(`(${readRealmEmblems})('[aria-label="Minimap"]')`);
+  record.view = await b.evaluate(`(() => {
+    const svg = document.querySelector('[aria-label="Minimap"] svg');
+    return { url: location.href, viewport: [innerWidth, innerHeight], viewBox: svg.getAttribute('viewBox'),
+      minimap: svg.getBoundingClientRect().toJSON(), scale: svg.getScreenCTM().a };
+  })()`);
+  record.checks.push({
+    check: "Live realm paintings fill their hex without crossing the inner rim",
+    ok:
+      record.emblems.length > 0 &&
+      record.emblems.every((emblem) => emblem.size >= 23 && emblem.paintedPixels > 0 && emblem.clearance >= 0),
+  });
+  record.checks.push({
+    check: "Level pips and ownership cues remain above the paintings",
+    ok: record.emblems.every(
+      (emblem) => emblem.value === emblem.meaning.slice(-1) && emblem.pipAboveArt && emblem.ownershipAboveArt,
+    ),
+  });
+  await b.run("screenshot", join(out, "live-minimap-page.png"));
+  await b.run("open", "about:blank");
+}
 
 export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages, missingSvg = false) {
   mkdirSync(out, { recursive: true });
@@ -65,15 +156,102 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       record.state = state;
       record.checks.push({
         check: "All rendered HTML and SVG icon URLs decode as semantic artwork",
-        ok: state.icons.length > 0 && state.icons.every((i) => i.loaded && i.url.startsWith("/icons/facets/")),
+        ok:
+          state.icons.length > 0 &&
+          state.icons.every(
+            (i) =>
+              i.loaded && (i.meaning === "lords" ? i.url === "/tokens/lords.svg" : i.url.startsWith("/icons/facets/")),
+          ),
       });
+      const lords = state.icons.filter((icon) => icon.meaning === "lords");
+      if (["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"].includes(name)) {
+        record.checks.push({
+          check: "LORDS displays the official token mark",
+          ok: lords.length > 0 && lords.every((icon) => icon.loaded && icon.url === "/tokens/lords.svg"),
+        });
+      }
       record.checks.push({ check: "Page fits viewport width", ok: !state.overflow });
+      if (name === "lords-prize") {
+        await b.run("scrollintoview", 'img[data-icon="lords"][width="96"]');
+        record.checks.push({
+          check: "Large LORDS reward uses the official SVG at 96px",
+          ok: await b.evaluate(`(() => {
+          const mark = document.querySelector('img[data-icon="lords"][width="96"]');
+          return mark?.getAttribute('src') === '/tokens/lords.svg' && mark.getBoundingClientRect().width === 96;
+        })()`),
+        });
+      }
+      if (name === "catalog" || name === "results") await b.run("scrollintoview", '[data-icon="lords"]');
       await b.run("screenshot", join(out, `${record.name}.png`));
       if (missingSvg) return;
       if (name !== "catalog") continue;
       const check = async (label, expression) =>
         record.checks.push({ check: label, ok: (await b.evaluate(expression)) === true });
-      await check("All 252 meanings are visible", "document.querySelectorAll('.icon-card').length===252");
+      await check(
+        "Every delivered meaning is visible",
+        `(async () => {
+        const {meanings} = await (await fetch('/icons/facets/manifest.json')).json();
+        const shown = [...document.querySelectorAll('.icon-card')].map(card => card.dataset.meaning);
+        return shown.length === Object.keys(meanings).length && shown.every(name => meanings[name]);
+      })()`,
+      );
+      await check(
+        "Four current model renders and shipped comparisons decode",
+        `(async () => {
+        const rows = [...document.querySelectorAll('[data-realm-level]')];
+        if (rows.length !== 4) return false;
+        try {
+          await Promise.all(rows.flatMap(row => [...row.querySelectorAll('img')]).map(image => image.decode()));
+          return rows.every(row => [...row.querySelectorAll('img')].every(image => image.naturalWidth > 0));
+        } catch { return false; }
+      })()`,
+      );
+      await b.run("click", "[data-realm-art='shipped']");
+      await check(
+        "Shipped switch restores the old icons and universal hex emblem",
+        "document.querySelectorAll('[data-realm-preview=shipped]').length===4 && document.querySelectorAll('#realm-levels [data-marker=map-realm]').length===16",
+      );
+      await b.run("click", "[data-realm-art='levels']");
+      await check(
+        "Every level has its own painting and four ownership hex badges",
+        "[0,1,2,3].every(level=>document.querySelector('[data-realm-level=\"'+level+'\"] [data-icon=realm-'+level+']') && document.querySelectorAll('#realm-levels [data-marker=map-realm-'+level+']').length===4)",
+      );
+      record.realmFill = await b.evaluate(`(${readRealmEmblems})('#hex-fill [data-hex-fill="after"]')`);
+      record.checks.push({
+        check: "All four enlarged emblems clear their rims and retain ownership and level pips",
+        ok:
+          record.realmFill.length === 32 &&
+          record.realmFill.every(
+            (emblem) =>
+              emblem.size >= 23 &&
+              emblem.clearance >= 0 &&
+              emblem.value === emblem.meaning.slice(-1) &&
+              emblem.pipAboveArt &&
+              emblem.ownershipAboveArt,
+          ),
+      });
+      await check(
+        "Before comparison retains the previous 18px inset",
+        `
+        [...document.querySelectorAll('#hex-fill [data-hex-fill="before"] image')].every(image =>
+          parseFloat(getComputedStyle(image).width) === 18 && parseFloat(getComputedStyle(image).x) === -9 && parseFloat(getComputedStyle(image).y) === -10)`,
+      );
+      for (const level of [0, 1, 2, 3]) {
+        await b.run("scrollintoview", `[data-hex-fill-level='${level}']`);
+        await b.run("screenshot", join(out, `${layout}-hex-fill-${level}.png`));
+      }
+      for (const size of [24, 32, 64]) {
+        await b.run("click", `[data-realm-size='${size}']`);
+        await check(
+          `Realm portraits display at ${size}px`,
+          `[...document.querySelectorAll('[data-realm-preview] img')].every(image=>image.width===${size})`,
+        );
+      }
+      await b.run("click", "[data-realm-size='32']");
+      for (const level of [0, 1, 2, 3]) {
+        await b.run("scrollintoview", `[data-realm-level='${level}']`);
+        await b.run("screenshot", join(out, `${layout}-realm-${level}.png`));
+      }
       for (const size of [24, 32, 64]) {
         await b.run("click", `[data-size='${size}']`);
         await check(
@@ -123,14 +301,20 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       where: (r) => ({ name: r.name }),
     },
     (b, out, records) =>
-      proveIcons(
-        b,
-        out,
-        records,
-        baseUrl,
-        missingSvg ? "desktop" : undefined,
-        missingSvg ? ["catalog"] : undefined,
-        missingSvg,
-      ),
+      process.argv.includes("--minimap-url")
+        ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
+        : proveIcons(
+            b,
+            out,
+            records,
+            baseUrl,
+            missingSvg ? "desktop" : undefined,
+            missingSvg || process.argv.includes("--catalog")
+              ? ["catalog"]
+              : process.argv.includes("--lords")
+                ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
+                : undefined,
+            missingSvg,
+          ),
   );
 }

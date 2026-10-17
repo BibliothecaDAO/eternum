@@ -187,7 +187,7 @@ export function RealtimeChatShell({
                   aria-pressed={activeZoneId === GLOBAL_CHAT_CHANNEL_ID}
                   className={cn(
                     "rounded px-3 py-1 text-sm max-lg:min-h-11",
-                    activeZoneId === GLOBAL_CHAT_CHANNEL_ID ? "bg-gold/20 text-gold" : "text-kit-muted hover:text-gold",
+                    activeZoneId === GLOBAL_CHAT_CHANNEL_ID ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold",
                   )}
                   onClick={() => selectWorldChannel(GLOBAL_CHAT_CHANNEL_ID)}
                 >
@@ -202,7 +202,7 @@ export function RealtimeChatShell({
                   }
                   className={cn(
                     "rounded px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40 max-lg:min-h-11",
-                    activeZoneId === gameZoneId ? "bg-gold/20 text-gold" : "text-kit-muted hover:text-gold",
+                    activeZoneId === gameZoneId ? "bg-gold/20 text-gold" : "text-gold/60 hover:text-gold",
                   )}
                   onClick={() => selectWorldChannel(gameZoneId)}
                 >
@@ -243,7 +243,7 @@ export function RealtimeChatShell({
               ) : activeTab?.type === "dm" ? (
                 <DirectMessagesPanel threadId={activeTab.targetId} />
               ) : (
-                <div className="flex items-center justify-center h-full text-kit-muted text-sm">
+                <div className="flex items-center justify-center h-full text-gold/50 text-sm">
                   No chat selected. Click "+ DM" to start a conversation.
                 </div>
               )}

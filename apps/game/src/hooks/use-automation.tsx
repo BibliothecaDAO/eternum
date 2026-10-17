@@ -273,7 +273,7 @@ export const useAutomation = () => {
             verboseLog(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
             for (const realmConfig of realmList) {
               if (signal.aborted) break;
-              const realmLabel = realmConfig.realmName ?? `Realm ${realmConfig.realmId}`;
+              const realmLabel = realmConfig.realmName ?? "Realm";
 
               if (skipRemainingRealmsMessage) {
                 recordRealmSkippedStatus({

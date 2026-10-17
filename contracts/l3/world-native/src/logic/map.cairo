@@ -494,9 +494,7 @@ pub mod MapLogic {
                 crate::taxonomy::DORMANT_SPIRE_OCCUPIER,
                 false,
             );
-            let reward = crate::exploration_rewards::spire_reward(
-                explorer.troops, context.rules.unbox().troop_limit_config, context.timestamp,
-            );
+            let reward = crate::exploration_rewards::spire_reward(explorer.troops.boosts, context.timestamp);
             let paid = self.pay_reveal(game_id, explorer_id, explorer, coord, reward, context);
             self.record_story(game_id, actor, context.timestamp, paid, crate::ownership::Story::SpireDiscovered(paid));
         }

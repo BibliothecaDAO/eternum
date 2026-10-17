@@ -47,6 +47,13 @@ const TOOLS = [
   },
   {
     group: "Art",
+    label: "Endgame mist",
+    path: "/lab/endgame",
+    route: "endgame",
+    View: lazy(() => import("./endgame-mist/view").then((module) => ({ default: module.EndgameMistLabView }))),
+  },
+  {
+    group: "Art",
     label: "World FX",
     path: "/lab/world-fx",
     route: "world-fx",
@@ -104,6 +111,17 @@ const TOOLS = [
     View: lazy(() =>
       import("../ui/features/debug/procedural-terrain-benchmark-view").then((module) => ({
         default: module.ProceduralTerrainBenchmarkView,
+      })),
+    ),
+  },
+  {
+    group: "Renderer",
+    label: "Map labels",
+    path: "/lab/map-labels",
+    route: "map-labels",
+    View: lazy(() =>
+      import("../ui/features/debug/map-label-lab/map-label-lab-view").then((module) => ({
+        default: module.MapLabelLabView,
       })),
     ),
   },

@@ -53,11 +53,11 @@ const MapViewSwitch = ({
       type="button"
       aria-pressed={isLocalView}
       disabled={!canOpenLocal}
-      title={canOpenLocal ? undefined : "Select a structure to open its local view"}
+      title={canOpenLocal ? undefined : "Select a structure to open its realm view"}
       onClick={() => onNavigate(false)}
       className={cn(viewButtonClasses(isLocalView, compact), "disabled:cursor-not-allowed disabled:opacity-40")}
     >
-      Local
+      Realm
     </button>
     <button
       type="button"
@@ -124,14 +124,14 @@ const viewButtonClasses = (active: boolean, compact: boolean) =>
   cn(
     HUD_LABEL_BRIGHT,
     "min-h-11 min-w-11 rounded-md px-3 font-sans transition-[color,background-color,transform] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] lg:min-h-7",
-    compact && "px-2",
-    active ? "bg-gold/20 text-gold" : "text-kit-muted",
+    compact && "px-2 tracking-normal",
+    active ? "bg-gold/20 text-gold" : "text-gold/65",
   );
 
 const layerButtonClasses = (active: boolean, compact = false) =>
   cn(
     HUD_LABEL_BRIGHT,
     "inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-3 font-sans transition-[color,background-color,transform] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] lg:min-h-7",
-    compact && "px-2",
-    active ? "bg-cyan-400/15 text-cyan-100" : "text-kit-muted",
+    compact && "px-2 tracking-normal",
+    active ? "bg-cyan-400/15 text-cyan-100" : "text-gold/65",
   );

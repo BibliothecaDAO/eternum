@@ -1,5 +1,6 @@
 import type { GameSyncModelDefinition } from "../sync/model-manifest";
 import type { GameClientSetup } from "./game-client";
+import type { SendStage } from "./submit";
 
 import type {
   GameSyncEvent,
@@ -27,6 +28,8 @@ export interface GameClientObserver {
   onSetupCompleted?: (setup: GameClientSetup) => void;
   /** The Herald subscription is active; the snapshot follows. */
   onSubscriptionActive?: () => void;
+  /** A replacement snapshot took the place of the store mid-stream: the facts no longer follow the stories delivered. */
+  onResynced?: () => void;
   /** Herald's stream is up (true), or lost and being retried (false): a named state, never a timeout. */
   onConnection?: (reachable: boolean) => void;
   /** A live delivery arrived: liveness, not content. */
@@ -37,6 +40,11 @@ export interface GameClientObserver {
   onHead?: (head: GameSyncHead) => void;
   /** Herald reported a transaction's status, pre-confirmed first and then confirmed with its block. */
   onTransaction?: (transaction: GameSyncTransaction) => void;
+  /**
+   * A command this client was handed reached a stage on its way to the chain (see SendStage), with its transaction's
+   * hash once known. Sends count from 1 for each client.
+   */
+  onSendStage?: (send: number, stage: SendStage, detail?: string, transactionHash?: string) => void;
   /** A story event row arrived on the live stream, scoped to the chain, world and game it belongs to. */
   onStoryEvent?: (event: GameSyncEvent, scope: StoryEventScope, confirmation: GameSyncEventConfirmation) => void;
   /** A new session starts; story events from the previous one are stale. */

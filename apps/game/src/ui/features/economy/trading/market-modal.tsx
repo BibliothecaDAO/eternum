@@ -175,7 +175,7 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
   return (
     <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 border-b border-gold/15 px-3 py-1">
       <span className="flex min-w-0 items-center gap-2">
-        <ResourceIcon resource={trait} size="sm" withTooltip={false} />
+        <ResourceIcon resource={desk.selectedResource} size="sm" withTooltip={false} />
         <span className="flex min-w-0 flex-col">
           <span className={cn(HUD_VALUE, "truncate")}>{trait}</span>
           <span className={cn(HUD_CUE, "flex flex-wrap gap-x-2")}>
@@ -280,7 +280,7 @@ const TradingStructureHeader = ({
       />
       <div className="flex items-center gap-1.5">
         <span className={cn(REQUIREMENT_CHIP, "text-gold")} title="Lords">
-          <ResourceIcon resource="Lords" size="xs" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
           {currencyFormat(balances.lords, 0)}
         </span>
         <span
@@ -290,7 +290,7 @@ const TradingStructureHeader = ({
           )}
           title="Donkeys"
         >
-          <ResourceIcon resource="Donkey" size="xs" withTooltip={false} />
+          <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
           {currencyFormat(balances.donkeys, 0)}
         </span>
       </div>

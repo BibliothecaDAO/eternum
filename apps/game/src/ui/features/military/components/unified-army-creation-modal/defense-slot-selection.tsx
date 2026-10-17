@@ -68,11 +68,7 @@ export const DefenseSlotSelection = ({
           const guardStaminaCurrent = guardInfo?.troops?.staminaCurrent;
           const guardStaminaMax = guardInfo?.troops?.staminaMax;
           const guardCountLabel = guardCount !== undefined ? guardCount.toLocaleString() : null;
-          const troopResourceTrait = guardCategory
-            ? (resources.find(
-                (resource) => resource.id === getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1),
-              )?.trait ?? null)
-            : null;
+          const troopResource = guardCategory ? getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1) : null;
           // A wiped slot keeps its troop row at count 0 on chain; it reads as empty here, or as rebuilding.
           const hasGuard = (guardCount ?? 0) > 0;
           const cooldownSeconds = guardInfo?.cooldownRemaining ?? 0;
@@ -96,18 +92,18 @@ export const DefenseSlotSelection = ({
                 hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
               )}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-sm px-1 rounded font-bold">
+              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">
                 {displayedSlotNumber}
               </div>
 
-              {hasGuard && troopResourceTrait && (
+              {hasGuard && troopResource !== null && (
                 <div className="flex-shrink-0">
-                  <ResourceIcon resource={troopResourceTrait} size="sm" withTooltip={false} />
+                  <ResourceIcon resource={troopResource} size="sm" withTooltip={false} />
                 </div>
               )}
 
               <div className="flex-1 min-w-0">
-                <div className={clsx("text-sm font-bold truncate", isSelected ? "text-gold" : "text-gold/80")}>
+                <div className={clsx("text-xs font-bold truncate", isSelected ? "text-gold" : "text-gold/80")}>
                   {slotName}
                 </div>
                 {hasGuard ? (
@@ -116,14 +112,14 @@ export const DefenseSlotSelection = ({
                       {guardTier && (
                         <span
                           className={clsx(
-                            "flex-shrink-0 rounded border px-1.5 py-0.5 text-sm font-bold leading-none",
+                            "flex-shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
                             getTierStyle(guardTier),
                           )}
                         >
                           {guardTier}
                         </span>
                       )}
-                      <span className={clsx("text-sm font-bold", isSelected ? "text-gold" : "text-gold/90")}>
+                      <span className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
                         {guardCountLabel}
                       </span>
                     </div>
@@ -132,7 +128,7 @@ export const DefenseSlotSelection = ({
                 ) : cooldownSeconds > 0 ? (
                   <GuardCooldownBadge seconds={cooldownSeconds} />
                 ) : (
-                  <div className={clsx("text-sm", isSelected ? "text-gold" : "text-kit-muted")}>Empty</div>
+                  <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>Empty</div>
                 )}
               </div>
             </button>
@@ -140,17 +136,17 @@ export const DefenseSlotSelection = ({
         })}
       </div>
       {sortedSlots.length === 0 && (
-        <div className="mt-1 text-sm text-center text-kit-muted">Upgrade to unlock slots</div>
+        <div className="mt-1 text-xxs text-center text-gold/60 uppercase">Upgrade to unlock slots</div>
       )}
       {defenseSlotInfoMessage && (
-        <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-sm text-gold/80 font-medium">
+        <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-xxs text-gold/80 font-medium">
           {defenseSlotInfoMessage}
         </div>
       )}
       {defenseSlotErrorMessage && (
         <div className="mt-1 bg-danger/10 border-l-2 border-danger rounded px-2 py-0.5 flex items-center gap-1.5">
           <SemanticIcon name="warning" className="w-3 h-3 text-danger flex-shrink-0" />
-          <span className="text-sm text-danger font-semibold">{defenseSlotErrorMessage}</span>
+          <span className="text-xxs text-danger font-semibold">{defenseSlotErrorMessage}</span>
         </div>
       )}
     </div>

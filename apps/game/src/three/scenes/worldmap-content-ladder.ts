@@ -10,15 +10,14 @@ export type WorldmapTextLabelTier = "full" | "priority" | "none";
  * deciding per surface.
  *
  * - near: everything.
- * - mid: models and FX, text only for priority entities, armies as tier glyphs.
+ * - mid: models and FX, plates only for priority entities.
  * - far: the strategic map — atlas icons and markers only; no models, no
  *   procedural characters, no FX, no text. Parked: wheel zoom-out stops at the
  *   top of the mid band until a map-mode key asks for this band.
  *
  * Camera pages and their loading fog remain visible in every band.
- * Procedural army characters are off on every row while they are iterated on —
- * the legacy army models are the one representation; `?proceduralCharacters=1`
- * under dev mode re-enables them.
+ * T1 knights use their production articulated model whenever army models are visible.
+ * Other procedural families remain available through `?proceduralCharacters=1` under dev mode.
  */
 export interface WorldmapContentLadder {
   readonly band: CameraView;
@@ -28,7 +27,6 @@ export interface WorldmapContentLadder {
   readonly fx: boolean;
   readonly textLabels: WorldmapTextLabelTier;
   readonly entityIcons: boolean;
-  readonly armyTierGlyphs: boolean;
 }
 
 const PROCEDURAL_CHARACTERS_ENABLED = resolveProceduralCharactersOverride();
@@ -41,7 +39,6 @@ const NEAR_LADDER: WorldmapContentLadder = Object.freeze({
   fx: true,
   textLabels: "full",
   entityIcons: false,
-  armyTierGlyphs: false,
 });
 
 const MID_LADDER: WorldmapContentLadder = Object.freeze({
@@ -52,7 +49,6 @@ const MID_LADDER: WorldmapContentLadder = Object.freeze({
   fx: true,
   textLabels: "priority",
   entityIcons: false,
-  armyTierGlyphs: true,
 });
 
 const FAR_LADDER: WorldmapContentLadder = Object.freeze({
@@ -63,7 +59,6 @@ const FAR_LADDER: WorldmapContentLadder = Object.freeze({
   fx: false,
   textLabels: "none",
   entityIcons: true,
-  armyTierGlyphs: false,
 });
 
 function resolveProceduralCharactersOverride(): boolean {

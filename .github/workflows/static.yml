@@ -49,5 +49,10 @@ jobs:
           node --test scripts/check-committed-env-rpc.test.mjs
           node scripts/check-committed-env-rpc.mjs
 
+      - name: Check every package's test script runs once
+        run: |
+          node --test scripts/check-test-scripts-run-once.test.mjs
+          node scripts/check-test-scripts-run-once.mjs
+
       - name: Check formatting
         run: pnpm run format:check

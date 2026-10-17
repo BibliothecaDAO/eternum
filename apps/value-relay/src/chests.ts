@@ -1,9 +1,17 @@
 import { Effect, Result } from "effect";
-import { RelayFailure, relayOperation, type ChestPage, type ChestPorts, type ChestRequest } from "./ports";
+import {
+  RelayFailure,
+  relayOperation,
+  type ChestPage,
+  type ChestPorts,
+  type ChestRequest,
+  type LedgerAnchor,
+} from "./ports";
 
 interface ChestCursor {
   fromBlock: number;
   page?: string | null;
+  anchor?: LedgerAnchor;
 }
 interface ChestStore {
   cursor(): Promise<ChestCursor>;
@@ -19,13 +27,22 @@ export class DurableChestStore implements ChestStore {
   async observe(page: ChestPage): Promise<void> {
     const cursor = await this.cursor();
     await this.storage.transaction(async (tx) => {
+      if (page.rewind) {
+        let old;
+        do {
+          old = await tx.list({ prefix: "chests:request:", limit: 1000 });
+          for (const key of old.keys()) await tx.delete(key);
+        } while (old.size === 1000);
+        await tx.delete("chests:queue-cursor");
+      }
       for (const change of page.rows) {
         if (change.kind === "requested") await tx.put(`chests:request:${change.request.tokenId}`, change.request);
         else await tx.delete(`chests:request:${change.tokenId}`);
       }
       await tx.put("chests:cursor", {
-        fromBlock: page.next === null ? page.head + 1 : cursor.fromBlock,
+        fromBlock: page.next === null ? page.head + 1 : page.rewind ? 0 : cursor.fromBlock,
         page: page.next,
+        anchor: page.anchor,
       });
     });
   }
@@ -49,8 +66,12 @@ export class DurableChestStore implements ChestStore {
 const observeRequests = (ports: Omit<ChestPorts, "finish">, store: ChestStore) =>
   Effect.gen(function* () {
     const cursor = yield* relayOperation("read chest cursor", () => store.cursor());
-    const page = yield* ports.changes(cursor.fromBlock, cursor.page ?? null);
-    if (page.head < cursor.fromBlock - 1 || page.rows.length > 100 || (page.next !== null && page.next === cursor.page))
+    const page = yield* ports.changes(cursor.fromBlock, cursor.page ?? null, cursor.anchor);
+    if (
+      (!page.rewind && page.head < cursor.fromBlock - 1) ||
+      page.rows.length > 100 ||
+      (!page.rewind && page.next !== null && page.next === cursor.page)
+    )
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_chest_event_page" }));
     yield* relayOperation("persist chest requests", () => store.observe(page));
   });

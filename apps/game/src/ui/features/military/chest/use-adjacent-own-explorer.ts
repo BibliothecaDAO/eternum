@@ -17,7 +17,9 @@ export const useAdjacentOwnExplorer = (hex: { col: number; row: number }): ID | 
   const mapLayer = useUIStore((state) => state.mapLayer);
   const [revision, setRevision] = useState(0);
 
-  useEffect(() => projection?.subscribeArmies(() => setRevision((current) => current + 1)), [projection]);
+  useEffect(() => {
+    return projection?.subscribeArmies(() => setRevision((current) => current + 1));
+  }, [projection]);
 
   return useMemo(() => {
     if (!projection || !address) return null;

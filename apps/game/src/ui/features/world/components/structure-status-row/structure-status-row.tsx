@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -58,8 +59,8 @@ const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
 };
 
 const InlineStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title?: string }) => (
-  <span className="inline-flex items-center gap-0.5 text-sm font-semibold tabular-nums text-kit-cream" title={title}>
-    <SemanticIcon name={Icon} className="h-3 w-3 text-kit-muted" />
+  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75" title={title}>
+    <SemanticIcon name={Icon} className="h-3 w-3 text-gold/55" />
     <span>{label}</span>
   </span>
 );
@@ -109,11 +110,9 @@ export const StructureStatusRow = memo(
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
-    // Use numeric realm level (1..6) instead of the letter abbreviation —
-    // shorter, sortable at a glance, no Settlement-vs-Hamlet mental lookup.
     const levelBadge =
       capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
-        ? String(Math.max(1, Math.trunc(structure.realmLevel)))
+        ? String(realmLevelNumber(Math.trunc(structure.realmLevel)))
         : null;
     const populationLabel =
       statsVariant === "default" && capabilities.hasPopulationDetails
@@ -156,7 +155,7 @@ export const StructureStatusRow = memo(
       [handleCardClick],
     );
 
-    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-kit-muted";
+    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-gold/60";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
     return (
@@ -244,7 +243,7 @@ export const StructureStatusRow = memo(
           <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
             {levelBadge && (
               <span
-                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-sm font-semibold tabular-nums text-kit-cream"
+                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-[10px] font-semibold tabular-nums text-gold/80"
                 title="Realm level"
               >
                 {levelBadge}

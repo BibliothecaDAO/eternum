@@ -58,18 +58,18 @@ export const FaithLeaderboardPanel = () => {
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex flex-col">
           <span className="text-sm font-semibold text-gold">Faith Leaderboard</span>
-          <span className="text-sm text-kit-muted">Live from the game stream</span>
-          <span className="text-sm text-kit-muted">Total FP includes estimated unclaimed points from FP/sec.</span>
+          <span className="text-[11px] text-gold/65">Live from the game stream</span>
+          <span className="text-[10px] text-gold/50">Total FP includes estimated unclaimed points from FP/sec.</span>
         </div>
       </div>
 
       {!hasEntries ? (
-        <div className="flex h-full items-center justify-center text-sm text-gold/70">
+        <div className="flex h-full items-center justify-center text-xs text-gold/70">
           No wonder faith data found for this world.
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-gold/15 bg-black/30">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="sticky top-0 z-10 bg-[#1d160e] text-gold/80">
               <tr>
                 <th className="px-3 py-2 text-center font-semibold">#</th>
@@ -99,13 +99,12 @@ export const FaithLeaderboardPanel = () => {
                   <td className="px-3 py-2">
                     <div className="flex flex-col">
                       <span className="font-semibold text-gold">{entry.wonderName}</span>
-                      <span className="text-sm text-kit-muted">Wonder #{entry.wonderId.toString()}</span>
                     </div>
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col">
                       <span className="font-medium text-gold">{buildOwnerLabel(entry)}</span>
-                      <span className="text-sm text-kit-muted">
+                      <span className="text-[11px] text-gold/60">
                         {isZeroAddress(entry.ownerAddress) ? "No owner recorded" : displayAddress(entry.ownerAddress)}
                       </span>
                     </div>

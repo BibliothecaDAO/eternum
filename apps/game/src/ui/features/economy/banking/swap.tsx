@@ -11,7 +11,6 @@ import { formatNumber, knownBalance } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
-  computeTravelTime,
   configManager,
   divideByPrecision,
   getBalance,
@@ -225,8 +224,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
     const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const positiveAmount = isBuyResource ? resourceAmount : lordsAmount;
-    const negativeResource = isBuyResource ? "Lords" : chosenResourceName || "";
-    const positiveResource = isBuyResource ? chosenResourceName || "" : "Lords";
+    const negativeResource = isBuyResource ? ResourcesIds.Lords : resourceId;
+    const positiveResource = isBuyResource ? resourceId : ResourcesIds.Lords;
     const resourcesToTransport = isBuyResource
       ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
       : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
@@ -269,7 +268,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
             <TravelInfo
               entityId={entityId}
               resources={resourcesToTransport}
-              travelTime={closestBank.travelTime}
+              bankId={closestBank.bankId}
               setCanCarry={setCanCarry}
               isAmm={true}
             />
@@ -288,7 +287,6 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     isLoading,
     onSwap,
     entityId,
-    computeTravelTime,
     setCanCarry,
   ]);
 
@@ -314,15 +312,15 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
         </div>
         <div className="p-2 w-full mx-auto">
-          <div className="space-y-2 text-sm">
+          <div className="space-y-2 text-xs">
             {/* Price */}
             <div className="flex justify-between items-center">
-              <span className="text-kit-muted">Price</span>
+              <span className="text-gold/60">Price</span>
               <span className="text-gold">{`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}</span>
             </div>
             {/* Slippage */}
             <div className="flex justify-between items-center">
-              <span className="text-kit-muted">Slippage</span>
+              <span className="text-gold/60">Slippage</span>
               <span className="text-red">
                 -
                 {formatNumber(
@@ -339,14 +337,14 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
             </div>
             {/* Bank Owner Fees */}
             <div className="flex justify-between items-center">
-              <span className="text-kit-muted">
+              <span className="text-gold/60">
                 Bank Owner Fee <span className="text-green">({configManager.getAdminBankOwnerFee() * 100}%)</span>
               </span>
               <span className="text-red">{formatNumber(-ownerFee, 4)} Lords</span>
             </div>
             {/* LP Fees */}
             <div className="flex justify-between items-center">
-              <span className="text-kit-muted">
+              <span className="text-gold/60">
                 LP Fee <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
               </span>
               <span className="text-red">
@@ -366,8 +364,8 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
             </Button>
             {!canSwap && (
               <div className="mt-2 p-2 rounded-lg bg-red/10 border border-red/20 text-center">
-                {!amountsBiggerThanZero && <div className="text-sm text-red/80">Enter an amount to swap</div>}
-                {!hasEnough && <div className="text-sm text-red">Insufficient balance</div>}
+                {!amountsBiggerThanZero && <div className="text-xs text-red/80">Enter an amount to swap</div>}
+                {!hasEnough && <div className="text-xs text-red">Insufficient balance</div>}
               </div>
             )}
           </div>

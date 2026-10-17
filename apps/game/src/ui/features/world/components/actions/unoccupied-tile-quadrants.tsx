@@ -1,3 +1,5 @@
+import { ResourcesIds } from "@bibliothecadao/types";
+import { biomeDisplayName } from "@/ui/utils/biome-name";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type ReactNode, useCallback, useMemo } from "react";
 
@@ -17,32 +19,22 @@ const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Cross
 const unoccupiedTileTroopConfig: Record<
   TroopType,
   {
-    resourceName: string;
+    resourceId: ResourcesIds;
     label: string;
   }
 > = {
   [TroopType.Knight]: {
-    resourceName: "Knight",
+    resourceId: ResourcesIds.Knight,
     label: "Knights",
   },
   [TroopType.Crossbowman]: {
-    resourceName: "Crossbowman",
+    resourceId: ResourcesIds.Crossbowman,
     label: "Crossbowmen",
   },
   [TroopType.Paladin]: {
-    resourceName: "Paladin",
+    resourceId: ResourcesIds.Paladin,
     label: "Paladins",
   },
-};
-
-const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
-  const label = biome.toString();
-  return label
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim();
 };
 
 const resolveBiomeBonusCardTone = (bonus: number) => {
@@ -117,7 +109,7 @@ export const BiomeSummaryCard = ({
   highlightTroopType,
 }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(() => buildBiomeTroopBonusCards(biome), [biome]);
-  const biomeLabel = formatQuadrantBiomeLabel(biome);
+  const biomeLabel = biomeDisplayName(biome);
 
   const orderedBonuses = useMemo(() => {
     if (highlightTroopType === undefined) return troopBonuses;
@@ -131,7 +123,7 @@ export const BiomeSummaryCard = ({
       <button
         type="button"
         onClick={onSimulateBattle}
-        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-sm font-semibold text-gold transition hover:border-gold hover:bg-gold/20"
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20"
         title="Simulate a battle in this biome"
         aria-label="Simulate battle"
       >
@@ -175,13 +167,13 @@ export const BiomeSummaryCard = ({
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${tone.iconWrapClassName}`}
                   >
-                    <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                    <ResourceIcon resource={config.resourceId} size="sm" withTooltip={false} />
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>
                       {config.label}
                       {isHighlighted && (
-                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-sm text-gold">
+                        <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-[8px] uppercase tracking-[0.18em] text-gold">
                           Your army
                         </span>
                       )}

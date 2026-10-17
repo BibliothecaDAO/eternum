@@ -1,9 +1,9 @@
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export interface TroopTierAvailability {
   tier: TroopTier;
   available: number;
-  resourceTrait: string;
+  resourceId: ResourcesIds;
 }
 
 export interface TroopSelectionOption {

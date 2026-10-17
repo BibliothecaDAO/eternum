@@ -166,7 +166,7 @@ describe("native scene updates", () => {
     };
     store.applyEvent({ model: "StoryEvent", key: "0x1", value: opening });
     expect(chest).toHaveBeenCalledWith({
-      title: "War pack: 3 relics to the army",
+      title: "Crate opened: 3 relics to the army",
       explorerId: 7,
       hex: { x: 10, y: 20 },
       relics: [41, 43, 39],

@@ -17,10 +17,7 @@ import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   activeCombatRules,
-  COMBAT_DIE_FACES,
   configManager,
-  forecastFight,
-  resolveExchange,
   formatTime,
   getGuardsByStructure,
   getTroopResourceId,
@@ -33,7 +30,8 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { describeFight, wholeTroops } from "./fight-forecast";
+import { combatTitle, describeFightCost, forecastAttack, wholeTroops } from "./fight-forecast";
+import { readSurvivalAdvice } from "./survival-advice";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -67,25 +65,6 @@ enum AttackerType {
   Army,
 }
 
-/** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
-const exchangeSides = (
-  worst: ReturnType<typeof resolveExchange>,
-  best: ReturnType<typeof resolveExchange>,
-): { attacker: SideRange; defender: SideRange } | null => {
-  if (!worst.ok || !best.ok) return null;
-  const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
-  return {
-    attacker: {
-      worst: side(worst.attackerLoss, worst.attacker.count),
-      best: side(best.attackerLoss, best.attacker.count),
-    },
-    defender: {
-      worst: side(worst.defenderLoss, worst.defender.count),
-      best: side(best.defenderLoss, best.defender.count),
-    },
-  };
-};
-
 export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps) => {
   const {
     account: { account },
@@ -99,7 +78,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       store,
     },
   } = useGame();
-  const revision = useNativeRevision(["ArmySlot", "Structure", "Guard", "ExplorerTroops", "TileOccupancy"]);
+  const revision = useNativeRevision([
+    "ArmySlot",
+    "Structure",
+    "Guard",
+    "ExplorerTroops",
+    "TileOccupancy",
+    "ResourceBalance",
+    "ResourceProduction",
+    "ResourceWeight",
+  ]);
 
   const accountName = usePlayerDisplayName(account?.address);
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -115,6 +103,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const executionSecond = useCurrentDefaultTick();
 
   const { target: targetData, targetResources, isLoading } = useAttackTargetData(attacker.id, target.hex, target.alt);
+  const targetOwnerName = usePlayerDisplayName(targetData ? (targetData.addressOwner ?? 0n) : null);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
   const ethereal = target.alt;
@@ -186,35 +175,24 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   );
 
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
-  const hasQueuedGuards = totalGuardCount > 1;
 
   // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
-  // attack and the whole fight as successive attacks now. Where the game rolls dice, both at the attacker's worst roll
-  // against the defender's best and the reverse; without dice the two ends are one exact result.
+  // attack and the whole fight as successive attacks now, at both ends of the dice.
   const fight = useMemo(() => {
     if (!attackerArmyData || !targetArmyData) return null;
-    const rules = activeCombatRules();
-    const at = (attackerRoll: number, defenderRoll: number) => {
-      const context = {
+    return forecastAttack(
+      attackerArmyData.troops,
+      targetArmyData.troops,
+      {
         timestamp: executionSecond,
         attackDistance: targetDistance,
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
         defenderIsStructureGuard: isStructureTarget,
-        attackerRoll,
-        defenderRoll,
-      };
-      return {
-        exchange: resolveExchange(attackerArmyData.troops, targetArmyData.troops, context, rules),
-        forecast: forecastFight(attackerArmyData.troops, targetArmyData.troops, context, rules),
-      };
-    };
-    if (!rollsDice) {
-      const exact = at(0, 0);
-      return { worst: exact, best: exact };
-    }
-    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
+      },
+      { rules: activeCombatRules(), rollsDice },
+    );
   }, [
     attackerArmyData,
     targetArmyData,
@@ -236,9 +214,22 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
   }, [targetArmyData]);
 
-  const sides = fight ? exchangeSides(fight.worst.exchange, fight.best.exchange) : null;
-  const attackerSide = sides?.attacker ?? null;
-  const defenderSide = sides?.defender ?? null;
+  const attackerSide = fight?.sides?.attacker ?? null;
+  const defenderSide = fight?.sides?.defender ?? null;
+  // The army falls at every roll: Attack steps back and the forecast says what would survive.
+  const certainLoss = fight?.certainLoss ?? false;
+  // What would survive it, within what the player can raise.
+  const survivalAdvice = useMemo(() => {
+    void revision;
+    if (!fight?.extraToSurvive || !attackerArmyData) return null;
+    const armyId = attackerType === AttackerType.Army ? attacker.id : null;
+    return readSurvivalAdvice(
+      store,
+      { id: armyId, troops: attackerArmyData.troops },
+      fight.extraToSurvive,
+      executionSecond,
+    );
+  }, [fight, attackerArmyData, attackerType, attacker.id, store, revision, executionSecond]);
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -252,8 +243,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       const isActive = index === 0;
       const remaining = isActive ? defenderRemaining : Number(snapshot.count) / RESOURCE_PRECISION;
       const resourceId = getTroopResourceId(snapshot.category, snapshot.tier);
-      const trait = resources.find((resource) => resource.id === resourceId)?.trait ?? "";
-      return { tier: snapshot.tier, trait, remaining, isActive, eliminated: remaining <= 0 };
+      return { tier: snapshot.tier, resourceId, remaining, isActive, eliminated: remaining <= 0 };
     });
   }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
 
@@ -334,26 +324,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return attackStaminaState.actionLabel;
   })();
 
-  const outcomeLabel = (() => {
-    if (!fight) {
-      if (isStructureTarget && hasQueuedGuards) return `${totalGuardCount} guards defending`;
-      return "No defenders";
-    }
-
-    const [worst, best] = [describeFight(fight.worst.forecast), describeFight(fight.best.forecast)];
-    const baseLabel = worst === best ? (worst ?? "—") : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
-
-    if (!isStructureTarget || !hasQueuedGuards) {
-      return baseLabel;
-    }
-
-    if (defenderRemaining <= 0) {
-      const remaining = queuedTargetGuards.length;
-      const suffix = remaining === 1 ? "1 guard remains" : `${remaining} guards remain`;
-      return `${baseLabel} • ${suffix}`;
-    }
-
-    return `${baseLabel} • Guard 1/${totalGuardCount}`;
+  // Who survives and what each side loses are the casualty lines below; the title only names the sides.
+  const title = combatTitle(accountName, targetOwnerName);
+  const fightCost = (() => {
+    if (!fight) return null;
+    const [worst, best] = [describeFightCost(fight.worst.forecast), describeFightCost(fight.best.forecast)];
+    return worst === best ? worst : `Worst roll: ${worst ?? "—"} · best: ${best ?? "—"}`;
   })();
 
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
@@ -451,7 +427,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   };
 
   const renderDetailsButton = (extraClassName?: string) => (
-    <Button variant="outline" size="md" onClick={handleShowDetails} className={cn("px-3 py-1 text-sm", extraClassName)}>
+    <Button
+      variant="outline"
+      size="md"
+      onClick={handleShowDetails}
+      forceUppercase={false}
+      className={cn("px-3 py-1 text-xs tracking-wide", extraClassName)}
+    >
       Details
     </Button>
   );
@@ -495,19 +477,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   return (
     <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
-        <div className="flex items-center gap-2">
-          <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
-          <button
-            type="button"
-            aria-label="Close attack preview"
-            className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
-            onClick={closeSurface}
-          >
-            <SemanticIcon name="close" className="h-3 w-3" />
-          </button>
-        </div>
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <span className={cn("min-w-0 break-words", HUD_LABEL)}>{title}</span>
+        <button
+          type="button"
+          aria-label="Close attack preview"
+          className="shrink-0 rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
+          onClick={closeSurface}
+        >
+          <SemanticIcon name="close" className="h-3 w-3" />
+        </button>
       </div>
 
       {isLoading ? (
@@ -517,7 +496,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       ) : (
         <div className="space-y-1.5">
           {rollsDice && (
-            <p className="text-sm text-gold/70">
+            <p className="text-xs text-gold/70">
               Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
             </p>
           )}
@@ -527,6 +506,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               <>
                 {casualtyLine("Your forces", attackerSide)}
                 {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
+                {fightCost && <p className={HUD_CUE}>{fightCost}</p>}
               </>
             )
           ) : (
@@ -548,15 +528,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
                   <li key={index} className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-sm font-bold border leading-none",
+                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
                         getTierStyle(slot.tier),
                       )}
                     >
                       {slot.tier}
                     </span>
-                    {slot.trait && (
-                      <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
-                    )}
+                    <ResourceIcon withTooltip={false} resource={slot.resourceId} size="sm" className="shrink-0" />
                     <span
                       className={cn(
                         "tabular-nums",
@@ -574,13 +552,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           )}
 
           {attackDisabled && (
-            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-sm text-red-200">
+            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
               <span>{attackButtonLabel}</span>
               {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-sm text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
+                <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
               )}
               {isLowStamina && (
-                <div className="mt-1 text-sm text-gold/70">
+                <div className="mt-1 text-[11px] text-gold/70">
                   <div>
                     Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
                   </div>
@@ -603,14 +581,25 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         </div>
       )}
 
+      {certainLoss && (
+        <p
+          role="status"
+          className="modal-no-drag mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-sm text-red-200"
+        >
+          Certain loss: your army is wiped out at any roll
+          {survivalAdvice ? ` · ${survivalAdvice}` : ""}.
+        </p>
+      )}
+
       <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
         <Button
-          variant="outline"
+          variant={certainLoss ? "outline" : "gold"}
           size="md"
           disabled={attackDisabled || !targetData || isLoading}
           isLoading={isSubmitting}
           onClick={handlePrimaryAction}
-          className="px-3 py-1 text-sm"
+          forceUppercase={false}
+          className="px-3 py-1 text-xs tracking-wide"
         >
           {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
         </Button>

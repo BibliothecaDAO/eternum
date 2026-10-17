@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
@@ -33,8 +34,10 @@ const MilitaryDeployHeader = ({ focusedRealmId }: { focusedRealmId: ID }) => {
   return (
     <header className="flex items-center gap-2 border-b border-gold/15 px-5 py-3">
       <SemanticIcon name="military" className="h-4 w-4 text-gold" />
-      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{detail.structureName ?? "Structure"}</span>
-      <span className={cn(HUD_LABEL_BRIGHT, "text-kit-muted")}>· Level {detail.structure.base.level}</span>
+      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{(detail.structureName ?? "Structure").toUpperCase()}</span>
+      <span className={cn(HUD_LABEL_BRIGHT, "text-gold/55")}>
+        · Level {realmLevelNumber(detail.structure.base.level)}
+      </span>
     </header>
   );
 };

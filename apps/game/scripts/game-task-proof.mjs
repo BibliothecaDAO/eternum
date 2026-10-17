@@ -1,12 +1,15 @@
 import { GAME_TASKS } from "./game-tasks.mjs";
 import { sleep, waitFor } from "./proof-wait.mjs";
 
-const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844] };
+/** The sizes a task runs at: a desktop, a phone upright, and the same phone on its side (the compact HUD's two lanes). */
+const VIEWPORTS = { desktop: [1440, 900], wide: [1920, 1080], phone: [390, 844], landscape: [844, 390] };
 const MAP_READY = `document.documentElement.dataset.bootState === "app-ready" && document.querySelector("canvas") !== null`;
 const READY_TIMEOUT_MS = 60_000;
 const STEP_TIMEOUT_MS = 20_000;
 const AT_REST_SETTLE_MS = 8_000;
 const CRATE_SEARCH = { radius: 240, step: 40 };
+/** Another holding sits further off than a crate beside an army: the search reaches across the map's middle. */
+const HOLDING_SEARCH = { radius: 480, step: 40 };
 const open = (b, url) => b.run("open", url, "--ignore-https-errors");
 const shot = async (b, out, name) => {
   await b.run("screenshot", `${out}/${name}`);
@@ -22,10 +25,13 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
 };
 
 /**
- * Presses the first visible control inside `within` whose words match `text`, scrolled to and clicked as a player
+ * Presses the first visible control inside `within` (or matched by it) whose words match `text`, scrolled to and clicked as a player
  * would; for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
- * clicks there (with `button`, right for an order sent at once); for `key`, presses that key; for `word`, clicks
- * the element showing that word, as agent-browser finds it. False when nothing matched.
+ * clicks there (with `button`, right for an order sent at once); for `hover`, moves it out until the page shows words
+ * matching that pattern and stops there, clicking nothing; for `holdingTile`, moves it out until it rests on
+ * another of the player's holdings than the one selected, and clicks there; for `fill`, types `value` into that
+ * field; for `key`, presses that key; for `word`, clicks the element showing that word, as agent-browser finds it.
+ * False when nothing matched.
  */
 const pressStep = async (b, press, layout) => {
   if (press.key) {
@@ -40,25 +46,34 @@ const pressStep = async (b, press, layout) => {
     await b.run("find", "text", press.word, "click");
     return true;
   }
-  if (press.tile) {
-    const centre = VIEWPORTS[layout].map((side) => side / 2);
-    for (const point of spiralPoints(centre, CRATE_SEARCH)) {
-      await b.run("mouse", "move", String(point[0]), String(point[1]));
-      await sleep(150);
-      if (await b.evaluate(`document.body.innerText.includes(${JSON.stringify(press.tile)})`)) {
-        await b.run("mouse", "move", ...point.map(String));
-        await b.run("mouse", "down", press.button ?? "left");
-        await b.run("mouse", "up", press.button ?? "left");
-        return true;
-      }
-    }
-    return false;
+  if (press.fill) {
+    await b.run("fill", press.fill, press.value);
+    return true;
   }
+  if (press.tile)
+    return clickTileWhere(
+      b,
+      layout,
+      CRATE_SEARCH,
+      press.button,
+      `document.body.innerText.includes(${JSON.stringify(press.tile)})`,
+    );
+  if (press.holdingTile) return clickTileWhere(b, layout, HOLDING_SEARCH, press.button, ANOTHER_HOLDING_HOVERED);
+  if (press.hover)
+    return (
+      (await pointAtTileWhere(
+        b,
+        layout,
+        HOLDING_SEARCH,
+        `new RegExp(${JSON.stringify(press.hover)}).test(document.body.innerText)`,
+      )) !== null
+    );
   const selector = await b.evaluate(`(() => {
+    const CONTROL = "button, a[href], [role=button], [role=tab]";
     const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})];
     const pattern = new RegExp(${JSON.stringify(press.text)});
     const control = scope
-      .flatMap((root) => [...root.querySelectorAll("button, a[href], [role=button], [role=tab]")])
+      .flatMap((root) => [root, ...root.querySelectorAll(CONTROL)].filter((el) => el.matches(CONTROL)))
       .find(
         (el) =>
           [el.innerText.replace(/\\s+/g, " ").trim(), el.getAttribute("aria-label") ?? ""].some((words) =>
@@ -73,6 +88,33 @@ const pressStep = async (b, press, layout) => {
   if (!selector) return false;
   await b.run("scrollintoview", selector);
   await b.run("click", selector);
+  return true;
+};
+
+/** The pointer rests on one of the player's holdings other than the one the HUD has selected. */
+const ANOTHER_HOLDING_HOVERED = `(() => {
+  const hovered = window.__eternumMapSelection?.hovered;
+  return Boolean(hovered?.ownedByViewer && !hovered.selectedHolding);
+})()`;
+
+/** Moves the pointer out from the screen's centre until `found` holds, and leaves it there; null when it never does. */
+const pointAtTileWhere = async (b, layout, search, found) => {
+  const centre = VIEWPORTS[layout].map((side) => side / 2);
+  for (const point of spiralPoints(centre, search)) {
+    await b.run("mouse", "move", String(point[0]), String(point[1]));
+    await sleep(150);
+    if (await b.evaluate(found)) return point;
+  }
+  return null;
+};
+
+/** Points at the first tile where `found` holds, and clicks there with `button`. */
+const clickTileWhere = async (b, layout, search, button = "left", found) => {
+  const point = await pointAtTileWhere(b, layout, search, found);
+  if (point === null) return false;
+  await b.run("mouse", "move", ...point.map(String));
+  await b.run("mouse", "down", button);
+  await b.run("mouse", "up", button);
   return true;
 };
 

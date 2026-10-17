@@ -9,9 +9,9 @@ interface ReconcileProceduralArmyRepresentationsInput {
   setLegacyModelVisible(entityId: number, visible: boolean): void;
 }
 
-/** Every assigned army model hands off to the shared procedural presentation runtime. */
-export function shouldPresentArmyProcedurally(modelType: ModelType | undefined): boolean {
-  return modelType !== undefined;
+/** T1 knights ship in the articulated runtime; other families retain their current presentation. */
+export function shouldPresentArmyProcedurally(modelType: ModelType | undefined, includeOtherFamilies = false): boolean {
+  return modelType === ModelType.Knight1 || (includeOtherFamilies && modelType !== undefined);
 }
 
 /**

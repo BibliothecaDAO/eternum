@@ -1,16 +1,12 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useGame } from "@/hooks/context/game-context";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { useQuery } from "@/hooks/helpers/use-query";
+import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLayout } from "@/shell/frame/layout";
-import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { Sweep } from "@/ui/motion/sweep";
-import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
@@ -65,7 +61,8 @@ const DockToken = ({
   wide: boolean;
 }) => {
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorerId);
-  const pick = usePickArmy(army.explorerId);
+  const selectArmy = useSelectArmyOnMap();
+  const pick = () => selectArmy(army.explorerId);
   const stamina = useWellRefillShown(army);
   return (
     <ArmyToken
@@ -92,21 +89,6 @@ const useWellRefillShown = (army: DockArmy) => {
   const ratio = army.stamina && army.stamina.max > 0 ? army.stamina.current / army.stamina.max : 0;
   const { shown } = useWellRefill(army.explorerId, ratio);
   return army.stamina && { current: shown * army.stamina.max, max: army.stamina.max };
-};
-
-/** The world map selects the army in place; from the realm board the first tap goes out to it. */
-const usePickArmy = (explorerId: number) => {
-  const { setup } = useGame();
-  const { isMapView } = useQuery();
-  const navigateToMapView = useNavigateToMapView();
-  return () => {
-    if (isMapView) {
-      requestArmySelection(explorerId);
-      return;
-    }
-    const coord = entityMapPosition(setup.store, configManager.getActiveGameId(), explorerId);
-    navigateToMapView(Position.fromContract(coord));
-  };
 };
 
 /** An open slot; the first one takes the guide's sweep when it points at Deploy. */

@@ -14,10 +14,13 @@ import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { ConstructionLab } from "./construction-lab";
+import { DeployLab } from "./deploy-lab";
 import { IconLab } from "./icon-lab";
 import { Link } from "react-router-dom";
 
 import { HudLab } from "./hud-lab";
+import { PanelsLab } from "./panels-lab";
+import { GuidanceLab } from "./guidance-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
@@ -32,6 +35,9 @@ export const KitLabView = () => {
     <Routes>
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
+      <Route path="deploy" element={<DeployLab />} />
+      <Route path="panels" element={<PanelsLab />} />
+      <Route path="guidance" element={<GuidanceLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="*" element={<Components />} />
     </Routes>

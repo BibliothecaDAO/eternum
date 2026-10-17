@@ -414,7 +414,7 @@ export const RaidContainer = ({
                             <span className="text-gold/70">Troops Remaining:</span>
                             <span className="text-lg font-bold text-gold">
                               {Math.floor(raidSimulation.attackerTroopsLeft)}
-                              <span className="text-sm text-kit-muted ml-1">
+                              <span className="text-sm text-gold/60 ml-1">
                                 (
                                 {Math.floor(
                                   (raidSimulation.attackerTroopsLeft /
@@ -431,7 +431,7 @@ export const RaidContainer = ({
                               className={`text-lg font-bold ${raidSimulation.newAttackerStamina < 10 ? "text-red-400" : "text-gold"}`}
                             >
                               {raidSimulation.newAttackerStamina}{" "}
-                              <span className="text-sm text-kit-muted ml-1">
+                              <span className="text-sm text-gold/60 ml-1">
                                 (+ {combatConfig.stamina_attack_req} if success)
                               </span>
                             </span>
@@ -481,7 +481,7 @@ export const RaidContainer = ({
                             className={`${targetTroops.length > 2 ? "p-2" : "p-3"} border border-gold/10 rounded relative`}
                           >
                             {targetTroops.length > 1 && (
-                              <div className="absolute top-0 right-0 bg-brown-800 text-gold px-2 py-0.5 text-sm rounded-bl-md rounded-tr-md">
+                              <div className="absolute top-0 right-0 bg-brown-800 text-gold px-2 py-0.5 text-xs rounded-bl-md rounded-tr-md">
                                 #{index + 1}
                               </div>
                             )}
@@ -509,7 +509,7 @@ export const RaidContainer = ({
                                   </span>
                                 )}
                               </div>
-                              <div className={`${targetTroops.length > 2 ? "text-sm" : "text-sm"} text-gold/80 mt-0.5`}>
+                              <div className={`${targetTroops.length > 2 ? "text-xs" : "text-sm"} text-gold/80 mt-0.5`}>
                                 Current Stamina: {Number(troops.stamina.amount || 0)}
                               </div>
                             </div>
@@ -529,7 +529,7 @@ export const RaidContainer = ({
                               <div className="text-xl font-bold text-order-giants bg-order-giants/10 rounded-md px-2 py-1">
                                 {-Math.floor(raidSimulation.defenderDamageTaken)}
                               </div>
-                              <div className="text-sm text-red-400">Total troops lost</div>
+                              <div className="uppercase text-xs text-red-400">Total troops lost</div>
                             </div>
                             <div className="text-sm text-gold/70">
                               (
@@ -626,7 +626,7 @@ export const RaidContainer = ({
                             <span className="text-base font-bold text-gold">
                               {Number(attackerArmyData.troops.stamina.amount) -
                                 (raidSimulation?.newAttackerStamina || 0)}
-                              <span className="text-sm text-kit-muted ml-1">
+                              <span className="text-sm text-gold/60 ml-1">
                                 (- {combatConfig.stamina_attack_req} if success)
                               </span>
                             </span>
@@ -636,10 +636,10 @@ export const RaidContainer = ({
                         {/* Battle Stats Summary */}
                         <div className="grid grid-cols-2 gap-3 mt-6">
                           <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-                            <div className="text-sm text-gold/70 mb-1">Your Casualties</div>
+                            <div className="text-xs text-gold/70 mb-1">Your Casualties</div>
                             <div className="text-lg font-bold text-order-giants">
                               {raidSimulation ? Math.floor(raidSimulation.raiderDamageTaken) : 0}
-                              <span className="text-sm ml-1">
+                              <span className="text-xs ml-1">
                                 (
                                 {raidSimulation && attackerArmyData && attackerArmyData.troops.count
                                   ? Math.floor(
@@ -653,10 +653,10 @@ export const RaidContainer = ({
                             </div>
                           </div>
                           <div className="p-2 border border-gold/20 rounded-md bg-brown-900/50 text-center">
-                            <div className="text-sm text-gold/70 mb-1">Defender Casualties</div>
+                            <div className="text-xs text-gold/70 mb-1">Defender Casualties</div>
                             <div className="text-lg font-bold text-order-giants">
                               {raidSimulation ? Math.floor(raidSimulation.defenderDamageTaken) : 0}
-                              <span className="text-sm ml-1">
+                              <span className="text-xs ml-1">
                                 (
                                 {raidSimulation && raidSimulation.totalDefenderTroops
                                   ? Math.floor(
@@ -705,7 +705,7 @@ export const RaidContainer = ({
                             </div>
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-kit-muted flex flex-col items-center">
+                          <div className="text-center py-8 text-gold/60 flex flex-col items-center">
                             <span className="text-3xl mb-2">🚫</span>
                             <p>No resources available to raid in this structure.</p>
                           </div>
@@ -730,7 +730,7 @@ export const RaidContainer = ({
 
                 {/* Additional feedback based on raid conditions */}
                 {!canRaid && (
-                  <div className="mt-2 text-sm text-kit-muted flex items-center gap-2">
+                  <div className="mt-2 text-sm text-gold/60 flex items-center gap-2">
                     {attackerArmyData && attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req && (
                       <span className="flex items-center gap-1">
                         <span>⚡</span> Wait for stamina to recharge ({combatConfig.stamina_attack_req} required)
@@ -756,7 +756,7 @@ export const RaidContainer = ({
               </div>
 
               {/* Help Text */}
-              <div className="text-sm text-kit-muted text-center mt-2 max-w-lg mx-auto">
+              <div className="text-xs text-gold/50 text-center mt-2 max-w-lg mx-auto">
                 Raids allow you to steal resources from enemy structures. Success chance depends on your troops, terrain
                 advantages, and defender forces.
               </div>

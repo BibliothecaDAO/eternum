@@ -4,7 +4,6 @@ export type RenderMode = "uncapped" | "capped";
 export interface RenderVisualProfile {
   animationCullDistance: number;
   animationFps: number;
-  labelRenderDistance: number;
   pixelRatio: number;
   shadowMapSize: number;
   shadows: boolean;
@@ -29,7 +28,6 @@ const LEGACY_DEVICE_CHECK_STORAGE_KEY = "INITIAL_LAPTOP_CHECK";
 const QUALITY_VISUALS: RenderVisualProfile = {
   animationCullDistance: 120,
   animationFps: 24,
-  labelRenderDistance: 160,
   pixelRatio: RENDERER_PIXEL_RATIO_CAP,
   shadowMapSize: 1024,
   shadows: true,

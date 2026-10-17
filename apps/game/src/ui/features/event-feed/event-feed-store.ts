@@ -1,14 +1,16 @@
-import type { ReactNode } from "react";
 import { create } from "zustand";
 
-export type FeedNoticeKind = "info" | "success" | "error" | "warning" | "custom";
+export type FeedNoticeKind = "info" | "success" | "error" | "warning";
 
-/** A transient notice: something that happened that no entity or transaction row carries. Ephemera, never a fact. */
-export interface FeedNotice {
+/**
+ * A transient notice: something that happened that no entity or transaction row carries. Ephemera, never a fact. Its
+ * words are text, so it is one row like every other, never a layout of its own drawn into the feed.
+ */
+interface FeedNotice {
   id: string;
   kind: FeedNoticeKind;
-  title: ReactNode;
-  description?: ReactNode;
+  title: string;
+  description?: string;
   at: number;
   /** How long the ticker shows it; the feed panel keeps it until it scrolls off the recent list. */
   ttlMs: number;
@@ -29,14 +31,11 @@ let nextNoticeId = 0;
 
 /** The same words again, as when one refused click is refused on two paths: one row, at the latest moment. */
 const repeats = (notice: Pick<FeedNotice, "kind" | "title" | "description">, other: FeedNotice) =>
-  typeof notice.title === "string" &&
-  other.kind === notice.kind &&
-  other.title === notice.title &&
-  other.description === notice.description;
+  other.kind === notice.kind && other.title === notice.title && other.description === notice.description;
 
 /**
- * The event feed's own state: notices. Transaction rows come from the transaction store and arrival rows from the
- * `resourceArrivals` slice — the feed derives its rows from those, it never copies them.
+ * The event feed's own state: notices. Transaction rows come from the transaction store — the feed derives its rows
+ * from it, it never copies them.
  */
 export const useEventFeedStore = create<EventFeedStore>()((set) => ({
   notices: [],

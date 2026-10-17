@@ -1,4 +1,3 @@
-import { FONTS } from "@/tokens";
 /**
  * Player Color Identity System
  *
@@ -443,7 +442,7 @@ const playerColorDebug = {
     }
 
     let html = `
-      <div style='font-family: ${FONTS.body}; padding: 20px; background: #1a1a2e; color: white;'>
+      <div style="font-family: system-ui; padding: 20px; background: #1a1a2e; color: white;">
         <h2 style="margin-bottom: 16px;">Player Color Palette (${playerCount} players)</h2>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
     `;

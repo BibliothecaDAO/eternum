@@ -5,8 +5,24 @@ import { describe, expect, it } from "vitest";
 import { Icon, SvgIcon } from "./icon";
 import { iconDefinition, iconMeanings, iconUrl, orderMeaning, resourceMeaning, type IconMeaning } from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
+import { realmMeaning, realmMarkerMeaning } from "./domain-icon-meaning";
+import type { ResourcesIds } from "@bibliothecadao/types";
 
-describe("semantic painted icons", () => {
+describe("semantic icons", () => {
+  it("gives every realm level its own portrait and hex emblem", () => {
+    for (const level of [0, 1, 2, 3]) {
+      expect(iconDefinition(realmMeaning(level)).art).toBe(`realm-${level}`);
+      const badge = renderToStaticMarkup(
+        <svg>
+          <HexMarker name={realmMarkerMeaning(level)} owner="you" value={String(level)} />
+        </svg>,
+      );
+      expect(badge).toContain(`/icons/facets/64/map-realm-${level}.webp`);
+      expect(badge).toContain(`>${level}</text>`);
+      expect(badge).toContain("#66ddab");
+    }
+    for (const invalid of [-1, 4, 1.5, NaN]) expect(() => realmMeaning(invalid)).toThrow("Unknown realm level");
+  });
   it.each(iconMeanings)("renders %s with shipped artwork", (name) => {
     const html = renderToStaticMarkup(<Icon name={name} size={32} />);
     const img = new DOMParser().parseFromString(html, "text/html").querySelector("img")!;
@@ -28,7 +44,7 @@ describe("semantic painted icons", () => {
   it("resolves every resource ID and all Orders", () => {
     for (let id = 1; id <= 58; id++) expect(iconDefinition(resourceMeaning(id)).label.length).toBeGreaterThan(0);
     for (let id = 0; id < 17; id++) expect(orderMeaning(id)).toMatch(/^order-/);
-    expect(() => resourceMeaning(999)).toThrow("Unknown resource icon");
+    expect(() => resourceMeaning(999 as ResourcesIds)).toThrow("Unknown resource icon");
     expect(() => orderMeaning(999)).toThrow("Unknown Order icon");
   });
   it("selects a larger export for a large portrait and preserves its accessible label", () => {
@@ -60,4 +76,21 @@ describe("semantic painted icons", () => {
     expect(markup("enemy")).toContain("M0 -3 L3 2 L-3 2 Z");
     expect(markup("you")).toContain(">3</text>");
   });
+});
+
+it("uses the unmodified LORDS token mark for resource, DOM and SVG consumers at every delivery size", () => {
+  expect(resourceMeaning(37)).toBe("lords");
+  for (const size of [64, 128, 256] as const) {
+    expect(iconUrl(resourceMeaning(37), size)).toBe("/tokens/lords.svg");
+    const html = renderToStaticMarkup(<Icon name="lords" size={size} />);
+    expect(html).toContain('src="/tokens/lords.svg"');
+    expect(html).not.toContain("rotate");
+  }
+  expect(
+    renderToStaticMarkup(
+      <svg>
+        <SvgIcon name="lords" />
+      </svg>,
+    ),
+  ).toContain('href="/tokens/lords.svg"');
 });

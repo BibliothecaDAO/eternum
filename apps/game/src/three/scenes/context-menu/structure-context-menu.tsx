@@ -23,7 +23,7 @@ interface OpenStructureContextMenuParams {
 
 const resolveStructureTitle = (structure: HexEntityInfo, store: Store) => {
   const structureRow = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.id });
-  return structureRow ? getStructureName(structureRow, getIsBlitz()).name : `Structure ${structure.id}`;
+  return structureRow ? getStructureName(structureRow, getIsBlitz()).name : "Structure";
 };
 
 export const openStructureContextMenu = ({ event, structure, hexCoords, store }: OpenStructureContextMenuParams) => {

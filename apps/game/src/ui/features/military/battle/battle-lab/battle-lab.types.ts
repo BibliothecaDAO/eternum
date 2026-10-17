@@ -6,6 +6,8 @@ export type BattleLabMode = "live" | "sim";
 /** An army the simulator runs on. Mirrors core `Army` + the equipped relics. */
 export interface WorkingArmy extends Army {
   relics: ResourcesIds[];
+  /** The army's own stamina maximum (tier, relics); absent in sim mode, where its type and tier give it. */
+  maxStamina?: number;
 }
 
 /** One selectable guard slot when the attacker is a structure. */

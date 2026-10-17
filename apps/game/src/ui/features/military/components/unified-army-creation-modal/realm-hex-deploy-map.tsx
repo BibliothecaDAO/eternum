@@ -165,7 +165,7 @@ export const RealmHexDeployMap = ({
           <div className="p-1 rounded-full bg-danger/20 w-fit mx-auto mb-1">
             <SemanticIcon name="warning" className="w-4 h-4 text-danger" />
           </div>
-          <p className="text-danger font-bold text-sm">No adjacent tiles</p>
+          <p className="text-danger font-bold text-xxs">No adjacent tiles</p>
         </div>
       ) : (
         <>
@@ -258,7 +258,7 @@ export const RealmHexDeployMap = ({
               );
             })}
           </svg>
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-sm text-kit-muted">
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[9px] uppercase tracking-wider text-gold/55">
             <span className="inline-flex items-center gap-1">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/70" />
               free

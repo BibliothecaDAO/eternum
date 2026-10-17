@@ -349,6 +349,28 @@
   },
   {
     "type": "struct",
+    "name": "game_ledger::types::MmrPreview",
+    "members": [
+      {
+        "name": "wallet",
+        "type": "core::starknet::contract_address::ContractAddress"
+      },
+      {
+        "name": "mmr_before",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "mmr_after",
+        "type": "core::integer::u128"
+      },
+      {
+        "name": "delta",
+        "type": "core::integer::i32"
+      }
+    ]
+  },
+  {
+    "type": "struct",
     "name": "game_ledger::types::Chest",
     "members": [
       {
@@ -1048,6 +1070,26 @@
         ],
         "outputs": [],
         "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "preview_mmr",
+        "inputs": [
+          {
+            "name": "key",
+            "type": "game_ledger::types::SlotKey"
+          },
+          {
+            "name": "ranked",
+            "type": "core::array::Array::<game_ledger::types::RankedPlayer>"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::array::Array::<game_ledger::types::MmrPreview>"
+          }
+        ],
+        "state_mutability": "view"
       },
       {
         "type": "function",

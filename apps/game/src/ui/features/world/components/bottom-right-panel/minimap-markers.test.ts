@@ -8,10 +8,22 @@ import { minimapMarkersView } from "./minimap-markers";
 afterEach(() => setBlockTimestampSource(null));
 
 describe("minimap icon meanings from game facts", () => {
+  it("changes the realm emblem with its native level while retaining ownership and the value badge", () => {
+    const { store } = campBeside();
+    const row = store.require("Structure", { game_id: 1, entity_id: 7 });
+    for (const level of [0, 1, 2, 3]) {
+      store.applyFacts([{ model: "Structure", key: "0x7", value: { ...row, base: { ...row.base, level } } }]);
+      expect(minimapMarkersView.read(store, ContractAddress("0x111")).get("7")).toEqual({
+        name: `map-realm-${level}`,
+        owner: "you",
+        value: String(level),
+      });
+    }
+  });
   it("shows ownership, realm level and army strength from the native rows", () => {
     const { store } = campBeside();
     const markers = minimapMarkersView.read(store, ContractAddress("0x111"));
-    expect(markers.get("7")).toEqual({ name: "map-realm", owner: "you", value: "0" });
+    expect(markers.get("7")).toEqual({ name: "map-realm-0", owner: "you", value: "0" });
     expect(markers.get(String(SITE))).toEqual({ name: "camp", owner: "neutral", value: undefined });
     expect(markers.get("201")).toEqual({ name: "map-army", owner: "you", value: "••" });
     expect(minimapMarkersView.read(store, null).get("201")?.owner).toBe("neutral");

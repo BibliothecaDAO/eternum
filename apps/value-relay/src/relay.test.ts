@@ -137,8 +137,17 @@ const fixture = () => {
           rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],
           next: null,
           head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
         }),
-      postedResults: () => Effect.succeed({ rows: [result], next: null, head: 1000 }),
+      postedResults: () =>
+        Effect.succeed({
+          rows: [result],
+          next: null,
+          head: 1000,
+          anchor: { number: 1000, hash: "0xa" },
+          rewind: false,
+        }),
     },
     realms: { ownerOf: () => Effect.succeed("0x123") },
   };
@@ -238,6 +247,8 @@ describe("independent payout monitor", () => {
             rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0xbad" }],
             next: null,
             head: 1000,
+            anchor: { number: 1000, hash: "0xa" },
+            rewind: false,
           });
       if (fault === "missing_receipt") f.ports.shard.withdrawal = () => Effect.succeed(null);
       if (fault === "wrong_amount") f.ports.shard.withdrawal = () => Effect.succeed({ ...withdrawal, amount: "18" });
@@ -322,7 +333,9 @@ it("checks later pages on a later tick without scanning the ledger history again
   };
   f.ports.ledger.postedResults = (cursor) =>
     Effect.succeed(
-      cursor === null ? { rows: [], next: "page2", head: 1000 } : { rows: [result], next: null, head: 1000 },
+      cursor === null
+        ? { rows: [], next: "page2", head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false }
+        : { rows: [result], next: null, head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false },
     );
   const monitor = () => Effect.runPromise(runMonitor({ ...f.ports, ledger: { ...f.ports.ledger, pause } }, store));
   await monitor();
@@ -457,7 +470,8 @@ it("accepts a historically authorized payout even when the player has since chan
   f.ports.identity.linkedWallet = () => Effect.succeed(null);
   Object.assign(f.ports.identity, { matchesPayDecision: () => Effect.succeed(true) });
   const paid = { ...withdrawal, wallet: "0x123", paymentTransactionHash: "0xdef", paidAt: 1000 };
-  f.ports.ledger.paidClaims = () => Effect.succeed({ rows: [paid], head: 1000, next: null });
+  f.ports.ledger.paidClaims = () =>
+    Effect.succeed({ rows: [paid], head: 1000, anchor: { number: 1000, hash: "0xa" }, rewind: false, next: null });
   let progress: MonitorProgress = { halted: null };
   const store = {
     load: async () => progress,

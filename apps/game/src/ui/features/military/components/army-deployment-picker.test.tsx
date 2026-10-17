@@ -37,4 +37,77 @@ describe("the shared deployment picker", () => {
     act(() => root.unmount());
     host.remove();
   });
+
+  it("names each kind over its column, as the Military window does, its tiers going down", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store } = frontierDay();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDeploymentPicker structureId={7} isExplorer />
+        </GameProvider>,
+      ),
+    );
+    const cells = [...host.querySelector('[aria-label="Available troops"]')!.children];
+    const kinds = cells.slice(0, 3).map((cell) => cell.textContent);
+    expect(kinds).toEqual(["Crossbow", "Knight", "Paladin"]);
+    // Row by row: each tile sits under its kind's name, T1 first.
+    const tiles = cells.slice(3).map((cell) => cell.getAttribute("aria-label")?.split(":")[0]);
+    expect(tiles).toEqual(["T1", "T2", "T3"].flatMap((tier) => kinds.map((kind) => `${kind} ${tier}`)));
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("chooses the amount in one row, with the cost on Deploy and one reason under it when it cannot go", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store } = frontierDay();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDeploymentPicker structureId={7} isExplorer />
+        </GameProvider>,
+      ),
+    );
+    const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent!))!;
+    const field = () => host.querySelector<HTMLInputElement>('input[inputmode="numeric"]')!;
+
+    // The amount: one field, out of the 420 knights on hand, +500 and Max; no line repeating it.
+    expect(host.textContent).toContain("of 420");
+    expect(host.textContent).not.toMatch(/Uses \d/);
+    // +500 adds 500, but never past the 420 on hand.
+    act(() => button(/^\+500$/).click());
+    expect(field().value).toBe("420");
+    expect(button(/^\+500$/).disabled).toBe(true);
+    expect(button(/^Max$/).disabled).toBe(true);
+    // Each knight takes two wheat: the cost rides on the one primary button.
+    expect(button(/^Deploy/).textContent).toBe("Deploy · 840 wheat");
+    // This fixture's realm has no map position, so no spawn hex: Deploy is shut and says so, once.
+    expect(button(/^Deploy/).disabled).toBe(true);
+    expect([...host.querySelectorAll('[role="status"]')].map((line) => line.textContent)).toEqual([
+      "No free spawn hex.",
+    ]);
+
+    // The realm's last knights gone: nothing to send, so the field and Max shut, and still a single reason line.
+    act(() =>
+      store.applyFacts([
+        {
+          model: "ResourceBalance",
+          key: "0x8",
+          value: { game_id: 1, entity_id: 7, resource_type: 26, balance: "0" },
+        },
+      ] as never),
+    );
+    expect(host.textContent).toContain("of 0");
+    expect(field().disabled).toBe(true);
+    expect(button(/^Max$/).disabled).toBe(true);
+    expect(host.querySelectorAll('[role="status"]')).toHaveLength(1);
+    act(() => root.unmount());
+    host.remove();
+  });
 });

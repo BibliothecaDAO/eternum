@@ -1,21 +1,27 @@
 import {
   BuildingType,
   BuildingTypeToString,
+  GUARD_SLOT_NAMES,
   GuardSlot,
+  getLevelName,
   RESOURCE_PRECISION,
+  RealmLevels,
   relicChestDelivery,
-  relicChestName,
-  relicChestPack,
   resources,
   type ResourcesIds,
+  wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { getStructureName, type PlayerNameResolver } from "../utils/entities";
-import { siteKindOf, structureMapPosition } from "../utils/expeditions";
+import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
+import { siteKindOf } from "../utils/expeditions";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
+import { feltEquals } from "../client/herald-http";
+import { divideByPrecision } from "../utils/utils";
+import { deliveryLandsAt } from "../utils/resource-arrivals";
+import { formatClockTime } from "../utils/timestamp";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 type StoryEventIcon =
@@ -36,6 +42,9 @@ export interface StoryEventPresentation {
   icon: StoryEventIcon;
   owner?: string | null;
 }
+
+/** What a capture takes with the structure: what the structure owns (its armies, the deliveries bound for it) is the captor's. */
+export const CAPTURE_AFTERMATH = "Its armies and incoming deliveries went with it";
 
 type StoryFormatter = (
   event: StoryEventSystemUpdate,
@@ -59,7 +68,7 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
   ExplorationReward: (_event, payload, components) => ({
-    title: `+${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
+    title: `${exploredAt(payload.coord)}: +${configManager.getVictoryPointGrants().exploreTile.toLocaleString()} points, +${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "resource",
   }),
@@ -69,7 +78,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "prize",
   }),
   RelicChestOpened: (_event, payload, components) => ({
-    title: describeRelicChestOpening(payload, components),
+    title: withPoints(describeRelicChestOpening(payload, components), payload.points),
     description: chestRelics(payload)
       .map((relic) => getResourceName(relic))
       .join(", "),
@@ -80,12 +89,21 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: getResourceName(Number(payload.value)),
     icon: "prize",
   }),
+  // Who took what from whom; from a player, what went with it; from The Vanguard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: "Structure captured",
-    description: joinPieces([
-      describeEntity(event.entityId, components),
-      `${nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "—"} → ${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "—"}`,
-    ]),
+    title: withPoints(
+      [
+        `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+          isViewer(payload.previous_owner, event.viewerAddress)
+            ? "you"
+            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+        }`,
+        toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
+      ]
+        .filter(Boolean)
+        .join(". "),
+      payload.points,
+    ),
     icon: "battle",
   }),
   TradeCreated: (_event, payload) => {
@@ -185,37 +203,22 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord = formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
-    const realm = describeStructureDetails(event, components) ?? "Realm";
     return {
-      title: "Realm founded",
-      description:
-        joinPieces([realm, ownerLabel ? `Settled by ${ownerLabel}` : undefined, coord ? `at ${coord}` : undefined]) ??
-        "New realm established on the map.",
+      title: `${describeStructureName(event.entityId, components) ?? "A realm"} founded`,
+      description: joinPieces([ownerLabel ? `Settled by ${ownerLabel}` : undefined, coord ? `at ${coord}` : undefined]),
       icon: "realm",
     };
   },
-  BuildingPlacementStory: (event, payload, components) => {
-    const status = describeBuildingStatus(payload);
-    const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
-    const title =
-      status === "Constructed" || status === "Demolished"
-        ? `${status}: ${categoryLabel}`
-        : `${categoryLabel} ${status.toLowerCase()}`;
-    return {
-      title,
-      description: joinPieces([describeStructureDetails(event, components, payload.category), status]),
-      icon: "building",
-    };
-  },
+  BuildingPlacementStory: (event, payload, components) => ({
+    title: `${formatBuildingCategory(payload.category) ?? "Building"} ${describeBuildingStatus(payload)} at ${subjectOf(event.entityId, components)}`,
+    icon: "building",
+  }),
+  // Paid in the same transaction as the building it pays for: the same action, told by the same title.
   BuildingPaymentStory: (event, payload, components) => {
-    const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
     const cost = formatResourceList(payload.cost);
     return {
-      title: `Building Constructed: ${categoryLabel}`,
-      description: joinPieces([
-        describeStructureDetails(event, components, payload.category),
-        cost ? `Cost: ${cost}` : undefined,
-      ]),
+      title: `${formatBuildingCategory(payload.category) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
+      description: cost ? `Paid ${cost}` : undefined,
       icon: "building",
     };
   },
@@ -223,34 +226,17 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const receivedId = toNumber(payload.received_resource_type);
     const amount = formatResourceAmount(payload.received_amount);
     const cost = formatResourceList(payload.cost);
-    const structureSummary = describeStructureDetails(event, components);
-    const resourceName = receivedId !== null ? getResourceName(receivedId) : undefined;
-    const outputLine = resourceName
-      ? `Output: ${resourceName}${amount ? ` ×${amount}` : ""}`
-      : amount
-        ? `Output: ×${amount}`
-        : undefined;
-    const inputsLine = cost ? `Inputs consumed: ${cost}` : undefined;
+    const resourceName = receivedId !== null ? getResourceName(receivedId) : "Resource";
     return {
-      title: resourceName ? `Production started: ${resourceName}` : "Production started",
-      description: joinPieces([structureSummary, outputLine, inputsLine]),
+      title: `${resourceName} production started at ${subjectOf(event.entityId, components)}`,
+      description: joinPieces([amount ? `${amount} ${resourceName}` : undefined, cost ? `for ${cost}` : undefined]),
       icon: "production",
     };
   },
   StructureLevelUpStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components);
-    const newLevelNumeric = toNumber(payload.new_level);
-    const previousLevel = newLevelNumeric !== null ? Math.max(newLevelNumeric - 1, 0) : null;
-    const levelLabel = newLevelNumeric !== null ? newLevelNumeric.toLocaleString() : undefined;
+    const level = toNumber(payload.new_level);
     return {
-      title: levelLabel ? `Structure reached level ${levelLabel}` : "Structure leveled up",
-      description:
-        joinPieces([
-          structureSummary,
-          previousLevel !== null && levelLabel
-            ? `Progression: ${previousLevel.toLocaleString()} → ${levelLabel}`
-            : undefined,
-        ]) ?? "Structure advanced to a higher tier.",
+      title: `${subjectOf(event.entityId, components)} became ${level !== null ? describeLevel(level) : "stronger"}`,
       icon: "building",
     };
   },
@@ -259,36 +245,34 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const defender = payload.defender as Record<string, unknown>;
     const attackerName = nameOwner(attacker.player, store, resolvePlayerName);
     const defenderName = nameOwner(defender.player, store, resolvePlayerName);
-    const winner = Number(payload.winner_id);
-    const victor =
-      winner > 0 && winner === Number(payload.attacker_owner)
-        ? `Attacker [${attackerName}]`
-        : winner > 0 && winner === Number(payload.defender_owner)
-          ? `Defender [${defenderName}]`
-          : BigInt(String(attacker.after)) === 0n && BigInt(String(defender.after)) === 0n
-            ? "Mutual Annihilation"
-            : "Draw";
+    const outcome = battleOutcome(
+      { name: attackerName, standing: BigInt(String(attacker.after)) > 0n },
+      { name: defenderName, standing: BigInt(String(defender.after)) > 0n },
+    );
     const side = (label: string, value: Record<string, unknown>) => [
       `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
-      `${label} Troops Left: ${formatResourceAmount(value.after)} Troops`,
+      `${label} Troops Left: ${formatResourceAmount(value.after)}`,
       Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
     ];
+    const sides = `${attackerName ?? "Attacker"} vs ${defenderName ?? "Defender"}`;
+    // The viewer's own loss leads: who won is then plain, and the army it cost is what they need to read.
+    const lost = lostArmyLine(payload, event.viewerAddress ?? null);
     return {
-      title: "Battle resolved",
+      title: lost ? `${lost} · ${sides}` : `${sides} · ${outcome}`,
       description: joinPieces([
         `Attacker [${attackerName}]: ${describeEntity(payload.attacker_id, store) ?? "Army"}`,
         `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? "Army"}`,
         ...side("Attacker", attacker),
         ...side("Defender", defender),
-        `Winner: ${victor}`,
+        `Outcome: ${outcome}`,
       ]),
       icon: "battle",
     };
   },
-  RaidEvent: (_, payload) => ({
-    title: payload.success ? "Raid successful" : "Raid repelled",
-    description: payload.success ? formatResourceList(payload.requested_loot) : "No resources captured.",
+  RaidEvent: (_, payload, components) => ({
+    title: `Raid on ${subjectOf(payload.structure_id, components)} ${payload.success ? "succeeded" : "repelled"}`,
+    description: payload.success ? formatResourceList(payload.requested_loot) : "Nothing taken",
     icon: "battle",
   }),
   BankLiquidity: (_, payload) => ({
@@ -296,123 +280,58 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: `${getResourceName(Number(payload.resource_type))} / Lords`,
     icon: "resource",
   }),
-  ResourceTransferStory: (event, payload, components, resolvePlayerName) => {
-    const resourcesText = formatResourceList(payload.resources);
-    const transferType = formatEnum(payload.transfer_type);
-    const route = formatRoute(payload.from_entity_id, payload.to_entity_id, components);
-    const sender = nameOwner(
-      payload.from_entity_owner_address ?? payload.from_entity_id,
-      components,
-      resolvePlayerName,
-    );
-    const recipient = nameOwner(payload.to_entity_owner_address ?? payload.to_entity_id, components, resolvePlayerName);
-    const travelTime = formatTravelTime(payload.travel_time);
-    const minted = payload.is_mint === true ? "Minted at destination" : undefined;
-
+  // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
+  ResourceTransferStory: (event, payload, components) => {
+    const destination = describeEntity(payload.to_entity_id, components);
+    const source = describeEntity(payload.from_entity_id, components);
+    const minted = payload.is_mint === true;
     return {
-      title: payload.is_mint === true ? "Resources minted" : "Resources transferred",
+      title: minted
+        ? `Resources minted${destination ? ` at ${destination}` : ""}`
+        : `Resources sent${destination ? ` to ${destination}` : ""}`,
       description: joinPieces([
-        route ? `Route: ${route}` : undefined,
-        transferType ? `Courier: ${transferType}` : undefined,
-        sender ? `Sender: ${sender}` : undefined,
-        recipient ? `Recipient: ${recipient}` : undefined,
-        travelTime ? `Travel time: ${travelTime}` : undefined,
-        minted,
-        resourcesText ? `Payload: ${resourcesText}` : undefined,
+        source && !minted ? `from ${source}` : undefined,
+        formatResourceList(payload.resources),
+        formatLanding(event.timestamp, payload.travel_time),
       ]),
       icon: "resource",
     };
   },
-  ResourceBurnStory: (_, payload) => {
-    const burned = formatResourceList(payload.resources);
-    return {
-      title: "Resources burned",
-      description: burned ? `Consumed: ${burned}` : "Resources consumed.",
-      icon: "resource",
-    };
-  },
-  ResourceReceiveArrivalStory: (_, payload) => {
-    const delivered = formatResourceList(payload.resources);
-    return {
-      title: "Resources arrived",
-      description: delivered ? `Delivery: ${delivered}` : "Incoming resources delivered.",
-      icon: "resource",
-    };
-  },
-  GuardAddStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
-    const slotLabel = formatSlotLabel(payload.slot);
-    const troopCategory = formatEnum(payload.category);
-    const troopTier = formatEnum(payload.tier);
-    const troopDescriptor = [troopCategory, troopTier].filter(Boolean).join(" ");
-    const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-
-    return {
-      title: "Garrison reinforced",
-      description: joinPieces([
-        structureSummary,
-        slotLabel ? `Assignment: ${slotLabel}` : undefined,
-        troopDescriptor ? `Unit: ${troopDescriptor}` : undefined,
-        amount ? `Strength: +${amount}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  GuardDeleteStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
-    const slotLabel = formatSlotLabel(payload.slot);
-    return {
-      title: "Guard dismissed",
-      description: joinPieces([structureSummary, slotLabel ? `Removed from ${slotLabel}` : undefined]),
-      icon: "troop",
-    };
-  },
-  ExplorerCreateStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
-    const troopCategory = formatEnum(payload.category);
-    const troopTier = formatEnum(payload.tier);
-    const troopDescriptor = [troopCategory, troopTier].filter(Boolean).join(" ");
-    const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-    const direction = formatDirection(payload.spawn_direction);
-
-    return {
-      title: "Explorer enlisted",
-      description: joinPieces([
-        structureSummary,
-        troopDescriptor ? `Unit: ${troopDescriptor}` : undefined,
-        amount ? `Strength: ${amount}` : undefined,
-        direction ? `Spawn: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  ExplorerAddStory: (_, payload, components) => {
-    const explorerRef = describeExplorer(payload.explorer_id, components);
-    const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-    const direction = formatDirection(payload.home_direction);
-    return {
-      title: "Explorer reinforced",
-      description: joinPieces([
-        `Explorer: ${explorerRef}`,
-        amount ? `Reinforcements: +${amount}` : undefined,
-        direction ? `Home route: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  ExplorerDeleteStory: (_, payload, components) => {
-    return {
-      title: "Explorer retired",
-      description: `${describeExplorer(payload.explorer_id, components)} disbanded.`,
-      icon: "troop",
-    };
-  },
+  ResourceBurnStory: (event, payload, components) => ({
+    title: `Resources spent at ${subjectOf(event.entityId, components)}`,
+    description: formatResourceList(payload.resources),
+    icon: "resource",
+  }),
+  ResourceReceiveArrivalStory: (event, payload, components) => ({
+    title: `${formatResourceList(payload.resources) ?? "Resources"} arrived at ${subjectOf(event.entityId, components)}`,
+    icon: "resource",
+  }),
+  GuardAddStory: (event, payload, components) => ({
+    title: `${subjectOf(payload.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(payload.slot) ?? "guard"} reinforced`,
+    description: describeTroops(payload, "+"),
+    icon: "troop",
+  }),
+  GuardDeleteStory: (event, payload, components) => ({
+    title: `${subjectOf(payload.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(payload.slot) ?? "guard"} dismissed`,
+    icon: "troop",
+  }),
+  ExplorerCreateStory: (event, payload, components) => ({
+    title: `Army raised at ${subjectOf(payload.structure_id ?? event.entityId, components)}`,
+    description: describeTroops(payload, ""),
+    icon: "troop",
+  }),
+  ExplorerAddStory: (_, payload, components) => ({
+    title: `${describeExplorer(payload.explorer_id, components)} reinforced`,
+    description: describeTroops(payload, "+"),
+    icon: "troop",
+  }),
+  ExplorerDeleteStory: (_, payload, components) => ({
+    title: `${describeExplorer(payload.explorer_id, components)} disbanded`,
+    icon: "troop",
+  }),
   TroopsTransferred: (event, payload, components) => ({
-    title: "Troops reassigned",
-    description: joinPieces([
-      `Route: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
-      `Transferred: ${formatResourceAmount(payload.amount)}`,
-    ]),
+    title: `Troops moved: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
+    description: troopCount(payload.amount),
     icon: "troop",
   }),
 };
@@ -446,12 +365,32 @@ function formatBuildingCategory(value: unknown): string | undefined {
 }
 
 /** What each change a placement story carries (the contract's BuildingChange) reads as. */
-const BUILDING_STATUS: Record<string, "Constructed" | "Demolished" | "Paused" | "Resumed"> = {
-  Created: "Constructed",
-  Destroyed: "Demolished",
-  Paused: "Paused",
-  Resumed: "Resumed",
+const BUILDING_STATUS: Record<string, "built" | "demolished" | "paused" | "resumed"> = {
+  Created: "built",
+  Destroyed: "demolished",
+  Paused: "paused",
+  Resumed: "resumed",
 };
+
+/**
+ * What a story is about, a structure or an army, as `describeEntity` names it; "a structure" once the store no longer
+ * holds it (every caller passes a structure's id). Never an id.
+ */
+function subjectOf(structureId: unknown, components?: NativeFactStore): string {
+  return describeEntity(structureId, components) ?? "a structure";
+}
+
+/** A realm's level by its name ("a City"); a level past the realm ladder by its number. */
+function describeLevel(level: number): string {
+  return level in RealmLevels ? `a ${getLevelName(level as RealmLevels)}` : `level ${level.toLocaleString()}`;
+}
+
+/** Troops a story moved, as a player reads them: "+500 Knight T1". */
+function describeTroops(payload: Record<string, unknown>, sign: "+" | ""): string | undefined {
+  const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
+  const troops = [formatEnum(payload.category), formatEnum(payload.tier)].filter(Boolean).join(" ");
+  return amount ? `${sign}${amount}${troops ? ` ${troops}` : ""}` : troops || undefined;
+}
 
 function describeBuildingStatus(payload: Record<string, unknown>) {
   const status = BUILDING_STATUS[formatEnum(payload.change) ?? ""];
@@ -465,32 +404,7 @@ function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?
   if (army.Explorer !== undefined) return describeExplorer(army.Explorer, components);
   if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
   const guard = army.Guard as Record<string, unknown>;
-  const structure =
-    describeStructureDetails(event, components, undefined, guard.structure_id) ??
-    `Structure ${formatNumber(guard.structure_id)}`;
-  return `${structure} · ${formatSlotLabel(guard.slot)}`;
-}
-
-function describeStructureDetails(
-  event: StoryEventSystemUpdate,
-  components?: NativeFactStore,
-  fallbackCategory?: unknown,
-  structureOverride?: unknown,
-): string | undefined {
-  const targetId = structureOverride ?? event.entityId;
-
-  if (!components || targetId === null || targetId === undefined) {
-    return formatBuildingCategory(fallbackCategory);
-  }
-
-  const structure = readStructure(targetId, components);
-  if (!structure) return formatBuildingCategory(fallbackCategory);
-
-  const name = getStructureName(structure, getIsBlitz()).name;
-  const level = toNumber(structure.base?.level);
-  const coord = formatCoord(structureMapPosition(components, structure));
-
-  return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
+  return `${subjectOf(guard.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(guard.slot) ?? "guard"}`;
 }
 
 type StructureRow = NonNullable<ReturnType<typeof readStructure>>;
@@ -533,11 +447,18 @@ function structureDisplayName(components: NativeFactStore, structure: StructureR
  * explorer has no row, so the home structure from the payload stands in; with nothing to read it is "Army".
  */
 function describeExplorer(explorerId: unknown, components?: NativeFactStore, homeStructureId?: unknown): string {
+  const name = describeArmyName(explorerId, components, homeStructureId);
+  if (name) return `${name} army`;
+  const home = describeStructureName(readExplorer(explorerId, components)?.owner ?? homeStructureId, components);
+  return home ? `${home} army` : "Army";
+}
+
+/** An army's name, its home and tier ("Stolsli T1"); null without both. */
+function describeArmyName(explorerId: unknown, components?: NativeFactStore, homeStructureId?: unknown): string | null {
   const explorer = readExplorer(explorerId, components);
   const home = describeStructureName(explorer?.owner ?? homeStructureId, components);
   const tier = formatEnum(explorer?.troops?.tier);
-  const army = tier ? `${tier} army` : "army";
-  return home ? `${home} ${army}` : "Army";
+  return home && tier ? `${home} ${tier}` : null;
 }
 
 const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
@@ -546,17 +467,17 @@ const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
 };
 
 /**
- * An opened chest as a player reads it: its pack and where its relics went ("Produce pack: 3 relics to Stolsli"). The
- * home is the opening army's; once that army is gone its row no longer names it.
+ * An opened chest as a player reads it: where its relics went ("Crate opened: 3 relics to Stolsli"). The home is the
+ * opening army's; once that army is gone its row no longer names it.
  */
 export function describeRelicChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
   const explorer = readExplorer(payload.explorer_id, components);
   const home = describeStructureName(explorer?.owner, components);
   const delivery = relicChestDelivery(chestRelics(payload), {
-    army: explorer && home ? describeExplorer(payload.explorer_id, components) : "the army",
+    army: explorer && home ? describeArmyName(payload.explorer_id, components) : null,
     home: home ?? "its realm",
   });
-  return `${relicChestName(relicChestPack(payload.chest))}: ${delivery}`;
+  return `Crate opened: ${delivery}`;
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */
@@ -696,13 +617,6 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
-function shortenAddress(value: unknown): string | null {
-  if (!value) return null;
-  const raw = String(value);
-  if (raw.length <= 10) return raw;
-  return `${raw.slice(0, 6)}…${raw.slice(-4)}`;
-}
-
 function amountToBigInt(value: unknown): bigint | null {
   if (value === undefined || value === null) return null;
   if (typeof value === "bigint") return value;
@@ -764,6 +678,19 @@ function toBigIntSafe(value: unknown): bigint | null {
   return null;
 }
 
+/** Whether an address is the player the story is told to. */
+function isViewer(address: unknown, viewerAddress: string | null): boolean {
+  const player = toBigIntSafe(address);
+  return player !== null && player !== 0n && viewerAddress !== null && player === BigInt(viewerAddress);
+}
+
+/** A number of troops, one troop or many ("1 troop", "1,000 troops"). */
+function troopCount(amount: unknown): string {
+  const count = formatResourceAmount(amount);
+  if (count === undefined) return "Some troops";
+  return `${count} ${count === "1" ? "troop" : "troops"}`;
+}
+
 function formatResourceAmount(amount: unknown): string | undefined {
   const bigIntAmount = amountToBigInt(amount);
   if (bigIntAmount === null) return undefined;
@@ -775,48 +702,61 @@ function formatSlotLabel(value: unknown): string | undefined {
   const label = formatEnum(value);
   const slot = numeric ?? (label ? GuardSlot[label as keyof typeof GuardSlot] : undefined);
   if (slot === undefined) return undefined;
-  const name = GuardSlot[slot as GuardSlot];
+  const name = GUARD_SLOT_NAMES[slot as GuardSlot];
   if (name === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
   return name;
 }
 
-function formatDirection(value: unknown): string | undefined {
-  const label = formatEnum(value);
-  if (label) return label;
-  return undefined;
+/**
+ * When a delivery's goods land, by the rule the chain lands them (deliveryLandsAt): at the end of the delivery tick
+ * its road ends in, not when the road ends. A story is history, so it says the clock time. An instant transfer has no
+ * road and nothing to say.
+ */
+function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undefined {
+  const road = toNumber(travelSeconds);
+  if (road === null || road === 0) return undefined;
+  return `lands at ${formatClockTime(deliveryLandsAt(Math.floor(sentAtMs / 1000), road) * 1000)}`;
 }
 
-function formatTravelTime(seconds: unknown): string | undefined {
-  const numeric = toNumber(seconds);
-  if (numeric === null) return undefined;
-  if (numeric === 0) return "Instant";
+/**
+ * A fight's outcome as every surface shows it, whole, decided as the contract decides its winner (combat.cairo's
+ * `battle_winner` and its guard branch): the side left standing when the other has no troops wins; both standing is
+ * a draw; neither is both falling. The event's `winner_id` is not read: it records the winner as a home structure, a
+ * guarded structure or an attacking structure depending on who attacked whom.
+ */
+/** A line and the points it scored, when it scored any: "… · +250 points". Story points are at contract precision. */
+const withPoints = (line: string, points: unknown): string => {
+  const whole = points === undefined || points === null ? 0 : wholePoints(BigInt(String(points)));
+  return whole > 0 ? `${line} · +${whole.toLocaleString()} points` : line;
+};
 
-  if (numeric < 60) return `${numeric.toLocaleString()} seconds`;
-  if (numeric < 3600) {
-    const minutes = Math.floor(numeric / 60);
-    const secs = numeric % 60;
-    return secs === 0
-      ? `${minutes.toLocaleString()} minutes`
-      : `${minutes.toLocaleString()} minutes ${secs.toLocaleString()} seconds`;
-  }
-  if (numeric < 86400) {
-    const hours = Math.floor(numeric / 3600);
-    const minutes = Math.floor((numeric % 3600) / 60);
-    return minutes === 0
-      ? `${hours.toLocaleString()} hours`
-      : `${hours.toLocaleString()} hours ${minutes.toLocaleString()} minutes`;
-  }
-  return `${numeric.toLocaleString()} ticks`;
+/** Where an explore revealed its find: "Explored · (4, 6)", in the map's own coordinates. */
+const exploredAt = (coord: unknown): string => {
+  const { x, y } = (coord ?? {}) as { x?: unknown; y?: unknown };
+  if (x === undefined || y === undefined) return "Explored";
+  const normalized = Position.fromContract({ x: Number(x), y: Number(y) }).getNormalized();
+  return `Explored · (${normalized.x}, ${normalized.y})`;
+};
+
+const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
+
+/** The viewer's side of a fight, when it fell: "Army lost: 1,000 Knights". Null when it stood, or is not theirs. */
+export const lostArmyLine = (payload: Record<string, unknown>, viewer: string | null): string | null => {
+  const side = [payload.attacker, payload.defender].find(
+    (entry): entry is Record<string, unknown> =>
+      typeof entry === "object" && entry !== null && feltEquals((entry as Record<string, unknown>).player, viewer),
+  );
+  if (!side || BigInt(String(side.after ?? 1)) !== 0n) return null;
+  const troops = divideByPrecision(Number(side.before ?? 0)).toLocaleString();
+  return `Army lost: ${troops} ${TROOP_PLURALS[String(side.category ?? "")] ?? "troops"}`;
+};
+
+function battleOutcome(attacker: { name?: string; standing: boolean }, defender: { name?: string; standing: boolean }) {
+  if (attacker.standing && !defender.standing) return `${attacker.name ?? "Attacker"} wins`;
+  if (defender.standing && !attacker.standing) return `${defender.name ?? "Defender"} wins`;
+  return attacker.standing ? "Draw" : "Both sides fall";
 }
 
-function formatRoute(fromEntity: unknown, toEntity: unknown, components?: NativeFactStore): string | undefined {
-  const fromRef = describeEntity(fromEntity, components);
-  const toRef = describeEntity(toEntity, components);
-  if (!fromRef || !toRef) return undefined;
-  return `${fromRef} → ${toRef}`;
-}
-
-/** An owner is an address (its registered name, else shortened) or an owning structure (its name). */
 /**
  * The one way a story names an owner: the ownerless address reads as Neutral, an address goes to the client's
  * resolver, then the chain name (the registration fallback reads as none), then the shortened address; anything
@@ -828,17 +768,6 @@ function nameOwner(
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
   if (owner === undefined || owner === null) return undefined;
-  if (typeof owner === "string" && owner.startsWith("0x")) {
-    if (isZeroAddress(owner)) return "Neutral";
-    return resolvePlayerName?.(owner) ?? shortenAddress(owner) ?? owner;
-  }
+  if (typeof owner === "string" && owner.startsWith("0x")) return displayPlayerName(owner, resolvePlayerName?.(owner));
   return components ? (describeStructureName(owner, components) ?? undefined) : undefined;
 }
-
-const isZeroAddress = (address: string): boolean => {
-  try {
-    return BigInt(address) === 0n;
-  } catch {
-    return false;
-  }
-};

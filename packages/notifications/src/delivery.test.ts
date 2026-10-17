@@ -86,3 +86,27 @@ it("accepts games named by chain id and game id and rejects any other game addre
   expect(parseNotificationPayload({ ...notification, target: "/g/0x57/12" }, now).target).toBe("/g/0x57/12");
   expect(() => parseNotificationPayload({ ...notification, target: "/g/madara/1" }, now)).toThrow();
 });
+
+it("tells a new building's placement and its payment as one story, and keeps two buildings apart", () => {
+  const placed = logicalStoryIdentity(
+    "story:0xfeed:0x3",
+    "BuildingPlacementStory",
+    {},
+    {
+      coord: { x: 4, y: 5 },
+      change: { Created: {} },
+    },
+  );
+  expect(
+    logicalStoryIdentity("story:0xfeed:0x4", "BuildingPaymentStory", {}, { coord: { x: 4, y: 5 }, cost: [] }),
+  ).toBe(placed);
+  expect(
+    logicalStoryIdentity("story:0xfeed:0x6", "BuildingPaymentStory", {}, { coord: { x: 6, y: 5 }, cost: [] }),
+  ).not.toBe(placed);
+  expect(
+    logicalStoryIdentity("story:0xbeef:0x4", "BuildingPaymentStory", {}, { coord: { x: 4, y: 5 }, cost: [] }),
+  ).not.toBe(placed);
+  expect(
+    logicalStoryIdentity("story:0xfeed:0x3", "BuildingPlacementStory", {}, { coord: { x: 4, y: 5 }, change: "Paused" }),
+  ).toBe("story:0xfeed:0x3");
+});

@@ -21,7 +21,6 @@ import {
   Scene,
   Vector3,
 } from "three";
-import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { writeMorphWeightsIfChanged } from "./morph-texture-dirty-state";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { createSlotDirtyRange, flushSlotDirtyRange, markSlotDirty } from "../utils/instance-update-ranges";
@@ -146,8 +145,6 @@ export class ArmyModel {
   private readonly movingInstances: Map<number, MovementData> = new Map();
   private readonly instanceData: Map<number, ArmyInstanceData> = new Map();
   private readonly matrixIndexOwners: Map<number, number> = new Map();
-  private readonly labels: Map<number, { label: CSS2DObject; entityId: number }> = new Map();
-  private readonly labelsGroup: Group;
   private currentCameraView: CameraView = CameraView.Medium;
   private movementCompleteCallbacks: Map<number, () => void> = new Map();
 
@@ -233,14 +230,12 @@ export class ArmyModel {
     scene: Scene,
     /** The biome an army stands on at contract coordinates: its tile's stored biome (see ArmyManager). */
     private readonly groundBiomeAt: (col: number, row: number) => BiomeType,
-    labelsGroup?: Group,
     cameraView?: CameraView,
     private readonly compilePipelines?: PipelineCompiler,
   ) {
     this.scene = scene;
     this.dummyObject = new Object3D();
     this.loadPromise = Promise.resolve();
-    this.labelsGroup = labelsGroup || new Group();
     this.currentCameraView = cameraView || CameraView.Medium;
     this.contactShadowsEnabled = this.currentCameraView !== CameraView.Close;
 
@@ -986,7 +981,6 @@ export class ArmyModel {
     this.activeCosmeticByEntity.delete(entityId);
     this.hiddenEntityRepresentations.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
-    this.removeLabel(entityId);
   }
 
   /** Hard-clear a single slot across every renderable, drop its ownership, and pool it. */
@@ -1673,8 +1667,6 @@ export class ArmyModel {
       instanceData.color,
     );
 
-    this.updateLabelPosition(entityId, this.tempVector1);
-
     if (movement.floatingHeight <= 0 || isShip) {
       this.movingInstances.delete(entityId);
     }
@@ -1718,8 +1710,6 @@ export class ArmyModel {
       this.dummyObject.rotation,
       instanceData.color,
     );
-
-    this.updateLabelPosition(entityId, this.tempVector2);
   }
 
   private getSplineEasingType(_tier: TroopTier): EasingType {
@@ -1787,7 +1777,6 @@ export class ArmyModel {
         this.dummyObject.rotation,
         instanceData.color,
       );
-      this.updateLabelPosition(entityId, this.tempVector2);
       return;
     }
 
@@ -1879,7 +1868,6 @@ export class ArmyModel {
         this.dummyObject.rotation,
         instanceData.color,
       );
-      this.updateLabelPosition(entityId, this.tempVector2);
       return;
     }
 
@@ -1950,8 +1938,6 @@ export class ArmyModel {
       this.dummyObject.rotation,
       instanceData.color,
     );
-
-    this.updateLabelPosition(entityId, this.tempVector2);
   }
 
   private updateRotation(movement: MovementData, deltaTime: number): void {
@@ -2316,54 +2302,6 @@ export class ArmyModel {
     };
   }
 
-  // Label Management Methods
-  public addLabel(entityId: number, label: CSS2DObject): void {
-    this.removeLabel(entityId);
-    this.labels.set(entityId, { label, entityId });
-    this.labelsGroup.add(label);
-  }
-
-  public removeLabel(entityId: number): void {
-    const labelData = this.labels.get(entityId);
-    if (labelData) {
-      this.labelsGroup.remove(labelData.label);
-      if (labelData.label.element && labelData.label.element.parentNode) {
-        labelData.label.element.parentNode.removeChild(labelData.label.element);
-      }
-      this.labels.delete(entityId);
-    }
-  }
-
-  private updateLabelPosition(entityId: number, position: Vector3): void {
-    const labelData = this.labels.get(entityId);
-    if (labelData) {
-      labelData.label.position.copy(position);
-      labelData.label.position.y += 1.5;
-    }
-  }
-
-  public removeLabelsFromScene(): void {
-    this.labels.forEach((labelData) => {
-      this.labelsGroup.remove(labelData.label);
-    });
-  }
-
-  public removeLabelsExcept(entityId?: number): void {
-    this.labels.forEach((labelData) => {
-      if (labelData.entityId !== entityId) {
-        this.labelsGroup.remove(labelData.label);
-      }
-    });
-  }
-
-  public addLabelsToScene(): void {
-    this.labels.forEach((labelData) => {
-      if (!this.labelsGroup.children.includes(labelData.label)) {
-        this.labelsGroup.add(labelData.label);
-      }
-    });
-  }
-
   // Instance Count Management Methods
   public resetInstanceCounts(): void {
     this.currentVisibleCount = 0;
@@ -2614,7 +2552,6 @@ export class ArmyModel {
     this.instanceData.clear();
     this.hiddenEntityRepresentations.clear();
     this.matrixIndexOwners.clear();
-    this.labels.clear();
     this.movementCompleteCallbacks.clear();
     this.idleWeightsBuffer = null;
     this.movingWeightsBuffer = null;

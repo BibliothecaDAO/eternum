@@ -1,5 +1,5 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
+import { formatAmount, formatCharge, formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 
@@ -63,7 +63,7 @@ export const OrderBar = ({
     <>
       <div className="frontier-card pointer-events-auto flex min-h-11 flex-wrap items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
         <CostChip icon="stamina" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
-        <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatExact(Math.ceil(wheat.cost))}`} />
+        <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatCharge(wheat.cost)}`} />
         {covered && kind === "explore" && revealYield !== null && (
           <RevealYield revealYield={revealYield} laborFits={laborFits} />
         )}
@@ -112,16 +112,14 @@ const CostChip = ({
   if (cost.held !== undefined && isCovered(cost)) return <Chip icons={[icon]} label={label} value={after(cost.held)} />;
   return (
     <>
-      <Chip
-        icons={[icon]}
-        label={label}
-        value={`${formatExact(cost.held)} / ${formatExact(Math.ceil(cost.cost))}`}
-        ember
-      />
+      <Chip icons={[icon]} label={label} value={`${formatHeld(cost.held)} / ${formatCharge(cost.cost)}`} ember />
       {cost.wait !== undefined && <Chip icons={["hourglass"]} label={LEFT} value={formatDuration(cost.wait)} />}
     </>
   );
 };
+
+/** What is held against a short cost, in whole units counted down: a shortfall never reads as enough. */
+const formatHeld = (held: number | undefined): string => formatExact(held === undefined ? undefined : Math.floor(held));
 
 /** What a reveal sends home: Essence or labor, one amount; when labor no longer fits, its half reads apart in ember. */
 const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { TileOccupier } from "@bibliothecadao/types";
-import { Group, Scene } from "three";
+import { Group, Scene, SphereGeometry } from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { describe, expect, it, vi } from "vitest";
 
@@ -19,6 +19,9 @@ vi.mock("../structures/spire-model", () => ({
   SpireModel: class {
     group = new Group();
     labelHeight = 2;
+    orbGeometry = new SphereGeometry(1);
+    setOrbScale = () => {};
+    getOrbTransform = () => false;
     placeSpire = (_index: number, _matrix: unknown, dormant: boolean) => void placed.push(dormant);
     setCount = () => {};
     needsUpdate = () => {};
@@ -39,7 +42,8 @@ describe("spires on the map", () => {
     };
     const labels = new Group();
     const manager = new SpireManager(new Scene(), projection as never, labels);
-    await vi.waitFor(() => expect(placed).toEqual([false, true]));
+    await manager.prepare();
+    expect(placed.slice(0, 2)).toEqual([false, true]);
     const names = labels.children.map((label) => (label as CSS2DObject).element.textContent);
     expect(names).toEqual(["Spire"]);
     manager.destroy();

@@ -9,7 +9,7 @@ import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothec
 import { useMemo, useState } from "react";
 
 const SEARCH_INPUT_CLASS =
-  "h-8 w-full rounded-md border border-gold/25 bg-black/40 px-2 text-sm text-gold placeholder:text-kit-muted focus:border-gold/60 focus:outline-none";
+  "h-8 w-full rounded-md border border-gold/25 bg-black/40 px-2 text-xs text-gold placeholder:text-gold/40 focus:border-gold/60 focus:outline-none";
 
 export const MarketResourceSidebar = ({
   entityId,

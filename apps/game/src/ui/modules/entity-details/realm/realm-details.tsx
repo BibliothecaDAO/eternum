@@ -1,3 +1,4 @@
+import { useNextUpHoldsPrimary } from "@/ui/features/world/hud/next-up-shows";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
@@ -43,7 +44,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
         <span className="text-emerald-300">
           {perHour === undefined ? "—" : `+${Math.round(perHour).toLocaleString()}`}
         </span>
-        <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
+        <ResourceIcon withTooltip={false} resource={ResourcesIds.Labor} size="xs" />
       </span>
     </SectionRow>
   );
@@ -51,7 +52,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
 
 /** What a castle level gives, from the game's rules. */
 const LevelGains = ({ level }: { level: number }) => (
-  <p className="text-sm leading-relaxed text-kit-muted">{describeCastleLevel(level)}</p>
+  <p className="text-[11px] leading-relaxed text-gold/80">{describeCastleLevel(level)}</p>
 );
 
 export const RealmUpgradeCompact = () => {
@@ -60,6 +61,7 @@ export const RealmUpgradeCompact = () => {
 
   const upgradeInfo = useStructureUpgrade(structureEntityId);
   const levelUp = useRealmLevelUp(structureEntityId);
+  const nextUpHoldsPrimary = useNextUpHoldsPrimary();
   if (!upgradeInfo || !levelUp) return null;
 
   if (!upgradeInfo.isOwner || !ordersAllowed) {
@@ -68,7 +70,7 @@ export const RealmUpgradeCompact = () => {
         <SectionRow label="Settlement level">
           <span className={CHIP_BASE}>{upgradeInfo.currentLevelName}</span>
         </SectionRow>
-        <p className="text-sm leading-relaxed text-kit-muted">
+        <p className="text-[11px] leading-relaxed text-gold/70">
           Select a building to inspect this settlement’s economy.
         </p>
       </div>
@@ -106,10 +108,13 @@ export const RealmUpgradeCompact = () => {
           onClick={levelUp.run}
           disabled={!levelUp.ready}
           className={cn(
-            "inline-flex h-9 items-center gap-1 rounded-md border px-3 text-sm font-semibold shadow transition",
-            levelUp.ready
-              ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-              : "cursor-not-allowed border-gold/20 bg-black/40 text-kit-muted",
+            "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] shadow transition",
+            // While Next up shows a step, its button is the screen's one filled gold action; this one is outlined.
+            !levelUp.ready
+              ? "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed"
+              : nextUpHoldsPrimary
+                ? "border-gold/70 text-gold hover:bg-gold/10"
+                : "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300",
           )}
         >
           <SemanticIcon name={Icon} className="h-3.5 w-3.5" />

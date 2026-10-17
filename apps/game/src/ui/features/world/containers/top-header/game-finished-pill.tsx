@@ -1,3 +1,4 @@
+import { skipGameEnd } from "@/three/effects/endgame/state";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -24,6 +25,7 @@ export const GameFinishedPill = () => {
   const navigate = useNavigate();
   const goToResults = useCallback(() => {
     const game = requireActiveGame();
+    skipGameEnd();
     navigate(resultsHref({ chainId: game.chainId, game_id: game.gameId }));
   }, [navigate]);
 
@@ -51,7 +53,7 @@ export const GameFinishedPill = () => {
       <div className="flex flex-col gap-3">
         <span className={HUD_HEADLINE}>This game has ended</span>
         <span className={HUD_BODY}>
-          Your place, the standings and rewards are on its Results page. The map stays open here.
+          Your place, the standings and rewards are on its Results page. The map stays open here. Escape skips the mist.
         </span>
         <Button variant="gold" size="xs" className="w-full justify-center" onClick={goToResults}>
           See the results

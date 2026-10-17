@@ -138,4 +138,84 @@ describe("native leaderboard", () => {
     upsert(store, [23, 0x222], "PlayerEntry", { game_id: 23, owner: 0x222n, player: PLAYER });
     expect(manager.getPlayerRegisteredPoints(0x222n)).toBe(0);
   });
+
+  describe("the hyperstructures paying a player now", () => {
+    const OTHER = 0x222n;
+    /** A game at t=150 whose hyperstructure 7 pays 1 VP a second times its multiplier, shared as given. */
+    const world = (options: {
+      shareholders: { player: bigint; bps: number }[];
+      multiplier?: number;
+      grant?: number;
+      startAt?: bigint;
+      endAt?: bigint;
+      devMode?: boolean;
+      now?: number;
+    }) => {
+      configManager.setActiveGame(23, 1);
+      const store = new NativeFactStore();
+      store.setSnapshot({ gameId: 23, complete: true, actor: PLAYER.toString(), timestamp: 150 });
+      upsert(store, [23], "SliceRules", {
+        ...preset.rules,
+        game_id: 23,
+        victory_points_grant_config: {
+          ...preset.rules.victory_points_grant_config,
+          hyp_points_per_second: options.grant ?? 1_000_000,
+        },
+      });
+      upsert(store, [23], "GameRegistry", {
+        game_id: 23,
+        preset_id: 3,
+        name: 1n,
+        start_settling_at: 1n,
+        start_main_at: 1n,
+        end_at: options.endAt ?? 1_000n,
+        settled: false,
+        ready: true,
+        dev_mode_on: options.devMode ?? false,
+        end_grace_seconds: 0,
+        seed: 1n,
+      });
+      upsert(store, [23, 7], "HyperstructureShares", {
+        game_id: 23,
+        entity_id: 7,
+        start_at: options.startAt ?? 100n,
+        multiplier: options.multiplier ?? 2,
+        shareholders: options.shareholders,
+      });
+      configManager.setStore(store);
+      setBlockTimestampSource(() => options.now ?? 150);
+      return new LeaderboardManager(store);
+    };
+    const quarter = [
+      { player: PLAYER, bps: 2_500 },
+      { player: OTHER, bps: 7_500 },
+    ];
+
+    it("pays a share of the hyperstructure's rate: a quarter of 1 VP a second times 2 is 0.5 VP a second", () => {
+      expect(world({ shareholders: quarter }).getPlayerHyperstructuresPaying(PLAYER)).toEqual([
+        { hyperstructureId: 7, shareholderPercentage: 0.25, pointsPerSecond: 0.5 },
+      ]);
+    });
+
+    it("keeps paying right after a checkpoint, when nothing has accrued yet", () => {
+      expect(world({ shareholders: quarter, startAt: 150n }).getPlayerHyperstructuresPaying(PLAYER)).toEqual([
+        { hyperstructureId: 7, shareholderPercentage: 0.25, pointsPerSecond: 0.5 },
+      ]);
+    });
+
+    it("is nothing for a player without a share, or for a share that pays nothing", () => {
+      expect(world({ shareholders: [{ player: OTHER, bps: 10_000 }] }).getPlayerHyperstructuresPaying(PLAYER)).toEqual(
+        [],
+      );
+      expect(world({ shareholders: quarter, multiplier: 0 }).getPlayerHyperstructuresPaying(PLAYER)).toEqual([]);
+      expect(world({ shareholders: quarter, grant: 0 }).getPlayerHyperstructuresPaying(PLAYER)).toEqual([]);
+    });
+
+    it("is nothing once the game has ended, except in development mode", () => {
+      expect(world({ shareholders: quarter, endAt: 120n }).getPlayerHyperstructuresPaying(PLAYER)).toEqual([]);
+      expect(
+        world({ shareholders: quarter, endAt: 120n, devMode: true }).getPlayerHyperstructuresPaying(PLAYER),
+      ).toEqual([{ hyperstructureId: 7, shareholderPercentage: 0.25, pointsPerSecond: 0.5 }]);
+    });
+  });
 });

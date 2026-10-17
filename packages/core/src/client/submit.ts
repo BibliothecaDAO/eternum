@@ -21,6 +21,17 @@ import { pause, transactionAnswer, TransactionNoAnswerError } from "./transactio
 import type { Shard } from "./shard";
 import type { GameSyncTransaction } from "../sync/game-sync-types";
 
+/**
+ * A command's way to the chain, in order: handed to the client, the game's release pins read, out of its account's
+ * queue, its nonce ("known", or "read" from the node), answered (by the "proxy"; by "herald" or the "node" seeing it
+ * included before the proxy replied; or "lost"), seen included (by "herald" or the "node"), and settled (with the
+ * error's name when it failed). From its nonce on, a stage carries the transaction's hash.
+ */
+export type SendStage = "command" | "release-ready" | "left-queue" | "nonce" | "answered" | "included" | "settled";
+type SendStageObserver = (stage: SendStage, detail?: string, transactionHash?: string) => void;
+/** Who established that a play is in a block. */
+type InclusionSource = "herald" | "node";
+
 /** What a gameplay account needs of its shard: the chain it signs for and the one gas bound the shard takes. */
 export type GameplayShard = Pick<Shard, "chainId" | "l2GasBound">;
 
@@ -47,6 +58,8 @@ interface ExecuteGameplayAccountTransactionOptions {
   stopped?: AbortSignal;
   /** Herald reports only after the transaction facts are written. */
   waitForTransaction?: (transactionHash: string) => Promise<GameSyncTransaction>;
+  /** Told each stage the send reaches. */
+  onStage?: SendStageObserver;
 }
 
 /**
@@ -144,6 +157,7 @@ export function executeGameplayAccountTransaction({
   details,
   stopped,
   waitForTransaction,
+  onStage,
 }: ExecuteGameplayAccountTransactionOptions): Promise<SentGameplayTransaction> {
   const configured = configuredGameplaySubmits.get(account);
   if (configured) assertConfiguredChain(account.address, configured.shard.chainId, shard.chainId);
@@ -156,7 +170,8 @@ export function executeGameplayAccountTransaction({
   const sending = state.pending.then(async () => {
     await untilRoomInFlight(state);
     owner?.throwIfAborted();
-    return sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction);
+    onStage?.("left-queue");
+    return sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction, onStage);
   });
   state.pending = sending.then(noop, noop);
   return sending;
@@ -198,12 +213,15 @@ async function sendAndReconcile(
   stopped: AbortSignal | undefined,
   submission: AccountSubmission,
   waitForTransaction?: (transactionHash: string) => Promise<GameSyncTransaction>,
+  onStage?: SendStageObserver,
 ): Promise<SentGameplayTransaction> {
+  const nonceKnown = submission.nextNonce !== undefined;
   const nonce = submission.nextNonce ?? BigInt(await account.getNonce(ACCOUNT_NONCE));
   submission.nextNonce = nonce + 1n;
   const { play, settle } = enterFlight(submission);
   const frame = playFrame(`0x${nonce.toString(16)}`, shard, details);
   const expectedHash = ordinaryHash(account.address, calls, shard, frame);
+  onStage?.("nonce", nonceKnown ? "known" : "read", expectedHash);
   let heraldReported: GameSyncTransaction | undefined;
   const reported = waitForTransaction?.(expectedHash)
     .then((status) => {
@@ -215,16 +233,25 @@ async function sendAndReconcile(
   const until = stopped ? AbortSignal.any([stopped, cancelled.signal]) : cancelled.signal;
   const expected = reconcile(account, expectedHash, until, reported);
   const transactionHash = await Promise.race([
-    expected.inBlock.then(() => expectedHash),
+    // Seen included before the proxy replied: whoever saw it answered.
+    expected.includedBy.then((source) => {
+      onStage?.("answered", source, expectedHash);
+      return expectedHash;
+    }),
     execute(calls, frame).then(
-      (response) => response.transaction_hash,
+      (response) => {
+        onStage?.("answered", "proxy", response.transaction_hash);
+        return response.transaction_hash;
+      },
       (error: unknown) => {
         if (isAdmissionRefused(error) && !heraldReported) {
           throw new TransactionNotSentError(expectedHash, { cause: error, reason: playRefusalReasonOf(error) });
         }
         // Anything after forwarding began proves nothing (-32011, a lost reply): reconcile, never resend.
         play.answerLost = true;
-        return hashOfUnansweredSend(error) ?? expectedHash;
+        const unanswered = hashOfUnansweredSend(error) ?? expectedHash;
+        onStage?.("answered", "lost", unanswered);
+        return unanswered;
       },
     ),
   ]).catch((error) => {
@@ -244,6 +271,11 @@ async function sendAndReconcile(
       waitForTransaction?.(transactionHash).catch(() => new Promise<never>(() => {})),
     );
   }
+  // Told after the answer, so a play its inclusion answered still reads answered, then included.
+  sent.includedBy.then(
+    (source) => onStage?.("included", source, sent.transaction_hash),
+    () => {},
+  );
   const inBlock = sent.inBlock
     .catch((error) => {
       submission.nextNonce = undefined;
@@ -251,7 +283,7 @@ async function sendAndReconcile(
     })
     .finally(settle);
   void inBlock.catch(() => {});
-  return { ...sent, inBlock };
+  return { transaction_hash: sent.transaction_hash, inBlock };
 }
 
 /** Counts a play in flight until `settle` says it was included, refused or given up on. */
@@ -263,28 +295,33 @@ function enterFlight(submission: AccountSubmission): { play: PlayInFlight; settl
   return { play, settle };
 }
 
-/** Herald and the node can establish inclusion; the first answer stops the fallback. */
+/** Herald and the node can establish inclusion; the first answer stops the fallback and names who gave it. */
 function reconcile(
   account: GameplaySubmitAccount,
   transactionHash: string,
   stopped: AbortSignal | undefined,
   herald?: Promise<GameSyncTransaction>,
-): SentGameplayTransaction {
-  const inBlock = transactionAnswer(
+): SentGameplayTransaction & { includedBy: Promise<InclusionSource> } {
+  const includedBy = transactionAnswer<InclusionSource>(
     transactionHash,
-    herald?.then(() => undefined),
+    herald?.then(() => "herald" as const),
     async (until) => {
-      if (!herald) return untilInBlock(account, transactionHash, until);
+      if (!herald) {
+        await untilInBlock(account, transactionHash, until);
+        return "node";
+      }
       const status = await account.getTransactionStatus(transactionHash).catch(() => undefined);
       if (!status?.finality_status || !IN_BLOCK.has(status.finality_status)) {
         throw new TransactionNoAnswerError(transactionHash);
       }
+      return "node";
     },
     stopped,
   );
+  const inBlock = includedBy.then(() => undefined);
   // Raw callers may only need the hash.
   void inBlock.catch(() => {});
-  return { transaction_hash: transactionHash, inBlock };
+  return { transaction_hash: transactionHash, inBlock, includedBy };
 }
 
 /** An ordinary v3 invoke at this nonce with the shard's fixed bounds and tip 0. */

@@ -238,7 +238,7 @@ export const ResourceProductionControls = ({
 
   if (compact)
     return (
-      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-sm">
+      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-xs">
         {canUseLabor && (
           <div role="group" aria-label="Production recipe" className="flex gap-1">
             <button
@@ -307,7 +307,7 @@ export const ResourceProductionControls = ({
         <div className="space-y-2">
           <h3 className={HUD_HEADLINE}>Start production · {ResourcesIds[selectedResource]}</h3>
           <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[selectedResource]} size="md" />
+            <ResourceIcon resource={selectedResource} size="md" />
             <NumberInput
               value={Math.round(productionAmount)}
               onChange={(value) => setProductionAmount(value)}
@@ -352,14 +352,14 @@ export const ResourceProductionControls = ({
       </div>
 
       {error && (
-        <p role="status" className="text-sm text-danger">
+        <p role="status" className="text-xs text-danger">
           {error}
         </p>
       )}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/15 pt-3">
         <span className={cn(HUD_VALUE, "flex items-center gap-1.5")}>
           {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
-          <ResourceIcon resource={ResourcesIds[selectedResource]} size="xs" withTooltip={false} />
+          <ResourceIcon resource={selectedResource} size="xs" withTooltip={false} />
           {bonus > 1 && <span className="text-relic-activated">+{Math.round((bonus - 1) * 100)}% bonus</span>}
         </span>
         <span className={HUD_CUE}>Time required {timeRequired}</span>

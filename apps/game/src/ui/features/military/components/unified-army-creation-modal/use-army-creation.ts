@@ -1,4 +1,3 @@
-import { knownBalance } from "@/ui/utils/utils";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -7,11 +6,9 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  getBalance,
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
-  liveHomeArmies,
   readTroopRaiseCost,
   ResourceManager,
   structureMapPosition,
@@ -32,6 +29,7 @@ import {
   GuardSlot,
   ID,
   resources,
+  ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
@@ -49,7 +47,9 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import {
+  describeTroopLimit,
   describeTroopRaiseCost,
+  describeTroopSource,
   describeTroopTraining,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
@@ -58,6 +58,13 @@ import {
   resolveTroopAvailabilityReason,
   type TroopSupply,
 } from "./army-creation-policy";
+import {
+  fieldArmyTroops,
+  formatTroopTypeLabel,
+  hasFreeFieldArmySlot,
+  heldTroops,
+  readFieldArmyRoom,
+} from "./field-army-room";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface ArmyCreationOptions {
@@ -73,8 +80,6 @@ interface ArmyCreationOptions {
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
-
-const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "Crossbow" : type);
 
 export const useArmyCreation = ({
   structureId: activeStructureId,
@@ -126,7 +131,7 @@ export const useArmyCreation = ({
       return TROOP_TYPES.map((type) => ({
         type,
         label: formatTroopTypeLabel(type),
-        tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceTrait: "" })),
+        tiers: TROOP_TIERS.map((tier) => ({ tier, available: 0, resourceId: getTroopResourceId(type, tier) })),
       }));
     }
 
@@ -135,17 +140,7 @@ export const useArmyCreation = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        // Troops this client cannot see can't be added to an army.
-        const available =
-          knownBalance(getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance) ?? 0;
-        const resource = resources.find((item) => item.id === resourceId);
-        if (!resource) throw new Error(`Missing troop resource ${resourceId}`);
-
-        return {
-          tier,
-          available,
-          resourceTrait: resource.trait,
-        };
+        return { tier, available: heldTroops(store, activeStructureId, resourceId, currentDefaultTick), resourceId };
       }),
     }));
   }, [activeStructureId, currentDefaultTick, store, revision]);
@@ -160,11 +155,16 @@ export const useArmyCreation = ({
     setSelectedTroopCombo(openingTroop());
   }
 
+  // The selected troop's field army room: the same troops, slots and cap the attack forecast's advice reads.
+  const fieldRoom = useMemo(
+    () =>
+      structureComponent ? readFieldArmyRoom(store, structureComponent, selectedTroopCombo, currentDefaultTick) : null,
+    [store, structureComponent, selectedTroopCombo, revision, currentDefaultTick],
+  );
   const structureBase = structureComponent?.base;
   const structureCategory = structureBase?.category as StructureType | undefined;
   const structureLevel = structureBase?.level ?? null;
-  const troopCapacityLimit =
-    structureLevel === null ? null : configManager.getMaxArmySize(structureLevel, selectedTroopCombo.tier);
+  const troopCapacityLimit = fieldRoom?.cap ?? null;
   const guardCapacityFromStructureRaw = structureBase?.troop_max_guard_count ?? null;
   const guardCapacityFromStructure =
     guardCapacityFromStructureRaw !== null && guardCapacityFromStructureRaw !== undefined
@@ -200,20 +200,14 @@ export const useArmyCreation = ({
     [structureComponent, store, revision],
   );
 
-  const currentExplorersCount = useMemo(
-    () =>
-      activeStructureId === undefined
-        ? 0
-        : liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
-    [store, activeStructureId, revision, currentDefaultTick],
-  );
+  const currentExplorersCount = fieldRoom?.armies ?? 0;
   const currentGuardsCount = guardsData?.filter(
     (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
   ).length;
   // Undefined for a structure this client cannot see: no attack army can be created from it.
-  const maxExplorers = structureBase?.troop_max_explorer_count;
+  const maxExplorers = fieldRoom?.maxArmies;
 
-  const canCreateAttackArmy = maxExplorers !== undefined && currentExplorersCount < maxExplorers;
+  const canCreateAttackArmy = fieldRoom !== null && hasFreeFieldArmySlot(fieldRoom);
   const canCreateDefenseArmy = currentGuardsCount !== undefined && currentGuardsCount < resolvedMaxDefenseSlots;
   const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
   const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;
@@ -335,12 +329,10 @@ export const useArmyCreation = ({
   }, [freeDirections, selectedDirection, direction]);
 
   useEffect(() => {
+    // A structure without defense slots shows Attack. A full field army cap never moves the window off Attack: right
+    // after raising an army the player stays with it, not on another tab's notice.
     if (fixedContext) return;
-    if (armyType && !canCreateAttackArmy && canInteractWithDefense) {
-      setArmyType(false);
-    } else if (!armyType && !canInteractWithDefense && canCreateAttackArmy) {
-      setArmyType(true);
-    }
+    if (!armyType && !canInteractWithDefense && canCreateAttackArmy) setArmyType(true);
   }, [armyType, fixedContext, canCreateAttackArmy, canInteractWithDefense]);
 
   useEffect(() => {
@@ -387,8 +379,11 @@ export const useArmyCreation = ({
     .find((option) => option.type === selectedTroopCombo.type)
     ?.tiers.find((option) => option.tier === selectedTroopCombo.tier)?.available;
   if (selectedAvailable === undefined) throw new Error("Selected troop is missing from the army catalogue");
-  const maxAffordable =
-    capacityRemainingForSelector === null
+  const maxAffordable = armyType
+    ? fieldRoom === null
+      ? 0
+      : fieldArmyTroops(fieldRoom)
+    : capacityRemainingForSelector === null
       ? 0
       : resolveArmyTroopAvailability(selectedAvailable, capacityRemainingForSelector);
 
@@ -467,8 +462,6 @@ export const useArmyCreation = ({
     isLoading,
   });
   const isActionDisabled = blockedReason !== null;
-  // The count controls already show the availability reason; the submit button names only a different one.
-  const submitBlockedReason = blockedReason === troopAvailabilityReason ? null : blockedReason;
 
   const handleCreate = async () => {
     if (activeStructureId === undefined || isActionDisabled || submittingRef.current) return;
@@ -541,10 +534,14 @@ export const useArmyCreation = ({
     isActionDisabled,
     handleCreate,
     troopAvailabilityReason,
-    submitBlockedReason,
-    // With no troop on hand the availability reason already carries the training line.
+    blockedReason,
+    // With no troop on hand the blocked reason already says when a full army is ready.
     troopTrainingLine: troopAvailabilityReason ? null : describeTroopTraining(troopSupply),
-    raiseCostLine: describeTroopRaiseCost(raiseCost),
+    troopLimitLine: describeTroopLimit(selectedAvailable, troopCapacityLimit, capacityRemainingForSelector),
+    // With none on hand, where they come from: the empty state's next step.
+    troopSourceLine:
+      selectedAvailable < 1 ? describeTroopSource(troopSupply.name, readTroopRecipe(store, selectedTroopCombo)) : null,
+    raiseCost: describeTroopRaiseCost(raiseCost),
   };
 };
 
@@ -562,6 +559,27 @@ function resolveOpeningTroop(options: TroopSelectionOption[], mode: GameModeConf
 
 /** The selected troop's barracks output now, read the way the resource bar reads production. */
 /** What the structure trains of this troop; with no structure nothing is read and nothing trains. */
+/**
+ * What a troop's barracks trains it from, per troop: its resource recipe (complex inputs, the arena games' only path),
+ * else its labor-paid one (simple inputs). Deployment charges are a separate cost and never part of this.
+ */
+function readTroopRecipe(store: ReturnType<typeof useGame>["setup"]["store"], troop: SelectedTroopCombo) {
+  const recipe = store.get("ProductionRecipe", {
+    game_id: configManager.getActiveGameId(),
+    resource_type: getTroopResourceId(troop.type, troop.tier),
+  });
+  if (!recipe) return [];
+  const [inputs, output] =
+    recipe.complex_output > 0n
+      ? [recipe.complex_inputs, recipe.complex_output]
+      : [recipe.simple_inputs, recipe.simple_output];
+  if (output === 0n) return [];
+  return inputs.map((input) => ({
+    resource: input.resource_type as ResourcesIds,
+    perTroop: Number(input.amount) / Number(output),
+  }));
+}
+
 function readTroopSupply(
   store: ReturnType<typeof useGame>["setup"]["store"],
   structureId: ID | undefined,

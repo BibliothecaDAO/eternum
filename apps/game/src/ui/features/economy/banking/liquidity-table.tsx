@@ -13,10 +13,10 @@ type LiquidityTableProps = {
 
 export const LiquidityTableHeader = () => (
   <div className="grid grid-cols-7 gap-4 px-2 pb-2 mb-2 border-b border-gold/10">
-    <div className="text-sm text-kit-muted font-medium">Pair</div>
-    <div className="text-sm text-kit-muted font-medium">Price</div>
-    <div className="text-sm text-kit-muted font-medium col-span-2">Total Liquidity</div>
-    <div className="text-sm text-kit-muted font-medium col-span-2">My Liquidity</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium">Pair</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium">Price</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium col-span-2">Total Liquidity</div>
+    <div className="text-[10px] uppercase text-gold/50 font-medium col-span-2">My Liquidity</div>
   </div>
 );
 

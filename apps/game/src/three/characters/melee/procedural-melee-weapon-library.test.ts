@@ -13,7 +13,7 @@ function rigidGear(): GLTF {
 afterEach(() => vi.restoreAllMocks());
 
 describe("procedural melee Knight assets", () => {
-  it("does not request Knight exports unless explicitly enabled", async () => {
+  it("does not request Knight exports until selected", async () => {
     const load = vi.spyOn(GLTFLoader.prototype, "loadAsync");
     const library = await ProceduralMeleeWeaponLibrary.create();
     expect(load).not.toHaveBeenCalled();
@@ -29,9 +29,12 @@ describe("procedural melee Knight assets", () => {
     library.dispose();
   });
 
-  it("loads the two rigid exports once through the opt-in path", async () => {
+  it("loads the two rigid exports once when selected", async () => {
     const load = vi.spyOn(GLTFLoader.prototype, "loadAsync").mockImplementation(async () => rigidGear());
-    const library = await ProceduralMeleeWeaponLibrary.create({ includeT1KnightDefault: true });
+    const library = await ProceduralMeleeWeaponLibrary.create();
+    const gear = { weaponId: "t1-knight-default-sword", offhandId: "t1-knight-default-shield" } as const;
+    await Promise.all([library.prepare(gear), library.prepare(gear)]);
+    await library.prepare(gear);
     expect(load.mock.calls.map(([url]) => url)).toEqual([
       "/models/characters/t1-knight-default/near/sword.glb",
       "/models/characters/t1-knight-default/near/shield.glb",

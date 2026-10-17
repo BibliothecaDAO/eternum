@@ -5,6 +5,7 @@ import {
   getGameEntryTimelineSnapshot,
   type GameEntryTimelineSnapshot,
 } from "@/ui/layouts/game-entry-timeline";
+import { requestsDiagnostics } from "@/play/navigation/play-route";
 import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
 
 const TICK_INTERVAL_MS = 250;
@@ -65,7 +66,14 @@ interface BootDebugPanelProps {
   slowThresholdMs?: number;
 }
 
-export const BootDebugPanel = ({ currentTaskLabel, slowThresholdMs = 1500 }: BootDebugPanelProps) => {
+/**
+ * The boot's timeline and renderer switch, for whoever diagnoses a slow or failed entry. It shows only on a page opened
+ * with the diagnostics opt-in (`?logs=1`), whichever screen mounts it: players never see it.
+ */
+export const BootDebugPanel = (props: BootDebugPanelProps) =>
+  requestsDiagnostics(new URLSearchParams(window.location.search)) ? <BootTimelineDiagnostics {...props} /> : null;
+
+const BootTimelineDiagnostics = ({ currentTaskLabel, slowThresholdMs = 1500 }: BootDebugPanelProps) => {
   const snapshot = useBootTimelineSnapshot();
   const steps = computeStepDurations(snapshot.milestones);
   const lastMilestone = steps.length > 0 ? steps[steps.length - 1] : null;

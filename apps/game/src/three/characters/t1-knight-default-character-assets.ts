@@ -24,17 +24,16 @@ const T1_KNIGHT_DEFAULT_MID = {
   url: "/models/characters/t1-knight-default/mid/skin.glb",
 } as const satisfies ProceduralCharacterAssetDefinition;
 
-export async function loadT1KnightDefaultCharacterAssetTemplates(): Promise<LoadedProceduralCharacterAssetTemplate[]> {
-  const loaded: LoadedProceduralCharacterAssetTemplate[] = [];
+export async function loadT1KnightDefaultCharacterAssetTemplate(
+  renderDetail: "hero" | "crowd",
+): Promise<LoadedProceduralCharacterAssetTemplate> {
+  const asset = renderDetail === "hero" ? T1_KNIGHT_DEFAULT_NEAR : T1_KNIGHT_DEFAULT_MID;
+  const gltf = await gltfLoader.loadAsync(asset.url);
   try {
-    for (const asset of [T1_KNIGHT_DEFAULT_NEAR, T1_KNIGHT_DEFAULT_MID]) {
-      const gltf = await gltfLoader.loadAsync(asset.url);
-      loaded.push({ ...asset, gltf });
-      validateT1KnightDefaultCharacterAsset(gltf, asset.id);
-    }
-    return loaded;
+    validateT1KnightDefaultCharacterAsset(gltf, asset.id);
+    return { ...asset, gltf };
   } catch (error) {
-    disposeSkinnedSceneTemplates(loaded.map(({ gltf }) => gltf.scene));
+    disposeSkinnedSceneTemplates([gltf.scene]);
     throw error;
   }
 }

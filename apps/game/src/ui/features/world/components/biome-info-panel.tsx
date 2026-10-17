@@ -1,3 +1,4 @@
+import { ResourcesIds } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useEffect, useMemo, useState } from "react";
 
@@ -46,15 +47,15 @@ const formatBiomeLabel = (biome: BiomeType | string) => {
 // Troop type configuration with resource names for ResourceIcon
 const troopConfig = {
   [TroopType.Knight]: {
-    resourceName: "Knight",
+    resourceId: ResourcesIds.Knight,
     label: "Knights",
   },
   [TroopType.Crossbowman]: {
-    resourceName: "Crossbowman",
+    resourceId: ResourcesIds.Crossbowman,
     label: "Crossbowmen",
   },
   [TroopType.Paladin]: {
-    resourceName: "Paladin",
+    resourceId: ResourcesIds.Paladin,
     label: "Paladins",
   },
 };
@@ -123,14 +124,14 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
         className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-1.5 text-left transition-colors hover:bg-gold/5"
       >
         <div className="flex items-center gap-2">
-          <span className="text-sm text-kit-muted">Biome</span>
+          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
           <span className="text-sm font-semibold text-gold">{formatBiomeLabel(biome)}</span>
         </div>
         <div className="flex items-center gap-2">
           {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
             <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
-              <ResourceIcon resource={config.resourceName} size="xs" withTooltip={false} />
-              <span className={`text-sm font-semibold leading-none ${summaryTextClass}`}>
+              <ResourceIcon resource={config.resourceId} size="xs" withTooltip={false} />
+              <span className={`text-[11px] font-semibold leading-none ${summaryTextClass}`}>
                 {formatBiomeBonus(bonus)}
               </span>
             </div>
@@ -156,12 +157,9 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
           <div className="relative z-10 flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-bold text-gold">{formatBiomeLabel(biome)}</h2>
-              <div className="group relative">
-                <SemanticIcon name="info" className="h-4 w-4 text-kit-muted transition-colors group-hover:text-gold" />
-                <div className="absolute left-6 top-0 hidden whitespace-nowrap rounded-lg border border-gold/30 bg-brown-900/95 p-3 text-sm text-gold/90 shadow-xl group-hover:block">
-                  Terrain affects combat effectiveness
-                </div>
-              </div>
+              <span data-tip="Terrain affects combat effectiveness" className="group">
+                <SemanticIcon name="info" className="h-4 w-4 text-gold/60 transition-colors group-hover:text-gold" />
+              </span>
             </div>
             <p className="text-sm font-medium text-gold/70">Combat effectiveness varies by troop type</p>
 
@@ -169,12 +167,12 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
               {troopBonuses.map(({ troopType, config, bonus, styles }) => (
                 <div
                   key={troopType}
-                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl ${styles.containerClass}`}
+                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:shadow-xl ${styles.containerClass}`}
                   role="tooltip"
                   aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
                 >
                   <div className="mb-1.5 flex justify-center">
-                    <ResourceIcon resource={config.resourceName} size="lg" withTooltip={false} className="opacity-90" />
+                    <ResourceIcon resource={config.resourceId} size="lg" withTooltip={false} className="opacity-90" />
                   </div>
                   <div className={`text-sm font-bold text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
                   {bonus !== 1 && (

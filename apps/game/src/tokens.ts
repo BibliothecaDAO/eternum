@@ -39,14 +39,22 @@ export const COLORS = {
 
 /**
  * The app's two faces (decisions-1, 14 October 2026): Bokor for page and card titles only, and Atkinson Hyperlegible
- * Next for everything read (labels, buttons, text, numbers), in sentence case, upright and untracked. IM FELL English SC
- * survives only inside the lockup (an SVG), so the app ships no IM FELL file. Cinzel stays banned.
+ * Next for everything read (labels, buttons, text, numbers), in sentence case, upright and untracked. The Blitz and
+ * Eternum HUD reads in its own faces (CLASSIC_HUD_FONTS).
  */
 export const FONTS = {
   /** Titles: page and card titles, the one display line of a page. */
   display: '"Bokor", serif',
   /** Everything read. */
   body: '"Atkinson Hyperlegible Next", system-ui, sans-serif',
+} as const;
+
+/**
+ * The Blitz and Eternum HUD's face (its War room skin, 16 October 2026), as a CSS variable under html.classic-hud only:
+ * Exo 2 for everything read there, panel titles included (--font-ui, also `font-ui`).
+ */
+export const CLASSIC_HUD_FONTS = {
+  ui: '"Exo 2", "Atkinson Hyperlegible Next", system-ui, sans-serif',
 } as const;
 
 /**
@@ -64,6 +72,12 @@ export const FONT_FACES = [
   {
     fontFamily: '"Bokor"',
     src: 'url("/fonts/bokor-regular.ttf") format("truetype")',
+    fontWeight: "100 900",
+    fontDisplay: "swap",
+  },
+  {
+    fontFamily: '"Exo 2"',
+    src: 'url("/fonts/exo-2.woff2") format("woff2")',
     fontWeight: "100 900",
     fontDisplay: "swap",
   },

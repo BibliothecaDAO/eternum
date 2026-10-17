@@ -7,8 +7,7 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { InfoBubble } from "../collapsible-bubble";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
   isStaminaRecharging,
@@ -95,11 +94,11 @@ const ArmyBannerEntityDetailContent = memo(
     // Relics are only worth listing where the game lets an army apply them.
     const showRelicsInline =
       derivedData.isMine && inventoryCounts.relics > 0 && configManager.isCommandEnabled("ApplyRelic");
-    const ownerDisplay = derivedData.addressName ?? `Army Owner`;
+    const ownerDisplay = derivedData.addressName;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
     const headerTitleClass = compact ? "text-sm" : "text-base";
-    const headerMetaClass = compact ? "text-sm" : "text-sm";
+    const headerMetaClass = compact ? "text-xxs" : "text-xs";
     const statusLabel = derivedData.isMine ? "You" : "Other";
     const statusClass = derivedData.isMine
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
@@ -123,20 +122,12 @@ const ArmyBannerEntityDetailContent = memo(
     );
 
     return (
-      <div
-        className={cn(
-          "pointer-events-auto flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl px-3 py-3",
-          OVERLAY_SURFACE_BASE,
-          hasWarnings && "ring-1 ring-gold/30",
-          className,
-        )}
+      <InfoBubble
+        title={coordsLabel}
+        cue={headerAction}
+        className={cn("flex h-full min-h-0 flex-col overflow-hidden", hasWarnings && "ring-1 ring-gold/30", className)}
+        bodyClassName="flex min-h-0 flex-col gap-2"
       >
-        {coordsLabel && (
-          <div className="flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
-            <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
-            {headerAction}
-          </div>
-        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -151,7 +142,12 @@ const ArmyBannerEntityDetailContent = memo(
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <p className={cn("truncate font-semibold text-gold", headerTitleClass)}>{ownerDisplay}</p>
-                <span className={cn("rounded-full border px-2 py-0.5 text-sm font-semibold ", statusClass)}>
+                <span
+                  className={cn(
+                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]",
+                    statusClass,
+                  )}
+                >
                   {statusLabel}
                 </span>
               </div>
@@ -191,12 +187,12 @@ const ArmyBannerEntityDetailContent = memo(
             />
           ) : null}
           {movementReadiness?.foodBlock ? (
-            <p className="text-sm leading-snug text-amber-300" role="status">
+            <p className="text-[11px] leading-snug text-amber-300" role="status">
               {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatNumber(amount, 0))}
             </p>
           ) : null}
           {derivedData.staminaDisplay?.isRecharging && derivedData.staminaDisplay ? (
-            <p className="text-sm text-kit-muted">
+            <p className="text-[10px] text-gold/60">
               Rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
             </p>
           ) : null}
@@ -233,7 +229,7 @@ const ArmyBannerEntityDetailContent = memo(
             />
           )}
         </div>
-      </div>
+      </InfoBubble>
     );
   },
 );
@@ -306,7 +302,7 @@ const InlineStaminaBar = ({
 
   return (
     <div
-      className="flex items-center gap-2 text-sm text-gold/80"
+      className="flex items-center gap-2 text-xxs text-gold/80"
       title={travelBlocked ? (travelBlockedTitle ?? undefined) : undefined}
     >
       <SemanticIcon name="stamina" className={cn("h-3 w-3 ", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />

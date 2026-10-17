@@ -5,6 +5,8 @@ import { Miniflare } from "miniflare";
 import worker, { monitor } from "./worker";
 import { probeServices } from "./probes";
 import { nextMonitorState } from "./state";
+import type { MonitorState } from "./model";
+import { NOTICE_LIFETIME_SECONDS, NO_ALERTS, recordNotices, SUSTAINED_SECONDS } from "./alerts";
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
@@ -35,6 +37,8 @@ const network =
     }
     if (url.endsWith("/api/directory")) return response({ shards: [{ ...world, games: [] }] });
     if (url.endsWith("/api/slots")) return response({ slots: [] });
+    if (url.endsWith("/api/factory/health"))
+      return response({ service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [] });
     if (url.endsWith("/api/guardian")) return response({ publicKey: "0x1", accountClassHash: "0x2" });
     if (url.endsWith("/api/health/accounts") || url.endsWith("/api/chat/health")) return response({ success: true });
     if (url.endsWith("/manifest"))
@@ -43,7 +47,13 @@ const network =
         rpcUrl: "https://rpc.public.test",
       });
     if (url.endsWith("/health"))
-      return response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0 });
+      return response({
+        service: "herald",
+        success: true,
+        confirmed_block: 10,
+        undecodable_events: 0,
+        node: { sampled_at: now, memory_bytes: 2e9, host_memory_bytes: 96e9 },
+      });
     if (url === "https://rpc.public.test") {
       const rpc = JSON.parse(String(init?.body));
       return response({ jsonrpc: "2.0", id: rpc.id, result: { block_number: 10, timestamp: now } });
@@ -59,12 +69,14 @@ it("probes every public path and world, not merely a directory200", async () => 
     ["accounts", "up"],
     ["directory", "up"],
     ["blitz", "up"],
+    ["launch", "up"],
     ["chat", "up"],
     ["guardian", "up"],
     ["relay", "up"],
     ["monitor", "up"],
     ["ledger", "up"],
     ["shard:0xa", "up"],
+    ["node:0xa", "up"],
   ]);
   const failed = await probeServices(
     network({ "https://shard.public.test/health": new Response(null, { status: 503 }) }),
@@ -371,4 +383,324 @@ it.each([
 ] as const)("reports malformed or stale %s health as down", async (id, path, body) => {
   const result = await probeServices(network({ [valueTargets.playUrl + path]: response(body) }), now, [], valueTargets);
   expect(result.probes.find((probe) => probe.id === id)!.status).toBe("down");
+});
+
+it("reports game launches down while a run has failed or is stranded", async () => {
+  const stranded = await probeServices(
+    network({
+      "https://play.realms.party/api/factory/health": Response.json(
+        { service: "launch", failedRuns: [], joinFailures: [], freezeFailures: [], strandedRuns: [{ id: 7 }] },
+        { status: 503 },
+      ),
+    }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(stranded.probes.find((p) => p.id === "launch")).toMatchObject({ status: "down", latency_ms: null });
+});
+
+/**
+ * Resend's idempotency contract: a key is kept 24 hours; the same key with the same payload answers its first answer and
+ * sends nothing; the same key with another payload is refused with 409; a key past its 24 hours is new. `loseAnswers`
+ * delivers and then drops the answer, as a connection reset after the provider took the request.
+ */
+const resend = (clock: () => number) => {
+  const keys = new Map<string, { body: string; at: number }>();
+  const emails: { key: string; subject: string; text: string }[] = [];
+  const conflicts: string[] = [];
+  const provider = { emails, conflicts, refuse: false, loseAnswers: 0 };
+  const send: typeof fetch = async (input, init) => {
+    expect(String(input)).toBe("https://api.resend.com/emails");
+    if (provider.refuse) return new Response(null, { status: 500 });
+    const key = new Headers(init?.headers).get("idempotency-key")!;
+    const body = String(init?.body);
+    const known = keys.get(key);
+    if (known && clock() - known.at < 86_400) {
+      if (known.body !== body) {
+        conflicts.push(key);
+        return new Response(null, { status: 409 });
+      }
+    } else {
+      keys.set(key, { body, at: clock() });
+      const email = JSON.parse(body);
+      emails.push({ key, subject: email.subject, text: email.text });
+    }
+    if (provider.loseAnswers > 0) {
+      provider.loseAnswers--;
+      throw new TypeError("connection reset");
+    }
+    return Response.json({ id: key });
+  };
+  return { provider, send };
+};
+const alerting = { apiKey: "re_test", to: "oncall@example.test", environment: "staging" };
+const probe = (id: string, name: string, status: "up" | "degraded" | "down") => ({
+  id,
+  name,
+  status,
+  latency_ms: status === "down" ? null : 10,
+});
+/** Observes the probes minute by minute from `start`, through `minutes` more, recording notices as the monitor does. */
+const observe = (
+  from: { state: MonitorState | null; alerts: typeof NO_ALERTS },
+  start: number,
+  minutes: number,
+  probes: ReturnType<typeof probe>[],
+) => {
+  let { state, alerts } = from;
+  for (let minute = 0; minute <= minutes; minute++) {
+    state = nextMonitorState(state, start + minute * 60, probes, [])!;
+    alerts = recordNotices(state.document, alerts, alerting);
+  }
+  return { state, alerts };
+};
+const MINUTES = SUSTAINED_SECONDS / 60;
+
+it("emails an outage of something players use once it lasts ten minutes, once, and again when it resolves", () => {
+  expect(SUSTAINED_SECONDS).toBe(600);
+  const down = [probe("accounts", "Sign in and accounts", "down")];
+  let run = observe({ state: null, alerts: NO_ALERTS }, now, MINUTES - 1, down);
+  expect(run.alerts.outbox).toEqual([]);
+  run = observe(run, now + MINUTES * 60, 2, down);
+  expect(run.alerts.told).toEqual([`accounts:${now}`]);
+  expect(run.alerts.outbox).toEqual([
+    expect.objectContaining({
+      key: `staging:accounts:${now}:opened`,
+      recorded_at: now + SUSTAINED_SECONDS,
+      to: "oncall@example.test",
+      subject: "[staging] Sign in and accounts: unavailable",
+    }),
+  ]);
+  run = observe(run, now + (MINUTES + 3) * 60, 0, [probe("accounts", "Sign in and accounts", "up")]);
+  expect(run.alerts.told).toEqual([]);
+  expect(run.alerts.outbox.map(({ key }) => key)).toEqual([
+    `staging:accounts:${now}:opened`,
+    `staging:accounts:${now}:resolved`,
+  ]);
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    expect(recordNotices(run.state!.document, NO_ALERTS, undefined)).toEqual({ told: [], outbox: [] });
+  } finally {
+    errors.mockRestore();
+  }
+});
+
+it("emails nothing for a short outage, a slowdown, or a component players do not use", () => {
+  const quiet = (probes: ReturnType<typeof probe>[], minutes: number) => {
+    const run = observe({ state: null, alerts: NO_ALERTS }, now, minutes, probes);
+    return observe(run, now + (minutes + 1) * 60, 0, [probe(probes[0]!.id, probes[0]!.name, "up")]).alerts;
+  };
+  // A blip: down for nine minutes, then up; neither its start nor its recovery is told.
+  expect(quiet([probe("shard:0xa", "herald.public.test", "down")], MINUTES - 1)).toEqual(NO_ALERTS);
+  // A world an hour behind by a few blocks, or slow: degraded only, however long.
+  expect(quiet([probe("shard:0xa", "herald.public.test", "degraded")], 60)).toEqual(NO_ALERTS);
+  // Down for an hour, but not something players use: the status page shows it.
+  for (const [id, name] of [
+    ["chat", "Chat"],
+    ["directory", "Games list"],
+    ["relay", "Value relay"],
+    ["ledger", "Starknet ledger"],
+    ["node:0xa", "herald.public.test node memory"],
+  ] as const)
+    expect(quiet([probe(id, name, "down")], 60)).toEqual(NO_ALERTS);
+});
+
+it("counts an outage from when it went down, and names it unavailable even if it began slow", () => {
+  const launch = (status: "degraded" | "down") => [probe("launch", "Game launches and seating", status)];
+  let run = observe({ state: null, alerts: NO_ALERTS }, now, 30, launch("degraded"));
+  run = observe(run, now + 31 * 60, MINUTES - 1, launch("down"));
+  expect(run.alerts.outbox).toEqual([]);
+  run = observe(run, now + (31 + MINUTES) * 60, 0, launch("down"));
+  expect(run.alerts.outbox).toEqual([
+    expect.objectContaining({
+      key: `staging:launch:${now}:opened`,
+      subject: "[staging] Game launches and seating: unavailable",
+    }),
+  ]);
+  expect(run.state!.document.incidents[0]!.title).toBe("Game launches and seating: unavailable");
+});
+
+/** The monitor's real R2 bucket on Miniflare, whose next writes can be made to fail. */
+const monitored = async () => {
+  const mf = new Miniflare({
+    modules: true,
+    script: "export default {fetch(){return new Response('ok')}}",
+    r2Buckets: ["STATUS_BUCKET"],
+    compatibilityDate: "2026-07-30",
+  });
+  const bucket = (await mf.getR2Bucket("STATUS_BUCKET")) as unknown as R2Bucket;
+  let failing = new Set<number>();
+  let writes = 0;
+  const flaky = new Proxy(bucket, {
+    get(target, property) {
+      if (property === "put")
+        return async (...args: Parameters<R2Bucket["put"]>) => (failing.has(++writes) ? null : target.put(...args));
+      const value = Reflect.get(target, property);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+  let clock = now;
+  const { provider, send } = resend(() => clock);
+  const accountsHealth = { ok: false };
+  const accounts = (input: RequestInfo | URL, init?: RequestInit) =>
+    String(input) === "https://api.resend.com/emails"
+      ? send(input, init)
+      : network({ "https://play.realms.party/api/health/accounts": response({ success: accountsHealth.ok }) })(
+          input,
+          init,
+        );
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  return {
+    provider,
+    accountsHealth,
+    errors,
+    /** One minute's run; `failWrites` names which of its writes fail (1 = its observation, 2 = its confirmation). */
+    run: (at: number, failWrites: number[] = []) => {
+      clock = at;
+      failing = new Set(failWrites.map((write) => writes + write));
+      return monitor(flaky, accounts, at, valueTargets, alerting);
+    },
+    state: async () => (await bucket.get("state.json"))!.json<MonitorState>(),
+    accountsEmails: () => provider.emails.filter(({ key }) => key.includes(":accounts:")).map(({ key }) => key),
+    close: async () => {
+      errors.mockRestore();
+      await disposeWorker(mf);
+    },
+  };
+};
+
+it("sends one recovery when the write confirming it fails, even after Resend forgets the key", async () => {
+  const m = await monitored();
+  try {
+    for (let minute = 0; minute <= MINUTES + 1; minute++) await m.run(now + minute * 60);
+    m.accountsHealth.ok = true;
+    await m.run(now + SUSTAINED_SECONDS + 120, [2]); // the recovery is sent; the write confirming it fails
+    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:accounts:${now}:resolved`);
+    await m.run(now + SUSTAINED_SECONDS + 180); // retried as recorded: Resend answers its first answer and sends nothing
+    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":accounts:"))).toEqual([]);
+    await m.run(now + SUSTAINED_SECONDS + 180 + 25 * 3600); // past the key's life, nothing is left to send
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`, `staging:accounts:${now}:resolved`]);
+  } finally {
+    await m.close();
+  }
+});
+
+it("sends nothing from an observation whose write fails, and records the change again on the next one", async () => {
+  const m = await monitored();
+  try {
+    for (let minute = 0; minute <= MINUTES + 1; minute++) await m.run(now + minute * 60);
+    m.accountsHealth.ok = true;
+    await expect(m.run(now + SUSTAINED_SECONDS + 120, [1])).rejects.toThrow("superseded");
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`]);
+    await m.run(now + SUSTAINED_SECONDS + 180);
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`, `staging:accounts:${now}:resolved`]);
+  } finally {
+    await m.close();
+  }
+});
+
+it("sends once when Resend delivers but its answer is lost", async () => {
+  const m = await monitored();
+  try {
+    for (let minute = 0; minute < MINUTES; minute++) await m.run(now + minute * 60);
+    m.provider.loseAnswers = 1;
+    await m.run(now + SUSTAINED_SECONDS);
+    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:accounts:${now}:opened`);
+    await m.run(now + SUSTAINED_SECONDS + 60);
+    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":accounts:"))).toEqual([]);
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`]);
+  } finally {
+    await m.close();
+  }
+});
+
+it("drops a notice Resend never confirmed once the key would have expired, and never sends it", async () => {
+  const m = await monitored();
+  try {
+    m.provider.refuse = true;
+    for (let minute = 0; minute <= MINUTES; minute++) await m.run(now + minute * 60);
+    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:accounts:${now}:opened`);
+    await m.run(now + SUSTAINED_SECONDS + NOTICE_LIFETIME_SECONDS - 60); // still within: retried, still refused
+    m.provider.refuse = false;
+    await m.run(now + SUSTAINED_SECONDS + NOTICE_LIFETIME_SECONDS); // expired: dropped, not sent
+    expect(m.accountsEmails()).toEqual([]);
+    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":accounts:"))).toEqual([]);
+    expect(m.errors.mock.calls.some(([line]) => String(line).includes(`"status_alert_expired"`))).toBe(true);
+  } finally {
+    await m.close();
+  }
+});
+
+it("sends nothing from an overlapping observation that loses its write", async () => {
+  const mf = new Miniflare({
+    modules: true,
+    script: "export default {fetch(){return new Response('ok')}}",
+    r2Buckets: ["STATUS_BUCKET"],
+    compatibilityDate: "2026-07-30",
+  });
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    const bucket = (await mf.getR2Bucket("STATUS_BUCKET")) as unknown as R2Bucket;
+    let clock = now;
+    const { provider, send } = resend(() => clock);
+    const down = network({ "https://play.realms.party/api/health/accounts": response({ success: false }) });
+    const mail =
+      (fallback: typeof fetch): typeof fetch =>
+      (input, init) =>
+        String(input) === "https://api.resend.com/emails" ? send(input, init) : fallback(input, init);
+    for (let minute = 0; minute <= MINUTES; minute++) {
+      clock = now + minute * 60;
+      await monitor(bucket, mail(down), clock, valueTargets, alerting);
+    }
+    // Chat recovers. The late run reads the state and waits in its probes, while a newer run records and sends the
+    // recovery with its own time; the late run's recovery would say another time under the same key.
+    let unblock!: () => void;
+    let entered!: () => void;
+    const gate = new Promise<void>((resolve) => (unblock = resolve));
+    const started = new Promise<void>((resolve) => (entered = resolve));
+    const slow: typeof fetch = async (input, init) => {
+      if (String(input).endsWith("/api/directory")) {
+        entered();
+        await gate;
+      }
+      return network()(input, init);
+    };
+    clock = now + SUSTAINED_SECONDS + 60;
+    const late = monitor(bucket, mail(slow), now + SUSTAINED_SECONDS + 60, valueTargets, alerting);
+    await started;
+    clock = now + SUSTAINED_SECONDS + 120;
+    await monitor(bucket, mail(network()), now + SUSTAINED_SECONDS + 120, valueTargets, alerting);
+    unblock();
+    await expect(late).rejects.toThrow("superseded");
+    const recoveries = provider.emails.filter(({ key }) => key === `staging:accounts:${now}:resolved`);
+    expect(recoveries).toHaveLength(1);
+    expect(recoveries[0]!.text).toContain(new Date((now + SUSTAINED_SECONDS + 120) * 1000).toISOString());
+    // The superseded run never tried: no send under the key with another payload.
+    expect(provider.conflicts).toEqual([]);
+  } finally {
+    errors.mockRestore();
+    await disposeWorker(mf);
+  }
+});
+
+it("alerts on a node's memory share, a stopped node, and a sample it cannot trust", async () => {
+  const health = (node: unknown) =>
+    response({ service: "herald", success: true, confirmed_block: 10, undecodable_events: 0, node });
+  for (const [node, status] of [
+    [{ sampled_at: now, memory_bytes: 47e9, host_memory_bytes: 96e9 }, "up"],
+    [{ sampled_at: now, memory_bytes: 48e9, host_memory_bytes: 96e9 }, "degraded"],
+    [{ sampled_at: now, memory_bytes: 72e9, host_memory_bytes: 96e9 }, "down"],
+    [{ sampled_at: now, memory_bytes: null, host_memory_bytes: 96e9 }, "down"],
+    [{ sampled_at: now - 61, memory_bytes: 2e9, host_memory_bytes: 96e9 }, "degraded"],
+    [null, "degraded"],
+  ] as const) {
+    const result = await probeServices(
+      network({ "https://shard.public.test/health": health(node) }),
+      now,
+      [],
+      valueTargets,
+    );
+    expect(result.probes.find((p) => p.id === "node:0xa")!.status).toBe(status);
+  }
 });

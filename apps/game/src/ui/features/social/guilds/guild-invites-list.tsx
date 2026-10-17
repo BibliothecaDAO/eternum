@@ -35,7 +35,7 @@ export const GuildInviteList = ({
             userIsGuildMaster={userIsGuildMaster}
           />
         ))}
-        {!invitedPlayers.length && <p className="py-4 text-center text-gold/70">No Tribe Invites Sent</p>}
+        {!invitedPlayers.length && <p className="py-4 text-center italic text-gold/70">No Tribe Invites Sent</p>}
       </div>
     </div>
   );
@@ -76,7 +76,7 @@ const InviteRow = ({
             removePlayerFromWhitelist(player.address);
             setTooltip(null);
           }}
-          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:scale-110 hover:opacity-100", {
+          className={clsx("h-5 w-5 opacity-70 transition-all duration-200 hover:opacity-100", {
             "pointer-events-none opacity-50": isLoading,
             "cursor-pointer": !isLoading,
           })}

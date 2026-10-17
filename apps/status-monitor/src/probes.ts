@@ -16,7 +16,7 @@ const IS_PAUSED = "0x238d7ea31550fece8f0a8a601e3ae1a7c59cb3b6cc976ceb721e31ebd9c
 export async function probeServices(network: typeof fetch, now: number, known: Target[], value: PublicValueTargets) {
   let targets = known;
   let directoryReadable = false;
-  const [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger] = await Promise.all([
+  const [play, accounts, directory, blitz, launch, chat, guardian, relay, monitor, ledger] = await Promise.all([
     measure("play", "Play", network, (read) => probePlay(read, value.playUrl)),
     measure("accounts", "Sign in and accounts", network, (read) => probeAccounts(read, value.playUrl)),
     measure("directory", "Games list", network, async (read) => {
@@ -26,6 +26,7 @@ export async function probeServices(network: typeof fetch, now: number, known: T
       return listing.available ? "up" : "down";
     }),
     measure("blitz", "Blitz lobbies", network, (read) => probeSlots(read, value.playUrl)),
+    measure("launch", "Game launches and seating", network, (read) => probeLaunch(read, value.playUrl)),
     measure("chat", "Chat", network, (read) => probeChat(read, value.playUrl)),
     measure("guardian", "Device guardian", network, (read) => probeGuardian(read, value.playUrl + "/api/guardian")),
     measure("relay", "Value relay", network, (read) =>
@@ -37,11 +38,15 @@ export async function probeServices(network: typeof fetch, now: number, known: T
     probeLedger(network, value, now),
   ]);
   const worlds = await Promise.all(targets.map((target) => probeWorld(target, network, now)));
+  const nodes = await Promise.all(targets.map((target) => probeNodeMemory(target, network, now)));
   if (directoryReadable && worlds.some((world) => world.status === "down")) {
     directory.status = "down";
     directory.latency_ms = null;
   } else if (directoryReadable && worlds.some((world) => world.status === "degraded")) directory.status = "degraded";
-  return { targets, probes: [play, accounts, directory, blitz, chat, guardian, relay, monitor, ledger, ...worlds] };
+  return {
+    targets,
+    probes: [play, accounts, directory, blitz, launch, chat, guardian, relay, monitor, ledger, ...worlds, ...nodes],
+  };
 }
 
 async function probePlay(read: Reader, playUrl: string): Promise<Status> {
@@ -142,6 +147,13 @@ async function probeSlots(read: Reader, playUrl: string): Promise<Status> {
   return "up";
 }
 
+/** The launch Worker answers 503 while any run has failed or is stranded, or a launcher or slot could not join or freeze. */
+async function probeLaunch(read: Reader, playUrl: string): Promise<Status> {
+  if ((await body(read, playUrl + "/api/factory/health")).service !== "launch")
+    throw new Error("Launch health missing");
+  return "up";
+}
+
 async function probeChat(read: Reader, playUrl: string): Promise<Status> {
   requireReady(await body(read, playUrl + "/api/chat/health"));
   return "up";
@@ -166,6 +178,26 @@ function probeWorld(target: Target, network: typeof fetch, now: number) {
     const age = Math.max(now - latest.timestamp, now - confirmed.timestamp);
     if (lag < 0 || latest.timestamp > now + 30 || confirmed.timestamp > now + 30) throw new Error("Invalid head clock");
     return age > 120 || lag > 10 ? "down" : age > 30 || lag > 2 ? "degraded" : "up";
+  });
+}
+
+/** A node's share of its host's memory: degraded from half, down from three quarters (no node limit is set). */
+const NODE_MEMORY_DEGRADED = 0.5;
+const NODE_MEMORY_DOWN = 0.75;
+/** The shard's collector samples every 10 s; a sample older than this means it stopped. */
+const NODE_SAMPLE_STALE_SECONDS = 60;
+
+/** The node's memory as the world's Herald publishes its collector's last sample; unknown is never up. */
+function probeNodeMemory(target: Target, network: typeof fetch, now: number) {
+  return measure(`node:${target.chainId}`, `${new URL(target.url).hostname} node memory`, network, async (read) => {
+    const node = (await body(read, target.url + "/health")).node as Record<string, unknown> | null | undefined;
+    if (!node || !height(node.sampled_at) || !height(node.host_memory_bytes) || node.host_memory_bytes === 0)
+      return "degraded";
+    if (now - node.sampled_at > NODE_SAMPLE_STALE_SECONDS || node.sampled_at > now + 30) return "degraded";
+    if (node.memory_bytes === null) return "down";
+    if (!height(node.memory_bytes)) return "degraded";
+    const share = node.memory_bytes / node.host_memory_bytes;
+    return share >= NODE_MEMORY_DOWN ? "down" : share >= NODE_MEMORY_DEGRADED ? "degraded" : "up";
   });
 }
 

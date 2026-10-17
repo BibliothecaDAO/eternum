@@ -3,9 +3,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveLeftViewSurface } from "./left-view-policy";
 import { LeftView } from "@/types";
-import { PopoverPanel, SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
-import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -33,8 +32,6 @@ export const LeftViewSurfaces = memo(() => {
 LeftViewSurfaces.displayName = "LeftViewSurfaces";
 
 const ActiveViewSurface = () => {
-  const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
-  const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const surface = useUIStore((state) => resolveLeftViewSurface(state.leftNavigationView));
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
@@ -45,27 +42,6 @@ const ActiveViewSurface = () => {
     return (
       <PopoverPanel id="build" ariaLabel="Build" anchor="top-center" className="w-auto p-0" onDismiss={closeView}>
         <ConstructionModal structureEntityId={structureEntityId} />
-      </PopoverPanel>
-    );
-  }
-  if (surface === "logistics") {
-    return (
-      <PopoverPanel
-        id="logistics"
-        ariaLabel="Logistics"
-        anchor="top-center"
-        className="w-auto p-0"
-        onDismiss={closeView}
-      >
-        <SurfaceFrame
-          title="Logistics"
-          icon={"resources" as const}
-          onClose={closeView}
-          className={SURFACE_WORKSPACE_CLASS}
-          bodyClassName="overflow-hidden"
-        >
-          <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-        </SurfaceFrame>
       </PopoverPanel>
     );
   }

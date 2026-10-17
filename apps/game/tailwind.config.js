@@ -1,6 +1,6 @@
 const plugin = require("tailwindcss/plugin");
 
-import { COLORS, FONT_FACES, FONTS } from "./src/tokens";
+import { CLASSIC_HUD_FONTS, COLORS, FONT_FACES, FONTS } from "./src/tokens";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -159,6 +159,10 @@ export default {
         "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
       },
       fontFamily: FONTS,
+      fontSize: {
+        xs: ".975rem",
+        xxs: ".825rem",
+      },
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",
         pointer: "url(/images/icons/cursor.png), pointer",
@@ -329,6 +333,7 @@ export default {
     "h-2",
     "w-16",
     "rounded-full",
+    "text-[10px]",
   ],
   plugins: [
     require("@tailwindcss/typography"),
@@ -340,6 +345,9 @@ export default {
           ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
         },
+        "html.classic-hud": Object.fromEntries(
+          Object.entries(CLASSIC_HUD_FONTS).map(([name, value]) => [`--font-${name}`, value]),
+        ),
       });
     }),
     plugin(function ({ addUtilities, theme, e }) {

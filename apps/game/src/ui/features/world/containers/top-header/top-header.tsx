@@ -102,7 +102,9 @@ export const TopHeader = memo(() => {
         lane={lane}
         identity={<IdentityChip compact={lane !== null} />}
         clock={<GameClock compact={lane !== null} />}
-        attention={<AttentionPill />}
+        // On a desktop Next up, atop the rail, is the one queue of what needs the player (the owner's ruling, 16
+        // October 2026); the phone, which has no Next up yet, keeps the pill.
+        attention={lane ? <AttentionPill /> : null}
         settings={<SecondaryMenuItems />}
         viewControls={
           <MapViewControls

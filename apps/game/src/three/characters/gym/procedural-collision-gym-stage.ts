@@ -100,11 +100,14 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
   private desiredActorCount = 0;
   private actorsInitialized = false;
   private disposed = false;
+  private preparingAssets = false;
+  private assetError: unknown;
 
   public constructor(
     private readonly unitRuntime: ProceduralUnitRuntime,
     unitConfig: ProceduralUnitConfig,
     config: ProceduralCollisionGymConfig,
+    private readonly onError: (error: unknown) => void,
   ) {
     this.unitConfig = unitConfig;
     this.config = applyProceduralCollisionGymConfigPatch(config, {});
@@ -119,6 +122,7 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
 
   public update(deltaSeconds: number): void {
     if (this.disposed || !this.config.enabled) return;
+    if (this.assetError) return;
     if (!this.buildActorBatch()) return;
     const elapsed = Number.isFinite(deltaSeconds) ? Math.min(0.1, Math.max(0, deltaSeconds)) : 0;
     this.elapsedSeconds += elapsed;
@@ -202,9 +206,7 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
   public updateUnitConfig(config: ProceduralUnitConfig): void {
     this.unitConfig = config;
     if (!this.config.enabled) return;
-    this.actors.forEach((record, index) => {
-      this.unitRuntime.updateActorConfig(record.actor, this.resolveActorConfig(record.kind, index));
-    });
+    this.rebuildActors();
     this.projectiles.updateConfig(resolveProjectileConfig(config));
   }
 
@@ -285,7 +287,28 @@ export class ProceduralCollisionGymStage implements ProjectileHitQuery {
 
   private buildActorBatch(): boolean {
     const batchEnd = Math.min(this.desiredActorCount, this.actors.length + ACTOR_BUILD_BATCH_SIZE);
-    while (this.actors.length < batchEnd) this.addActor(this.actors.length);
+    while (this.actors.length < batchEnd) {
+      const index = this.actors.length;
+      const config = this.resolveActorConfig(resolveScenarioKind(this.config.scenario, index), index);
+      if (!this.unitRuntime.areAssetsReady(config)) {
+        if (!this.preparingAssets) {
+          this.preparingAssets = true;
+          void this.unitRuntime
+            .prepareAssets(config)
+            .catch((error) => {
+              if (!this.disposed) {
+                this.assetError = error;
+                this.onError(error);
+              }
+            })
+            .finally(() => {
+              this.preparingAssets = false;
+            });
+        }
+        return false;
+      }
+      this.addActor(index);
+    }
     this.debugMesh.count = 0;
     if (this.actors.length < this.desiredActorCount) return false;
     if (!this.actorsInitialized) {

@@ -142,8 +142,8 @@ export const SEASON_WORDS = {
   share: "Share",
   /** Between a place and the field: "3rd of 24". */
   of: "of",
-  /** Blitz's own unit. */
-  vp: "VP",
+  /** Blitz's own unit, one word wherever a player reads it. */
+  vp: "points",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */

@@ -13,10 +13,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PLAYS_IN_FLIGHT } from "@bibliothecadao/provider";
 
+import { nativePlay } from "./native-submission";
 import {
   configureGameplayAccountSubmits,
   executeGameplayAccountTransaction,
   invalidateGameplayNonce,
+  type SendStage,
   type SentGameplayTransaction,
 } from "./submit";
 
@@ -24,6 +26,7 @@ const CALL = { contractAddress: "0x1", entrypoint: "play", calldata: [] };
 const OTHER_CALL = { contractAddress: "0x1", entrypoint: "play", calldata: ["0x2"] };
 const SHARD = { chainId: "0x1", l2GasBound: 0x47868c00n };
 afterEach(() => {
+  for (const end of endWithTest.splice(0)) end();
   vi.useRealTimers();
 });
 
@@ -690,6 +693,163 @@ function fakeMempool(
   };
 }
 
+describe("a send's stages, as the game client reports them", () => {
+  /**
+   * The game client's submit over a fake shard: every stage it reports, as "send:stage" or "send:stage:detail".
+   * Herald reports a play `heraldAfterMs` after it is sent, or never.
+   */
+  const playedOver = (
+    shard: FakeShard,
+    heraldAfterMs: number | null,
+    onHash?: (stage: SendStage, transactionHash: string | undefined) => void,
+  ) => {
+    const stages: string[] = [];
+    const submit = nativePlay(
+      {
+        bindings: {
+          commandAbi: [{ type: "enum", name: "world_native::commands::Command", variants: [{ name: "Explore" }] }],
+        } as unknown as Parameters<typeof nativePlay>[0]["bindings"],
+        release: { ready: async () => {} },
+        shard: SHARD,
+        stopped: new AbortController().signal,
+        runtime: {
+          recordSubmittedTransaction: () => {},
+          waitForTransaction: (hash) =>
+            new Promise((resolve) => {
+              if (heraldAfterMs !== null)
+                setTimeout(() => resolve({ hash, block: null, status: "PRE_CONFIRMED" }), heraldAfterMs);
+            }),
+        },
+        onSendStage: (send: number, stage: SendStage, detail?: string, transactionHash?: string) => {
+          stages.push([send, stage, detail].filter((part) => part !== undefined).join(":"));
+          onHash?.(stage, transactionHash);
+        },
+      },
+      { require: () => ({ release_id: 1n, preset_commitment: 2n }) } as unknown as Parameters<typeof nativePlay>[1],
+      3,
+      CALL.contractAddress,
+    );
+    const play = () =>
+      submit(shard.account as unknown as AccountInterface, {
+        ...CALL,
+        entrypoint: "Explore",
+        calldata: ["0x3", "0x0"],
+      });
+    return { stages, play };
+  };
+
+  it("reaches each stage once, in order, from the command to Herald's word and the settled play", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5e01", (invoke) => shard.land(invoke));
+    const { stages, play } = playedOver(shard, 300);
+
+    const first = await play();
+    const second = await play();
+    await vi.advanceTimersByTimeAsync(300);
+    await Promise.all([first.inBlock, second.inBlock]);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(stages.filter((stage) => stage.startsWith("1:"))).toEqual([
+      "1:command",
+      "1:release-ready",
+      "1:left-queue",
+      "1:nonce:read",
+      "1:answered:proxy",
+      "1:included:herald",
+      "1:settled",
+    ]);
+    expect(stages).toContain("2:nonce:known");
+  });
+
+  it("with Herald silent, says the node included the play after Herald's wait", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5e02", (invoke) => shard.land(invoke));
+    const { stages, play } = playedOver(shard, null);
+
+    const sent = await play();
+    await vi.advanceTimersByTimeAsync(11_000);
+    expect(stages).not.toContain("1:included:node");
+    await vi.advanceTimersByTimeAsync(2_000);
+    await sent.inBlock;
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(stages.slice(-2)).toEqual(["1:included:node", "1:settled"]);
+  });
+
+  it("with the proxy's reply held and Herald silent, says the node answered and included the play, never Herald", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5e20", (invoke) => {
+      shard.land(invoke);
+      return new Promise<void>(() => {});
+    });
+    const { stages, play } = playedOver(shard, null);
+    const pending = play();
+    await vi.advanceTimersByTimeAsync(13_000);
+    await (
+      await pending
+    ).inBlock;
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(stages.slice(-3)).toEqual(["1:answered:node", "1:included:node", "1:settled"]);
+    expect(stages).not.toContain("1:answered:herald");
+  });
+
+  it("with the proxy's reply held and Herald reporting, says Herald answered, then included the play", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5e21", (invoke) => {
+      shard.land(invoke);
+      return new Promise<void>(() => {});
+    });
+    const { stages, play } = playedOver(shard, 300);
+    const pending = play();
+    await vi.advanceTimersByTimeAsync(300);
+    await (
+      await pending
+    ).inBlock;
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(stages.slice(-3)).toEqual(["1:answered:herald", "1:included:herald", "1:settled"]);
+  });
+
+  it("names the play's hash from its nonce on", async () => {
+    vi.useFakeTimers();
+    const shard = fakeShard("0x5e22", (invoke) => shard.land(invoke));
+    const hashes: Array<[SendStage, string | undefined]> = [];
+    const { play } = playedOver(shard, 300, (stage, hash) => hashes.push([stage, hash]));
+    const sent = await play();
+    await vi.advanceTimersByTimeAsync(300);
+    await sent.inBlock;
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(hashes).toEqual([
+      ["command", undefined],
+      ["release-ready", undefined],
+      ["left-queue", undefined],
+      ["nonce", sent.transaction_hash],
+      ["answered", sent.transaction_hash],
+      ["included", sent.transaction_hash],
+      ["settled", sent.transaction_hash],
+    ]);
+  });
+
+  it("a refused send settles with its error's name and was never answered", async () => {
+    const shard = fakeShard("0x5e03", () => {
+      throw Object.assign(new Error("Invalid transaction nonce"), { code: 52 });
+    });
+    const { stages, play } = playedOver(shard, null);
+
+    await expect(play()).rejects.toThrow();
+
+    expect(stages).toEqual([
+      "1:command",
+      "1:release-ready",
+      "1:left-queue",
+      "1:nonce:read",
+      "1:settled:TransactionNotSentError",
+    ]);
+  });
+});
+
 const send = (shard: FakeShard, calls: Call = CALL, stopped?: AbortSignal) =>
   executeGameplayAccountTransaction({ account: shard.account, calls, shard: SHARD, stopped });
 
@@ -704,12 +864,21 @@ type FakeShard = ReturnType<typeof fakeShard>;
  * holds but has not included. An unknown hash answers the node's own error 29; an unreadable read fails otherwise.
  * `onSend` plays the node and proxy for each invoke the account signs.
  */
+/**
+ * Stops each test's fake node when the test ends. Its client may still be polling for an answer; a node that stops
+ * answering parks that poll, so it never sets a timer on a later test's clock.
+ */
+const endWithTest: Array<() => void> = [];
+const silence = () => new Promise<never>(() => {});
+
 function fakeShard(
   address: string,
   onSend: (invoke: SentInvoke) => { transaction_hash: string } | void | Promise<void>,
 ) {
   const statuses = new Map<string, "RECEIVED" | "PRE_CONFIRMED">();
   const sent: SentInvoke[] = [];
+  let ended = false;
+  endWithTest.push(() => (ended = true));
   const shard = {
     nonce: 7n,
     nonceReadable: true,
@@ -740,16 +909,19 @@ function fakeShard(
     account: {
       address,
       execute: vi.fn(async (calls: AllowArray<Call>, details?: UniversalDetails) => {
+        if (ended) return silence();
         const invoke = { hash: invokeHash(address, calls, details!), nonce: String(details!.nonce) };
         sent.push(invoke);
         const response = await onSend(invoke);
         return response ?? { transaction_hash: invoke.hash };
       }),
       getNonce: vi.fn(async () => {
+        if (ended) return silence();
         if (!shard.nonceReadable) throw new Error("upstream timed out");
         return `0x${shard.nonce.toString(16)}`;
       }),
       getTransactionStatus: vi.fn(async (transactionHash: string) => {
+        if (ended) return silence();
         if (!shard.statusReadable) throw Object.assign(new Error("RPC read unavailable"), { code: -32012 });
         const status = statuses.get(transactionHash);
         if (!status) throw Object.assign(new Error("Transaction hash not found"), { baseError: { code: 29 } });

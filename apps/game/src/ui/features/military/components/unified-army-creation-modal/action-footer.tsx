@@ -7,7 +7,7 @@ interface ActionFooterProps {
   label: string;
   isLoading: boolean;
   isDisabled: boolean;
-  /** Why the button is disabled, when the form does not already say it next to the control that caused it. */
+  /** Why the button is disabled: the one place the form says it, in a few words under the button. */
   blockedReason: string | null;
   onSubmit: () => void;
   /** Embed mode: render just the button, no surrounding card chrome. */
@@ -23,6 +23,7 @@ export const ActionFooter = ({
   onSubmit,
   embedded = false,
 }: ActionFooterProps) => {
+  const reason = isDisabled ? blockedReason : null;
   const button = (
     <Button
       variant="gold"
@@ -34,8 +35,7 @@ export const ActionFooter = ({
         "bg-gradient-to-br from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70",
         "shadow-xl hover:shadow-xl hover:shadow-gold/50",
         "border-2 border-gold/60 hover:border-gold/80",
-        "transform hover:scale-[1.02]",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-md",
+        "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-md",
       )}
     >
       <div className="flex items-center justify-center gap-2">
@@ -52,11 +52,10 @@ export const ActionFooter = ({
   const action = (
     <>
       {button}
-      {isDisabled && blockedReason && (
-        <p className="mt-1 px-1 text-sm text-gold/70" role="status">
-          {blockedReason}
-        </p>
-      )}
+      {/* Always one line tall, empty when the button can go: the button never moves as its reason comes and goes. */}
+      <p className="mt-1 h-5 truncate px-1 text-xs leading-5 text-gold/70" role="status" title={reason ?? undefined}>
+        {reason}
+      </p>
     </>
   );
 

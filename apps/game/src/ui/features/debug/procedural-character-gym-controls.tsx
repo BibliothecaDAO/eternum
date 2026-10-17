@@ -38,11 +38,7 @@ import {
 import { resolveProceduralMeleeAttackVariants } from "@/three/characters/melee/procedural-melee-config";
 import { isProceduralMeleeGearFittedToRig } from "@/three/characters/melee/procedural-melee-weapon-catalog";
 import { resolveProceduralCharacterAppearance } from "@/three/characters/procedural-character-appearance";
-import {
-  filterProceduralCharacterReviewOptions,
-  listOfferedProceduralCharacterAppearances,
-  resolveActiveProceduralCharacterReviewCapability,
-} from "@/three/characters/procedural-character-review-capability";
+import { listOfferedProceduralCharacterAppearances } from "@/three/characters/procedural-character-appearance";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 type NumericConfigKey = {
@@ -129,9 +125,8 @@ interface MeleeNumericField {
   step: number;
 }
 
-const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
-const availableMeleeWeapons = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_WEAPONS, reviewCapability);
-const availableMeleeOffhands = filterProceduralCharacterReviewOptions(PROCEDURAL_MELEE_OFFHANDS, reviewCapability);
+const availableMeleeWeapons = PROCEDURAL_MELEE_WEAPONS;
+const availableMeleeOffhands = PROCEDURAL_MELEE_OFFHANDS;
 
 const APPEARANCE_FIELDS: readonly NumericField[] = [
   { key: "metalness", label: "Metalness", min: 0, max: 1, step: 0.01 },
@@ -624,7 +619,7 @@ const CharacterControls = ({ config, selectedPreset, onApplyPreset, onPatchConfi
       <SelectControl
         label={config.kind === "paladin" ? "Rider appearance" : "Appearance"}
         value={config.humanoid.appearanceId}
-        options={listOfferedProceduralCharacterAppearances(reviewCapability, [config.kind]).map(({ id, label }) => ({
+        options={listOfferedProceduralCharacterAppearances([config.kind]).map(({ id, label }) => ({
           value: id,
           label,
         }))}

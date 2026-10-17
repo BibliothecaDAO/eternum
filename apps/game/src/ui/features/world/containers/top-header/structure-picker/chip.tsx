@@ -1,7 +1,8 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
+import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
   formatPopulationStatusLabel,
@@ -52,10 +53,10 @@ export type StructureWithMetadata = Structure & {
 
 const StructureInfoStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title: string }) => (
   <span
-    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-sm text-kit-muted"
+    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
     title={title}
   >
-    <SemanticIcon name={Icon} className="h-3 w-3 text-kit-muted" />
+    <SemanticIcon name={Icon} className="h-3 w-3 text-gold/60" />
     <span>{label}</span>
   </span>
 );
@@ -75,6 +76,61 @@ const StructureStatusStats = ({
   </div>
 );
 
+/**
+ * What a realm's next level asks for and gives: why the step cannot be taken now (when it cannot), each cost against
+ * what the realm holds and what is on its way, or that it costs nothing, and what the level brings. Never a blank.
+ */
+export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
+  if (step.mode === "max") {
+    return <div className="text-sm text-kit-muted">Castle fully upgraded.</div>;
+  }
+
+  return (
+    <div className="min-w-[220px] space-y-2 text-gold">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-kit-muted">Upgrade</span>
+        {step.nextLevelName && <span className="text-sm text-kit-muted">to {step.nextLevelName}</span>}
+      </div>
+      {step.refusal && <p className="text-sm text-red-300">{step.refusal}</p>}
+      {step.requirements.length === 0 && <p className="text-sm text-kit-cream">Nothing to pay for this level.</p>}
+      <div className="space-y-1">
+        {step.requirements.map((req) => {
+          const isMet = req.current !== undefined && req.current >= req.amount;
+          return (
+            <div
+              key={`${req.resource}-${req.amount}`}
+              className={clsx(
+                "rounded border px-2 py-1",
+                isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
+                <span className="flex-1 text-sm text-kit-cream">{ResourcesIds[req.resource]}</span>
+                <span className={clsx("text-sm font-semibold", isMet ? "text-gold" : "text-red-300")}>
+                  {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
+                  {req.amount.toLocaleString()}
+                </span>
+              </div>
+              {req.incoming && (
+                <div className="pl-6 text-sm text-emerald-300/90">
+                  +{Math.floor(req.incoming.amount).toLocaleString()} in transit,{" "}
+                  {formatIncomingEta(req.incoming.etaSeconds)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {step.nextLevel > 0 && (
+        <p className="text-sm text-kit-muted">
+          {step.nextLevelName ?? "It"} gives {describeCastleLevel(step.nextLevel)}.
+        </p>
+      )}
+    </div>
+  );
+};
+
 type StructureRealmActionsProps = {
   structureEntityId: ID | null;
   className?: string;
@@ -92,52 +148,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
     return null;
   }
 
-  const requirementsContent = (() => {
-    if (step.mode === "max") {
-      return <div className="text-sm text-kit-muted">Castle fully upgraded.</div>;
-    }
-    if (!step.requirements?.length) {
-      return <div className="text-sm text-kit-muted">No upgrade requirements found.</div>;
-    }
-
-    return (
-      <div className="min-w-[220px] space-y-2 text-gold">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-kit-muted">Upgrade</span>
-          {step.nextLevelName && <span className="text-sm text-kit-muted">to {step.nextLevelName}</span>}
-        </div>
-        <div className="space-y-1">
-          {step.requirements.map((req) => {
-            const isMet = req.current !== undefined && req.current >= req.amount;
-            return (
-              <div
-                key={`${req.resource}-${req.amount}`}
-                className={clsx(
-                  "rounded border px-2 py-1",
-                  isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
-                  <span className="flex-1 text-sm text-kit-cream">{ResourcesIds[req.resource]}</span>
-                  <span className={clsx("text-sm font-semibold", isMet ? "text-gold" : "text-red-300")}>
-                    {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
-                    {req.amount.toLocaleString()}
-                  </span>
-                </div>
-                {req.incoming && (
-                  <div className="pl-6 text-sm text-emerald-300/90">
-                    +{Math.floor(req.incoming.amount).toLocaleString()} in transit,{" "}
-                    {formatIncomingEta(req.incoming.etaSeconds)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  })();
+  const requirementsContent = <LevelUpRequirements step={step} />;
 
   const showRequirementsTooltip = (event: MouseEvent<HTMLButtonElement>) => {
     setTooltip({
@@ -178,10 +189,11 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         onClick={takeStep}
         disabled={!step.ready}
         className={clsx(
-          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-sm font-semibold transition",
+          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+          // Ready reads as a gold outline, never a filled or pulsing gold: the screen's one gold button is Next up's.
           step.ready
-            ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-            : "border-gold/20 bg-black/30 text-kit-muted cursor-not-allowed",
+            ? "border-gold/70 text-gold hover:bg-gold/10"
+            : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
         )}
         aria-label={step.word}
         title={step.refusal ?? step.word}
@@ -195,7 +207,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         onFocus={showRequirementsTooltip as never}
         onBlur={hideRequirementsTooltip}
         onClick={(event) => event.stopPropagation()}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-kit-muted hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-gold/70 hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
         aria-label="View upgrade requirements"
       >
         <SemanticIcon name="info" className="h-3.5 w-3.5" />
@@ -248,10 +260,10 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-sm transition cursor-pointer",
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-xs transition cursor-pointer",
         isSelected
           ? "border-gold bg-gold/15 text-gold"
-          : "border-gold/25 bg-black/30 text-kit-cream hover:border-gold/50 hover:bg-black/50",
+          : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
       )}
       title={structure.displayName}
       aria-pressed={isSelected}
@@ -262,7 +274,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
           event.stopPropagation();
           onToggleFavorite(structure.entityId);
         }}
-        className="shrink-0 rounded p-0.5 text-kit-muted hover:text-gold"
+        className="shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
         title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
         aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
       >
@@ -288,7 +300,9 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
         {structure.displayName}
       </span>
       {levelAbbrev && (
-        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-sm text-kit-muted">{levelAbbrev}</span>
+        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/60">
+          {levelAbbrev}
+        </span>
       )}
       {populationStatusLabel && (
         <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />

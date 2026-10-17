@@ -7,6 +7,12 @@ const markerColors: Record<MarkerOwner, string> = {
   enemy: "#ff8176",
   neutral: "#c8c4b8",
 };
+const realmEmblemLayout: Partial<Record<IconMeaning, { size: number; y: number }>> = {
+  "map-realm-0": { size: 26, y: -13 },
+  "map-realm-1": { size: 25, y: -13 },
+  "map-realm-2": { size: 23, y: -11.5 },
+  "map-realm-3": { size: 26, y: -14 },
+};
 const hexMarkerPoints = (radius: number, x = 0, y = 0) =>
   Array.from({ length: 6 }, (_, index) => {
     const angle = ((60 * index - 30) * Math.PI) / 180;
@@ -28,10 +34,11 @@ export function HexMarker({
   radius?: number;
 }) {
   const color = markerColors[owner];
+  const emblem = realmEmblemLayout[name] ?? { size: 18, y: -10 };
   return (
     <g transform={`translate(${x} ${y}) scale(${radius / 15})`} data-marker={name} data-owner={owner}>
       <polygon points={hexMarkerPoints(14)} fill="#17242b" stroke={color} strokeWidth={1.4} />
-      <SvgIcon name={name} x={-9} y={-10} size={18} />
+      <SvgIcon name={name} x={-emblem.size / 2} y={emblem.y} size={emblem.size} />
       <g transform="translate(-7 8)" fill={color} stroke="#17242b" strokeWidth={0.5}>
         {owner === "you" ? (
           <circle r={2.3} />

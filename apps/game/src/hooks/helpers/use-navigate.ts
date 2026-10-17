@@ -1,8 +1,10 @@
 import { useCallback } from "react";
 
+import { useGame } from "@/hooks/context/game-context";
 import { leaveRealmVisit } from "@/sync/active-game-client";
+import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { useAccountStore } from "../store/use-account-store";
-import { configManager, Position } from "@bibliothecadao/eternum";
+import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
 
 import { buildPlayHref, mapRouteHex, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -49,6 +51,25 @@ export const useNavigateToMapView = () => {
     showBlankOverlay(false);
     setPreviewBuilding(null);
     handleUrlChange(url);
+  };
+};
+
+/**
+ * Selects one of the player's armies on the world map from any view: on the map at once; from another view the map
+ * opens at the army's tile and selects it once it is shown. Given a site, the site's card opens with the army as its
+ * actor.
+ */
+export const useSelectArmyOnMap = () => {
+  const { setup } = useGame();
+  const { isMapView } = useQuery();
+  const navigateToMapView = useNavigateToMapView();
+  return (entityId: ID, forSite: { col: number; row: number } | null = null) => {
+    if (!isMapView) {
+      navigateToMapView(
+        Position.fromContract(entityMapPosition(setup.store, configManager.getActiveGameId(), entityId)),
+      );
+    }
+    requestArmySelection(entityId, forSite);
   };
 };
 

@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { biomeDisplayName } from "@/ui/utils/biome-name";
 import { DROPDOWN_CONTENT } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { CombatSimulator, configManager } from "@bibliothecadao/eternum";
@@ -28,13 +29,6 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
   showTriggerBonuses = true,
 }) => {
   const [selectedBiome, setSelectedBiome] = useState<string>(defaultValue?.toString() || "");
-
-  const formatBiomeName = (biome: string) => {
-    return biome
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
 
   const formatBonus = (bonus: number) => {
     const percentage = ((bonus - 1) * 100).toFixed(0);
@@ -68,7 +62,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
         <SelectValue placeholder="Select biome">
           {selectedBiome && (
             <div className="flex items-center justify-start w-full">
-              <span className="font-medium flex justify-start">{formatBiomeName(selectedBiome)}</span>
+              <span className="font-medium flex justify-start">{biomeDisplayName(selectedBiome)}</span>
               <div className={showTriggerBonuses ? "flex gap-8 ml-auto" : "hidden"}>
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
                   const bonus = configManager.getBiomeCombatBonus(type, selectedBiome as BiomeType);
@@ -78,10 +72,10 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
                       <span
                         className={
                           bonus > 1
-                            ? "text-order-brilliance text-sm"
+                            ? "text-order-brilliance text-xs"
                             : bonus < 1
-                              ? "text-order-giants text-sm"
-                              : "text-kit-muted text-sm"
+                              ? "text-order-giants text-xs"
+                              : "text-gold/50 text-xs"
                         }
                       >
                         {formatBonus(bonus)}
@@ -98,7 +92,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
         {Object.values(BiomeType).map((biome) => (
           <SelectItem key={biome} value={biome} className="py-3">
             <div className="flex items-center justify-between w-full">
-              <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(biome)}</span>
+              <span className="font-medium w-[200px] flex justify-start">{biomeDisplayName(biome)}</span>
               <div className="flex gap-8 ml-10">
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
                   const bonus = configManager.getBiomeCombatBonus(type, biome);
@@ -111,7 +105,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
                             ? "text-order-brilliance text-sm font-medium"
                             : bonus < 1
                               ? "text-order-giants text-sm font-medium"
-                              : "text-kit-muted text-sm"
+                              : "text-gold/50 text-sm"
                         }
                       >
                         {formatBonus(bonus)}

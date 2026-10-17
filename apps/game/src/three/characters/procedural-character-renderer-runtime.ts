@@ -3,7 +3,6 @@ import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runti
 import { configureGltfTextureSupport } from "@/three/utils/gltf-loader";
 import { isCoarsePointer } from "@/utils/pointer";
 
-import { resolveActiveProceduralCharacterReviewCapability } from "./procedural-character-review-capability";
 import { ProceduralUnitRuntime } from "./procedural-unit-runtime";
 
 interface InitializeProceduralCharacterRendererRuntimeInput {
@@ -17,7 +16,6 @@ export async function initializeProceduralCharacterRendererRuntime(
   unitRuntime: ProceduralUnitRuntime;
   rendererRuntime: Awaited<ReturnType<typeof initializeRendererBackendRuntime>>;
 }> {
-  const reviewCapability = resolveActiveProceduralCharacterReviewCapability();
   const rendererRuntime = await initializeRendererBackendRuntime({
     envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
     isMobileDevice: isCoarsePointer(),
@@ -29,7 +27,6 @@ export async function initializeProceduralCharacterRendererRuntime(
   try {
     const unitRuntime = await ProceduralUnitRuntime.create({
       preloadPhysics: input.preloadPhysics,
-      includeT1KnightDefault: reviewCapability.includeT1KnightDefault,
     });
     return { unitRuntime, rendererRuntime };
   } catch (error) {

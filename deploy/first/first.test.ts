@@ -364,13 +364,36 @@ test("metadata presence follows all confirmed event pages; differing metadata re
 });
 
 test("every service uses one RPC; deployer and cold admin keys never enter Worker values", () => {
-  const map = Object.fromEntries(workers.map((worker) => [worker.id, workerSecrets(worker, input, secrets, keys)]));
+  const access = { teamDomain: "realms.cloudflareaccess.com", audience: "aud", operators: ["o@x.io"], writers: [] };
+  const map = Object.fromEntries(
+    workers.map((worker) => [worker.id, workerSecrets(worker, input, secrets, keys, access)]),
+  );
   for (const name of ["identity", "relay", "monitor", "status"]) expect(map[name]!.L2_RPC_URL).toBe(input.rpc);
   expect(map.guardian).toEqual({});
   expect(map.relay!.LEDGER_OPERATOR_PRIVATE_KEY).toBe(keys.relay);
   expect(map.monitor!.PAUSER_PRIVATE_KEY).toBe(keys.monitor);
   expect(Object.values(map).flatMap(Object.values)).not.toContain(keys.deployer);
   expect(map.launch!.LAUNCH_DEPLOYER_PRIVATE_KEY).toBe(keys.launcher);
+  expect(map.admin).toEqual({
+    OPERATOR_TOKEN: secrets.operator,
+    ACCESS_TEAM_DOMAIN: "realms.cloudflareaccess.com",
+    ACCESS_AUD: "aud",
+  });
+  const admin = workers.find((worker) => worker.id === "admin")!;
+  expect(() => workerSecrets(admin, input, secrets, keys, undefined)).toThrow("Admin access is not set up yet");
+});
+
+test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
+  const status = workers.find((worker) => worker.id === "status")!;
+  expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys, undefined)).toEqual({
+    L2_RPC_URL: input.rpc,
+    RESEND_API_KEY: input.resend,
+    ALERT_EMAIL: "oncall@example.test",
+  });
+  expect(workerSecrets(status, { ...input, alertEmail: undefined }, secrets, keys, undefined)).toEqual({
+    L2_RPC_URL: input.rpc,
+    RESEND_API_KEY: input.resend,
+  });
 });
 
 test("dry platform refuses every write entry before any network or subprocess call", async () => {

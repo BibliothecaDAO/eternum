@@ -1,3 +1,4 @@
+import { decodeModelGeometry } from "../scripts/lib/decode-model-geometry.mjs";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -5,7 +6,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 /** Load actual public GLB geometry while stripping textures unsupported by Node fixtures. */
 export async function parseTextureFreeGlb(url: string) {
-  const glb = readFileSync(resolve(process.cwd(), `public${url}`));
+  const glb = await decodeModelGeometry(readFileSync(resolve(process.cwd(), `public${url}`)));
   const jsonLength = glb.readUInt32LE(12);
   const document = JSON.parse(glb.subarray(20, 20 + jsonLength).toString());
   const binary = glb.subarray(28 + jsonLength);

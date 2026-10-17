@@ -449,15 +449,33 @@ fn preset_registration_rejects_camps_with_zero_camp_labor() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn preset_registration_rejects_equal_or_reversed_mercenary_bounds() {
+fn preset_registration_rejects_reversed_light_and_heavy_guard_bounds() {
     let d = setup();
-    let mut preset = definition(true);
-    preset.rules.troop_limit_config.mercenaries_troop_lower_bound = 10;
-    for upper in array![10_u16, 9] {
-        preset.rules.troop_limit_config.mercenaries_troop_upper_bound = upper;
+    for light in array![true, false] {
+        let mut preset = definition(true);
+        if light {
+            preset.rules.troop_limit_config.light_guard_lower_bound = 10;
+            preset.rules.troop_limit_config.light_guard_upper_bound = 9;
+        } else {
+            preset.rules.troop_limit_config.heavy_guard_lower_bound = 10;
+            preset.rules.troop_limit_config.heavy_guard_upper_bound = 9;
+        }
         assert!(safe(d, super::authority()).register_preset(1, preset).is_err());
         assert_eq!(registry(d).preset_commitment(1), 0);
     }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn preset_registration_accepts_single_value_guard_ranges() {
+    let d = setup();
+    let mut preset = definition(true);
+    preset.rules.troop_limit_config.light_guard_lower_bound = 10;
+    preset.rules.troop_limit_config.light_guard_upper_bound = 10;
+    preset.rules.troop_limit_config.heavy_guard_lower_bound = 65535;
+    preset.rules.troop_limit_config.heavy_guard_upper_bound = 65535;
+    assert!(safe(d, super::authority()).register_preset(1, preset).is_ok());
+    assert_eq!(registry(d).preset_commitment(1), crate::presets::commitment(preset));
 }
 
 #[test]

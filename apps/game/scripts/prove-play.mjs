@@ -119,7 +119,7 @@ const READY = `document.documentElement.dataset.bootState === "app-ready" && doc
 
 const USAGE =
   "expected --base-url <url> --out <dir>, and for a game --game <chain>:<game> --profile <dir> " +
-  "[--at-rest] [--tasks <task,task>] [--crate <col>,<row>] [--until-end <minutes>] [--ended]";
+  "[--at-rest] [--watch] [--tasks <task,task>] [--crate <col>,<row>] [--until-end <minutes>] [--ended]";
 
 export const parseArgs = (argv) => {
   const args = { baseUrl: "https://127.0.0.1:4176", out: join(process.cwd(), "play-proof") };
@@ -133,6 +133,7 @@ export const parseArgs = (argv) => {
     else if (argv[index] === "--until-end") args.untilEndMinutes = Number(value());
     else if (argv[index] === "--ended") args.ended = true;
     else if (argv[index] === "--at-rest") args.atRest = true;
+    else if (argv[index] === "--watch") args.watch = true;
     else if (argv[index] === "--tasks") args.tasks = value().split(",");
     else throw new Error(`Unknown argument ${argv[index]}; ${USAGE}`);
   }

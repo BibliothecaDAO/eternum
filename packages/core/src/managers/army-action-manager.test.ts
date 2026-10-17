@@ -200,6 +200,9 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(actionPaths.get(ActionPaths.posKey(wellHex))).toBeUndefined();
     expect(actionPaths.get(ActionPaths.posKey(dormantHex))).toBeUndefined();
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(openHex)) ?? [])).toBe(ActionType.Move);
+    for (const hex of [shrineHex, wellHex, dormantHex]) {
+      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "occupied" });
+    }
   });
 
   it.each([false, true])("uses stride-one portal access on the army's layer (alt=%s)", (alt) => {
@@ -258,6 +261,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
+    // The map names why: the attack's stamina.
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(targetHex))).toEqual({ reason: "stamina", need: 5 });
   });
 
   it("keeps adjacent enemy structure attack paths when attack stamina meets the required threshold", () => {
@@ -297,7 +302,9 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(owned))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(owned))).toEqual({ reason: "off-limits" });
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
+    expect(actionPaths.getRefusals().has(ActionPaths.posKey(site))).toBe(false);
   });
 
   it("adds radius-two attack paths for crossbowman armies", () => {
@@ -323,6 +330,63 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+  });
+
+  it("says a structure off limits in a crossbowman's range is off limits, not out of reach", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    const adjacentKeys = new Set(
+      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
+    );
+    const targetHex = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
+      (hex) =>
+        !adjacentKeys.has(ActionPaths.posKey(hex)) && ActionPaths.posKey(hex) !== ActionPaths.posKey(oldFeltStart),
+    )!;
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString())!.troops.category = TroopType.Crossbowman;
+    setNestedMapValue(structureHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.spyOn(configManager, "attacksOnlyUnownedStructures").mockReturnValue(true);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 50n, settled_at: 0, remainder: 0 } as any);
+
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(targetHex))).toEqual({ reason: "off-limits" });
+  });
+
+  it("says an own holding next to the army takes no transfer where the game allows none", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    vi.spyOn(configManager, "helpTransfers").mockReturnValue([]);
+    const holding = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    setNestedMapValue(structureHexes, holding.col - TEST_FELT_CENTER, holding.row - TEST_FELT_CENTER, {
+      owner: 0x123n,
+    } as HexEntityInfo);
+
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    expect(actionPaths.get(ActionPaths.posKey(holding))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(holding))).toEqual({ reason: "no-transfer" });
+  });
+
+  it("says a crate, a structure or an army beyond the army's step is too far, and nothing of the army's own tile", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const far = { col: oldFeltStart.col + 4, row: oldFeltStart.row };
+    const index = (map: Map<number, Map<number, HexEntityInfo>>, hex: HexPosition, owner: bigint) =>
+      setNestedMapValue(map, hex.col - TEST_FELT_CENTER, hex.row - TEST_FELT_CENTER, { owner } as HexEntityInfo);
+    index(structureHexes, far, 0x999n);
+    index(armyHexes, { col: far.col, row: far.row + 2 }, 0x999n);
+    index(chestHexes, { col: far.col + 1, row: far.row }, 0n);
+    index(armyHexes, oldFeltStart, 0x123n);
+
+    const refusals = manager
+      .findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any)
+      .getRefusals();
+
+    for (const hex of [far, { col: far.col, row: far.row + 2 }, { col: far.col + 1, row: far.row }]) {
+      expect(refusals.get(ActionPaths.posKey(hex))).toEqual({ reason: "too-far" });
+    }
+    expect(refusals.has(ActionPaths.posKey(oldFeltStart))).toBe(false);
   });
 
   it("does not add radius-two attack paths for non-ranged armies", () => {
@@ -351,6 +415,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 
 describe("ArmyActionManager food checks", () => {
   beforeEach(() => {
+    vi.spyOn(configManager, "getCombatConfig").mockReturnValue({ stamina_attack_req: 5 } as any);
+    vi.spyOn(configManager, "getTravelStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getMinTravelStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
@@ -379,6 +445,59 @@ describe("ArmyActionManager food checks", () => {
 
     vi.mocked(manager.getFood).mockReturnValue({ wheat: 100, fish: 0 });
     expect(manager.canExplore(0)).toBe(true);
+  });
+
+  it("says why an unexplored neighbour offers no explore: the owner's wheat, or else the army's stamina", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const fog = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    exploredHexes.get(fog.col - TEST_FELT_CENTER)!.delete(fog.row - TEST_FELT_CENTER);
+    const refusal = () =>
+      manager
+        .findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any)
+        .getRefusals()
+        .get(ActionPaths.posKey(fog));
+
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 99, fish: 0 });
+    expect(refusal()).toEqual({ reason: "food" });
+
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 999, fish: 0 });
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 0n, settled_at: 0, remainder: 0 } as any);
+    expect(refusal()).toEqual({ reason: "stamina", need: 1 });
+  });
+
+  it("names the smallest stamina a route two tiles off needs, and nothing for a tile some route reaches", () => {
+    vi.spyOn(configManager, "getTravelStaminaCost").mockReturnValue(30);
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const near = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    const far = getNeighborHexes(near.col, near.row).find(
+      (hex) =>
+        !getNeighborHexes(oldFeltStart.col, oldFeltStart.row).some((n) => n.col === hex.col && n.row === hex.row),
+    )!;
+    setNestedMapValue(exploredHexes, far.col - TEST_FELT_CENTER, far.row - TEST_FELT_CENTER, 1 as BiomeType);
+
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    // 50 stamina: one 30-stamina step, not two.
+    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(near))!)).toBe(ActionType.Move);
+    expect(paths.getRefusals().has(ActionPaths.posKey(near))).toBe(false);
+    expect(paths.getRefusals().get(ActionPaths.posKey(far))).toEqual({ reason: "stamina", need: 60 });
+  });
+
+  it("says the second step of a route is out of food where the owner's wheat pays for one step only", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 59, fish: 0 });
+    const near = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    const far = getNeighborHexes(near.col, near.row).find(
+      (hex) =>
+        !getNeighborHexes(oldFeltStart.col, oldFeltStart.row).some((n) => n.col === hex.col && n.row === hex.row),
+    )!;
+    setNestedMapValue(exploredHexes, far.col - TEST_FELT_CENTER, far.row - TEST_FELT_CENTER, 1 as BiomeType);
+
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    // 59 wheat at 30 a step pays for one step; the 50 stamina would pay for fifty.
+    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(near))!)).toBe(ActionType.Move);
+    expect(paths.getRefusals().get(ActionPaths.posKey(far))).toEqual({ reason: "food" });
   });
 });
 

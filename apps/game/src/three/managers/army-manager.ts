@@ -1,5 +1,5 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
-import { staminaFill } from "@/lib/army-stamina/segments";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
@@ -56,7 +56,6 @@ import {
   divideByPrecision,
   getBlockTimestamp,
   getExplorerOwner,
-  recordArmyMovementLatencyPhase,
   ResourceManager,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
@@ -65,20 +64,12 @@ import type {
   ArmySpatialRenderable,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BiomeType, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { shortString } from "starknet";
-import * as THREE from "three";
-import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
-import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { displayPlayerName, getEntityName, getIsBlitz } from "@bibliothecadao/eternum";
+import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
-import {
-  CosmeticAttachmentManager,
-  findCosmeticById,
-  resolveArmyCosmetic,
-  resolveArmyMountTransforms,
-} from "../cosmetics";
+import { CosmeticAttachmentManager, resolveArmyCosmetic, resolveArmyMountTransforms } from "../cosmetics";
 import { ArmyData, RenderChunkSize } from "../types";
 import {
   getHexForWorldPosition,
@@ -90,32 +81,16 @@ import { CentralizedVisibilityManager } from "../utils/centralized-visibility-ma
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
-import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
-import { updateStaminaBar } from "../utils/labels/label-components";
-import { LabelPool } from "../utils/labels/label-pool";
-import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
 import type { HoverLabelShowResult } from "./hover-label-show-result";
 import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
 import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { FXManager } from "./fx-manager";
-import {
-  buildArmyLabelLayoutDataKey,
-  buildArmyLabelStaminaDataKey,
-  syncArmyLabelContentState,
-} from "./army-label-content";
-import {
-  configureArmyLabelHoverPriority,
-  initializeArmyLabelState,
-  revealArmyLabelState,
-} from "./army-label-lifecycle";
-import { syncArmyLabelPresentationState } from "./army-label-presentation";
-import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
-import type { CompactEntityLabelScope } from "./compact-entity-label-renderer";
-import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
+import type { MapPlateScope } from "../map-plates/map-plate-layer";
+import { buildArmyPlate } from "../map-plates/map-plate-model";
 import { createArmyRecord } from "./army-record";
 import { finalizeArmyChunkTransition } from "./army-chunk-transition-finalizer";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
@@ -146,7 +121,7 @@ import {
   shouldRunManagerChunkUpdate,
   waitForVisualSettle,
 } from "./manager-update-convergence";
-import { getRendererDiagnosticActiveMode, snapshotRendererDiagnostics } from "../renderer-diagnostics";
+import { getRendererDiagnosticActiveMode } from "../renderer-diagnostics";
 import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PipelineCompiler } from "../pipeline-compiler";
@@ -224,9 +199,6 @@ export class ArmyManager {
   private pendingRenderChunkKey: string | null = null;
   private pendingRenderOptions: ManagerChunkUpdateOptions | null = null;
   private armyPaths: Map<ID, Position[]> = new Map();
-  private entityIdLabels: Map<ID, CSS2DObject> = new Map();
-  private labelPool = new LabelPool();
-  private labelsGroup: Group;
   private currentCameraView: CameraView;
   private contentLadder: WorldmapContentLadder;
   private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
@@ -236,17 +208,12 @@ export class ArmyManager {
   private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
   private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
-  private compactLabelRenderer: CompactEntityLabelScope;
-  private frustumVisibilityDirty = false;
-  private labelRenderDistance = Infinity;
-  private lastLabelVisibilityUpdate = 0;
-  private labelVisibilityIntervalMs = 66;
+  private plates: MapPlateScope;
   // Keep moving-army culling bounds fresh without paying a full recompute every frame.
   private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
   private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
   private hadMovingArmiesLastFrame = false;
   private visibilityManager?: CentralizedVisibilityManager;
-  private unsubscribeVisibility?: () => void;
   private unsubscribeChainTime?: () => void;
   private chunkSwitchPromise: Promise<void> | null = null; // Track ongoing chunk switches
   private latestTransitionToken = 0;
@@ -301,8 +268,7 @@ export class ArmyManager {
     scene: Scene,
     renderChunkSize: { width: number; height: number },
     worldSpatialProjection: WorldSpatialProjection,
-    compactLabelRenderer: CompactEntityLabelScope,
-    labelsGroup?: Group,
+    plates: MapPlateScope,
     hexagonScene?: HexagonScene,
     gameContext?: SetupResult,
     visibilityManager?: CentralizedVisibilityManager,
@@ -317,7 +283,6 @@ export class ArmyManager {
     this.armyModel = new ArmyModel(
       scene,
       (col, row) => this.groundBiomeOrLand(col, row),
-      labelsGroup,
       this.currentCameraView,
       compilePipelines,
     );
@@ -331,15 +296,8 @@ export class ArmyManager {
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.visibilityManager = visibilityManager;
-    if (this.visibilityManager) {
-      this.frustumVisibilityDirty = true;
-      this.unsubscribeVisibility = this.visibilityManager.onChange(() => {
-        this.frustumVisibilityDirty = true;
-      });
-    }
     this.onMouseMove = this.onMouseMove.bind(this);
     this.onRightClick = this.onRightClick.bind(this);
-    this.labelsGroup = labelsGroup || new Group();
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
@@ -363,7 +321,7 @@ export class ArmyManager {
       hexagonScene.addCameraViewListener(this.handleCameraViewChange);
     }
 
-    this.compactLabelRenderer = compactLabelRenderer;
+    this.plates = plates;
 
     // Initialize path renderer for movement visualization
     this.pathRenderer = new PathRenderer();
@@ -648,16 +606,12 @@ export class ArmyManager {
   }
 
   private addDebugArmyFromControls(input: { col: number; entityId: number; isMine: boolean; row: number }): void {
+    // A debug army spawned as the viewer's with no viewer is neutral, owned by nobody.
+    const address = input.isMine ? (accountAddress() ?? 0n) : 0n;
     this.addArmy({
       entityId: input.entityId,
       hexCoords: Position.fromNormalized({ x: input.col, y: input.row }),
-      owner: {
-        // A debug army spawned as the viewer's with no viewer is neutral, owned by nobody.
-        address: input.isMine ? (accountAddress() ?? 0n) : 0n,
-        // TODO: Add owner name and guild name
-        ownerName: "Neutral",
-        guildName: "None",
-      },
+      owner: { address, ownerName: displayPlayerName(address, null), guildName: "None" },
       category: TroopType.Paladin,
       tier: TroopTier.T1,
       troopCount: 10,
@@ -931,11 +885,7 @@ export class ArmyManager {
     army.isMine = nextIsMine;
     army.color = nextColor;
     this.armyPresentations.set(params.entityId, army);
-
-    const label = this.entityIdLabels.get(params.entityId);
-    if (label) {
-      this.updateArmyLabelData(params.entityId, army, label);
-    }
+    this.refreshArmyCompactLabel(army);
 
     const slot = this.visibleArmyIndices.get(params.entityId);
     if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
@@ -1197,7 +1147,6 @@ export class ArmyManager {
     // to prevent frustum culling mismatches at chunk edges
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.frustumVisibilityDirty = true;
   }
 
   private compactVisibleArmySlots(): void {
@@ -1291,15 +1240,7 @@ export class ArmyManager {
   }
 
   private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3) {
-    this.syncArmyLabelPresentation(army, position);
     this.updateArmyCompactLabel(army, position);
-  }
-
-  private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
-    syncArmyLabelPresentationState({
-      label: this.entityIdLabels.get(army.entityId),
-      position,
-    });
   }
 
   private removeVisibleArmy(entityId: ID, options?: { notifyMovementVisualCancel?: boolean }): number | null {
@@ -1319,7 +1260,6 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.removeArmyCompactLabel(entityId);
-    this.removeEntityIdLabel(entityId);
 
     const numericId = this.toNumericId(entityId);
     // Chunk reconciliation can evict a mid-move army; freeInstanceSlot below
@@ -1350,26 +1290,25 @@ export class ArmyManager {
 
   private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
     if (!this.shouldShowArmyCompactLabel(army)) {
-      this.compactLabelRenderer.removeLabel(army.entityId);
+      this.plates.removeLabel(army.entityId);
       return;
     }
     const labelPosition = this.tempCompactLabelPosition.copy(position);
     labelPosition.y += ARMY_PLATE_HEIGHT;
-    const number = this.resolveOwnArmyNumber(army);
-    this.compactLabelRenderer.setLabel({
+    this.plates.setLabel({
       entityId: army.entityId,
       position: labelPosition,
-      variant: resolveCompactEntityLabelVariant(army),
-      ...(number === undefined
-        ? { text: this.contentLadder.armyTierGlyphs ? army.tier : resolveArmyCompactEntityLabel(army) }
-        : {
-            text: String(number),
-            front: true,
-            meter: staminaFill(
-              army.currentStamina === undefined ? undefined : { current: army.currentStamina, max: army.maxStamina },
-            ),
-          }),
+      plate: buildArmyPlate(
+        { ...army, isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address) },
+        this.resolveHomeRealmName(army),
+      ),
     });
+  }
+
+  /** The realm an army comes from: the structure that raised it, by the one name the map and event text use. */
+  private resolveHomeRealmName(army: ArmyData): string {
+    if (!this.store || army.owningStructureId === null || army.owningStructureId === undefined) return "";
+    return getEntityName(army.owningStructureId, this.store, getIsBlitz()) ?? "";
   }
 
   /**
@@ -1389,12 +1328,12 @@ export class ArmyManager {
   }
 
   private removeArmyCompactLabel(entityId: ID): void {
-    this.compactLabelRenderer.removeLabel(entityId);
+    this.plates.removeLabel(entityId);
   }
 
   private syncVisibleSlots(): void {
     this.armyModel.setVisibleSlots(this.visibleArmyIndices.values());
-    this.compactLabelRenderer.retainOnly(this.visibleArmyIndices.keys());
+    this.plates.retainOnly(this.visibleArmyIndices.keys());
   }
 
   private getAttachmentSignature(templates: CosmeticAttachmentTemplate[]): string {
@@ -1624,9 +1563,6 @@ export class ArmyManager {
       modelTypesByEntity,
       forceRefresh,
       currentVisibleOrder: this.visibleArmyOrder,
-      forEachTrackedLabel: (visit) => {
-        this.entityIdLabels.forEach((_, entityId) => visit(entityId));
-      },
       getVisibleArmySlot: (entityId) => this.visibleArmyIndices.get(entityId),
       removeVisibleArmy: (entityId) => this.removeVisibleArmy(entityId),
       addVisibleArmy: (army, modelType) => this.addVisibleArmy(army, modelType),
@@ -1634,7 +1570,6 @@ export class ArmyManager {
         // Re-resolve cosmetics on force refresh to pick up debug override changes.
         this.refreshArmyInstance(army, slot, modelType, true);
       },
-      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
       commitVisibleArmyOrder: (entityIds) => this.setVisibleArmyOrder(entityIds),
       markVisibleArmyPresentationDirty: (buffersDirty) => this.markVisibleArmyPresentationDirty(buffersDirty),
       sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => this.toNumericId(a) - this.toNumericId(b)),
@@ -2051,7 +1986,6 @@ export class ArmyManager {
     if (removedSlot === null) {
       this.runMovementVisualCancelListeners(numericEntityId);
       this.removeArmyCompactLabel(entityId);
-      this.removeEntityIdLabel(entityId);
     }
 
     this.armyPresentations.delete(entityId);
@@ -2408,18 +2342,6 @@ export class ArmyManager {
     this.syncArmyBoundsForMovementState();
     this.armyModel.flushInstanceUploads();
 
-    if (this.frustumVisibilityDirty) {
-      const now = performance.now();
-      if (now - this.lastLabelVisibilityUpdate >= this.labelVisibilityIntervalMs) {
-        this.applyFrustumVisibilityToLabels();
-        this.frustumVisibilityDirty = false;
-        this.lastLabelVisibilityUpdate = now;
-      }
-    }
-
-    // Flush batched label pool operations to minimize layout thrashing
-    this.labelPool.flushBatch();
-
     // Throttled (~1.5s at 60fps) so the per-frame cost stays negligible.
     this.slotAuditFrameCounter = (this.slotAuditFrameCounter + 1) % 90;
     if (this.slotAuditFrameCounter === 0) {
@@ -2463,7 +2385,8 @@ export class ArmyManager {
     this.proceduralArmyPresentationBuffer.length = 0;
     this.desiredProceduralArmyEntityIds.clear();
 
-    if (this.contentLadder.proceduralCharacters) {
+    // Map-first boot prepares a hidden map before handing off to the requested scene.
+    if (this.contentLadder.armyModels && !useUIStore.getState().showBlankOverlay) {
       this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
     }
     this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
@@ -2480,7 +2403,7 @@ export class ArmyManager {
     const modelType = this.armyModel.getAssignedModelType(entityId);
     if (
       !instance ||
-      !shouldPresentArmyProcedurally(modelType) ||
+      !shouldPresentArmyProcedurally(modelType, this.contentLadder.proceduralCharacters) ||
       !isAnimationPositionVisible(instance.position, animationContext)
     ) {
       return;
@@ -2490,7 +2413,7 @@ export class ArmyManager {
     if (!presentation) {
       presentation = {
         category: army.category,
-        distanceToViewCenterSquared: animationContext?.cameraPosition?.distanceToSquared(instance.position),
+        distanceToCameraSquared: this.hexagonScene?.getCamera().position.distanceToSquared(instance.position),
         entityId,
         isNaval: isShipModel(modelType),
         isMoving: false,
@@ -2504,7 +2427,7 @@ export class ArmyManager {
 
     presentation.attachments = army.attachments;
     presentation.category = army.category;
-    presentation.distanceToViewCenterSquared = animationContext?.cameraPosition?.distanceToSquared(instance.position);
+    presentation.distanceToCameraSquared = this.hexagonScene?.getCamera().position.distanceToSquared(instance.position);
     presentation.isNaval = isShipModel(modelType);
     presentation.isMoving = this.armyModel.isEntityMoving(entityId);
     presentation.isSelected = this.selectedArmyForPath === army.entityId;
@@ -2706,14 +2629,12 @@ export class ArmyManager {
     this.lastMovingBoundsRefreshAt = now;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.frustumVisibilityDirty = true;
   }
 
   private refreshSettledArmyBounds() {
     this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.frustumVisibilityDirty = true;
   }
 
   /** Moving labels and attachments follow the same live model instances in one pass. */
@@ -2756,14 +2677,6 @@ export class ArmyManager {
         });
       }
     }
-  }
-
-  private applyFrustumVisibilityToLabels() {
-    syncArmyLabelVisibility<ID>({
-      labels: this.entityIdLabels.values(),
-      setLabelVisible: (label) => this.isArmyLabelVisible(label),
-      revealLabel: (entityId, label) => this.revealArmyLabel(entityId, label),
-    });
   }
 
   private getArmyWorldPositionInto(out: Vector3, hexCoords: Position): Vector3 {
@@ -2848,11 +2761,7 @@ export class ArmyManager {
       army.isMine = nextIsMine;
       army.color = nextColor;
       this.armyPresentations.set(entityId, army);
-
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        this.updateArmyLabelData(entityId, army, label);
-      }
+      this.refreshArmyCompactLabel(army);
 
       if (this.visibleArmyIndices.has(entityId)) {
         updatedVisible.push(army);
@@ -2881,127 +2790,26 @@ export class ArmyManager {
 
     this.armyModel.flushInstanceUploads();
     this.syncVisibleSlots();
-    this.frustumVisibilityDirty = true;
   }
 
-  private async addEntityIdLabel(army: ArmyData, position: Vector3) {
-    const { label } = this.labelPool.acquire(() => {
-      const element = createArmyLabel(army, this.currentCameraView);
-      return new CSS2DObject(element);
-    });
-
-    initializeArmyLabelState({
-      label,
-      entityId: army.entityId,
-      position,
-    });
-    configureArmyLabelHoverPriority(label);
-
-    this.entityIdLabels.set(army.entityId, label);
-    this.armyModel.addLabel(this.toNumericId(army.entityId), label);
-
-    this.updateArmyLabelData(army.entityId, army, label);
-    this.frustumVisibilityDirty = true;
-  }
-
+  /** Opens the army's plate: the pointer is on its tile. */
   public showLabel(entityId: ID): HoverLabelShowResult {
-    const army = this.armyPresentations.get(entityId);
-    // One of the player's own numbered armies has no second label: its plate carries its number and stamina, its
-    // dock card the rest.
-    if (!army || this.resolveOwnArmyNumber(army) !== undefined) {
-      return { status: "missing" };
-    }
-
-    const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-    if (this.entityIdLabels.has(army.entityId)) {
-      const label = this.entityIdLabels.get(army.entityId)!;
-      const wasDetached = label.parent !== this.labelsGroup;
-      const wasHidden = label.visible !== true || label.element.style.display === "none";
-      syncArmyLabelPresentationState({
-        label,
-        position,
-      });
-      this.revealArmyLabel(entityId, label);
-      label.visible = true;
-      label.element.style.display = "";
-      this.updateArmyLabelData(entityId, army, label);
-      this.compactLabelRenderer.setHover(entityId);
-      if (wasDetached || wasHidden) {
-        this.frustumVisibilityDirty = true;
-        return { status: "reattached" };
-      }
-      return { status: "unchanged" };
-    }
-
-    this.addEntityIdLabel(army, position);
-    this.compactLabelRenderer.setHover(entityId);
-    this.frustumVisibilityDirty = true;
+    if (!this.armyPresentations.has(entityId)) return { status: "missing" };
+    this.plates.setHover(entityId);
     return { status: "shown" };
   }
 
-  public hideLabel(entityId: ID): void {
-    this.removeEntityIdLabel(entityId);
-    this.compactLabelRenderer.clearHover();
-    this.frustumVisibilityDirty = true;
+  public hideLabel(_entityId: ID): void {
+    this.plates.clearHover();
   }
 
   public hideAllLabels(): void {
-    removeArmyLabels({
-      trackedLabelEntityIds: Array.from(this.entityIdLabels.keys()),
-      shouldRetainLabel: () => false,
-      removeEntityIdLabel: (armyId) => this.removeEntityIdLabel(armyId),
-    });
-    this.compactLabelRenderer.clearHover();
-    this.frustumVisibilityDirty = true;
+    this.plates.clearHover();
   }
 
-  public setLabelRenderDistance(distance: number): void {
-    this.labelRenderDistance = distance;
-    // Re-evaluate label visibility on the next update cycle.
-    this.frustumVisibilityDirty = true;
-  }
-
-  private isArmyLabelVisible(label: CSS2DObject): boolean {
-    if (this.labelRenderDistance < Infinity) {
-      const camera = this.hexagonScene?.getCamera();
-      if (camera && camera.position.distanceTo(label.position) > this.labelRenderDistance) {
-        return false;
-      }
-    }
-    return this.visibilityManager?.isPointVisible(label.position) ?? true;
-  }
-
-  private revealArmyLabel(entityId: ID, label: CSS2DObject) {
-    revealArmyLabelState({
-      label,
-      labelsGroup: this.labelsGroup,
-      army: this.armyPresentations.get(entityId),
-      renderLabel: (army) => updateArmyLabel(label.element, army, this.currentCameraView),
-    });
-  }
-
+  /** A scene leaving the map leaves no plate open; the next hover opens one again. */
   removeLabelsFromScene() {
-    this.armyModel.removeLabelsFromScene();
-  }
-
-  removeLabelsExcept(entityId?: ID) {
-    this.armyModel.removeLabelsExcept(entityId ? this.toNumericId(entityId) : undefined);
-  }
-
-  addLabelsToScene() {
-    this.armyModel.addLabelsToScene();
-  }
-
-  private removeEntityIdLabel(entityId: ID) {
-    const label = this.entityIdLabels.get(entityId);
-    if (!label) {
-      return;
-    }
-
-    this.armyModel.removeLabel(this.toNumericId(entityId));
-    this.labelPool.release(label);
-    this.entityIdLabels.delete(entityId);
-    this.frustumVisibilityDirty = true;
+    this.plates.clearHover();
   }
 
   private handleCameraViewChange = (view: CameraView) => {
@@ -3021,16 +2829,12 @@ export class ArmyManager {
 
     // Update the ArmyModel's camera view
     this.armyModel.setCurrentCameraView(view);
-
-    // Apply label transitions using the centralized function
-    applyLabelTransitions(this.entityIdLabels, view);
     this.applyContentLadder(resolveWorldmapContentLadder(view));
   };
 
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
     this.armyModel.setModelsVisible(ladder.armyModels);
-    this.labelsGroup.visible = ladder.textLabels !== "none";
     this.resyncVisibleArmyCompactLabels();
   }
 
@@ -3177,8 +2981,6 @@ ${
       army.currentStamina = staminaSnapshot.current;
       army.maxStamina = staminaSnapshot.max;
       army.foodBlocked = this.resolveFoodBlocked(entityId, army.isMine);
-      const label = this.entityIdLabels.get(entityId);
-      if (label) this.updateArmyLabelData(entityId, army, label);
       this.refreshArmyCompactLabel(army);
     } catch {
       // One bad entity must not block the others.
@@ -3197,42 +2999,9 @@ ${
         // Only update if timer has changed or expired
         if (army.battleTimerLeft !== newBattleTimerLeft) {
           army.battleTimerLeft = newBattleTimerLeft;
-
-          // Update visible label if it exists
-          const label = this.entityIdLabels.get(entityId);
-          if (label) {
-            this.updateArmyLabelData(entityId, army, label);
-          }
         }
       }
     });
-  }
-
-  /**
-   * Update an army label with fresh data
-   */
-  private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    const layoutDataKey = `${buildArmyLabelLayoutDataKey(army)}-${army.color}`;
-    const staminaDataKey = buildArmyLabelStaminaDataKey(army);
-
-    syncArmyLabelContentState({
-      label: existingLabel,
-      layoutDataKey,
-      staminaDataKey,
-      labelsAttachedToScene: this.labelsGroup.parent !== null,
-      renderLabel: () => updateArmyLabel(existingLabel.element, army, this.currentCameraView),
-      renderStamina: () => this.updateArmyLabelStamina(existingLabel.element, army),
-    });
-  }
-
-  private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
-    const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
-    if (!staminaBar || army.currentStamina === undefined) {
-      updateArmyLabel(labelElement, army, this.currentCameraView);
-      return;
-    }
-
-    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina);
   }
 
   /**
@@ -3248,12 +3017,8 @@ ${
     } else {
       army.attackedFromDegrees = degrees;
     }
-
-    // Update label
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.updateArmyLabelData(entityId, army, label);
-    }
+    // Under attack lifts the plate's priority.
+    this.refreshArmyCompactLabel(army);
   }
 
   private applyExplorerTroopsPresentationUpdate(explorerTroops: ExplorerTroopsComponentValue): void {
@@ -3304,11 +3069,7 @@ ${
 
     army.battleCooldownEnd = explorerTroops.troops.battle_cooldown_end;
     army.battleTimerLeft = getBattleTimerLeft(explorerTroops.troops.battle_cooldown_end);
-
-    const label = this.entityIdLabels.get(entityId);
-    if (label) {
-      this.updateArmyLabelData(entityId, army, label);
-    }
+    this.refreshArmyCompactLabel(army);
   }
 
   private refreshArmyPositionPresentation(army: ArmyData): void {
@@ -3352,11 +3113,6 @@ ${
     this.unsubscribeStructureOwnership = undefined;
     this.armyProjectionSyncs.clear();
 
-    if (this.unsubscribeVisibility) {
-      this.unsubscribeVisibility();
-      this.unsubscribeVisibility = undefined;
-    }
-
     this.unsubscribePlayers?.();
     this.unsubscribePlayers = undefined;
     if (this.unsubscribeAccountStore) {
@@ -3377,12 +3133,6 @@ ${
       clearInterval(this.debugStatsIntervalId);
       this.debugStatsIntervalId = undefined;
     }
-
-    this.entityIdLabels.forEach((label, entityId) => {
-      this.armyModel.removeLabel(this.toNumericId(entityId));
-      this.labelPool.release(label);
-    });
-    this.entityIdLabels.clear();
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
@@ -3408,14 +3158,11 @@ ${
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();
 
-    // Clear label pool storage after dispose ensures detached DOM
-    this.labelPool.clear();
-
     this.attachmentManager.clear();
     this.activeArmyAttachmentEntities.clear();
     this.armyAttachmentSignatures.clear();
 
-    this.compactLabelRenderer.dispose();
+    this.plates.dispose();
 
     // Clean up any other resources...
   }

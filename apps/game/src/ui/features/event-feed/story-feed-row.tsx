@@ -2,20 +2,21 @@ import {
   battleRollsOf,
   extractRoleLabel,
   findSegmentValue,
-  formatWinnerName,
   normalizePresentationTroops,
   parsePresentationDescription,
 } from "@/ui/features/story-events/story-event-utils";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure, useNavigateToMapView, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { relicChestShares } from "@bibliothecadao/types";
 import { Position, configManager, structureMapPosition, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { formatFeedTime } from "./important-feed-rows";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { formatClockTime } from "@bibliothecadao/eternum";
 import { storyPayloadId } from "@/utils/native-id";
 
-export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
+function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
   const coord = event.storyPayload.end_coord ?? event.storyPayload.coord;
   if (coord && typeof coord === "object" && "x" in coord && "y" in coord) {
     return Position.fromContract({ x: Number(coord.x), y: Number(coord.y) });
@@ -33,21 +34,59 @@ export function resolveStoryEventPosition(event: ProcessedStoryEvent, store: Nat
   return null;
 }
 
-export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
+/** Where an opened crate's relics are held: the army or its home structure, whichever got most of them. */
+type RelicHolder = { kind: "army"; id: number } | { kind: "structure"; id: number; position: Position };
+
+/**
+ * The holder of a crate's relics, while the opening army stands (its row names its home): its pack's army relics went
+ * to it and the rest to its home, so the row opens whichever got most. Null for any other story, or once the army is
+ * gone and its home unknown.
+ */
+function storyRelicHolder(event: ProcessedStoryEvent, store: NativeFactStore): RelicHolder | null {
+  if (event.story !== "RelicChestOpened" || event.storyPayload.explorer_id == null) return null;
+  const game_id = configManager.getActiveGameId();
+  const explorerId = storyPayloadId(event.storyPayload.explorer_id);
+  const army = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
+  if (!army) return null;
+  const { toArmy, toHome } = relicChestShares((event.storyPayload.relics as number[]).map(Number));
+  if (toArmy >= toHome) return { kind: "army", id: explorerId };
+  const home = store.get("Structure", { game_id, entity_id: army.owner });
+  const site = home && structureMapPosition(store, home);
+  return site ? { kind: "structure", id: safeInteger(army.owner), position: Position.fromContract(site) } : null;
+}
+
+/**
+ * Opens a story where it happened, for the Events card and the log alike. An opened crate's row selects what holds
+ * its relics: an army pack's army (from the realm view, on the world map once it is shown), a structure pack's realm.
+ * Any other row, or a crate whose army is gone, flies to its tile. Null when the story has no place left to show.
+ */
+export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null {
   const {
+    setup,
     setup: { store },
   } = useGame();
   useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
   const navigate = useNavigateToMapView();
+  const selectArmy = useSelectArmyOnMap();
+  const goToStructure = useGoToStructure(setup);
+  const { isMapView } = useQuery();
+  const holder = storyRelicHolder(event, store);
   const position = resolveStoryEventPosition(event, store);
+  if (holder?.kind === "structure") return () => void goToStructure(holder.id, holder.position, isMapView);
+  if (holder) return () => selectArmy(holder.id);
+  return position ? () => navigate(position) : null;
+}
+
+export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
+  const open = useStoryOpener(event);
   const battle = event.story === "BattleEvent";
   return (
     <button
       type="button"
-      disabled={!position}
-      onClick={() => position && navigate(position)}
-      title={position ? event.presentation.description : "This event’s location is no longer available"}
-      className="block w-full px-3 py-2 text-left !font-sans !text-sm text-gold enabled:hover:bg-gold/10 disabled:cursor-default"
+      disabled={!open}
+      onClick={() => open?.()}
+      title={open ? event.presentation.description : "This event’s location is no longer available"}
+      className="block w-full px-3 py-2 text-left !font-sans !text-[11px] normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:cursor-default"
     >
       {battle ? (
         <BattleDetails description={event.presentation.description} />
@@ -55,9 +94,9 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
         <>
           <span className="flex justify-between gap-2 font-normal">
             <span className="truncate">{event.presentation.title}</span>
-            <span className="shrink-0 tabular-nums text-kit-muted">{formatFeedTime(event.timestampMs)}</span>
+            <span className="shrink-0 tabular-nums text-gold/50">{formatClockTime(event.timestampMs)}</span>
           </span>
-          <span className="line-clamp-2 text-kit-muted">{event.presentation.description}</span>
+          <span className="line-clamp-2 text-gold/65">{event.presentation.description}</span>
         </>
       )}
     </button>
@@ -70,25 +109,25 @@ function BattleDetails({ description }: { description?: string }) {
   const defender = extractRoleLabel(description, "Defender");
   const forces = (role: string) =>
     normalizePresentationTroops(findSegmentValue(segments, (label) => label === `${role} forces`));
-  const winner = formatWinnerName(findSegmentValue(segments, (label) => label === "Winner"));
+  const outcome = findSegmentValue(segments, (label) => label === "Outcome");
   const rolls = battleRollsOf(description);
   return (
     <>
       <span className="flex gap-1 font-normal">
         <span aria-hidden>⚔</span>
         <span className="truncate">
-          {attacker} <span className="text-kit-muted">vs</span> {defender}
+          {attacker} <span className="text-gold/50">vs</span> {defender}
         </span>
       </span>
       <span className="mt-1 block text-gold/70">
         {forces("Attacker")} vs {forces("Defender")}
       </span>
       {rolls && (
-        <span className="block text-kit-muted">
-          d20 {rolls.attacker} <span className="text-kit-muted">vs</span> {rolls.defender}
+        <span className="block text-gold/60">
+          d20 {rolls.attacker} <span className="text-gold/40">vs</span> {rolls.defender}
         </span>
       )}
-      {winner && <span className="block text-emerald-300">Winner: {winner}</span>}
+      {outcome && <span className="block text-emerald-300">{outcome}</span>}
     </>
   );
 }

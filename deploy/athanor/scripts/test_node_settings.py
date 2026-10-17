@@ -13,8 +13,12 @@ class NodeSettingsTest(unittest.TestCase):
         self.assertEqual(dev["services"]["prepare"]["environment"]["BLOCK_TIME"], "1s")
         node = compose["services"]["madara"]
         self.assertTrue(node["image"].endswith("40934db1cdcd0e37058531c9bda152b336a0b594e349cbf2578f3893e0cc20e2"))
-        for key in ("mem_limit", "memswap_limit", "cpuset", "cpus", "cpu_quota", "ulimits", "cgroup_parent", "pids_limit"):
+        for key in ("mem_limit", "memswap_limit", "cpuset", "cpus", "cpu_quota", "ulimits", "pids_limit"):
             self.assertNotIn(key, node)
+        # The node's one placement: alone in its shard's slice, so the metrics collector can read its memory, and outside
+        # athanor.slice, so a measurement node keeps the host and none of the slice's limits.
+        self.assertEqual(node["cgroup_parent"], "node-athanor-smoke.slice")
+        self.assertEqual(compose["services"]["metrics"]["environment"]["NODE_SLICE"], "node-athanor-smoke.slice")
         self.assertIn("--db-max-kept-snapshots=0", node["command"])
         self.assertEqual(node["environment"]["MALLOC_ARENA_MAX"], "2")
         command = [flag for flag in node["command"] if flag != "--db-max-kept-snapshots=0"]

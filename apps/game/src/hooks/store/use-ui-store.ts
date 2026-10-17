@@ -80,16 +80,8 @@ interface UIStore {
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
-  transferPanelSourceId: number | null;
-  setTransferPanelSourceId: (entityId: number | null) => void;
-  // Default tab to open inside the unified Logistics view (Arrivals / Transfer /
-  // Automation / All Balances). WalletPill's swap sets this to "transfer" so the
-  // panel opens straight to the send flow; the sidebar pill defaults to arrivals.
-  logisticsActiveTab: "arrivals" | "transfer" | "automation" | "balances";
-  setLogisticsActiveTab: (tab: "arrivals" | "transfer" | "automation" | "balances") => void;
-  // Cross-component signal: when a non-null id is set, the StructureEditPopup
-  // (mounted inside LeftCommandSidebar) opens for that structure. The picker
-  // popover writes this from the top-zone pills without needing prop-drilling.
+  // Cross-component signal: when a non-null id is set, the StructureEditPopup (mounted by LeftViewSurfaces) opens for
+  // that structure. The holding card's rename and the structure list's pencil write it.
   pendingRenameStructureEntityId: number | null;
   setPendingRenameStructureEntityId: (entityId: number | null) => void;
   // Force-refresh counter bumped after a rename writes to localStorage. Consumers
@@ -211,7 +203,7 @@ export const useUIStore = create(
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => {
       useTooltipStore.getState().setTooltip(null);
-      // Every way into a workspace (Build, Logistics, Military) comes through here: before play opens it stays shut.
+      // Every way into a workspace (Build, Military) comes through here: before play opens it stays shut.
       if (resolveLeftViewSurface(view) !== null && refusedBeforePlay()) return;
       set({ leftNavigationView: view });
     },
@@ -242,10 +234,6 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    transferPanelSourceId: null,
-    setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
-    logisticsActiveTab: "arrivals",
-    setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
     pendingRenameStructureEntityId: null,
     setPendingRenameStructureEntityId: (entityId: number | null) => set({ pendingRenameStructureEntityId: entityId }),
     structureNameVersion: 0,

@@ -51,7 +51,7 @@ export const CompactBuildingCard = ({
         <BuildingThumbnail building={building} alt="" className="h-14 w-14 shrink-0 object-contain" />
         <div className="min-w-0 flex-1">
           <h3 className="text-base font-semibold leading-tight text-gold">{name}</h3>
-          <p className="text-sm text-gold/75">
+          <p className="text-xs text-gold/75">
             {count} built{status && ` · ${status}`}
           </p>
         </div>
@@ -66,7 +66,7 @@ export const CompactBuildingCard = ({
         </button>
       </div>
       <div className="mt-2 space-y-1">
-        <p className="text-sm text-gold/75">Cost · owned / needed</p>
+        <p className="text-xs text-gold/75">Cost · owned / needed</p>
         <RequirementChips requirements={requirements} />
         {disabledReason && <p className="text-sm text-gold/85">{disabledReason}</p>}
       </div>

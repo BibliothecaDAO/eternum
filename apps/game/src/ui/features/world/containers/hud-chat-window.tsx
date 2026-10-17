@@ -137,7 +137,7 @@ export function HudChatWindow({
         // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
         onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
         className={cn(
-          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans ",
+          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
           OVERLAY_SURFACE_BASE,
           "hover:border-gold/50",
           foldToIcon && "portrait:w-auto portrait:self-start",
@@ -146,7 +146,7 @@ export function HudChatWindow({
         <SemanticIcon name="chat" className="h-3.5 w-3.5 shrink-0 text-gold/70" />
         <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
         {initializer && !open && unread > 0 && (
-          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-sm text-dark-brown">
+          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
             {unread}
           </span>
         )}

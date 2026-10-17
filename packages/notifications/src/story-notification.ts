@@ -52,9 +52,7 @@ export function storyNotificationCopy(
     case "RaidEvent":
       return raidCopy(payload, recipient);
     case "StructureCapturedStory":
-      return compareInteger(payload.new_owner, recipient) === true
-        ? { title: "The stronghold is yours", body: "Your banner now flies over the captured site." }
-        : { title: "A stronghold has fallen", body: "The enemy broke through. Rally the realm." };
+      return captureCopy(payload, recipient);
     case "RealmCreatedStory":
       return { title: "A new realm rises", body: "Your banner now flies over fresh lands." };
     case "BuildingPlacementStory":
@@ -98,6 +96,15 @@ function nativeBattleCopy(payload: Record<string, unknown>, recipient: string | 
   return compareInteger(payload.winner_id, side) === true
     ? { title: "Victory on the field", body: "Your forces carried the day." }
     : { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
+}
+
+/** A capture tells both sides what changed hands: a player's structure takes its armies and incoming deliveries along. */
+function captureCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
+  if (compareInteger(payload.new_owner, recipient) !== true)
+    return { title: "A stronghold has fallen", body: "The enemy took it, with its armies and incoming deliveries." };
+  return compareInteger(payload.previous_owner, 0) === false
+    ? { title: "The stronghold is yours", body: "Its armies and incoming deliveries are yours too." }
+    : { title: "The stronghold is yours", body: "Your banner now flies over the captured site." };
 }
 
 function raidCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {

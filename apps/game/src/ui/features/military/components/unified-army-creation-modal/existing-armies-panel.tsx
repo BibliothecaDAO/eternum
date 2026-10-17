@@ -10,9 +10,10 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
-import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import { type ArmyInfo, type ID, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import { memo, useMemo, useState } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 
 interface ExistingArmiesPanelProps {
   structureId: ID;
@@ -32,13 +33,13 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
     <div className={cn("rounded-md border border-gold/25 bg-black/25 px-2.5 py-2", className)}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className={cn("flex items-center gap-1.5", HUD_LABEL, "text-gold/75")}>
-          <SemanticIcon name="target" className="h-3 w-3 text-kit-muted" />
+          <SemanticIcon name="target" className="h-3 w-3 text-gold/65" />
           Existing armies
         </span>
-        <span className={cn(HUD_LABEL, "text-kit-muted")}>{ownedArmies.length}</span>
+        <span className={cn(HUD_LABEL, "text-gold/55")}>{ownedArmies.length}</span>
       </div>
       {ownedArmies.length === 0 ? (
-        <p className={cn(HUD_BODY_MUTED, "text-sm")}>None deployed yet.</p>
+        <p className={cn(HUD_BODY_MUTED, "text-[11px]")}>None deployed yet.</p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] gap-1.5 lg:max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {ownedArmies.map((army) => (
@@ -56,7 +57,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const selectOnMap = useUIStore((state) => state.selectOnMap);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const timestamp = useCurrentDefaultTick();
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(army.entityId);
   const [deleting, setDeleting] = useState(false);
 
   // troops.count is the raw precision value; currencyFormat divides internally.
@@ -77,14 +78,11 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   }, [army.troops]);
 
   const staminaPercent = stamina && maxStamina > 0 ? Math.min(100, (Number(stamina.amount) / maxStamina) * 100) : 0;
-  const staminaTone =
-    staminaPercent > 66 ? "bg-emerald-400/80" : staminaPercent > 33 ? "bg-amber-400/80" : "bg-rose-400/80";
 
-  const troopResourceTrait = useMemo(() => {
-    if (!army.troops) return "";
-    const id = getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier);
-    return resources.find((resource) => resource.id === id)?.trait ?? "";
-  }, [army.troops]);
+  const troopResource = useMemo(
+    () => (army.troops ? getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier) : null),
+    [army.troops],
+  );
 
   const handleJump = () => {
     selectOnMap({ kind: "hex", hex: { col: Number(army.position.x), row: Number(army.position.y) } });
@@ -100,7 +98,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       await requireActiveGameClient().actions.deleteExplorerArmy({ structureId, explorerId: army.entityId });
       // Free the hex on the deploy map.
       bumpMilitaryMapVersion();
-      setConfirming(false);
+      close();
     } catch (error) {
       console.error("Failed to delete army", error);
     } finally {
@@ -112,25 +110,27 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     <li className="flex items-center gap-2 rounded-md border border-gold/20 bg-black/30 px-2 py-1.5" title={army.name}>
       <span
         className={cn(
-          "shrink-0 rounded px-1.5 py-0.5 text-sm font-bold border leading-none",
+          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
           getTierStyle(army.troops?.tier as TroopTier),
         )}
       >
         {army.troops?.tier ?? "—"}
       </span>
-      {troopResourceTrait && (
-        <ResourceIcon withTooltip={false} resource={troopResourceTrait} size="sm" className="shrink-0" />
+      {troopResource !== null && (
+        <ResourceIcon withTooltip={false} resource={troopResource} size="sm" className="shrink-0" />
       )}
-      <span className="text-sm font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
+      <span className="text-[12px] font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
           title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
         >
+          <span className="shrink-0 text-[10px] text-gold/65">Stamina</span>
           <div className="relative h-2 flex-1 min-w-0 overflow-hidden rounded-sm bg-black/40">
-            <div className={cn("absolute inset-y-0 left-0", staminaTone)} style={{ width: `${staminaPercent}%` }} />
+            {/* A neutral bar: low stamina is a state to read, not an alarm. */}
+            <div className="absolute inset-y-0 left-0 bg-gold/60" style={{ width: `${staminaPercent}%` }} />
           </div>
-          <span className="shrink-0 text-sm tabular-nums text-kit-muted">
+          <span className="shrink-0 text-[10px] tabular-nums text-gold/65">
             {Number(stamina.amount)}/{maxStamina}
           </span>
         </div>
@@ -138,7 +138,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       <div className="flex shrink-0 items-center gap-0.5">
         {!confirming && <IconButton icon={"map" as const} title="Navigate to army" onClick={handleJump} tone="gold" />}
         {!confirming ? (
-          <IconButton icon={"trash" as const} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
+          <IconButton icon={"trash" as const} title="Disband army" onClick={ask} tone="rose" />
         ) : (
           <>
             <IconButton
@@ -148,13 +148,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
               tone="emerald"
               spinning={deleting}
             />
-            <IconButton
-              icon={"close" as const}
-              title="Cancel"
-              onClick={() => setConfirming(false)}
-              tone="rose"
-              disabled={deleting}
-            />
+            <IconButton icon={"close" as const} title="Cancel" onClick={close} tone="rose" disabled={deleting} />
           </>
         )}
       </div>

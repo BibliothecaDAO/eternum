@@ -1,3 +1,4 @@
+import type { NodeHealth } from "./node-health";
 import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
 import type { HeraldGameLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { required, number } from "./native/values";
@@ -48,6 +49,8 @@ interface HeraldHttpState {
     "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
   >;
   undecodableEventCount: () => number;
+  /** The node's last memory sample (node-health.ts); null while none can be read. */
+  nodeHealth: () => NodeHealth | null;
 }
 
 const HISTORY_PAGE_LIMIT = 500;
@@ -145,6 +148,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
           service: "herald",
           success: !failure,
           undecodable_events: state.undecodableEventCount(),
+          node: state.nodeHealth(),
         },
         failure ? 503 : 200,
       );

@@ -40,6 +40,8 @@ export function validateInputs(input: Inputs, target: Target) {
   )
     throw new PublicError("Use the Alchemy mainnet HTTPS endpoint");
   if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
+  if (input.alertEmail !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.alertEmail))
+    throw new PublicError("The alert email must be an email address");
   if (!/^[1-9][0-9]*$/.test(input.amount) || BigInt(input.amount) * WEI >= 1n << 128n)
     throw new PublicError("Deposit must be positive whole tokens fitting u128 wei");
   validateDates(input);

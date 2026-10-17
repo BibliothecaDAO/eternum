@@ -337,7 +337,8 @@ export abstract class HexagonScene {
   }
 
   private setupInputHandlers(): void {
-    this.inputManager.addListener("mousemove", throttle(this.handleMouseMove.bind(this), 50));
+    this.inputManager.addListener("mousemove", this.throttledMouseMove);
+    this.inputManager.addListener("mouseleave", this.handleMouseLeave.bind(this));
     this.inputManager.addListener("dblclick", this.handleDoubleClick.bind(this));
     this.inputManager.addListener("click", this.handleClick.bind(this));
     this.inputManager.addListener("contextmenu", this.handleRightClick.bind(this));
@@ -370,6 +371,15 @@ export abstract class HexagonScene {
 
   public deactivateInputSurface(): void {
     this.inputManager.deactivate();
+  }
+
+  private readonly throttledMouseMove = throttle(this.handleMouseMove.bind(this), 50);
+
+  /** The pointer left the map for the HUD or the page: no tile is under it, and a throttled move must not say one is. */
+  private handleMouseLeave(): void {
+    this.throttledMouseMove.cancel();
+    this.interactiveHexManager.clearHover();
+    this.onHexagonMouseMove(null);
   }
 
   private handleMouseMove(event: MouseEvent, raycaster: Raycaster): void {

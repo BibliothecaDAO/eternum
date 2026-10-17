@@ -81,7 +81,7 @@ export const ContextMenu = () => {
             </button>
           )}
           <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{menu.title}</span>
-          {menu.subtitle && <span className="shrink-0 text-sm text-kit-muted">{menu.subtitle}</span>}
+          {menu.subtitle && <span className="shrink-0 text-[10px] text-gold/50">{menu.subtitle}</span>}
         </div>
       )}
       <div className="flex flex-col py-1">
@@ -94,7 +94,7 @@ export const ContextMenu = () => {
             title={action.hint}
             onClick={() => select(action)}
             className={cn(
-              "flex h-8 items-center gap-2 rounded-md px-2 text-left font-sans ",
+              "flex h-8 items-center gap-2 rounded-md px-2 text-left font-sans normal-case tracking-normal",
               HUD_BODY,
               action.disabled ? "opacity-45" : "hover:bg-gold/10",
             )}
@@ -105,7 +105,7 @@ export const ContextMenu = () => {
             </span>
             <span className="min-w-0 flex-1 truncate">{action.label}</span>
             {action.children?.length ? (
-              <SemanticIcon name="chevron-right" className="h-3.5 w-3.5 shrink-0 text-kit-muted" />
+              <SemanticIcon name="chevron-right" className="h-3.5 w-3.5 shrink-0 text-gold/50" />
             ) : null}
           </button>
         ))}

@@ -18,6 +18,12 @@ interface TroopSelectionGridProps {
   compact?: boolean;
 }
 
+/** The options' tiers row by row: the first tier of every kind, then the second, so each kind keeps a column. */
+const tierRows = (options: TroopSelectionOption[]) =>
+  Array.from({ length: Math.max(0, ...options.map((option) => option.tiers.length)) }, (_, index) =>
+    options.flatMap((option) => (option.tiers[index] ? [{ option, tier: option.tiers[index] }] : [])),
+  );
+
 export const TroopSelectionGrid = ({
   options,
   selected,
@@ -38,9 +44,15 @@ export const TroopSelectionGrid = ({
 
   if (compact) {
     return (
+      // A column per kind under its name, as the Military window lays them out, its tiers going down.
       <div className="grid grid-cols-3 gap-2 p-1" role="group" aria-label="Available troops">
-        {options.flatMap((option) =>
-          option.tiers.map((tier) => {
+        {options.map((option) => (
+          <span key={option.type} className="text-center text-xs font-semibold text-gold/80">
+            {option.label}
+          </span>
+        ))}
+        {tierRows(options).flatMap((row) =>
+          row.map(({ option, tier }) => {
             const key = `${option.type}-${tier.tier}`;
             const isSelected = selected.type === option.type && selected.tier === tier.tier;
             const reason =
@@ -58,14 +70,14 @@ export const TroopSelectionGrid = ({
                 disabled={Boolean(reason)}
                 title={reason ?? `${option.label} ${tier.tier}`}
                 className={clsx(
-                  "relative flex min-w-0 flex-col items-center rounded border px-1 pt-3 pb-1 text-sm tabular-nums disabled:grayscale disabled:opacity-40",
+                  "relative flex min-w-0 flex-col items-center rounded border px-1 pt-3 pb-1 text-xs tabular-nums disabled:grayscale disabled:opacity-40",
                   isSelected ? "border-gold bg-gold/15" : "border-gold/25",
                 )}
                 onClick={() => onSelect(option.type, tier.tier)}
               >
-                <span className="absolute top-0.5 right-1 text-sm">{tier.tier}</span>
-                <ResourceIcon resource={tier.resourceTrait} size="lg" className="!h-10 !w-10" withTooltip={false} />
-                <span className="max-w-full truncate rounded bg-black/40 px-1 text-sm">
+                <span className="absolute top-0.5 right-1 text-[10px]">{tier.tier}</span>
+                <ResourceIcon resource={tier.resourceId} size="lg" className="!h-10 !w-10" withTooltip={false} />
+                <span className="max-w-full truncate rounded bg-black/40 px-1 text-[10px]">
                   {tier.available.toLocaleString()}
                 </span>
               </button>
@@ -83,7 +95,7 @@ export const TroopSelectionGrid = ({
           <div key={option.type} className="flex flex-col gap-2">
             {/* Header */}
             <div className="text-center py-1 border-b border-gold/30">
-              <span className="text-gold text-sm font-bold ">{option.label}</span>
+              <span className="text-gold text-xs font-bold uppercase tracking-wider">{option.label}</span>
             </div>
 
             {/* Tier Cards */}
@@ -110,14 +122,14 @@ export const TroopSelectionGrid = ({
                     >
                       <div
                         className={clsx(
-                          "flex items-center justify-center px-1 py-0.5 rounded border text-sm font-bold",
+                          "flex items-center justify-center px-1 py-0.5 rounded border text-xxs font-bold",
                           getTierStyle(tierOption.tier),
                         )}
                       >
                         {tierOption.tier}
                       </div>
-                      <ResourceIcon resource={tierOption.resourceTrait} size="xs" withTooltip={false} />
-                      <span className="text-sm text-gray-600 font-semibold ml-auto">0</span>
+                      <ResourceIcon resource={tierOption.resourceId} size="xs" withTooltip={false} />
+                      <span className="text-xs text-gray-600 font-semibold ml-auto">0</span>
                     </div>
                   );
                 }
@@ -132,7 +144,7 @@ export const TroopSelectionGrid = ({
                       isSelected
                         ? "border-gold bg-gradient-to-br from-gold/20 to-gold/10 shadow-lg shadow-gold/30 scale-105"
                         : canSelect
-                          ? "border-brown/40 bg-gradient-to-br from-brown/10 to-brown/5 hover:border-gold/50 hover:shadow-md hover:scale-102"
+                          ? "border-brown/40 bg-gradient-to-br from-brown/10 to-brown/5 hover:border-gold/50 hover:shadow-md"
                           : "border-brown/20 bg-brown/5 opacity-60 cursor-not-allowed",
                       isLockedOption && "pointer-events-none",
                     )}
@@ -143,7 +155,7 @@ export const TroopSelectionGrid = ({
                       {/* Tier Badge */}
                       <div
                         className={clsx(
-                          "flex items-center justify-center px-1 py-0.5 rounded border text-sm font-bold shadow-sm flex-shrink-0",
+                          "flex items-center justify-center px-1 py-0.5 rounded border text-xs font-bold shadow-sm flex-shrink-0",
                           getTierStyle(tierOption.tier),
                           isSelected && "shadow-md",
                         )}
@@ -153,7 +165,7 @@ export const TroopSelectionGrid = ({
 
                       {/* Resource Icon */}
                       <div className="flex-shrink-0">
-                        <ResourceIcon resource={tierOption.resourceTrait} size="sm" withTooltip={false} />
+                        <ResourceIcon resource={tierOption.resourceId} size="sm" withTooltip={false} />
                       </div>
 
                       {/* Count — min-w-0 + truncate so a large value can never
@@ -176,7 +188,7 @@ export const TroopSelectionGrid = ({
                     {/* Locked Overlay */}
                     {isLockedOption && (
                       <div className="absolute inset-0 rounded-lg bg-brown/80 backdrop-blur-sm flex items-center justify-center">
-                        <span className="text-sm font-bold text-gold/80 ">Locked</span>
+                        <span className="text-xxs font-bold text-gold/80 uppercase tracking-wide">Locked</span>
                       </div>
                     )}
                   </div>

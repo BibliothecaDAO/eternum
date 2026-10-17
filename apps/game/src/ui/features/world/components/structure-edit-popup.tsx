@@ -38,7 +38,7 @@ export const StructureEditPopup = ({
     <SurfaceFrame title="Edit Structure" onClose={onCancel} className="w-[480px] max-h-[calc(100vh-7rem)]">
       <div className="flex flex-col gap-4 p-4">
         <div>
-          <p className="text-sm text-kit-muted">Structure Name</p>
+          <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Name</p>
           <div className="mt-2 flex items-center gap-2">
             <input
               type="text"
@@ -54,21 +54,21 @@ export const StructureEditPopup = ({
             )}
           </div>
           {originalName && originalName !== currentName && (
-            <p className="mt-1 text-sm text-kit-muted">Original name: {originalName}</p>
+            <p className="mt-1 text-xxs text-gold/60">Original name: {originalName}</p>
           )}
-          <p className="mt-2 text-sm text-kit-muted">
+          <p className="mt-2 text-xxs text-gold/50">
             This change is only visible locally and does not sync with other players.
           </p>
         </div>
 
         {onUpdateColor && (
           <div>
-            <p className="text-sm text-kit-muted">Structure Color</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-gold/60">Structure Color</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => onUpdateColor(null)}
-                className={`flex items-center gap-2 rounded border px-2 py-1 text-sm transition ${
+                className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
                   groupColor === null ? "border-gold text-gold" : "border-gold/30 text-gold/70 hover:border-gold/50"
                 }`}
               >
@@ -81,7 +81,7 @@ export const StructureEditPopup = ({
                     type="button"
                     key={color.value}
                     onClick={() => onUpdateColor(color.value)}
-                    className={`flex items-center gap-2 rounded border px-2 py-1 text-sm transition ${
+                    className={`flex items-center gap-2 rounded border px-2 py-1 text-xs transition ${
                       isSelected
                         ? "border-gold text-gold ring-1 ring-gold/60"
                         : "border-gold/30 text-gold/70 hover:border-gold/50"

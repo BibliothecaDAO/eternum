@@ -12,10 +12,17 @@ import { EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/type
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
-import type { RelicHolderPreview } from "./player-relic-tray";
 import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+
+/** A structure or army holding a relic, with how many it holds: one choice of who activates it. */
+export interface RelicHolderPreview {
+  entityId: ID;
+  amount: number;
+  recipientType: RelicRecipientType;
+  entityType: EntityType;
+}
 
 interface RelicActivationSelectorProps {
   resourceId: ID;
@@ -61,16 +68,8 @@ const RelicActivationHolderCard = ({
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
   const parentRealmLabel = (() => {
-    if (holder.parentStructureName) {
-      const suffix = holder.parentStructureId != null ? ` (#${holder.parentStructureId})` : "";
-      return `${holder.parentStructureName}${suffix}`;
-    }
-
-    if (holder.parentStructureId != null) {
-      return `Realm #${holder.parentStructureId}`;
-    }
-
-    return null;
+    if (holder.parentStructureName) return holder.parentStructureName;
+    return holder.parentStructureId != null ? "Realm" : null;
   })();
 
   return (
@@ -78,12 +77,12 @@ const RelicActivationHolderCard = ({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-gold">{holder.entityName}</p>
-          <p className="text-sm text-kit-muted">ID: {holder.entityId}</p>
+          <p className="text-xs text-gold/60">ID: {holder.entityId}</p>
         </div>
-        <div className="text-sm font-semibold text-gold/70">Amount: {currencyFormat(holder.amount, 0)}</div>
+        <div className="text-xs font-semibold text-gold/70">Amount: {currencyFormat(holder.amount, 0)}</div>
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-semibold">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-semibold">
         <span
           className={`rounded px-2 py-1 ${
             compatible ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
@@ -101,7 +100,7 @@ const RelicActivationHolderCard = ({
       </div>
 
       {isArmyHolder && parentRealmLabel && (
-        <div className="mt-2 w-full text-sm text-kit-muted">Parent Realm · {parentRealmLabel}</div>
+        <div className="mt-2 w-full text-xxs text-gold/60">Parent Realm · {parentRealmLabel}</div>
       )}
 
       {isArmyHolder && holder.troops && (
@@ -123,7 +122,7 @@ const RelicActivationHolderCard = ({
         <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} className="mt-2" />
       )}
 
-      {activationError && <p className="mt-2 text-sm font-semibold text-red-300">{activationError}</p>}
+      {activationError && <p className="mt-2 text-xs font-semibold text-red-300">{activationError}</p>}
 
       <div className="mt-3 flex justify-end">
         <Button
@@ -201,26 +200,16 @@ export const RelicActivationSelector = ({
         const name = mode.structure.getName(structure.structure).name;
         map.set(String(id), name);
       } catch {
-        map.set(String(id), `Realm #${id}`);
+        map.set(String(id), "Structure");
       }
     });
 
     return map;
   }, [mode, playerStructures]);
 
-  const { relicInfo, resourceName, resourceKey, essenceCost } = useRelicMetadata(resourceId);
+  const { relicInfo, resourceName, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
 
-  const relicDescription = useMemo(() => {
-    if (!relicInfo) {
-      return undefined;
-    }
-
-    if (!relicInfo.duration) {
-      return relicInfo.effect;
-    }
-
-    return `${relicInfo.effect} (${relicInfo.duration})`;
-  }, [relicInfo]);
+  const relicDescription = relicInfo?.effectLine;
 
   const enrichedHolders = useMemo<EnrichedHolder[]>(() => {
     const resolveParentStructureName = (structureId: ID | null): string | null => {
@@ -243,9 +232,9 @@ export const RelicActivationSelector = ({
 
     return holders.map((holder) => {
       const entityInfo = mode.structure.getEntityInfo(holder.entityId, null, store);
-      const entityName = entityInfo?.name?.name ?? `Entity ${holder.entityId}`;
-      const selfId = toEntityId(holder.entityId, holder.entityId);
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
+      const entityName = entityInfo?.name?.name ?? (isArmy ? "Army" : "Structure");
+      const selfId = toEntityId(holder.entityId, holder.entityId);
       const explorerOwnerRaw = isArmy ? entityInfo?.explorer?.owner : undefined;
       const entityOwnerId = isArmy ? toEntityId(explorerOwnerRaw, selfId) : selfId;
       const hasParentStructure = isArmy && entityOwnerId !== selfId;
@@ -321,7 +310,7 @@ export const RelicActivationSelector = ({
     <SurfaceFrame title="Select Activation Target" onClose={onClose} className="w-[560px]" bodyClassName="p-4">
       <div className="space-y-5">
         <RelicSummary
-          resourceKey={resourceKey}
+          resourceId={relicResourceId}
           title={resourceName}
           subtitle={`Total available: ${visibleDisplayAmount}`}
           description={relicDescription}

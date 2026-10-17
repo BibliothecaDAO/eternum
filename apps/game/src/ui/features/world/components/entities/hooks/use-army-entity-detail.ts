@@ -6,7 +6,7 @@ import { usePlayerProfile } from "@/hooks/use-player-profile";
 import {
   configManager,
   getExplorerOwner,
-  getArmyName,
+  displayPlayerName,
   getArmyRelicEffects,
   getGuildFromPlayerAddress,
   isViewerOwner,
@@ -30,7 +30,8 @@ interface DerivedArmyData {
   maxStamina: number;
   staminaDisplay: ArmyStaminaPresentation | null;
   playerGuild?: { name: string } | undefined;
-  addressName?: string;
+  /** The army's owner by the one owner rule: the Vanguard when no player holds it. */
+  addressName: string;
   isMine: boolean;
   structureOwnerName?: string;
 }
@@ -98,7 +99,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
     const isMine = isViewerOwner(owner, userAddress);
 
-    const addressName = owner ? (ownerProfile.name ?? undefined) : getArmyName(armyEntityId, store);
+    const addressName = displayPlayerName(owner.toString(), ownerProfile.name);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
 

@@ -6,27 +6,33 @@ import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
-import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
+import { NEUTRAL_OWNER_NAME, ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
+import type { MmrForecast } from "./mmr-forecast";
+import { describeHyperstructureHold, type VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
 const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const ROW_HEIGHT = 44; // Approximate row height in pixels
 
 export interface PlayerCustom extends PlayerInfo {
-  structures: string[];
   isUser: boolean;
   isInvited: boolean;
   guild: GuildInfo | undefined;
   activityBreakdown: PlayerActivityBreakdown | null;
   includesLiveShareholderPoints: boolean;
+  /** The MMR the player would gain or lose if the game ended now; null where the ledger gave none. */
+  mmrDelta: number | null;
 }
 
 interface PlayerListProps {
   players: PlayerCustom[];
+  grants: VictoryPointGrants;
+  /** Whether the MMR column shows (a rated game), and what it says while the ledger has no answer. */
+  mmr: MmrForecast["status"];
   focusOwnPlayer?: boolean;
   viewPlayerInfo: (playerAddress: ContractAddress) => void;
   whitelistPlayer: (address: ContractAddress) => void;
@@ -48,13 +54,37 @@ interface PlayerWithActivityStats extends PlayerCustom {
 
 const formatActivityValue = (count: number, points: number): string => {
   if (count > 0 && points > 0) {
-    return `${COUNT_FORMATTER.format(count)} · ${currencyIntlFormat(points)} pts`;
+    return `${COUNT_FORMATTER.format(count)} · ${currencyIntlFormat(points)} points`;
   }
 
   if (count > 0) return COUNT_FORMATTER.format(count);
-  if (points > 0) return `${currencyIntlFormat(points)} pts`;
+  if (points > 0) return `${currencyIntlFormat(points)} points`;
   return "—";
 };
+
+/**
+ * The table's columns: fixed widths on wide screens, so the window is exactly the table's width; MMR adds one, as wide
+ * as its "if it ended now".
+ */
+const GRID_TEMPLATES = {
+  plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
+  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px_112px]",
+  tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]",
+  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px_112px]",
+} as const;
+
+/** A rating change as a player reads it: +26 in green, −11 in red, ±0, or a dash where the ledger gave none. */
+const MmrDeltaCell = ({ delta }: { delta: number | null }) => (
+  <div
+    className={clsx("text-right text-sm font-semibold tabular-nums md:text-center", {
+      "text-emerald-300": delta !== null && delta > 0,
+      "text-red-300": delta !== null && delta < 0,
+      "text-gold/60": delta === null || delta === 0,
+    })}
+  >
+    {delta === null ? "—" : delta > 0 ? `+${delta}` : delta < 0 ? `−${-delta}` : "±0"}
+  </div>
+);
 
 /** A column only wide screens have room for; a narrow row says it under the name instead. */
 const WIDE_ONLY = "hidden md:flex";
@@ -92,6 +122,8 @@ const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivitySta
 
 export const PlayerList = ({
   players,
+  grants,
+  mmr,
   viewPlayerInfo,
   whitelistPlayer,
   isLoading,
@@ -101,13 +133,8 @@ export const PlayerList = ({
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
   const [prevPositions, setPrevPositions] = useState<Map<string, number>>(new Map());
-  const leaderboardGridTemplate = useMemo(
-    () =>
-      showTribeDetails
-        ? "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[68px_minmax(0,_1.25fr)_minmax(0,_1.1fr)_minmax(0,_0.8fr)_minmax(0,_0.8fr)_minmax(0,_0.85fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_1fr)]"
-        : "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[68px_minmax(0,_1.7fr)_minmax(0,_0.9fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1.05fr)_minmax(0,_1.1fr)]",
-    [showTribeDetails],
-  );
+  const showMmr = mmr !== "off";
+  const leaderboardGridTemplate = GRID_TEMPLATES[`${showTribeDetails ? "tribe" : "plain"}${showMmr ? "Mmr" : ""}`];
 
   useEffect(() => {
     if (!selectedPlayerAddress) {
@@ -201,10 +228,16 @@ export const PlayerList = ({
   );
 
   return (
-    <div className="flex flex-col h-full">
-      <PlayerListHeader showTribeDetails={showTribeDetails} gridTemplateClass={leaderboardGridTemplate} />
+    <div className="flex flex-col">
+      <ScoringRulesLine showTribeDetails={showTribeDetails} grants={grants} />
+      <PlayerListHeader
+        showTribeDetails={showTribeDetails}
+        grants={grants}
+        mmr={mmr}
+        gridTemplateClass={leaderboardGridTemplate}
+      />
 
-      <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent flex-1">
+      <div className="mt-2">
         {sortedPlayers.length > 0 ? (
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
@@ -220,6 +253,7 @@ export const PlayerList = ({
                 whitelistPlayer={whitelistPlayer}
                 isLoading={isLoading}
                 showTribeDetails={showTribeDetails}
+                showMmr={showMmr}
                 gridTemplateClass={leaderboardGridTemplate}
                 isSelected={selectedPlayerAddress === normalizedAddress}
                 effect={playerEffect}
@@ -228,7 +262,7 @@ export const PlayerList = ({
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center h-32 text-kit-muted">
+          <div className="flex flex-col items-center justify-center h-32 text-gold/60">
             <SemanticIcon name="person" className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No players found</p>
           </div>
@@ -241,47 +275,108 @@ export const PlayerList = ({
   );
 };
 
+/** A column of the table: its name, and for an activity the points it grants, with the rule in full on hover. */
+interface PlayerListColumn {
+  label: string;
+  align: string;
+  grant?: string;
+  rule?: string;
+}
+
+/**
+ * Each activity column carries its grant under its name, the game's scoring table where the points it counts are: a
+ * one-line title over a one-line grant, the rule in full on hover.
+ */
+const resolveColumns = (
+  showTribeDetails: boolean,
+  grants: VictoryPointGrants,
+  mmr: MmrForecast["status"],
+): PlayerListColumn[] => {
+  const each = (points: number) => `${currencyIntlFormat(points)} each`;
+  const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
+  return [
+    { label: "Rank", align: "justify-center text-center" },
+    { label: "Name", align: "justify-start text-left" },
+    ...(showTribeDetails ? [{ label: "Tribe", align: "hidden text-left md:block" }] : []),
+    { label: "Tiles", align: activity, grant: each(grants.exploreTile), rule: "Explore a tile" },
+    { label: "Crates", align: activity, grant: each(grants.openRelicCrate), rule: "Open a relic crate" },
+    {
+      label: "Camps & Rifts",
+      align: activity,
+      grant: each(grants.claimCampFromBandits),
+      rule: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
+    },
+    {
+      label: "HS taken",
+      align: activity,
+      grant: each(grants.claimHyperstructureFromBandits),
+      rule: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
+    },
+    {
+      label: "HS held",
+      align: activity,
+      ...describeHyperstructureHold(grants),
+    },
+    { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
+    ...(mmr === "off"
+      ? []
+      : [
+          {
+            label: "MMR",
+            align: "flex flex-col justify-center text-center",
+            grant: mmr === "unavailable" ? "unavailable" : "if it ended now",
+            rule: "The rating each player would gain or lose if the game ended with these standings, as the ledger settles it",
+          },
+        ]),
+  ];
+};
+
+/**
+ * The scoring rules where the activity columns are hidden (a phone): the same grants the wide header puts under each
+ * column, in one line above the table.
+ */
+const ScoringRulesLine = ({ showTribeDetails, grants }: { showTribeDetails: boolean; grants: VictoryPointGrants }) => (
+  <p aria-label="Scoring rules" className="px-3 pb-2 text-xs text-gold/60 md:hidden">
+    {resolveColumns(showTribeDetails, grants, "off")
+      .filter((column) => column.grant)
+      .map((column) => `${column.label} ${column.grant}`)
+      .join(" · ")}
+  </p>
+);
+
 const PlayerListHeader = ({
   showTribeDetails,
+  grants,
+  mmr,
   gridTemplateClass,
 }: {
   showTribeDetails: boolean;
+  grants: VictoryPointGrants;
+  mmr: MmrForecast["status"];
   gridTemplateClass: string;
 }) => {
-  const columns = useMemo(() => {
-    const params: Array<{ label: string; align: string }> = [
-      { label: "Rank", align: "justify-center text-center" },
-      { label: "Name", align: "justify-start text-left" },
-    ];
-
-    if (showTribeDetails) {
-      params.push({ label: "Tribe", align: "hidden text-left md:block" });
-    }
-
-    params.push(
-      { label: "Tiles", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "Crates", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "Rifts/Camps", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "HS Taken", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "HS Held", align: `${WIDE_ONLY} justify-center text-center` },
-      { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
-    );
-
-    return params;
-  }, [showTribeDetails]);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
+  const columns = useMemo(() => resolveColumns(showTribeDetails, grants, mmr), [showTribeDetails, grants, mmr]);
 
   return (
-    // Solid opaque background + z-20 so the sticky header never shows the rows
-    // bleeding through as it scrolls under it.
+    // Opaque, on the window's own surface, so the sticky header never shows the rows scrolling under it.
     <div
       className={clsx(
-        "grid gap-x-3 items-center py-3 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[#1a1410] md:gap-x-4 md:px-4",
+        "grid gap-x-3 items-start py-2 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[var(--overlay-surface-from)] md:gap-x-4 md:px-4",
         gridTemplateClass,
       )}
     >
-      {columns.map(({ label, align }) => (
-        <div key={label} className={clsx("w-full items-center text-sm font-semibold text-gold/70", align)}>
-          {label}
+      {columns.map(({ label, align, grant, rule }) => (
+        <div
+          key={label}
+          className={clsx("w-full items-center text-sm font-semibold text-gold/80", align)}
+          onMouseEnter={
+            rule ? () => setTooltip({ content: <div className="text-gold">{rule}</div>, position: "top" }) : undefined
+          }
+          onMouseLeave={rule ? () => setTooltip(null) : undefined}
+        >
+          <span className="whitespace-nowrap">{label}</span>
+          {grant && <span className="whitespace-nowrap text-xs font-normal text-gold/55">{grant}</span>}
         </div>
       ))}
     </div>
@@ -295,6 +390,7 @@ const PlayerRow = ({
   whitelistPlayer,
   isLoading,
   showTribeDetails,
+  showMmr,
   gridTemplateClass,
   isSelected,
   effect,
@@ -306,6 +402,7 @@ const PlayerRow = ({
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
   showTribeDetails: boolean;
+  showMmr: boolean;
   gridTemplateClass: string;
   isSelected: boolean;
   effect?: PlayerEffect;
@@ -332,7 +429,7 @@ const PlayerRow = ({
       data-player-address={String(player.address)}
       aria-current={isSelected ? "true" : undefined}
       className={clsx(
-        "relative flex w-full mb-1 overflow-visible rounded-lg border border-transparent bg-dark/40 backdrop-blur-sm transition-all duration-200",
+        "relative flex w-full mb-1 overflow-visible rounded-lg border border-transparent bg-black/20 transition-all duration-200",
         player.isUser && !isSelected && "border-gold/50 bg-gold/20",
         !isSelected && !hasRankUp && !hasRankDown && "hover:border-gold/20 hover:bg-brown/40",
         isSelected && "border-amber-300/80 bg-amber-400/20 shadow-[0_0_14px_rgba(223,170,84,0.45)]",
@@ -351,16 +448,24 @@ const PlayerRow = ({
       )}
       <div
         className={clsx(
-          "grid w-full cursor-pointer items-center gap-x-3 px-3 py-2 text-sm transition-colors md:gap-x-4 md:px-4",
+          "grid w-full cursor-pointer items-center gap-x-3 px-3 py-2 text-xs transition-colors md:gap-x-4 md:px-4",
           gridTemplateClass,
         )}
+        role="button"
+        tabIndex={0}
+        aria-label={`${player.name}: their points`}
         onClick={onSelect}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onSelect();
+        }}
       >
         <div className="flex justify-center">
           <span
             className={clsx(
               "font-medium transition-colors",
-              !isUnranked && "",
+              !isUnranked && "italic",
               isUnranked ? "text-red-400" : isSelected ? "text-lightest" : "text-gold/90",
             )}
           >
@@ -384,22 +489,16 @@ const PlayerRow = ({
             >
               {player.name}
             </h6>
-            {player.isUser && (
-              <span
-                title={`0x${BigInt(player.address).toString(16)}`}
-                className="block truncate font-mono text-sm text-kit-muted"
-              >{`0x${BigInt(player.address).toString(16)}`}</span>
-            )}
             {activitySummary && <span className="block text-sm text-kit-muted md:hidden">{activitySummary}</span>}
           </div>
         </div>
         {showTribeDetails ? (
           <div
-            className={clsx("hidden min-w-0 truncate text-sm transition-colors md:block", {
+            className={clsx("hidden min-w-0 truncate text-xs transition-colors md:block", {
               "text-emerald-300/90": player.guild && !isSelected,
               "text-emerald-200": player.guild && isSelected,
-              "text-kit-muted": !player.guild && !isSelected,
-              "text-gold/70": !player.guild && isSelected,
+              "text-gold/50 italic": !player.guild && !isSelected,
+              "text-gold/70 italic": !player.guild && isSelected,
             })}
           >
             {player.guild ? player.guild.name : "No Tribe"}
@@ -455,7 +554,7 @@ const PlayerRow = ({
           <span>{player.points === null ? "—" : currencyIntlFormat(player.points)}</span>
           {hasShareholderPoints && (
             <span
-              className="text-order-brilliance text-sm"
+              className="text-order-brilliance text-xs"
               onMouseEnter={() =>
                 setTooltip({
                   content: <div className="text-gold">Includes real-time hyperstructure shareholder points</div>,
@@ -473,6 +572,7 @@ const PlayerRow = ({
             <span onClick={(event) => event.stopPropagation()}></span>
           )}
         </div>
+        {showMmr && <MmrDeltaCell delta={player.mmrDelta} />}
       </div>
 
       {showTribeDetails ? (

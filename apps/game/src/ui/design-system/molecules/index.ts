@@ -1,4 +1,3 @@
-export * from "./base-three-tooltip";
 export * from "./circle-button";
 export * from "./headline";
 export * from "./hint-modal-button";
@@ -15,4 +14,3 @@ export * from "./sort-panel";
 export * from "./stamina-resource-cost";
 export * from "./tooltip";
 export * from "./twitter-share-button";
-export * from "./view-on-map-icon";

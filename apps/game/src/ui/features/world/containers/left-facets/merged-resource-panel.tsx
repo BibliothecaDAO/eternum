@@ -7,9 +7,9 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
+import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
-import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import {
   buildRealmBuilding,
@@ -54,9 +54,8 @@ interface MergedResourcePanelProps {
 
 /**
  * One panel that merges the old Production + Balance bubbles. Every relevant
- * resource is a single ProductionStatusBadge (the buildings-section token):
- *   top-left   = # production buildings   top-right = current balance
- *   bottom-left = production timer/ring    bottom-right = build "+"
+ * resource is a single ProductionStatusBadge, the one resource ring: its production buildings on the top-left badge,
+ * the balance on the bottom rim, time left in its tooltip, and a build "+" at its bottom-left.
  * The "+" reuses the exact build path from the build menu (buildRealmBuilding +
  * resolveConstructionBuildability), so it auto-builds
  * and is enabled only when the realm can afford the building. Tokens are split
@@ -121,22 +120,11 @@ export const MergedResourcePanel = memo(
       return map;
     }, [productionSummary]);
 
-    // Group ids by the game's own tier order (insertion order is already
-    // economic → transport → food → T1 → T2 → T3); split military out. Relics
-    // are excluded entirely — they get their own dedicated row above the grid.
-    const { resourceIds, militaryIds } = useMemo(() => {
-      const tiers = mode.resources.getTiers() as Record<string, ResourcesIds[]>;
-      const resourceList: ResourcesIds[] = [];
-      let military: ResourcesIds[] = [];
-      for (const [key, ids] of Object.entries(tiers)) {
-        if (key === "military") {
-          military = ids;
-        } else {
-          resourceList.push(...ids);
-        }
-      }
-      return { resourceIds: resourceList.filter((id) => !isRelic(id)), militaryIds: military };
-    }, [mode]);
+    // The classic tier order (resource-tier-order.ts): relics have their own row above the grid.
+    const ringOrder = useMemo(
+      () => resourcesInTierOrder(mode.resources.getTiers() as Record<string, ResourcesIds[]>),
+      [mode],
+    );
 
     // Whether the structure holds any relic, so an empty token grid still keeps
     // the panel (and its relic row) visible.
@@ -183,13 +171,6 @@ export const MergedResourcePanel = memo(
 
         const label = ResourcesIds[resourceId];
         const effectiveRemaining = item?.timeRemainingSeconds ?? null;
-        // Whole minutes only: automation refills inputs every minute, so seconds are noise and anything
-        // under a minute is the normal state of a topped-up resource, not a warning.
-        const timer =
-          item?.isProducing && effectiveRemaining !== null && effectiveRemaining >= 60
-            ? formatTimeRemaining(Math.ceil(effectiveRemaining / 60) * 60)
-            : undefined;
-        const count = item && item.totalBuildings > 0 ? `${item.totalBuildings}` : undefined;
         const balanceLabel = balance > 0 ? formatInventoryAmount(balance) : undefined;
 
         let buildEnabled = false;
@@ -208,27 +189,16 @@ export const MergedResourcePanel = memo(
           buildEnabled = buildability.canSubmit;
         }
 
-        const tooltipParts = [label];
-        if (item?.isProducing) {
-          tooltipParts.push(`${item.activeBuildings}/${item.totalBuildings} producing`);
-          if (timer) tooltipParts.push(`${timer} left`);
-        } else if (count) {
-          tooltipParts.push(`Idle (${item?.totalBuildings} building${item && item.totalBuildings !== 1 ? "s" : ""})`);
-        }
-        if (balanceLabel) tooltipParts.push(`${balanceLabel} held`);
-
         return (
           <div key={resourceId} className="relative inline-flex h-12 w-12 shrink-0">
             <ProductionStatusBadge
-              resourceLabel={label}
-              tooltipText={tooltipParts.join(" • ")}
+              resource={resourceId}
               isProducing={Boolean(item?.isProducing)}
               timeRemainingSeconds={effectiveRemaining}
               size="sm"
               showTooltip
-              cornerTopLeft={count}
-              cornerTopRight={balanceLabel}
-              cornerBottomRight={timer}
+              buildings={item?.totalBuildings ?? 0}
+              amount={balanceLabel}
               accrualKey={resolveAccrualKey(resourceId, balanceLabel)}
             />
             {isBuildable && canBuild && (
@@ -244,7 +214,7 @@ export const MergedResourcePanel = memo(
                   "absolute -bottom-1 -left-1 z-20 inline-flex h-4 w-4 items-center justify-center rounded-full border shadow-md transition",
                   buildEnabled
                     ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                    : "border-gold/20 bg-black/70 text-kit-muted cursor-not-allowed opacity-70",
+                    : "border-gold/20 bg-black/70 text-gold/40 cursor-not-allowed opacity-70",
                 )}
                 title={buildEnabled ? `Build ${label}` : (buildReason ?? "Cannot build")}
                 aria-label={`Build ${label}`}
@@ -272,13 +242,10 @@ export const MergedResourcePanel = memo(
 
     // One flat grid — resources and military together (resources first, then the
     // troop resources), no section split.
-    const tokens = useMemo(
-      () => [...resourceIds, ...militaryIds].map(renderToken).filter(Boolean),
-      [resourceIds, militaryIds, renderToken],
-    );
+    const tokens = useMemo(() => ringOrder.map(renderToken).filter(Boolean), [ringOrder, renderToken]);
 
     if (tokens.length === 0 && !hasRelics) {
-      return <p className="text-sm text-kit-muted">No resources yet.</p>;
+      return <p className="text-xxs italic text-gold/60">No resources yet.</p>;
     }
 
     // Relics first, on their own dedicated, clickable row. Then the resource +

@@ -7,7 +7,6 @@ import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   MarketManager,
-  computeTravelTime,
   configManager,
   divideByPrecision,
   getClosestBank,
@@ -56,9 +55,9 @@ export const LiquidityResourceRow = ({
   const pair = useMemo(
     () => (
       <div className="flex flex-row items-center">
-        <ResourceIcon resource={"Lords"} size="md" />
+        <ResourceIcon resource={ResourcesIds.Lords} size="md" />
         {" / "}
-        {resource?.trait && <ResourceIcon resource={resource.trait} size="md" />}
+        {resource && <ResourceIcon resource={resourceId} size="md" />}
       </div>
     ),
     [resource],
@@ -177,7 +176,7 @@ export const LiquidityResourceRow = ({
                 <TravelInfo
                   entityId={entityId}
                   resources={travelResources}
-                  travelTime={closestBank.travelTime}
+                  bankId={closestBank.bankId}
                   setCanCarry={setCanCarry}
                 />
               </div>
@@ -195,7 +194,6 @@ export const LiquidityResourceRow = ({
     onWithdraw,
     resourceId,
     entityId,
-    computeTravelTime,
     setCanCarry,
     calculateWithdrawAmounts,
   ]);
@@ -210,7 +208,7 @@ export const LiquidityResourceRow = ({
           onMouseEnter={() => setShowInputResourcesPrice(true)}
           onMouseLeave={() => setShowInputResourcesPrice(false)}
         >
-          {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource="Lords" size="sm" />
+          {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
           {showInputResourcesPrice && (
             <div className={`${isFirst ? "top-10" : "bottom-10"} absolute left-0 z-[100] pointer-events-none`}>
               <InputResourcesPrice marketManager={marketManager} />
@@ -258,12 +256,12 @@ const TotalLiquidity = ({
     <div className="flex flex-col col-span-2 justify-center">
       <div className="flex">
         <div>{divideByPrecision(totalLords).toLocaleString()}</div>
-        <ResourceIcon resource="Lords" size="sm" />
+        <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
       </div>
 
       <div className="flex">
         <div>{divideByPrecision(totalResource).toLocaleString()}</div>
-        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+        <ResourceIcon resource={resourceId} size="sm" />
       </div>
     </div>
   );
@@ -319,9 +317,9 @@ const MyLiquidity = ({
     <div className="flex flex-col col-span-2">
       <div className="flex">
         <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
-        <ResourceIcon resource="Lords" size="sm" />
+        <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
         {playerLiquidityInfo && lordsAmount > 0 && (
-          <span className={`ml-1 text-sm ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(lordsDifferencePercentage, 4)}%)
           </span>
@@ -330,9 +328,9 @@ const MyLiquidity = ({
 
       <div className="flex">
         <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
-        <ResourceIcon resource={ResourcesIds[resourceId]} size="sm" />
+        <ResourceIcon resource={resourceId} size="sm" />
         {playerLiquidityInfo && resourceAmount > 0 && (
-          <span className={`ml-1 text-sm ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
             ({resourceDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(resourceDifferencePercentage, 4)}%)
           </span>
@@ -341,7 +339,7 @@ const MyLiquidity = ({
 
       {totalValueDifferenceInLords !== 0 && (
         <div className="flex mt-1">
-          <span className={`text-sm ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
             {totalValueDifferenceInLords >= 0 ? "+" : "-"}
             {formatNumber(Math.abs(totalValueDifferenceInLords), 4)} Lords (uPNL)
           </span>
@@ -371,15 +369,15 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
         {inputResources.map(({ resource }, index) => (
           <React.Fragment key={index}>
             {index > 0 && <span className="mx-1">+</span>}
-            <ResourceIcon key={resource} resource={ResourcesIds[resource]} size="sm" />
+            <ResourceIcon key={resource} resource={resource} size="sm" />
           </React.Fragment>
         ))}
       </div>
-      <div className="flex flex-row text-sm text-gold w-full items-center justify-between mt-1">
+      <div className="flex flex-row text-xxs text-gold w-full items-center justify-between mt-1">
         <span className="mr-1 whitespace-nowrap">production cost:</span>
         <div className="flex items-center space-x-1">
           <span className="font-semibold ">{formatNumber(totalPrice, 4)}</span>
-          <ResourceIcon resource="Lords" size="xs" />
+          <ResourceIcon resource={ResourcesIds.Lords} size="xs" />
         </div>
       </div>
     </div>

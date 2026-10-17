@@ -1,3 +1,6 @@
+import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { ModelType } from "@/three/types/army";
+import { ProceduralArmyCharacterLayer } from "@/three/characters/procedural-army-character-layer";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import {
@@ -18,7 +21,7 @@ import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 import { SpireModel } from "../structures/spire-model";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import type { WeatherState } from "@/three/managers/weather-manager";
-import { Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 } from "three";
+import { Euler, Matrix4, PerspectiveCamera, Plane, Raycaster, Scene, Vector2, Vector3 } from "three";
 
 import { buildArmyModelAssetPath } from "@/three/constants/army-constants";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
@@ -40,6 +43,8 @@ import { DEFAULT_TERRAIN_LAB_PREVIEW, buildTerrainLabRequest, type TerrainLabPre
 /** Lab inputs change the fixture; terrain, selection and models use production renderers. */
 export class TerrainLabInteraction {
   private readonly hover: HoverHexManager;
+  private readonly characters: ProceduralArmyCharacterLayer;
+  private readonly armyRotation = new Euler();
   private readonly raycaster = new Raycaster();
   private readonly pointer = new Vector2();
   private readonly ground = new Plane(new Vector3(0, 1, 0), 0);
@@ -78,6 +83,7 @@ export class TerrainLabInteraction {
     private readonly localMode = false,
   ) {
     this.hover = new HoverHexManager(scene, terrain);
+    this.characters = new ProceduralArmyCharacterLayer(scene);
     this.selected = chooseInitialTile(request);
     canvas.addEventListener("pointerdown", this.beginPick);
     canvas.addEventListener("pointerup", this.finishPick);
@@ -127,6 +133,24 @@ export class TerrainLabInteraction {
         else model.updateAnimations(delta, { cameraPosition: this.camera.position });
       }
     }
+    this.characters.sync(
+      this.preview.army === ModelType.Knight1
+        ? [
+            {
+              category: TroopType.Knight,
+              tier: TroopTier.T1,
+              entityId: 1,
+              isNaval: false,
+              isMoving: false,
+              primaryColor: "#4268b5",
+              distanceToCameraSquared: this.camera.position.distanceToSquared(this.armyPosition),
+              position: this.armyPosition,
+              rotation: this.armyRotation.set(0, this.spinAngle, 0),
+            },
+          ]
+        : [],
+      delta,
+    );
     if (!this.army) return;
     if (moved || this.preview.spin) {
       this.matrix.makeRotationY(this.spinAngle);
@@ -214,6 +238,7 @@ export class TerrainLabInteraction {
     this.canvas.removeEventListener("pointerdown", this.beginPick);
     this.canvas.removeEventListener("pointerup", this.finishPick);
     this.hover.dispose();
+    this.characters.dispose();
     for (const model of this.models.values()) {
       this.scene.remove(model.group);
       model.dispose();
@@ -261,7 +286,7 @@ export class TerrainLabInteraction {
     if (this.disposed || revision !== this.revision) return;
     const fog = await this.terrain.prepareFogMaskAsync([prepared]);
     const model =
-      preview.army === "none"
+      preview.army === "none" || preview.army === ModelType.Knight1
         ? null
         : await this.loadModel(preview.army, buildArmyModelAssetPath(preview.army), 1, preview.army);
     if (this.disposed || revision !== this.revision) return;

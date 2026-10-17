@@ -1,5 +1,5 @@
 import { ResourceIcon } from "@/ui/design-system/molecules";
-import { getTierStyle } from "@/ui/utils/tier-styles";
+import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -23,30 +23,22 @@ export const TroopChip = ({
     xs: {
       padding: "px-1.5 py-0.5",
       gap: "gap-1",
-      text: "text-sm",
-      tierText: "text-sm",
-      tierPadding: "px-1 py-0.5",
+      text: "text-[10px]",
     },
     sm: {
       padding: "px-2 py-1",
       gap: "gap-2",
-      text: "text-sm",
-      tierText: "text-sm",
-      tierPadding: "px-1.5 py-0.5",
+      text: "text-xs",
     },
     md: {
       padding: "px-2.5 py-1.5",
       gap: "gap-2",
       text: "text-sm",
-      tierText: "text-sm",
-      tierPadding: "px-2 py-1",
     },
     lg: {
       padding: "px-3 py-2",
       gap: "gap-3",
       text: "text-base",
-      tierText: "text-sm",
-      tierPadding: "px-2.5 py-1",
     },
   };
 
@@ -59,16 +51,10 @@ export const TroopChip = ({
           direction === "row" ? "flex-row" : "flex-col"
         } ${currentSize.gap} border border-gold/10`}
       >
-        <span
-          className={`${currentSize.tierPadding} rounded ${currentSize.tierText} font-bold border relative ${getTierStyle(troops.tier)}`}
-        >
-          <span className="relative z-10">{troops.tier}</span>
-        </span>
+        <TroopTierChip tier={troops.tier} size={size} />
         <ResourceIcon
           withTooltip={false}
-          resource={
-            resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait || ""
-          }
+          resource={getTroopResourceId(troops.category as TroopType, TroopTier.T1)}
           size={size}
         />
         <div

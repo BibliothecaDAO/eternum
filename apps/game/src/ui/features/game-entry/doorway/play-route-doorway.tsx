@@ -66,7 +66,7 @@ export const PlayRouteDoorway = ({
       onSignIn={() => requestSignIn()}
       results={route ? resultsHref({ chainId: route.chainId, game_id: route.gameId }) : undefined}
     >
-      {route?.verboseLogs && <BootDebugPanel currentTaskLabel={currentTaskLabel} />}
+      <BootDebugPanel currentTaskLabel={currentTaskLabel} />
     </DoorwayScreen>
   );
 };

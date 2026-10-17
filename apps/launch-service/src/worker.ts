@@ -54,7 +54,7 @@ const launchAppOf = (env: LaunchEnv, chainId?: string | null) => {
     config: {
       operatorToken: env.OPERATOR_TOKEN,
     },
-    deployment: { environment: env.ENVIRONMENT, version: env.VERSION.id },
+    deployment: { environment: env.ENVIRONMENT, version: env.VERSION.id, revision: env.VERSION.tag ?? "" },
     store: launches,
     slots,
     calendar,
