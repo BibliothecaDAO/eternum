@@ -16,7 +16,7 @@ interface InfoBubbleProps {
   className?: string;
   variant?: "panel" | "section";
   bodyClassName?: string;
-  /** Header toggles the body open/closed (default on). The cue stays visible
+  /** The chevron and title toggle the body open/closed (default on). The cue stays visible
    *  while collapsed so at-a-glance info (e.g. the automation countdown) is
    *  always available. Set false for bubbles that should never collapse. */
   collapsible?: boolean;
@@ -27,7 +27,7 @@ interface InfoBubbleProps {
 /**
  * The HUD's one panel: the overlay surface, a header band naming it over a divider, and its body. Every panel of the
  * Blitz and Eternum HUD is one (holdings, the selected holding, minimap, Next up, events, the picked tile). Optionally
- * collapsible (header click toggles the body).
+ * collapsible (its chevron and title toggle the body).
  */
 export const InfoBubble = ({
   label,
@@ -67,8 +67,8 @@ export const InfoBubble = ({
 };
 
 /**
- * The band naming a panel, over its divider. A collapsible panel's whole header toggles it, title and cue; an
- * interactive cue control (gear, re-sync, Battle, All) does not.
+ * The band naming a panel, over its divider. A collapsible panel's chevron and title are its one toggle; the rest of
+ * the band, the cue's controls (gear, re-sync, Battle, All, a step cursor) included, never collapses it.
  */
 const PanelHeader = ({
   title,
@@ -80,36 +80,9 @@ const PanelHeader = ({
   icon?: IconMeaning;
   cue?: ReactNode;
   collapse: { collapsed: boolean; toggle: () => void } | null;
-}) => (
-  <div
-    className={cn(
-      "flex items-center justify-between gap-2 border-b border-gold/15 px-3 py-2",
-      collapse && "cursor-pointer select-none",
-    )}
-    onClick={
-      collapse
-        ? (event) => {
-            if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) return;
-            collapse.toggle();
-          }
-        : undefined
-    }
-    role={collapse ? "button" : undefined}
-    tabIndex={collapse ? 0 : undefined}
-    aria-expanded={collapse ? !collapse.collapsed : undefined}
-    onKeyDown={
-      collapse
-        ? (event) => {
-            if (event.target !== event.currentTarget) return;
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              collapse.toggle();
-            }
-          }
-        : undefined
-    }
-  >
-    <span className={cn("flex min-w-0 items-center gap-2", HUD_LABEL)}>
+}) => {
+  const name = (
+    <>
       {collapse && (
         <SemanticIcon
           name="chevron-down"
@@ -121,7 +94,23 @@ const PanelHeader = ({
       )}
       {Icon && <SemanticIcon name={Icon} className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}
       <span className="truncate">{title}</span>
-    </span>
-    {cue && <span className={cn("flex-shrink-0", HUD_CUE)}>{cue}</span>}
-  </div>
-);
+    </>
+  );
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-gold/15 px-3 py-2">
+      {collapse ? (
+        <button
+          type="button"
+          aria-expanded={!collapse.collapsed}
+          onClick={collapse.toggle}
+          className={cn("flex min-w-0 select-none items-center gap-2 text-left", HUD_LABEL)}
+        >
+          {name}
+        </button>
+      ) : (
+        <span className={cn("flex min-w-0 items-center gap-2", HUD_LABEL)}>{name}</span>
+      )}
+      {cue && <span className={cn("flex-shrink-0", HUD_CUE)}>{cue}</span>}
+    </div>
+  );
+};
