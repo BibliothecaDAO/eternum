@@ -1,6 +1,6 @@
 import { displayPlayerName, type FightForecast } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
-import { combatTitle, describeFightCost, wholeTroops } from "./fight-forecast";
+import { aboutTroops, combatTitle, describeFightCost, extraTroopsToSurvive, wholeTroops } from "./fight-forecast";
 
 const troops = (whole: number) => ({ count: BigInt(whole) * 1_000_000_000n }) as never;
 
@@ -54,4 +54,26 @@ describe("describeFightCost", () => {
 
 it("counts whole troops as the contract does", () => {
   expect(wholeTroops(1_999_999_999n)).toBe(1);
+});
+
+describe("how many more troops would survive a certain loss", () => {
+  const unit = 1_000_000_000n; // one troop at the contract's precision
+  it("finds the smallest army that comes through, less the one the attacker has", () => {
+    // This defender kills 1,650 troops: 1,651 survive.
+    const survives = (count: bigint) => count > 1_650n * unit;
+    const extra = extraTroopsToSurvive(1_000n * unit, survives)!;
+    expect(Number(extra / unit)).toBeGreaterThanOrEqual(651);
+    expect(Number(extra / unit)).toBeLessThanOrEqual(652);
+  });
+
+  it("is zero for an army that already survives, and null when not even 64 times it would", () => {
+    expect(extraTroopsToSurvive(1_000n * unit, () => true)).toBe(0n);
+    expect(extraTroopsToSurvive(1_000n * unit, () => false)).toBeNull();
+  });
+
+  it("reads as an estimate, rounded up to two significant figures", () => {
+    expect(aboutTroops(651)).toBe("660");
+    expect(aboutTroops(1_234)).toBe("1,300");
+    expect(aboutTroops(48)).toBe("48");
+  });
 });

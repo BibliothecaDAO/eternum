@@ -33,7 +33,7 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { combatTitle, describeFightCost, wholeTroops } from "./fight-forecast";
+import { aboutTroops, combatTitle, describeFightCost, extraTroopsToSurvive, wholeTroops } from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -210,11 +210,33 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         forecast: forecastFight(attackerArmyData.troops, targetArmyData.troops, context, rules),
       };
     };
-    if (!rollsDice) {
-      const exact = at(0, 0);
-      return { worst: exact, best: exact };
-    }
-    return { worst: at(1, COMBAT_DIE_FACES), best: at(COMBAT_DIE_FACES, 1) };
+    const [attackerRoll, defenderRoll] = rollsDice ? [1, COMBAT_DIE_FACES] : [0, 0];
+    const worst = at(attackerRoll, defenderRoll);
+    const best = rollsDice ? at(COMBAT_DIE_FACES, 1) : worst;
+    // A certain loss says how much army would come through: the same exchange at the worst roll, with more troops.
+    const survivesWith = (count: bigint) => {
+      const exchange = resolveExchange(
+        { ...attackerArmyData.troops, count },
+        targetArmyData.troops,
+        {
+          timestamp: executionSecond,
+          attackDistance: targetDistance,
+          attackerBiome: biome,
+          defenderBiome: biome,
+          attackerIsStructureGuard: attackerType === AttackerType.Structure,
+          defenderIsStructureGuard: isStructureTarget,
+          attackerRoll,
+          defenderRoll,
+        },
+        rules,
+      );
+      return exchange.ok && exchange.attacker.count > 0n;
+    };
+    const extraToSurvive =
+      worst.exchange.ok && worst.exchange.attacker.count === 0n
+        ? extraTroopsToSurvive(attackerArmyData.troops.count, survivesWith)
+        : 0n;
+    return { worst, best, extraToSurvive };
   }, [
     attackerArmyData,
     targetArmyData,
@@ -239,6 +261,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const sides = fight ? exchangeSides(fight.worst.exchange, fight.best.exchange) : null;
   const attackerSide = sides?.attacker ?? null;
   const defenderSide = sides?.defender ?? null;
+  // The army falls at every roll: Attack steps back and the forecast says what would survive.
+  const certainLoss = attackerSide !== null && survivalOf(attackerSide) === "Eliminated";
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -590,9 +614,22 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         </div>
       )}
 
+      {certainLoss && (
+        <p
+          role="status"
+          className="modal-no-drag mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-sm text-red-200"
+        >
+          Certain loss: your army is wiped out at any roll
+          {fight?.extraToSurvive
+            ? ` · about ${aboutTroops(wholeTroops(fight.extraToSurvive))} more troops to survive it`
+            : ""}
+          .
+        </p>
+      )}
+
       <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
         <Button
-          variant="outline"
+          variant={certainLoss ? "outline" : "gold"}
           size="md"
           disabled={attackDisabled || !targetData || isLoading}
           isLoading={isSubmitting}

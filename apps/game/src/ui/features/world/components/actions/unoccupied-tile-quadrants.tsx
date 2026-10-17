@@ -1,4 +1,5 @@
 import { ResourcesIds } from "@bibliothecadao/types";
+import { biomeDisplayName } from "@/ui/utils/biome-name";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type ReactNode, useCallback, useMemo } from "react";
 
@@ -34,16 +35,6 @@ const unoccupiedTileTroopConfig: Record<
     resourceId: ResourcesIds.Paladin,
     label: "Paladins",
   },
-};
-
-const formatQuadrantBiomeLabel = (biome: BiomeType | string) => {
-  const label = biome.toString();
-  return label
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim();
 };
 
 const resolveBiomeBonusCardTone = (bonus: number) => {
@@ -118,7 +109,7 @@ export const BiomeSummaryCard = ({
   highlightTroopType,
 }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(() => buildBiomeTroopBonusCards(biome), [biome]);
-  const biomeLabel = formatQuadrantBiomeLabel(biome);
+  const biomeLabel = biomeDisplayName(biome);
 
   const orderedBonuses = useMemo(() => {
     if (highlightTroopType === undefined) return troopBonuses;

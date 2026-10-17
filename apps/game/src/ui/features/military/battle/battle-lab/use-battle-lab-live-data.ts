@@ -87,6 +87,7 @@ export const useBattleLabLiveData = (
           const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, staminaTimestamp);
           const army: WorkingArmy = {
             stamina: Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina.amount)),
+            maxStamina: staminaSnapshot?.max,
             troopCount: divideByPrecision(Number(guard.troops.count)),
             troopType: guard.troops.category as TroopType,
             tier: guard.troops.tier as TroopTier,
@@ -106,6 +107,11 @@ export const useBattleLabLiveData = (
         const stamina = StaminaManager.getStamina(troops, staminaTimestamp).amount;
         armyAttacker = {
           stamina: Number(stamina),
+          maxStamina: StaminaManager.getMaxStamina(
+            troops.category as TroopType,
+            troops.tier as TroopTier,
+            troops.staminaMax,
+          ),
           troopCount: divideByPrecision(Number(army.troops.count)),
           troopType: army.troops.category as TroopType,
           tier: army.troops.tier as TroopTier,
@@ -120,6 +126,11 @@ export const useBattleLabLiveData = (
     const defender: WorkingArmy | null = defenderTroop
       ? {
           stamina: Number(StaminaManager.getStamina(defenderTroop, staminaTimestamp).amount),
+          maxStamina: StaminaManager.getMaxStamina(
+            defenderTroop.category as TroopType,
+            defenderTroop.tier as TroopTier,
+            defenderTroop.staminaMax,
+          ),
           troopCount: divideByPrecision(Number(defenderTroop.count)),
           troopType: defenderTroop.category as TroopType,
           tier: defenderTroop.tier as TroopTier,

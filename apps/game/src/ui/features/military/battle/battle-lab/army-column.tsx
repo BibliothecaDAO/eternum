@@ -6,6 +6,7 @@ import { SelectRelic } from "@/ui/design-system/molecules/select-relic";
 import { SelectTier } from "@/ui/design-system/molecules/select-tier";
 import { SelectTroop } from "@/ui/design-system/molecules/select-troop";
 import { getTierStyle } from "@/ui/utils/tier-styles";
+import { StaminaManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
@@ -46,6 +47,8 @@ export const ArmyColumn = ({
   footer,
 }: ArmyColumnProps) => {
   const accent = side === "attacker" ? "bg-red-500" : "bg-blue-500";
+  // The army's own maximum where the chain gives it, else what its type and tier allow.
+  const maxStamina = StaminaManager.getMaxStamina(army.troopType, army.tier, army.maxStamina);
 
   return (
     <div className={cn("flex flex-col gap-3 rounded-xl p-4", OVERLAY_SURFACE_BASE)}>
@@ -87,8 +90,14 @@ export const ArmyColumn = ({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Stamina" hint={`${army.stamina}/200`}>
-          <NumberInput value={army.stamina} onChange={(stamina) => onChange({ stamina })} min={0} max={200} step={1} />
+        <Field label="Stamina" hint={`${army.stamina}/${maxStamina}`}>
+          <NumberInput
+            value={army.stamina}
+            onChange={(stamina) => onChange({ stamina })}
+            min={0}
+            max={maxStamina}
+            step={1}
+          />
         </Field>
         <Field label="Troops" hint={army.troopCount.toLocaleString()}>
           <NumberInput
