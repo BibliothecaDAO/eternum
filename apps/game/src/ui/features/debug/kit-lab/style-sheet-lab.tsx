@@ -70,7 +70,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 import { createContext, type ReactNode, useContext, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { eventsRows, installFixtureGame, PLAYER } from "./fixture-game";
+import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
 
@@ -996,8 +996,8 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
     }
     today={
       <div className="flex w-80 flex-col gap-1">
-        {eventsRows(store).map((row) => (
-          <FeedRowLine key={row.id} row={row} />
+        {eventStories(store).map((event) => (
+          <FeedRowLine key={event.id} event={event} />
         ))}
         <Notice icon="wheat" line="Storage full" verb="Spend" onVerb={() => undefined} />
       </div>
