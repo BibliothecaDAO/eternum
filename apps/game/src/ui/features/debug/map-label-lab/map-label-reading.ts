@@ -1,29 +1,10 @@
-import type { MapLabelEntity, MapLabelTroops, MapLabelTroopType } from "@/three/debug/map-label-lab-fixture";
+import type { MapLabelEntity, MapLabelTroops } from "@/three/debug/map-label-lab-fixture";
 
 const LOCAL_RANGE = 2 ** 32;
 
-const KIND_WORD: Record<MapLabelEntity["kind"], string> = {
-  realm: "Realm",
-  camp: "Camp",
-  rift: "Rift",
-  hyperstructure: "Hyperstructure",
-  army: "Army",
-};
-
-/**
- * The owner's pick (round 2): a thing no player named is called by its kind and a short code read off its id, its home
- * namespace and serial ("Camp 19·21"); a realm keeps its own name.
- */
-export const codeName = (entity: MapLabelEntity): string =>
-  entity.kind === "realm"
-    ? entity.name
-    : `${KIND_WORD[entity.kind]} ${Math.floor(entity.entityId / LOCAL_RANGE)}·${entity.entityId % LOCAL_RANGE}`;
-
-export const TROOP_WORD: Record<MapLabelTroopType, string> = {
-  crossbowman: "Crossbowman",
-  knight: "Knight",
-  paladin: "Paladin",
-};
+/** A thing's short id, read off its entity id: its home namespace and serial ("19·21"); its kind is its painting. */
+export const homeCode = (entity: MapLabelEntity): string =>
+  `${Math.floor(entity.entityId / LOCAL_RANGE)}·${entity.entityId % LOCAL_RANGE}`;
 
 /**
  * A guard at rest, one number (round 3): a single slot as that slot (its troop type, tier and count); several as the

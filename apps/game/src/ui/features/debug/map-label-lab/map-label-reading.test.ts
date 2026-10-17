@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
 
-import { codeName, restingGuard } from "./map-label-reading";
+import { homeCode, restingGuard } from "./map-label-reading";
 
 const entity = (fields: Partial<MapLabelEntity>): MapLabelEntity => ({
   entityId: 1,
@@ -20,10 +20,9 @@ const entity = (fields: Partial<MapLabelEntity>): MapLabelEntity => ({
 });
 
 describe("what a map plate reads", () => {
-  it("calls an unnamed thing by its kind and its home and serial, and a realm by its name", () => {
-    expect(codeName(entity({ kind: "camp", entityId: 19 * 2 ** 32 + 21 }))).toBe("Camp 19·21");
-    expect(codeName(entity({ kind: "army", entityId: 12884901891 }))).toBe("Army 3·3");
-    expect(codeName(entity({ kind: "realm" }))).toBe("Stolsli");
+  it("reads a thing's short id off its entity id: its home namespace and serial", () => {
+    expect(homeCode(entity({ kind: "camp", entityId: 19 * 2 ** 32 + 21 }))).toBe("19·21");
+    expect(homeCode(entity({ kind: "army", entityId: 12884901891 }))).toBe("3·3");
   });
 
   it("rests a guard on one number: a single slot as itself, several as their total, none as open", () => {

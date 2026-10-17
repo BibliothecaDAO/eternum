@@ -111,14 +111,12 @@
   padding-left: 6px;
   font-weight: 700;
 }
-/* Where an army comes from. */
-.mll-from {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  border-left: 1px solid rgba(223, 170, 84, 0.3);
-  padding-left: 6px;
-  color: rgba(244, 235, 220, 0.85);
+/* An army's owner, on the line above its troops. */
+.mll-plate__name {
+  display: flex;
+  height: 22px;
+  align-items: flex-end;
+  padding-bottom: 1px;
 }
 
 /* A plate that found no room: the kind's painting in a disk ringed in the side's colour. */
