@@ -1,5 +1,4 @@
-import { getRealmNameById } from "@bibliothecadao/eternum";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { getHyperstructureName, getRealmNameById } from "@bibliothecadao/eternum";
 import { Box3, Matrix4, type Object3D, type Scene, Vector3 } from "three";
 
 import { CAMP_MODEL_PATH, RiftModelPath } from "../constants/scene-constants";
@@ -42,8 +41,6 @@ export interface MapLabelEntity {
   level: number;
   /** A structure's guard slots, in slot order; empty when it stands open. */
   guards: readonly MapLabelTroops[];
-  /** What a camp or a rift gives to the army that takes it. */
-  reward?: { resource: ResourcesIds; amount: number };
   /** An army's troops and stamina. */
   army?: { troops: MapLabelTroops; stamina: number; staminaMax: number };
 }
@@ -63,13 +60,14 @@ const PLATE_CLEARANCE = 0.3;
 /**
  * The lab's map: the benchmark's 48 real realms (a dense block on two-hex spacing) and, in the hexes between them, real
  * camp, rift, hyperstructure and knight models. Three realms are the viewer's, as a Blitz player starts with three. The
- * guards, rewards and armies spread over what a player must tell apart at a glance: whose, how strong and of what
- * troops, guarded or open, worth taking or not.
+ * guards and armies spread over what a player must tell apart at a glance: whose, how strong and of what troops,
+ * guarded or open.
  */
 export async function createMapLabelFixture(
   scene: Scene,
   terrain: WorldmapProceduralTerrain,
   realmPositions: readonly Vector3[],
+  { busy = false }: { busy?: boolean } = {},
 ): Promise<{ entities: MapLabelEntity[]; dispose: () => void }> {
   const realms = realmPositions.map((position, index) => realmEntity(position, index));
   // The hex south-east (or south-west) of a realm: on the next row, half a hex across.
@@ -123,7 +121,7 @@ export async function createMapLabelFixture(
   }
   towers.setCount(HYPERSTRUCTURES.length);
   const armies: MapLabelEntity[] = [];
-  for (const [index, army] of ARMIES.entries()) {
+  for (const [index, army] of [...ARMIES, ...(busy ? busyArmies() : [])].entries()) {
     const ground = beside(army.slot, -1);
     const anchor = await place("/models/units/default_knight_lvl1.glb", ground, 0.6);
     armies.push({ ...armyEntity(anchor, homeOf(army.slot, army.relation) ?? realms[army.slot], army, index), ground });
@@ -141,19 +139,19 @@ export async function createMapLabelFixture(
 type Placement = { slot: number; relation: MapLabelRelation };
 
 /** Camps beside realms (south-east of them): the viewer's, other players', an ally's, and bandit camps. */
-const CAMPS: readonly (Placement & { guard: MapLabelTroops; reward: number })[] = [
-  { slot: 18, relation: "own", guard: { type: "crossbowman", tier: 1, count: 300 }, reward: 550 },
-  { slot: 9, relation: "enemy", guard: { type: "crossbowman", tier: 3, count: 400 }, reward: 900 },
-  { slot: 12, relation: "enemy", guard: { type: "crossbowman", tier: 2, count: 350 }, reward: 700 },
-  { slot: 26, relation: "enemy", guard: { type: "paladin", tier: 1, count: 500 }, reward: 650 },
-  { slot: 29, relation: "neutral", guard: { type: "paladin", tier: 1, count: 250 }, reward: 1200 },
-  { slot: 36, relation: "neutral", guard: { type: "crossbowman", tier: 2, count: 1100 }, reward: 800 },
-  { slot: 41, relation: "ally", guard: { type: "paladin", tier: 1, count: 450 }, reward: 600 },
+const CAMPS: readonly (Placement & { guard: MapLabelTroops })[] = [
+  { slot: 18, relation: "own", guard: { type: "crossbowman", tier: 1, count: 300 } },
+  { slot: 9, relation: "enemy", guard: { type: "crossbowman", tier: 3, count: 400 } },
+  { slot: 12, relation: "enemy", guard: { type: "crossbowman", tier: 2, count: 350 } },
+  { slot: 26, relation: "enemy", guard: { type: "paladin", tier: 1, count: 500 } },
+  { slot: 29, relation: "neutral", guard: { type: "paladin", tier: 1, count: 250 } },
+  { slot: 36, relation: "neutral", guard: { type: "crossbowman", tier: 2, count: 1100 } },
+  { slot: 41, relation: "ally", guard: { type: "paladin", tier: 1, count: 450 } },
 ];
-/** Rifts: unowned, guarded, each holding essence. */
-const RIFTS: readonly (Placement & { guard: MapLabelTroops; reward: number })[] = [
-  { slot: 3, relation: "neutral", guard: { type: "crossbowman", tier: 2, count: 300 }, reward: 1200 },
-  { slot: 33, relation: "neutral", guard: { type: "crossbowman", tier: 3, count: 500 }, reward: 3000 },
+/** Rifts: unowned and guarded; a rift yields essence. */
+const RIFTS: readonly (Placement & { guard: MapLabelTroops })[] = [
+  { slot: 3, relation: "neutral", guard: { type: "crossbowman", tier: 2, count: 300 } },
+  { slot: 33, relation: "neutral", guard: { type: "crossbowman", tier: 3, count: 500 } },
 ];
 /** Two hyperstructures: one an enemy holds behind four guard slots, one unclaimed and open. */
 const HYPERSTRUCTURES: readonly (Placement & { guards: MapLabelTroops[] })[] = [
@@ -180,6 +178,22 @@ const ARMIES: readonly (Placement & { troops: MapLabelTroops; stamina: number })
   { slot: 28, relation: "ally", troops: { type: "crossbowman", tier: 2, count: 700 }, stamina: 60 },
   { slot: 35, relation: "enemy", troops: { type: "knight", tier: 2, count: 400 }, stamina: 110 },
 ];
+
+/**
+ * A busy Blitz: an army beside every realm that has none yet, so the block holds what a full lobby fields in one view
+ * (48 realms and about as many armies, with the camps, rifts and hyperstructures between them).
+ */
+const busyArmies = (): (Placement & { troops: MapLabelTroops; stamina: number })[] => {
+  const taken = new Set(ARMIES.map((army) => army.slot));
+  return Array.from({ length: 48 }, (_, slot) => slot)
+    .filter((slot) => !taken.has(slot))
+    .map((slot) => ({
+      slot,
+      relation: (["enemy", "enemy", "ally", "enemy"] as const)[slot % 4],
+      troops: { type: TROOP_TYPES[slot % 3], tier: (1 + (slot % 3)) as 1 | 2 | 3, count: 200 + ((slot * 211) % 1800) },
+      stamina: 20 + ((slot * 37) % 100),
+    }));
+};
 
 const OWN_REALMS = new Set([18, 19, 20]);
 const ALLY_REALMS = new Set([28, 41]);
@@ -215,7 +229,7 @@ const siteEntity = (
   kind: "camp" | "rift",
   anchor: Vector3,
   home: MapLabelEntity | null,
-  site: Placement & { guard: MapLabelTroops; reward: number },
+  site: Placement & { guard: MapLabelTroops },
 ): Omit<MapLabelEntity, "ground"> => ({
   // An unowned site is the world's: allocated in the administrative namespace, zero, after the realms' setup ids.
   entityId: home ? home.entityId * LOCAL_RANGE + 3 + site.slot : 100 + site.slot,
@@ -227,7 +241,6 @@ const siteEntity = (
   homeName: home?.name ?? "",
   level: 0,
   guards: [site.guard],
-  reward: { resource: kind === "rift" ? ResourcesIds.Essence : ResourcesIds.Labor, amount: site.reward },
 });
 
 const hyperstructureEntity = (
@@ -240,7 +253,9 @@ const hyperstructureEntity = (
   relation: hyperstructure.relation,
   owner: home?.owner ?? null,
   anchor,
-  name: "",
+  name: getHyperstructureName({
+    entity_id: home ? home.entityId * LOCAL_RANGE + 40 + hyperstructure.slot : 200 + hyperstructure.slot,
+  } as never),
   homeName: home?.name ?? "",
   level: 0,
   guards: hyperstructure.guards,

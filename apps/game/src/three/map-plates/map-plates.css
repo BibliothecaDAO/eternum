@@ -1,13 +1,13 @@
-/* The map plates (owner's pick, rounds 2 and 3), in the War room HUD's look (hud/hud.css, index.css under
+/* The map plates (map-plates.tsx, the owner's pick, map-labels rounds 2 to 4), in the War room HUD's look (hud/hud.css, index.css under
    classic-hud): Exo 2 text, the teal glass surface, gold hairlines. The side reads as the plate's left bar: yours gold,
    an ally teal, an enemy red, an unowned thing stone. Every word is 14 px or more; the row reads at 15. */
-.mll {
-  --mll-glass: linear-gradient(180deg, rgba(25, 41, 48, 0.94), rgba(16, 28, 35, 0.96));
-  --mll-hairline: rgba(223, 170, 84, 0.5);
-  --mll-own: #f3d08a;
-  --mll-ally: #7fd6cf;
-  --mll-enemy: #ff7b6b;
-  --mll-neutral: #b9b1a1;
+.mp {
+  --mp-glass: linear-gradient(180deg, rgba(25, 41, 48, 0.94), rgba(16, 28, 35, 0.96));
+  --mp-hairline: rgba(223, 170, 84, 0.5);
+  --mp-own: #f3d08a;
+  --mp-ally: #7fd6cf;
+  --mp-enemy: #ff7b6b;
+  --mp-neutral: #b9b1a1;
   position: absolute;
   z-index: 2;
   inset: 0;
@@ -16,20 +16,20 @@
   font-family: "Exo 2", system-ui, sans-serif;
   color: #f4ebdc;
 }
-.mll [data-relation="own"] {
-  --mll-side: var(--mll-own);
+.mp [data-relation="own"] {
+  --mp-side: var(--mp-own);
 }
-.mll [data-relation="ally"] {
-  --mll-side: var(--mll-ally);
+.mp [data-relation="ally"] {
+  --mp-side: var(--mp-ally);
 }
-.mll [data-relation="enemy"] {
-  --mll-side: var(--mll-enemy);
+.mp [data-relation="enemy"] {
+  --mp-side: var(--mp-enemy);
 }
-.mll [data-relation="neutral"] {
-  --mll-side: var(--mll-neutral);
+.mp [data-relation="neutral"] {
+  --mp-side: var(--mp-neutral);
 }
 
-.mll-at {
+.mp-at {
   position: absolute;
   left: 0;
   top: 0;
@@ -37,35 +37,35 @@
 }
 
 /* The plate: one row of facts; opened, its extra lines stand above the row. */
-.mll-plate {
+.mp-plate {
   position: relative;
   display: flex;
   flex-direction: column;
   white-space: nowrap;
-  border: 1px solid var(--mll-hairline);
-  border-left: 3px solid var(--mll-side);
+  border: 1px solid var(--mp-hairline);
+  border-left: 3px solid var(--mp-side);
   border-radius: 6px;
-  background: var(--mll-glass);
+  background: var(--mp-glass);
   padding: 0 8px 0 6px;
   font-size: 15px;
   font-weight: 600;
   line-height: 1;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
-.mll-plate__row {
+.mp-plate__row {
   display: flex;
   height: 28px;
   align-items: center;
   gap: 6px;
 }
-.mll-plate__more {
+.mp-plate__more {
   display: flex;
   height: 24px;
   align-items: center;
   gap: 6px;
   border-bottom: 1px solid rgba(223, 170, 84, 0.25);
 }
-.mll-plate__meter {
+.mp-plate__meter {
   position: absolute;
   left: 6px;
   right: 6px;
@@ -74,39 +74,39 @@
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.14);
 }
-.mll-plate__meter > i {
+.mp-plate__meter > i {
   display: block;
   height: 100%;
   border-radius: 2px;
   background: #66ddab;
 }
 /* A place's name is a title (the War room's Cinzel); a player's name reads in the side's colour; ids and levels muted. */
-.mll-title {
+.mp-title {
   font-family: "Cinzel", serif;
   font-size: 16px;
   font-weight: 700;
   color: #f1dfb0;
 }
-.mll-owner {
-  color: var(--mll-side);
+.mp-owner {
+  color: var(--mp-side);
 }
-.mll-muted {
+.mp-muted {
   color: rgba(244, 235, 220, 0.75);
 }
-.mll-reward {
+.mp-reward {
   display: inline-flex;
   align-items: center;
   gap: 2px;
 }
 
 /* A troop stack: its painting (type and tier), the tier, the count. */
-.mll-troops {
+.mp-troops {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 /* The guard's one number, set apart from the owner or the reward before it. */
-.mll-guard {
+.mp-guard {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -115,7 +115,7 @@
   font-weight: 700;
 }
 /* An army's owner (opened: and its home realm), on the line above its troops. */
-.mll-plate__name {
+.mp-plate__name {
   display: flex;
   height: 24px;
   align-items: flex-end;
@@ -123,32 +123,32 @@
   padding-bottom: 1px;
 }
 /* The order an attacker meets guard slots in, read left to right. */
-.mll-next {
+.mp-next {
   margin: 0 2px;
   color: rgba(223, 170, 84, 0.8);
   font-weight: 700;
 }
 
 /* A plate that found no room: the kind's painting in a disk ringed in the side's colour. */
-.mll-pin {
+.mp-pin {
   display: flex;
   width: 28px;
   height: 28px;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--mll-side);
+  border: 2px solid var(--mp-side);
   border-radius: 9999px;
   background: radial-gradient(circle at 50% 35%, #2a3f45 0%, #16252a 70%, #0d171b 100%);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 
 /* Selected: a gold ring. A plate that would sit under an opened one steps aside. */
-.mll [data-selected="true"] :is(.mll-plate, .mll-pin) {
-  border-color: var(--mll-own);
+.mp [data-selected="true"] :is(.mp-plate, .mp-pin) {
+  border-color: var(--mp-own);
   box-shadow:
     0 0 0 2px rgba(243, 208, 138, 0.55),
     0 0 14px rgba(243, 208, 138, 0.4);
 }
-.mll [data-yields="true"] {
+.mp [data-yields="true"] {
   opacity: 0;
 }
