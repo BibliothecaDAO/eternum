@@ -235,12 +235,24 @@ export const GAME_TASKS = {
     ...TRANSFER_SENT,
   },
   "blitz-transfer-gesture": {
-    goal: "Blitz: select a holding, right-click another of yours, and send it wheat",
+    goal: "Blitz: choose a holding in the holdings list, right-click another of yours on the map, and send it wheat",
     layouts: ["desktop"],
     view: "map",
     presses: [
       // The row's own button: the star beside it is named by its pin words.
       { name: "the first holding", within: HOLDING_ROWS, text: "^(?!Pin |Unpin ).+" },
+      { name: "another of your holdings, right-clicked", holdingTile: true, button: "right" },
+      ...sendWheat(1),
+    ],
+    ...TRANSFER_SENT,
+  },
+  "blitz-transfer-gesture-map": {
+    goal: "Blitz: select a holding on the map, right-click another of yours, and send it wheat",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      // Selecting a holding on the map draws its deploy tiles: the right-click on another must still be the transfer.
+      { name: "another of your holdings, selected on the map", holdingTile: true },
       { name: "another of your holdings, right-clicked", holdingTile: true, button: "right" },
       ...sendWheat(1),
     ],

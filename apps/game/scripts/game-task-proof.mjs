@@ -81,10 +81,10 @@ const pressStep = async (b, press, layout) => {
   return true;
 };
 
-/** The map's selection names a holding, and the pointer rests on another of the player's. */
+/** The pointer rests on one of the player's holdings other than the one the HUD has selected. */
 const ANOTHER_HOLDING_HOVERED = `(() => {
-  const map = window.__eternumMapSelection;
-  return Boolean(map?.hovered?.ownedByViewer && map.structure && map.hovered.id !== Number(map.structure.id));
+  const hovered = window.__eternumMapSelection?.hovered;
+  return Boolean(hovered?.ownedByViewer && !hovered.selectedHolding);
 })()`;
 
 /** Moves the pointer out from the screen's centre until `found` holds, and clicks there with `button`. */
