@@ -50,12 +50,11 @@ export const FONTS = {
 } as const;
 
 /**
- * The Blitz and Eternum HUD's faces (its War room skin, 16 October 2026), as CSS variables under html.classic-hud only:
- * Exo 2 for everything read there (--font-ui, also `font-ui`), Cinzel for its panel titles (--font-hud-title).
+ * The Blitz and Eternum HUD's face (its War room skin, 16 October 2026), as a CSS variable under html.classic-hud only:
+ * Exo 2 for everything read there, panel titles included (--font-ui, also `font-ui`).
  */
 export const CLASSIC_HUD_FONTS = {
   ui: '"Exo 2", "Atkinson Hyperlegible Next", system-ui, sans-serif',
-  "hud-title": '"Cinzel", serif',
 } as const;
 
 /**
@@ -80,12 +79,6 @@ export const FONT_FACES = [
     fontFamily: '"Exo 2"',
     src: 'url("/fonts/exo-2.woff2") format("woff2")',
     fontWeight: "100 900",
-    fontDisplay: "swap",
-  },
-  {
-    fontFamily: '"Cinzel"',
-    src: 'url("/fonts/cinzel.woff2") format("woff2")',
-    fontWeight: "400 900",
     fontDisplay: "swap",
   },
 ] as const;

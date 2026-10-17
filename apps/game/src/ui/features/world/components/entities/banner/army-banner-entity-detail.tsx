@@ -7,8 +7,7 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { InfoBubble } from "../collapsible-bubble";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
   isStaminaRecharging,
@@ -123,20 +122,12 @@ const ArmyBannerEntityDetailContent = memo(
     );
 
     return (
-      <div
-        className={cn(
-          "pointer-events-auto flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl px-3 py-3",
-          OVERLAY_SURFACE_BASE,
-          hasWarnings && "ring-1 ring-gold/30",
-          className,
-        )}
+      <InfoBubble
+        title={coordsLabel}
+        cue={headerAction}
+        className={cn("flex h-full min-h-0 flex-col overflow-hidden", hasWarnings && "ring-1 ring-gold/30", className)}
+        bodyClassName="flex min-h-0 flex-col gap-2"
       >
-        {coordsLabel && (
-          <div className="flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
-            <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
-            {headerAction}
-          </div>
-        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -238,7 +229,7 @@ const ArmyBannerEntityDetailContent = memo(
             />
           )}
         </div>
-      </div>
+      </InfoBubble>
     );
   },
 );

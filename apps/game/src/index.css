@@ -430,9 +430,8 @@ html.scene-viewport body {
 }
 
 /* The Blitz and Eternum HUD's type (classic-hud on <html>, set while that HUD is mounted): its War room skin, which the
-   owner approved on 16 October 2026. Exo 2 for everything read (--font-ui), Cinzel capitals for its panel titles only
-   (--font-hud-title, hud/hud.css), and otherwise the readable rules: sentence case, upright and untracked, on the teal
-   overlay surface. */
+   owner approved on 16 October 2026. Exo 2 for everything read (--font-ui), panel titles included, and otherwise the
+   readable rules: sentence case, upright and untracked, on the teal overlay surface. */
 html.classic-hud {
   --overlay-surface-from: #192930;
   --overlay-surface-to: #101c23;
@@ -495,6 +494,30 @@ html.classic-hud .hud-value {
 /* The Blitz and Eternum HUD's labels (the top bar's among them) read at 14 px, as its chat strip does. */
 html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   font-size: 0.875rem;
+}
+/* Inside its panels (InfoBubble, .hud-panel) every reading is one step larger: its text a pixel up, the panel's title
+   and labels 16 px, in the same padding. A rim badge's 10 px stays, fitted to its ring. */
+html.classic-hud .hud-panel .text-xs {
+  font-size: 0.8125rem;
+}
+html.classic-hud .hud-panel .text-sm {
+  font-size: 0.9375rem;
+}
+html.classic-hud .hud-panel .text-base {
+  font-size: 1.0625rem;
+}
+html.classic-hud .hud-panel .text-\[11px\] {
+  font-size: 12px;
+}
+html.classic-hud .hud-panel .text-\[12px\] {
+  font-size: 13px;
+}
+/* After the plain sizes, so a reading that names its kind (hud-body on a text-xs line) keeps its kind's size. */
+html.classic-hud .hud-panel :is(.hud-caps, .hud-caps-tight, .hud-value) {
+  font-size: 1rem;
+}
+html.classic-hud .hud-panel .hud-body {
+  font-size: 1.0625rem;
 }
 .frontier-sheet {
   /* An opaque base under the translucent gradient: nothing beneath a sheet shows through it. */

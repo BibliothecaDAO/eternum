@@ -14,6 +14,7 @@ import {
   useStructureProductionSummary,
 } from "@/ui/features/world/components/entities/structure-production-summary";
 import { Icon } from "@/ui/design-system/icon";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import {
   formatPopulationStatusLabel,
   formatUsedBuildingTilesLabel,
@@ -30,8 +31,9 @@ import { ProductionStatusBadge } from "@/ui/shared";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 
 /**
- * The selected holding of the player's: its name with rename, its population, building tiles and automation, then a
- * medallion per resource it makes or holds (five to a row, by id), then its relics. Nothing for a holding not theirs.
+ * The selected holding of the player's, in a HUD panel named for it with rename beside the name: its population,
+ * building tiles and automation, then a medallion per resource it makes or holds (five to a row), then its relics.
+ * Nothing for a holding not theirs.
  */
 export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }) => {
   const entityId = useUIStore((state) => state.structureEntityId);
@@ -40,56 +42,58 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
   if (detail.isLoadingStructure || !detail.structure || !detail.isMine) return null;
   const isVillage = isVillageLikeStructureCategory(detail.structure.base.category);
   return (
-    <section aria-label="Selected holding" className="flex min-w-0 flex-col gap-2">
-      <CardHeader
-        entityId={entityId}
-        name={detail.structureName ?? detail.typeLabel ?? "Holding"}
-        holding={holding}
-        automation={isVillage ? "village" : detail.structure.base.category === StructureType.Realm ? "realm" : null}
-      />
-      <ResourceRings resources={detail.resources} summary={summary} />
-      <HeldRelics entityId={entityId} resources={detail.resources} activeRelicIds={detail.relicEffects} />
-    </section>
+    <InfoBubble
+      label="Selected holding"
+      title={detail.structureName ?? detail.typeLabel ?? "Holding"}
+      cue={<RenameButton entityId={entityId} />}
+      className="flex min-h-0 flex-col"
+      bodyClassName="min-h-0 overflow-y-auto scrollbar-thin"
+    >
+      <div className="flex min-w-0 flex-col gap-2">
+        <HoldingLine
+          entityId={entityId}
+          holding={holding}
+          automation={isVillage ? "village" : detail.structure.base.category === StructureType.Realm ? "realm" : null}
+        />
+        <ResourceRings resources={detail.resources} summary={summary} />
+        <HeldRelics entityId={entityId} resources={detail.resources} activeRelicIds={detail.relicEffects} />
+      </div>
+    </InfoBubble>
   );
 };
 
-/** The name on its own line, with rename beside it; under it the holding's population, tiles and automation. */
-const CardHeader = ({
+/** Rename, beside the holding's name in its panel's header. */
+const RenameButton = ({ entityId }: { entityId: ID }) => {
+  const rename = useUIStore((state) => state.setPendingRenameStructureEntityId);
+  return (
+    <button
+      type="button"
+      aria-label="Rename"
+      title="Rename"
+      onClick={() => rename(safeInteger(entityId))}
+      className="flex h-6 w-6 items-center justify-center rounded-md text-kit-muted hover:text-gold"
+    >
+      <Icon name="edit" size={14} />
+    </button>
+  );
+};
+
+/** The holding's population, tiles and automation, on one line under its panel's header. */
+const HoldingLine = ({
   entityId,
-  name,
   holding,
   automation,
 }: {
   entityId: ID;
-  name: string;
   holding: StructureWithMetadata | null;
   automation: "realm" | "village" | null;
-}) => {
-  const rename = useUIStore((state) => state.setPendingRenameStructureEntityId);
-  return (
-    <header className="flex min-w-0 flex-col gap-1">
-      <div className="flex min-w-0 items-center gap-1">
-        <h2 className="hud-card-title min-w-0 truncate" title={name}>
-          {name}
-        </h2>
-        <button
-          type="button"
-          aria-label="Rename"
-          title="Rename"
-          onClick={() => rename(safeInteger(entityId))}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-kit-muted hover:text-gold"
-        >
-          <Icon name="edit" size={16} />
-        </button>
-      </div>
-      <div className="flex min-h-9 items-center gap-4 text-sm font-semibold tabular-nums text-kit-cream">
-        {holding && <HoldingStats holding={holding} />}
-        <span className="flex-1" />
-        {automation && <AutomationSelect entityId={entityId} entityType={automation} />}
-      </div>
-    </header>
-  );
-};
+}) => (
+  <div className="flex min-h-9 items-center gap-4 text-sm font-semibold tabular-nums text-kit-cream">
+    {holding && <HoldingStats holding={holding} />}
+    <span className="flex-1" />
+    {automation && <AutomationSelect entityId={entityId} entityType={automation} />}
+  </div>
+);
 
 /** Population used of its room, and building tiles used of those open, as the structure list reads them. */
 const HoldingStats = ({ holding }: { holding: StructureWithMetadata }) => {

@@ -3,6 +3,7 @@ import type { LeftListFilter } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { Icon } from "@/ui/design-system/icon";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "@/ui/features/world/hud/holdings-model";
@@ -58,7 +59,7 @@ export const HoldingPicker = ({
 
   return (
     <section aria-label={title} className="flex min-h-0 flex-col gap-2">
-      <h3 className="hud-panel-title">{title}</h3>
+      <h3 className={HUD_LABEL}>{title}</h3>
       {/* The kinds held as tabs, one even when only one is held: the lit tab names the kind its list shows. */}
       <div role="tablist" aria-label={`${title} by kind`} className="hud-tabs">
         {kinds.map((entry) => {

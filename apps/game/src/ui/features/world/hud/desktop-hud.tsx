@@ -1,13 +1,12 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { SpectatorStandingsBody } from "@/ui/features/world/containers/spectator-standings";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ActionBubbles } from "./action-bubbles";
 import { GuidedRail } from "./guided-rail";
 import { HoldingsList, useHoldings } from "./holdings";
-import { HUD_PANEL } from "./hud-panel";
 import { useHudKeys } from "./hud-keys";
 import { IdleArmiesButton, useIdleArmies } from "./idle-armies";
 import { HudMinimap } from "./minimap";
@@ -57,9 +56,14 @@ const LeftColumn = () => {
       {ordersAllowed ? (
         <HoldingsAndCard />
       ) : (
-        <section aria-label="Spectator standings" className={cn(HUD_PANEL, "max-h-[40vh] overflow-y-auto p-0")}>
+        <InfoBubble
+          label="Spectator standings"
+          title="Standings"
+          className="flex max-h-[40vh] flex-col"
+          bodyClassName="min-h-0 overflow-y-auto p-0"
+        >
           <SpectatorStandingsBody />
-        </section>
+        </InfoBubble>
       )}
       <HudMinimap className="min-h-[160px] w-full shrink" />
     </aside>
@@ -71,9 +75,7 @@ const HoldingsAndCard = () => {
   return (
     <>
       <HoldingsList holdings={holdings} />
-      <div className={cn(HUD_PANEL, "flex min-h-0 shrink-0 flex-col overflow-y-auto scrollbar-thin")}>
-        <RealmCard holding={holdings.selected} />
-      </div>
+      <RealmCard holding={holdings.selected} />
     </>
   );
 };

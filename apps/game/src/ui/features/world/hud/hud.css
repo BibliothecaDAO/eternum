@@ -1,18 +1,6 @@
-/* The Blitz and Eternum HUD's parts: the minimap's plate, round medallions with rim badges, round command bubbles, tabs,
-   and the titles, on the teal surfaces and in the faces html.classic-hud gives the HUD (index.css). Every size is
+/* The Blitz and Eternum HUD's parts inside its panels: round medallions with rim badges, round command bubbles and tabs,
+   on the teal surfaces and in the faces html.classic-hud gives the HUD (index.css). Every size is
    fixed, so hover, focus and selection only recolour; nothing in the HUD moves when the pointer does. */
-
-.hud-plate {
-  pointer-events: auto;
-  border: 1px solid var(--line2);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to));
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(243, 208, 138, 0.22),
-    inset 0 0 0 3px rgba(19, 15, 12, 0.6),
-    inset 0 0 0 4px rgba(107, 82, 48, 0.45);
-}
 
 /* Medallion */
 .hud-medallion {
@@ -160,24 +148,6 @@
 }
 .hud-select:disabled {
   opacity: 0.55;
-}
-
-/* The panels' titles in Cinzel capitals, tracked (the one place the HUD sets capitals); the selected holding's name in
-   Cinzel, larger and untracked. */
-.hud-panel-title {
-  font-family: var(--font-hud-title, var(--font-display));
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #d6bd84;
-}
-.hud-card-title {
-  font-family: var(--font-hud-title, var(--font-display));
-  font-size: 16px;
-  letter-spacing: 0.06em;
-  line-height: 1.2;
-  color: #f1dfb0;
 }
 
 /* Tabs: a tab per kind held, its painting and its count; the lit one is the list shown. */

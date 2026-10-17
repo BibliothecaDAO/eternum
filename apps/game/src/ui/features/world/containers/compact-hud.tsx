@@ -34,6 +34,7 @@ import { ActionTile } from "./left-facets/structure-actions-panel";
 import { StructureListColumn } from "./left-facets/structure-list-column";
 import { useStructureActions } from "./left-facets/use-structure-actions";
 import { resolveLeftViewSurface } from "./left-view-policy";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { SpectatorStandingsBody } from "./spectator-standings";
 
 type CompactTab = "empire" | "map" | "log" | "chat" | "details";
@@ -291,7 +292,14 @@ const SheetContent = ({
       </div>
     );
   if (tab === "details") return tileDetails;
-  if (tab === "empire") return ordersAllowed ? <EmpireColumn /> : <SpectatorStandingsBody />;
+  if (tab === "empire")
+    return ordersAllowed ? (
+      <EmpireColumn />
+    ) : (
+      <InfoBubble variant="section" title="Standings" collapsible={false} bodyClassName="p-0">
+        <SpectatorStandingsBody />
+      </InfoBubble>
+    );
   return null;
 };
 

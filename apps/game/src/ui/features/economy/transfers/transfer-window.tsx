@@ -13,7 +13,8 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
-import { HUD_PANEL } from "@/ui/features/world/hud/hud-panel";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
@@ -112,8 +113,10 @@ const swapEnds = (ends: TransferEnds): TransferEnds =>
     : ends;
 
 /** A view tab in the HUD's title type; the lit one (gold hairline on a gold wash) is the view shown. */
-const VIEW_TAB =
-  "hud-panel-title !mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 transition hover:border-gold/45 data-[selected]:border-gold/70 data-[selected]:bg-gold/15";
+const VIEW_TAB = cn(
+  HUD_LABEL,
+  "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 transition hover:border-gold/45 data-[selected]:border-gold/70 data-[selected]:bg-gold/15",
+);
 
 /**
  * The one transfer window: sending, and what is on its way, the repeating transfers and every holding's balances,
@@ -202,8 +205,8 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
   const change = (next: Partial<Omit<Draft, "revision">>) => setDraft((current) => revised(current, next));
   return (
     <div className="flex flex-col gap-3 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[260px_auto_260px_1fr]">
-      {/* Each column its own panel, as the HUD's: teal glass, a gold hairline. */}
-      <div className={cn(HUD_PANEL, "flex min-h-0 flex-col")}>
+      {/* Each column uses the shared HUD panel. */}
+      <InfoBubble className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
         <HoldingPicker
           title="Send from"
           chosen={ends.sourceId === null ? [] : [ends.sourceId]}
@@ -211,7 +214,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           onPick={(id) => change({ ends: pickSource(ends, id), edited: null })}
           note={(id) => <DonkeysNote id={id} />}
         />
-      </div>
+      </InfoBubble>
       {/* Closed until one holding is chosen to send to, and it looks closed and says so. */}
       <button
         type="button"
@@ -223,7 +226,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
       >
         ⇄
       </button>
-      <div className={cn(HUD_PANEL, "flex min-h-0 flex-col")}>
+      <InfoBubble className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
         <HoldingPicker
           title="Send to"
           chosen={ends.destinationIds}
@@ -234,8 +237,8 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
             return seconds === undefined ? null : landsText(seconds);
           }}
         />
-      </div>
-      <div className={cn(HUD_PANEL, "flex min-h-0 flex-col gap-3")}>
+      </InfoBubble>
+      <InfoBubble className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col gap-3 py-2">
         {ends.sourceId !== null && sides && plans && (
           <Goods
             key={ends.sourceId}
@@ -252,7 +255,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
             }
           />
         )}
-      </div>
+      </InfoBubble>
     </div>
   );
 };

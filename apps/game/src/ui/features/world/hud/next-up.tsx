@@ -5,8 +5,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { Button } from "@/ui/design-system/kit/button";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { useEmpireSuggestions } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
 import {
   isOrderSuggestion,
@@ -50,28 +50,27 @@ export const NextUp = () => {
   usePublishShown(step);
   if (!step) return null;
   return (
-    <section
-      aria-label="Next up"
-      className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex flex-col gap-1.5 rounded-xl px-3 py-2")}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="hud-panel-title">Next up</h2>
-        {steps.length > 1 && (
+    <InfoBubble
+      label="Next up"
+      title="Next up"
+      cue={
+        steps.length > 1 && (
           <button
             type="button"
             onClick={() => setCursor(index + 1)}
-            className="h-7 rounded-md px-1 text-sm font-semibold text-kit-cream hover:text-gold"
+            className="rounded-md px-1 font-semibold text-kit-cream hover:text-gold"
           >
             {index + 1} of {steps.length} ›
           </button>
-        )}
-      </div>
+        )
+      }
+    >
       {step.kind === "level-up" ? (
         <LevelUpStep key={step.key} realmId={step.realmId} name={step.name} />
       ) : (
         <StepBody line={step.line} verb={step.verb} busy={step.busy} run={step.run} />
       )}
-    </section>
+    </InfoBubble>
   );
 };
 

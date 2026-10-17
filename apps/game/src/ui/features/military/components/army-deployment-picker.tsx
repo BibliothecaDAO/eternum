@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 
 import { useEffect } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -32,7 +33,7 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
   return (
     <div className="w-[360px] max-w-full space-y-3 p-3">
       <div className="flex items-center justify-between">
-        <h2 className="hud-panel-title">{describeDeploymentTarget(target)}</h2>
+        <h2 className={HUD_LABEL}>{describeDeploymentTarget(target)}</h2>
         <button
           type="button"
           aria-label="Close deployment picker"

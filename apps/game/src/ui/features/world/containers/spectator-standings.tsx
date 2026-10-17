@@ -13,8 +13,7 @@ import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-le
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
 
-/** The desktop left column for a spectator: the standings table in its own fixed frame. */
-/** The standings table without a frame, so the desktop column and the compact sheet host the same rows. */
+/** The standings table without a frame or title, so the desktop panel and the compact sheet host the same rows. */
 export function SpectatorStandingsBody() {
   return <StandingsRows key={configManager.getActiveGameId()} />;
 }
@@ -47,7 +46,6 @@ function StandingsRows() {
 
   return (
     <>
-      <div className="px-3 py-2 text-xs uppercase tracking-widest text-gold border-b border-gold/20">Standings</div>
       <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-[10px] text-gold/50">
         <span>#</span>
         <span>Player</span>

@@ -560,7 +560,6 @@ const CREDITS: LegalSection[] = [
           licence="im-fell-english-sc-regular.OFL.txt"
         />
         <Typeface name="Exo 2" authors="The Exo 2 Project Authors" licence="exo-2.OFL.txt" />
-        <Typeface name="Cinzel" authors="The Cinzel Project Authors" licence="cinzel.OFL.txt" />
         <Typeface
           name="Atkinson Hyperlegible Next"
           authors="The Atkinson Hyperlegible Next Project Authors (Braille Institute)"

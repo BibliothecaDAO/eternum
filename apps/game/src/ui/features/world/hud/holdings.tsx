@@ -17,7 +17,7 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "./holdings-model";
-import { HUD_PANEL } from "./hud-panel";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { Medallion } from "./medallion";
 
 const hasLevels = (structure: StructureWithMetadata) => structure.realmLevelLabel !== null;
@@ -106,7 +106,11 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
   const { toggleFavorite } = useFavoriteStructures();
   const kind = holdings.kinds.find((entry) => entry.kind === holdings.filter);
   return (
-    <section className={cn(HUD_PANEL, "flex max-h-[40vh] shrink-0 flex-col gap-1.5")}>
+    <InfoBubble
+      title={kind ? `${kind.plural} · ${kind.count}` : "Holdings"}
+      className="flex max-h-[40vh] flex-col"
+      bodyClassName="flex min-h-0 flex-col gap-1.5"
+    >
       {holdings.kinds.length > 1 && (
         <div role="tablist" aria-label="Holdings by kind" className="hud-tabs">
           {holdings.kinds.map((entry) => (
@@ -126,11 +130,6 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
           ))}
         </div>
       )}
-      {kind && (
-        <h2 className="hud-panel-title">
-          {kind.plural} · {kind.count}
-        </h2>
-      )}
       <HoldingSearch holdings={holdings} />
       <div role="tabpanel" className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 scrollbar-thin">
         {holdings.visible.map((structure) => (
@@ -144,7 +143,7 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
         ))}
         {holdings.visible.length === 0 && <NoHoldingsMatch />}
       </div>
-    </section>
+    </InfoBubble>
   );
 };
 
