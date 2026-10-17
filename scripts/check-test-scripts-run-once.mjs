@@ -6,16 +6,32 @@ import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 
-/** A vitest call that watches: `vitest` alone or with options, not `vitest run` (or bench, list, related). */
-const WATCHING_VITEST = /(^|[\s;&|(])vitest(?!\s+(run|bench|list|related)\b)(?=\s|$|[;&|)])/;
+/**
+ * Each command of a script, split at `&&`, `||`, `;`, `|` and `&`, as its words. A narrow grammar: enough for the
+ * scripts packages write, not a shell.
+ */
+const commandsOf = (script) =>
+  script
+    .split(/&&|\|\||[;|&]/)
+    .map((command) => command.replace(/[()]/g, " ").trim().split(/\s+/).filter(Boolean))
+    .filter((words) => words.length > 0);
+
+/**
+ * Whether one command starts vitest in watch mode. Vitest watches unless its own command says `run` (or `list`) right
+ * after it, or carries `--run`: `bench` and `related` watch too, and a flag in one command never covers another.
+ */
+const watches = (words) => {
+  const at = words.findIndex((word) => word === "vitest" || word.endsWith("/vitest"));
+  if (at === -1) return false;
+  const rest = words.slice(at + 1);
+  return !["run", "list"].includes(rest[0]) && !rest.includes("--run");
+};
 
 /** Every manifest whose `test` script watches instead of running once. */
 export function findWatchingTestScripts(manifests) {
   return manifests.flatMap(({ path, text }) => {
     const script = JSON.parse(text).scripts?.test;
-    return typeof script === "string" && WATCHING_VITEST.test(script) && !/--run\b/.test(script)
-      ? [{ path, script }]
-      : [];
+    return typeof script === "string" && commandsOf(script).some(watches) ? [{ path, script }] : [];
   });
 }
 
