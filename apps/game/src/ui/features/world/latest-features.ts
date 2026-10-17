@@ -58,7 +58,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Clearer events and log",
     description:
-      "Each event stays its full 20 s on screen before it fades and leaves. The log tells each action once and names what it is about, a realm or an army, in plain words, and connection changes no longer fill it. Labels on the map now stay clear of the side panels.",
+      "Each event stays its full 20 s on screen before it fades and leaves, and each action is one row. An opened crate's row takes you to what holds its relics, the army or the realm. The log tells each action once and names what it is about in plain words. The minimap takes the shape of the map it shows, the realm card shows all its relics, and labels on the map stay clear of the side panels.",
     type: "improvement",
   },
   {
