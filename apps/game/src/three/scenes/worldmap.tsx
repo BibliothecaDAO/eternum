@@ -2404,7 +2404,8 @@ export default class WorldmapScene extends WarpTravel {
       exploreStamina: configManager.getExploreStaminaCost(),
       wheat: armyTroops ? orderWheat(path, armyTroops) : 0,
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
-      occupied: Boolean(structure || army || chest),
+      // The selected army's own tile is where it stands, not a target out of reach.
+      occupied: Boolean(structure || chest || (army && Number(army.id) !== Number(this.selectedArmyId()))),
       refusal,
       staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
       points: configManager.getVictoryPointGrants(),
