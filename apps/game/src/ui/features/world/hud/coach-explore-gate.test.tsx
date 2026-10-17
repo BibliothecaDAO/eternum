@@ -16,6 +16,22 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: (
 vi.mock("@/hooks/use-fact-view", () => ({
   useFactView: (view: unknown) => (view === selectableArmiesView ? world.armies : []),
 }));
+vi.mock("@/hooks/store/use-account-store", () => ({ useAccountAddress: () => 0x111n }));
+// The player's army 69 fell a second ago, as the game's history tells it.
+vi.mock("@/hooks/store/use-story-events-store", () => ({
+  useStoryEvents: () => ({
+    data: [
+      {
+        id: "fallen",
+        timestampMs: 349_000,
+        storyPayload: {
+          attacker: { player: "0x111", category: "Knight", before: "1000000000000", after: "0" },
+          defender: { player: "0x222", category: "Paladin", before: "1000000000000", after: "100000000000" },
+        },
+      },
+    ],
+  }),
+}));
 vi.mock("@bibliothecadao/eternum/game-sync", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   getActiveGameSyncRuntime: () => ({ getWorldSpatialProjection: () => world.projection }),
@@ -27,7 +43,7 @@ import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { ArmyActionManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import explorerFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
-import { useCoachSteps } from "./use-coach-steps";
+import { useCoachSteps, useLostArmyAlert } from "./use-coach-steps";
 
 /**
  * The deploy fixture's realm 7 with explorer 70 at full stamina, and the realm's wheat and fish held at the amounts given
@@ -115,4 +131,44 @@ it("tells an army it can explore only when the explore order's own rule lets it:
   const fed = realmWithExplorer({ wheat: "100000000000000", fish: "100000000000000" });
   expect(new ArmyActionManager(fed, {} as never, 70).canExplore(350)).toBe(true);
   expect(coachLines(fed)).toContain("Your army can explore");
+});
+
+it("drops the raise-another alert once a new army stands in the field, which the coach then sends to explore", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const store = realmWithExplorer({ wheat: "100000000000000", fish: "100000000000000" });
+  const Probe = () => (
+    <div>
+      <p data-alert>
+        {useLostArmyAlert()
+          .map((step) => step.key)
+          .join(" ")}
+      </p>
+      <p data-coach>
+        {useCoachSteps()
+          .map((step) => (step.kind === "order" ? step.line : step.why))
+          .join(" | ")}
+      </p>
+    </div>
+  );
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const draw = () =>
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <Probe />
+        </GameProvider>,
+      ),
+    );
+  try {
+    world.armies = [];
+    draw();
+    expect(host.querySelector("[data-alert]")!.textContent).toBe("lost:fallen");
+    world.armies = [{ entityId: 70 }];
+    draw();
+    expect(host.querySelector("[data-alert]")!.textContent).toBe("");
+    expect(host.querySelector("[data-coach]")!.textContent).toContain("Your army can explore");
+  } finally {
+    act(() => root.unmount());
+  }
 });

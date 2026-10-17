@@ -20,9 +20,9 @@ import {
   biomeTypeOf,
   configManager,
   getGuardsByStructure,
+  getBalance,
   getTileAt,
   lostArmyLine,
-  readResourceManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -63,9 +63,11 @@ export const useCoachSteps = (): NextStep[] => {
 
 /**
  * The player's army that fell in a fight in the last few minutes, as an alert to raise another where troops are on
- * hand; none otherwise. It is an alert, so it shows with tips off too.
+ * hand, while they have no army in the field; none once one stands again (the loss stays in Events and the Log). It
+ * is an alert, so it shows with tips off too.
  */
 export const useLostArmyAlert = (): NextStep[] => {
+  const inTheField = useFactView(selectableArmiesView).length > 0;
   const viewer = useAccountAddress();
   const address = viewer === null ? null : `0x${viewer.toString(16)}`;
   const { data: battles } = useStoryEvents(20, "BattleEvent", address ?? undefined);
@@ -80,7 +82,7 @@ export const useLostArmyAlert = (): NextStep[] => {
         .find(({ line }) => line !== null),
     [battles, nowMs, address],
   );
-  if (!lost?.line) return [];
+  if (!lost?.line || inTheField) return [];
   const raise = raiseStep({ troopsOnHand, grants: configManager.getVictoryPointGrants() });
   const next = troopsOnHand
     ? `Raise another at ${troopsOnHand.realmName} (${troopsOnHand.troops.toLocaleString()} troops on hand).`
@@ -180,29 +182,35 @@ const TROOP_RESOURCES = [
   ResourcesIds.PaladinT3,
 ];
 
-/** The player's holding with the most troops on hand, where an army can be raised now; null when none holds any. */
+/**
+ * The player's holding with the most troops on hand, where an army can be raised now; null when none holds any. On
+ * hand is what Military offers: the stored troops and what the barracks trained since, within storage, at chain time.
+ */
 const useTroopsOnHand = (): TroopsOnHand | null => {
   const { setup } = useGame();
   const mode = useGameModeConfig();
   const structures = useFactView(playerStructuresView);
-  const facts = useNativeRevision(["ResourceBalance", "ResourceProduction"]);
+  const tick = useCurrentDefaultTick();
+  const facts = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   return useMemo(
     () =>
       structures
         .map((structure) => ({
           realmId: structure.entityId,
           realmName: mode.structure.getName(structure.structure).name,
-          troops: troopsHeld(setup.store, structure.entityId),
+          troops: troopsOnHand(setup.store, structure.entityId, tick),
         }))
         .reduce<TroopsOnHand | null>((most, realm) => (realm.troops > (most?.troops ?? 0) ? realm : most), null),
-    [structures, setup.store, mode, facts],
+    [structures, setup.store, mode, tick, facts],
   );
 };
 
-/** The whole troops a holding holds, every type and tier together. */
-const troopsHeld = (store: NativeFactStore, entityId: number): number => {
-  const resources = readResourceManager(store, entityId);
-  const held = TROOP_RESOURCES.reduce((sum, troop) => sum + (knownBalance(resources.balance(troop)) ?? 0), 0);
+/** The whole troops a holding can raise an army from now, every type and tier together, as Military counts them. */
+const troopsOnHand = (store: NativeFactStore, entityId: number, tick: number): number => {
+  const held = TROOP_RESOURCES.reduce(
+    (sum, troop) => sum + (knownBalance(getBalance(entityId, troop, tick, store).balance) ?? 0),
+    0,
+  );
   return Math.floor(held);
 };
 
