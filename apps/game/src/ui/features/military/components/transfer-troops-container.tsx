@@ -881,28 +881,20 @@ export const TransferTroopsContainer = ({
     ? `Troop mismatch: You can only transfer troops of the same tier and type (Tier ${incoming?.tier} ${incoming?.category} ≠ Tier ${holder?.tier} ${holder?.category})`
     : null;
 
-  const getDisabledMessage = () => {
-    if (loading) return "Processing transfer...";
-    if (transferRestriction) return transferRestriction;
-    if (troopAmount === 0) return "Please select an amount of troops to transfer";
-
-    if (guardSelectionRequired && guardSlot === null) {
-      return "Please select a guard slot";
-    }
-
-    if (receivingGuard && receivingGuard.cooldownRemaining > 0) {
-      return `Cannot transfer troops: Slot is rebuilding (${formatTime(receivingGuard.cooldownRemaining)} remaining)`;
-    }
-
+  // What the player has still to choose is the button's own words, never an error: an error answers an action.
+  const nextStep = (() => {
+    if (guardSelectionRequired && guardSlot === null) return "Choose a guard slot";
+    if (troopAmount === 0) return "Choose an amount";
     return null;
-  };
+  })();
 
-  const guardSelectionComplete = !guardSelectionRequired || guardSlot !== null;
-  const amountStepComplete = troopAmount > 0;
-  const stepOneReady = guardSelectionComplete && amountStepComplete;
-  const transferReady = stepOneReady && !isTroopsTransferDisabled;
-
-  const disabledMessage = getDisabledMessage();
+  // A fact of the game that keeps the transfer closed, said calmly: nothing the player did failed.
+  const blockReason =
+    transferRestriction ??
+    troopMismatchMessage ??
+    (receivingGuard && receivingGuard.cooldownRemaining > 0
+      ? `This slot is rebuilding (${formatTime(receivingGuard.cooldownRemaining)} remaining).`
+      : null);
 
   const quickAmountOptions = useMemo(() => {
     if (maxTroops <= 0) return [];
@@ -1202,18 +1194,13 @@ export const TransferTroopsContainer = ({
                 </div>
                 <TransferBalanceCards cards={transferBalanceCards} />
 
-                {troopMismatchMessage && (
-                  <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
-                    <SemanticIcon name="warning" className="mt-[2px] h-4 w-4 flex-shrink-0" />
-                    <span>{troopMismatchMessage}</span>
-                  </div>
-                )}
-
-                {!transferReady && disabledMessage && !troopMismatchMessage && (
-                  <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
-                    <SemanticIcon name="warning" className="mt-[2px] h-4 w-4 flex-shrink-0" />
-                    <span>{disabledMessage}</span>
-                  </div>
+                {blockReason && (
+                  <p
+                    role="status"
+                    className="rounded-md border border-gold/30 bg-dark-brown/50 p-3 text-sm text-gold/70"
+                  >
+                    {blockReason}
+                  </p>
                 )}
 
                 <div className="flex flex-col items-center">
@@ -1224,7 +1211,7 @@ export const TransferTroopsContainer = ({
                     isLoading={loading}
                     className="w-full sm:w-auto"
                   >
-                    {loading ? "Processing..." : "Transfer Troops"}
+                    {loading ? "Processing..." : (nextStep ?? "Transfer Troops")}
                   </Button>
                 </div>
               </div>

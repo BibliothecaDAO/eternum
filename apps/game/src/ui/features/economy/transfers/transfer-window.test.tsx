@@ -167,8 +167,11 @@ const type = async (label: string, value: string) => {
   });
 };
 const sendButton = () =>
-  [...host.querySelectorAll("button")].find((button) => /^(Send|Choose)/.test(button.textContent!))!;
+  [...host.querySelectorAll("button")].find((button) => /^(Send|Choose|Not enough)/.test(button.textContent!))!;
 const send = async () => act(async () => sendButton().click());
+/** Anything the window writes in red. */
+const redText = () =>
+  [...host.querySelectorAll('[class*="red-"], [class*="danger"]')].map((element) => element.textContent);
 const toggle = async (id: number) =>
   act(async () => host.querySelector<HTMLButtonElement>(`[data-pick="Send to:${id}"]`)!.click());
 const setHeld = async (wheat: number) =>
@@ -241,6 +244,17 @@ describe("the transfer window's amounts", () => {
     // 100 kg needs 2 carriers beside the 8 sent: 10 of 10.
     expect(sendButton().disabled).toBe(false);
     await type(`${DONKEYS}: total to send`, "9");
+    expect(sendButton().disabled).toBe(true);
+    expect(sendButton().textContent).toBe("Not enough donkeys: these loads need 11, 10 here");
+    expect(redText()).toEqual([]);
+  });
+
+  it("opens without an error: the closed Send says what to choose", async () => {
+    await open([]);
+    expect(redText()).toEqual([]);
+    expect(sendButton().textContent).toBe("Choose where to send");
+    await toggle(A);
+    expect(sendButton().textContent).toBe("Choose what to send");
     expect(sendButton().disabled).toBe(true);
   });
 });

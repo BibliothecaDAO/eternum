@@ -261,7 +261,7 @@ const Goods = ({
 
   return (
     <>
-      <p className={cn("text-sm", short ? "text-red-300" : "text-kit-muted")}>
+      <p className="text-sm text-kit-muted">
         {destinationIds.length === 0
           ? `${amountText(sides.donkeysHave)} donkeys at ${sides.sourceName} · pick where to send`
           : `${travelText(sides.travelMinutes)} by donkey · ${amountText(donkeys)} of ${amountText(sides.donkeysHave)} donkeys`}
@@ -277,11 +277,16 @@ const Goods = ({
       <button
         type="button"
         disabled={chosen === 0 || destinationIds.length === 0 || short || send.busy}
-        title={short ? "Not enough donkeys for these loads" : undefined}
         onClick={() => void sendNow()}
         className="rounded-md bg-gold px-4 py-3 text-base font-semibold text-kit-ink disabled:opacity-50"
       >
-        {sendWords(chosen, destinationIds.length, sides.travelMinutes, repeat, interval)}
+        {sendWords({
+          goods: chosen,
+          destinations: destinationIds.length,
+          minutes: sides.travelMinutes,
+          donkeys: { needed: donkeys, held: sides.donkeysHave },
+          every: repeat ? interval : null,
+        })}
       </button>
       <label className="flex items-center gap-2 text-sm text-kit-muted">
         <input type="checkbox" checked={repeat} onChange={(event) => setRepeat(event.target.checked)} /> Repeat
@@ -321,13 +326,31 @@ const plansFor = (refused: Shipment[], goods: Good[]): Plans => {
   return plans;
 };
 
-/** The Send button's words: what leaves, to how many, and when it lands; or what is still missing. */
-const sendWords = (goods: number, destinations: number, minutes: number, repeat: boolean, interval: number) => {
+/**
+ * The Send button's words: what leaves, to how many, and when it lands; or, while it is closed, what is still to
+ * choose or what keeps it closed. Never an error: the window has had no action to answer yet, and the owner's prefill
+ * alone can ask for more donkeys than the source holds.
+ */
+const sendWords = ({
+  goods,
+  destinations,
+  minutes,
+  donkeys,
+  every,
+}: {
+  goods: number;
+  destinations: number;
+  minutes: number;
+  donkeys: { needed: number; held: number };
+  every: number | null;
+}) => {
   if (destinations === 0) return "Choose where to send";
   if (goods === 0) return "Choose what to send";
+  if (donkeys.needed > donkeys.held)
+    return `Not enough donkeys: these loads need ${amountText(donkeys.needed)}, ${amountText(donkeys.held)} here`;
   const to = destinations > 1 ? ` to ${destinations} holdings` : "";
-  const every = repeat ? ` · every ${interval} min` : "";
-  return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · on the road ${travelText(minutes)}${every}`;
+  const repeat = every === null ? "" : ` · every ${every} min`;
+  return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · on the road ${travelText(minutes)}${repeat}`;
 };
 
 /** Each destination's goods in whole units, as much as the source holds now. */

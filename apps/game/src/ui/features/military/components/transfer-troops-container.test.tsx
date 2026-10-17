@@ -83,6 +83,12 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}) => {
     [...host.querySelectorAll("button")].find((element) => element.textContent?.includes(label));
   return {
     text: () => host.textContent ?? "",
+    /** The form's messages on a red wash (a slot's own "Hit first" tag is part of its button, not a message). */
+    errors: () =>
+      [...host.querySelectorAll('[class*="bg-danger/10"]')]
+        .filter((element) => !element.closest("button"))
+        .map((element) => element.textContent),
+    send: () => [...host.querySelectorAll("button")].at(-1)!,
     transfer: () => button("Transfer Troops"),
     choose: (slotName: string) => act(() => button(slotName)!.click()),
     sendMax: () => act(() => button("Max")!.click()),
@@ -94,6 +100,18 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}) => {
 };
 
 describe("reinforcing a structure from an adjacent army", () => {
+  it("opens without an error: the closed button says what to choose, until an amount is chosen", () => {
+    const view = reinforce();
+    expect(view.errors()).toEqual([]);
+    expect(view.text()).not.toMatch(/please select/i);
+    expect(view.send().textContent).toBe("Choose an amount");
+    expect(view.send().disabled).toBe(true);
+    view.sendMax();
+    expect(view.send().textContent).toBe("Transfer Troops");
+    expect(view.send().disabled).toBe(false);
+    view.unmount();
+  });
+
   it("sends T1 knights into an empty guard slot, whatever type the slot last held", () => {
     const view = reinforce();
     view.sendMax();
