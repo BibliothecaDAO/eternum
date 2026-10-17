@@ -234,32 +234,36 @@ const plateOf = (entity: MapLabelEntity): MapPlate => {
       entity.homeName,
     );
   }
-  return buildStructurePlate({
-    entityId: entity.entityId,
-    structureName: entity.name,
-    structureType: STRUCTURE_TYPES[entity.kind as keyof typeof STRUCTURE_TYPES],
-    mineKind: entity.kind === "rift" ? 1 : undefined,
-    level: entity.level,
-    isMine,
-    isAlly,
-    owner,
-    guardArmies: entity.guards.map((slot, index) => ({
-      slot: index,
-      category: CATEGORY[slot.type],
-      tier: slot.tier,
-      count: slot.count,
-    })),
-    incomingTroopArrivals: (entity.arrivals ?? []).map((arrival) => ({
-      structureEntityId: entity.entityId,
-      resourceId: getTroopResourceId(CATEGORY[arrival.troops.type], `T${arrival.troops.tier}`),
-      troopType: CATEGORY[arrival.troops.type],
-      troopTier: `T${arrival.troops.tier}`,
-      count: arrival.troops.count,
-      arrivesAt: BigInt(arrival.secondsLeft),
-      day: 0,
-      slot: 0n,
-    })),
-  });
+  return buildStructurePlate(
+    {
+      entityId: entity.entityId,
+      structureName: entity.name,
+      structureType: STRUCTURE_TYPES[entity.kind as keyof typeof STRUCTURE_TYPES],
+      mineKind: entity.kind === "rift" ? 1 : undefined,
+      level: entity.level,
+      isMine,
+      isAlly,
+      owner,
+      guardArmies: entity.guards.map((slot, index) => ({
+        slot: index,
+        category: CATEGORY[slot.type],
+        tier: slot.tier,
+        count: slot.count,
+      })),
+      incomingTroopArrivals: (entity.arrivals ?? []).map((arrival) => ({
+        structureEntityId: entity.entityId,
+        resourceId: getTroopResourceId(CATEGORY[arrival.troops.type], `T${arrival.troops.tier}`),
+        troopType: CATEGORY[arrival.troops.type],
+        troopTier: `T${arrival.troops.tier}`,
+        count: arrival.troops.count,
+        arrivesAt: BigInt(arrival.secondsLeft),
+        day: 0,
+        slot: 0n,
+      })),
+    },
+    0,
+    entity.reward,
+  );
 };
 
 /** The game's camera over the block: its 45° field and 60° pitch, at a play distance or close. */

@@ -1,9 +1,9 @@
-/* The map plates (map-plates.tsx, the owner's pick, map-labels rounds 2 to 4), in the War room HUD's look (hud/hud.css, index.css under
-   classic-hud): Exo 2 text, the teal glass surface, gold hairlines. The side reads as the plate's left bar: yours gold,
-   an ally teal, an enemy red, an unowned thing stone. Every word is 14 px or more; the row reads at 15. */
+/* The map plates (map-plates.tsx, the owner's pick, map-labels rounds 2 to 5), in the HUD panel's family (InfoBubble:
+   the overlay surface, its gold hairline and shadow, Exo 2): the surface follows the mode's panels (--overlay-surface-*,
+   index.css). The side reads as the plate's left bar and its player's name: yours gold, an ally teal, an enemy red, an
+   unowned thing stone. Every word is 13 px or more; a row reads at 15. */
 .mp {
-  --mp-glass: linear-gradient(180deg, rgba(25, 41, 48, 0.94), rgba(16, 28, 35, 0.96));
-  --mp-hairline: rgba(223, 170, 84, 0.5);
+  --mp-gold: 223, 170, 84;
   --mp-own: #f3d08a;
   --mp-ally: #7fd6cf;
   --mp-enemy: #ff7b6b;
@@ -36,40 +36,38 @@
   will-change: transform;
 }
 
-/* The plate: one row of facts; opened, its extra lines stand above the row. */
+/* The plate: the HUD panel's surface (OVERLAY_SURFACE_BASE) at a plate's size; its rows, most important first. */
 .mp-plate {
   position: relative;
   display: flex;
   flex-direction: column;
   white-space: nowrap;
-  border: 1px solid var(--mp-hairline);
+  border: 1px solid rgba(var(--mp-gold), 0.25);
   border-left: 3px solid var(--mp-side);
-  border-radius: 6px;
-  background: var(--mp-glass);
-  padding: 0 8px 0 6px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to));
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(var(--mp-gold), 0.18);
+  padding: 3px 8px 3px 6px;
   font-size: 15px;
   font-weight: 600;
   line-height: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.mp-plate:has(.mp-plate__meter) {
+  padding-bottom: 8px;
 }
 .mp-plate__row {
-  display: flex;
-  height: 28px;
-  align-items: center;
-  gap: 6px;
-}
-.mp-plate__more {
   display: flex;
   height: 24px;
   align-items: center;
   gap: 6px;
-  border-bottom: 1px solid rgba(223, 170, 84, 0.25);
 }
 .mp-plate__meter {
   position: absolute;
   left: 6px;
-  right: 6px;
-  bottom: 2px;
+  right: 8px;
+  bottom: 4px;
   height: 3px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.14);
@@ -80,23 +78,28 @@
   border-radius: 2px;
   background: #66ddab;
 }
-/* A place's name is a title, as a HUD panel's is (Exo 2, a step larger, bold, gold); a player's name reads in the side's
-   colour; ids and levels muted. */
-.mp-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #f1dfb0;
-}
+
+/* The readings, in the panel's voice: a player in the side's colour; a place's own name as the panel's title (a step
+   larger, bold, gold); a kind in plain words; a label (rank, reward, state) in the panel's label gold; an id as its
+   small cue; a count in white. */
 .mp-owner {
   color: var(--mp-side);
 }
-.mp-muted {
-  color: rgba(244, 235, 220, 0.75);
+.mp-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgb(var(--mp-gold));
 }
-.mp-reward {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+.mp-label {
+  color: rgba(var(--mp-gold), 0.75);
+}
+.mp-cue {
+  font-size: 13px;
+  color: rgba(var(--mp-gold), 0.6);
+}
+.mp-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 /* A troop stack: its painting (type and tier), the tier, the count. */
@@ -105,27 +108,17 @@
   align-items: center;
   gap: 4px;
 }
-/* The guard's one number, set apart from the owner or the reward before it. */
-.mp-guard {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-left: 1px solid rgba(223, 170, 84, 0.3);
-  padding-left: 6px;
-  font-weight: 700;
-}
-/* An army's owner (opened: and its home realm), on the line above its troops. */
-.mp-plate__name {
-  display: flex;
-  height: 24px;
-  align-items: flex-end;
-  gap: 6px;
-  padding-bottom: 1px;
+/* Between a name and what it holds, as the panel's dividers are. */
+.mp-divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 5px 0;
+  background: rgba(var(--mp-gold), 0.3);
 }
 /* The order an attacker meets guard slots in, read left to right. */
 .mp-next {
   margin: 0 2px;
-  color: rgba(223, 170, 84, 0.8);
+  color: rgba(var(--mp-gold), 0.8);
   font-weight: 700;
 }
 
@@ -138,7 +131,7 @@
   justify-content: center;
   border: 2px solid var(--mp-side);
   border-radius: 9999px;
-  background: radial-gradient(circle at 50% 35%, #2a3f45 0%, #16252a 70%, #0d171b 100%);
+  background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to));
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
 

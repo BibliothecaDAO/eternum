@@ -1,7 +1,8 @@
 import { mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { displayPlayerName } from "@bibliothecadao/eternum";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { REALM_LEVELS } from "@/ui/design-system/kit/words";
+import { displayPlayerName, getStructureTypeName } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
 
@@ -28,25 +29,35 @@ export interface ArmyPlate {
 }
 
 /**
- * A structure's plate: a named one (a realm, a hyperstructure) by its name, a nameless one by its kind's painting and
- * what it yields; then its guard. Opened: its owner, a realm's level or the thing's id, and its guard slots.
+ * A structure's plate: whose it is (and a realm's rank), its name (a place's own, else its kind's) and its guard; for a
+ * camp or a rift, what taking it gives. Opened: its guard slots, the troops on their way to it, and a nameless thing's
+ * owner and id.
  */
 export interface StructurePlate {
   kind: "structure";
   relation: PlateRelation;
-  /** A realm's or a hyperstructure's own name; absent for a nameless thing. */
-  title?: string;
-  /** The kind's painting, drawn where a nameless thing has no name. */
-  icon: IconMeaning;
   owner: string;
-  level?: number;
+  /** A realm's rank, said beside its owner: Settlement, City, Kingdom or Empire. */
+  rank?: string;
+  /** A realm's or a hyperstructure's own name; else its kind's ("Camp", "Essence Rift"). */
+  name: string;
+  /** Whether `name` is the place's own, set as a title, rather than its kind's. */
+  named: boolean;
+  /** What taking it gives, said in words: "1,200 Essence", "250 points". */
+  reward?: string;
   code: string;
-  /** What taking it yields (a rift's essence), by its resource. */
-  yields?: ResourcesIds;
-  /** Guard slots in slot order; empty when it stands open. */
+  /** Guard slots in slot order; empty when it stands undefended. */
   guards: PlateTroops[];
   /** Troops on their way to it (the player's own reinforcements), soonest first, at most three. */
   arrivals: { troops: PlateTroops; secondsLeft: number }[];
+  /** Its kind's painting, drawn only as the pin of a plate with no room. */
+  icon: IconMeaning;
+}
+
+/** What taking a camp or a rift gives: an amount of a unit ("Essence", "points"). */
+export interface PlateReward {
+  amount: number;
+  unit: string;
 }
 
 export type MapPlate = ArmyPlate | StructurePlate;
@@ -82,6 +93,8 @@ const tierOf = (tier: number | string): PlateTroops["tier"] => {
 /** A named structure's kinds: a realm and a hyperstructure carry their own names; the rest are named by their kind. */
 const NAMED: ReadonlySet<StructureType> = new Set([StructureType.Realm, StructureType.Hyperstructure]);
 
+const rankOf = (level: number): string | undefined => REALM_LEVELS[level];
+
 export const buildStructurePlate = (
   structure: Pick<
     StructureInfo,
@@ -97,21 +110,24 @@ export const buildStructurePlate = (
     | "incomingTroopArrivals"
   >,
   nowSeconds = 0,
+  reward?: PlateReward,
 ): StructurePlate => {
   const named = NAMED.has(structure.structureType) && structure.structureName.trim().length > 0;
-  const isRift = structure.structureType === StructureType.Rift || structure.mineKind === 1;
   return {
     kind: "structure",
     relation: relationOf(structure),
-    title: named ? structure.structureName.trim() : undefined,
+    owner: ownerOf(structure.owner),
+    rank: structure.structureType === StructureType.Realm ? rankOf(structure.level) : undefined,
+    name: named
+      ? structure.structureName.trim()
+      : getStructureTypeName(structure.structureType, structure.mineKind ?? undefined),
+    named,
+    reward: reward && reward.amount > 0 ? `${formatCount(reward.amount)} ${reward.unit}` : undefined,
+    code: homeCode(Number(structure.entityId)),
     icon:
       structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structureMeaning(structure.structureType),
-    owner: ownerOf(structure.owner),
-    level: structure.structureType === StructureType.Realm ? structure.level + 1 : undefined,
-    code: homeCode(Number(structure.entityId)),
-    yields: isRift ? ResourcesIds.Essence : undefined,
     guards: (structure.guardArmies ?? [])
       .filter((guard) => guard.count > 0)
       .toSorted((a, b) => a.slot - b.slot)

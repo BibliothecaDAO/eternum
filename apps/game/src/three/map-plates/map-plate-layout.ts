@@ -1,4 +1,5 @@
-import { formatCount, restingGuard, type MapPlate } from "./map-plate-model";
+import { formatCount, type MapPlate } from "./map-plate-model";
+import { plateRows, type PlateSegment } from "./map-plate-rows";
 
 /** A plate's box on screen, in CSS pixels from the map's top left. */
 export interface PlateBox {
@@ -36,75 +37,71 @@ export const stack = (boxes: readonly PlateBox[], maxSteps = 2): Map<string, num
   return lifts;
 };
 
-const ROW_HEIGHT = 30;
-const NAME_LINE = 24;
-const OPEN_LINE = 24;
+/** A row's height, the plate's padding and frame, the gap between readings: as map-plates.css draws them. */
+const ROW_HEIGHT = 24;
+const PLATE_PADDING_Y = 6;
+const METER = 5;
+const PLATE_PADDING_X = 6 + 8 + 3 + 1;
+const READING_GAP = 6;
 
-/** The widest opened army that still reads as one line. */
-const ONE_LINE_WIDTH = 360;
+const FONTS = {
+  body: '600 15px "Exo 2"',
+  title: '700 16px "Exo 2"',
+  cue: '600 13px "Exo 2"',
+  chip: '700 12px "Exo 2"',
+} as const;
 
-/** A text's drawn width: in the plate's face, or as a title (a place's name, a step larger and bold). */
+/** A text's drawn width in one of the plate's faces. */
 const measure = (() => {
   let context: CanvasRenderingContext2D | null | undefined;
-  return (text: string, title = false) => {
+  return (text: string, font: keyof typeof FONTS) => {
     if (context === undefined)
       context = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
-    if (!context) return text.length * (title ? 10 : 8);
-    context.font = title ? '700 16px "Exo 2"' : '600 15px "Exo 2"';
+    if (!context) return text.length * (font === "cue" ? 7 : 8.5);
+    context.font = FONTS[font];
     return context.measureText(text).width;
   };
 })();
 
-/** A plate's resting size, from the words it draws and its paintings and chips at their fixed widths. */
-export const restingSize = (plate: MapPlate): { width: number; height: number } => {
-  if (plate.kind === "army") {
-    const troops = `T${plate.troops.tier} ${formatCount(plate.troops.count)}`;
-    return {
-      width: Math.ceil(Math.max(measure(troops) + 20 + 12, measure(plate.owner)) + 32),
-      height: ROW_HEIGHT + NAME_LINE,
-    };
+/** A troop stack's painting, and the tier chip's padding around its letters. */
+const TROOP_PAINTING = 20;
+const CHIP_PADDING = 10;
+
+const segmentWidth = (segment: PlateSegment): number => {
+  switch (segment.kind) {
+    case "owner":
+    case "word":
+    case "label":
+    case "count":
+      return measure(segment.text, "body");
+    case "title":
+      return measure(segment.text, "title");
+    case "cue":
+      return measure(segment.text, "cue");
+    case "troops":
+      return (
+        TROOP_PAINTING +
+        measure(`T${segment.troops.tier}`, "chip") +
+        CHIP_PADDING +
+        measure(formatCount(segment.troops.count), "body") +
+        2 * 4
+      );
+    case "next":
+      return measure("›", "body") + 4;
+    case "divider":
+      return 1;
   }
-  const guard = restingGuard(plate.guards);
-  const guardWords =
-    guard.kind === "open"
-      ? ""
-      : guard.kind === "slot"
-        ? `T${guard.slot.tier} ${formatCount(guard.slot.count)}`
-        : formatCount(guard.total);
-  const lead = plate.title ? measure(plate.title, true) : 20 + (plate.yields !== undefined ? 22 : 0);
-  const guardWidth = guard.kind === "open" ? 18 : measure(guardWords) + (guard.kind === "slot" ? 20 + 12 : 0);
-  return { width: Math.ceil(lead + guardWidth + 46), height: ROW_HEIGHT };
 };
 
-/** An opened army's two halves (owner and home; id and troops), each as drawn. */
-const openedArmyHalves = (plate: Extract<MapPlate, { kind: "army" }>) => [
-  measure(`${plate.owner} `) + measure(plate.homeName, true) + 20,
-  measure(`${plate.code} T${plate.troops.tier} ${formatCount(plate.troops.count)}`) + 20 + 12 + 24,
-];
-
-/** Whether an opened army reads on one line. */
-export const armyFitsOneLine = (plate: Extract<MapPlate, { kind: "army" }>) => {
-  const [first, second] = openedArmyHalves(plate);
-  return first + second + 20 <= ONE_LINE_WIDTH;
-};
-
-/** A plate's size once opened: a structure grows upward by its lines; an army re-lays its own two lines inline. */
-export const openedSize = (plate: MapPlate): { width: number; height: number } => {
-  const resting = restingSize(plate);
-  if (plate.kind === "army") {
-    const [first, second] = openedArmyHalves(plate);
-    return armyFitsOneLine(plate)
-      ? { width: Math.ceil(first + second + 20), height: ROW_HEIGHT }
-      : { width: Math.ceil(Math.max(first, second) + 20), height: ROW_HEIGHT + NAME_LINE };
-  }
-  const slots = plate.guards.length > 1 ? 1 : 0;
-  const arrivals = plate.arrivals.length > 0 ? 1 : 0;
+/** A plate's size, resting or opened, from the rows it draws. */
+export const plateSize = (plate: MapPlate, open: boolean): { width: number; height: number } => {
+  const rows = plateRows(plate, open);
+  const width = Math.max(
+    ...rows.map((row) => row.reduce((sum, segment) => sum + segmentWidth(segment), 0) + READING_GAP * (row.length - 1)),
+  );
+  const meter = plate.kind === "army" && plate.stamina !== undefined ? METER : 0;
   return {
-    width: Math.max(
-      resting.width,
-      slots ? plate.guards.length * 96 : 0,
-      arrivals ? 24 + plate.arrivals.length * 130 : 0,
-    ),
-    height: resting.height + OPEN_LINE * (1 + slots + arrivals),
+    width: Math.ceil(width + PLATE_PADDING_X),
+    height: rows.length * ROW_HEIGHT + PLATE_PADDING_Y + meter,
   };
 };

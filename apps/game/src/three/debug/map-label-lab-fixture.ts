@@ -1,5 +1,6 @@
 import { getHyperstructureName, getRealmNameById } from "@bibliothecadao/eternum";
 import { Box3, Matrix4, type Object3D, type Scene, Vector3 } from "three";
+import { POINTS } from "@/ui/design-system/kit/words";
 
 import { CAMP_MODEL_PATH, RiftModelPath } from "../constants/scene-constants";
 import { HYPERSTRUCTURE_HEIGHT } from "../structures/hyperstructure-design";
@@ -43,6 +44,8 @@ export interface MapLabelEntity {
   guards: readonly MapLabelTroops[];
   /** An army's troops and stamina. */
   army?: { troops: MapLabelTroops; stamina: number; staminaMax: number };
+  /** What taking a camp or a rift gives: the points for a camp, the Essence a rift holds. */
+  reward?: { amount: number; unit: string };
   /** Troops on their way to a structure of the viewer's, with the seconds until each arrives. */
   arrivals?: readonly { troops: MapLabelTroops; secondsLeft: number }[];
 }
@@ -250,6 +253,13 @@ const siteEntity = (
   homeName: home?.name ?? "",
   level: 0,
   guards: [site.guard],
+  // As a Blitz world holds them: 250 points for a camp taken from the Vanguard, a rift's Essence filling over time.
+  reward:
+    kind === "rift"
+      ? { amount: 1_200 + ((site.slot * 977) % 9_000), unit: "Essence" }
+      : home
+        ? undefined
+        : { amount: 250, unit: POINTS },
 });
 
 const hyperstructureEntity = (

@@ -4,7 +4,7 @@ import { type Camera, Matrix4, Vector3 } from "three";
 
 import "./map-plates.css";
 import { keepLabelsBesideHudColumns } from "../utils/labels/hud-clearance";
-import { openedSize, restingSize, stack, type PlateBox } from "./map-plate-layout";
+import { plateSize, stack, type PlateBox } from "./map-plate-layout";
 import type { MapPlate } from "./map-plate-model";
 import { Pin, Plate } from "./map-plates";
 
@@ -171,8 +171,8 @@ export class MapPlateLayer {
       entityId: input.entityId,
       plate: input.plate,
       position: input.position.clone(),
-      resting: restingSize(input.plate),
-      opened: openedSize(input.plate),
+      resting: plateSize(input.plate, false),
+      opened: plateSize(input.plate, true),
     });
     this.invalidate();
   }

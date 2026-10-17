@@ -22,13 +22,17 @@ const army: ArmyPlate = {
 const realm: StructurePlate = {
   kind: "structure",
   relation: "enemy",
-  title: "Niziz",
-  icon: "realm",
   owner: "Tamsin",
-  level: 1,
+  rank: "Kingdom",
+  name: "Niziz",
+  named: true,
   code: "3·1",
-  guards: [],
+  guards: [
+    { type: "knight", tier: 1, count: 300 },
+    { type: "paladin", tier: 3, count: 600 },
+  ],
   arrivals: [],
+  icon: "realm",
 };
 
 describe("the map's plate layer, as the world map's managers drive it", () => {
@@ -80,7 +84,9 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
 
     structures.setHover(1);
     await frame();
-    expect(plateOf("Niziz")!.textContent).toContain("Level 1");
+    // Opened, the guard total gives way to its slots in the order an attacker meets them.
+    expect(isOpen("Niziz")).toBe(true);
+    expect(plateOf("Niziz")!.textContent).toContain("›");
 
     structures.clearHover();
     await frame();

@@ -1,4 +1,4 @@
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { stack, type PlateBox } from "./map-plate-layout";
@@ -18,9 +18,10 @@ const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = 
 });
 
 describe("a map plate's facts", () => {
-  it("names a realm by its own name and its level from one, with its owner and guards in slot order", () => {
+  it("names a realm by its own name and its rank in words, with its owner and guards in slot order", () => {
     const plate = buildStructurePlate(
       structure({
+        level: 2,
         guardArmies: [
           { slot: 2, category: "Paladin", tier: 3, count: 638 },
           { slot: 0, category: "Crossbowman", tier: 1, count: 516 },
@@ -28,32 +29,37 @@ describe("a map plate's facts", () => {
         ],
       }),
     );
-    expect(plate).toMatchObject({ title: "Epakehamamut", owner: "Tamsin", level: 1, relation: "enemy" });
+    expect(plate).toMatchObject({ name: "Epakehamamut", named: true, owner: "Tamsin", rank: "Kingdom" });
     expect(plate.guards).toEqual([
       { type: "crossbowman", tier: 1, count: 516 },
       { type: "paladin", tier: 3, count: 638 },
     ]);
   });
 
-  it("shows a nameless thing by its kind's painting, never its id, and nobody's camp as the Vanguard's", () => {
+  it("names a nameless thing by its kind, never its id, nobody's as the Vanguard's, and says what taking it gives", () => {
     const camp = buildStructurePlate(
       structure({
         entityId: 129,
-        structureName: "Camp",
+        structureName: "",
         structureType: StructureType.Camp,
         owner: { address: 0n, ownerName: "", guildName: "" },
       }),
+      0,
+      { amount: 250, unit: "points" },
     );
     expect(camp).toMatchObject({
-      title: undefined,
-      icon: "camp",
+      name: "Camp",
+      named: false,
       owner: "The Vanguard",
-      relation: "neutral",
+      reward: "250 points",
+      rank: undefined,
     });
     const rift = buildStructurePlate(
       structure({ structureName: "Essence Rift", structureType: StructureType.Mine, mineKind: 1 }),
+      0,
+      { amount: 1200.4, unit: "Essence" },
     );
-    expect(rift).toMatchObject({ icon: "rift", yields: ResourcesIds.Essence, title: undefined });
+    expect(rift).toMatchObject({ name: "Essence Rift", named: false, reward: "1,200 Essence" });
   });
 
   it("lists troops on their way to a structure, soonest first, with the time left", () => {

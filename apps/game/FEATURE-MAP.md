@@ -228,13 +228,16 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
 - **Plates**: a plate over each realm, structure and army at gameplay zoom (only the selected, hovered and top ones in
-  the mid band, none when zoomed out): a realm by its name and one guard number, a nameless thing by its painting, an
-  army by its owner over its troops and stamina. Hover a tile, or select it, to open its plate: owner, level or short id
-  ("19·21"), troops on their way, guard slots in the order an attacker meets them; for an army, its home realm and id.
-  Crowded plates stack up two steps, then shrink to a pin (`src/three/map-plates/`). An unnamed army or structure is
-  called by its kind ("Camp", "Army"), never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`),
-  the same name the attack toast uses. The dev build's lab draws the same plates over a fixture world, `/lab/map-labels`
-  (`zoom`, `hover`, `select`, `focus`, `busy=1` in the address).
+  the mid band, none when zoomed out), on the HUD panel's surface: two short rows at rest, three at most opened
+  (`src/three/map-plates/map-plate-rows.ts`). An army: its player over its troops and stamina; opened, its home realm
+  and short id ("19·12") join the player. A realm or hyperstructure: its player and a realm's rank (Settlement, City,
+  Kingdom, Empire) over its name and guard total, or "Undefended"; opened, the guard slots in the order an attacker
+  meets them, and the troops on their way. A camp or rift: its kind and what taking it gives ("Essence Rift | 6,441
+  Essence", "Camp | 250 points") over its guard; opened, its owner (the Vanguard for nobody's) and id lead. Hover a
+  tile, or select it, to open its plate. Crowded plates stack up two steps, then shrink to a pin. An unnamed army or
+  structure is called by its kind, never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The
+  dev build's lab draws the same plates over a fixture world, `/lab/map-labels` (`zoom`, `hover`, `select`, `focus`,
+  `busy=1` in the address).
 
 ## Outposts
 
