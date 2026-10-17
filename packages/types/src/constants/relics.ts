@@ -329,13 +329,18 @@ const relicCount = (count: number): string => `${count} relic${count === 1 ? "" 
  * relics stay with the army that opened it, the rest go to its home ("3 relics to the army Stolsli T1", "1 relic to the
  * army Stolsli T1, 2 to Stolsli", "3 relics to Stolsli"). `army` is the army's name ("Stolsli T1"), null when unknown.
  */
-export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string | null; home: string }): string => {
+/** How an opened chest's relics divide: army relics to the army that opened it, the rest to that army's home. */
+export const relicChestShares = (relics: ResourcesIds[]): { toArmy: number; toHome: number } => {
   const toArmy = relics.filter((id) => {
     const relic = getRelicInfo(id);
     if (!relic) throw new Error(`Resource ${id} is not a relic`);
     return relic.recipientType === RelicRecipientType.Explorer;
   }).length;
-  const toHome = relics.length - toArmy;
+  return { toArmy, toHome: relics.length - toArmy };
+};
+
+export const relicChestDelivery = (relics: ResourcesIds[], to: { army: string | null; home: string }): string => {
+  const { toArmy, toHome } = relicChestShares(relics);
   const army = to.army ? `the army ${to.army}` : "the army";
   if (toHome === 0) return `${relicCount(toArmy)} to ${army}`;
   if (toArmy === 0) return `${relicCount(toHome)} to ${to.home}`;

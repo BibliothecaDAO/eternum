@@ -12,22 +12,29 @@ const game = vi.hoisted(() => ({
   mapView: true,
   navigate: vi.fn(),
   selectArmy: vi.fn(),
+  goToStructure: vi.fn(),
 }));
 
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
       store: {
-        get: (model: string, key: { explorer_id?: number }) =>
+        // Every army here calls realm 5 home.
+        get: (model: string, key: { explorer_id?: number; entity_id?: number }) =>
           model === "ExplorerTroops" && game.armies.has(Number(key.explorer_id))
-            ? { explorer_id: key.explorer_id }
-            : undefined,
+            ? { explorer_id: key.explorer_id, owner: 5n }
+            : model === "Structure" && Number(key.entity_id) === 5
+              ? { entity_id: 5n }
+              : undefined,
       },
     },
   }),
 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0, useNativeRow: () => undefined }));
-vi.mock("@/hooks/helpers/use-navigate", () => ({ useNavigateToMapView: () => game.navigate }));
+vi.mock("@/hooks/helpers/use-navigate", () => ({
+  useNavigateToMapView: () => game.navigate,
+  useGoToStructure: () => game.goToStructure,
+}));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: game.mapView }) }));
 vi.mock("@/three/scenes/worldmap-army-select-request", () => ({ requestArmySelection: game.selectArmy }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
@@ -36,11 +43,13 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   entityMapPosition: () => ({ x: 50, y: 60 }),
   getEntityName: (entityId: number) => game.names.get(entityId),
   getIsBlitz: () => true,
-  structureMapPosition: () => null,
+  structureMapPosition: (_store: unknown, structure: { entity_id: bigint }) =>
+    structure.entity_id === 5n ? { x: 70, y: 80 } : null,
 }));
 
 import { FeedRowLine } from "./feed-row-line";
 import { selectImportantFeedRows, type ImportantFeedRow } from "./important-feed-rows";
+import { relicChestRelics } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
 const story = (id: string, kind: string, owner: string, payload: Record<string, unknown>, title: string) =>
@@ -56,13 +65,16 @@ const story = (id: string, kind: string, owner: string, payload: Record<string, 
     storyPayload: payload,
     presentation: { title, description: title },
   }) as unknown as ProcessedStoryEvent;
-const crate = story(
-  "crate",
-  "RelicChestOpened",
-  PLAYER,
-  { explorer_id: 9, coord: { x: 3, y: 4 } },
-  "War pack: 3 relics to the army Stolsli T1",
-);
+/** An opened crate of this pack, by army 9 on the hex (3, 4). */
+const crateOf = (pack: "War" | "Produce" | "Fortress", title: string) =>
+  story(
+    `crate-${pack}`,
+    "RelicChestOpened",
+    PLAYER,
+    { explorer_id: 9, coord: { x: 3, y: 4 }, relics: relicChestRelics({ pack, lucky: false }) },
+    title,
+  );
+const crate = crateOf("War", "War pack: 3 relics to the army Stolsli T1");
 const noFeed = { inFlight: [], arrived: [], recent: [] };
 
 let host: HTMLDivElement;
@@ -74,6 +86,7 @@ beforeEach(() => {
   game.mapView = true;
   game.navigate.mockClear();
   game.selectArmy.mockClear();
+  game.goToStructure.mockClear();
 });
 afterEach(() => host.remove());
 
@@ -118,7 +131,7 @@ describe("An opened crate in Events", () => {
   it("holds the player's opened crate, but not another player's, nor routine production", () => {
     const theirs = story("theirs", "RelicChestOpened", "0x2", { explorer_id: 7 }, "War pack: 3 relics to North T1");
     const production = story("made", "ProductionStory", PLAYER, {}, "Wheat produced");
-    expect(eventsRows([crate, theirs, production]).map((row) => row.id)).toEqual(["story:crate"]);
+    expect(eventsRows([crate, theirs, production]).map((row) => row.id)).toEqual(["story:crate-War"]);
   });
 
   it("names where the crate's relics went", () => {
@@ -143,6 +156,19 @@ describe("An opened crate in Events", () => {
     await clickRow(eventsRows([crate])[0]);
     expect(game.selectArmy).not.toHaveBeenCalled();
     expect(game.navigate.mock.calls[1][0].getContract()).toEqual({ x: 3, y: 4 });
+  });
+});
+
+describe("A structure pack's row", () => {
+  it("selects the realm that got most of the relics, not the army that opened the crate", async () => {
+    await clickRow(eventsRows([crateOf("Produce", "Produce pack: 3 relics to Stolsli")])[0]);
+    expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
+    expect(game.goToStructure.mock.calls[0][1].getContract()).toEqual({ x: 70, y: 80 });
+    expect(game.selectArmy).not.toHaveBeenCalled();
+
+    game.goToStructure.mockClear();
+    await clickRow(eventsRows([crateOf("Fortress", "Fortress pack: 1 relic to the army Stolsli T1, 2 to Stolsli")])[0]);
+    expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
   });
 });
 

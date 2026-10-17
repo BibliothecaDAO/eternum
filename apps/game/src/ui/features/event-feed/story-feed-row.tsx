@@ -5,9 +5,10 @@ import {
   normalizePresentationTroops,
   parsePresentationDescription,
 } from "@/ui/features/story-events/story-event-utils";
-import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useGoToStructure, useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { relicChestShares } from "@bibliothecadao/types";
 import { Position, configManager, structureMapPosition, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -34,32 +35,47 @@ function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFact
   return null;
 }
 
-/** The army a story's relics went to, while it stands: an opened crate pays army relics to the army that opened it. */
-function storyRelicArmy(event: ProcessedStoryEvent, store: NativeFactStore): number | null {
+/** Where an opened crate's relics are held: the army or its home structure, whichever got most of them. */
+type RelicHolder = { kind: "army"; id: number } | { kind: "structure"; id: number; position: Position };
+
+/**
+ * The holder of a crate's relics, while the opening army stands (its row names its home): its pack's army relics went
+ * to it and the rest to its home, so the row opens whichever got most. Null for any other story, or once the army is
+ * gone and its home unknown.
+ */
+function storyRelicHolder(event: ProcessedStoryEvent, store: NativeFactStore): RelicHolder | null {
   if (event.story !== "RelicChestOpened" || event.storyPayload.explorer_id == null) return null;
+  const game_id = configManager.getActiveGameId();
   const explorerId = storyPayloadId(event.storyPayload.explorer_id);
-  return store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: explorerId })
-    ? explorerId
-    : null;
+  const army = store.get("ExplorerTroops", { game_id, explorer_id: explorerId });
+  if (!army) return null;
+  const { toArmy, toHome } = relicChestShares((event.storyPayload.relics as number[]).map(Number));
+  if (toArmy >= toHome) return { kind: "army", id: explorerId };
+  const home = store.get("Structure", { game_id, entity_id: army.owner });
+  const site = home && structureMapPosition(store, home);
+  return site ? { kind: "structure", id: safeInteger(army.owner), position: Position.fromContract(site) } : null;
 }
 
 /**
- * Opens a story where it happened, for the Events card and the log alike: an opened crate's row selects the army that
- * holds its relics (on the world map; from the realm view it flies there), any other row, or a crate whose army is
- * gone, flies to its tile. Null when the story has no place left to show.
+ * Opens a story where it happened, for the Events card and the log alike. An opened crate's row selects what holds
+ * its relics: an army pack's army (on the world map; from the realm view it flies there), a structure pack's realm.
+ * Any other row, or a crate whose army is gone, flies to its tile. Null when the story has no place left to show.
  */
 export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null {
   const {
+    setup,
     setup: { store },
   } = useGame();
   useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
   const navigate = useNavigateToMapView();
+  const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
-  const army = storyRelicArmy(event, store);
+  const holder = storyRelicHolder(event, store);
   const position = resolveStoryEventPosition(event, store);
-  if (army !== null && isMapView) return () => requestArmySelection(army);
-  if (army !== null)
-    return () => navigate(Position.fromContract(entityMapPosition(store, configManager.getActiveGameId(), army)));
+  if (holder?.kind === "structure") return () => void goToStructure(holder.id, holder.position, isMapView);
+  if (holder && isMapView) return () => requestArmySelection(holder.id);
+  if (holder)
+    return () => navigate(Position.fromContract(entityMapPosition(store, configManager.getActiveGameId(), holder.id)));
   return position ? () => navigate(position) : null;
 }
 
