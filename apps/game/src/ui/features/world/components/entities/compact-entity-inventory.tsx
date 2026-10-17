@@ -1,5 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { relicLine, relicShortName } from "@/ui/features/relics/relic-words";
+import { useRelicPayerEssence } from "@/ui/features/relics/hooks/use-relic-activation";
+import { coversRelicCost, relicLine, relicShortName } from "@/ui/features/relics/relic-words";
 
 import { memo, useCallback, useMemo } from "react";
 
@@ -227,6 +228,10 @@ export const CompactEntityInventory = memo(
     const closeSurface = usePopoverStore((state) => state.closeSurface);
     const mode = useGameModeConfig();
     const currentDefaultTick = useCurrentDefaultTick();
+    const payerEssence = useRelicPayerEssence(
+      allowRelicActivation ? entityId : undefined,
+      recipientType === RelicRecipientType.Explorer,
+    );
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
     const items = useMemo(
       () => buildDisplayItems(resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers),
@@ -292,6 +297,8 @@ export const CompactEntityInventory = memo(
       const itemName = relicInfo?.name ?? resourceDef?.trait ?? ResourcesIds[item.resourceId] ?? "resource";
       const isActivatableRelic = item.isRelic && item.canActivate && !item.isActive;
       const isClickableRelic = allowRelicActivation && isActivatableRelic && entityId && entityType != null;
+      // A relic its holder cannot pay to activate stays clickable (its activation says what is missing) but not ready.
+      const isAffordable = isClickableRelic && coversRelicCost(item.resourceId, payerEssence);
 
       const heroPadding = "px-2.5 py-2";
       const heroIconSize = "sm";
@@ -309,7 +316,8 @@ export const CompactEntityInventory = memo(
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
         isClickableRelic &&
-          "animate-relic-ready cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+        isClickableRelic && (isAffordable ? "animate-relic-ready" : "opacity-60"),
       );
 
       const itemContent = (
@@ -349,7 +357,7 @@ export const CompactEntityInventory = memo(
             className={itemClasses}
             onClick={() => handleRelicClick(item)}
             aria-label={`Activate ${itemName}`}
-            data-tip={`Activate · ${relicLine(item.resourceId)}`}
+            data-tip={`Activate · ${relicLine(item.resourceId, payerEssence)}`}
           >
             {itemContent}
           </button>

@@ -80,6 +80,8 @@ it("prices a relic in whole Essence as the preset sets it, and refuses an activa
   const short = realmWithEssence(249);
   expect(relicLine(ResourcesIds.DamageRelic1)).toMatch(/Costs 250 Essence to activate\.$/);
   expect(relicLine(ResourcesIds.DamageRelic2)).toMatch(/Costs 500 Essence to activate\.$/);
+  expect(relicLine(ResourcesIds.DamageRelic2, 200)).toMatch(/Costs 500 Essence to activate; you have 200\.$/);
+  expect(relicLine(ResourcesIds.DamageRelic2, 500)).toMatch(/Costs 500 Essence to activate\.$/);
   expect(activationFor(short)).toEqual({
     essenceCost: 250,
     hasEnoughEssence: false,

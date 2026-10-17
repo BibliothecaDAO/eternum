@@ -19,9 +19,17 @@ export const relicEffectLine = (relicId: ResourcesIds): string => {
 
 /**
  * The one line every relic's hover says: its name, what it does, for how long, and what activating it costs ("Damage
- * I: Increases damage by 20% for 30m. Costs 500 Essence to activate.").
+ * I: Increases damage by 20% for 30m. Costs 500 Essence to activate."); given the Essence its holder can pay with, what
+ * it lacks ("Costs 500 Essence to activate; you have 200.").
  */
-export const relicLine = (relicId: ResourcesIds): string => {
+export const relicLine = (relicId: ResourcesIds, essenceHeld?: number): string => {
   const { essenceCost } = configManager.getRelicActivation(relicId);
-  return `${relicShortName(relicId)}: ${relicEffectLine(relicId)}. Costs ${essenceCost.toLocaleString()} Essence to activate.`;
+  const short = essenceHeld !== undefined && essenceHeld < essenceCost;
+  const cost = `Costs ${essenceCost.toLocaleString()} Essence to activate`;
+  const held = short ? `; you have ${Math.floor(essenceHeld).toLocaleString()}` : "";
+  return `${relicShortName(relicId)}: ${relicEffectLine(relicId)}. ${cost}${held}.`;
 };
+
+/** Whether the Essence a relic's holder can pay with covers activating it; an unknown balance never does. */
+export const coversRelicCost = (relicId: ResourcesIds, essenceHeld: number | undefined): boolean =>
+  essenceHeld !== undefined && essenceHeld >= configManager.getRelicActivation(relicId).essenceCost;

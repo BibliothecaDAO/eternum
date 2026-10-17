@@ -60,3 +60,17 @@ export const isRelicCompatible = (relicInfo: RelicInfoResult, recipientType: Rel
 
   return relicInfo.recipientType === recipientType;
 };
+
+/**
+ * The Essence a relic's holder can pay an activation with: a structure its own, an army its home structure's; unknown
+ * while that balance is not known, or with no holder.
+ */
+export const useRelicPayerEssence = (holderId: ID | undefined, isArmy: boolean): number | undefined => {
+  const explorer = useNativeRow(
+    "ExplorerTroops",
+    isArmy && holderId !== undefined ? { game_id: configManager.getActiveGameId(), explorer_id: holderId } : undefined,
+  );
+  const payerId = isArmy ? (explorer ? Number(explorer.owner) : undefined) : holderId;
+  const payer = useResourceManager(payerId);
+  return useMemo(() => knownBalance(payer?.balance(ResourcesIds.Essence)), [payer]);
+};

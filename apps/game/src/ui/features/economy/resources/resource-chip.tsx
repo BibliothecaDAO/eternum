@@ -12,7 +12,7 @@ import { ProductionModal } from "@/ui/features/settlement/production/production-
 import { CountUpNumber } from "@/ui/shared";
 import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
+import { currencyFormat, currencyIntlFormat, knownBalance } from "@/ui/utils/utils";
 import {
   bonusActive,
   configManager,
@@ -325,7 +325,7 @@ export const ResourceChip = ({
           onMouseEnter={(event) =>
             setTooltip({
               anchorElement: event.currentTarget,
-              content: `Activate · ${relicLine(resourceId)}`,
+              content: `Activate · ${relicLine(resourceId, knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
               position: "bottom",
             })
           }

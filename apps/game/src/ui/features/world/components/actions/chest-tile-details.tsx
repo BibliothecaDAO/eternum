@@ -53,10 +53,10 @@ export function ChestTileDetails({
               type="button"
               onClick={onOpen}
               disabled={!onOpen}
-              title={openBlockedReason}
+              data-tip={onOpen ? undefined : openBlockedReason}
               className={cn(HUD_PILL_BUTTON, "mt-2")}
             >
-              Open
+              {onOpen ? "Open" : "Move next to it"}
             </button>
           )}
         </InfoBubble>
