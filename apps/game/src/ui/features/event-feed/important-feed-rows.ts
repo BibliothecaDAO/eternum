@@ -96,47 +96,84 @@ export const formatFeedTime = (atMs: number): string =>
   new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
 /**
- * What a quick-feed row is to the player: one action, whichever row tells it. A story of a send this client made is
- * that send told better, so it shares the send's key and takes over its place and its time on screen.
+ * What a quick-feed row is to the player: one action, whichever row tells it, however long its sources keep it. A send
+ * and every story its transaction wrote share the transaction's key; any other row is its own.
  */
-export const quickFeedKey = (row: ImportantFeedRow, sends: ReadonlySet<string>): string => {
+const quickFeedKey = (row: ImportantFeedRow): string => {
   if (row.kind === "transaction") return sendKey(row.transaction.hash);
-  if (row.kind === "story" && sends.has(sendKey(row.event.tx_hash))) return sendKey(row.event.tx_hash);
+  if (row.kind === "story") return sendKey(row.event.tx_hash);
   return row.id;
 };
 
 /** A send's key, the same however its hash is written (case, leading zeros). */
 export const sendKey = (hash: string): string => `send:${hash.toLowerCase().replace(/^0x0*/, "")}`;
 
-/** The quick feed's screen: the keys drawn, top first, and the keys whose fade has ended. */
-export interface QuickFeedScreen {
-  shown: readonly string[];
-  ended: ReadonlySet<string>;
+/** Whether a row is about the player: their own sends, caravans and notices, and the stories that name them. */
+const isAboutPlayer = (row: ImportantFeedRow, address: string | null): boolean =>
+  row.kind === "story"
+    ? [row.event.owner, ...row.event.participants].some((player) => player !== null && feltEquals(player, address))
+    : row.kind !== "headline";
+
+/** A row Events shows: its action's key and its latest words. */
+export interface ShownRow {
+  key: string;
+  row: ImportantFeedRow;
 }
 
-/**
- * The quick feed, one rule: a row stays on screen 20 s from when it is first drawn, its fade being its clock. So a
- * drawn row keeps its slot and its place until its fade ends: no newer row pushes it off, and no re-sort moves it,
- * which would restart its fade. New rows come in on top, newest first, only into free slots and only while their event
- * is within the window of now (the chain clock their stamps are on). Returns the rows to draw by key, top first.
- */
-export function selectQuickFeedRows(
-  rows: ImportantFeedRow[],
-  nowMs: number,
-  screen: QuickFeedScreen,
-  sends: ReadonlySet<string>,
-  windowMs: number,
-  maxRows: number,
-): Array<{ key: string; row: ImportantFeedRow }> {
-  const byKey = new Map<string, ImportantFeedRow>();
-  for (const row of rows.toSorted((left, right) => right.at - left.at)) {
-    const key = quickFeedKey(row, sends);
-    if (!byKey.has(key)) byKey.set(key, row);
-  }
-  const kept = screen.shown.filter((key) => byKey.has(key) && !screen.ended.has(key));
-  const fresh = [...byKey]
-    .filter(([key, row]) => !kept.includes(key) && !screen.ended.has(key) && Math.abs(nowMs - row.at) < windowMs)
-    .slice(0, Math.max(0, maxRows - kept.length))
-    .map(([key]) => key);
-  return [...fresh, ...kept].map((key) => ({ key, row: byKey.get(key)! }));
+/** What Events holds between renders: the rows shown, top first, and the actions whose time on screen is over. */
+export interface QuickFeed {
+  shown: readonly ShownRow[];
+  ended: readonly string[];
 }
+
+/** How many ended actions Events remembers, so none comes back; far more than can be recent at once. */
+const ENDED_MEMORY = 200;
+
+/**
+ * Events' own short list, one rule: a row stays on screen 20 s from when it is first shown (its fade is its clock), in
+ * its place, with its action's latest words, even once its sources drop it. Never more than `maxRows` at once. A row
+ * about the player comes in on top when it arrives; with every slot taken, it takes the slot of the oldest shown row
+ * not about the player, whose time on screen ends there. A row not about the player comes in only to a free slot, so
+ * it never displaces one of the player's. A row comes in only while its event is within the window of now, and an
+ * action whose time on screen is over never comes back.
+ */
+export function nextQuickFeed(
+  feed: QuickFeed,
+  rows: ImportantFeedRow[],
+  context: { nowMs: number; address: string | null; windowMs: number; maxRows: number },
+): QuickFeed {
+  const latest = new Map<string, ImportantFeedRow>();
+  for (const row of rows.toSorted((left, right) => right.at - left.at)) {
+    const key = quickFeedKey(row);
+    if (!latest.has(key)) latest.set(key, row);
+  }
+  const ended = [...feed.ended];
+  let shown = feed.shown
+    .filter((entry) => !ended.includes(entry.key))
+    .map((entry) => ({ ...entry, row: latest.get(entry.key) ?? entry.row }));
+  const arriving = [...latest].filter(
+    ([key, row]) =>
+      !ended.includes(key) &&
+      !shown.some((entry) => entry.key === key) &&
+      Math.abs(context.nowMs - row.at) < context.windowMs,
+  );
+  // Newest first, so a free slot goes to the newest; those let in go on top, newest highest.
+  const admitted: ShownRow[] = [];
+  for (const [key, row] of arriving) {
+    if (admitted.length + shown.length >= context.maxRows) {
+      if (!isAboutPlayer(row, context.address)) continue;
+      const displaced = shown.findLast((entry) => !isAboutPlayer(entry.row, context.address));
+      if (!displaced) continue;
+      shown = shown.filter((entry) => entry !== displaced);
+      ended.push(displaced.key);
+    }
+    admitted.push({ key, row });
+  }
+  return { shown: [...admitted, ...shown], ended: ended.slice(-ENDED_MEMORY) };
+}
+
+/** The feed once an action's time on screen is over: its row leaves, and the action never comes back. */
+export const endQuickFeedRow = (feed: QuickFeed, key: string): QuickFeed => ({
+  shown: feed.shown.filter((entry) => entry.key !== key),
+  ended: [...feed.ended, key].slice(-ENDED_MEMORY),
+});

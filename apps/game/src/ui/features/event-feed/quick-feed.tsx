@@ -13,11 +13,12 @@ import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headl
 import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
 import {
+  endQuickFeedRow,
   type ImportantFeedRow,
-  quickFeedKey,
+  nextQuickFeed,
+  type QuickFeed,
   selectImportantFeedRows,
-  selectQuickFeedRows,
-  sendKey,
+  type ShownRow,
 } from "./important-feed-rows";
 import { useFeedRows } from "./use-feed-rows";
 
@@ -26,36 +27,45 @@ const QUICK_FEED_MAX_ROWS = 5;
 const QUICK_FEED_FADE_MS = 3_000;
 
 /**
- * The feed's pinned notices and its latest rows, each on screen 20 s from when it is first drawn: it fades over its
- * last seconds and leaves when the fade ends (`selectQuickFeedRows` holds the one rule).
+ * The feed's pinned notices and its own short list of rows (`nextQuickFeed` holds its one rule): each on screen 20 s
+ * from when it is first shown, fading over its last seconds and leaving when the fade ends.
  */
 export const QuickFeedRows = () => {
-  const { nowMs, rows, pinned, sends } = useImportantFeed();
-  const [shown, setShown] = useState<readonly string[]>([]);
-  const [ended, setEnded] = useState<ReadonlySet<string>>(() => new Set());
-  const drawn = selectQuickFeedRows(rows, nowMs, { shown, ended }, sends, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
-  const keys = drawn.map(({ key }) => key);
-  // What is on screen is remembered by setting it during render, as React advises: it converges at once.
-  if (!sameOrder(keys, shown)) setShown(keys);
-  const endRow = (key: string) => {
-    const live = new Set(rows.map((row) => quickFeedKey(row, sends)));
-    setEnded((previous) => new Set([...previous, key].filter((kept) => live.has(kept))));
-  };
+  const { nowMs, rows, pinned, address } = useImportantFeed();
+  const [feed, setFeed] = useState<QuickFeed>({ shown: [], ended: [] });
+  const next = nextQuickFeed(feed, rows, {
+    nowMs,
+    address,
+    windowMs: QUICK_FEED_WINDOW_MS,
+    maxRows: QUICK_FEED_MAX_ROWS,
+  });
+  // What Events shows is remembered by setting it during render, as React advises: it converges at once.
+  if (!sameShown(next.shown, feed.shown) || next.ended.length !== feed.ended.length) setFeed(next);
   return (
     <>
       <FeedNotices pinned={pinned} />
-      {drawn.map(({ key, row }) => (
-        <QuickFeedRow key={key} row={row} onFaded={() => endRow(key)} />
+      {next.shown.map((entry) => (
+        <QuickFeedRow
+          key={entry.key}
+          entry={entry}
+          onFaded={() => setFeed((current) => endQuickFeedRow(current, entry.key))}
+        />
       ))}
     </>
   );
 };
 
-const sameOrder = (a: readonly string[], b: readonly string[]): boolean =>
-  a.length === b.length && a.every((key, index) => b[index] === key);
+/** The same rows, in the same order, telling the same: only then is there nothing new to remember. */
+const sameShown = (a: readonly ShownRow[], b: readonly ShownRow[]): boolean =>
+  a.length === b.length &&
+  a.every((entry, index) => entry.key === b[index].key && rowWords(entry.row) === rowWords(b[index].row));
 
-/** A drawn row: its fade starts with it on the compositor, and its end takes the row off the card. */
-const QuickFeedRow = ({ row, onFaded }: { row: ImportantFeedRow; onFaded: () => void }) => (
+/** What a row says, for telling whether it changed: its source and, for a send, how it stands. */
+const rowWords = (row: ImportantFeedRow): string =>
+  `${row.id}:${row.kind === "transaction" ? row.transaction.status : ""}`;
+
+/** A shown row: its fade starts with it on the compositor (17 s, then 3 s), and its end takes it off the card for good. */
+const QuickFeedRow = ({ entry, onFaded }: { entry: ShownRow; onFaded: () => void }) => (
   <div
     style={{
       animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS}ms forwards`,
@@ -64,7 +74,7 @@ const QuickFeedRow = ({ row, onFaded }: { row: ImportantFeedRow; onFaded: () => 
       if (event.target === event.currentTarget) onFaded();
     }}
   >
-    <FeedRowLine row={row} />
+    <FeedRowLine row={entry.row} />
   </div>
 );
 
@@ -78,12 +88,7 @@ export function useImportantFeed() {
   const stories = useEventsStories(address);
   const feed = useFeedRows();
   const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
-  const sends = new Set(
-    [...feed.inFlight, ...feed.recent].flatMap((row) =>
-      row.kind === "transaction" ? [sendKey(row.transaction.hash)] : [],
-    ),
-  );
-  return { nowMs, rows, pinned: headlineFeed.pinned, sends };
+  return { nowMs, rows, pinned: headlineFeed.pinned, address };
 }
 
 /**

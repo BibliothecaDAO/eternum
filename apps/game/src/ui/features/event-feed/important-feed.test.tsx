@@ -49,6 +49,9 @@ vi.mock("./feed-row-line", () => ({
   HeadlineIcon: () => null,
 }));
 
+import { deriveFeedRows } from "./event-feed-rows";
+import { TransactionType } from "@bibliothecadao/provider";
+import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { QuickFeedRows, useImportantFeed } from "./quick-feed";
 
 const Rows = () => (
@@ -186,4 +189,93 @@ it("keeps a send and the story that tells it as one row: the same element, its f
     feed.unmount();
     useChainTimeStore.setState(prior);
   }
+});
+
+// Review regressions: the bound holds the player's news, and an action keeps one row and one life across its sources.
+const withFeed = (ids: string[], run: (feed: ReturnType<typeof mountQuickFeed>) => void) => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const prior = useChainTimeStore.getState();
+  useChainTimeStore.getState().anchor({ timestamp: 100_000 });
+  const feed = mountQuickFeed(ids);
+  try {
+    run(feed);
+  } finally {
+    feed.unmount();
+    useChainTimeStore.setState(prior);
+  }
+};
+
+it("admits the player's battle even when five unrelated battles occupy Events", () => {
+  withFeed(["r0", "r1", "r2", "r3", "r4"], (feed) => {
+    history.push({ id: "attacked", story: "BattleEvent", owner: PLAYER, participants: [PLAYER], at: 101_000 });
+    feed.rerender();
+    expect(feed.drawn().length).toBeLessThanOrEqual(5);
+    expect(feed.drawn()).toContain("story:attacked");
+  });
+});
+
+const original = {
+  hash: "0x0abc",
+  status: "success",
+  type: TransactionType.ATTACK_EXPLORER_VS_GUARD,
+  submittedAt: 100_000,
+  confirmedAt: 100_000,
+} as Transaction;
+const setTransactions = (transactions: Transaction[]) => {
+  const rows = deriveFeedRows({ transactions, ownedStructureIds: [], arrivals: [], notices: [], nowSeconds: 101 });
+  sent.splice(0, sent.length, ...rows.recent);
+};
+const pruneOriginal = () =>
+  setTransactions([
+    original,
+    ...Array.from({ length: 15 }, (_, i) => ({
+      ...original,
+      hash: `0x${(4096 + i).toString(16)}`,
+      type: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+      submittedAt: 102_000 + i,
+      confirmedAt: 102_000 + i,
+    })),
+  ]);
+const addStory = () =>
+  history.push({ id: "fight", story: "BattleEvent", owner: PLAYER, participants: [PLAYER], at: 101_000, tx: "0xabc" });
+
+it("retains the same story element when its send leaves the real 15-row recent list", () => {
+  withFeed([], (feed) => {
+    setTransactions([original]);
+    feed.rerender();
+    const element = feed.wrapper("0x0abc");
+    addStory();
+    feed.rerender();
+    expect(feed.wrapper("story:fight")).toBe(element);
+    pruneOriginal();
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:fight"]);
+    expect(feed.wrapper("story:fight")).toBe(element);
+  });
+});
+
+it("does not redisplay a finished action after its send leaves the real recent list", () => {
+  withFeed([], (feed) => {
+    setTransactions([original]);
+    feed.rerender();
+    addStory();
+    feed.rerender();
+    act(() => useChainTimeStore.getState().anchor({ timestamp: 120_000 }));
+    feed.endFade("story:fight");
+    expect(feed.drawn()).toEqual([]);
+    pruneOriginal();
+    feed.rerender();
+    expect(feed.drawn()).toEqual([]);
+  });
+});
+
+it("keeps a drawn send until its fade when the real recent list prunes it", () => {
+  withFeed([], (feed) => {
+    setTransactions([original]);
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["0x0abc"]);
+    pruneOriginal();
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["0x0abc"]);
+  });
 });

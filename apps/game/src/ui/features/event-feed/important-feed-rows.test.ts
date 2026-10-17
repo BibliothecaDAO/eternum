@@ -3,11 +3,13 @@ import { expect, it, vi } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRows } from "./event-feed-rows";
 import {
+  endQuickFeedRow,
   formatFeedTime,
   type ImportantFeedRow,
+  nextQuickFeed,
   oneStoryPerAction,
+  type QuickFeed,
   selectImportantFeedRows,
-  selectQuickFeedRows,
   sendKey,
 } from "./important-feed-rows";
 const empty: FeedRows = { inFlight: [], arrived: [], recent: [] };
@@ -16,6 +18,7 @@ const battle = (id: string, at: number, owner = "0x1") =>
     id,
     event_id: `story:v1:madara:0x1:0x7:0x99:0x${(at * 2 + (owner === "0x2" ? 1 : 0)).toString(16)}`,
     tx_hash: `0x${(at * 2 + (owner === "0x2" ? 1 : 0)).toString(16)}`,
+    participants: ["0x1", "0x2"],
     entity_id: owner === "0x2" ? 22 : 11,
     timestampMs: at,
     story: "BattleEvent",
@@ -62,28 +65,6 @@ it("combat excludes personal failures and arrivals", () => {
 });
 it("formats a row time as HH:MM", () => {
   expect(formatFeedTime(new Date(2026, 8, 9, 14, 5).getTime())).toBe("14:05");
-});
-
-/** The keys a quick feed draws, top first, from this screen; no send of the client's own unless given. */
-const drawn = (
-  rows: ImportantFeedRow[],
-  nowMs: number,
-  shown: string[] = [],
-  ended: string[] = [],
-  sends: ReadonlySet<string> = new Set(),
-) => selectQuickFeedRows(rows, nowMs, { shown, ended: new Set(ended) }, sends, 20_000, 5).map(({ key }) => key);
-
-it("draws only rows still within the window of now, newest on top, capped", () => {
-  const rows = selectImportantFeedRows(
-    [battle("fresh", 100_000), battle("older", 85_000), battle("stale", 70_000), battle("future", 101_000)],
-    empty,
-    "all",
-    null,
-  );
-  expect(drawn(rows, 100_500)).toEqual(["story:future", "story:fresh", "story:older"]);
-  expect(
-    selectQuickFeedRows(rows, 100_500, { shown: [], ended: new Set() }, new Set(), 20_000, 1).map(({ key }) => key),
-  ).toEqual(["story:future"]);
 });
 
 it("keeps pending and completed actions and travelling caravans in Events", () => {
@@ -164,51 +145,6 @@ it("holds each event once, however many sources reach it", () => {
   expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["0xexplore"]);
 });
 
-it("keeps a drawn row, in its place, until its own fade ends: no newer row pushes it off, no clock moves it", () => {
-  const battles = Array.from({ length: 5 }, (_, index) => battle(`row${index}`, 100_000 - index));
-  const rows = selectImportantFeedRows(battles, empty, "all", null);
-  const first = drawn(rows, 100_000);
-  expect(first).toHaveLength(5);
-  // A newer battle arrives while five are drawn: the drawn rows stay, in their order; the newcomer waits for a slot.
-  const busier = selectImportantFeedRows([battle("newer", 105_000), ...battles], empty, "all", null);
-  expect(drawn(busier, 105_000, first)).toEqual(first);
-  // Any chain time, even far past their stamps, leaves them until their fades end.
-  expect(drawn(busier, 300_000, first)).toEqual(first);
-  // When one fade ends, the newcomer takes a slot on top, if it is still recent, and the rest keep their places.
-  expect(drawn(busier, 110_000, first, [first[2]])).toEqual([
-    "story:newer",
-    ...first.filter((key) => key !== first[2]),
-  ]);
-  // A row already past the window when it would first be drawn (history after a reload) never comes in.
-  expect(drawn(busier, 140_000, [])).toEqual([]);
-});
-
-it("keeps a send and the story that tells it as one row: the story takes the send's place and time on screen", () => {
-  const send = {
-    kind: "transaction",
-    id: "0x0abc",
-    at: 100_000,
-    transaction: { hash: "0x0abc", status: "success", type: TransactionType.ATTACK_EXPLORER_VS_GUARD },
-  };
-  const sends = new Set([sendKey("0x0abc")]);
-  const pending = selectImportantFeedRows([], { ...empty, recent: [send] } as unknown as FeedRows, "all", "0x1");
-  const other = selectImportantFeedRows([battle("other", 99_000)], empty, "all", "0x1");
-  const before = drawn([...other, ...pending], 100_000, [], [], sends);
-  // The story arrives under the send's hash (written without its leading zero); Events now tells the send by it.
-  const told = { ...battle("fight", 101_000), tx_hash: "0xabc" } as unknown as ProcessedStoryEvent;
-  const after = selectImportantFeedRows(
-    [told, battle("other", 99_000)],
-    { ...empty, recent: [send] } as unknown as FeedRows,
-    "all",
-    "0x1",
-  );
-  expect(after.map((row) => row.id)).not.toContain("0x0abc");
-  expect(drawn(after, 102_000, before, [], sends)).toEqual(before);
-  expect(selectQuickFeedRows(after, 102_000, { shown: before, ended: new Set() }, sends, 20_000, 5)[0].row.id).toBe(
-    "story:fight",
-  );
-});
-
 it("lists a building placed and paid for in one transaction once, and two buildings twice", () => {
   const building = (index: number, story: string, x: number, extra: Record<string, unknown>) =>
     ({
@@ -226,4 +162,86 @@ it("lists a building placed and paid for in one transaction once, and two buildi
     building(1, "BuildingPlacementStory", 4, { change: "Created" }),
   ];
   expect(oneStoryPerAction(stories).map((event) => event.id)).toEqual(["b4", "b2"]);
+});
+
+/** Events' short list after these rows arrive at `nowMs`, as the player 0x1 sees it. */
+const quick = (feed: QuickFeed, rows: ImportantFeedRow[], nowMs: number) =>
+  nextQuickFeed(feed, rows, { nowMs, address: "0x1", windowMs: 20_000, maxRows: 5 });
+const keysOf = (feed: QuickFeed) => feed.shown.map(({ key }) => key);
+const empty_: QuickFeed = { shown: [], ended: [] };
+/** A battle between two other players. */
+const theirs = (id: string, at: number) =>
+  ({
+    ...battle(id, at),
+    owner: "0x7",
+    participants: ["0x7", "0x8"],
+    storyPayload: { attacker: { player: "0x7" }, defender: { player: "0x8" } },
+  }) as ProcessedStoryEvent;
+const eventsRows = (events: ProcessedStoryEvent[]) => selectImportantFeedRows(events, empty, "all", "0x1");
+
+it("shows rows still within the window of now, newest on top, five at most; the rest wait", () => {
+  const events = Array.from({ length: 7 }, (_, index) => theirs(`t${index}`, 100_000 - index * 1_000));
+  const feed = quick(empty_, eventsRows([...events, theirs("stale", 70_000)]), 100_500);
+  expect(keysOf(feed)).toEqual(events.slice(0, 5).map((event) => sendKey(event.tx_hash)));
+});
+
+it("gives the player's news the slot of the oldest row not about them at once; theirs never displaces it", () => {
+  const unrelated = Array.from({ length: 5 }, (_, index) => theirs(`t${index}`, 100_000 - index));
+  const full = quick(empty_, eventsRows(unrelated), 100_000);
+  const mine = battle("mine", 101_000);
+  const withMine = quick(full, eventsRows([mine, ...unrelated]), 101_000);
+  expect(keysOf(withMine)).toEqual([sendKey(mine.tx_hash), ...keysOf(full).slice(0, 4)]);
+  // The displaced row's time on screen is over: it never comes back.
+  expect(withMine.ended).toEqual([keysOf(full)[4]]);
+  // Another unrelated battle waits: it neither displaces the player's row nor anyone else.
+  const later = quick(withMine, eventsRows([theirs("t9", 102_000), mine, ...unrelated]), 102_000);
+  expect(keysOf(later)).toEqual(keysOf(withMine));
+});
+
+it("keeps one row per action across send, story and the sources dropping it, and never brings an ended one back", () => {
+  const send = {
+    kind: "transaction",
+    id: "0x0abc",
+    at: 100_000,
+    transaction: { hash: "0x0abc", status: "success", type: TransactionType.ATTACK_EXPLORER_VS_GUARD },
+  };
+  const sending = quick(
+    empty_,
+    selectImportantFeedRows([], { ...empty, recent: [send] } as unknown as FeedRows, "all", "0x1"),
+    100_000,
+  );
+  const story = { ...battle("fight", 101_000), tx_hash: "0xabc" } as unknown as ProcessedStoryEvent;
+  const told = quick(sending, eventsRows([story]), 101_000);
+  expect(keysOf(told)).toEqual(keysOf(sending));
+  expect(told.shown[0].row.id).toBe("story:fight");
+  // Every source drops it: it stays, with its last words, until its fade ends.
+  const dropped = quick(told, [], 110_000);
+  expect(dropped.shown.map(({ row }) => row.id)).toEqual(["story:fight"]);
+  // Its fade ends; it never returns, whatever source brings it back while it is still recent.
+  const over = endQuickFeedRow(dropped, keysOf(dropped)[0]);
+  expect(keysOf(quick(over, eventsRows([story]), 112_000))).toEqual([]);
+});
+
+it("stays bounded and never starves the player's news under a sustained flood of other battles", () => {
+  let feed: QuickFeed = empty_;
+  const events: ProcessedStoryEvent[] = [];
+  const firstSeen = new Map<string, number>();
+  const players = new Set<string>();
+  for (let second = 0; second < 120; second++) {
+    const now = 100_000 + second * 1_000;
+    events.unshift(theirs(`t${second}`, now));
+    const mine = second % 15 === 0 ? battle(`mine${second}`, now) : null;
+    if (mine) events.unshift(mine);
+    if (mine) players.add(sendKey(mine.tx_hash));
+    feed = quick(feed, eventsRows(events.slice(0, 350)), now);
+    for (const { key } of feed.shown) if (!firstSeen.has(key)) firstSeen.set(key, now);
+    // The player's battle is on screen the moment it lands, and at most five rows stay at once.
+    if (mine) expect(keysOf(feed)).toContain(sendKey(mine.tx_hash));
+    expect(feed.shown.length).toBeLessThanOrEqual(5);
+    // No player's row is ever displaced: none ends before its 20 s.
+    expect(feed.ended.filter((key) => players.has(key) && now - firstSeen.get(key)! < 20_000)).toEqual([]);
+    // Each row's fade ends 20 s after it was first shown.
+    for (const { key } of feed.shown) if (now - firstSeen.get(key)! >= 20_000) feed = endQuickFeedRow(feed, key);
+  }
+  expect(players.size).toBe(8);
 });
