@@ -22,11 +22,20 @@ const panel = (id) => `[data-popover-panel="${id}"]`;
 const BUILD_PANEL = panel("build");
 const DEPLOY_PANEL = panel("army-deployment");
 
-/** The troops the selected realm holds, every kind and tier, as its card's resources name them ("KnightT2 · 300 held"). */
-const TROOPS_HELD = `[...document.querySelectorAll('section[aria-label="Selected holding"] ul[aria-label="Resources"] li')]
-  .map((el) => el.getAttribute("aria-label")?.match(/^(?:Knight|Crossbowman|Paladin)(?:T[23])? · ([\\d,]+) held/)?.[1])
-  .filter(Boolean)
-  .reduce((sum, held) => sum + Number(held.replaceAll(",", "")), 0)`;
+/**
+ * The troops the selected realm holds, every kind and tier, as its card's resources name them ("KnightT2 · 300 held").
+ * Null, not 0, when the card names none of its resources: a card that lost its names says nothing about troops.
+ */
+const TROOPS_HELD = `(() => {
+  const names = [...document.querySelectorAll('section[aria-label="Selected holding"] ul[aria-label="Resources"] li')]
+    .map((el) => el.getAttribute("aria-label"))
+    .filter(Boolean);
+  if (names.length === 0) return null;
+  return names
+    .map((name) => name.match(/^(?:Knight|Crossbowman|Paladin)(?:T[23])? · ([\\d,]+) held/)?.[1])
+    .filter(Boolean)
+    .reduce((sum, held) => sum + Number(held.replaceAll(",", "")), 0);
+})()`;
 
 const TRANSFER_PANEL = panel("transfer");
 const HOLDING_ROWS = 'aside[aria-label="Holdings"] [role=tabpanel]';

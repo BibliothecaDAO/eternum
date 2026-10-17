@@ -202,7 +202,7 @@ const ResourceRings = ({
   return (
     <ul aria-label="Resources" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {readings.map((reading) => (
-        <li key={reading.resourceId}>
+        <li key={reading.resourceId} aria-label={describeResource(reading)}>
           <ProductionStatusBadge
             resource={reading.resourceId}
             tooltipText={describeResource(reading)}
