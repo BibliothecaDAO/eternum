@@ -252,6 +252,13 @@ it("never loses one of the player's actions to a card full of their own: the old
   expect(next.ended).toEqual([keysOf(full)[4]]);
 });
 
+it("keeps the player's newer rows when an older action of theirs is still waiting: the unchanged backlog stays out", () => {
+  const mine = Array.from({ length: 6 }, (_, index) => battle(`m${index}`, 100_000 - index));
+  const full = quick(empty_, eventsRows(mine), 100_001);
+  expect(keysOf(full)).toEqual(mine.slice(0, 5).map((event) => sendKey(event.tx_hash)));
+  expect(quick(full, eventsRows(mine), 100_001)).toEqual(full);
+});
+
 it("stays bounded and never starves the player's news under a sustained flood of other battles", () => {
   let feed: QuickFeed = empty_;
   const events: ProcessedStoryEvent[] = [];

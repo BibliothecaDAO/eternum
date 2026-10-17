@@ -165,10 +165,11 @@ const ENDED_MEMORY = 200;
  * Events' own short list, one rule: a row stays on screen 20 s from when it is first shown (its fade is its clock), in
  * its place, with its action's latest words, even once its sources drop it. Never more than `maxRows` at once. A row
  * about the player comes in on top when it arrives; with every slot taken, it takes the slot of the oldest shown row
- * not about the player (or, when all are the player's, the oldest), whose time on screen ends there, so none of the
- * player's actions is lost to a full card. A row not about the player comes in only to a free slot, so
- * it never displaces one of the player's. A row comes in only while its event is within the window of now, and an
- * action whose time on screen is over never comes back.
+ * not about the player (or, when all are the player's, of the oldest of them if it is newer than that one), whose time
+ * on screen ends there, so none of the player's newer actions is lost to a full card and an older one never pushes out
+ * a newer. A row not about the player comes in only to a free slot, so it never displaces one of the player's. A row
+ * comes in only while its event is within the window of now, and an action whose time on screen is over never comes
+ * back.
  */
 export function nextQuickFeed(
   feed: QuickFeed,
@@ -195,11 +196,7 @@ export function nextQuickFeed(
   const admitted: ShownRow[] = [];
   for (const [key, row] of arriving) {
     if (admitted.length + shown.length >= context.maxRows) {
-      if (!isAboutPlayer(row, context.address)) continue;
-      // The oldest row not about the player gives way; with every slot the player's own, the oldest of those does, so
-      // no action of the player's waits for a slot until its time to show has passed.
-      const displaced =
-        shown.findLast((entry) => !isAboutPlayer(entry.row, context.address)) ?? shown[shown.length - 1];
+      const displaced = slotGivenTo(row, shown, context.address);
       if (!displaced) continue;
       shown = shown.filter((entry) => entry !== displaced);
       ended.push(displaced.key);
@@ -208,6 +205,22 @@ export function nextQuickFeed(
   }
   return { shown: [...admitted, ...shown], ended: ended.slice(-ENDED_MEMORY) };
 }
+
+/**
+ * The shown row that gives its slot to an arriving one on a full card, if any: only a row about the player takes a
+ * slot; the oldest row not about the player gives way, and with every slot the player's own, the oldest of those does
+ * when the arriving row is newer, so no newer action of the player's waits until its time to show has passed.
+ */
+const slotGivenTo = (row: ImportantFeedRow, shown: readonly ShownRow[], address: string | null): ShownRow | null => {
+  if (!isAboutPlayer(row, address)) return null;
+  const other = shown.findLast((entry) => !isAboutPlayer(entry.row, address));
+  if (other) return other;
+  const oldest = shown.reduce<ShownRow | null>(
+    (held, entry) => (held && held.row.at <= entry.row.at ? held : entry),
+    null,
+  );
+  return oldest && oldest.row.at < row.at ? oldest : null;
+};
 
 /** The feed once an action's time on screen is over: its row leaves, and the action never comes back. */
 export const endQuickFeedRow = (feed: QuickFeed, key: string): QuickFeed => ({
