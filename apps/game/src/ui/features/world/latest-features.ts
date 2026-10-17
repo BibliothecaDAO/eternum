@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Advice you can follow",
+    description:
+      "A certain-loss forecast now asks only for an army your realm can hold, and when it cannot, says to level the realm up or which of your realms can raise it. After raising an army the Military window stays on Attack, and a full army cap reads as a note, not an error. The leaderboard's held hyperstructures read points/second.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "Hovers that explain",
     description:
       "A realm's level-up says why it waits, what it costs (or that it is free) and what the level gives, and every window shows the same level number. The realm card's numbers, automation and the order buttons explain themselves on hover, relics say what they do, for how long and for how much Essence, and a Hyperstructure site says what founding brings before you confirm it. An army standing on an opened crate shows first.",
@@ -65,7 +72,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Leaderboard scoring",
     description:
-      "The leaderboard's columns say what each action earns in points, read from the game: 5 points a tile, 250 points a crate or camp, 1K points a hyperstructure taken, and x points/s for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
+      "The leaderboard's columns say what each action earns in points, read from the game: 5 points a tile, 250 points a crate or camp, 1K points a hyperstructure taken, and points every second for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
     type: "fix",
   },
   {

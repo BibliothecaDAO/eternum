@@ -6,7 +6,7 @@ export type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPoint
 
 /**
  * What a held hyperstructure earns, as the contract pays it: its rate every second, alone ("1 points/s"), doubled in a Duel
- * ("2 points/s"), or for each realm settled on the six sites around it, which differs by hyperstructure ("x points/s").
+ * ("2 points/s"), or for each realm settled on the six sites around it, which differs by hyperstructure ("points/second").
  */
 export const describeHyperstructureHold = ({
   hyperstructurePerSecond: rate,
@@ -15,7 +15,7 @@ export const describeHyperstructureHold = ({
   // Each hyperstructure pays its own rate, by the realms around it: no one number is true of all of them.
   if (scale === "per-realm")
     return {
-      grant: "x points/s",
+      grant: "points/second",
       rule: `Hold a Hyperstructure: ${currencyIntlFormat(rate)} points every second for each realm settled on the six sites around it`,
     };
   const perSecond = scale === "double" ? rate * 2 : rate;

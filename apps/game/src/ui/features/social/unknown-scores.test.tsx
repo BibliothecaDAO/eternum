@@ -61,7 +61,7 @@ describe("the leaderboard's columns", () => {
       ["Crates", "250 points each"],
       ["Rifts/Camps", "300 points each"],
       ["Hyperstructures taken", "1.5K points each"],
-      ["Hyperstructures held", "x points/s"],
+      ["Hyperstructures held", "points/second"],
     ]) {
       expect(header).toContain(`<span>${column}</span><span class="text-xs font-normal text-gold/55">${grant}</span>`);
     }
@@ -81,7 +81,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(html).toContain(
-      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 points each · Crates 250 points each · Rifts/Camps 300 points each · Hyperstructures taken 1.5K points each · Hyperstructures held x points/s</p>',
+      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 points each · Crates 250 points each · Rifts/Camps 300 points each · Hyperstructures taken 1.5K points each · Hyperstructures held points/second</p>',
     );
   });
 });

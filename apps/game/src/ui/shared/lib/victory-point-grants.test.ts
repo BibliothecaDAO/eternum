@@ -15,7 +15,7 @@ const blitz: VictoryPointGrants = {
 describe("what a held hyperstructure earns", () => {
   it("states no one rate where each hyperstructure pays by the realms around it (Blitz), and gives the rule on hover", () => {
     expect(describeHyperstructureHold(blitz)).toEqual({
-      grant: "x points/s",
+      grant: "points/second",
       rule: "Hold a Hyperstructure: 1 points every second for each realm settled on the six sites around it",
     });
   });
