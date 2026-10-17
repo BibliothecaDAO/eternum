@@ -31,6 +31,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 
 import { type ReactNode, useState } from "react";
 import { NotificationsCard } from "@/shell/profile/notifications";
+import { PROFILE_WORDS } from "@/shell/words";
 import { PwaInstallControl } from "@/pwa/pwa-install-control";
 import { shortAddress } from "@/ui/design-system/kit/address";
 
@@ -44,7 +45,9 @@ export const SettingsPanel = () => (
     <AudioSettings />
     <VideoSettings />
     <NextUpSettings />
-    <NotificationsCard />
+    <SettingsSection title={PROFILE_WORDS.notifications}>
+      <NotificationsCard />
+    </SettingsSection>
     <ShortcutsSection />
     <PwaInstallControl />
     <RendererSettings />

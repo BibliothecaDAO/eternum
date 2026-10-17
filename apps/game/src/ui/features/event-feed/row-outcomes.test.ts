@@ -32,8 +32,8 @@ it("tells what an explore found, where, and its points", () => {
 });
 
 it("adds a crate's points, and a capture's points when it paid any", () => {
-  expect(storyOutcome(story("RelicChestOpened", {}, "War pack: 3 relics to the army Stolsli T1"), grants)).toBe(
-    "War pack: 3 relics to the army Stolsli T1 · +250 points",
+  expect(storyOutcome(story("RelicChestOpened", {}, "Crate opened: 3 relics to the army Stolsli T1"), grants)).toBe(
+    "Crate opened: 3 relics to the army Stolsli T1 · +250 points",
   );
   const camp = story("StructureCapturedStory", { points: 250 }, "clientlane took Camp from The Vanguard");
   expect(storyOutcome(camp, grants)).toBe("clientlane took Camp from The Vanguard · +250 points");

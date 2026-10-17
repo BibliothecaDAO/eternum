@@ -252,16 +252,23 @@ const resolveBuildSuggestion = (
   return createBuildSuggestion(input, key, reason);
 };
 
+/** How many of a target are built, in words: "1 of 4 built". */
+const builtOf = (count: number, target: number): string => `${count} of ${target} built`;
+
 const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
   if (!input.canAffordUpgrade) return null;
 
-  return createBaseSuggestion(input, "upgrade", "Level up realm", 0, "Upgrade is affordable.");
+  return createBaseSuggestion(input, "upgrade", "Level up realm", 0, "It can level up now.");
 };
 
 const resolvePopulationSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
   if (!isPopulationPressured(input)) return null;
 
-  return resolveBuildSuggestion(input, "workerHut", `${input.population}/${input.populationCapacity} pop.`);
+  return resolveBuildSuggestion(
+    input,
+    "workerHut",
+    `Population ${input.population} of ${input.populationCapacity}: a worker hut makes room for more.`,
+  );
 };
 
 const resolveWheatSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
@@ -270,7 +277,12 @@ const resolveWheatSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggesti
     return null;
   }
 
-  return resolveBuildSuggestion(input, "wheat", `${input.buildingCounts.wheat}/${wheatTarget} farms.`);
+  const missing = wheatTarget - input.buildingCounts.wheat;
+  return resolveBuildSuggestion(
+    input,
+    "wheat",
+    `Build ${missing} ${missing === 1 ? "farm" : "farms"} for steady wheat (${builtOf(input.buildingCounts.wheat, wheatTarget)}).`,
+  );
 };
 
 const resolveResourceSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
@@ -281,7 +293,11 @@ const resolveResourceSuggestion = (input: BlitzRealmSuggestionInput): BlitzSugge
   const resourceCount = input.buildingCounts[resourceKey];
   const resourceLabel = RESOURCE_BUILD_LABELS[resourceKey];
 
-  return resolveBuildSuggestion(input, resourceKey, `${resourceCount}/${resourceTarget} ${resourceLabel}.`);
+  return resolveBuildSuggestion(
+    input,
+    resourceKey,
+    `Build more ${resourceLabel} (${builtOf(resourceCount, resourceTarget)}).`,
+  );
 };
 
 const resolveMilitarySuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
@@ -297,7 +313,11 @@ const resolveMilitarySuggestion = (input: BlitzRealmSuggestionInput): BlitzSugge
       ? ` for +${target.bonusPercent}% biome bonus`
       : "";
 
-  return resolveBuildSuggestion(input, "military", `${target.count}/${targetCount} ${target.label}${bonusLabel}.`);
+  return resolveBuildSuggestion(
+    input,
+    "military",
+    `Build more ${target.label}${bonusLabel} (${builtOf(target.count, targetCount)}).`,
+  );
 };
 
 const resolveGarrisonSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
@@ -316,7 +336,7 @@ const resolveExplorerDeploymentSuggestion = (input: BlitzRealmSuggestionInput): 
     "deploy-explorer",
     "Deploy explorer army",
     15,
-    `${input.occupiedExplorers}/${EXPLORER_DEPLOYMENT_TARGET} explorers deployed.`,
+    `${input.occupiedExplorers} of ${EXPLORER_DEPLOYMENT_TARGET} armies in the field: deploy another to explore.`,
   );
 };
 

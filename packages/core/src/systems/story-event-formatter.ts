@@ -7,8 +7,6 @@ import {
   RESOURCE_PRECISION,
   RealmLevels,
   relicChestDelivery,
-  relicChestName,
-  relicChestPack,
   resources,
   type ResourcesIds,
 } from "@bibliothecadao/types";
@@ -455,8 +453,8 @@ const chestRelics = (payload: Record<string, unknown>): ResourcesIds[] => {
 };
 
 /**
- * An opened chest as a player reads it: its pack and where its relics went ("Produce pack: 3 relics to Stolsli"). The
- * home is the opening army's; once that army is gone its row no longer names it.
+ * An opened chest as a player reads it: where its relics went ("Crate opened: 3 relics to Stolsli"). The home is the
+ * opening army's; once that army is gone its row no longer names it.
  */
 export function describeRelicChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
   const explorer = readExplorer(payload.explorer_id, components);
@@ -465,7 +463,7 @@ export function describeRelicChestOpening(payload: Record<string, unknown>, comp
     army: explorer && home ? describeArmyName(payload.explorer_id, components) : null,
     home: home ?? "its realm",
   });
-  return `${relicChestName(relicChestPack(payload.chest))}: ${delivery}`;
+  return `Crate opened: ${delivery}`;
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */

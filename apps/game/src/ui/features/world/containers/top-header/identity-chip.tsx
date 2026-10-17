@@ -67,28 +67,37 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
   const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
   const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
 
-  if (state.kind === "player" || state.kind === "unnamed") {
-    return <IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />;
+  if (state.kind === "player") return <PlayerChipTrigger state={state} isOpen={isOpen} compact={compact} />;
+  if (state.kind === "unnamed") {
+    return <IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} label="Account" />;
   }
   return (
     <Popover
       id={popoverId}
-      ariaLabel="Identity"
-      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} />}
+      ariaLabel="Account"
+      trigger={<IdentityChipTrigger state={state} isOpen={isOpen} compact={compact} label="Account" />}
     >
       <IdentityChipPanelBody state={state} />
     </Popover>
   );
 };
 
+/** A player's chip: its hover says how the game is won and scored, and it opens the leaderboard. */
+const PlayerChipTrigger = (props: { state: IdentityChipState; isOpen: boolean; compact: boolean }) => {
+  const goal = usePointsGoal();
+  return <IdentityChipTrigger {...props} label={`${goal.sentence} Open the leaderboard for every score.`} />;
+};
+
 const IdentityChipTrigger = ({
   state,
   isOpen,
   compact,
+  label,
 }: {
   state: IdentityChipState;
   isOpen: boolean;
   compact: boolean;
+  label: string;
 }) => {
   const togglePopover = usePopoverStore((popovers) => popovers.toggle);
   const requestSignIn = useRequestSignIn();
@@ -97,7 +106,7 @@ const IdentityChipTrigger = ({
     <button
       type="button"
       aria-expanded={isOpen}
-      aria-label="Identity"
+      aria-label={label}
       onClick={() => {
         if (state.kind === "unnamed") {
           requestSignIn();

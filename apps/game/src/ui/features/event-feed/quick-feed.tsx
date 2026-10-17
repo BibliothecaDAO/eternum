@@ -131,9 +131,7 @@ export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
     {pinned.map((headline) => (
       <div key={headline.id} aria-label="Pinned event" className={cn(FEED_ROW_CLASS, "border border-gold/60")}>
         <HeadlineIcon type={headline.type} />
-        <span className="line-clamp-2 min-w-0 flex-1 break-words" title={headline.description}>
-          {headline.description}
-        </span>
+        <span className="min-w-0 flex-1 break-words">{headline.description}</span>
       </div>
     ))}
   </>

@@ -417,7 +417,7 @@ describe("every story the chain can tell", () => {
   });
 });
 
-it("names an opened chest by its pack and where its relics went, and lists them as their panel does", () => {
+it("says where an opened chest's relics went, and lists them as their panel does", () => {
   expect(new Set(RELICS.map((relic) => relic.name)).size).toBe(RELICS.length);
   vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
   const { store, setStructure, setExplorer } = buildStore();
@@ -429,12 +429,12 @@ it("names an opened chest by its pack and where its relics went, and lists them 
       store,
     );
   expect(opened({ pack: "Explore", lucky: true })).toMatchObject({
-    title: "Explore pack · lucky: 3 relics to the army Stolsli T1",
+    title: "Crate opened: 3 relics to the army Stolsli T1",
     description: "Exploration Relic II, Exploration Reward Relic II, Stamina Relic II",
   });
-  expect(opened({ pack: "Produce", lucky: false }).title).toBe("Produce pack: 3 relics to Stolsli");
+  expect(opened({ pack: "Produce", lucky: false }).title).toBe("Crate opened: 3 relics to Stolsli");
   expect(opened({ pack: "Fortress", lucky: false }).title).toBe(
-    "Fortress pack: 1 relic to the army Stolsli T1, 2 to Stolsli",
+    "Crate opened: 1 relic to the army Stolsli T1, 2 to Stolsli",
   );
 });
 
@@ -443,7 +443,7 @@ it("names a gone army's chest delivery without its names", () => {
   const { title } = buildStoryEventPresentation(
     story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
   );
-  expect(title).toBe("Produce pack: 3 relics to its realm");
+  expect(title).toBe("Crate opened: 3 relics to its realm");
 });
 
 describe("a capture", () => {

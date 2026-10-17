@@ -30,7 +30,9 @@ describe("the resource ring", () => {
     expect(chip(host, "-bottom-1.5")).toBe("1.3K");
     expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 3600 }), "-right-2")).toBe("3h");
     // Production with no inputs to run out of (a farm's wheat) never stops: the badge says so.
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: Number.POSITIVE_INFINITY }), "-right-2")).toBe("∞");
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: Number.POSITIVE_INFINITY }), "-right-2")).toBe(
+      "no end",
+    );
   });
 
   it("shows no time while idle, without a known time, or under a minute", () => {

@@ -78,7 +78,7 @@ const ROWS: ImportantFeedRow[] = [
     kind: "story",
     id: "story:crate",
     at: 350_000,
-    event: story("crate", "RelicChestOpened", {}, "War pack: 3 relics to the army Stolsli T1"),
+    event: story("crate", "RelicChestOpened", {}, "Crate opened: 3 relics to the army Stolsli T1"),
   },
   {
     kind: "story",

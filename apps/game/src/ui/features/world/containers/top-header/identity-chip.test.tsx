@@ -51,7 +51,7 @@ const openChip = async () => {
     ),
   );
   unmount = () => act(async () => root.unmount());
-  await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Identity"]')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Account"]')!.click());
   return document.body;
 };
 

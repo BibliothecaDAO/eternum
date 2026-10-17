@@ -1,13 +1,6 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import {
-  getRelicInfo,
-  type ID,
-  relicChestName,
-  relicChestPack,
-  relicChestRelics,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { getRelicInfo, type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -65,21 +58,25 @@ export function ChestTileDetails({
   );
 }
 
-/** The crate's pack, as the chain stored it when the crate appeared, and the points opening it scores. */
+/** The relics the crate holds, as the chain stored them when the crate appeared, and the points opening it scores. */
 const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   const row = useNativeRow(
     "RelicChest",
     crateEntityId === null ? undefined : { game_id: configManager.getActiveGameId(), entity_id: crateEntityId },
   );
-  const chest = row && relicChestPack(row);
+  const relics = row && relicChestRelics(relicChestPack(row));
   return (
     <div className="flex flex-col gap-2">
-      {chest && <p className={cn("text-gold", HUD_BODY)}>{relicChestName(chest)}</p>}
-      {chest && <RelicList relics={relicChestRelics(chest)} />}
+      {relics && (
+        <p className={cn("text-gold", HUD_BODY)}>
+          {relics.length === 1 ? "1 relic" : `${relics.length} relics`} inside
+        </p>
+      )}
+      {relics && <RelicList relics={relics} />}
       <EntityDetailStatList compact columns={1}>
         <EntityDetailStat
           compact
-          label="Victory points"
+          label="Points"
           value={configManager.getVictoryPointGrants().openRelicCrate.toLocaleString()}
           emphasizeValue
         />

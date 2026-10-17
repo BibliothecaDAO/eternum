@@ -4,7 +4,6 @@ import {
   getRelicInfo,
   RELIC_PACKS,
   relicChestDelivery,
-  relicChestName,
   relicChestPack,
   relicChestRelics,
   relicEffect,
@@ -24,9 +23,7 @@ describe("relic table", () => {
 });
 
 describe("relic chest packs", () => {
-  it("names a chest by its pack, and a lucky one holds the same pack at level II", () => {
-    expect(relicChestName({ pack: "War", lucky: false })).toBe("War pack");
-    expect(relicChestName({ pack: "Fortress", lucky: true })).toBe("Fortress pack · lucky");
+  it("fills a chest from its pack, and a lucky one holds the same pack at level II", () => {
     expect(relicChestRelics({ pack: "Produce", lucky: false })).toEqual([
       ResourcesIds.ProductionRelic1,
       ResourcesIds.LaborProductionRelic1,

@@ -79,7 +79,7 @@ const crateOf = (pack: "War" | "Produce" | "Fortress", title: string) =>
     { explorer_id: 9, coord: { x: 3, y: 4 }, relics: relicChestRelics({ pack, lucky: false }) },
     title,
   );
-const crate = crateOf("War", "War pack: 3 relics to the army Stolsli T1");
+const crate = crateOf("War", "Crate opened: 3 relics to the army Stolsli T1");
 const noFeed = { inFlight: [], recent: [] };
 
 let host: HTMLDivElement;
@@ -133,14 +133,14 @@ describe("Transfer in the event feed", () => {
 
 describe("An opened crate in Events", () => {
   it("holds the player's opened crate, but not another player's, nor routine production", () => {
-    const theirs = story("theirs", "RelicChestOpened", "0x2", { explorer_id: 7 }, "War pack: 3 relics to North T1");
+    const theirs = story("theirs", "RelicChestOpened", "0x2", { explorer_id: 7 }, "Crate opened: 3 relics to North T1");
     const production = story("made", "ProductionStory", PLAYER, {}, "Wheat produced");
     expect(eventsRows([crate, theirs, production]).map((row) => row.id)).toEqual(["story:crate-War"]);
   });
 
   it("names where the crate's relics went", () => {
     expect(renderToStaticMarkup(<FeedRowLine row={eventsRows([crate])[0]} />)).toContain(
-      "War pack: 3 relics to the army Stolsli T1",
+      "Crate opened: 3 relics to the army Stolsli T1",
     );
   });
 
@@ -162,13 +162,13 @@ describe("An opened crate in Events", () => {
 
 describe("A structure pack's row", () => {
   it("selects the realm that got most of the relics, not the army that opened the crate", async () => {
-    await clickRow(eventsRows([crateOf("Produce", "Produce pack: 3 relics to Stolsli")])[0]);
+    await clickRow(eventsRows([crateOf("Produce", "Crate opened: 3 relics to Stolsli")])[0]);
     expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
     expect(game.goToStructure.mock.calls[0][1].getContract()).toEqual({ x: 70, y: 80 });
     expect(game.selectArmy).not.toHaveBeenCalled();
 
     game.goToStructure.mockClear();
-    await clickRow(eventsRows([crateOf("Fortress", "Fortress pack: 1 relic to the army Stolsli T1, 2 to Stolsli")])[0]);
+    await clickRow(eventsRows([crateOf("Fortress", "Crate opened: 1 relic to the army Stolsli T1, 2 to Stolsli")])[0]);
     expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
   });
 });

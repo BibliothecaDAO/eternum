@@ -50,13 +50,20 @@ const PlacedRowLine = ({ row }: { row: ImportantFeedRow }) => {
   return <RowLine row={row} open={target ? () => navigate(target) : null} />;
 };
 
-/** The row itself: its words never cut to one line, so a sentence keeps where things went; whole on hover. */
+/**
+ * The row itself: its words never cut to one line, so a sentence keeps where things went, and whole on hover. A
+ * headline (the game's start and what scores, an announcement) is never cut.
+ */
 const RowLine = ({ row, open }: { row: ImportantFeedRow; open: (() => void) | null }) => {
   const { icon, text } = summarizeFeedRow(row, useOutcomeContext());
+  const whole = row.kind === "headline";
   const content = (
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
-      <span className="line-clamp-2 min-w-0 flex-1 break-words text-left" title={text}>
+      <span
+        className={cn("min-w-0 flex-1 break-words text-left", !whole && "line-clamp-2")}
+        data-tip={whole ? undefined : text}
+      >
         {text}
       </span>
       <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">{formatClockTime(row.at)}</span>

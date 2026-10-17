@@ -224,7 +224,8 @@ const ResourceRings = ({
 const describeResource = ({ resourceId, held, buildings, producing, secondsLeft }: ResourceReading): string => {
   const parts = [`${ResourcesIds[resourceId]} · ${Math.floor(held).toLocaleString()} held`];
   if (buildings > 0) parts.push(`${buildings} building${buildings === 1 ? "" : "s"}`);
-  if (producing && secondsLeft !== null && secondsLeft >= 60)
+  if (producing && secondsLeft === Number.POSITIVE_INFINITY) parts.push("production never runs out");
+  else if (producing && secondsLeft !== null && secondsLeft >= 60)
     parts.push(`${formatTimeRemaining(Math.ceil(secondsLeft / 60) * 60)} of production left`);
   return parts.join(" · ");
 };

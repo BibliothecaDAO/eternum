@@ -1232,7 +1232,7 @@ export const BuildingCard = ({
         status={
           productionStatus
             ? productionStatus.isProducing
-              ? `Producing${formattedRemaining ? ` · ${formattedRemaining} left` : ""}`
+              ? `Producing${producingFor(formattedRemaining, effectiveRemainingSeconds)}`
               : "Idle"
             : undefined
         }
@@ -1737,4 +1737,10 @@ const BuildingInfo = ({
       )}
     </div>
   );
+};
+
+/** How long a building keeps producing, after "Producing": " · 4h left", " · never runs out", or nothing unknown. */
+const producingFor = (formatted: string | null, seconds: number | null): string => {
+  if (seconds === Number.POSITIVE_INFINITY) return " · never runs out";
+  return formatted ? ` · ${formatted} left` : "";
 };

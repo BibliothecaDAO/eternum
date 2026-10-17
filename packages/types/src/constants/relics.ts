@@ -293,9 +293,6 @@ interface RelicChestPack {
   lucky: boolean;
 }
 
-/** The chest's name, the one its panel and the game's history show: "War pack", or "War pack · lucky". */
-export const relicChestName = ({ pack, lucky }: RelicChestPack): string => `${pack} pack${lucky ? " · lucky" : ""}`;
-
 /** The relics a chest holds: its pack's, each a level up when the chest is lucky. */
 export const relicChestRelics = ({ pack, lucky }: RelicChestPack): ResourcesIds[] =>
   RELIC_PACKS[pack].relics.map((id) => (lucky ? ((id + 1) as ResourcesIds) : id));
