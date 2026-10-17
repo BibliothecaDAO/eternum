@@ -136,23 +136,73 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
   expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
 });
 
-it("names a fight with no winner a draw, never a draw that wins", () => {
-  const battle = (attackerAfter: string, defenderAfter: string, winner: number) =>
-    buildStoryEventPresentation(
-      story("BattleEvent", {
-        attacker_id: 20,
-        defender_id: 21,
-        attacker_owner: 10,
-        defender_owner: 0,
-        winner_id: winner,
-        attacker: { player: "0x123", category: "Knight", tier: "T1", before: "10", after: attackerAfter, roll: 0 },
-        defender: { player: "0x0", category: "Knight", tier: "T1", before: "10", after: defenderAfter, roll: 0 },
-      }),
-    ).description;
-  expect(battle("5", "4", 0)).toContain("Outcome: Draw");
-  expect(battle("0", "0", 0)).toContain("Outcome: Both sides fall");
-  expect(battle("5", "0", 10)).toContain("Outcome: Lord 0123 wins");
-  expect(battle("5", "4", 0)).not.toContain("wins");
+/**
+ * Each BattleEvent shape combat.cairo emits, as its fields are recorded: army 20 from home 10 (player 0x123), army 22
+ * from home 11 (player 0x456), structure 21 guarded by the Vanguard (player 0x0), structure 23 owned by player 0x123.
+ */
+const BATTLES = {
+  "army beats army": { ids: [20, 22], owners: [10, 11], winner: 10, players: ["0x123", "0x456"], after: ["5", "0"] },
+  "defending army beats army": {
+    ids: [20, 22],
+    owners: [10, 11],
+    winner: 11,
+    players: ["0x123", "0x456"],
+    after: ["0", "5"],
+  },
+  "army beats guard": { ids: [20, 21], owners: [10, 0], winner: 10, players: ["0x123", "0x0"], after: ["5", "0"] },
+  "guard beats army": { ids: [20, 21], owners: [10, 0], winner: 21, players: ["0x123", "0x0"], after: ["0", "4"] },
+  "guard beats attacking army": {
+    ids: [23, 22],
+    owners: [0, 11],
+    winner: 23,
+    players: ["0x123", "0x456"],
+    after: ["4", "0"],
+  },
+  "army beats attacking guard": {
+    ids: [23, 22],
+    owners: [0, 11],
+    winner: 11,
+    players: ["0x123", "0x456"],
+    after: ["0", "4"],
+  },
+  "true draw": { ids: [20, 22], owners: [10, 11], winner: 0, players: ["0x123", "0x456"], after: ["5", "4"] },
+  "draw against a guard": { ids: [20, 21], owners: [10, 0], winner: 0, players: ["0x123", "0x0"], after: ["5", "4"] },
+  "mutual destruction": { ids: [20, 22], owners: [10, 11], winner: 0, players: ["0x123", "0x456"], after: ["0", "0"] },
+} as const;
+
+it.each([
+  ["army beats army", "Lord 0123 wins"],
+  ["defending army beats army", "Lord 0456 wins"],
+  ["army beats guard", "Lord 0123 wins"],
+  ["guard beats army", "The Vanguard wins"],
+  ["guard beats attacking army", "Lord 0123 wins"],
+  ["army beats attacking guard", "Lord 0456 wins"],
+  ["true draw", "Draw"],
+  ["draw against a guard", "Draw"],
+  ["mutual destruction", "Both sides fall"],
+] as const)("words the outcome of %s as the contract decided it: %s", (battle, expected) => {
+  const { ids, owners, winner, players, after } = BATTLES[battle];
+  const side = (index: 0 | 1) => ({
+    player: players[index],
+    category: "Knight",
+    tier: "T1",
+    before: "10",
+    after: after[index],
+    roll: 0,
+  });
+  const { description } = buildStoryEventPresentation(
+    story("BattleEvent", {
+      attacker_id: ids[0],
+      defender_id: ids[1],
+      attacker_owner: owners[0],
+      defender_owner: owners[1],
+      winner_id: winner,
+      attacker: side(0),
+      defender: side(1),
+    }),
+  );
+  expect(description).toContain(`Outcome: ${expected}`);
+  if (!expected.endsWith("wins")) expect(description).not.toContain("wins");
 });
 
 it.each([

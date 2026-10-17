@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Fights end the way they did",
+    description:
+      "A fight's line in Events and World history now names its winner exactly as the battle decided it, a guard's win included. A fight both sides survive reads Draw, and one neither survives reads Both sides fall.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "Create field army stays put",
     description:
       "The deploy and Military buttons keep their place when their reason (such as Choose a troop count.) comes and goes, so pressing Max no longer moves the button out from under your click.",

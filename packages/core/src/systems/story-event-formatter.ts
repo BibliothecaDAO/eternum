@@ -230,16 +230,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const defender = payload.defender as Record<string, unknown>;
     const attackerName = nameOwner(attacker.player, store, resolvePlayerName);
     const defenderName = nameOwner(defender.player, store, resolvePlayerName);
-    const winner = Number(payload.winner_id);
-    // The fight's outcome as every surface shows it, whole: a winner wins; a fight with no winner is a draw.
-    const outcome =
-      winner > 0 && winner === Number(payload.attacker_owner)
-        ? `${attackerName} wins`
-        : winner > 0 && winner === Number(payload.defender_owner)
-          ? `${defenderName} wins`
-          : BigInt(String(attacker.after)) === 0n && BigInt(String(defender.after)) === 0n
-            ? "Both sides fall"
-            : "Draw";
+    const outcome = battleOutcome(
+      { name: attackerName, standing: BigInt(String(attacker.after)) > 0n },
+      { name: defenderName, standing: BigInt(String(defender.after)) > 0n },
+    );
     const side = (label: string, value: Record<string, unknown>) => [
       `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
@@ -713,6 +707,18 @@ function formatTravelTime(seconds: unknown): string | undefined {
  * resolver, then the chain name (the registration fallback reads as none), then the shortened address; anything
  * else is a structure id and reads by its name.
  */
+/**
+ * A fight's outcome as every surface shows it, whole, decided as the contract decides its winner (combat.cairo's
+ * `battle_winner` and its guard branch): the side left standing when the other has no troops wins; both standing is
+ * a draw; neither is both falling. The event's `winner_id` is not read: it records the winner as a home structure, a
+ * guarded structure or an attacking structure depending on who attacked whom.
+ */
+function battleOutcome(attacker: { name?: string; standing: boolean }, defender: { name?: string; standing: boolean }) {
+  if (attacker.standing && !defender.standing) return `${attacker.name ?? "Attacker"} wins`;
+  if (defender.standing && !attacker.standing) return `${defender.name ?? "Defender"} wins`;
+  return attacker.standing ? "Draw" : "Both sides fall";
+}
+
 function nameOwner(
   owner: unknown,
   components?: NativeFactStore,
