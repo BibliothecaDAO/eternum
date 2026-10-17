@@ -107,6 +107,8 @@ function updateIncidents(previous: Incident[], probes: Probe[], now: number) {
       };
       incidents.unshift(incident);
     } else {
+      // An incident is titled by the worst it has been, so a slowdown that became an outage reads as one.
+      if (probe.status === "down") incident.title = `${probe.name}: unavailable`;
       const text = `The public probe observed ${probe.status}.`;
       if (incident.updates.at(-1)?.text !== text) incident.updates.push({ at: now, text });
     }

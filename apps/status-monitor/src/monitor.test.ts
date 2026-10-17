@@ -435,36 +435,90 @@ const resend = (clock: () => number) => {
   return { provider, send };
 };
 const alerting = { apiKey: "re_test", to: "oncall@example.test", environment: "staging" };
-const chatDown = [{ id: "chat", name: "Chat", status: "down" as const, latency_ms: null }];
-
-it("records a notice once an incident lasts two minutes, once, and again when it resolves, with its exact email", () => {
-  let state = nextMonitorState(null, now, chatDown, [])!;
-  let alerts = recordNotices(state.document, NO_ALERTS, alerting);
-  expect(alerts.outbox).toEqual([]);
-  for (const minute of [1, 2, 3]) {
-    state = nextMonitorState(state, now + minute * 60, chatDown, [])!;
+const probe = (id: string, name: string, status: "up" | "degraded" | "down") => ({
+  id,
+  name,
+  status,
+  latency_ms: status === "down" ? null : 10,
+});
+/** Observes the probes minute by minute from `start`, through `minutes` more, recording notices as the monitor does. */
+const observe = (
+  from: { state: MonitorState | null; alerts: typeof NO_ALERTS },
+  start: number,
+  minutes: number,
+  probes: ReturnType<typeof probe>[],
+) => {
+  let { state, alerts } = from;
+  for (let minute = 0; minute <= minutes; minute++) {
+    state = nextMonitorState(state, start + minute * 60, probes, [])!;
     alerts = recordNotices(state.document, alerts, alerting);
   }
-  expect(SUSTAINED_SECONDS).toBe(120);
-  expect(alerts.told).toEqual([`chat:${now}`]);
-  expect(alerts.outbox).toEqual([
+  return { state, alerts };
+};
+const MINUTES = SUSTAINED_SECONDS / 60;
+
+it("emails an outage of something players use once it lasts ten minutes, once, and again when it resolves", () => {
+  expect(SUSTAINED_SECONDS).toBe(600);
+  const down = [probe("accounts", "Sign in and accounts", "down")];
+  let run = observe({ state: null, alerts: NO_ALERTS }, now, MINUTES - 1, down);
+  expect(run.alerts.outbox).toEqual([]);
+  run = observe(run, now + MINUTES * 60, 2, down);
+  expect(run.alerts.told).toEqual([`accounts:${now}`]);
+  expect(run.alerts.outbox).toEqual([
     expect.objectContaining({
-      key: `staging:chat:${now}:opened`,
-      recorded_at: now + 120,
+      key: `staging:accounts:${now}:opened`,
+      recorded_at: now + SUSTAINED_SECONDS,
       to: "oncall@example.test",
-      subject: "[staging] Chat: unavailable",
+      subject: "[staging] Sign in and accounts: unavailable",
     }),
   ]);
-  state = nextMonitorState(state, now + 240, [{ ...chatDown[0]!, status: "up", latency_ms: 10 }], [])!;
-  alerts = recordNotices(state.document, alerts, alerting);
-  expect(alerts.told).toEqual([]);
-  expect(alerts.outbox.map(({ key }) => key)).toEqual([`staging:chat:${now}:opened`, `staging:chat:${now}:resolved`]);
+  run = observe(run, now + (MINUTES + 3) * 60, 0, [probe("accounts", "Sign in and accounts", "up")]);
+  expect(run.alerts.told).toEqual([]);
+  expect(run.alerts.outbox.map(({ key }) => key)).toEqual([
+    `staging:accounts:${now}:opened`,
+    `staging:accounts:${now}:resolved`,
+  ]);
   const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
   try {
-    expect(recordNotices(state.document, NO_ALERTS, undefined)).toEqual({ told: [], outbox: [] });
+    expect(recordNotices(run.state!.document, NO_ALERTS, undefined)).toEqual({ told: [], outbox: [] });
   } finally {
     errors.mockRestore();
   }
+});
+
+it("emails nothing for a short outage, a slowdown, or a component players do not use", () => {
+  const quiet = (probes: ReturnType<typeof probe>[], minutes: number) => {
+    const run = observe({ state: null, alerts: NO_ALERTS }, now, minutes, probes);
+    return observe(run, now + (minutes + 1) * 60, 0, [probe(probes[0]!.id, probes[0]!.name, "up")]).alerts;
+  };
+  // A blip: down for nine minutes, then up; neither its start nor its recovery is told.
+  expect(quiet([probe("shard:0xa", "herald.public.test", "down")], MINUTES - 1)).toEqual(NO_ALERTS);
+  // A world an hour behind by a few blocks, or slow: degraded only, however long.
+  expect(quiet([probe("shard:0xa", "herald.public.test", "degraded")], 60)).toEqual(NO_ALERTS);
+  // Down for an hour, but not something players use: the status page shows it.
+  for (const [id, name] of [
+    ["chat", "Chat"],
+    ["directory", "Games list"],
+    ["relay", "Value relay"],
+    ["ledger", "Starknet ledger"],
+    ["node:0xa", "herald.public.test node memory"],
+  ] as const)
+    expect(quiet([probe(id, name, "down")], 60)).toEqual(NO_ALERTS);
+});
+
+it("counts an outage from when it went down, and names it unavailable even if it began slow", () => {
+  const launch = (status: "degraded" | "down") => [probe("launch", "Game launches and seating", status)];
+  let run = observe({ state: null, alerts: NO_ALERTS }, now, 30, launch("degraded"));
+  run = observe(run, now + 31 * 60, MINUTES - 1, launch("down"));
+  expect(run.alerts.outbox).toEqual([]);
+  run = observe(run, now + (31 + MINUTES) * 60, 0, launch("down"));
+  expect(run.alerts.outbox).toEqual([
+    expect.objectContaining({
+      key: `staging:launch:${now}:opened`,
+      subject: "[staging] Game launches and seating: unavailable",
+    }),
+  ]);
+  expect(run.state!.document.incidents[0]!.title).toBe("Game launches and seating: unavailable");
 });
 
 /** The monitor's real R2 bucket on Miniflare, whose next writes can be made to fail. */
@@ -488,24 +542,27 @@ const monitored = async () => {
   });
   let clock = now;
   const { provider, send } = resend(() => clock);
-  const chatHealth = { ok: false };
-  const chat = (input: RequestInfo | URL, init?: RequestInit) =>
+  const accountsHealth = { ok: false };
+  const accounts = (input: RequestInfo | URL, init?: RequestInit) =>
     String(input) === "https://api.resend.com/emails"
       ? send(input, init)
-      : network({ "https://play.realms.party/api/chat/health": response({ success: chatHealth.ok }) })(input, init);
+      : network({ "https://play.realms.party/api/health/accounts": response({ success: accountsHealth.ok }) })(
+          input,
+          init,
+        );
   const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
   return {
     provider,
-    chatHealth,
+    accountsHealth,
     errors,
     /** One minute's run; `failWrites` names which of its writes fail (1 = its observation, 2 = its confirmation). */
     run: (at: number, failWrites: number[] = []) => {
       clock = at;
       failing = new Set(failWrites.map((write) => writes + write));
-      return monitor(flaky, chat, at, valueTargets, alerting);
+      return monitor(flaky, accounts, at, valueTargets, alerting);
     },
     state: async () => (await bucket.get("state.json"))!.json<MonitorState>(),
-    chatEmails: () => provider.emails.filter(({ key }) => key.includes(":chat:")).map(({ key }) => key),
+    accountsEmails: () => provider.emails.filter(({ key }) => key.includes(":accounts:")).map(({ key }) => key),
     close: async () => {
       errors.mockRestore();
       await disposeWorker(mf);
@@ -516,14 +573,14 @@ const monitored = async () => {
 it("sends one recovery when the write confirming it fails, even after Resend forgets the key", async () => {
   const m = await monitored();
   try {
-    for (const minute of [0, 1, 2, 3]) await m.run(now + minute * 60);
-    m.chatHealth.ok = true;
-    await m.run(now + 240, [2]); // the recovery is sent; the write confirming it fails
-    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:chat:${now}:resolved`);
-    await m.run(now + 300); // retried as recorded: Resend answers its first answer and sends nothing
-    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":chat:"))).toEqual([]);
-    await m.run(now + 300 + 25 * 3600); // past the key's life, nothing is left to send
-    expect(m.chatEmails()).toEqual([`staging:chat:${now}:opened`, `staging:chat:${now}:resolved`]);
+    for (let minute = 0; minute <= MINUTES + 1; minute++) await m.run(now + minute * 60);
+    m.accountsHealth.ok = true;
+    await m.run(now + SUSTAINED_SECONDS + 120, [2]); // the recovery is sent; the write confirming it fails
+    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:accounts:${now}:resolved`);
+    await m.run(now + SUSTAINED_SECONDS + 180); // retried as recorded: Resend answers its first answer and sends nothing
+    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":accounts:"))).toEqual([]);
+    await m.run(now + SUSTAINED_SECONDS + 180 + 25 * 3600); // past the key's life, nothing is left to send
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`, `staging:accounts:${now}:resolved`]);
   } finally {
     await m.close();
   }
@@ -532,12 +589,12 @@ it("sends one recovery when the write confirming it fails, even after Resend for
 it("sends nothing from an observation whose write fails, and records the change again on the next one", async () => {
   const m = await monitored();
   try {
-    for (const minute of [0, 1, 2, 3]) await m.run(now + minute * 60);
-    m.chatHealth.ok = true;
-    await expect(m.run(now + 240, [1])).rejects.toThrow("superseded");
-    expect(m.chatEmails()).toEqual([`staging:chat:${now}:opened`]);
-    await m.run(now + 300);
-    expect(m.chatEmails()).toEqual([`staging:chat:${now}:opened`, `staging:chat:${now}:resolved`]);
+    for (let minute = 0; minute <= MINUTES + 1; minute++) await m.run(now + minute * 60);
+    m.accountsHealth.ok = true;
+    await expect(m.run(now + SUSTAINED_SECONDS + 120, [1])).rejects.toThrow("superseded");
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`]);
+    await m.run(now + SUSTAINED_SECONDS + 180);
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`, `staging:accounts:${now}:resolved`]);
   } finally {
     await m.close();
   }
@@ -546,13 +603,13 @@ it("sends nothing from an observation whose write fails, and records the change 
 it("sends once when Resend delivers but its answer is lost", async () => {
   const m = await monitored();
   try {
-    for (const minute of [0, 1]) await m.run(now + minute * 60);
+    for (let minute = 0; minute < MINUTES; minute++) await m.run(now + minute * 60);
     m.provider.loseAnswers = 1;
-    await m.run(now + 120);
-    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:chat:${now}:opened`);
-    await m.run(now + 180);
-    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":chat:"))).toEqual([]);
-    expect(m.chatEmails()).toEqual([`staging:chat:${now}:opened`]);
+    await m.run(now + SUSTAINED_SECONDS);
+    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:accounts:${now}:opened`);
+    await m.run(now + SUSTAINED_SECONDS + 60);
+    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":accounts:"))).toEqual([]);
+    expect(m.accountsEmails()).toEqual([`staging:accounts:${now}:opened`]);
   } finally {
     await m.close();
   }
@@ -562,13 +619,13 @@ it("drops a notice Resend never confirmed once the key would have expired, and n
   const m = await monitored();
   try {
     m.provider.refuse = true;
-    for (const minute of [0, 1, 2]) await m.run(now + minute * 60);
-    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:chat:${now}:opened`);
-    await m.run(now + 120 + NOTICE_LIFETIME_SECONDS - 60); // still within: retried, still refused
+    for (let minute = 0; minute <= MINUTES; minute++) await m.run(now + minute * 60);
+    expect((await m.state()).alerts!.outbox.map(({ key }) => key)).toContain(`staging:accounts:${now}:opened`);
+    await m.run(now + SUSTAINED_SECONDS + NOTICE_LIFETIME_SECONDS - 60); // still within: retried, still refused
     m.provider.refuse = false;
-    await m.run(now + 120 + NOTICE_LIFETIME_SECONDS); // expired: dropped, not sent
-    expect(m.chatEmails()).toEqual([]);
-    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":chat:"))).toEqual([]);
+    await m.run(now + SUSTAINED_SECONDS + NOTICE_LIFETIME_SECONDS); // expired: dropped, not sent
+    expect(m.accountsEmails()).toEqual([]);
+    expect((await m.state()).alerts!.outbox.filter(({ key }) => key.includes(":accounts:"))).toEqual([]);
     expect(m.errors.mock.calls.some(([line]) => String(line).includes(`"status_alert_expired"`))).toBe(true);
   } finally {
     await m.close();
@@ -587,12 +644,12 @@ it("sends nothing from an overlapping observation that loses its write", async (
     const bucket = (await mf.getR2Bucket("STATUS_BUCKET")) as unknown as R2Bucket;
     let clock = now;
     const { provider, send } = resend(() => clock);
-    const down = network({ "https://play.realms.party/api/chat/health": response({ success: false }) });
+    const down = network({ "https://play.realms.party/api/health/accounts": response({ success: false }) });
     const mail =
       (fallback: typeof fetch): typeof fetch =>
       (input, init) =>
         String(input) === "https://api.resend.com/emails" ? send(input, init) : fallback(input, init);
-    for (const minute of [0, 1, 2]) {
+    for (let minute = 0; minute <= MINUTES; minute++) {
       clock = now + minute * 60;
       await monitor(bucket, mail(down), clock, valueTargets, alerting);
     }
@@ -609,16 +666,16 @@ it("sends nothing from an overlapping observation that loses its write", async (
       }
       return network()(input, init);
     };
-    clock = now + 180;
-    const late = monitor(bucket, mail(slow), now + 180, valueTargets, alerting);
+    clock = now + SUSTAINED_SECONDS + 60;
+    const late = monitor(bucket, mail(slow), now + SUSTAINED_SECONDS + 60, valueTargets, alerting);
     await started;
-    clock = now + 240;
-    await monitor(bucket, mail(network()), now + 240, valueTargets, alerting);
+    clock = now + SUSTAINED_SECONDS + 120;
+    await monitor(bucket, mail(network()), now + SUSTAINED_SECONDS + 120, valueTargets, alerting);
     unblock();
     await expect(late).rejects.toThrow("superseded");
-    const recoveries = provider.emails.filter(({ key }) => key === `staging:chat:${now}:resolved`);
+    const recoveries = provider.emails.filter(({ key }) => key === `staging:accounts:${now}:resolved`);
     expect(recoveries).toHaveLength(1);
-    expect(recoveries[0]!.text).toContain(new Date((now + 240) * 1000).toISOString());
+    expect(recoveries[0]!.text).toContain(new Date((now + SUSTAINED_SECONDS + 120) * 1000).toISOString());
     // The superseded run never tried: no send under the key with another payload.
     expect(provider.conflicts).toEqual([]);
   } finally {

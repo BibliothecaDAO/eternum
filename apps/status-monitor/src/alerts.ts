@@ -1,7 +1,15 @@
 import type { Incident, StatusDocument } from "./model";
 
-/** An incident reaches people once it has lasted this long, so one slow minute wakes no one. */
-export const SUSTAINED_SECONDS = 120;
+/**
+ * An outage reaches the owner once its component has been down this long without a break. Anything shorter, and
+ * anything only degraded (slow, or a few blocks behind), stays on the status page: in one night of test games a
+ * two-minute rule on any status sent 328 emails, every one a degraded blip that recovered by itself.
+ */
+export const SUSTAINED_SECONDS = 600;
+
+/** What players use and only the owner can bring back: the client, sign-in, game launches, and each world. */
+const isEmailed = (componentId: string) =>
+  ["play", "accounts", "launch"].includes(componentId) || componentId.startsWith("shard:");
 
 /**
  * Resend keeps an idempotency key for 24 hours and answers a repeated key with its first answer, sending nothing. A
@@ -35,8 +43,8 @@ export interface AlertState {
 export const NO_ALERTS: AlertState = { told: [], outbox: [] };
 
 /**
- * Records a notice for each incident sustained and untold, and for each told incident now resolved, beside the notices
- * still unconfirmed. The monitor writes this state before any send, so a notice is decided once, whatever happens to
+ * Records a notice for each sustained outage untold, and for each told one now resolved, beside the notices still
+ * unconfirmed. The monitor writes this state before any send, so a notice is decided once, whatever happens to
  * a send or a later write. Without an address, nothing is recorded and the changes wait untold.
  */
 export function recordNotices(
@@ -51,10 +59,7 @@ export function recordNotices(
     return live;
   });
   const opened = document.incidents.filter(
-    (incident) =>
-      incident.status !== "resolved" &&
-      !told.has(incident.id) &&
-      document.checked_at - incident.started_at >= SUSTAINED_SECONDS,
+    (incident) => incident.status !== "resolved" && !told.has(incident.id) && isSustainedOutage(document, incident),
   );
   const resolved = document.incidents.filter((incident) => incident.status === "resolved" && told.has(incident.id));
   if (!opened.length && !resolved.length) return { told: [...told], outbox };
@@ -78,6 +83,16 @@ export async function sendNotices(outbox: readonly Notice[], apiKey: string, net
   const confirmed = new Set<string>();
   for (const notice of outbox) if (await sendNotice(notice, apiKey, network)) confirmed.add(notice.key);
   return confirmed;
+}
+
+function isSustainedOutage(document: StatusDocument, incident: Incident) {
+  return document.components.some(
+    (component) =>
+      incident.components.includes(component.id) &&
+      isEmailed(component.id) &&
+      component.status === "down" &&
+      document.checked_at - component.since >= SUSTAINED_SECONDS,
+  );
 }
 
 function noticeOf(alerting: Alerting, incident: Incident, news: "opened" | "resolved", now: number): Notice {

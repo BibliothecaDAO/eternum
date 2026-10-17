@@ -1,12 +1,18 @@
 # On call
 
-The status monitor (`apps/status-monitor`) probes every public path once a minute. A component that stays down or
-degraded for two minutes is emailed to the address setup recorded (`alertEmail` in the private directory's
-`inputs.json`), and so is its recovery, each exactly once. Each email is recorded in the monitor's state before it is
-sent and retried as recorded until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and
-logged as `status_alert_expired` (the status page still shows the incident), because past Resend's 24-hour key a resend
-could be a second email. The email names the component; find it below. Dev is `play.dev-realms.party` and the box's dev
-shard is `realms-dev`. Production is `play.realms.party`, and its Worker names drop `-staging`.
+The status monitor (`apps/status-monitor`) probes every public path once a minute and shows every component below on the
+status page. Only an outage players feel, which only the owner can end, is emailed to the address setup recorded
+(`alertEmail` in the private directory's `inputs.json`):
+
+- the component is `play`, `accounts`, `launch` or a world (`shard:<chain>`);
+- and it has been down, not merely degraded, for ten minutes without a break.
+
+The outage and its recovery are each emailed exactly once. Shorter outages, slowdowns and every other component stay on
+the status page; read it first. Each email is recorded in the monitor's state before it is sent and retried as recorded
+until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and logged as `status_alert_expired`
+(the status page still shows the incident), because past Resend's 24-hour key a resend could be a second email. The
+email names the component; find it below. Dev is `play.dev-realms.party` and the box's dev shard is `realms-dev`.
+Production is `play.realms.party`, and its Worker names drop `-staging`.
 
 Commands for the box run there (`ssh realms-dev`). Worker logs need the Cloudflare token:
 `pnpm --dir <app> exec wrangler tail <worker>`.
