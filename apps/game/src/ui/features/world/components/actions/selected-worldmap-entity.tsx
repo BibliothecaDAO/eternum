@@ -29,7 +29,8 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -268,11 +269,11 @@ const TileChrome = ({
  */
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({ contractHex: selectedHex });
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(`${selectedHex.col}:${selectedHex.row}`);
   const capturePoints = configManager.getVictoryPointGrants().claimHyperstructureFromBandits;
 
   const handleCreateHyperstructure = useCallback(async () => {
-    setConfirming(false);
+    close();
     try {
       await createHyperstructure();
     } catch (error) {
@@ -281,7 +282,7 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
         location: { x: selectedHex.col, y: selectedHex.row },
       });
     }
-  }, [createHyperstructure, selectedHex.col, selectedHex.row]);
+  }, [close, createHyperstructure, selectedHex.col, selectedHex.row]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -301,19 +302,14 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
             >
               Found it
             </button>
-            <button type="button" className={HUD_PILL_BUTTON} onClick={() => setConfirming(false)}>
+            <button type="button" className={HUD_PILL_BUTTON} onClick={close}>
               Cancel
             </button>
           </div>
         </div>
       ) : (
         <div>
-          <button
-            type="button"
-            className={HUD_PILL_BUTTON}
-            disabled={!canCreate || isCreating}
-            onClick={() => setConfirming(true)}
-          >
+          <button type="button" className={HUD_PILL_BUTTON} disabled={!canCreate || isCreating} onClick={ask}>
             {isCreating ? "Founding…" : "Found a Hyperstructure"}
           </button>
         </div>

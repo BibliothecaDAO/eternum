@@ -1,9 +1,9 @@
 import { useGame } from "@/hooks/context/game-context";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { useState } from "react";
 
 import type { DockArmy } from "../hud/dock-armies";
 import { useRealmLords } from "../value/use-realm-lords";
@@ -16,7 +16,7 @@ import { RefillButton, RefillConfirm } from "./refill";
 export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows["Structure"] }) => {
   const { setup, account } = useGame();
   const held = useRealmLords(realm);
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(army.explorerId);
   const refilling = useInFlight("refill", army.explorerId) !== undefined;
   const stamina = army.stamina;
   if (!stamina || stamina.current >= stamina.max) return null;
@@ -28,7 +28,7 @@ export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows[
     try {
       await sendOnce("refill", army.explorerId, true, async () => {
         const sent = await setup.systemCalls.refill_stamina({ signer, explorerId: army.explorerId });
-        setConfirming(false);
+        close();
         return sent;
       });
     } catch (error) {
@@ -38,19 +38,14 @@ export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows[
 
   return (
     <>
-      <RefillButton
-        price={Math.ceil(stamina.max - stamina.current)}
-        held={held}
-        refilling={refilling}
-        onRefill={() => setConfirming(true)}
-      />
+      <RefillButton price={Math.ceil(stamina.max - stamina.current)} held={held} refilling={refilling} onRefill={ask} />
       {confirming && (
         <RefillConfirm
           stamina={stamina}
           held={held}
           sending={refilling}
           onRefill={() => void refill()}
-          onCancel={() => setConfirming(false)}
+          onCancel={close}
         />
       )}
     </>

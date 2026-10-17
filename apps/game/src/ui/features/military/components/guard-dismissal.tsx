@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
@@ -24,7 +25,7 @@ export const GuardDismissal = ({
   const game_id = configManager.getActiveGameId();
   const structure = useNativeRow("Structure", { game_id, entity_id: structureId });
   const guard = useNativeRow("Guard", { game_id, structure_id: structureId, slot });
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(`${structureId}:${slot}`);
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
   const canDismiss =
@@ -63,13 +64,13 @@ export const GuardDismissal = ({
             <Button variant="danger" disabled={disabled || pending} onClick={dismiss}>
               Confirm dismissal
             </Button>
-            <Button disabled={pending} onClick={() => setConfirming(false)}>
+            <Button disabled={pending} onClick={close}>
               Cancel
             </Button>
           </div>
         </>
       ) : (
-        <Button variant="outline" disabled={disabled} onClick={() => setConfirming(true)}>
+        <Button variant="outline" disabled={disabled} onClick={ask}>
           Dismiss guard
         </Button>
       )}

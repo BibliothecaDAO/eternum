@@ -6,7 +6,7 @@ const { selectedTile, crate, founding } = vi.hoisted(() => ({
   selectedTile: { occupierType: 0 },
   /** A crate opened on the tile this session, as the crate store keeps it. */
   crate: { opening: null as null | { relics: number[] } },
-  founding: { create: () => Promise.resolve() },
+  founding: { create: (_site: { col: number; row: number }) => Promise.resolve() },
 }));
 vi.mock("@/hooks/helpers/use-tile-at", () => ({
   useTileAt: () => ({ biome: 1, occupier_type: selectedTile.occupierType, occupier_id: 900 }),
@@ -15,7 +15,11 @@ vi.mock("@/hooks/store/use-relic-crate-store", () => ({ useRelicCrateOpening: ()
 vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => null }));
 vi.mock("./chest-tile-details", () => ({ ChestTileDetails: () => <div data-panel="crate" /> }));
 vi.mock("@/hooks/use-blitz-hyperstructure-creation", () => ({
-  useBlitzHyperstructureCreation: () => ({ canCreate: true, isCreating: false, createHyperstructure: founding.create }),
+  useBlitzHyperstructureCreation: ({ contractHex }: { contractHex: { col: number; row: number } }) => ({
+    canCreate: true,
+    isCreating: false,
+    createHyperstructure: () => founding.create(contractHex),
+  }),
 }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
@@ -103,6 +107,56 @@ describe("a reserved Hyperstructure site", () => {
       expect(host.textContent).toContain("Found it? It cannot be undone.");
       await act(async () => button("Found it").click());
       expect(create).toHaveBeenCalledTimes(1);
+    } finally {
+      unmount();
+      useUIStore.getState().selectOnMap(null);
+    }
+  });
+});
+
+describe("a founding confirm", () => {
+  const site = (host: HTMLElement) => ({
+    button: (word: string) => [...host.querySelectorAll("button")].find((b) => b.textContent === word),
+  });
+
+  it("belongs to the site it was asked on: another site selected shows its own Found a Hyperstructure", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
+    const create = vi.fn((_site: { col: number; row: number }) => Promise.resolve());
+    founding.create = create;
+    const { host, unmount } = mount(TileOccupier.ReservedHyperstructure);
+    const { button } = site(host);
+    try {
+      act(() => button("Found a Hyperstructure")!.click());
+      expect(button("Found it")).toBeDefined();
+      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 9, row: 5 } }));
+      expect(button("Found it")).toBeUndefined();
+      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } }));
+      expect(button("Found it")).toBeUndefined();
+
+      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 9, row: 5 } }));
+      act(() => button("Found a Hyperstructure")!.click());
+      await act(async () => button("Found it")!.click());
+      expect(create.mock.calls).toEqual([[{ col: 9, row: 5 }]]);
+    } finally {
+      unmount();
+      useUIStore.getState().selectOnMap(null);
+    }
+  });
+
+  it("closes on Cancel without founding", () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
+    const create = vi.fn((_site: { col: number; row: number }) => Promise.resolve());
+    founding.create = create;
+    const { host, unmount } = mount(TileOccupier.ReservedHyperstructure);
+    const { button } = site(host);
+    try {
+      act(() => button("Found a Hyperstructure")!.click());
+      act(() => button("Cancel")!.click());
+      expect(button("Found it")).toBeUndefined();
+      expect(button("Found a Hyperstructure")).toBeDefined();
+      expect(create).not.toHaveBeenCalled();
     } finally {
       unmount();
       useUIStore.getState().selectOnMap(null);

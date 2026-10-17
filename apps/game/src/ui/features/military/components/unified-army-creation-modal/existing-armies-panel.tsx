@@ -13,6 +13,7 @@ import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import { memo, useMemo, useState } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 
 interface ExistingArmiesPanelProps {
   structureId: ID;
@@ -56,7 +57,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const selectOnMap = useUIStore((state) => state.selectOnMap);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const timestamp = useCurrentDefaultTick();
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(army.entityId);
   const [deleting, setDeleting] = useState(false);
 
   // troops.count is the raw precision value; currencyFormat divides internally.
@@ -97,7 +98,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       await requireActiveGameClient().actions.deleteExplorerArmy({ structureId, explorerId: army.entityId });
       // Free the hex on the deploy map.
       bumpMilitaryMapVersion();
-      setConfirming(false);
+      close();
     } catch (error) {
       console.error("Failed to delete army", error);
     } finally {
@@ -137,7 +138,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       <div className="flex shrink-0 items-center gap-0.5">
         {!confirming && <IconButton icon={"map" as const} title="Navigate to army" onClick={handleJump} tone="gold" />}
         {!confirming ? (
-          <IconButton icon={"trash" as const} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
+          <IconButton icon={"trash" as const} title="Disband army" onClick={ask} tone="rose" />
         ) : (
           <>
             <IconButton
@@ -147,13 +148,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
               tone="emerald"
               spinning={deleting}
             />
-            <IconButton
-              icon={"close" as const}
-              title="Cancel"
-              onClick={() => setConfirming(false)}
-              tone="rose"
-              disabled={deleting}
-            />
+            <IconButton icon={"close" as const} title="Cancel" onClick={close} tone="rose" disabled={deleting} />
           </>
         )}
       </div>

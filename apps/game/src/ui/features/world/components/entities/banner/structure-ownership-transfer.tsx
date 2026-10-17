@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { validateAndParseAddress } from "starknet";
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -26,7 +27,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
   const mode = useResolvedWorldGameMode();
   const key = { game_id: configManager.getActiveGameId(), entity_id: structureId };
   const structure = useNativeRow("Structure", key);
-  const [confirming, setConfirming] = useState(false);
+  const { confirming, ask, close } = useConfirmFor(structureId);
   const [recipient, setRecipient] = useState("");
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
@@ -53,7 +54,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
         structure_id: structureId,
         new_owner: address,
       });
-      setConfirming(false);
+      close();
       setRecipient("");
     } catch (error) {
       toast.failed(error, "Could not transfer ownership");
@@ -90,13 +91,13 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
             <Button variant="danger" disabled={!validRecipient || pending} onClick={transfer}>
               Confirm transfer
             </Button>
-            <Button disabled={pending} onClick={() => setConfirming(false)}>
+            <Button disabled={pending} onClick={close}>
               Cancel
             </Button>
           </div>
         </>
       ) : (
-        <Button variant="outline" onClick={() => setConfirming(true)}>
+        <Button variant="outline" onClick={ask}>
           Transfer ownership
         </Button>
       )}
