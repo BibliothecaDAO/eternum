@@ -70,6 +70,13 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-17",
+    title: "The map says what a right-click does",
+    description:
+      "With an army selected, hover a tile: it says what a right-click does there, what it costs and what it scores (Explore · 21 stamina · +5 points, Open crate · +250 points). Where no order is possible it says why: too far, or the stamina it needs and when it is ready.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Production time back on the rings",
     description:
       'Each resource ring shows its production time left on its right (∞ when it never runs out), beside the building count and the amount. Hovering a ring now just names the resource. When fewer troops fit than you hold, the troop amount reads "of 500 that fit", so Max and +500 are clear.',

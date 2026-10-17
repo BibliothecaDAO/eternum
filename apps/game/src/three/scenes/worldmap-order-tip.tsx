@@ -2,9 +2,12 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
 import type { OrderTip } from "@/ui/features/frontier/hud/order-tip";
 
-/** The tip sits beside the tile it names, clear of the pointer and inside the screen. */
-const TIP_OFFSET = { x: 12, y: -42 };
-const TIP_ROOM = { width: 280, top: 56, edge: 8 };
+/**
+ * The tip sits under the tile it names, beside the pointer and inside the screen: above the tile is the map plate's
+ * place (a tile's plate opens on hover), and the tip never covers it.
+ */
+const TIP_OFFSET = { x: 12, y: 26 };
+const TIP_ROOM = { width: 280, height: 56, top: 56, edge: 8 };
 
 let shown = false;
 
@@ -31,7 +34,7 @@ export function showOrderTip(tip: (OrderTip & { at: { x: number; y: number } }) 
     ),
     fixed: {
       x: Math.max(TIP_ROOM.edge, Math.min(tip.at.x + TIP_OFFSET.x, window.innerWidth - TIP_ROOM.width)),
-      y: Math.max(TIP_ROOM.top, tip.at.y + TIP_OFFSET.y),
+      y: Math.max(TIP_ROOM.top, Math.min(tip.at.y + TIP_OFFSET.y, window.innerHeight - TIP_ROOM.height)),
     },
   });
 }

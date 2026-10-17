@@ -226,8 +226,8 @@ export const GAME_TASKS = {
     view: "map",
     presses: [
       { name: "the next army", key: "Tab" },
-      // The transfer order's tooltip; "Transfer" alone is also the action strip's button.
-      { name: "its realm's tile, right-clicked", tile: "Troops / Resources", button: "right" },
+      // The tile's order line; "Transfer" alone is also the action strip's button.
+      { name: "its realm's tile, right-clicked", tile: "Transfer troops", button: "right" },
     ],
     // A full modal stands in the middle of the screen, wherever on the map it was opened from, and wholly on it.
     done: `(() => {

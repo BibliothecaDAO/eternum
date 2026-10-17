@@ -122,8 +122,10 @@ import {
   getBlockTimestamp,
   findArmyReach,
   getTileAt,
+  type OrderRefusal,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { inFlight } from "@/hooks/store/use-actions-in-flight";
@@ -265,7 +267,7 @@ import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-or
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { type OrderTip, orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { type OrderTip, orderTip, orderWheat } from "@/ui/features/frontier/hud/order-tip";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { showOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -1001,6 +1003,8 @@ export default class WorldmapScene extends WarpTravel {
     recoveryTransitionToken: number;
   } | null = null;
   private actionPathsTransitionToken: number | null = null;
+  /** Why each tile the selected army's rules looked at offers no order; set with its paths (updateEntityActionPaths). */
+  private orderRefusals: Map<string, OrderRefusal> = new Map();
   private readonly selectedArmyOrders = new SelectedArmyOrders({
     reach: (entityId) =>
       findArmyReach(requireActiveGameClient(), {
@@ -2353,7 +2357,8 @@ export default class WorldmapScene extends WarpTravel {
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
     // are required to distinguish "no selection" from a real selected entity.
     const hasOrders = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
-    if (hasOrders || this.hudCarriesOrderVerb()) this.showOrderUnderPointer(hexCoords);
+    if (hasOrders || this.hudCarriesOrderVerb() || this.selectedArmyId() !== null)
+      this.showOrderUnderPointer(hexCoords);
 
     this.interactiveHexManager.applyHoverPalette(hoverPalette);
   }
@@ -2373,22 +2378,58 @@ export default class WorldmapScene extends WarpTravel {
    * has revealed) and a click opens the preview.
    */
   private showOrderUnderPointer(hexCoords: HexPosition | null): void {
-    if (!this.hudCarriesOrderVerb()) {
-      this.state.updateEntityActionHoveredHex(hexCoords);
-      return;
-    }
+    if (!this.hudCarriesOrderVerb()) this.state.updateEntityActionHoveredHex(hexCoords);
+    // The tile's line: the order a right-click sends there, or why none; with an army selected in every mode.
+    if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return;
     const tip = hexCoords && this.nameOrderAt(hexCoords);
     showOrderTip(tip && hexCoords ? { ...tip, at: projectHexToScreen(hexCoords, this.camera) } : null);
   }
 
+  /** The army whose orders the map shows, or null when the selection is no army. */
+  private selectedArmyId(): ID | null {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId === null || selectedEntityId === undefined) return null;
+    return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
+  }
+
   private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
-    const { structure } = this.getHexagonEntity(hexCoords);
+    const { structure, army, chest } = this.getHexagonEntity(hexCoords);
+    const key = ActionPaths.posKey(hexCoords, true);
+    const refusal = this.orderRefusals.get(key);
+    const path = getLiveWorldmapEntityActions().actionPaths.get(key);
+    const armyTroops = this.selectedArmyRow()?.troops;
     return orderTip({
-      path: getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true)),
+      path,
       target: structure ? this.siteWord(structure.id) : null,
       exploreStamina: configManager.getExploreStaminaCost(),
+      wheat: armyTroops ? orderWheat(path, armyTroops) : 0,
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
+      occupied: Boolean(structure || army || chest),
+      refusal,
+      staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
+      points: configManager.getVictoryPointGrants(),
+      clickPreviews: this.hudCarriesOrderVerb(),
     });
+  }
+
+  /** The selected army's troops row, or undefined when the selection is no army. */
+  private selectedArmyRow() {
+    const armyId = this.selectedArmyId();
+    if (armyId === null) return undefined;
+    return this.game.store.get("ExplorerTroops", {
+      game_id: configManager.getActiveGameId(),
+      explorer_id: safeInteger(armyId),
+    });
+  }
+
+  /** Seconds until the selected army holds this much stamina, by the stamina rules the chain settles it with. */
+  private secondsUntilSelectedArmyHolds(need: number): number | undefined {
+    const row = this.selectedArmyRow();
+    const troops = row && resolveExplorerTroops(this.game.store, row);
+    if (!troops) return undefined;
+    const { currentDefaultTick } = getBlockTimestamp();
+    const ready = StaminaManager.getAffordableAt(troops, need, currentDefaultTick);
+    return ready === null ? undefined : Math.max(0, ready - currentDefaultTick);
   }
 
   /** A standing site as its card names it; null for anything else. */
@@ -3685,7 +3726,7 @@ export default class WorldmapScene extends WarpTravel {
     const paths = actionPaths.getPaths();
     const highlightedHexes = actionPaths.getHighlightDescriptors();
 
-    this.updateEntityActionPaths(paths);
+    this.updateEntityActionPaths(paths, actionPaths.getRefusals());
     this.highlightHexManager.highlightHexes(highlightedHexes);
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
   }
@@ -3835,7 +3876,15 @@ export default class WorldmapScene extends WarpTravel {
     this.state.selectOnMap(null);
   }
 
-  private updateEntityActionPaths(actionPaths: Map<string, ActionPath[]>) {
+  /**
+   * The selection's orders, and why each tile the rules looked at offers none (ActionPaths.getRefusals): the two always
+   * change together, so the map never names a reason from another moment's orders.
+   */
+  private updateEntityActionPaths(
+    actionPaths: Map<string, ActionPath[]>,
+    refusals: Map<string, OrderRefusal> = new Map(),
+  ) {
+    this.orderRefusals = refusals;
     // Stamp token before publishing store updates to avoid transient null-token
     // windows inside synchronous subscribers.
     this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;

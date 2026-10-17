@@ -1,4 +1,3 @@
-export * from "./base-three-tooltip";
 export * from "./circle-button";
 export * from "./headline";
 export * from "./hint-modal-button";

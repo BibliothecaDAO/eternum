@@ -9,7 +9,6 @@ import { SurfaceHost } from "../design-system/molecules/popover";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
-import { ActionInfo } from "../features/world/components/actions/action-info";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
 import { CompactHud } from "../features/world/containers/compact-hud";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
@@ -143,8 +142,6 @@ const ArenaHud = () => {
   const lane = useCompactLane();
   return (
     <>
-      {/* The hovered order's costs; Frontier's action bar shows them in its own HUD. */}
-      <ActionInfo />
       <TopHeader />
       {lane ? <CompactHud lane={lane} /> : <DesktopHud />}
     </>
