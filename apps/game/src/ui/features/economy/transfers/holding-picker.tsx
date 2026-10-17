@@ -3,7 +3,6 @@ import type { LeftListFilter } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "@/ui/features/world/hud/holdings-model";
@@ -81,7 +80,7 @@ export const HoldingPicker = ({
               className="hud-tab"
               onClick={() => setAsked(entry.kind)}
             >
-              <Icon name={structureMeaning(entry.kind)} size={22} />
+              <Icon name={entry.icon} size={22} />
               <span>{entry.count}</span>
             </button>
           ))}

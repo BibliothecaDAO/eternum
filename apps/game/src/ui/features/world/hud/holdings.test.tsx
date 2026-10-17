@@ -21,11 +21,16 @@ vi.mock("@/ui/features/world/containers/top-header/favorites", () => ({
 }));
 vi.mock("@/ui/design-system/icon", () => ({ Icon: () => null }));
 vi.mock("./medallion", () => ({ Medallion: () => null }));
-vi.mock("@bibliothecadao/eternum", () => ({ Position: {}, structureMapPosition: () => null }));
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
+  Position: {},
+  structureMapPosition: () => null,
+}));
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HoldingsList, useHoldings } from "./holdings";
 
+const FRAGMENT_MINE = 2;
 const holding = (entityId: number, category: StructureType, displayName: string) => ({
   entityId,
   category,
@@ -33,6 +38,7 @@ const holding = (entityId: number, category: StructureType, displayName: string)
   realmLevel: 0,
   realmLevelLabel: category === StructureType.Realm ? "Settlement" : null,
   isFavorite: false,
+  structure: { base: { category }, metadata: { mine_kind: FRAGMENT_MINE } },
 });
 
 const realms = (count: number) =>
@@ -72,7 +78,7 @@ describe("the holdings search", () => {
     type("Realm 1");
     expect(shownNames()).toEqual(["Realm 1", "Realm 10", "Realm 11", "Realm 12"]);
 
-    act(() => host.querySelector<HTMLButtonElement>('[role="tab"][aria-label="Mines, 1"]')!.click());
+    act(() => host.querySelector<HTMLButtonElement>('[role="tab"][aria-label="Fragment Mines, 1"]')!.click());
 
     expect(searchField()).toBeNull();
     expect(shownNames()).toEqual(["Copper Mine"]);

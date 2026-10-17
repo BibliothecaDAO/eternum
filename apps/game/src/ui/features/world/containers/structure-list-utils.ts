@@ -1,6 +1,3 @@
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { type IconMeaning } from "@/ui/design-system/icon";
-
 import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
@@ -62,27 +59,6 @@ export const sortStructures = (
     return compareNames(a, b);
   });
 };
-
-/** Category filter chips, ordered. "All" is intentionally excluded — the
- *  player always sees exactly one category. The rail derives which chips to
- *  render from what they actually own; categories with zero structures don't
- *  get a chip. Each option carries an icon so the filter bar is a row of
- *  glyphs and the label only appears as the hover tooltip. */
-export const CATEGORY_FILTER_OPTIONS: Array<{
-  value: StructureType;
-  label: string;
-  icon: IconMeaning;
-}> = [
-  { value: StructureType.Realm, label: "Realms", icon: structureMeaning(StructureType.Realm) },
-  { value: StructureType.Village, label: "Villages", icon: structureMeaning(StructureType.Village) },
-  { value: StructureType.Camp, label: "Camps", icon: structureMeaning(StructureType.Camp) },
-  { value: StructureType.Mine, label: "Mines", icon: structureMeaning(StructureType.Mine) },
-  {
-    value: StructureType.Hyperstructure,
-    label: "Hyperstructures",
-    icon: structureMeaning(StructureType.Hyperstructure),
-  },
-];
 
 const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [
   { value: "favorites", label: "Favorites" },

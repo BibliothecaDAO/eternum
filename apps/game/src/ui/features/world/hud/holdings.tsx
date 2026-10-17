@@ -5,7 +5,6 @@ import { type LeftListFilter, useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
@@ -121,7 +120,7 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
               className="hud-tab"
               onClick={() => holdings.setFilter(entry.kind)}
             >
-              <Icon name={structureMeaning(entry.kind)} size={22} />
+              <Icon name={entry.icon} size={22} />
               <span>{entry.count}</span>
             </button>
           ))}

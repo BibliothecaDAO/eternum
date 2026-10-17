@@ -1,15 +1,19 @@
 import type { LeftListFilter } from "@/hooks/store/use-ui-store";
-import { realmMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { mineMeaning, realmMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
-import { StructureType } from "@bibliothecadao/types";
+import { presentedMineKind } from "@bibliothecadao/eternum";
+import { getMinePresentation, StructureType } from "@bibliothecadao/types";
 
 /**
- * The one grammar every list of the player's holdings reads by: the HUD's holdings panel and the transfer window's
- * Send from and Send to. Kinds as tabs in this order, one kind at a time, a search once the kind outgrows a screen,
- * starred holdings first.
+ * The one grammar every list of the player's holdings reads by: the HUD's holdings panel, the transfer window's Send
+ * from and Send to, and the compact HUD's and the workspaces' structure lists. Kinds as tabs in this order, each named
+ * as the game names it, one kind at a time, a search once the kind outgrows a screen, starred holdings first.
  */
-type ListedHolding = Pick<StructureWithMetadata, "category" | "displayName" | "isFavorite" | "realmLevel">;
+type ListedHolding = Pick<
+  StructureWithMetadata,
+  "category" | "displayName" | "isFavorite" | "realmLevel" | "structure"
+>;
 
 /** Every kind a player can hold, in the order the tabs show them. */
 const KINDS: Array<{ kind: StructureType; plural: string }> = [
@@ -29,14 +33,34 @@ const KIND_RANK = new Map(KINDS.map(({ kind }, index) => [kind, index]));
 /** A search box earns its place once the kind shown no longer fits on one screen. */
 const SEARCH_FROM = 12;
 
-/** The kinds held, in tab order, each with its count. */
-export const kindsHeld = (holdings: ReadonlyArray<Pick<ListedHolding, "category">>) => {
+/** A held mine's kind as the game presents it (an Essence Rift, a Fragment Mine); none for any other holding. */
+const mineKindOf = (holding: Pick<ListedHolding, "category" | "structure">): number | undefined =>
+  holding.category === StructureType.Mine ? presentedMineKind(holding.structure) : undefined;
+
+/**
+ * The kinds held, in tab order, each with its name, its painting and its count. Mines are named and painted by the
+ * kind they present, so a player holding rifts sees "Essence Rifts", as everywhere else; only both kinds at once
+ * share the word "Mines".
+ */
+export const kindsHeld = (holdings: ReadonlyArray<Pick<ListedHolding, "category" | "structure">>) => {
   const counts = new Map<StructureType, number>();
+  const mineKinds = new Set<number>();
   for (const holding of holdings) {
     const kind = holding.category as StructureType;
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    const mineKind = mineKindOf(holding);
+    if (mineKind !== undefined) mineKinds.add(mineKind);
   }
-  return KINDS.filter(({ kind }) => counts.has(kind)).map((entry) => ({ ...entry, count: counts.get(entry.kind)! }));
+  const [onlyMineKind] = mineKinds.size === 1 ? mineKinds : [];
+  return KINDS.filter(({ kind }) => counts.has(kind)).map(({ kind, plural }) => {
+    const presentsOneMineKind = kind === StructureType.Mine && onlyMineKind !== undefined;
+    return {
+      kind,
+      plural: presentsOneMineKind ? `${getMinePresentation(onlyMineKind).name}s` : plural,
+      icon: presentsOneMineKind ? mineMeaning(onlyMineKind) : structureMeaning(kind),
+      count: counts.get(kind)!,
+    };
+  });
 };
 
 /** Never every holding at once: the asked kind while one is held, else the first held (realms come first). */
@@ -65,8 +89,9 @@ export const listHoldings = <T extends ListedHolding>(holdings: T[], kind: LeftL
     );
 };
 
-/** A realm shows its age's painting; every other holding its kind's. */
-export const holdingIcon = (holding: Pick<ListedHolding, "category" | "realmLevel">): IconMeaning =>
-  holding.category === StructureType.Realm
-    ? realmMeaning(holding.realmLevel)
-    : structureMeaning(holding.category as StructureType);
+/** A realm shows its age's painting, a mine its kind's (a rift's rift), every other holding its category's. */
+export const holdingIcon = (holding: Pick<ListedHolding, "category" | "realmLevel" | "structure">): IconMeaning => {
+  if (holding.category === StructureType.Realm) return realmMeaning(holding.realmLevel);
+  const mineKind = mineKindOf(holding);
+  return mineKind !== undefined ? mineMeaning(mineKind) : structureMeaning(holding.category as StructureType);
+};
