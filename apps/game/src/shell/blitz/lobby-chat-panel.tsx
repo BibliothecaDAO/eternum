@@ -9,7 +9,7 @@ import { displayPlayerName } from "@bibliothecadao/eternum";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { Field } from "@/ui/design-system/kit/field";
 import { Kbd } from "@/ui/design-system/kit/kbd";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
 import { ServiceFailure } from "../service-failure";
 import { CHAT_WORDS } from "../words";
 import { type ChatHold, useLobbyChat } from "./lobby-chat";

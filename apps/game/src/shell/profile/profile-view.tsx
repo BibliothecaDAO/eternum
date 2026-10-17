@@ -13,7 +13,7 @@ import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { OwnRatingLine } from "../rating-line";
 import { paintingSources } from "../paintings";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
 import { AgeLabel } from "../play/age-label";
 import { ageOf } from "../play/ages";
 import { chooseSeason } from "../season";

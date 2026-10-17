@@ -3,11 +3,11 @@ import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identit
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
+import { Pill } from "@/ui/design-system/kit/pill";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import type { NotificationLevel } from "@bibliothecadao/notifications";
 
-import { StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { LEVEL_WORDS, PROFILE_WORDS } from "../words";
 import { SettingRow, SettingRows } from "./setting-row";
@@ -71,11 +71,11 @@ export const NotificationsCard = () => {
 const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () => Promise<void> }) => {
   switch (state) {
     case "install":
-      return <StateChip icon="monitor" text={PROFILE_WORDS.install} />;
+      return <Pill icon="monitor">{PROFILE_WORDS.install}</Pill>;
     case "blocked":
-      return <StateChip icon="lock" text={PROFILE_WORDS.blocked} />;
+      return <Pill icon="lock">{PROFILE_WORDS.blocked}</Pill>;
     case "unavailable":
-      return <StateChip icon="lock" />;
+      return <Pill icon="lock" />;
     case "saving":
       return <SemanticIcon name="refresh" size={24} className="animate-spin" />;
     default:

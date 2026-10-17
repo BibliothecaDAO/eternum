@@ -6,6 +6,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
+import { StateCard } from "@/ui/design-system/kit/state-card";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { DAY } from "@/ui/design-system/kit/words";
 import { boardRows, wholeLords } from "@/ui/features/frontier/board/standings";
@@ -15,8 +16,7 @@ import { openedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { paintingSources } from "../paintings";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
 import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, seasonTitle } from "../season";
 import { ServiceFailure } from "../service-failure";
@@ -78,15 +78,9 @@ const DesktopSeason = () => {
 
 /** No Frontier season runs: the plains and the one line that says so. */
 const NoSeason = () => (
-  <section className="plate flex flex-col gap-4 p-4">
-    <img
-      {...paintingSources("brooding-plains")}
-      sizes="50vw"
-      alt=""
-      className="h-40 w-full rounded-control object-cover"
-    />
+  <StateCard painting="brooding-plains" image="md" pad="4" sizes="50vw">
     <p className="font-body text-xl font-bold text-kit-cream">{WORDS.noSeason}</p>
-  </section>
+  </StateCard>
 );
 
 const SeasonDay = ({ season }: { season: DirectoryGame }) => {

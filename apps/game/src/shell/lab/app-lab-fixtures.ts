@@ -547,9 +547,12 @@ export const LAB_SIGN_IN_EMAIL = LAB_SESSION.user.email;
 /** When the lab's emailed code stops working: five minutes on, as the identity Worker gives it. */
 export const labCodeExpiry = () => Math.floor(Date.now() / 1000) + 300;
 
+/** How long the lab's awaited season is from starting: two hours, so the doorway's chip reads its clock time and the wait. */
+export const LAB_SEASON_WAIT = 2 * 3600 + 4 * 60;
+
 /**
- * The doorway into Frontier: the map booting under the player's realm, and the entry held for a sign-in before the
- * realm is known.
+ * The doorway into Frontier: the map booting under the player's realm, the entry held for a sign-in before the realm
+ * is known, and the realm step with the entry's own chip: the season's start awaited, a Blitz roster filling.
  */
 export const LAB_DOORWAYS = {
   map: {
@@ -558,6 +561,14 @@ export const LAB_DOORWAYS = {
   },
   "sign-in": {
     view: doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),
+    realm: null,
+  },
+  waiting: {
+    view: doorwayView({ source: "entry", phase: "settlement-waiting", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  preparing: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;

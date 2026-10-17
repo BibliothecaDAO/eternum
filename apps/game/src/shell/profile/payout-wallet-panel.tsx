@@ -6,6 +6,8 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
+import { PanelTitle } from "@/ui/design-system/kit/panel";
+import { Pill } from "@/ui/design-system/kit/pill";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
@@ -58,9 +60,9 @@ export const PayoutWalletPanel = ({
   };
   return (
     <div className="flex flex-col gap-4">
-      <Title icon={step.kind === "code" && step.change.kind === "unlink" ? "lock" : "backpack"}>
+      <PanelTitle rule="line" icon={step.kind === "code" && step.change.kind === "unlink" ? "lock" : "backpack"}>
         {step.kind === "code" && step.change.kind === "unlink" ? WALLET_WORDS.unlinkTitle : WALLET_WORDS.payoutWallet}
-      </Title>
+      </PanelTitle>
       {step.kind === "linked" && wallet !== null ? (
         <Linked
           address={wallet}
@@ -97,7 +99,7 @@ const Linking = ({
           <Suspense fallback={<Loading />}>
             <WalletPicker onProof={pick} />
           </Suspense>
-          <Chip icon="download" word={WALLET_WORDS.needOne} onClick={() => onStep({ kind: "need" })} />
+          <Step icon="download" word={WALLET_WORDS.needOne} onClick={() => onStep({ kind: "need" })} />
         </>
       );
     case "need":
@@ -110,7 +112,7 @@ const Linking = ({
             <WalletPicker only={["argentX"]} onProof={pick} />
           </Suspense>
           <p className="font-body text-base text-kit-muted">{WALLET_WORDS.backFromReady}</p>
-          <Chip icon="refresh" word={WALLET_WORDS.anotherWallet} onClick={() => onStep({ kind: "pick" })} />
+          <Step icon="refresh" word={WALLET_WORDS.anotherWallet} onClick={() => onStep({ kind: "pick" })} />
         </>
       );
     default:
@@ -274,7 +276,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
         </IconLine>
       )}
       {error && <p className="font-body text-base text-kit-red">{error}</p>}
-      <Chip
+      <Step
         icon="refresh"
         word={WALLET_WORDS.newCode}
         onClick={() => {
@@ -409,20 +411,9 @@ const KeysStay = () => (
   </IconLine>
 );
 
-const Title = ({ icon, children }: { icon: IconMeaning; children: string }) => (
-  <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
-    <SemanticIcon name={icon} size={26} />
-    {children}
-  </h2>
-);
-
-const Chip = ({ icon, word, onClick }: { icon: IconMeaning; word: string; onClick: () => void }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="inline-flex h-9 w-fit items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-base font-bold text-kit-muted"
-  >
-    <SemanticIcon name={icon} size={20} />
+/** A side step as a pill: another wallet, a new code, a wallet to get first. */
+const Step = ({ icon, word, onClick }: { icon: IconMeaning; word: string; onClick: () => void }) => (
+  <Pill as="button" size="lg" tone="muted" icon={icon} onClick={onClick} className="w-fit">
     {word}
-  </button>
+  </Pill>
 );

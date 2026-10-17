@@ -29,7 +29,7 @@ import type { Painting } from "../paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
-import { FailureCard } from "../play/state-card";
+import { FailureCard } from "@/ui/design-system/kit/state-card";
 import { useNowSeconds } from "../use-now";
 import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";

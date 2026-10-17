@@ -9,7 +9,7 @@ import { PageFrame } from "../frame/page-frame";
 import type { ScrollPost } from "../generated/scroll-posts";
 import { NothingHere } from "../not-found";
 import { paintingSources } from "../paintings";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
 import { NEWS_WORDS } from "../words";
 import { postHref, postKind, postPainting, publishedPosts, WHATS_NEW_PATH } from "./posts";
 

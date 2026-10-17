@@ -1,8 +1,8 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
-import type { ReactNode } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
+import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
@@ -26,7 +26,6 @@ import { signInHref } from "../sign-in/sign-in-route";
 import { BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
 import type { PlayItem } from "./play-board";
-import { LiveChip, StateChip } from "./state-chip";
 
 type ItemVerb = { word: string; icon: IconMeaning; to: string };
 
@@ -80,12 +79,12 @@ const titleOf = (item: PlayItem): string => {
 const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; firstVisit: boolean }) => {
   if (item.source === "row") {
     const { row } = item;
-    if (row.action === "refund") return <StateChip icon="lock" text={ENTRY_WORDS.closed} />;
+    if (row.action === "refund") return <Pill icon="lock">{ENTRY_WORDS.closed}</Pill>;
     return (
       <>
         {row.startsAt === null ? (
           <>
-            <LiveChip />
+            <Pill tone="live">{WORDS.live}</Pill>
             {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
           </>
         ) : row.kind === "slot" ? (
@@ -93,15 +92,19 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
         ) : (
           <ClockChip prefix="starts" at={row.startsAt} now={now} />
         )}
-        {row.action === "registered" ? <StateChip icon="check" text={WORDS.joined} /> : <SeatsChip row={row} />}
+        {row.action === "registered" ? <Pill icon="check">{WORDS.joined}</Pill> : <SeatsChip row={row} />}
       </>
     );
   }
   const { game } = item;
   if (item.verb === "results")
-    return <StateChip icon="victory" text={`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`} />;
+    return <Pill icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</Pill>;
   if (item.mode === "eternum")
-    return item.verb === "enter" ? <LiveChip /> : <ClockChip prefix="opens" at={game.clock.start_main_at} now={now} />;
+    return item.verb === "enter" ? (
+      <Pill tone="live">{WORDS.live}</Pill>
+    ) : (
+      <ClockChip prefix="opens" at={game.clock.start_main_at} now={now} />
+    );
   if (firstVisit) return <p className="font-body text-base text-kit-cream">{PITCH}</p>;
   if (game.status !== "Live") return <ClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
   const day = directoryDay(game, now);
@@ -221,9 +224,4 @@ export const ItemRows = ({ items, now, signedIn }: { items: readonly PlayItem[];
       <ItemRow key={item.key} item={item} now={now} signedIn={signedIn} />
     ))}
   </ul>
-);
-
-/** The heading over a Play section: "Now", "Next and done". */
-export const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <h2 className="font-body text-sm font-bold text-kit-peach">{children}</h2>
 );

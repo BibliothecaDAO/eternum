@@ -11,11 +11,15 @@ import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
 import { Field } from "./field";
 import { Notice } from "./notice";
+import { Panel, PanelTitle } from "./panel";
+import { Pill } from "./pill";
 import { PriceChip } from "./price-chip";
 import { ReasonPlate, shortfallLine } from "./reason-plate";
 import { SeasonRow } from "./season-row";
+import { SectionLabel } from "./section-label";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
+import { FailureCard, StateCard } from "./state-card";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
 import { formatClockTime, formatDuration, formatMoment } from "./time";
@@ -238,6 +242,112 @@ describe("ViewSwitch", () => {
     expect(onChange).not.toHaveBeenCalled();
     act(() => history.click());
     expect(onChange).toHaveBeenCalledWith("history");
+  });
+});
+
+describe("Pill", () => {
+  it("says one fact with its icon, or leads with the sage dot for a game under way", () => {
+    const closed = renderToStaticMarkup(<Pill icon="lock">Closed</Pill>);
+    expect(text(closed)).toBe("Closed");
+    expect(closed).toContain('data-icon="lock"');
+    const live = renderToStaticMarkup(<Pill tone="live">Live</Pill>);
+    expect(live).toContain("bg-kit-sage");
+    expect(live).not.toContain("data-icon");
+  });
+
+  it("runs its step when it is a button, and crosses out the icon of a prize that does not come", () => {
+    const onClick = vi.fn();
+    act(() =>
+      root.render(
+        <Pill as="button" size="lg" tone="muted" icon="refresh" onClick={onClick}>
+          Another wallet
+        </Pill>,
+      ),
+    );
+    act(() => host.querySelector("button")!.click());
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(
+      renderToStaticMarkup(
+        <Pill size="lg" tone="muted" icon="lords" struck>
+          No LORDS
+        </Pill>,
+      ),
+    ).toContain("bg-kit-red");
+  });
+});
+
+describe("ViewSwitch as tabs", () => {
+  it("is a tab list with the shown view selected, and dots only an unshown view that holds the player's own", () => {
+    const onChange = vi.fn();
+    const views = [
+      { id: "blitz", word: "Blitz" },
+      { id: "eternum", word: "Eternum" },
+    ] as const;
+    act(() =>
+      root.render(
+        <ViewSwitch
+          label="Modes"
+          variant="split"
+          semantics="tab"
+          views={[...views]}
+          lit="blitz"
+          onChange={onChange}
+          marked={["blitz", "eternum"]}
+          markWord="Yours"
+        />,
+      ),
+    );
+    expect(host.querySelector('[role="tablist"]')?.getAttribute("aria-label")).toBe("Modes");
+    const [blitz, eternum] = host.querySelectorAll('[role="tab"]');
+    expect(blitz.getAttribute("aria-selected")).toBe("true");
+    expect(blitz.hasAttribute("aria-checked")).toBe(false);
+    expect(blitz.querySelector('[aria-label="Yours"]')).toBeNull();
+    expect(eternum.querySelector('[aria-label="Yours"]')).not.toBeNull();
+    act(() => (eternum as HTMLButtonElement).click());
+    expect(onChange).toHaveBeenCalledWith("eternum");
+  });
+});
+
+describe("SectionLabel", () => {
+  it("heads a group in its words", () => {
+    expect(renderToStaticMarkup(<SectionLabel>Now</SectionLabel>)).toMatch(/^<h2 [^>]*>Now<\/h2>$/);
+  });
+});
+
+describe("Panel", () => {
+  it("titles its rows with its icon and words, a figure at the title's end", () => {
+    const panel = renderToStaticMarkup(
+      <Panel icon="crown" title="Frontier" aside={<b>12th</b>}>
+        <p>rows</p>
+      </Panel>,
+    );
+    expect(text(panel)).toBe("Frontier12throws");
+    expect(panel).toContain('data-icon="crown"');
+    expect(
+      renderToStaticMarkup(
+        <PanelTitle rule="line" icon="backpack">
+          Payout wallet
+        </PanelTitle>,
+      ),
+    ).toContain("border-b");
+  });
+});
+
+describe("StateCard", () => {
+  it("shows its painting over one line, and a failed read as the storm with the service's line and Try again", () => {
+    const card = renderToStaticMarkup(
+      <StateCard painting="brooding-plains" sizes="50vw">
+        <p>No season running</p>
+      </StateCard>,
+    );
+    expect(card).toContain("brooding-plains-800.webp");
+    expect(card).toContain('sizes="50vw"');
+    const retry = vi.fn();
+    act(() => root.render(<FailureCard service="season" error={new Error("down")} retry={retry} />));
+    expect(host.querySelector("img")?.getAttribute("src")).toContain("stormy");
+    expect(host.textContent).toContain("Season did not answer.");
+    act(() => host.querySelector("button")!.click());
+    expect(retry).toHaveBeenCalled();
   });
 });
 

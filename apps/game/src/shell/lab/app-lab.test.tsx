@@ -96,6 +96,8 @@ it.each([
   ["sign-in/name", "Claim name"],
   ["doorway/sign-in", "Sign in to play."],
   ["doorway/map", "Stolsli"],
+  ["doorway/waiting", "Starts"],
+  ["doorway/preparing", "Preparing… 17/24"],
   ["terms", "Terms of Service"],
   ["scroll/infrastructure-autonomous-worlds", "Newer"],
   ["no-such-page", "Nothing here"],
