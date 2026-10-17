@@ -1,5 +1,6 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { type To, useNavigate } from "react-router-dom";
 
 import { type PriceKind, PriceChip } from "./price-chip";
 
@@ -20,22 +21,7 @@ const ROLES: Record<ButtonRole, string> = {
 
 export type Price = { of: PriceKind; amount: number | undefined };
 
-/**
- * The kit's button: an icon, one word and the prices it pays. While its action is under way it shows that step's word
- * ("Deploying…") on itself and takes no second tap.
- */
-export const Button = ({
-  role,
-  word,
-  icon,
-  prices = [],
-  loading,
-  disabled = false,
-  warns = false,
-  type = "button",
-  className,
-  onClick,
-}: {
+type ButtonProps = {
   role: ButtonRole;
   word: string;
   icon?: IconMeaning;
@@ -49,7 +35,42 @@ export const Button = ({
   /** The host's placement only (width, flex); the look is the role's. */
   className?: string;
   onClick?: () => void;
-}) => (
+  /** A verb that leads somewhere: the route it opens, after `onClick` has run. */
+  to?: To;
+};
+
+/**
+ * The kit's button: an icon, one word and the prices it pays. While its action is under way it shows that step's word
+ * ("Deploying…") on itself and takes no second tap. Given `to`, the press leads to that route.
+ */
+export const Button = ({ to, ...button }: ButtonProps) =>
+  to === undefined ? <ButtonFace {...button} /> : <RouteButton {...button} to={to} />;
+
+const RouteButton = ({ to, onClick, ...button }: Omit<ButtonProps, "to"> & { to: To }) => {
+  const navigate = useNavigate();
+  return (
+    <ButtonFace
+      {...button}
+      onClick={() => {
+        onClick?.();
+        navigate(to);
+      }}
+    />
+  );
+};
+
+const ButtonFace = ({
+  role,
+  word,
+  icon,
+  prices = [],
+  loading,
+  disabled = false,
+  warns = false,
+  type = "button",
+  className,
+  onClick,
+}: Omit<ButtonProps, "to">) => (
   <button
     type={type}
     aria-busy={loading !== undefined}

@@ -3,6 +3,7 @@ import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identit
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
+import { Switch } from "@/ui/design-system/kit/switch";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import type { NotificationLevel } from "@bibliothecadao/notifications";
 
@@ -10,7 +11,6 @@ import { StateChip } from "../play/state-chip";
 import { ServiceFailure } from "../service-failure";
 import { LEVEL_WORDS, PROFILE_WORDS } from "../words";
 import { SettingRow, SettingRows } from "./setting-row";
-import { Switch } from "./switch";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 
 /**

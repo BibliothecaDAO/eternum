@@ -51,6 +51,7 @@ import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw"
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
 import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
+import { GuideLinesSheet } from "@/ui/features/frontier/guide/guide-lines-sheet";
 import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
 import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
 import { useRef, useState } from "react";
@@ -462,6 +463,13 @@ const LAB_GUIDE_FACTS: GuideFacts = {
   },
 };
 
+/** The lines the guide has said by the season's end, as the Menu's Guide lists them to read again. */
+const LAB_GUIDE_SAID = Object.values(GUIDE_LINES).map((id) => {
+  const step = GUIDE_STEPS.find((candidate) => candidate.id === id);
+  if (!step) throw new Error(`No guide step ${id}`);
+  return { id, line: step.line(LAB_GUIDE_FACTS) };
+});
+
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
@@ -750,6 +758,7 @@ const STATES = {
     },
   },
   "guide-season": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", guide: "season" },
+  "guide-lines": { clock: CLOCK, stores: STORES, armies: ARMIES, guideLines: true },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
   "value-menu": {
@@ -890,6 +899,8 @@ type LabState = {
   realmDot?: "ember";
   offline?: boolean;
   menu?: boolean;
+  /** The Menu's Guide sheet: its switch on, and the lines said so far. */
+  guideLines?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
   /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
@@ -1112,6 +1123,7 @@ export const HudLab = () => {
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
+        {lab.guideLines && <GuideLinesSheet on lines={LAB_GUIDE_SAID} onToggle={noop} onClose={noop} />}
         {lab.menu && (
           <MenuSheet
             rank="#12"

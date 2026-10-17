@@ -1,8 +1,8 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { IDENTITY_PORTRAITS, SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 
 import { portraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Field } from "@/ui/design-system/kit/field";
 
 import { SIGN_IN_WORDS } from "../words";
 
@@ -61,24 +61,18 @@ export const NameField = ({
   valid: boolean;
   onName: (name: string) => void;
 }) => (
-  <label
-    className={cn(
-      "flex h-14 items-center gap-2 rounded-plate border-2 bg-kit-plate px-4",
-      valid ? "border-kit-peach" : "border-kit-red",
-    )}
-  >
-    <span className="sr-only">{SIGN_IN_WORDS.yourName}</span>
-    <input
-      type="text"
-      value={name}
-      maxLength={20}
-      autoComplete="nickname"
-      onChange={(event) => onName(event.target.value)}
-      aria-invalid={!valid}
-      className="min-w-0 flex-1 bg-transparent font-body text-xl font-bold text-kit-cream outline-none"
-    />
-    {valid && <SemanticIcon name="check" size={24} />}
-  </label>
+  <Field
+    size="lg"
+    valid={valid}
+    invalid={!valid}
+    type="text"
+    value={name}
+    maxLength={20}
+    autoComplete="nickname"
+    onChange={(event) => onName(event.target.value)}
+    aria-label={SIGN_IN_WORDS.yourName}
+    className="font-body text-xl font-bold"
+  />
 );
 
 /** The twelve portraits, the chosen one on the peach ring. */

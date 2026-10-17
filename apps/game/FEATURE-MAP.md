@@ -12,19 +12,19 @@ directory per run, and exiting 1 unless every press arrived). The places beyond 
 `pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
 Season, You, Settings and What's new from a fresh Play at both sizes, as a new visitor or, given a saved signed-in
 browser state, as a returning player, scrolling to and clicking each control through the browser. Signed out it also
-measures the lab's fixture pages (Play, a running Blitz season, a claim, a sealed chest, a paid entry, You, Settings and
-What's new) and holds every page it passes, lab or live, to its content starting within 64 px under the bar (or a
-phone's top row), every word displaying at 14 px or more as drawn (an SVG's scale counted), and on desktop the body
-starting at the window's left edge. It sets back what it changes (the alert level, music) to the value it read, however
-the flow ends, and stops before anything outward (paying, leaving for the docs, signing out). It writes
-`shell-proof-<persona>.json` and screenshots into a new directory per run, marks a flow stopped by a service that did
-not answer as unavailable and any other stop as failed, and exits 1 unless every flow arrived
-(`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given `--watch /g/<chain>/<game>` and the saved
-state of a player who holds realms in that live game, it drives the one path inside a match it covers instead: it
-watches the game, opens the identity chip, presses its Play, and checks at both sizes that the doorway shows and goes,
-the game is played rather than watched, the chip names the player, and the page never reloads
-(`shell-proof-watch-to-play.json`). `apps/game/AGENTS.md` documents a spectator smoke test (agent-browser steps that
-open the client, watch a running game and check the canvas). Inside a match,
+measures the lab's fixture pages (Play, a running Blitz season, a claim, a sealed chest, a paid entry, You, Settings,
+What's new and a post, the legal pages, each sign-in step, the doorway's holds and an unknown path) and holds every page
+it passes, lab or live, to its content starting within 64 px under the bar (or a phone's top row), every word displaying
+at 14 px or more as drawn (an SVG's scale counted), and on desktop the body starting at the window's left edge. It sets
+back what it changes (the alert level, music) to the value it read, however the flow ends, and stops before anything
+outward (paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots into a new
+directory per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as failed,
+and exits 1 unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given
+`--watch /g/<chain>/<game>` and the saved state of a player who holds realms in that live game, it drives the one path
+inside a match it covers instead: it watches the game, opens the identity chip, presses its Play, and checks at both
+sizes that the doorway shows and goes, the game is played rather than watched, the chip names the player, and the page
+never reloads (`shell-proof-watch-to-play.json`). `apps/game/AGENTS.md` documents a spectator smoke test (agent-browser
+steps that open the client, watch a running game and check the canvas). Inside a match,
 `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed in once through
 the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's army by
 pointer, reads the pack its panel names, opens it and reads the same relics back from the history **Log** opens after a
@@ -40,12 +40,12 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 ## Shell (outside a game)
 
 On a desktop, a bar across the top holds the lockup, Play and Season, and You at its right end; keys `1`–`3` open the
-three places and `Esc` goes back (`shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`). A full-screen step (sign-in, a
-lobby) keeps the bar with the lockup alone. Every page's content starts at the top, under the bar; a painting is its
-ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is enabled,
-nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The
-app's notice (offline, an update ready, or Install, which only Play offers) sits in the desktop's top bar before You,
-and on a phone just above the foot.
+three places and `Esc` goes back (`shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`; each key's mark is the kit's
+`Kbd`, `ui/design-system/kit/kbd.tsx`). A full-screen step (sign-in, a lobby) keeps the bar with the lockup alone. Every
+page's content starts at the top, under the bar; a painting is its ground, never space above it. `Enter` presses the
+page's step button (the one marked as its step) when it is enabled, nothing has focus that answers Enter itself, and no
+dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an update ready, or Install,
+which only Play offers) sits in the desktop's top bar before You, and on a phone just above the foot.
 
 | Feature                                                                   | Route                                      | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

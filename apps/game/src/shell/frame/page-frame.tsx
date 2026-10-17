@@ -10,7 +10,7 @@ import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
-import { Kbd } from "./kbd";
+import { Kbd } from "@/ui/design-system/kit/kbd";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { PLACES, TabBar, TopBar } from "./tabs";

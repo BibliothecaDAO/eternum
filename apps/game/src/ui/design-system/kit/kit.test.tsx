@@ -1,6 +1,7 @@
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { formatAmount, formatExact } from "./amount";
@@ -8,6 +9,7 @@ import { Button } from "./button";
 import { ClockLine } from "./clock-line";
 import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
+import { Field } from "./field";
 import { Notice } from "./notice";
 import { PriceChip } from "./price-chip";
 import { ReasonPlate, shortfallLine } from "./reason-plate";
@@ -127,6 +129,46 @@ describe("Button", () => {
     expect(button.disabled).toBe(true);
     act(() => button.click());
     expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("given a route, leads there after its verb has run", () => {
+    const order: string[] = [];
+    const Here = () => {
+      order.push(`at ${useLocation().pathname}`);
+      return null;
+    };
+    act(() =>
+      root.render(
+        <MemoryRouter initialEntries={["/nowhere"]}>
+          <Button role="primary" word="Play" to="/" onClick={() => order.push("verb")} />
+          <Here />
+        </MemoryRouter>,
+      ),
+    );
+    act(() => host.querySelector("button")!.click());
+    expect(order).toEqual(["at /nowhere", "verb", "at /"]);
+  });
+});
+
+describe("Field", () => {
+  const field = () => host.querySelector("label")!;
+  it("is one box around its input, and says when the player's entry is refused", () => {
+    act(() => root.render(<Field size="lg" icon="mail" aria-label="Email" />));
+    expect(field().querySelector("input")!.getAttribute("aria-label")).toBe("Email");
+    expect(field().querySelector("input")!.hasAttribute("aria-invalid")).toBe(false);
+    expect(field().className).toContain("focus-within:border-kit-peach");
+
+    act(() => root.render(<Field size="lg" invalid aria-label="Name" />));
+    expect(field().querySelector("input")!.getAttribute("aria-invalid")).toBe("true");
+    expect(field().className).toContain("border-kit-red");
+    expect(field().className).not.toContain("focus-within:");
+  });
+
+  it("ticks a valid entry and keeps a trailing control inside the box", () => {
+    act(() => root.render(<Field size="md" valid aria-label="Message" trailing={<kbd>Enter</kbd>} />));
+    expect(field().className).toContain("border-kit-peach");
+    expect(field().querySelectorAll("img, svg").length).toBeGreaterThan(0);
+    expect(field().querySelector("kbd")?.textContent).toBe("Enter");
   });
 });
 

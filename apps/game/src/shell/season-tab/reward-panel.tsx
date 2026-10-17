@@ -4,6 +4,7 @@ import { lazy, type ReactNode, Suspense, useState } from "react";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
+import { IconLine } from "@/ui/design-system/kit/icon-line";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
@@ -109,7 +110,9 @@ const ChestPlate = ({
     return (
       <Plate icon="chest" title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="hourglass">{REWARD_WORDS.arrives}</Line>
+        <IconLine tone="muted" icon="hourglass">
+          {REWARD_WORDS.arrives}
+        </IconLine>
       </Plate>
     );
   if (state === "opened")
@@ -133,7 +136,9 @@ const ChestPlate = ({
     return (
       <Plate icon="chest" title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="chronicles">{REWARD_WORDS.traded}</Line>
+        <IconLine tone="muted" icon="chronicles">
+          {REWARD_WORDS.traded}
+        </IconLine>
       </Plate>
     );
   const open = signing ? (
@@ -262,13 +267,6 @@ const Plate = ({ icon, title, children }: { icon: IconMeaning; title: string; ch
     </h2>
     {children}
   </section>
-);
-
-const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-base text-kit-muted">
-    <SemanticIcon name={icon} size={24} />
-    {children}
-  </p>
 );
 
 const Chip = ({

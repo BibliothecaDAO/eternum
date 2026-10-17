@@ -10,7 +10,7 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
-import { Kbd } from "./kbd";
+import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Lockup } from "./lockup";
 
 /**

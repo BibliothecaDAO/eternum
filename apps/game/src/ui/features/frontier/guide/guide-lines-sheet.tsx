@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { Switch } from "@/shell/profile/switch";
+import { Switch } from "@/ui/design-system/kit/switch";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { GUIDE } from "@/ui/design-system/kit/words";

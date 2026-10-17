@@ -1,10 +1,11 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH, type SignInOptions } from "@realms-world/identity";
-import { lazy, type ReactNode, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { Button } from "@/ui/design-system/kit/button";
+import { IconLine } from "@/ui/design-system/kit/icon-line";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
@@ -252,7 +253,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
     <>
       {change.kind === "link" && <Track at={1} />}
       {change.kind === "link" && <WalletCard address={change.proof.address} chip={null} />}
-      <Line icon="mail">
+      <IconLine tone="cream" icon="mail">
         {sent ? (
           <>
             {WALLET_WORDS.codeSentTo} <b>{email}</b>
@@ -260,10 +261,18 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
         ) : (
           WALLET_WORDS.sending
         )}
-      </Line>
+      </IconLine>
       <CodeBoxes code={code} refused={error !== null} disabled={!sent || busy} onType={type} />
-      {busy && change.kind === "link" && <Line icon="backpack">{WALLET_WORDS.confirmInWallet}</Line>}
-      {change.kind === "unlink" && <Line icon="stamina">{WALLET_WORDS.nothingPaysOut}</Line>}
+      {busy && change.kind === "link" && (
+        <IconLine tone="cream" icon="backpack">
+          {WALLET_WORDS.confirmInWallet}
+        </IconLine>
+      )}
+      {change.kind === "unlink" && (
+        <IconLine tone="cream" icon="stamina">
+          {WALLET_WORDS.nothingPaysOut}
+        </IconLine>
+      )}
       {error && <p className="font-body text-base text-kit-red">{error}</p>}
       <Chip
         icon="refresh"
@@ -394,20 +403,17 @@ const PrizesGoHere = () => (
   </p>
 );
 
-const KeysStay = () => <Line icon="lock">{WALLET_WORDS.keysStay}</Line>;
+const KeysStay = () => (
+  <IconLine tone="cream" icon="lock">
+    {WALLET_WORDS.keysStay}
+  </IconLine>
+);
 
 const Title = ({ icon, children }: { icon: IconMeaning; children: string }) => (
   <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
     <SemanticIcon name={icon} size={26} />
     {children}
   </h2>
-);
-
-const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-base text-kit-cream">
-    <SemanticIcon name={icon} size={24} />
-    <span>{children}</span>
-  </p>
 );
 
 const Chip = ({ icon, word, onClick }: { icon: IconMeaning; word: string; onClick: () => void }) => (

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Kbd } from "./kbd";
+import { Kbd } from "@/ui/design-system/kit/kbd";
 
 /**
  * The screen's one step on the desktop: its verb, with the Enter mark at its right while it can be taken (desktop-keys
