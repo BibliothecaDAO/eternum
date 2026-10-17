@@ -32,6 +32,7 @@ import {
   GuardSlot,
   ID,
   resources,
+  ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
@@ -49,7 +50,9 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import {
+  describeTroopLimit,
   describeTroopRaiseCost,
+  describeTroopSource,
   describeTroopTraining,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
@@ -535,6 +538,10 @@ export const useArmyCreation = ({
     blockedReason,
     // With no troop on hand the blocked reason already says when a full army is ready.
     troopTrainingLine: troopAvailabilityReason ? null : describeTroopTraining(troopSupply),
+    troopLimitLine: describeTroopLimit(selectedAvailable, troopCapacityLimit, capacityRemainingForSelector),
+    // With none on hand, where they come from: the empty state's next step.
+    troopSourceLine:
+      selectedAvailable < 1 ? describeTroopSource(troopSupply.name, readTroopRecipe(store, selectedTroopCombo)) : null,
     raiseCost: describeTroopRaiseCost(raiseCost),
   };
 };
@@ -553,6 +560,19 @@ function resolveOpeningTroop(options: TroopSelectionOption[], mode: GameModeConf
 
 /** The selected troop's barracks output now, read the way the resource bar reads production. */
 /** What the structure trains of this troop; with no structure nothing is read and nothing trains. */
+/** A troop's recipe inputs, per troop: what its barracks trains it from. */
+function readTroopRecipe(store: ReturnType<typeof useGame>["setup"]["store"], troop: SelectedTroopCombo) {
+  const recipe = store.get("ProductionRecipe", {
+    game_id: configManager.getActiveGameId(),
+    resource_type: getTroopResourceId(troop.type, troop.tier),
+  });
+  if (!recipe || recipe.simple_output === 0n) return [];
+  return recipe.simple_inputs.map((input) => ({
+    resource: input.resource_type as ResourcesIds,
+    perTroop: Number(input.amount) / Number(recipe.simple_output),
+  }));
+}
+
 function readTroopSupply(
   store: ReturnType<typeof useGame>["setup"]["store"],
   structureId: ID | undefined,

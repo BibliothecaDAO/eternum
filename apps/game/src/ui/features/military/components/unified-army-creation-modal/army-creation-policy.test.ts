@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  describeTroopLimit,
   describeTroopRaiseCost,
+  describeTroopSource,
   describeTroopTraining,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
@@ -143,5 +145,28 @@ describe("spawn direction", () => {
   });
   it("chooses nothing when no hex is free", () => {
     expect(resolveSpawnDirection(0, [], undefined)).toBeNull();
+  });
+});
+
+describe("how many can go, and where troops come from", () => {
+  it("says what is on hand and which cap applies, and the room left when it is less", () => {
+    expect(describeTroopLimit(1_000, 7_500, 7_500)).toBe("1,000 on hand · army cap 7,500");
+    expect(describeTroopLimit(1_000, 1_500, 500)).toBe("1,000 on hand · army cap 1,500 · room for 500");
+    expect(describeTroopLimit(0, null, null)).toBe("0 on hand");
+  });
+
+  it("names the barracks that trains a troop and what it is made from, per troop", () => {
+    expect(describeTroopSource("Knight T1", [{ resource: ResourcesIds.Wheat, perTroop: 2 }])).toBe(
+      "Knight T1 are trained by a Knight T1 barracks on the realm board, from 2 wheat each.",
+    );
+    expect(
+      describeTroopSource("Paladin T2", [
+        { resource: ResourcesIds.Wheat, perTroop: 2 },
+        { resource: ResourcesIds.Paladin, perTroop: 1 },
+      ]),
+    ).toBe("Paladin T2 are trained by a Paladin T2 barracks on the realm board, from 2 wheat and 1 paladin each.");
+    expect(describeTroopSource("Knight T1", [])).toBe(
+      "Knight T1 are trained by a Knight T1 barracks on the realm board.",
+    );
   });
 });

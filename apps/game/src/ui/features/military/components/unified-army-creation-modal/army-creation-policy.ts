@@ -73,6 +73,25 @@ export function describeTroopRaiseCost(costs: TroopRaiseCost[] | undefined): str
     .join(" and ");
 }
 
+/**
+ * Where a troop comes from, for a realm that has none: "Knight T1 are trained by a Knight T1 barracks on the realm
+ * board, from 2 wheat each." The inputs are the troop's recipe, per troop.
+ */
+export function describeTroopSource(name: string, inputs: readonly { resource: ResourcesIds; perTroop: number }[]) {
+  const from = inputs.length
+    ? `, from ${inputs.map(({ resource, perTroop }) => `${perTroop.toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`).join(" and ")} each`
+    : "";
+  return `${name} are trained by a ${name} barracks on the realm board${from}.`;
+}
+
+/** What the window says about how many can go: "1,000 on hand · army cap 7,500", with the room left when it is less. */
+export function describeTroopLimit(held: number, cap: number | null, room: number | null): string {
+  const parts = [`${held.toLocaleString()} on hand`];
+  if (cap !== null) parts.push(`army cap ${cap.toLocaleString()}`);
+  if (cap !== null && room !== null && room < cap) parts.push(`room for ${Math.max(0, room).toLocaleString()}`);
+  return parts.join(" · ");
+}
+
 /** The training line while a barracks fills the next army; null when nothing trains the troop. */
 export function describeTroopTraining(supply: TroopSupply): string | null {
   if (supply.perHour <= 0 || supply.secondsToFullArmy === null) return null;

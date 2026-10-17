@@ -77,8 +77,6 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   }, [army.troops]);
 
   const staminaPercent = stamina && maxStamina > 0 ? Math.min(100, (Number(stamina.amount) / maxStamina) * 100) : 0;
-  const staminaTone =
-    staminaPercent > 66 ? "bg-emerald-400/80" : staminaPercent > 33 ? "bg-amber-400/80" : "bg-rose-400/80";
 
   const troopResource = useMemo(
     () => (army.troops ? getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier) : null),
@@ -126,8 +124,10 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
           className="flex min-w-0 flex-1 items-center gap-1.5"
           title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
         >
+          <span className="shrink-0 text-[10px] text-gold/65">Stamina</span>
           <div className="relative h-2 flex-1 min-w-0 overflow-hidden rounded-sm bg-black/40">
-            <div className={cn("absolute inset-y-0 left-0", staminaTone)} style={{ width: `${staminaPercent}%` }} />
+            {/* A neutral bar: low stamina is a state to read, not an alarm. */}
+            <div className="absolute inset-y-0 left-0 bg-gold/60" style={{ width: `${staminaPercent}%` }} />
           </div>
           <span className="shrink-0 text-[10px] tabular-nums text-gold/65">
             {Number(stamina.amount)}/{maxStamina}

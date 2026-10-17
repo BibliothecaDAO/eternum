@@ -45,6 +45,7 @@ export const ArmyTypeToggle = ({
         <button
           onClick={() => onSelect(true)}
           disabled={!canCreateAttackArmy}
+          title={`Field armies: ${currentExplorersCount} of ${maxExplorers ?? "—"}`}
           className={clsx(
             "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
             "border-b-2 -mb-[1px]",
@@ -68,6 +69,7 @@ export const ArmyTypeToggle = ({
         <button
           onClick={() => onSelect(false)}
           disabled={!canInteractWithDefense}
+          title={`Guard slots filled: ${currentGuardsCount ?? "—"} of ${maxGuards}`}
           className={clsx(
             "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
             "border-b-2 -mb-[1px]",
