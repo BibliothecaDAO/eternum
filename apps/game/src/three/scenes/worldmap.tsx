@@ -2330,6 +2330,7 @@ export default class WorldmapScene extends WarpTravel {
         ? {
             id: Number(hoveredStructure.id),
             ownedByViewer: hoveredStructure.owner !== undefined && isAddressEqualToAccount(hoveredStructure.owner),
+            selectedHolding: Number(hoveredStructure.id) === Number(useUIStore.getState().structureEntityId),
           }
         : null,
     });
@@ -2664,17 +2665,15 @@ export default class WorldmapScene extends WarpTravel {
 
     const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
+    // Before the selection's own orders: a holding selected on the map draws its deploy tiles, which must not swallow
+    // the right-click on another holding.
+    const transfer = structure && isMineStructure ? this.transferFromSelectedHolding(Number(structure.id)) : null;
+    if (transfer) {
+      openTransfer(transfer);
+      return;
+    }
+
     if (structure && isMineStructure && !hasActiveEntityAction) {
-      const transfer = transferGesture({
-        selection: useUIStore.getState().mapSelection,
-        clickedId: Number(structure.id),
-        canTransferBetween: isTransferPair,
-        transfersAllowed: configManager.isCommandEnabled("SendResources"),
-      });
-      if (transfer) {
-        openTransfer(transfer);
-        return;
-      }
       this.logInteractionDebug("opening_owned_structure_context_menu", {
         structureId: structure.id,
         hexCoords,
@@ -2691,6 +2690,20 @@ export default class WorldmapScene extends WarpTravel {
     // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
     showOrderTip(null);
     this.actAtHex(hexCoords);
+  }
+
+  /** The transfer a right-click on one of your holdings opens from the selected holding, if it is one. */
+  private transferFromSelectedHolding(clickedId: number) {
+    const ui = useUIStore.getState();
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    const armyActing = selectedEntityId != null && this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
+    return transferGesture({
+      selectedHoldingId: Number(ui.structureEntityId),
+      armySelected: ui.mapSelection?.kind === "army" || armyActing,
+      clickedId,
+      canTransferBetween: isTransferPair,
+      transfersAllowed: configManager.isCommandEnabled("SendResources"),
+    });
   }
 
   /**

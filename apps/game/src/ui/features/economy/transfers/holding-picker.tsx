@@ -114,7 +114,7 @@ export const HoldingPicker = ({
               aria-pressed={picked}
               onClick={() => onPick(id)}
               className={cn(
-                "flex h-11 w-full items-center gap-2 rounded-lg border px-1.5 text-left transition-colors",
+                "flex h-12 w-full items-center gap-2 rounded-lg border px-1.5 text-left transition-colors",
                 picked ? "border-gold/60 bg-gold/10" : "border-transparent hover:border-gold/30",
               )}
             >
@@ -124,14 +124,14 @@ export const HoldingPicker = ({
                 tone={picked ? "lit" : "plain"}
                 corner={holding.realmLevelLabel !== null ? holding.realmLevel + 1 : undefined}
               />
-              <span
-                className="min-w-0 flex-1 truncate text-base font-semibold text-kit-cream"
-                title={holding.displayName}
-              >
-                {holding.isFavorite && <span className="mr-1 text-gold">★</span>}
-                {holding.displayName}
+              {/* The name has the row's width, its note under it: a long name is not cut for "under a minute". */}
+              <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                <span className="truncate text-base font-semibold text-kit-cream" title={holding.displayName}>
+                  {holding.isFavorite && <span className="mr-1 text-gold">★</span>}
+                  {holding.displayName}
+                </span>
+                <span className="truncate text-sm text-kit-muted">{note(id)}</span>
               </span>
-              <span className="shrink-0 text-sm text-kit-muted">{note(id)}</span>
             </button>
           );
         })}

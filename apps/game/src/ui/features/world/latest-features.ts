@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Transfer from the map",
+    description:
+      "With a holding chosen in the holdings list or on the map, right-click another of yours: the Transfer window opens between the two. Its holding lists show long names in full, and donkeys are called donkeys.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "Fights end the way they did",
     description:
       "A fight's line in Events and World history now names its winner exactly as the battle decided it, a guard's win included. A fight both sides survive reads Draw, and one neither survives reads Both sides fall.",

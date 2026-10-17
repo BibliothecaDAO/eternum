@@ -201,7 +201,7 @@
     },
     "donkey": {
       "art": "donkey",
-      "label": "Pack donkey / Transfer",
+      "label": "Donkey",
       "family": "Actions",
       "resourceId": 25
     },

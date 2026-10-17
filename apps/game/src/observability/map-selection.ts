@@ -9,8 +9,11 @@ interface MapSelectionSnapshot {
   ringedHexes: number;
   /** The selected army, its hex, and how many tiles it is offered an order on (none while its order is in flight). */
   army: { id: number; hex: { col: number; row: number }; orders: number } | null;
-  /** The structure under the pointer, and whether it is the viewer's (the proof's transfer gesture right-clicks one). */
-  hovered: { id: number; ownedByViewer: boolean } | null;
+  /**
+   * The structure under the pointer, whether it is the viewer's, and whether it is the holding the HUD has selected
+   * (the proof's transfer gesture right-clicks another of the viewer's).
+   */
+  hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
 }
 
 interface MapSelectionWindow {
