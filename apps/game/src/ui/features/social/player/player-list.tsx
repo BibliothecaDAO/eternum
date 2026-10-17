@@ -64,10 +64,10 @@ const formatActivityValue = (count: number, points: number): string => {
 
 /** The table's columns: fixed widths on wide screens, so the window is exactly the table's width; MMR adds one. */
 const GRID_TEMPLATES = {
-  plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(4,_96px)_112px_80px]",
-  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(4,_96px)_112px_80px_80px]",
-  tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(4,_96px)_112px_80px]",
-  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(4,_96px)_112px_80px_80px]",
+  plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
+  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px_80px]",
+  tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]",
+  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px_80px]",
 } as const;
 
 /** A rating change as a player reads it: +26 in green, −11 in red, ±0, or a dash where the ledger gave none. */
@@ -445,7 +445,15 @@ const PlayerRow = ({
           "grid w-full cursor-pointer items-center gap-x-3 px-3 py-2 text-xs transition-colors md:gap-x-4 md:px-4",
           gridTemplateClass,
         )}
+        role="button"
+        tabIndex={0}
+        aria-label={`${player.name}: their points`}
         onClick={onSelect}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          onSelect();
+        }}
       >
         <div className="flex justify-center">
           <span

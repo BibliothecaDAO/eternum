@@ -61,7 +61,7 @@ describe("the leaderboard's columns", () => {
       ["Crates", "250 VP each"],
       ["Rifts/Camps", "300 VP each"],
       ["HS Taken", "1.5K VP each"],
-      ["HS Held", "2 VP/s × realms"],
+      ["HS Held", "x VP/s"],
     ]) {
       expect(header).toContain(`<span>${column}</span><span class="text-xs font-normal text-gold/55">${grant}</span>`);
     }
@@ -81,7 +81,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(html).toContain(
-      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 VP each · Crates 250 VP each · Rifts/Camps 300 VP each · HS Taken 1.5K VP each · HS Held 2 VP/s × realms</p>',
+      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 VP each · Crates 250 VP each · Rifts/Camps 300 VP each · HS Taken 1.5K VP each · HS Held x VP/s</p>',
     );
   });
 });

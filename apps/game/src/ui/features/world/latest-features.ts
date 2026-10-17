@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Leaderboard points, in VP",
     description:
-      "The leaderboard's columns say what each action earns in VP, read from the game: 5 VP a tile, 250 VP a crate or camp, 1K VP a hyperstructure taken, and 1 VP/s for each realm around a hyperstructure you hold.",
+      "The leaderboard's columns say what each action earns in VP, read from the game: 5 VP a tile, 250 VP a crate or camp, 1K VP a hyperstructure taken, and x VP/s for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
     type: "fix",
   },
   {

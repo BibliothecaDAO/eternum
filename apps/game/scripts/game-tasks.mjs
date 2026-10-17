@@ -98,6 +98,22 @@ const LEADERBOARD_FITS = `(() => {
   return content.height >= room.height - 2 && room.right - header.getBoundingClientRect().right <= 16;
 })()`;
 
+/**
+ * A player's detail open beside the leaderboard: the window stays as tall as what it shows (no scroll for a short
+ * detail), and the table keeps its width, running up to the detail with no strip between them.
+ */
+const LEADERBOARD_DETAIL_FITS = `(() => {
+  const frame = document.querySelector('[data-popover-panel="leaderboard"] [data-surface-frame]');
+  const body = frame?.children[1];
+  const header = body?.querySelector(".sticky");
+  const detail = body?.querySelector('[aria-label="Player details"]');
+  if (!body || !header || !detail) return false;
+  const content = body.firstElementChild.getBoundingClientRect();
+  const room = body.getBoundingClientRect();
+  const gap = detail.getBoundingClientRect().left - header.getBoundingClientRect().right;
+  return content.height >= room.height - 2 && body.scrollHeight <= body.clientHeight + 2 && gap >= 0 && gap <= 24;
+})()`;
+
 /** Before play opens: the entrance is pressed, nothing opens and the player is told when play opens. */
 const REFUSED_BEFORE_PLAY = {
   view: "map",
@@ -293,6 +309,16 @@ export const GAME_TASKS = {
     view: "map",
     presses: [{ name: "your name chip", text: "^Identity$" }],
     done: LEADERBOARD_FITS,
+  },
+  "blitz-standings-detail": {
+    goal: "Blitz: open the first player's detail beside the standings, at 1920x1080",
+    layouts: ["wide"],
+    view: "map",
+    presses: [
+      { name: "your name chip", text: "^Identity$" },
+      { name: "the first player's row", within: '[data-popover-panel="leaderboard"] [data-player-address]', text: "." },
+    ],
+    done: LEADERBOARD_DETAIL_FITS,
   },
   production: {
     goal: "Read the realm's production: each store's rate an hour against its limit",

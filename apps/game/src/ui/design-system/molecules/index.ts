@@ -15,4 +15,3 @@ export * from "./sort-panel";
 export * from "./stamina-resource-cost";
 export * from "./tooltip";
 export * from "./twitter-share-button";
-export * from "./view-on-map-icon";

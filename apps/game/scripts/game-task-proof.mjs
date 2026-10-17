@@ -2,7 +2,7 @@ import { GAME_TASKS } from "./game-tasks.mjs";
 import { sleep, waitFor } from "./proof-wait.mjs";
 
 /** The sizes a task runs at: a desktop, a phone upright, and the same phone on its side (the compact HUD's two lanes). */
-const VIEWPORTS = { desktop: [1440, 900], phone: [390, 844], landscape: [844, 390] };
+const VIEWPORTS = { desktop: [1440, 900], wide: [1920, 1080], phone: [390, 844], landscape: [844, 390] };
 const MAP_READY = `document.documentElement.dataset.bootState === "app-ready" && document.querySelector("canvas") !== null`;
 const READY_TIMEOUT_MS = 60_000;
 const STEP_TIMEOUT_MS = 20_000;

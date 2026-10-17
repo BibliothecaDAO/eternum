@@ -269,7 +269,7 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
         )}
       </div>
       {isExpanded && (
-        <div className="w-[400px] shrink-0 border-l border-gold/15">
+        <div className="w-[360px] shrink-0 border-l border-gold/15">
           {tabs[activeTabIndex]?.expandedContent ?? null}
         </div>
       )}
