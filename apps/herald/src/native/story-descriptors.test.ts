@@ -1,4 +1,5 @@
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
+import { GUARD_SLOT_NAMES, GuardSlot } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { toJsonValue } from "../model-registry";
 import { manifest, raw, schema, setup } from "./fixtures";
@@ -26,9 +27,10 @@ function decodedStory(name: string, payload: number[]) {
   return value.story[name];
 }
 
+/** What a player reads for a compiled story: its title and description as one line. */
 function renderedStory(storyType: string, payload: number[]) {
   const storyPayload = decodedStory(storyType, payload);
-  return buildStoryEventPresentation({
+  const { title, description } = buildStoryEventPresentation({
     storyType,
     storyPayload,
     ownerAddress: "0x123",
@@ -37,24 +39,41 @@ function renderedStory(storyType: string, payload: number[]) {
     txHash: "0x55",
     timestamp: 140,
     rawStory: { [storyType]: storyPayload },
-  }).description;
+  });
+  return `${title} · ${description ?? ""}`;
 }
 
+// The decoded fields carry the chain's values (troop kind and tier, guard slot, spawn direction); what a player reads
+// names the troops and the slot's wall in plain words, never the slot's internal name, and leaves the spawn direction
+// out (the owner ruled it debug wording).
 describe("compiled native story descriptors", () => {
   for (const [category, categoryName] of categories.entries()) {
     for (const [tier, tierName] of tiers.entries()) {
       for (const [slot, slotName] of slots.entries()) {
-        it(`renders ${tierName} ${categoryName} in ${slotName}`, () => {
-          const description = renderedStory("GuardAddStory", [3, slot, category, tier, 1_000_000]);
-          expect(description).toContain(`Unit: ${categoryName} ${tierName}`);
-          expect(description).toContain(`Assignment: ${slotName}`);
+        it(`decodes and tells ${tierName} ${categoryName} in ${slotName}`, () => {
+          const payload = [3, slot, category, tier, 1_000_000];
+          expect(decodedStory("GuardAddStory", payload)).toMatchObject({
+            slot: `0x${slot.toString(16)}`,
+            category: categoryName,
+            tier: tierName,
+          });
+          const told = renderedStory("GuardAddStory", payload);
+          expect(told).toContain(`${categoryName} ${tierName}`);
+          expect(told).toContain(GUARD_SLOT_NAMES[GuardSlot[slotName as keyof typeof GuardSlot]]);
+          expect(told).not.toMatch(new RegExp(`\\b${slotName}\\b`));
         });
       }
       for (const [direction, directionName] of directions.entries()) {
-        it(`renders ${tierName} ${categoryName} spawning ${directionName}`, () => {
-          const description = renderedStory("ExplorerCreateStory", [7, 3, category, tier, 1_000_000, direction]);
-          expect(description).toContain(`Unit: ${categoryName} ${tierName}`);
-          expect(description).toContain(`Spawn: ${directionName}`);
+        it(`decodes ${tierName} ${categoryName} spawning ${directionName}, and tells it without the direction`, () => {
+          const payload = [7, 3, category, tier, 1_000_000, direction];
+          expect(decodedStory("ExplorerCreateStory", payload)).toMatchObject({
+            category: categoryName,
+            tier: tierName,
+            spawn_direction: directionName,
+          });
+          const told = renderedStory("ExplorerCreateStory", payload);
+          expect(told).toContain(`${categoryName} ${tierName}`);
+          expect(told).not.toMatch(/East|West|Spawn/);
         });
       }
     }
