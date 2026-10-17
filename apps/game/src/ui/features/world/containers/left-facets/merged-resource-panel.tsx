@@ -120,10 +120,8 @@ export const MergedResourcePanel = memo(
       return map;
     }, [productionSummary]);
 
-    // Group ids by the game's own tier order (insertion order is already
-    // economic → transport → food → T1 → T2 → T3); split military out. Relics
-    // are excluded entirely — they get their own dedicated row above the grid.
-    const { resourceIds, militaryIds } = useMemo(
+    // The classic tier order (resource-tier-order.ts): relics have their own row above the grid.
+    const ringOrder = useMemo(
       () => resourcesInTierOrder(mode.resources.getTiers() as Record<string, ResourcesIds[]>),
       [mode],
     );
@@ -244,10 +242,7 @@ export const MergedResourcePanel = memo(
 
     // One flat grid — resources and military together (resources first, then the
     // troop resources), no section split.
-    const tokens = useMemo(
-      () => [...resourceIds, ...militaryIds].map(renderToken).filter(Boolean),
-      [resourceIds, militaryIds, renderToken],
-    );
+    const tokens = useMemo(() => ringOrder.map(renderToken).filter(Boolean), [ringOrder, renderToken]);
 
     if (tokens.length === 0 && !hasRelics) {
       return <p className="text-xxs italic text-gold/60">No resources yet.</p>;

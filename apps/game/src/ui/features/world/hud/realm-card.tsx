@@ -173,10 +173,7 @@ const useResourceReadings = (resources: ResourceManager | null | undefined, summ
       held.set(Number(balance.resourceId), divideByPrecision(Number(balance.amount)));
     }
     const made = new Map(summary.items.map((item) => [item.resourceId, item]));
-    const { resourceIds, militaryIds } = resourcesInTierOrder(
-      mode.resources.getTiers() as Record<string, ResourcesIds[]>,
-    );
-    return [...resourceIds, ...militaryIds].flatMap((resourceId) => {
+    return resourcesInTierOrder(mode.resources.getTiers() as Record<string, ResourcesIds[]>).flatMap((resourceId) => {
       const item = made.get(resourceId);
       const amount = held.get(resourceId) ?? 0;
       if (!item && amount <= 0) return [];

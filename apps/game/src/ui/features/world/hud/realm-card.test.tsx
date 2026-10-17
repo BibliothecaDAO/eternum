@@ -11,6 +11,7 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
     ui: { showAutomation: false },
     resources: {
       getTiers: () => ({
+        essence: [ResourcesIds.Essence],
         food: [ResourcesIds.Wheat],
         military: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
       }),
@@ -72,6 +73,21 @@ describe("the realm card's resources, as the deploy proof reads them", () => {
       [...host.querySelectorAll('ul[aria-label="Resources"] li')].map((el) => el.getAttribute("aria-label")),
     ).toEqual(["Wheat · 6,900 held", "Crossbowman · 1,000 held"]);
     expect(troopsHeld()).toBe(1000);
+  });
+
+  it("adds a ring found mid-game (a first Essence) at the end, leaving every ring where it was", () => {
+    card.balances = [
+      { resourceId: ResourcesIds.Wheat, amount: 6_900 * 1e9 },
+      { resourceId: ResourcesIds.Crossbowman, amount: 1_000 * 1e9 },
+    ];
+    act(() => root.render(<RealmCard holding={null} />));
+    const rings = () =>
+      [...host.querySelectorAll('ul[aria-label="Resources"] li')].map((el) => el.getAttribute("aria-label"));
+    expect(rings()).toEqual(["Wheat · 6,900 held", "Crossbowman · 1,000 held"]);
+
+    card.balances = [...card.balances, { resourceId: ResourcesIds.Essence, amount: 50 * 1e9 }];
+    act(() => root.render(<RealmCard holding={null} />));
+    expect(rings()).toEqual(["Wheat · 6,900 held", "Crossbowman · 1,000 held", "Essence · 50 held"]);
   });
 
   it("reads 0 troops for a realm whose named rings hold none", () => {
