@@ -83,3 +83,19 @@ it("collapses only from its chevron and title, never from a stray click on its h
   act(() => button("Next up")!.click());
   expect(shown()).toBe("Step b.");
 });
+
+it("forgets a look once an alert interrupts it, even when the step it was taken from comes back", () => {
+  const [explore, crate, lost] = [step("explore"), step("crate"), step("lost")];
+  draw([explore, crate]);
+  act(() => button("1 of 2")!.click());
+  expect(shown()).toBe("Step crate.");
+  draw([lost, explore, crate]);
+  expect(shown()).toBe("Step lost.");
+  draw([explore, crate]);
+  expect(shown()).toBe("Step explore.");
+
+  act(() => button("1 of 2")!.click());
+  draw([]);
+  draw([explore, crate]);
+  expect(shown()).toBe("Step explore.");
+});

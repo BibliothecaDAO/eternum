@@ -51,6 +51,8 @@ export const NextUp = () => <NextUpView steps={useNextSteps()} refusal={useActNo
 export const NextUpView = ({ steps, refusal = null }: { steps: NextStep[]; refusal?: string | null }) => {
   const [paged, setPaged] = useState<{ from: string; to: string } | null>(null);
   const current = steps[0] as NextStep | undefined;
+  // A look lives only as long as the step it was taken from is current: it ends there, never to come back.
+  if (paged && current?.key !== paged.from) setPaged(null);
   const step = (paged && current?.key === paged.from && steps.find(({ key }) => key === paged.to)) || current;
   usePublishShown(step);
   if (!step || !current) return null;
