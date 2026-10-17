@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Leaderboard headers on two lines",
+    description:
+      "Each leaderboard column reads its short name on one line and its points under it on the next: Tiles 5 each, Crates 250 each, Camps & Rifts 250 each, HS taken 1K each, HS held x/s. Hover a column for its full rule.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Next up: the one step that scores now",
     description:
       "Next up shows the step that scores most for where you are: open a crate your army stands beside, explore, go for a crate or a camp, or level up first when an attack would wipe your army out. After a loss it raises the next army where your troops are. Paging to other steps is a look: it comes back to the current one. The camera frames what it shows clear of the side panels, and Events and the Log tell every event in the same sentence, with what came of it.",
@@ -51,7 +58,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Advice you can follow",
     description:
-      "A certain-loss forecast now asks only for an army your realm can hold, and when it cannot, says to level the realm up, which of your realms can raise it now (troops on hand, a free army slot, the cap), or the troops to train there first. After raising an army the Military window stays on Attack, and a full army cap reads as a note, not an error. The leaderboard's held hyperstructures read points/second.",
+      "A certain-loss forecast now asks only for an army your realm can hold, and when it cannot, says to level the realm up, which of your realms can raise it now (troops on hand, a free army slot, the cap), or the troops to train there first. After raising an army the Military window stays on Attack, and a full army cap reads as a note, not an error. ",
     type: "fix",
   },
   {

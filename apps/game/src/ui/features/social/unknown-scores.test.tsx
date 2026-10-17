@@ -57,13 +57,16 @@ describe("the leaderboard's columns", () => {
     );
     const header = html.slice(0, html.indexOf("Unseen player"));
     for (const [column, grant] of [
-      ["Tiles", "5 points each"],
-      ["Crates", "250 points each"],
-      ["Rifts/Camps", "300 points each"],
-      ["Hyperstructures taken", "1.5K points each"],
-      ["Hyperstructures held", "points/second"],
+      ["Tiles", "5 each"],
+      ["Crates", "250 each"],
+      ["Camps &amp; Rifts", "300 each"],
+      ["HS taken", "1.5K each"],
+      ["HS held", "x/s"],
     ]) {
-      expect(header).toContain(`<span>${column}</span><span class="text-xs font-normal text-gold/55">${grant}</span>`);
+      // One line for the title and one for the grant: neither wraps.
+      expect(header).toContain(
+        `<span class="whitespace-nowrap">${column}</span><span class="whitespace-nowrap text-xs font-normal text-gold/55">${grant}</span>`,
+      );
     }
   });
 });
@@ -81,7 +84,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(html).toContain(
-      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 points each · Crates 250 points each · Rifts/Camps 300 points each · Hyperstructures taken 1.5K points each · Hyperstructures held points/second</p>',
+      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 each · Crates 250 each · Camps &amp; Rifts 300 each · HS taken 1.5K each · HS held x/s</p>',
     );
   });
 });
@@ -107,7 +110,7 @@ describe("the MMR column", () => {
       { ...player, address: 4n, name: "Unanswered", points: 0, rank: 4, mmrDelta: null },
     ];
     const rated = rows("ready", players);
-    expect(rated).toContain("<span>MMR</span>");
+    expect(rated).toContain('<span class="whitespace-nowrap">MMR</span>');
     expect(rated).toContain("if it ended now");
     const cells = [...rated.matchAll(/tabular-nums[^"]*">([^<]*)</g)].map(([, text]) => text);
     expect(cells).toEqual(["+26", "±0", "−11", "—"]);

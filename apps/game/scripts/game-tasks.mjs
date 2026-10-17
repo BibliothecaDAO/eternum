@@ -99,6 +99,15 @@ const LEADERBOARD_FITS = `(() => {
 })()`;
 
 /**
+ * The leaderboard's column headers in two rows: each title on one line and each rule under it on one line, none cut
+ * off by its column.
+ */
+const LEADERBOARD_HEADERS_FIT = `[...document.querySelectorAll('[data-popover-panel="leaderboard"] .sticky > div')]
+  .filter((cell) => cell.offsetParent !== null)
+  .every((cell) => cell.children.length <= 2 && cell.scrollWidth <= cell.clientWidth + 1 &&
+    [...cell.children].every((line) => line.getBoundingClientRect().height <= parseFloat(getComputedStyle(line).lineHeight) + 1))`;
+
+/**
  * A player's detail open beside the leaderboard: the window stays as tall as what it shows (no scroll for a short
  * detail), and the table keeps its width, running up to the detail with no strip between them.
  */
@@ -341,11 +350,11 @@ export const GAME_TASKS = {
     done: `/${ORDER_REFUSAL}/.test(document.body.innerText)`,
   },
   "blitz-standings": {
-    goal: "Blitz: see the standings, in a window as large as its table and rows",
-    layouts: PHONE_AND_DESKTOP,
+    goal: "Blitz: see the standings, in a window as large as its table and rows, each column header in two rows",
+    layouts: [...PHONE_AND_DESKTOP, "wide"],
     view: "map",
     presses: [{ name: "your name chip", text: "^Identity$" }],
-    done: LEADERBOARD_FITS,
+    done: `${LEADERBOARD_FITS} && ${LEADERBOARD_HEADERS_FIT}`,
   },
   "blitz-standings-detail": {
     goal: "Blitz: open the first player's detail beside the standings, at 1920x1080",

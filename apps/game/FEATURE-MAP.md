@@ -169,8 +169,9 @@ fails on page or console errors. It is a signed-in game proof, separate from the
 same runner's
 `blitz-build-window,blitz-farm,blitz-army,blitz-deploy,blitz-explore,blitz-transfer,blitz-transfer-window,blitz-transfer-gesture,blitz-standings,blitz-standings-detail`
 tasks play a seated Blitz player's orders through the HUD (`blitz-standings` also checks the leaderboard's window fits
-its table and rows, and `blitz-standings-detail`, at 1920x1080, that a player's detail opens beside the table without
-stretching it), and `gate-build,gate-production` check that nothing acts before play opens (`scripts/game-tasks.mjs`).
+its table and rows, and at 1440 and 1920 wide that each column header is one title line over one points line, and
+`blitz-standings-detail`, at 1920x1080, that a player's detail opens beside the table without stretching it), and
+`gate-build,gate-production` check that nothing acts before play opens (`scripts/game-tasks.mjs`).
 
 For a seated Blitz player with at least two armies able to act:
 

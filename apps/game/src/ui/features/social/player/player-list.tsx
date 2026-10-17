@@ -62,12 +62,15 @@ const formatActivityValue = (count: number, points: number): string => {
   return "—";
 };
 
-/** The table's columns: fixed widths on wide screens, so the window is exactly the table's width; MMR adds one. */
+/**
+ * The table's columns: fixed widths on wide screens, so the window is exactly the table's width; MMR adds one, as wide
+ * as its "if it ended now".
+ */
 const GRID_TEMPLATES = {
   plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
-  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px_80px]",
+  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px_112px]",
   tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]",
-  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px_80px]",
+  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px_112px]",
 } as const;
 
 /** A rating change as a player reads it: +26 in green, −11 in red, ±0, or a dash where the ledger gave none. */
@@ -280,13 +283,16 @@ interface PlayerListColumn {
   rule?: string;
 }
 
-/** Each activity column carries its grant under its name: the game's scoring table, where the points it counts are. */
+/**
+ * Each activity column carries its grant under its name, the game's scoring table where the points it counts are: a
+ * one-line title over a one-line grant, the rule in full on hover.
+ */
 const resolveColumns = (
   showTribeDetails: boolean,
   grants: VictoryPointGrants,
   mmr: MmrForecast["status"],
 ): PlayerListColumn[] => {
-  const each = (points: number) => `${currencyIntlFormat(points)} points each`;
+  const each = (points: number) => `${currencyIntlFormat(points)} each`;
   const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
   return [
     { label: "Rank", align: "justify-center text-center" },
@@ -295,19 +301,19 @@ const resolveColumns = (
     { label: "Tiles", align: activity, grant: each(grants.exploreTile), rule: "Explore a tile" },
     { label: "Crates", align: activity, grant: each(grants.openRelicCrate), rule: "Open a relic crate" },
     {
-      label: "Rifts/Camps",
+      label: "Camps & Rifts",
       align: activity,
       grant: each(grants.claimCampFromBandits),
       rule: `Claim an Essence Rift or Camp from ${NEUTRAL_OWNER_NAME}`,
     },
     {
-      label: "Hyperstructures taken",
+      label: "HS taken",
       align: activity,
       grant: each(grants.claimHyperstructureFromBandits),
       rule: `Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME}`,
     },
     {
-      label: "Hyperstructures held",
+      label: "HS held",
       align: activity,
       ...describeHyperstructureHold(grants),
     },
@@ -356,7 +362,7 @@ const PlayerListHeader = ({
     // Opaque, on the window's own surface, so the sticky header never shows the rows scrolling under it.
     <div
       className={clsx(
-        "grid gap-x-3 items-center py-2 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[var(--overlay-surface-from)] md:gap-x-4 md:px-4",
+        "grid gap-x-3 items-start py-2 px-3 border-b border-gold/25 sticky top-0 z-20 bg-[var(--overlay-surface-from)] md:gap-x-4 md:px-4",
         gridTemplateClass,
       )}
     >
@@ -369,8 +375,8 @@ const PlayerListHeader = ({
           }
           onMouseLeave={rule ? () => setTooltip(null) : undefined}
         >
-          <span>{label}</span>
-          {grant && <span className="text-xs font-normal text-gold/55">{grant}</span>}
+          <span className="whitespace-nowrap">{label}</span>
+          {grant && <span className="whitespace-nowrap text-xs font-normal text-gold/55">{grant}</span>}
         </div>
       ))}
     </div>
