@@ -1,14 +1,6 @@
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds } from "@bibliothecadao/types";
-import {
-  configManager,
-  getBlockTimestamp,
-  getRealmCountPerHyperstructure,
-  readResourceManager,
-  siteKindOf,
-  siteReward,
-  type SiteKind,
-} from "@bibliothecadao/eternum";
+import { configManager, getRealmCountPerHyperstructure, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   fallenRealmBeastModelIndex,
@@ -65,7 +57,7 @@ import type {
   WorldSpatialBounds,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BuildingType, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { BuildingType, ID, StructureType } from "@bibliothecadao/types";
 import { Box3, Euler, Object3D, Scene, Sphere, Vector3 } from "three";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import {
@@ -103,8 +95,8 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
-import { buildStructurePlate, type PlateReward } from "../map-plates/map-plate-model";
-import { POINTS } from "@/ui/design-system/kit/words";
+import { buildStructurePlate } from "../map-plates/map-plate-model";
+import { holdsGrowingEssence, readPlateReward } from "../map-plates/plate-reward";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
   applyVisibleStructurePresentation,
@@ -1748,53 +1740,18 @@ export class StructureManager {
       plate: buildStructurePlate(
         structure,
         useChainTimeStore.getState().getNowSeconds(),
-        this.resolveStructureReward(structure),
+        this.store && readPlateReward(this.store, structure),
       ),
     });
     this.compactLabelIds.add(structure.entityId);
     this.metrics.compactLabelsShown = this.compactLabelIds.size;
   }
 
-  /**
-   * What taking a camp or a rift gives, as its tile card says: a Frontier site's payout home; in Blitz, the Essence a
-   * rift holds (it changes hands with it), and for a camp the points for taking it from the Vanguard.
-   */
-  private resolveStructureReward(structure: StructureInfo): PlateReward | undefined {
-    const site = this.store?.get("ExpeditionSite", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: structure.entityId,
-    });
-    if (site) {
-      const payout = siteReward(siteKindOf(structure.structureType), site);
-      return payout
-        ? { amount: divideByPrecision(Number(payout.amount)), unit: ResourcesIds[payout.resourceType] }
-        : undefined;
-    }
-    if (this.holdsGrowingEssence(structure)) {
-      const held = this.store
-        ? readResourceManager(this.store, structure.entityId).balanceWithProduction(
-            getBlockTimestamp().currentDefaultTick,
-            ResourcesIds.Essence,
-          )
-        : undefined;
-      return held ? { amount: divideByPrecision(held.balance), unit: ResourcesIds[ResourcesIds.Essence] } : undefined;
-    }
-    if (structure.structureType === StructureType.Camp && structure.owner.address === 0n) {
-      return { amount: configManager.getVictoryPointGrants().claimCampFromBandits, unit: POINTS };
-    }
-    return undefined;
-  }
-
-  /** A Blitz Essence Rift: a mine whose Essence grows every second, so its plate is said again each second. */
-  private holdsGrowingEssence(structure: StructureInfo): boolean {
-    return structure.structureType === StructureType.Mine && structure.mineKind === 1;
-  }
-
   /** Says again the plates whose reward grows with time (a rift's Essence); unchanged words cost no render. */
   private refreshGrowingRewardPlates(): void {
     for (const entityId of this.compactLabelIds) {
       const structure = this.resolveStructureInfoByEntityId(entityId);
-      if (structure && this.holdsGrowingEssence(structure)) this.refreshStructurePlate(structure);
+      if (structure && holdsGrowingEssence(structure)) this.refreshStructurePlate(structure);
     }
   }
 
