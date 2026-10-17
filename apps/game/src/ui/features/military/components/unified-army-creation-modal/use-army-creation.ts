@@ -1,4 +1,3 @@
-import { knownBalance } from "@/ui/utils/utils";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -7,11 +6,9 @@ import {
   configManager,
   divideByPrecision,
   formatTime,
-  getBalance,
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
-  liveHomeArmies,
   readTroopRaiseCost,
   ResourceManager,
   structureMapPosition,
@@ -61,6 +58,13 @@ import {
   resolveTroopAvailabilityReason,
   type TroopSupply,
 } from "./army-creation-policy";
+import {
+  fieldArmyTroops,
+  formatTroopTypeLabel,
+  hasFreeFieldArmySlot,
+  heldTroops,
+  readFieldArmyRoom,
+} from "./field-army-room";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 interface ArmyCreationOptions {
@@ -76,8 +80,6 @@ interface ArmyCreationOptions {
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
-
-const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "Crossbow" : type);
 
 export const useArmyCreation = ({
   structureId: activeStructureId,
@@ -138,10 +140,7 @@ export const useArmyCreation = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        // Troops this client cannot see can't be added to an army.
-        const available =
-          knownBalance(getBalance(activeStructureId, resourceId, currentDefaultTick, store).balance) ?? 0;
-        return { tier, available, resourceId };
+        return { tier, available: heldTroops(store, activeStructureId, resourceId, currentDefaultTick), resourceId };
       }),
     }));
   }, [activeStructureId, currentDefaultTick, store, revision]);
@@ -156,11 +155,16 @@ export const useArmyCreation = ({
     setSelectedTroopCombo(openingTroop());
   }
 
+  // The selected troop's field army room: the same troops, slots and cap the attack forecast's advice reads.
+  const fieldRoom = useMemo(
+    () =>
+      structureComponent ? readFieldArmyRoom(store, structureComponent, selectedTroopCombo, currentDefaultTick) : null,
+    [store, structureComponent, selectedTroopCombo, revision, currentDefaultTick],
+  );
   const structureBase = structureComponent?.base;
   const structureCategory = structureBase?.category as StructureType | undefined;
   const structureLevel = structureBase?.level ?? null;
-  const troopCapacityLimit =
-    structureLevel === null ? null : configManager.getMaxArmySize(structureLevel, selectedTroopCombo.tier);
+  const troopCapacityLimit = fieldRoom?.cap ?? null;
   const guardCapacityFromStructureRaw = structureBase?.troop_max_guard_count ?? null;
   const guardCapacityFromStructure =
     guardCapacityFromStructureRaw !== null && guardCapacityFromStructureRaw !== undefined
@@ -196,20 +200,14 @@ export const useArmyCreation = ({
     [structureComponent, store, revision],
   );
 
-  const currentExplorersCount = useMemo(
-    () =>
-      activeStructureId === undefined
-        ? 0
-        : liveHomeArmies(store, activeStructureId, configManager.getActiveGameId()).length,
-    [store, activeStructureId, revision, currentDefaultTick],
-  );
+  const currentExplorersCount = fieldRoom?.armies ?? 0;
   const currentGuardsCount = guardsData?.filter(
     (guard) => guard.troops?.count && guard.troops.count > 0n && availableGuardSlotSet.has(Number(guard.slot)),
   ).length;
   // Undefined for a structure this client cannot see: no attack army can be created from it.
-  const maxExplorers = structureBase?.troop_max_explorer_count;
+  const maxExplorers = fieldRoom?.maxArmies;
 
-  const canCreateAttackArmy = maxExplorers !== undefined && currentExplorersCount < maxExplorers;
+  const canCreateAttackArmy = fieldRoom !== null && hasFreeFieldArmySlot(fieldRoom);
   const canCreateDefenseArmy = currentGuardsCount !== undefined && currentGuardsCount < resolvedMaxDefenseSlots;
   const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
   const canInteractWithDefense = canCreateDefenseArmy || hasDefenseArmies;
@@ -381,8 +379,11 @@ export const useArmyCreation = ({
     .find((option) => option.type === selectedTroopCombo.type)
     ?.tiers.find((option) => option.tier === selectedTroopCombo.tier)?.available;
   if (selectedAvailable === undefined) throw new Error("Selected troop is missing from the army catalogue");
-  const maxAffordable =
-    capacityRemainingForSelector === null
+  const maxAffordable = armyType
+    ? fieldRoom === null
+      ? 0
+      : fieldArmyTroops(fieldRoom)
+    : capacityRemainingForSelector === null
       ? 0
       : resolveArmyTroopAvailability(selectedAvailable, capacityRemainingForSelector);
 

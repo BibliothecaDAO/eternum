@@ -83,39 +83,62 @@ describe("how many more troops would survive a certain loss", () => {
     expect(aboutTroops(1_234)).toBe("1,300");
     expect(aboutTroops(48)).toBe("48");
   });
+
+  it("stays exact where rounding up would pass the most that fits, and never rounds down", () => {
+    expect(aboutTroops(499, 499)).toBe("499");
+    expect(aboutTroops(1_234, 1_299)).toBe("1,234");
+    expect(aboutTroops(1_234, 1_300)).toBe("1,300");
+  });
 });
 
 describe("what a newcomer can do about a certain loss", () => {
   const egonal = { name: "Egonal", cap: 1_500 };
+  const advice = (input: Partial<Parameters<typeof describeSurvivalAdvice>[0]>) =>
+    describeSurvivalAdvice({
+      extra: 400,
+      current: 1_000,
+      troop: "T1 Knight",
+      home: egonal,
+      nextLevel: null,
+      source: null,
+      ...input,
+    });
+
   it("asks for the troops to add when the army's realm can hold them", () => {
-    expect(describeSurvivalAdvice({ extra: 400, current: 1_000, home: egonal, nextLevel: null, roomier: null })).toBe(
-      "about 400 more troops to survive it",
-    );
+    expect(advice({})).toBe("about 400 more troops to survive it");
+  });
+
+  it("never asks for more troops than the cap that holds the army (1,001 plus 499 against 1,500)", () => {
+    expect(advice({ extra: 499, current: 1_001 })).toBe("about 499 more troops to survive it");
   });
 
   it("names the cap and what lifts it when the army would outgrow its realm (the audit's 2,400 against 1,500)", () => {
     expect(
-      describeSurvivalAdvice({
+      advice({
         extra: 1_400,
-        current: 1_000,
-        home: egonal,
         nextLevel: { name: "City", cap: 15_000 },
-        roomier: { name: "'oak Leukue", cap: 7_500 },
+        source: { name: "'oak Leukue", cap: 7_500, short: 0 },
       }),
     ).toBe(
       "it needs about 2,400 troops, and Egonal's army cap is 1,500: level it to City (cap 15,000), or raise one from 'oak Leukue (cap 7,500)",
     );
   });
 
+  it("says the troops to train first at a realm with room for the army but not the troops", () => {
+    expect(advice({ extra: 1_400, source: { name: "Empty", cap: 15_000, short: 2_351 } })).toBe(
+      "it needs about 2,400 troops, and Egonal's army cap is 1,500: train 2,400 more T1 Knight at Empty and raise one there (cap 15,000)",
+    );
+  });
+
+  it("reads the total within the smallest cap offered", () => {
+    expect(advice({ extra: 1_001, nextLevel: { name: "Town", cap: 2_050 } })).toBe(
+      "it needs about 2,001 troops, and Egonal's army cap is 1,500: level it to Town (cap 2,050)",
+    );
+  });
+
   it("offers only what would hold the army, and says when nothing within reach would", () => {
-    expect(
-      describeSurvivalAdvice({
-        extra: 30_000,
-        current: 1_000,
-        home: egonal,
-        nextLevel: { name: "City", cap: 15_000 },
-        roomier: null,
-      }),
-    ).toBe("it needs about 31,000 troops, and Egonal's army cap is 1,500; no realm of yours holds that many yet");
+    expect(advice({ extra: 30_000, nextLevel: { name: "City", cap: 15_000 } })).toBe(
+      "it needs about 31,000 troops, and Egonal's army cap is 1,500; no realm of yours can raise that many yet",
+    );
   });
 });
