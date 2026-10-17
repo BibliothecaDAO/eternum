@@ -19,7 +19,7 @@ former `/debug` tools now live under `/lab`. Their runners and links use the new
 | Models & motion     | `/lab/models`              | Art: model review, animation inspection and captures                                              |
 | Rewards             | `/lab/rewards`             | Art: reward and chest review with capture controls                                                |
 | Terrain props       | `/lab/terrain-props`       | Art: biome prop and material review                                                               |
-| Endgame mist        | `/lab/endgame`             | World: shipped frost, spire awakening/rise, mist spread and spared realm comparison               |
+| Endgame mist        | `/lab/endgame`             | World: shipped frost, spire awakening/materialisation, mist spread and spared realm comparison    |
 | World FX            | `/lab/world-fx`            | Art: world effects and capture controls                                                           |
 | Character review    | `/lab/characters`          | Character art and animation: frame inspector, smoke checks and animation captures                 |
 | Character benchmark | `/lab/character-benchmark` | Performance: character benchmark smoke and performance runners                                    |
@@ -122,22 +122,23 @@ knight1** uses the actual map scale and automatic camera-distance LOD through th
 
 ## Endgame mist study
 
-`/lab/endgame` compares the shipped two-second frost with three proposed spire/mist sequences on the production terrain,
-lighting, realm, army and spire renderers. This route is dev-only. No live end trigger or Results component changes. Use
-**End game preview** to start, **Shipped / reset** to return to live terrain, and the position slider to inspect the
-front. **See the results** remains available during the sequence; it skips the effect and opens a labelled Results
-fixture. **Escape** or **Skip** goes straight to the frozen map. The real Results route is not mounted here.
+`/lab/endgame` previews the owner-selected **Fractured veil**, using the production terrain, lighting, realm, army and
+spire renderers. This route is dev-only. No live end trigger or Results component changes. **End game preview** starts;
+**Reset map** returns to the live fixture. **Inspect orb** focuses the first spire, **Whole map** restores the camera,
+and the timeline can pause any stage. **See the results** immediately skips to a labelled Results fixture; **Escape** or
+**Skip** goes straight to the frozen map. The real Results route is not mounted here.
 
-- `variation=surge`: a narrow front, 1.5 s awakening, 4 s spread, 1.5 s settle; 7 s total.
-- `variation=tide`: a broad choking front, 2 s awakening, 7 s spread, 2 s settle; 11 s total.
-- `variation=fracture`: an irregular front, 2 s awakening, 5.5 s spread, 1.5 s settle; 9 s total.
+One nine-second sequence: materialise in place (0–0.8 s), form and contract the actual orb into a singularity (up to 2
+s), burst at 2 s, fractured mist spread (2–7.5 s), settle and hold (7.5–9 s). The spire never rises or changes its hex's
+terrain. Orb positions come from the existing model's authored spherical-core transform.
+
 - `gameMode=frontier` spares the central realm hex and uses production Frontier lighting. Blitz spares no hex.
-- `spires=awaken` starts with discovered dormant spires; `spires=rise` starts with two undiscovered fixture sites. These
-  are explicit lab coordinates, not a source of hidden live-chain positions.
-- `shipped=1` uses the actual shipped material library and global frost rather than the study coating/front.
+- `spires=materialise` (default) starts with two absent spires; `spires=awaken` starts with discovered dormant spires.
+  Sites are explicit fixture coordinates, not a source of hidden live-chain positions. Both have identical terrain.
+- `shipped=1` keeps a URL-only comparison with the actual shipped material library and two-second global frost.
 - `busy=1` uses 1,008 hexes, 25 realms and 50 armies. The smaller study uses 320 hexes, 5 realms and 10 armies.
 - `rendererMode=webgpu-force-webgl` selects the production WebGL fallback. Default is WebGPU.
-- `time=<seconds>` opens a paused mist position. Replay gives the authored spire loop its normal animation.
+- `time=<seconds>` opens a paused sequence position.
 
 Start and exercise the actual app with one command (the port must be free):
 
@@ -146,10 +147,11 @@ flock /tmp/eternum-lanes-heavy.lock pnpm --dir apps/game prove:endgame --port 41
 flock /tmp/eternum-lanes-heavy.lock pnpm --dir apps/game prove:endgame --port 4199 --mode cost --iterations 3 --out <fresh-output-directory>
 ```
 
-The runner owns its server and each browser/profile, drives the visible start, reset, Results and Escape controls,
-records each direction in Blitz and Frontier, and stops what it starts. To use a client already served by you, pass
-`--base-url https://127.0.0.1:4199`. `--variation surge|tide|fracture` narrows a run; `--spires awaken|rise` captures
-either entrance in both worlds. The cost run hides the shared header and asserts a 1920×1080 drawing buffer, checks site
-collisions, checks the hardware adapter and load average, records raw frame intervals and renderer submission samples,
-and keeps stock, armed, active and frozen snapshots with draw counts. Frame intervals include refresh pacing; submission
-time is CPU work, not GPU duration. The fixture is not a measured live match or a phone profile.
+The runner owns its server and browser/profile. It drives visible buttons, camera focus, timeline keyboard input,
+Results and Escape, records full-map and orb videos plus stage frames, and stops what it starts. Gallery covers both
+entrances in both worlds; `--spires awaken|materialise` narrows it. For a client already served by you, pass
+`--base-url https://127.0.0.1:4199`. The owner's showcase is served separately on 4198; rebuilding it is manual.
+
+Cost mode hides the shared header, asserts a 1920×1080 drawing buffer, checks distinct sites, hardware backend and load,
+and records raw frame intervals plus stock, armed, active and frozen draw snapshots. Frame intervals include refresh
+pacing; renderer submission is CPU work, not GPU duration. This fixture is not a live match or a phone profile.

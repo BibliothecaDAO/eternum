@@ -1,4 +1,4 @@
-import { AnimationMixer, Box3, Camera, Group, Matrix4, Mesh, Sphere } from "three";
+import { AnimationMixer, Box3, Camera, Group, Matrix4, Mesh, Sphere, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import InstancedModel from "../managers/instanced-model";
 import type { AnimationVisibilityContext } from "../types/animation";
@@ -10,6 +10,7 @@ import { LocalEmissiveGlow } from "./local-emissive-glow";
 interface SpirePlacement {
   matrix: Matrix4;
   phase: number;
+  orbScale: number;
   /** A dormant spire has no portal and holds its first pose. */
   portal: ReturnType<SpirePortalMaterials["create"]> | null;
 }
@@ -43,6 +44,9 @@ export class SpireModel extends InstancedModel {
   private readonly portalMaterials: SpirePortalMaterials;
   private readonly veins: LocalEmissiveGlow;
   private readonly composed = new Matrix4();
+  private readonly orbContraction = new Matrix4();
+  private readonly coreInverse = new Matrix4();
+  private readonly orbSize = new Vector3();
   private readonly clipDuration: number;
   private readonly sweptBounds: Sphere[];
   private seconds = 0;
@@ -97,7 +101,7 @@ export class SpireModel extends InstancedModel {
     }
     if (!placement) {
       const portal = dormant ? null : this.portalMaterials.create(this.prepared.portals);
-      placement = { matrix: matrix.clone(), phase: 0, portal };
+      placement = { matrix: matrix.clone(), phase: 0, orbScale: 1, portal };
       this.placements.set(index, placement);
       if (portal) this.group.add(portal.group);
     }
@@ -114,6 +118,25 @@ export class SpireModel extends InstancedModel {
   override removeInstance(index: number): void {
     this.setMatrixAt(index, new Matrix4().makeScale(0, 0, 0));
     this.needsUpdate();
+  }
+
+  /** The orb contracts about its authored centre; the spire and its terrain stay in place. */
+  setOrbScale(index: number, scale: number): void {
+    if (!Number.isFinite(scale) || scale <= 0) throw new Error("Spire orb scale must be positive");
+    const placement = this.placements.get(index);
+    if (!placement) return;
+    if (placement.orbScale === scale) return;
+    placement.orbScale = scale;
+    this.writePose(index, placement);
+  }
+
+  /** Authored orb frame before contraction, for effects emitted from its centre. */
+  getOrbTransform(index: number, target: Matrix4): boolean {
+    const placement = this.placements.get(index);
+    if (!placement) return false;
+    this.group.updateWorldMatrix(true, false);
+    target.copy(this.group.matrixWorld).multiply(placement.matrix).multiply(this.prepared.core.matrixWorld);
+    return true;
   }
 
   override setCount(count: number): void {
@@ -192,15 +215,20 @@ export class SpireModel extends InstancedModel {
       queueInstanceUpdate(mesh.instanceMatrix, index, 1);
     });
     if (!placement.portal) return;
+    const contracting = placement.orbScale !== 1;
+    if (contracting)
+      this.orbContraction
+        .copy(this.prepared.core.matrixWorld)
+        .scale(this.orbSize.setScalar(placement.orbScale))
+        .multiply(this.coreInverse.copy(this.prepared.core.matrixWorld).invert());
     placement.portal.surfaces.forEach((mesh, part) => {
       mesh.matrix.copy(this.prepared.portals[part].matrixWorld);
+      if (contracting) mesh.matrix.premultiply(this.orbContraction);
       mesh.matrixWorldNeedsUpdate = true;
     });
     this.group.updateWorldMatrix(true, false);
-    placement.portal.state.inverseCore
-      .copy(this.group.matrixWorld)
-      .multiply(placement.matrix)
-      .multiply(this.prepared.core.matrixWorld)
-      .invert();
+    placement.portal.state.inverseCore.copy(this.group.matrixWorld).multiply(placement.matrix);
+    if (contracting) placement.portal.state.inverseCore.multiply(this.orbContraction);
+    placement.portal.state.inverseCore.multiply(this.prepared.core.matrixWorld).invert();
   }
 }

@@ -388,12 +388,13 @@ the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture
 
 ## Endgame mist preview
 
-Dev lab only: `/lab/endgame` → **Sequence** compares the shipped end freeze with Spire surge (7 s), Choking tide (11 s)
-and Fractured veil (9 s). Choose **Spire entrance** for discovered awakening or undiscovered fixture emergence, and
-**World mode** for Blitz (all hexes freeze) or Frontier (the central realm hex is spared). **End game preview** starts
-the event; **Shipped / reset** restores the scene. **See the results** opens the labelled fixture immediately;
-**Escape** skips to the frozen map. The live end-of-game and Results paths are unchanged pending owner selection.
+Dev lab only: `/lab/endgame` previews **Fractured veil (9 s)**. Appearing spires materialise in place without changing
+their hex's biome. Their actual spherical orbs contract into singularities, burst, and release the fractured mist.
+**Spires** switches existing dormant spires versus materialisation; **World** switches Blitz (all hexes freeze) versus
+Frontier (the central realm hex is spared). **Inspect orb** focuses the first source; **Whole map** returns to the map.
+**End game preview** starts the event, **Reset map** restores it, **See the results** opens the labelled fixture
+immediately, and **Escape** skips to the frozen map. Production end-of-game and Results paths are unchanged.
 
 `pnpm --dir apps/game prove:endgame --port 4199 --mode gallery --out <fresh-directory>` starts the app, drives these
-controls, records captures and cleans up its browser and server. `--mode cost --iterations 3` measures the busy fixture
-on WebGPU and WebGL at 1920×1080; see `src/lab/README.md` for parameters and measurement limits.
+controls and the timeline, records map/orb captures for both entrances and worlds, and cleans up its browser and server.
+`--mode cost --iterations 3` measures the busy fixture on WebGPU and WebGL at 1920×1080. See `src/lab/README.md`.

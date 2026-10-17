@@ -1,4 +1,4 @@
-import { Euler, Group, Matrix4, Mesh, PlaneGeometry, Vector2, Vector3, type Camera, type Scene } from "three";
+import { Euler, Group, Matrix4, Mesh, PlaneGeometry, Vector3, type Camera, type Scene } from "three";
 import {
   color,
   diffuseColor,
@@ -29,7 +29,8 @@ import { terrainHexToWorld } from "@/three/terrain/terrain-coordinates";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { createEndgameFixture } from "./fixture";
-import { ENDGAME_VARIATIONS, endgameFrame, type EndgameSettings } from "./sequence";
+import { ENDGAME_SEQUENCE, endgameFrame, type EndgameSettings } from "./sequence";
+import { SpireEndEvent } from "./spire-event";
 
 /** Preview uniforms and materials belong to the lab renderer and never touch the live end trigger. */
 export class EndgameMistPresentation {
@@ -49,6 +50,9 @@ export class EndgameMistPresentation {
   private actors: ProceduralArmyCharacterPresentation[] = [];
   private mist: Mesh<PlaneGeometry, MeshBasicNodeMaterial> | null = null;
   private spirePhase = false;
+  private spireEvent: SpireEndEvent | null = null;
+  private readonly origins = [uniform(new Vector3()), uniform(new Vector3())];
+  private readonly allowed: Node<"float">;
   private readonly maximumReach: number;
 
   constructor(readonly settings: EndgameSettings) {
@@ -61,22 +65,22 @@ export class EndgameMistPresentation {
           const p = terrainHexToWorld(cell.col, cell.row);
           return Math.min(Math.hypot(p.x - first.x, p.z - first.z), Math.hypot(p.x - second.x, p.z - second.z));
         }),
-      ) + ENDGAME_VARIATIONS[settings.variation].width;
-    const a = uniform(new Vector2(first.x, first.z));
-    const b = uniform(new Vector2(second.x, second.z));
+      ) + ENDGAME_SEQUENCE.width;
+    const [a, b] = this.origins;
+    a.value.set(first.x, 0, first.z);
+    b.value.set(second.x, 0, second.z);
     const realm = terrainHexToWorld(this.fixture.realm.col, this.fixture.realm.row);
-    const relative = positionWorld.xz.sub(uniform(new Vector2(realm.x, realm.z))).abs();
+    const relative = positionWorld.xz.sub(uniform(new Vector3(realm.x, 0, realm.z)).xz).abs();
     const hexDistance = relative.x.max(relative.x.mul(0.5).add(relative.y.mul(Math.sqrt(3) / 2)));
     const spared = settings.spared === "realm" ? float(1).sub(smoothstep(0.85, 0.87, hexDistance)) : float(0);
-    const choice = ENDGAME_VARIATIONS[settings.variation];
+    this.allowed = float(1).sub(spared);
+    const choice = ENDGAME_SEQUENCE;
     const noise = mx_noise_float(vec3(positionWorld.x.mul(0.38), positionWorld.z.mul(0.38), this.clock.mul(0.14)))
       .mul(0.5)
       .add(0.5);
-    const distance = positionWorld.xz.sub(a).length().min(positionWorld.xz.sub(b).length());
+    const distance = positionWorld.sub(a).length().min(positionWorld.sub(b).length());
     const boundary = distance.add(noise.sub(0.5).mul(choice.turbulence));
-    const covered = smoothstep(boundary.sub(0.9), boundary.add(0.9), this.reach)
-      .mul(this.active)
-      .mul(float(1).sub(spared));
+    const covered = smoothstep(boundary.sub(0.9), boundary.add(0.9), this.reach).mul(this.active).mul(this.allowed);
     const frost = covered.mul(this.settled.mul(0.6).add(0.4));
     const applyFrost = (surface: Node<"vec3">): Node<"vec3"> => {
       const grain = mx_noise_float(positionWorld.mul(22)).mul(0.5).add(0.5);
@@ -196,12 +200,30 @@ export class EndgameMistPresentation {
     if (!this.settings.shipped) this.installTerrainFrost(scene);
     this.poseSpires(terrain);
     this.spires.updateAnimations(0, { camera });
+    if (!this.settings.shipped) {
+      let core: Mesh | null = null;
+      spireAsset.scene.traverse((object) => {
+        if (object instanceof Mesh && object.userData.trueSphereRadius > 0) core = object;
+      });
+      if (!core) throw new Error("Spire event requires the authored spherical orb");
+      this.spireEvent = new SpireEndEvent(
+        this.spires,
+        (core as Mesh).geometry,
+        this.settings,
+        this.applyFrost,
+        this.allowed,
+      );
+      this.group.add(...this.spireEvent.meshes);
+      this.updateSpireEvent();
+    }
   }
 
   private installTerrainFrost(scene: Scene): void {
     const patched = new Set<NodeMaterial>();
+    const spireParts = new Set();
+    this.spires?.group.traverse((object) => spireParts.add(object));
     scene.traverse((object) => {
-      if (!(object instanceof Mesh) || object === this.mist) return;
+      if (!(object instanceof Mesh) || object === this.mist || spireParts.has(object)) return;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       for (const material of materials) {
         if (
@@ -231,52 +253,57 @@ export class EndgameMistPresentation {
     this.playing = false;
   }
   skip(): void {
-    this.seek(this.settings.shipped ? 2 : ENDGAME_VARIATIONS[this.settings.variation].duration);
+    this.seek(this.settings.shipped ? 2 : ENDGAME_SEQUENCE.duration);
   }
 
   update(delta: number, terrain: ProceduralTerrain, camera: Camera): void {
     if (this.playing && this.elapsed !== null) this.elapsed += delta;
     const frame = endgameFrame(this.settings, this.elapsed);
     if (frame.finished) this.playing = false;
-    this.active.value = this.elapsed === null ? 0 : 1;
+    this.active.value = frame.spread > 0 ? 1 : 0;
     this.clock.value = frame.seconds;
     this.settled.value = frame.settle;
     this.reach.value = frame.spread * this.maximumReach;
-    if (this.mist) this.mist.visible = !this.settings.shipped && this.elapsed !== null;
+    if (this.mist) this.mist.visible = !this.settings.shipped && frame.spread > 0;
     this.poseSpires(terrain);
     if (!frame.finished && (!this.settings.shipped || this.elapsed === null)) {
       this.spires?.updateAnimations(delta, { camera });
       this.characters?.sync(this.actors, delta);
       this.realms?.updateAnimations(delta);
     }
+    this.updateSpireEvent();
+  }
+
+  private updateSpireEvent(): void {
+    this.spireEvent?.update(endgameFrame(this.settings, this.elapsed));
+    this.spireEvent
+      ?.getSnapshot()
+      .orbOrigins.forEach((origin, index) => this.origins[index].value.set(origin.x, origin.y, origin.z));
   }
 
   private poseSpires(terrain: ProceduralTerrain): void {
     if (!this.spires) return;
     const frame = endgameFrame(this.settings, this.elapsed);
-    const awake = !this.settings.shipped && this.elapsed !== null && frame.emergence > 0.45;
+    const awake = !this.settings.shipped && this.elapsed !== null && frame.materialisation > 0.05;
     const changed = awake !== this.spirePhase;
     this.spirePhase = awake;
-    this.spires.group.visible = this.settings.spires === "awaken" || (this.elapsed !== null && frame.emergence > 0);
+    this.spires.group.visible =
+      this.settings.spires === "awaken" ||
+      (!this.settings.shipped && this.elapsed !== null && frame.materialisation > 0);
     this.fixture.spires.forEach((p, i) => {
       const w = terrainHexToWorld(p.col, p.row);
-      const emergence = this.settings.spires === "rise" ? frame.emergence : 1;
-      const lift = emergence * emergence * (3 - 2 * emergence);
-      this.matrix
-        .makeRotationY(i * 1.2)
-        .setPosition(w.x, terrain.sampleSurface(w.x, w.z).height - (1 - lift) * 3.4, w.z);
-      if (this.settings.spires === "rise" && emergence === 0) return;
+      this.matrix.makeRotationY(i * 1.2).setPosition(w.x, terrain.sampleSurface(w.x, w.z).height, w.z);
       this.spires!.placeSpire(i, this.matrix, !awake);
     });
     this.spires.setCount(2);
-    if (changed || frame.phase === "awakening" || frame.phase === "live") this.spires.needsUpdate();
+    if (changed || frame.phase === "materialising" || frame.phase === "live") this.spires.needsUpdate();
   }
 
   getSnapshot() {
     return {
       ...endgameFrame(this.settings, this.elapsed),
-      variation: this.settings.variation,
-      duration: this.settings.shipped ? 2 : ENDGAME_VARIATIONS[this.settings.variation].duration,
+      sequence: ENDGAME_SEQUENCE.label,
+      duration: this.settings.shipped ? 2 : ENDGAME_SEQUENCE.duration,
       shipped: this.settings.shipped === true,
       spires: this.settings.spires,
       spared: this.settings.shipped ? "none" : this.settings.spared,
@@ -285,12 +312,14 @@ export class EndgameMistPresentation {
       spireSites: this.fixture.spires,
       realmCount: this.fixture.realms.length,
       armyCount: this.characters?.getStats().actorCount ?? 0,
-      mistDraws: this.settings.shipped || this.elapsed === null ? 0 : 1,
+      mistDraws: this.mist?.visible ? 1 : 0,
+      ...this.spireEvent?.getSnapshot(),
       playing: this.playing,
     };
   }
   dispose(): void {
     this.characters?.dispose();
+    this.spireEvent?.dispose();
     this.spires?.dispose();
     this.realms?.dispose();
     this.mist?.geometry.dispose();

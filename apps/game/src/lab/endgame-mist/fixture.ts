@@ -40,19 +40,17 @@ export function createEndgameFixture(settings: EndgameSettings) {
       const col = i % columns,
         row = Math.floor(i / columns);
       const key = `${col}:${row}`;
-      const spire = spires.some((p) => p.col === col && p.row === row);
-      const hidden = settings.spires === "rise" && spire;
-      const biome = occupied.has(key)
+      const realmCell = realms.some((p) => p.col === col && p.row === row);
+      const biome = realmCell
         ? BiomeType.Grassland
         : biomes[(Math.floor(col / 5) + Math.floor(row / 4) * 2) % biomes.length];
       return {
         col,
         row,
-        biome: hidden ? null : biome,
+        biome,
         previewBiome: biome,
-        explored: !hidden,
+        explored: true,
         occupied: occupied.has(key),
-        ...(spire && !hidden ? { surfacePresentation: "ethereal" as const } : {}),
       };
     }),
     settlementAnchors: realms.map((p, i) => ({

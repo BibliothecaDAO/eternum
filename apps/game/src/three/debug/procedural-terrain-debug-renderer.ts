@@ -150,6 +150,7 @@ export interface ProceduralTerrainDebugRendererHandle {
   resetEndgame(): void;
   seekEndgame(seconds: number): void;
   skipEndgame(): void;
+  focusEndgameSpire(): void;
   setMoonEnabled(enabled: boolean): void;
   setWeather(type: WeatherType): void;
   setWeatherEvolving(enabled: boolean): void;
@@ -274,6 +275,14 @@ export async function mountProceduralTerrainDebugRenderer(
       resetEndgame: () => runtime.endgame?.reset(),
       seekEndgame: (seconds) => runtime.endgame?.seek(seconds),
       skipEndgame: () => runtime.endgame?.skip(),
+      focusEndgameSpire: () => {
+        const origin = runtime.endgame?.getSnapshot().orbOrigins?.[0];
+        if (!origin) return;
+        runtime.controls.target.set(origin.x, origin.y, origin.z);
+        runtime.camera.position.set(origin.x + 3.2, origin.y + 3.5, origin.z + 5);
+        runtime.camera.lookAt(runtime.controls.target);
+        runtime.controls.update();
+      },
       setGameEnded: (ended) => {
         runtime.gameEnded = ended;
         updateGameEndFreeze(0, ended, 0);

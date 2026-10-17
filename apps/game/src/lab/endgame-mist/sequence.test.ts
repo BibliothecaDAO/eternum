@@ -1,85 +1,68 @@
 import { describe, expect, it } from "vitest";
-import { ENDGAME_VARIATIONS, endgameFrame, readEndgameSettings } from "./sequence";
+import { BiomeType } from "@bibliothecadao/types";
+import { ENDGAME_SEQUENCE, endgameFrame, readEndgameSettings } from "./sequence";
 import { createEndgameFixture } from "./fixture";
 
-describe("endgame lab sequence", () => {
-  it.each(["surge", "tide", "fracture"] as const)(
-    "keeps %s idle before end, runs once and skips to the same frozen state",
-    (variation) => {
-      const settings = { variation, spires: "awaken" as const, spared: "none" as const, busy: false };
-      const choice = ENDGAME_VARIATIONS[variation];
-      expect(endgameFrame(settings, null)).toEqual({
-        phase: "live",
-        seconds: 0,
-        emergence: 0,
-        spread: 0,
-        settle: 0,
-        finished: false,
-      });
-      expect(endgameFrame(settings, choice.awaken / 2)).toMatchObject({
-        phase: "awakening",
-        emergence: 0.5,
-        spread: 0,
-      });
-      const middle = choice.awaken + (choice.duration - choice.awaken - choice.settle) / 2;
-      expect(endgameFrame(settings, middle)).toMatchObject({ phase: "spreading", spread: 0.5, finished: false });
-      expect(endgameFrame(settings, choice.duration)).toEqual({
-        phase: "frozen",
-        seconds: choice.duration,
-        emergence: 1,
-        spread: 1,
-        settle: 1,
-        finished: true,
-      });
-      expect(endgameFrame(settings, 999)).toEqual(endgameFrame(settings, choice.duration));
-    },
-  );
-  it("changes only spared hexes between Blitz and Frontier fixtures", () => {
-    const blitz = readEndgameSettings("?variation=tide&spires=rise&busy=1");
-    const frontier = readEndgameSettings("?variation=tide&spires=rise&busy=1&gameMode=frontier");
+describe("Fractured veil", () => {
+  const settings = readEndgameSettings("");
+  it("stays idle until end, materialises, contracts, bursts, spreads and freezes once", () => {
+    expect(endgameFrame(settings, null)).toMatchObject({
+      phase: "live",
+      materialisation: 0,
+      spread: 0,
+      finished: false,
+    });
+    expect(endgameFrame(settings, 0.4)).toMatchObject({
+      phase: "materialising",
+      materialisation: 0.5,
+      spread: 0,
+      orbScale: 1,
+    });
+    expect(endgameFrame(settings, 1.5)).toMatchObject({
+      phase: "contracting",
+      materialisation: 1,
+      contraction: 0.5,
+      spread: 0,
+    });
+    expect(endgameFrame(settings, 1.999).orbScale).toBeCloseTo(0.06, 2);
+    expect(endgameFrame(settings, 2.1)).toMatchObject({ phase: "bursting", finished: false });
+    expect(endgameFrame(settings, 4.75)).toMatchObject({ phase: "spreading", spread: 0.5 });
+    expect(endgameFrame(settings, 9)).toMatchObject({
+      phase: "frozen",
+      seconds: 9,
+      spread: 1,
+      settle: 1,
+      finished: true,
+    });
+    expect(endgameFrame(settings, 999)).toEqual(endgameFrame(settings, ENDGAME_SEQUENCE.duration));
+  });
+  it("uses one sequence with only the spared hex changing by world", () => {
+    const blitz = readEndgameSettings("?spires=awaken&busy=1");
+    const frontier = readEndgameSettings("?spires=awaken&busy=1&gameMode=frontier");
     expect(frontier).toEqual({ ...blitz, spared: "realm" });
     expect(createEndgameFixture(frontier)).toEqual(createEndgameFixture(blitz));
-    const fixture = createEndgameFixture(blitz);
-    expect(fixture.request.cells).toHaveLength(1008);
-    expect(fixture.realms).toHaveLength(25);
-    expect(fixture.request.cells.filter((c) => !c.explored).map(({ col, row }) => ({ col, row }))).toEqual(
-      fixture.spires,
-    );
   });
-});
-
-it("keeps the shipped control on its existing two-second frost without spire awakening", () => {
-  const settings = readEndgameSettings("?shipped=1");
-  expect(endgameFrame(settings, null)).toEqual({
-    phase: "live",
-    seconds: 0,
-    emergence: 0,
-    spread: 0,
-    settle: 0,
-    finished: false,
+  it.each([false, true])(
+    "preserves the biome and surface at both spire sites for either entrance (busy=%s)",
+    (busy) => {
+      const appeared = createEndgameFixture({ ...settings, busy });
+      const discovered = createEndgameFixture({ ...settings, busy, spires: "awaken" });
+      expect(appeared.request).toEqual(discovered.request);
+      expect(appeared.request.cells).toHaveLength(busy ? 1008 : 320);
+      const spireCells = appeared.spires.map(
+        (p) => appeared.request.cells.find((c) => c.col === p.col && c.row === p.row)!,
+      );
+      expect(spireCells.every((c) => c.explored && c.biome !== null && c.surfacePresentation === undefined)).toBe(true);
+      if (!busy)
+        expect(spireCells.map((c) => c.biome)).toEqual([BiomeType.TemperateDesert, BiomeType.TropicalSeasonalForest]);
+      const sites = [...appeared.realms, ...appeared.spires];
+      expect(new Set(sites.map((p) => `${p.col}:${p.row}`)).size).toBe(sites.length);
+    },
+  );
+  it("keeps the shipped control on its existing two-second frost", () => {
+    const shipped = readEndgameSettings("?shipped=1");
+    expect(endgameFrame(shipped, null)).toMatchObject({ phase: "live", spread: 0, finished: false });
+    expect(endgameFrame(shipped, 1)).toMatchObject({ phase: "spreading", spread: 0, settle: 0.5, finished: false });
+    expect(endgameFrame(shipped, 2)).toMatchObject({ phase: "frozen", spread: 0, settle: 1, finished: true });
   });
-  expect(endgameFrame(settings, 1)).toEqual({
-    phase: "spreading",
-    seconds: 1,
-    emergence: 0,
-    spread: 0,
-    settle: 0.5,
-    finished: false,
-  });
-  expect(endgameFrame(settings, 2)).toEqual({
-    phase: "frozen",
-    seconds: 2,
-    emergence: 0,
-    spread: 0,
-    settle: 1,
-    finished: true,
-  });
-});
-
-it.each([false, true])("keeps every realm and spire on a distinct fixture hex (busy=%s)", (busy) => {
-  for (const spires of ["awaken", "rise"] as const) {
-    const fixture = createEndgameFixture({ variation: "surge", spared: "none", spires, busy });
-    const sites = [...fixture.realms, ...fixture.spires];
-    expect(new Set(sites.map((p) => `${p.col}:${p.row}`)).size).toBe(sites.length);
-  }
 });

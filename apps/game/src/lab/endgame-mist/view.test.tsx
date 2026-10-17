@@ -41,12 +41,14 @@ it("mounts one renderer under development remount, opens Results during the effe
   await act(async () =>
     root.render(
       <StrictMode>
-        <MemoryRouter initialEntries={["/lab/endgame?variation=tide"]}>
+        <MemoryRouter initialEntries={["/lab/endgame"]}>
           <EndgameMistLabView />
         </MemoryRouter>
       </StrictMode>,
     ),
   );
+  expect(host.querySelector('[aria-label="Sequence"]')).toBeNull();
+  expect(host.querySelector("h1")?.textContent).toBe("Fractured veil");
   expect(renderer.mount).not.toHaveBeenCalled();
   expect(frames.size).toBe(1);
   await act(async () => {

@@ -13,15 +13,13 @@ const base = arg("--base-url", null);
 const port = arg("--port", "4199");
 const mode = arg("--mode", "gallery");
 const output = resolve(arg("--out", ".context/endgame-study-" + Date.now()));
-const selected = arg("--variation", "all");
 const entrance = arg("--spires", null);
-if (entrance !== null && entrance !== "awaken" && entrance !== "rise") throw new Error("Unknown spire entrance");
+if (entrance !== null && entrance !== "awaken" && entrance !== "materialise") throw new Error("Unknown spire entrance");
 const iterations = Number(arg("--iterations", "3"));
 const app = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const urlBase = base ?? "https://127.0.0.1:" + port;
-const choices = { surge: 7, tide: 11, fracture: 9 };
+const duration = 9;
 if (!["gallery", "cost"].includes(mode)) throw new Error("Mode must be gallery or cost");
-if (selected !== "all" && !(selected in choices)) throw new Error("Unknown variation");
 if (!Number.isInteger(iterations) || iterations < 1 || iterations > 5)
   throw new Error("Iterations must be from 1 to 5");
 mkdirSync(output, { recursive: false });
@@ -91,38 +89,63 @@ function waitUntilFrozen(browser, duration) {
     browser.run(["wait", "200"]);
   }
 }
-function gallery(browser, variation, world) {
-  const spires = entrance ?? (world === "frontier" ? "rise" : "awaken");
-  const url = urlBase + "/lab/endgame?variation=" + variation + "&gameMode=" + world + "&spires=" + spires;
+function seek(browser, seconds) {
+  browser.run(["focus", "input[aria-label='Sequence position']"]);
+  browser.press("Home");
+  const steps = Math.round(seconds / 0.05);
+  if (steps) browser.run(["batch", ...Array(steps).fill("press ArrowRight")]);
+  browser.run(["wait", "150"]);
+  check(Math.abs(snapshot(browser).endgame.seconds - seconds) < 0.01, "Scrubber did not seek to requested time");
+}
+function gallery(browser, world, spires) {
+  const url = urlBase + "/lab/endgame?gameMode=" + world + "&spires=" + spires;
   const adapter = openScenario(browser, url);
-  const name = variation + "-" + world + "-" + spires;
-  const before = capture(browser, name + "-shipped");
+  const name = "fracture-" + world + "-" + spires;
+  const before = capture(browser, name + "-before");
   check(before.endgame.phase === "live" && before.endgame.mistDraws === 0, "Effect ran before end");
   let recording = false;
   try {
     browser.run(["record", "start", join(output, name + ".webm"), "--fps", "12"]);
     recording = true;
     browser.click("End game preview");
-    browser.run(["wait", "550"]);
-    const awakening = capture(browser, name + "-awakening");
-    browser.run(["wait", String(choices[variation] * 350)]);
-    const spreading = capture(browser, name + "-spreading");
-    waitUntilFrozen(browser, choices[variation]);
+    waitUntilFrozen(browser, duration);
     const frozen = capture(browser, name + "-frozen");
     browser.run(["record", "stop"]);
     recording = false;
-    browser.click("Shipped / reset");
+    browser.click("Inspect orb");
+    browser.click("Reset map");
+    capture(browser, name + "-orb-before");
+    browser.run(["record", "start", join(output, name + "-orb.webm"), "--fps", "12"]);
+    recording = true;
+    browser.click("End game preview");
+    waitUntilFrozen(browser, duration);
+    browser.run(["record", "stop"]);
+    recording = false;
+    const stages = {};
+    for (const [stage, seconds] of Object.entries({
+      materialising: 0.4,
+      singularity: 1,
+      contracted: 1.95,
+      burst: 2.15,
+      spreading: 4.75,
+      frozen: 9,
+    })) {
+      seek(browser, seconds);
+      stages[stage] = capture(browser, name + "-orb-" + stage);
+    }
+    browser.click("Whole map");
+    browser.click("Reset map");
     browser.click("End game preview");
     browser.run(["wait", "300"]);
     browser.click("See the results");
     check(
       browser.read('JSON.stringify(!!document.querySelector("[aria-label=\\"Results fixture\\"]"))'),
-      "Results did not open during awakening",
+      "Results did not open during materialisation",
     );
     const results = capture(browser, name + "-results");
     check(results.endgame.finished, "Results did not finish the cosmetic sequence");
     browser.click("Back to the frozen map");
-    browser.click("Shipped / reset");
+    browser.click("Reset map");
     browser.click("End game preview");
     browser.press("Escape");
     check(snapshot(browser).endgame.finished, "Escape did not skip");
@@ -132,13 +155,11 @@ function gallery(browser, variation, world) {
       mode: "gallery",
       url,
       adapter,
-      variation,
       world,
       spires,
       before,
-      awakening,
-      spreading,
       frozen,
+      stages,
       results,
       escapeSkipped: true,
       errors,
@@ -147,19 +168,16 @@ function gallery(browser, variation, world) {
     if (recording) browser.run(["record", "stop"], { allowFailure: true });
   }
 }
-const sample = (browser, count) =>
+const sample = (browser, count, includeBurst = false) =>
   browser.read(
-    "(async()=>{const values=[];let previous=await new Promise(requestAnimationFrame);for(let i=0;i<" +
+    "(async()=>{const values=[];let burstSnapshot=null;let previous=await new Promise(requestAnimationFrame);for(let i=0;i<" +
       count +
-      ";i++){const now=await new Promise(requestAnimationFrame);values.push(now-previous);previous=now;}return JSON.stringify({intervals:values,snapshot:window.__terrainVerification.getSnapshot()});})()",
+      ";i++){const now=await new Promise(requestAnimationFrame);values.push(now-previous);previous=now;if(i===145 && " +
+      includeBurst +
+      ")burstSnapshot=window.__terrainVerification.getSnapshot();}return JSON.stringify({intervals:values,burstSnapshot,snapshot:window.__terrainVerification.getSnapshot()});})()",
   );
-function cost(browser, variation, rendererMode, iteration) {
-  const url =
-    urlBase +
-    "/lab/endgame?variation=" +
-    variation +
-    "&capture=1&gameMode=blitz&spires=awaken&busy=1&rendererMode=" +
-    rendererMode;
+function cost(browser, rendererMode, iteration) {
+  const url = urlBase + "/lab/endgame?capture=1&gameMode=blitz&spires=awaken&busy=1&rendererMode=" + rendererMode;
   const adapter = openScenario(browser, url + "&shipped=1");
   const drawingBuffer = browser.read(
     'JSON.stringify((()=>{const c=document.querySelector("canvas");return {width:c.width,height:c.height,viewportWidth:innerWidth,viewportHeight:innerHeight,dpr:devicePixelRatio};})())',
@@ -194,18 +212,18 @@ function cost(browser, variation, rendererMode, iteration) {
     "Renderer mismatch",
   );
   browser.click("End game preview");
-  const active = sample(browser, Math.floor((choices[variation] - 0.5) * 60));
-  waitUntilFrozen(browser, choices[variation]);
+  const active = sample(browser, Math.floor((duration - 0.5) * 60), true);
+  check(active.burstSnapshot?.endgame.burstDraws === 2, "Active sample missed the orb burst");
+  waitUntilFrozen(browser, duration);
   browser.run(["wait", "1500"]);
   const frozen = sample(browser, 120);
   const loadAfter = loadavg();
   check(loadAfter[0] <= 12, "Shared machine load exceeded 12");
   const errors = browser.run(["errors"]);
   check(!errors.trim(), errors);
-  capture(browser, "cost-" + variation + "-" + rendererMode + "-" + iteration);
+  capture(browser, "cost-fracture-" + rendererMode + "-" + iteration);
   records.push({
     mode: "cost",
-    variation,
     rendererMode,
     iteration,
     url,
@@ -240,18 +258,18 @@ try {
       await pause(200);
     }
   }
-  const variations = selected === "all" ? Object.keys(choices) : [selected];
-  for (const variation of variations) {
-    const scenarios = mode === "gallery" ? ["blitz", "frontier"] : ["webgpu-auto", "webgpu-force-webgl"];
-    for (const scenario of scenarios)
+  const scenarios = mode === "gallery" ? ["blitz", "frontier"] : ["webgpu-auto", "webgpu-force-webgl"];
+  for (const scenario of scenarios) {
+    const entrances = mode === "gallery" ? (entrance ? [entrance] : ["materialise", "awaken"]) : ["awaken"];
+    for (const spires of entrances)
       for (let i = 0; i < (mode === "gallery" ? 1 : iterations); i++) {
         await pause(0);
         check(!cancelled, "Cancelled");
         const profile = mkdtempSync(join(tmpdir(), "endgame-study-"));
         const browser = createBrowserSession("endgame-" + Date.now().toString(36), { profile, headed: false });
         try {
-          if (mode === "gallery") gallery(browser, variation, scenario);
-          else cost(browser, variation, scenario, i + 1);
+          if (mode === "gallery") gallery(browser, scenario, spires);
+          else cost(browser, scenario, i + 1);
         } finally {
           browser.close();
           rmSync(profile, { recursive: true, force: true });
