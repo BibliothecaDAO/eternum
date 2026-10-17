@@ -25,6 +25,10 @@ const push = (kind: FeedNoticeKind, title: string, options?: NoticeOptions): str
  */
 export const toast = Object.assign((title: string, options?: NoticeOptions) => push("info", title, options), {
   info: (title: string, options?: NoticeOptions) => push("info", title, options),
+  /**
+   * Success the player cannot see otherwise. Never a chain action's: its transaction row tells it, then its story, and
+   * a notice beside them would tell the one action twice.
+   */
   success: (title: string, options?: NoticeOptions) => push("success", title, options),
   error: (title: string, options?: NoticeOptions) => push("error", title, options),
   /**

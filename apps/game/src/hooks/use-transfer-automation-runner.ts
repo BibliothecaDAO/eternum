@@ -122,10 +122,6 @@ export const useTransferAutomationRunner = () => {
               recordPlannedDebits(submitted.sourceId, submitted.transfers, plannedDebits);
               update(submitted.entryId, { lastRunAt: submitted.submittedAt });
               scheduleNext(submitted.entryId, nowMs);
-              const summary = submitted.transfers
-                .map((item) => `${item.humanAmount.toLocaleString()} ${ResourcesIds[item.resourceId]}`)
-                .join(", ");
-              toast.success(`Transfer scheduled: ${summary}`);
             },
           },
           async (submit) => {

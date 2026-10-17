@@ -372,7 +372,6 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         wonder_id: selectedWonderId,
       });
 
-      toast.success("Devotion updated.");
       closeModal();
     } catch (error) {
       toast.failed(error, "Failed to update devotion.");

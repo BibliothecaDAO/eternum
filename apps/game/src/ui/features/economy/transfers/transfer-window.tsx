@@ -410,10 +410,8 @@ const useSend = () => {
   return { run, busy };
 };
 
-/** One notice for what landed, and one for each shipment that did not, saying whether Send can try it again. */
+/** One notice for each shipment that did not land, saying whether Send can try it again; a sent one is its own row. */
 const tellOutcomes = (outcomes: ShipmentOutcome[]) => {
-  const landed = outcomes.filter((outcome) => outcome.status === "applied");
-  if (landed.length > 0) toast.success(landed.length > 1 ? "Transfers sent." : "Transfer sent.");
   for (const outcome of outcomes) {
     const to = outcome.shipment.destinationName;
     if (outcome.status === "refused")

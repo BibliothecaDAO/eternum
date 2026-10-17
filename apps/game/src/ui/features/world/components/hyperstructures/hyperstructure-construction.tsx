@@ -99,13 +99,12 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
   );
   const canSubmit = canContribute && source && contributions.length > 0 && requirements.every((row) => row.valid);
 
-  const submit = async (action: () => Promise<unknown>, message: string) => {
+  const submit = async (action: () => Promise<unknown>) => {
     if (!account || actor === 0n || pending) return;
     setPending(true);
     try {
       await action();
       setAmounts({});
-      toast.success(message);
     } catch (error) {
       toast.failed(error, "Construction action failed");
     } finally {
@@ -115,30 +114,22 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
 
   const initialize = () => {
     if (!owned) return;
-    return submit(
-      () => systemCalls.initialize_hyperstructure({ signer: account, hyperstructure_id: entityId }),
-      "Hyperstructure construction started",
-    );
+    return submit(() => systemCalls.initialize_hyperstructure({ signer: account, hyperstructure_id: entityId }));
   };
   const contribute = () => {
     if (!canSubmit || !source) return;
-    return submit(
-      () =>
-        systemCalls.contribute_to_construction({
-          signer: account,
-          hyperstructure_entity_id: entityId,
-          contributor_entity_id: source.entity_id,
-          contributions,
-        }),
-      "Construction resources contributed",
+    return submit(() =>
+      systemCalls.contribute_to_construction({
+        signer: account,
+        hyperstructure_entity_id: entityId,
+        contributor_entity_id: source.entity_id,
+        contributions,
+      }),
     );
   };
   const setAccess = (access: number) => {
     if (!owned) return;
-    return submit(
-      () => systemCalls.set_access({ signer: account, hyperstructure_entity_id: entityId, access }),
-      "Construction access updated",
-    );
+    return submit(() => systemCalls.set_access({ signer: account, hyperstructure_entity_id: entityId, access }));
   };
 
   return (

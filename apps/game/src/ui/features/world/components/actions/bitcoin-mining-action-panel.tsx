@@ -60,7 +60,6 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
         labor_amount: parsed,
       });
       setAmount("");
-      toast.success("Labor contributed to the current mining phase");
     } catch (error) {
       toast.failed(error, "Labor contribution failed");
     } finally {
@@ -86,7 +85,6 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
           mine_ids: [structureEntityId],
         });
       });
-      toast.success("Ready mining phases settled");
     } catch (error) {
       toast.failed(error, "Mining phase settlement failed");
     } finally {

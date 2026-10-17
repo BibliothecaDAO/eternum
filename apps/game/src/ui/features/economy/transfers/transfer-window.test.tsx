@@ -206,6 +206,8 @@ describe("the transfer window's amounts", () => {
     await type("Wheat to Alpha", "1.5");
     await send();
     expect(world.notices.failed).not.toHaveBeenCalled();
+    // A landed send is told once, by its own row in Events (then its story), never also by a notice.
+    expect(world.notices.success).not.toHaveBeenCalled();
     expect(wheatSent()).toEqual([
       [A, 1],
       [B, 9],

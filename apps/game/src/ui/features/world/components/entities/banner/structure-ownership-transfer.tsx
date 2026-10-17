@@ -55,7 +55,6 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
       });
       setConfirming(false);
       setRecipient("");
-      toast.success("Structure ownership transferred");
     } catch (error) {
       toast.failed(error, "Could not transfer ownership");
     } finally {

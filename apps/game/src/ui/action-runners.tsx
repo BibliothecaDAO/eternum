@@ -5,7 +5,6 @@ import {
   AutomationSignerUnavailable,
   AutomationPending,
 } from "@/ui/features/infrastructure/automation/model/automation-runner";
-import { structureMapPosition } from "@bibliothecadao/eternum";
 import { resolveResourceArrivalIndicators } from "@/ui/utils/resource-arrival-indicators";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -187,8 +186,6 @@ const ResourceArrivalAutoClaim = () => {
   return null;
 };
 
-type ProvisionableRealm = RealmProvisionCandidate & { location: { x: number; y: number } };
-
 const AutoProvisionRealms = () => {
   const client = requireActiveGameClient();
   const {
@@ -200,7 +197,7 @@ const AutoProvisionRealms = () => {
   useEffect(() => {
     if (!isBlitzWorld || !account || accountAddress() === null) return;
 
-    const readRealms = (): ProvisionableRealm[] =>
+    const readRealms = (): RealmProvisionCandidate[] =>
       readFactView(store, playerStructuresView)
         .filter((structure) => structure.category === StructureType.Realm)
         .flatMap((structure) => {
@@ -208,8 +205,7 @@ const AutoProvisionRealms = () => {
             game_id: configManager.getActiveGameId(),
             entity_id: structure.entityId,
           });
-          const location = structureMapPosition(store, structure.structure);
-          if (!buildings || !location) return [];
+          if (!buildings) return [];
           const packedCounts = [buildings.packed_counts_1, buildings.packed_counts_2, buildings.packed_counts_3].map(
             (count) => BigInt(count),
           );
@@ -218,7 +214,6 @@ const AutoProvisionRealms = () => {
               entityId: safeInteger(structure.entityId),
               name: getStructureName(structure.structure, getIsBlitz()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
-              location,
             },
           ];
         });
@@ -243,9 +238,6 @@ const AutoProvisionRealms = () => {
       report: {
         provisioned: (realms) => {
           toast.dismiss(provisionBatchNoticeId(realms));
-          realms.forEach((realm) =>
-            toast.success(`Provisioned ${realm.name}`, { location: (realm as ProvisionableRealm).location }),
-          );
         },
         failed: (realms, error, retry) =>
           realms.forEach((realm) =>

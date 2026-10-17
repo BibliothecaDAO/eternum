@@ -43,7 +43,6 @@ export const GuardDismissal = ({
     setPending(true);
     try {
       await systemCalls.guard_delete({ signer: account, for_structure_id: structureId, slot });
-      toast.success("Guard dismissed");
       onDismissed();
     } catch (error) {
       toast.failed(error, "Could not dismiss guard");
