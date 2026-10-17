@@ -1,8 +1,11 @@
 import {
   BuildingType,
   BuildingTypeToString,
+  GUARD_SLOT_NAMES,
   GuardSlot,
+  getLevelName,
   RESOURCE_PRECISION,
+  RealmLevels,
   relicChestDelivery,
   relicChestName,
   relicChestPack,
@@ -11,7 +14,7 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
-import { siteKindOf, structureMapPosition } from "../utils/expeditions";
+import { siteKindOf } from "../utils/expeditions";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
@@ -185,37 +188,22 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord = formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
-    const realm = describeStructureDetails(event, components) ?? "Realm";
     return {
-      title: "Realm founded",
-      description:
-        joinPieces([realm, ownerLabel ? `Settled by ${ownerLabel}` : undefined, coord ? `at ${coord}` : undefined]) ??
-        "New realm established on the map.",
+      title: `${describeStructureName(event.entityId, components) ?? "A realm"} founded`,
+      description: joinPieces([ownerLabel ? `Settled by ${ownerLabel}` : undefined, coord ? `at ${coord}` : undefined]),
       icon: "realm",
     };
   },
-  BuildingPlacementStory: (event, payload, components) => {
-    const status = describeBuildingStatus(payload);
-    const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
-    const title =
-      status === "Constructed" || status === "Demolished"
-        ? `${status}: ${categoryLabel}`
-        : `${categoryLabel} ${status.toLowerCase()}`;
-    return {
-      title,
-      description: joinPieces([describeStructureDetails(event, components, payload.category), status]),
-      icon: "building",
-    };
-  },
+  BuildingPlacementStory: (event, payload, components) => ({
+    title: `${formatBuildingCategory(payload.category) ?? "Building"} ${describeBuildingStatus(payload)} at ${subjectOf(event.entityId, components)}`,
+    icon: "building",
+  }),
+  // Paid in the same transaction as the building it pays for: the same action, told by the same title.
   BuildingPaymentStory: (event, payload, components) => {
-    const categoryLabel = formatBuildingCategory(payload.category) ?? "Structure";
     const cost = formatResourceList(payload.cost);
     return {
-      title: `Building Constructed: ${categoryLabel}`,
-      description: joinPieces([
-        describeStructureDetails(event, components, payload.category),
-        cost ? `Cost: ${cost}` : undefined,
-      ]),
+      title: `${formatBuildingCategory(payload.category) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
+      description: cost ? `Paid ${cost}` : undefined,
       icon: "building",
     };
   },
@@ -223,34 +211,17 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const receivedId = toNumber(payload.received_resource_type);
     const amount = formatResourceAmount(payload.received_amount);
     const cost = formatResourceList(payload.cost);
-    const structureSummary = describeStructureDetails(event, components);
-    const resourceName = receivedId !== null ? getResourceName(receivedId) : undefined;
-    const outputLine = resourceName
-      ? `Output: ${resourceName}${amount ? ` ×${amount}` : ""}`
-      : amount
-        ? `Output: ×${amount}`
-        : undefined;
-    const inputsLine = cost ? `Inputs consumed: ${cost}` : undefined;
+    const resourceName = receivedId !== null ? getResourceName(receivedId) : "Resource";
     return {
-      title: resourceName ? `Production started: ${resourceName}` : "Production started",
-      description: joinPieces([structureSummary, outputLine, inputsLine]),
+      title: `${resourceName} production started at ${subjectOf(event.entityId, components)}`,
+      description: joinPieces([amount ? `${amount} ${resourceName}` : undefined, cost ? `for ${cost}` : undefined]),
       icon: "production",
     };
   },
   StructureLevelUpStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components);
-    const newLevelNumeric = toNumber(payload.new_level);
-    const previousLevel = newLevelNumeric !== null ? Math.max(newLevelNumeric - 1, 0) : null;
-    const levelLabel = newLevelNumeric !== null ? newLevelNumeric.toLocaleString() : undefined;
+    const level = toNumber(payload.new_level);
     return {
-      title: levelLabel ? `Structure reached level ${levelLabel}` : "Structure leveled up",
-      description:
-        joinPieces([
-          structureSummary,
-          previousLevel !== null && levelLabel
-            ? `Progression: ${previousLevel.toLocaleString()} → ${levelLabel}`
-            : undefined,
-        ]) ?? "Structure advanced to a higher tier.",
+      title: `${subjectOf(event.entityId, components)} became ${level !== null ? describeLevel(level) : "stronger"}`,
       icon: "building",
     };
   },
@@ -286,9 +257,9 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "battle",
     };
   },
-  RaidEvent: (_, payload) => ({
-    title: payload.success ? "Raid successful" : "Raid repelled",
-    description: payload.success ? formatResourceList(payload.requested_loot) : "No resources captured.",
+  RaidEvent: (_, payload, components) => ({
+    title: `Raid on ${subjectOf(payload.structure_id, components)} ${payload.success ? "succeeded" : "repelled"}`,
+    description: payload.success ? formatResourceList(payload.requested_loot) : "Nothing taken",
     icon: "battle",
   }),
   BankLiquidity: (_, payload) => ({
@@ -296,123 +267,55 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: `${getResourceName(Number(payload.resource_type))} / Lords`,
     icon: "resource",
   }),
-  ResourceTransferStory: (event, payload, components, resolvePlayerName) => {
-    const resourcesText = formatResourceList(payload.resources);
-    const transferType = formatEnum(payload.transfer_type);
-    const route = formatRoute(payload.from_entity_id, payload.to_entity_id, components);
-    const sender = nameOwner(
-      payload.from_entity_owner_address ?? payload.from_entity_id,
-      components,
-      resolvePlayerName,
-    );
-    const recipient = nameOwner(payload.to_entity_owner_address ?? payload.to_entity_id, components, resolvePlayerName);
+  ResourceTransferStory: (_event, payload, components) => {
+    const destination = subjectOf(payload.to_entity_id, components);
     const travelTime = formatTravelTime(payload.travel_time);
-    const minted = payload.is_mint === true ? "Minted at destination" : undefined;
-
     return {
-      title: payload.is_mint === true ? "Resources minted" : "Resources transferred",
+      title: payload.is_mint === true ? `Resources minted at ${destination}` : `Resources sent to ${destination}`,
       description: joinPieces([
-        route ? `Route: ${route}` : undefined,
-        transferType ? `Courier: ${transferType}` : undefined,
-        sender ? `Sender: ${sender}` : undefined,
-        recipient ? `Recipient: ${recipient}` : undefined,
-        travelTime ? `Travel time: ${travelTime}` : undefined,
-        minted,
-        resourcesText ? `Payload: ${resourcesText}` : undefined,
+        payload.is_mint === true ? undefined : `from ${subjectOf(payload.from_entity_id, components)}`,
+        formatResourceList(payload.resources),
+        travelTime && travelTime !== "Instant" ? `${travelTime} on the road` : undefined,
       ]),
       icon: "resource",
     };
   },
-  ResourceBurnStory: (_, payload) => {
-    const burned = formatResourceList(payload.resources);
-    return {
-      title: "Resources burned",
-      description: burned ? `Consumed: ${burned}` : "Resources consumed.",
-      icon: "resource",
-    };
-  },
-  ResourceReceiveArrivalStory: (_, payload) => {
-    const delivered = formatResourceList(payload.resources);
-    return {
-      title: "Resources arrived",
-      description: delivered ? `Delivery: ${delivered}` : "Incoming resources delivered.",
-      icon: "resource",
-    };
-  },
-  GuardAddStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
-    const slotLabel = formatSlotLabel(payload.slot);
-    const troopCategory = formatEnum(payload.category);
-    const troopTier = formatEnum(payload.tier);
-    const troopDescriptor = [troopCategory, troopTier].filter(Boolean).join(" ");
-    const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-
-    return {
-      title: "Garrison reinforced",
-      description: joinPieces([
-        structureSummary,
-        slotLabel ? `Assignment: ${slotLabel}` : undefined,
-        troopDescriptor ? `Unit: ${troopDescriptor}` : undefined,
-        amount ? `Strength: +${amount}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  GuardDeleteStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
-    const slotLabel = formatSlotLabel(payload.slot);
-    return {
-      title: "Guard dismissed",
-      description: joinPieces([structureSummary, slotLabel ? `Removed from ${slotLabel}` : undefined]),
-      icon: "troop",
-    };
-  },
-  ExplorerCreateStory: (event, payload, components) => {
-    const structureSummary = describeStructureDetails(event, components, undefined, payload.structure_id);
-    const troopCategory = formatEnum(payload.category);
-    const troopTier = formatEnum(payload.tier);
-    const troopDescriptor = [troopCategory, troopTier].filter(Boolean).join(" ");
-    const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-    const direction = formatDirection(payload.spawn_direction);
-
-    return {
-      title: "Explorer enlisted",
-      description: joinPieces([
-        structureSummary,
-        troopDescriptor ? `Unit: ${troopDescriptor}` : undefined,
-        amount ? `Strength: ${amount}` : undefined,
-        direction ? `Spawn: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  ExplorerAddStory: (_, payload, components) => {
-    const explorerRef = describeExplorer(payload.explorer_id, components);
-    const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
-    const direction = formatDirection(payload.home_direction);
-    return {
-      title: "Explorer reinforced",
-      description: joinPieces([
-        `Explorer: ${explorerRef}`,
-        amount ? `Reinforcements: +${amount}` : undefined,
-        direction ? `Home route: ${direction}` : undefined,
-      ]),
-      icon: "troop",
-    };
-  },
-  ExplorerDeleteStory: (_, payload, components) => {
-    return {
-      title: "Explorer retired",
-      description: `${describeExplorer(payload.explorer_id, components)} disbanded.`,
-      icon: "troop",
-    };
-  },
+  ResourceBurnStory: (event, payload, components) => ({
+    title: `Resources spent at ${subjectOf(event.entityId, components)}`,
+    description: formatResourceList(payload.resources),
+    icon: "resource",
+  }),
+  ResourceReceiveArrivalStory: (event, payload, components) => ({
+    title: `Resources arrived at ${subjectOf(event.entityId, components)}`,
+    description: formatResourceList(payload.resources),
+    icon: "resource",
+  }),
+  GuardAddStory: (event, payload, components) => ({
+    title: `${subjectOf(payload.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(payload.slot) ?? "guard"} reinforced`,
+    description: describeTroops(payload, "+"),
+    icon: "troop",
+  }),
+  GuardDeleteStory: (event, payload, components) => ({
+    title: `${subjectOf(payload.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(payload.slot) ?? "guard"} dismissed`,
+    icon: "troop",
+  }),
+  ExplorerCreateStory: (event, payload, components) => ({
+    title: `Army raised at ${subjectOf(payload.structure_id ?? event.entityId, components)}`,
+    description: describeTroops(payload, ""),
+    icon: "troop",
+  }),
+  ExplorerAddStory: (_, payload, components) => ({
+    title: `${describeExplorer(payload.explorer_id, components)} reinforced`,
+    description: describeTroops(payload, "+"),
+    icon: "troop",
+  }),
+  ExplorerDeleteStory: (_, payload, components) => ({
+    title: `${describeExplorer(payload.explorer_id, components)} disbanded`,
+    icon: "troop",
+  }),
   TroopsTransferred: (event, payload, components) => ({
-    title: "Troops reassigned",
-    description: joinPieces([
-      `Route: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
-      `Transferred: ${formatResourceAmount(payload.amount)}`,
-    ]),
+    title: `Troops moved: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
+    description: `${formatResourceAmount(payload.amount) ?? "Some"} troops`,
     icon: "troop",
   }),
 };
@@ -446,12 +349,29 @@ function formatBuildingCategory(value: unknown): string | undefined {
 }
 
 /** What each change a placement story carries (the contract's BuildingChange) reads as. */
-const BUILDING_STATUS: Record<string, "Constructed" | "Demolished" | "Paused" | "Resumed"> = {
-  Created: "Constructed",
-  Destroyed: "Demolished",
-  Paused: "Paused",
-  Resumed: "Resumed",
+const BUILDING_STATUS: Record<string, "built" | "demolished" | "paused" | "resumed"> = {
+  Created: "built",
+  Destroyed: "demolished",
+  Paused: "paused",
+  Resumed: "resumed",
 };
+
+/** What a structure is called in a story: its shared name, or "a structure" once the store no longer holds it. */
+function subjectOf(structureId: unknown, components?: NativeFactStore): string {
+  return describeStructureName(structureId, components) ?? "a structure";
+}
+
+/** A realm's level by its name ("a City"); a level past the realm ladder by its number. */
+function describeLevel(level: number): string {
+  return level in RealmLevels ? `a ${getLevelName(level as RealmLevels)}` : `level ${level.toLocaleString()}`;
+}
+
+/** Troops a story moved, as a player reads them: "+500 Knight T1". */
+function describeTroops(payload: Record<string, unknown>, sign: "+" | ""): string | undefined {
+  const amount = formatResourceAmount(payload.amount) ?? formatNumber(payload.amount ?? null) ?? undefined;
+  const troops = [formatEnum(payload.category), formatEnum(payload.tier)].filter(Boolean).join(" ");
+  return amount ? `${sign}${amount}${troops ? ` ${troops}` : ""}` : troops || undefined;
+}
 
 function describeBuildingStatus(payload: Record<string, unknown>) {
   const status = BUILDING_STATUS[formatEnum(payload.change) ?? ""];
@@ -465,30 +385,7 @@ function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?
   if (army.Explorer !== undefined) return describeExplorer(army.Explorer, components);
   if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
   const guard = army.Guard as Record<string, unknown>;
-  const structure = describeStructureDetails(event, components, undefined, guard.structure_id) ?? "Structure";
-  return `${structure} · ${formatSlotLabel(guard.slot)}`;
-}
-
-function describeStructureDetails(
-  event: StoryEventSystemUpdate,
-  components?: NativeFactStore,
-  fallbackCategory?: unknown,
-  structureOverride?: unknown,
-): string | undefined {
-  const targetId = structureOverride ?? event.entityId;
-
-  if (!components || targetId === null || targetId === undefined) {
-    return formatBuildingCategory(fallbackCategory);
-  }
-
-  const structure = readStructure(targetId, components);
-  if (!structure) return formatBuildingCategory(fallbackCategory);
-
-  const name = getStructureName(structure, getIsBlitz()).name;
-  const level = toNumber(structure.base?.level);
-  const coord = formatCoord(structureMapPosition(components, structure));
-
-  return joinPieces([name, level !== null ? `Level ${level}` : undefined, coord ? `at ${coord}` : undefined]);
+  return `${subjectOf(guard.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(guard.slot) ?? "guard"}`;
 }
 
 type StructureRow = NonNullable<ReturnType<typeof readStructure>>;
@@ -773,15 +670,9 @@ function formatSlotLabel(value: unknown): string | undefined {
   const label = formatEnum(value);
   const slot = numeric ?? (label ? GuardSlot[label as keyof typeof GuardSlot] : undefined);
   if (slot === undefined) return undefined;
-  const name = GuardSlot[slot as GuardSlot];
+  const name = GUARD_SLOT_NAMES[slot as GuardSlot];
   if (name === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
   return name;
-}
-
-function formatDirection(value: unknown): string | undefined {
-  const label = formatEnum(value);
-  if (label) return label;
-  return undefined;
 }
 
 function formatTravelTime(seconds: unknown): string | undefined {
@@ -805,13 +696,6 @@ function formatTravelTime(seconds: unknown): string | undefined {
       : `${hours.toLocaleString()} hours ${minutes.toLocaleString()} minutes`;
   }
   return `${numeric.toLocaleString()} ticks`;
-}
-
-function formatRoute(fromEntity: unknown, toEntity: unknown, components?: NativeFactStore): string | undefined {
-  const fromRef = describeEntity(fromEntity, components);
-  const toRef = describeEntity(toEntity, components);
-  if (!fromRef || !toRef) return undefined;
-  return `${fromRef} → ${toRef}`;
 }
 
 /** An owner is an address (its registered name, else shortened) or an owning structure (its name). */

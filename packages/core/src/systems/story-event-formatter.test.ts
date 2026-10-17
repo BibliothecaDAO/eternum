@@ -137,11 +137,11 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
 });
 
 it.each([
-  [0, "Delta", "Delta"],
-  [1, "Gamma", "Gamma"],
-  [2, "Beta", "Beta"],
-  [3, "Alpha", "Alpha"],
-])("renders slot %i consistently for numeric and named stories", (slot, name, label) => {
+  [0, "Delta", "Inner Wall"],
+  [1, "Gamma", "Castle Wall"],
+  [2, "Beta", "Outer Wall"],
+  [3, "Alpha", "Watchtower"],
+])("names slot %i by its wall, for numeric and named stories alike", (slot, name, label) => {
   for (const value of [slot, name]) {
     const result = buildStoryEventPresentation(
       story("TroopsTransferred", {
@@ -150,8 +150,9 @@ it.each([
         amount: "0x77359400",
       }),
     );
-    expect(result.description).toContain(label);
-    expect(result.description).not.toContain("undefined");
+    expect(result.title).toContain(label);
+    expect(result.title).not.toContain(name);
+    expect(result.title).not.toContain("undefined");
   }
 });
 
@@ -309,12 +310,21 @@ describe("every story the chain can tell", () => {
     expect(presentation.title.length).toBeGreaterThan(0);
   });
 
+  // A battle's lines are parsed into its card (Attacker forces, Winner...); every other description reads as plain words.
+  it.each(Object.entries(SAMPLES).filter(([storyType]) => storyType !== "BattleEvent"))(
+    "tells %s without a debug label (Field: value)",
+    (storyType, payload) => {
+      const { description } = buildStoryEventPresentation(story(storyType, payload, 7));
+      expect(description ?? "").not.toMatch(/(^|· )[A-Z][a-z]+( [a-z]+)*: /);
+    },
+  );
+
   it("reads a building's placement from the change the story carries, never as an update", () => {
     const placed = (change: string) =>
       buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37, change }, 7)).title;
-    expect(placed("Created")).toMatch(/^Constructed: /);
-    expect(placed("Destroyed")).toMatch(/^Demolished: /);
-    expect(placed("Paused")).toMatch(/ paused$/);
+    expect(placed("Created")).toMatch(/ built at /);
+    expect(placed("Destroyed")).toMatch(/ demolished at /);
+    expect(placed("Paused")).toMatch(/ paused at /);
     expect(() => buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37 }, 7))).toThrow(
       "Incomplete building placement story",
     );
@@ -363,4 +373,37 @@ it("names a gone army's chest delivery without its names", () => {
     story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
   );
   expect(title).toBe("Produce pack: 3 relics to its realm");
+});
+
+describe("a story's subject", () => {
+  it("is named in its title, so a list of titles says which realm each line is about", () => {
+    const { store, setStructure } = buildStore();
+    setStructure(5, 1, 1);
+    const title = (storyType: string, payload: Record<string, unknown>) =>
+      buildStoryEventPresentation(story(storyType, payload, 5), store).title;
+    const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ founded$/, "");
+    expect(name).not.toMatch(/^A realm$|\d{6,}/);
+    expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe(`Resources arrived at ${name}`);
+    expect(title("StructureLevelUpStory", { new_level: 1 })).toBe(`${name} became a City`);
+    expect(title("BuildingPlacementStory", { coord: { x: 1, y: 1 }, category: 37, change: "Created" })).toMatch(
+      new RegExp(` built at ${name}$`),
+    );
+    expect(
+      title("GuardAddStory", { structure_id: 5, slot: 1, category: "Knight", tier: "T1", amount: "0x77359400" }),
+    ).toBe(`${name}'s Castle Wall reinforced`);
+  });
+
+  it("tells a building's placement and its payment, one action, by the same title", () => {
+    const { store, setStructure } = buildStore();
+    setStructure(5, 1, 1);
+    const placed = buildStoryEventPresentation(
+      story("BuildingPlacementStory", { coord: { x: 1, y: 1 }, category: 37, change: "Created" }, 5),
+      store,
+    );
+    const paid = buildStoryEventPresentation(
+      story("BuildingPaymentStory", { coord: { x: 1, y: 1 }, category: 37, cost: [] }, 5),
+      store,
+    );
+    expect(paid.title).toBe(placed.title);
+  });
 });
