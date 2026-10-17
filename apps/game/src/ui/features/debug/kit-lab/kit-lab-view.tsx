@@ -36,6 +36,7 @@ import { AreaDLab } from "./area-d-lab";
 import { DeployLab } from "./deploy-lab";
 import { IconLab } from "./icon-lab";
 import { TokensLab } from "./tokens-lab";
+import { ResourceIconsLab } from "./resource-icons-lab";
 import { Link } from "react-router-dom";
 
 import { HudLab } from "./hud-lab";
@@ -58,6 +59,7 @@ export const KitLabView = () => {
     <Routes>
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
+      <Route path="resource-icons" element={<ResourceIconsLab />} />
       <Route path="deploy" element={<DeployLab />} />
       <Route path="area-d" element={<AreaDLab />} />
       <Route path="panels" element={<PanelsLab />} />
@@ -78,6 +80,7 @@ const Components = () => {
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
         <Link to="/lab/kit/tokens">Design tokens</Link>
+        <Link to="/lab/kit/resource-icons">Resource icon review</Link>
         <Link to="/lab/kit/construction">Construction models</Link>
         <ClockSection />
         <StoresSection />

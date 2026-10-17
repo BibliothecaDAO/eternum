@@ -1,0 +1,172 @@
+{
+  "mithral-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The three separated pieces break the ingot silhouette; the central core is a small bright spot at 16 px."
+  },
+  "mithral-b": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The two broad crescents retain a cleaner horizontal gap at 16 px. Recommended over A."
+  },
+  "cold-iron-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The tall ore wedge breaks the ingot family, but its narrow shape is small in a chip."
+  },
+  "cold-iron-b": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The deep split reads as a U at 20 px and gives more width at 16 px. Recommended over A."
+  },
+  "ethereal-silica-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The curved glass has an open S outline at all tested sizes; separates from ice without relying on green. Recommended."
+  },
+  "ethereal-silica-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The green fan separates from ice, but joins the pointed crystal family. Less distinct across the full set than A."
+  },
+  "deep-crystal-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The dark cavity and pale geode rim survive 16 px, unlike the shipped cluster tips. Recommended."
+  },
+  "deep-crystal-b": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The horizontal geode separates from quartz but has less open cavity at 16 px than A."
+  },
+  "dragonhide-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The pointed single scale removes the log-shaped cylinder and matches the lore. Recommended."
+  },
+  "dragonhide-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The spread removes the round log end, but becomes a broad red-brown patch at 16 px."
+  },
+  "knight-t3-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The broad red fan persists above the steel head at 16 px and distinguishes the plain T2 helmet. Recommended."
+  },
+  "knight-t3-b": {
+    "status": "proposal",
+    "comparison": "similar",
+    "reason": "The enlarged tall plume remains close to the shipped silhouette; the fan gives a larger shape change."
+  },
+  "crossbowman-t2-a": {
+    "status": "proposal",
+    "comparison": "similar",
+    "reason": "A broader kettle brim changes too little of the shipped portrait at 16 px. Keep for comparison, not recommended."
+  },
+  "crossbowman-t2-b": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The raised crossbow creates a taller asymmetric outline while retaining a soldier holding it. Recommended."
+  },
+  "paladin-t2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The wide silver wings produce a broader helmet silhouette than the bare T1 and hooded T3. Recommended."
+  },
+  "paladin-t2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The crest and hammer distinguish the tier, but a hammer changes the weapon association. Prefer A."
+  },
+  "stamina-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "stamina-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "damage-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "damage-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "damage-reduction-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "damage-reduction-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "exploration-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "exploration-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "exploration-reward-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "exploration-reward-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "structure-damage-reduction-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "structure-damage-reduction-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "production-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "production-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "labor-production-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "labor-production-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  },
+  "troop-production-relic-2-a": {
+    "status": "proposal",
+    "comparison": "clearer",
+    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+  },
+  "troop-production-relic-2-b": {
+    "status": "proposal",
+    "comparison": "tradeoff",
+    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+  }
+}

@@ -1,0 +1,426 @@
+{
+  "base": "3f73b3d02af62085018e97bf6735a78e051d9e44",
+  "loreSource": "packages/types/src/constants/resources.ts; packages/types/src/constants/relics.ts",
+  "method": "Visual audit at 40, 20 and 16 CSS px; risk judgements, not measured player confusion rates.",
+  "proposals": [
+    {
+      "meaning": "mithral",
+      "against": [
+        "silver",
+        "cold-iron"
+      ],
+      "family": "Materials",
+      "risk": "High",
+      "shape": "The same two-bar stack as silver; pale blue only separates it by colour.",
+      "colourValue": "Blue-silver and white, both bright at chip size.",
+      "lore": "Lighter-than-air fragments held around a gravitational core.",
+      "options": [
+        {
+          "id": "mithral-a",
+          "label": "Floating triangle"
+        },
+        {
+          "id": "mithral-b",
+          "label": "Floating crescents"
+        }
+      ]
+    },
+    {
+      "meaning": "cold-iron",
+      "against": [
+        "silver",
+        "mithral"
+      ],
+      "family": "Materials",
+      "risk": "High",
+      "shape": "Single pale bar still reads as the same ingot family at 16 px.",
+      "colourValue": "Dark side loses area; the bright top dominates.",
+      "lore": "Chilled metallic ore with a thirst for warmth.",
+      "options": [
+        {
+          "id": "cold-iron-a",
+          "label": "Frosted wedge"
+        },
+        {
+          "id": "cold-iron-b",
+          "label": "Split ore"
+        }
+      ]
+    },
+    {
+      "meaning": "ethereal-silica",
+      "against": [
+        "true-ice",
+        "stone"
+      ],
+      "family": "Materials",
+      "risk": "High",
+      "shape": "Both silica and ice are compact many-sided pale chunks.",
+      "colourValue": "White/cyan high-value mass; fine refraction disappears.",
+      "lore": "Glass that bends light unnaturally.",
+      "options": [
+        {
+          "id": "ethereal-silica-a",
+          "label": "Twisted glass"
+        },
+        {
+          "id": "ethereal-silica-b",
+          "label": "Glass fan"
+        }
+      ]
+    },
+    {
+      "meaning": "deep-crystal",
+      "against": [
+        "twilight-quartz"
+      ],
+      "family": "Materials",
+      "risk": "Medium",
+      "shape": "Both are upright purple crystal clusters; the amber tips carry most of the difference.",
+      "colourValue": "Purple midtone body with tiny bright tips.",
+      "lore": "Crystal imprisoned inside a timeless geode.",
+      "options": [
+        {
+          "id": "deep-crystal-a",
+          "label": "Open geode"
+        },
+        {
+          "id": "deep-crystal-b",
+          "label": "Geode wedge"
+        }
+      ]
+    },
+    {
+      "meaning": "dragonhide",
+      "against": [
+        "wood",
+        "ironwood"
+      ],
+      "family": "Materials",
+      "risk": "High",
+      "shape": "The rolled hide becomes another diagonal cylinder with a bright round end.",
+      "colourValue": "Warm brown/red overlap; scales disappear at 16 px.",
+      "lore": "The resource lore describes a fallen dragon scale.",
+      "options": [
+        {
+          "id": "dragonhide-a",
+          "label": "Single scale"
+        },
+        {
+          "id": "dragonhide-b",
+          "label": "Spread scales"
+        }
+      ]
+    },
+    {
+      "meaning": "knight-t3",
+      "against": [
+        "knight-t1",
+        "knight-t2"
+      ],
+      "family": "Troops",
+      "risk": "Medium",
+      "shape": "T2 and T3 share a steel helmet and shoulder triangle; the plume is the main tier cue.",
+      "colourValue": "Red mantle exists in all tiers; steel highlights merge.",
+      "lore": "Keep a richer armoured knight, with a larger tier silhouette.",
+      "options": [
+        {
+          "id": "knight-t3-a",
+          "label": "Fan crest"
+        },
+        {
+          "id": "knight-t3-b",
+          "label": "Tall plume"
+        }
+      ]
+    },
+    {
+      "meaning": "crossbowman-t2",
+      "against": [
+        "crossbowman-t1",
+        "crossbowman-t3"
+      ],
+      "family": "Troops",
+      "risk": "Medium",
+      "shape": "All three have the same crossbow-and-shoulders silhouette.",
+      "colourValue": "Brown and green midtones dominate; trim disappears at chip size.",
+      "lore": "Keep the crossbowman holding his crossbow; middle tier uses steel over padded cloth.",
+      "options": [
+        {
+          "id": "crossbowman-t2-a",
+          "label": "Broad kettle helm"
+        },
+        {
+          "id": "crossbowman-t2-b",
+          "label": "Raised crossbow"
+        }
+      ]
+    },
+    {
+      "meaning": "paladin-t2",
+      "against": [
+        "paladin-t1",
+        "paladin-t3"
+      ],
+      "family": "Troops",
+      "risk": "Medium",
+      "shape": "Sword, pale tabard and shoulders recur in all tiers; wing detail shrinks away.",
+      "colourValue": "White/blue mass with steel highlights in every tier.",
+      "lore": "Keep an armoured holy warrior, blue mantle and sun tabard.",
+      "options": [
+        {
+          "id": "paladin-t2-a",
+          "label": "Winged helm"
+        },
+        {
+          "id": "paladin-t2-b",
+          "label": "Blue crest and hammer"
+        }
+      ]
+    },
+    {
+      "meaning": "stamina-relic-2",
+      "against": [
+        "stamina-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "stamina-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "stamina-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "damage-relic-2",
+      "against": [
+        "damage-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "damage-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "damage-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "damage-reduction-relic-2",
+      "against": [
+        "damage-reduction-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "damage-reduction-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "damage-reduction-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "exploration-relic-2",
+      "against": [
+        "exploration-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "exploration-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "exploration-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "exploration-reward-relic-2",
+      "against": [
+        "exploration-reward-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "exploration-reward-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "exploration-reward-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-2",
+      "against": [
+        "structure-damage-reduction-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "structure-damage-reduction-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "structure-damage-reduction-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "production-relic-2",
+      "against": [
+        "production-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "production-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "production-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "labor-production-relic-2",
+      "against": [
+        "labor-production-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "labor-production-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "labor-production-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    },
+    {
+      "meaning": "troop-production-relic-2",
+      "against": [
+        "troop-production-relic-1"
+      ],
+      "family": "Relics",
+      "risk": "High",
+      "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
+      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
+      "options": [
+        {
+          "id": "troop-production-relic-2-a",
+          "label": "Round stone"
+        },
+        {
+          "id": "troop-production-relic-2-b",
+          "label": "Twin tablets"
+        }
+      ]
+    }
+  ],
+  "controls": [
+    {
+      "meanings": [
+        "wood",
+        "coal"
+      ],
+      "risk": "Low",
+      "reason": "Warm long logs versus dark compact lumps; keep both."
+    },
+    {
+      "meanings": [
+        "coal",
+        "obsidian",
+        "ignium"
+      ],
+      "risk": "Low",
+      "reason": "Coal is a low lumpy heap, obsidian is a tall sharp star, ignium carries a large orange interior; keep."
+    },
+    {
+      "meanings": [
+        "copper",
+        "gold",
+        "silver",
+        "adamantine"
+      ],
+      "risk": "Medium without colour",
+      "reason": "Shared ingot grammar, but copper orange, gold yellow, silver white and adamantine dark green separate by value and hue. Keep these anchors; remove mithral and cold iron from the grammar."
+    },
+    {
+      "meanings": [
+        "ruby",
+        "sapphire",
+        "diamonds"
+      ],
+      "risk": "Medium without colour",
+      "reason": "Similar cut-gem forms; saturated red, deep blue and high-value white preserve the gem family. Keep for this pass."
+    },
+    {
+      "meanings": [
+        "wood",
+        "ironwood",
+        "hartwood"
+      ],
+      "risk": "Low at 40; medium at 16",
+      "reason": "Paired golden logs, single dark red-ended log, and upright sap-bleeding heart cut remain distinguishable. Keep; moving dragonhide out removes the fourth cylinder."
+    },
+    {
+      "meanings": [
+        "alchemical-silver",
+        "essence"
+      ],
+      "risk": "Medium at 16",
+      "reason": "Both include purple liquid, but alchemical silver has a strong horizontal bright bar while essence is a vertical bottle. Keep and retain labels in dense lists."
+    }
+  ]
+}

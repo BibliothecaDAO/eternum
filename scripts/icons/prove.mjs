@@ -290,6 +290,120 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
   }
 }
 
+export async function proveResourceIcons(b, out, records, baseUrl) {
+  mkdirSync(out, { recursive: true });
+  for (const [layout, width, height] of [
+    ["desktop", 1440, 1000],
+    ["phone", 390, 844],
+  ]) {
+    const record = { name: `${layout}-resource-icons`, ready: false, presses: [], checks: [] };
+    records.push(record);
+    const check = async (name, expression) =>
+      record.checks.push({ check: name, ok: (await b.evaluate(expression)) === true });
+    const decode = async () =>
+      check(
+        "Every visible painting decodes at its exact HUD size",
+        `(async () => {
+      const images = [...document.querySelectorAll('.rss-sample img')];
+      try { await Promise.all(images.map(image => image.decode())); } catch { return false; }
+      return images.length > 0 && images.every(image => image.naturalWidth > 0 &&
+        image.getBoundingClientRect().width === Number(image.closest('[data-size]').dataset.size) &&
+        image.getBoundingClientRect().height === Number(image.closest('[data-size]').dataset.size));
+    })()`,
+      );
+    const fit = async () => check("No horizontal overflow", "document.documentElement.scrollWidth <= innerWidth");
+    const sheet = async (name) => {
+      const sheetHeight = await b.evaluate("Math.ceil(document.querySelector('.rss-lab').scrollHeight + 80)");
+      await b.run("set", "viewport", String(width), String(sheetHeight));
+      await b.run("scrollintoview", ".rss-lab header");
+      await b.run("screenshot", join(out, `${layout}-${name}.png`));
+      await b.run("set", "viewport", String(width), String(height));
+    };
+    await b.run("set", "viewport", String(width), String(height));
+    await b.run("open", `${baseUrl}/lab/kit/resource-icons`, "--ignore-https-errors");
+    await b.run("wait", ".rss-inventory [data-resource-id='58']");
+    record.ready = true;
+    for (const art of ["shipped", "a", "b"]) {
+      await b.run("select", '[aria-label="Inventory artwork"]', art);
+      await decode();
+      await check(
+        `All 58 resources; only reviewed art changes for ${art}`,
+        `(async () => {
+        const { resources, meanings } = await (await fetch('/icons/facets/manifest.json')).json();
+        const variants = await (await fetch('/lab/rss-icons/manifest.json')).json();
+        const rows = [...document.querySelectorAll('[data-resource-id]')];
+        const ids = rows.map(row => Number(row.dataset.resourceId)).sort((a,b)=>a-b);
+        return rows.every(row => {
+          const meaning = resources[row.dataset.resourceId].meaning;
+          const option = meaning + '-${art}';
+          return [...row.querySelectorAll('img')].every(image => {
+            const pixels = image.width > 32 ? 128 : 64;
+            const expected = '${art}' !== 'shipped' && variants[option]
+              ? '/lab/rss-icons/' + pixels + '/' + option + '.webp'
+              : meanings[meaning].token ? '/tokens/lords.svg' : '/icons/facets/' + pixels + '/' + meanings[meaning].art + '.webp';
+            return image.getAttribute('src') === expected;
+          });
+        }) && ids.length === 58 && ids.every((id, index) => id === index + 1) &&
+          document.querySelectorAll('.rss-inventory [data-proposal-art]').length === ${art === "shipped" ? 0 : 51} &&
+          document.querySelectorAll('.rss-inventory [data-icon=lords][src="/tokens/lords.svg"]').length === 3;
+      })()`,
+      );
+      await fit();
+      await sheet(`inventory-${art}`);
+    }
+    await b.run("select", '[aria-label="Inventory artwork"]', "shipped");
+    await b.run("click", 'button:has-text("Hide names")');
+    await check(
+      "Hide names conceals the inventory names",
+      `[...document.querySelectorAll('.rss-name')].every(node => getComputedStyle(node).visibility === 'hidden')`,
+    );
+    for (const view of ["greyscale", "silhouette", "colour"]) {
+      await b.run("select", '[aria-label="Resource view"]', view);
+      await check(
+        `The ${view} control changes image rendering`,
+        `(() => {
+        const filter = getComputedStyle(document.querySelector('.rss-sample img')).filter;
+        return ${view === "greyscale" ? "filter.includes('grayscale(1)')" : view === "silhouette" ? "filter.includes('brightness(0)') && filter.includes('invert(1)')" : "filter === 'none'"};
+      })()`,
+      );
+      if (view !== "colour") await sheet(`inventory-${view}`);
+    }
+    await b.run("click", 'button:has-text("Show names")');
+    for (const [family, count] of [
+      ["Materials", 5],
+      ["Troops", 3],
+      ["Relics", 9],
+    ]) {
+      await b.run("click", `nav[aria-label="Resource review sections"] button:has-text("${family}")`);
+      await decode();
+      await fit();
+      await check(
+        `${family} shows shipped and two options for every reviewed resource`,
+        `(() => {
+        const rows = [...document.querySelectorAll('[data-resource-study]')];
+        return rows.length === ${count} && rows.every(row => ['shipped','a','b'].every(version =>
+          row.querySelectorAll('[data-version='+version+'] img').length === 3));
+      })()`,
+      );
+      const meanings = await b.evaluate(
+        "[...document.querySelectorAll('[data-resource-study]')].map(node => node.dataset.resourceStudy)",
+      );
+      for (const meaning of meanings) {
+        await b.run("scrollintoview", `[data-resource-study="${meaning}"]`);
+        await b.run("screenshot", join(out, `${layout}-${meaning}.png`));
+      }
+    }
+    await b.run("click", 'nav[aria-label="Resource review sections"] button:has-text("Kept pairs")');
+    await decode();
+    await fit();
+    await check(
+      "Six kept groups remain unchanged",
+      "document.querySelectorAll('.rss-comparison').length === 6 && document.querySelectorAll('[data-proposal-art]').length === 0",
+    );
+    await sheet("kept-pairs");
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const baseUrl = process.argv[3] ?? "https://127.0.0.1:4193";
   const missingSvg = process.argv.includes("--missing-svg");
@@ -301,20 +415,22 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       where: (r) => ({ name: r.name }),
     },
     (b, out, records) =>
-      process.argv.includes("--minimap-url")
-        ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
-        : proveIcons(
-            b,
-            out,
-            records,
-            baseUrl,
-            missingSvg ? "desktop" : undefined,
-            missingSvg || process.argv.includes("--catalog")
-              ? ["catalog"]
-              : process.argv.includes("--lords")
-                ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
-                : undefined,
-            missingSvg,
-          ),
+      process.argv.includes("--resources")
+        ? proveResourceIcons(b, out, records, baseUrl)
+        : process.argv.includes("--minimap-url")
+          ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
+          : proveIcons(
+              b,
+              out,
+              records,
+              baseUrl,
+              missingSvg ? "desktop" : undefined,
+              missingSvg || process.argv.includes("--catalog")
+                ? ["catalog"]
+                : process.argv.includes("--lords")
+                  ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
+                  : undefined,
+              missingSvg,
+            ),
   );
 }

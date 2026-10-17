@@ -112,7 +112,8 @@
     "hud:capture": "node scripts/hud-sheet/capture.mjs",
     "icons:review": "node scripts/icons/review.mjs",
     "icons:prove": "node scripts/icons/prove.mjs",
-    "icons:measure": "node scripts/icons/measure.mjs"
+    "icons:measure": "node scripts/icons/measure.mjs",
+    "icons:study": "node scripts/icons/build-resource-study.mjs"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

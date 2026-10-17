@@ -1,0 +1,176 @@
+/* Lab-scoped ring and chip surfaces match the HUD style sheet; only the proposed artwork varies. */
+.rss-lab {
+  min-height: 100vh;
+  padding: 24px;
+  color: #efe7da;
+  background: #0b1418;
+  font: 14px/1.5 sans-serif;
+}
+.rss-lab h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+.rss-lab h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.rss-lab h3 small {
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 12px;
+  color: #c8bdad;
+}
+.rss-lab p {
+  margin: 6px 0 12px;
+}
+.rss-controls,
+.rss-controls nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.rss-controls {
+  margin: 16px 0;
+}
+.rss-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rss-controls button,
+.rss-controls select {
+  border: 1px solid #64716e;
+  border-radius: 4px;
+  background: #192930;
+  color: #efe7da;
+  padding: 6px 10px;
+}
+.rss-controls button[aria-pressed="true"] {
+  background: #3b5554;
+  border-color: #9dcfc2;
+}
+.rss-controls button:focus-visible,
+.rss-controls select:focus-visible {
+  outline: 2px solid #9dcfc2;
+  outline-offset: 2px;
+}
+.rss-inventory {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+  gap: 8px;
+}
+.rss-inventory > figure,
+.rss-comparison {
+  border: 1px solid #334047;
+  border-radius: 8px;
+  background: #101c23;
+  padding: 14px;
+}
+.rss-lab figcaption {
+  font-size: 12px;
+  min-height: 36px;
+  margin-bottom: 4px;
+  max-width: 245px;
+}
+.rss-sample {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+}
+.rss-sample img {
+  flex: none;
+  object-fit: contain;
+  max-width: none;
+}
+.rss-ring {
+  position: relative;
+  display: inline-grid;
+  width: 52px;
+  height: 52px;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgb(102 221 171 / 0.6);
+  border-radius: 9999px;
+}
+.rss-ring-face {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgb(214 181 125 / 0.25);
+  border-radius: 9999px;
+  background: radial-gradient(circle at 50% 35%, #192930, #101c23);
+}
+.rss-ring-count {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgb(214 181 125 / 0.5);
+  border-radius: 9999px;
+  background: #101c23;
+  padding: 0 4px;
+  font: 700 11px/14px sans-serif;
+}
+.rss-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgb(214 181 125 / 0.25);
+  border-radius: 4px;
+  background: rgb(214 181 125 / 0.1);
+  padding: 1px 6px;
+  color: #d6b57d;
+  font: 600 12px/16px sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.rss-comparison {
+  margin-bottom: 16px;
+}
+.rss-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.rss-neighbours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding-top: 12px;
+  border-top: 1px solid #334047;
+}
+.rss-note,
+.rss-lab footer {
+  color: #b8b8ad;
+  font-size: 12px;
+}
+.rss-lab footer {
+  margin-top: 24px;
+}
+.rss-lab[data-labels="false"] .rss-name {
+  visibility: hidden;
+}
+.rss-lab[data-vision="greyscale"] .rss-sample img {
+  filter: grayscale(1);
+}
+.rss-lab[data-vision="silhouette"] .rss-sample img {
+  filter: brightness(0) invert(1);
+}
+@media (max-width: 800px) {
+  .rss-options {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .rss-lab {
+    padding: 12px;
+  }
+  .rss-controls {
+    align-items: flex-start;
+  }
+}
