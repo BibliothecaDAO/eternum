@@ -3,15 +3,21 @@ import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Tabs } from "@/ui/design-system/atoms/tab";
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
+import { ResourceArrivals } from "@/ui/features/economy/trading";
+import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
+import { HUD_PANEL } from "@/ui/features/world/hud/hud-panel";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
+import { BalancesView } from "./balances-view";
 import { HoldingPicker } from "./holding-picker";
 import { type Shipment, type ShipmentOutcome, sendShipments } from "./send-shipments";
 import {
@@ -105,8 +111,17 @@ const swapEnds = (ends: TransferEnds): TransferEnds =>
     ? { sourceId: ends.destinationIds[0], destinationIds: [ends.sourceId] }
     : ends;
 
+/** A view tab in the HUD's title type; the lit one (gold hairline on a gold wash) is the view shown. */
+const VIEW_TAB =
+  "hud-panel-title !mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 transition hover:border-gold/45 data-[selected]:border-gold/70 data-[selected]:bg-gold/15";
+
+/**
+ * The one transfer window: sending, and what is on its way, the repeating transfers and every holding's balances,
+ * each a tab of it (Transfer · Arrivals · Automation · Balances). It opens on Transfer.
+ */
 const TransferSurface = ({ initial }: { initial: TransferEnds }) => {
   const closeSurface = usePopoverStore((state) => state.closeSurface);
+  const showAutomation = useGameModeConfig().ui.showAutomation;
   return (
     <SurfaceFrame
       title="Transfer"
@@ -115,9 +130,61 @@ const TransferSurface = ({ initial }: { initial: TransferEnds }) => {
       className={SURFACE_WORKSPACE_CLASS}
       bodyClassName="lg:overflow-hidden"
     >
-      <TransferWindow initial={initial} />
+      <Tabs className="flex flex-col gap-2 p-3 lg:h-full lg:min-h-0">
+        <Tabs.List
+          aria-label="Transfer views"
+          className={cn("grid gap-1", showAutomation ? "grid-cols-4" : "grid-cols-3")}
+        >
+          <Tabs.Tab className={VIEW_TAB}>Transfer</Tabs.Tab>
+          <Tabs.Tab className={VIEW_TAB}>
+            Arrivals
+            <ArrivalsBadge />
+          </Tabs.Tab>
+          {showAutomation && <Tabs.Tab className={VIEW_TAB}>Automation</Tabs.Tab>}
+          <Tabs.Tab className={VIEW_TAB}>Balances</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panels className="lg:min-h-0 lg:flex-1">
+          <Tabs.Panel className="lg:h-full">
+            <TransferWindow initial={initial} />
+          </Tabs.Panel>
+          <Tabs.Panel className="lg:h-full lg:overflow-y-auto">
+            <ArrivalsView />
+          </Tabs.Panel>
+          {showAutomation && (
+            <Tabs.Panel className="lg:h-full lg:overflow-y-auto">
+              <TransferAutomationAdvancedModal />
+            </Tabs.Panel>
+          )}
+          <Tabs.Panel className="lg:h-full lg:overflow-hidden">
+            <BalancesView />
+          </Tabs.Panel>
+        </Tabs.Panels>
+      </Tabs>
     </SurfaceFrame>
   );
+};
+
+/** What is on its way to the player's holdings: green once some is ready to claim, gold while all is on the road. */
+const ArrivalsBadge = () => {
+  const arrived = useUIStore((state) => state.arrivedArrivalsNumber);
+  const pending = useUIStore((state) => state.pendingArrivalsNumber);
+  if (arrived + pending === 0) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
+        arrived > 0 ? "bg-progress-bar-good/90 text-dark" : "bg-gold/90 text-dark",
+      )}
+      title={`${arrived} ready · ${pending} pending`}
+    >
+      {arrived + pending}
+    </span>
+  );
+};
+
+const ArrivalsView = () => {
+  const arriving = useUIStore((state) => state.arrivedArrivalsNumber + state.pendingArrivalsNumber);
+  return <ResourceArrivals hasArrivals={arriving > 0} />;
 };
 
 /**
@@ -134,9 +201,9 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
   // A new source, or swapped ends, start their own amounts.
   const change = (next: Partial<Omit<Draft, "revision">>) => setDraft((current) => revised(current, next));
   return (
-    <div className="flex flex-col gap-2 p-3 lg:h-full lg:min-h-0">
-      <LogisticsLinks />
-      <div className="flex flex-col gap-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[250px_auto_250px_1fr]">
+    <div className="flex flex-col gap-3 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[260px_auto_260px_1fr]">
+      {/* Each column its own panel, as the HUD's: teal glass, a gold hairline. */}
+      <div className={cn(HUD_PANEL, "flex min-h-0 flex-col")}>
         <HoldingPicker
           title="Send from"
           chosen={ends.sourceId === null ? [] : [ends.sourceId]}
@@ -144,17 +211,19 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           onPick={(id) => change({ ends: pickSource(ends, id), edited: null })}
           note={(id) => <DonkeysNote id={id} />}
         />
-        {/* Closed until one holding is chosen to send to, and it looks closed and says so. */}
-        <button
-          type="button"
-          aria-label="Swap from and to"
-          title={ends.destinationIds.length === 1 ? "Swap from and to" : "Choose one holding to send to, then swap"}
-          disabled={ends.destinationIds.length !== 1}
-          onClick={() => change({ ends: swapEnds(ends), edited: null })}
-          className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:cursor-not-allowed disabled:border-gold/10 disabled:text-gold/25 max-lg:rotate-90"
-        >
-          ⇄
-        </button>
+      </div>
+      {/* Closed until one holding is chosen to send to, and it looks closed and says so. */}
+      <button
+        type="button"
+        aria-label="Swap from and to"
+        title={ends.destinationIds.length === 1 ? "Swap from and to" : "Choose one holding to send to, then swap"}
+        disabled={ends.destinationIds.length !== 1}
+        onClick={() => change({ ends: swapEnds(ends), edited: null })}
+        className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:cursor-not-allowed disabled:border-gold/10 disabled:text-gold/25 max-lg:rotate-90"
+      >
+        ⇄
+      </button>
+      <div className={cn(HUD_PANEL, "flex min-h-0 flex-col")}>
         <HoldingPicker
           title="Send to"
           chosen={ends.destinationIds}
@@ -165,49 +234,26 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
             return seconds === undefined ? null : landsText(seconds);
           }}
         />
-        <div className="flex min-h-0 flex-col gap-3">
-          {ends.sourceId !== null && sides && plans && (
-            <Goods
-              key={ends.sourceId}
-              sourceId={ends.sourceId}
-              destinationIds={ends.destinationIds}
-              sides={sides}
-              plans={plans}
-              landsIn={Math.max(0, ...ends.destinationIds.map((id) => landsIn(id) ?? 0))}
-              revision={draft.revision}
-              focus={initial.resource}
-              onPlans={(edited) => change({ edited })}
-              onSettled={(sentRevision, refused, goods) =>
-                setDraft((current) => settled(current, sentRevision, refused, goods))
-              }
-            />
-          )}
-        </div>
+      </div>
+      <div className={cn(HUD_PANEL, "flex min-h-0 flex-col gap-3")}>
+        {ends.sourceId !== null && sides && plans && (
+          <Goods
+            key={ends.sourceId}
+            sourceId={ends.sourceId}
+            destinationIds={ends.destinationIds}
+            sides={sides}
+            plans={plans}
+            landsIn={Math.max(0, ...ends.destinationIds.map((id) => landsIn(id) ?? 0))}
+            revision={draft.revision}
+            focus={initial.resource}
+            onPlans={(edited) => change({ edited })}
+            onSettled={(sentRevision, refused, goods) =>
+              setDraft((current) => settled(current, sentRevision, refused, goods))
+            }
+          />
+        )}
       </div>
     </div>
-  );
-};
-
-/** Arrivals, Automation and Balances live in Logistics; the window links to them, Arrivals with what is on its way. */
-const LogisticsLinks = () => {
-  const arriving = useUIStore((state) => state.arrivedArrivalsNumber + state.pendingArrivalsNumber);
-  const open = (tab: "arrivals" | "automation" | "balances") => () => {
-    usePopoverStore.getState().closeSurface();
-    useUIStore.getState().setLogisticsActiveTab(tab);
-    useUIStore.getState().setLeftNavigationView(LeftView.ResourceArrivals);
-  };
-  return (
-    <nav aria-label="Logistics" className="flex justify-end gap-3 text-sm">
-      <button type="button" onClick={open("arrivals")} className="text-gold underline">
-        Arrivals{arriving > 0 ? ` (${arriving})` : ""}
-      </button>
-      <button type="button" onClick={open("automation")} className="text-gold underline">
-        Automation
-      </button>
-      <button type="button" onClick={open("balances")} className="text-gold underline">
-        Balances
-      </button>
-    </nav>
   );
 };
 

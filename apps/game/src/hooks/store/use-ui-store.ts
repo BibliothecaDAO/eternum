@@ -80,9 +80,6 @@ interface UIStore {
   setHasAcceptedToS: (accepted: boolean) => void;
   showToS: boolean;
   setShowToS: (show: boolean) => void;
-  // The tab Logistics opens on (Arrivals / Automation / Balances); the transfer window's links set it.
-  logisticsActiveTab: "arrivals" | "automation" | "balances";
-  setLogisticsActiveTab: (tab: "arrivals" | "automation" | "balances") => void;
   // Cross-component signal: when a non-null id is set, the StructureEditPopup (mounted by LeftViewSurfaces) opens for
   // that structure. The holding card's rename and the structure list's pencil write it.
   pendingRenameStructureEntityId: number | null;
@@ -206,7 +203,7 @@ export const useUIStore = create(
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => {
       useTooltipStore.getState().setTooltip(null);
-      // Every way into a workspace (Build, Logistics, Military) comes through here: before play opens it stays shut.
+      // Every way into a workspace (Build, Military) comes through here: before play opens it stays shut.
       if (resolveLeftViewSurface(view) !== null && refusedBeforePlay()) return;
       set({ leftNavigationView: view });
     },
@@ -237,8 +234,6 @@ export const useUIStore = create(
     },
     showToS: false,
     setShowToS: (show: boolean) => set({ showToS: show }),
-    logisticsActiveTab: "arrivals",
-    setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
     pendingRenameStructureEntityId: null,
     setPendingRenameStructureEntityId: (entityId: number | null) => set({ pendingRenameStructureEntityId: entityId }),
     structureNameVersion: 0,

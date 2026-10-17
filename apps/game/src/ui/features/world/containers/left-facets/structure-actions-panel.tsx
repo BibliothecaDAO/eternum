@@ -17,7 +17,7 @@ export const ActionTile = ({ action }: { action: StructureAction }) => {
   return (
     <button
       type="button"
-      data-popover-anchor={action.id === "transfer" ? "logistics" : action.id === "trade" ? "market" : action.id}
+      data-popover-anchor={action.id === "trade" ? "market" : action.id}
       aria-label={label}
       aria-pressed={active}
       disabled={refusal !== null}

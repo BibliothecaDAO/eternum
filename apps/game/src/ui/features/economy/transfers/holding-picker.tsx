@@ -46,7 +46,6 @@ export const HoldingPicker = ({
   const [query, setQuery] = useState("");
   const kinds = kindsHeld(holdings);
   const kind = shownKind(asked, kinds);
-  const shown = kinds.find((entry) => entry.kind === kind);
   const searchable = needsSearch(kinds, kind, holdings.length);
   const rows = listHoldings(holdings, kind, searchable ? query : "");
 
@@ -59,33 +58,29 @@ export const HoldingPicker = ({
 
   return (
     <section aria-label={title} className="flex min-h-0 flex-col gap-2">
-      <h3 className="hud-panel-title flex justify-between">
-        <span>{title}</span>
-        {shown && (
-          <span className="text-kit-muted">
-            {shown.plural} · {shown.count}
-          </span>
-        )}
-      </h3>
-      {kinds.length > 1 && (
-        <div role="tablist" aria-label={`${title} by kind`} className="hud-tabs">
-          {kinds.map((entry) => (
+      <h3 className="hud-panel-title">{title}</h3>
+      {/* The kinds held as tabs, one even when only one is held: the lit tab names the kind its list shows. */}
+      <div role="tablist" aria-label={`${title} by kind`} className="hud-tabs">
+        {kinds.map((entry) => {
+          const selected = entry.kind === kind;
+          return (
             <button
               key={entry.kind}
               type="button"
               role="tab"
-              aria-selected={entry.kind === kind}
+              aria-selected={selected}
               aria-label={`${entry.plural}, ${entry.count}`}
               title={entry.plural}
               className="hud-tab"
+              style={{ flexGrow: selected ? 3 : 1 }}
               onClick={() => setAsked(entry.kind)}
             >
               <Icon name={entry.icon} size={22} />
-              <span>{entry.count}</span>
+              <span className="truncate">{selected ? `${entry.plural} ${entry.count}` : entry.count}</span>
             </button>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
       {searchable && (
         <input
           type="search"

@@ -81,6 +81,15 @@ vi.mock("@/ui/design-system/molecules/popover", () => ({
   SurfaceFrame: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
+vi.mock("@/config/game-modes/use-game-mode-config", () => ({
+  useGameModeConfig: () => ({ ui: { showAutomation: true } }),
+}));
+/** The window's other views, each its tab's panel. */
+vi.mock("@/ui/features/economy/trading", () => ({ ResourceArrivals: () => <p>Arrivals list</p> }));
+vi.mock("@/ui/features/economy/transfers/transfer-automation-modal", () => ({
+  TransferAutomationAdvancedModal: () => <p>Automation list</p>,
+}));
+vi.mock("./balances-view", () => ({ BalancesView: () => <p>Balances table</p> }));
 vi.mock("@/ui/features/event-feed/notify", () => ({ toast: world.notices }));
 /** The game's own landing rule (deliveryLandsAt) on a 3-minute delivery tick; the holdings' roads come from `sides`. */
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
@@ -453,5 +462,26 @@ describe("the swap between the two ends", () => {
     await toggle(A);
     expect(swap().disabled).toBe(false);
     expect(swap().title).toBe("Swap from and to");
+  });
+});
+
+describe("the window's views", () => {
+  it("are tabs, Transfer first and open, each showing its own view, and the draft waits behind the others", async () => {
+    await open([A]);
+    const tabs = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Transfer views"] [role="tab"]')];
+    const transferPanel = () => host.querySelector('[data-pick="Send to:22"]')!.closest('[role="tabpanel"]')!;
+    expect(tabs().map((tab) => tab.textContent)).toEqual(["Transfer", "Arrivals", "Automation", "Balances"]);
+    expect(tabs()[0].getAttribute("aria-selected")).toBe("true");
+    await type("Wheat: total to send", "7");
+
+    await act(async () => tabs()[3].click());
+    expect(host.textContent).toContain("Balances table");
+    expect(transferPanel().hasAttribute("hidden")).toBe(true);
+    await act(async () => tabs()[1].click());
+    expect(host.textContent).toContain("Arrivals list");
+
+    await act(async () => tabs()[0].click());
+    expect(transferPanel().hasAttribute("hidden")).toBe(false);
+    expect(field("Wheat: total to send")!.value).toBe("7");
   });
 });

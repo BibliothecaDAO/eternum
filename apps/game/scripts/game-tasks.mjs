@@ -229,13 +229,33 @@ export const GAME_TASKS = {
     ],
     ...TRANSFER_SENT,
   },
-  "blitz-transfer-balances": {
-    goal: "Blitz: send wheat to two holdings from Logistics' Balances, through the one Transfer window",
+  "blitz-transfer-tabs": {
+    goal: "Blitz: open the Transfer window, see its views as tabs and its three columns as panels, and come back",
     layouts: ["desktop"],
     view: "map",
     presses: [
       { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
-      { name: "Balances", within: `${TRANSFER_PANEL} nav[aria-label="Logistics"]`, text: "^Balances$" },
+      {
+        name: "the Balances tab",
+        within: `${TRANSFER_PANEL} [aria-label="Transfer views"]`,
+        text: "^(Balances|BALANCES)$",
+      },
+      {
+        name: "the Transfer tab",
+        within: `${TRANSFER_PANEL} [aria-label="Transfer views"]`,
+        text: "^(Transfer|TRANSFER)$",
+      },
+    ],
+    // Back on Transfer: Send from and Send to each lead with their kind tabs.
+    done: `document.querySelectorAll(${JSON.stringify(`${TRANSFER_PANEL} [role="tablist"][aria-label$="by kind"]`)}).length === 2`,
+  },
+  "blitz-transfer-balances": {
+    goal: "Blitz: send wheat to two holdings from the Transfer window's Balances tab",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "Transfer", within: STRUCTURE_ACTIONS, text: "^Transfer$" },
+      { name: "Balances", within: `${TRANSFER_PANEL} [aria-label="Transfer views"]`, text: "^(Balances|BALANCES)$" },
       { name: "the wheat's Transfer in Balances", text: "^Transfer Wheat$" },
       { name: "a holding to send to", within: SEND_TO_UNPICKED, text: "." },
       { name: "a second holding to send to", within: SEND_TO_UNPICKED, text: "." },

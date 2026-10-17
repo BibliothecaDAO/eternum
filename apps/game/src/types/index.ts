@@ -7,7 +7,6 @@ export enum LeftView {
   ConstructionView,
   BridgeView,
   HyperstructuresView,
-  ResourceArrivals,
   StoryEvents,
   ResourceTable,
   RelicsView,

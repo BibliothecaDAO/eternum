@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Transfer, Arrivals, Automation, Balances: one window, four tabs",
+    description:
+      "The Transfer window's views are tabs again, and switching away keeps what you were about to send. Send from, Send to and the goods each sit in their own panel, and each list leads with its kinds as tabs (Realms, Camps, Essence Rifts).",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "+500 is back",
     description:
       "Wherever you choose how many troops go (deploying an army, the Military window, transferring troops), +500 adds 500 with each press, up to what you can send, beside Max.",
