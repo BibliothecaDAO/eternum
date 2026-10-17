@@ -19,11 +19,11 @@ import { useLayout } from "../frame/layout";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
-import { Confirm } from "./confirm";
+import { Confirm } from "@/ui/design-system/kit/confirm";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { walletReturnOf } from "./settings-route";
 import { PayoutWalletPanel } from "./payout-wallet-panel";
-import { SettingRow, SettingRows } from "./setting-row";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 
 type Open = "name" | "portrait" | "payout" | null;
 

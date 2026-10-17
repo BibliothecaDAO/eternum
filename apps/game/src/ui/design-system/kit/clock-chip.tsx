@@ -1,8 +1,6 @@
-import { Pill } from "@/ui/design-system/kit/pill";
-import { formatClockTime, formatDate, formatDuration } from "@/ui/design-system/kit/time";
-import { LEFT } from "@/ui/design-system/kit/words";
-
-import { CLOCK_WORDS } from "./words";
+import { Pill } from "./pill";
+import { formatClockTime, formatDate, formatDuration } from "./time";
+import { CLOCK_WORDS, LEFT } from "./words";
 
 type ClockPrefix = "starts" | "opens" | "ends" | "expires" | "closes";
 
@@ -26,12 +24,6 @@ export const clockLine = (prefix: ClockPrefix | null, at: number | undefined, no
   if (at === undefined) return `${word} ${formatClockTime(undefined)}`;
   if (isWithinADay(at, now)) return `${word} ${formatClockTime(at)} · ${countdown(prefix, at - now)}`;
   return `${word} ${formatDate(at, now)}, ${formatClockTime(at)}`;
-};
-
-/** A post or guide's day, written "2025-01-13" in the bundled content, as the device's local day ("13 Jan 2025"). */
-export const formatContentDay = (day: string): string => {
-  const [year, month, date] = day.split("-").map(Number);
-  return formatDate(new Date(year, month - 1, date).getTime() / 1000);
 };
 
 /** A moment as a chip: the hourglass within a day, the calendar further out or for a finished game's date. */

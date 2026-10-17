@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { clockLine, formatContentDay } from "./clock-chip";
+import { clockLine } from "./clock-chip";
+import { formatContentDay, formatCountdown } from "./time";
 
 /** A local moment, so the expectations read the same in every time zone. */
 const at = (month: number, day: number, hours: number, minutes: number, year = 2026) =>
@@ -31,5 +32,11 @@ describe("the one time line", () => {
 
   it("reads a bundled post's day on the device's own calendar", () => {
     expect(formatContentDay("2025-01-13")).toBe("13 Jan 2025");
+  });
+
+  it("counts down to the second in hours, minutes and seconds, never below zero", () => {
+    expect(formatCountdown(2 * 3600 + 4 * 60 + 12.9)).toBe("2:04:12");
+    expect(formatCountdown(59)).toBe("0:00:59");
+    expect(formatCountdown(-5)).toBe("0:00:00");
   });
 });

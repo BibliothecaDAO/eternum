@@ -1,7 +1,6 @@
-import { Button } from "@/ui/design-system/kit/button";
-import { Sheet } from "@/ui/design-system/kit/sheet";
-
-import { PROFILE_WORDS } from "../words";
+import { Button } from "./button";
+import { Sheet } from "./sheet";
+import { KEEP } from "./words";
 
 /**
  * A destructive step asks first: the question, its cost in one sentence, Keep as the primary and the destructive verb
@@ -28,7 +27,7 @@ export const Confirm = ({
     <div className="flex flex-col gap-3 py-2">
       <h2 className="font-body text-xl font-bold text-kit-cream">{question}</h2>
       <p className="text-base text-kit-muted">{cost}</p>
-      <Button role="primary" word={PROFILE_WORDS.keep} onClick={onKeep} />
+      <Button role="primary" word={KEEP} onClick={onKeep} />
       <Button role="outline" word={verb} loading={doing} onClick={onConfirm} />
     </div>
   );

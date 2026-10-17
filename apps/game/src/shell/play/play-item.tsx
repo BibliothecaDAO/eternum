@@ -7,21 +7,23 @@ import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import { DAY } from "@/ui/design-system/kit/words";
+import { Title } from "@/ui/design-system/kit/title";
 
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
 import { useSlotRegistered } from "../blitz/entry";
 import { SeatsChip } from "../blitz/seats-chip";
 import type { PlaytestSlot } from "../blitz-slot";
-import { ClockChip, clockLine } from "../clock-chip";
+import { ClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
 import { useLayout } from "../frame/layout";
 import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
 import type { DirectoryGame } from "../herald";
-import { paintingSources } from "../paintings";
 import { gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { directoryDay } from "../season";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
+import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { signInHref } from "../sign-in/sign-in-route";
 import { BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
@@ -144,22 +146,23 @@ export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
   const desktop = useLayout() === "desktop";
   const verb = <ItemVerbButton item={item} signedIn={signedIn} gold />;
   return (
-    <section data-play-item={item.key} className="painted flex rounded-plate">
-      <img
-        {...paintingSources(ageOf(item.mode).painting)}
-        sizes={desktop ? "45vw" : "100vw"}
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/80 to-kit-ground/40" />
+    <PaintedCard
+      data-play-item={item.key}
+      painting={ageOf(item.mode).painting}
+      sizes={desktop ? "45vw" : "100vw"}
+      grade="side"
+      className="flex"
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 lg:p-6">
-        <h2 className="font-display text-title leading-none text-kit-cream lg:text-title-lg">{titleOf(item)}</h2>
+        <Title level="card" as="h2">
+          {titleOf(item)}
+        </Title>
         <div className="flex flex-wrap items-center gap-2">
           <ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />
         </div>
         {desktop ? <StepVerb>{verb}</StepVerb> : verb}
       </div>
-    </section>
+    </PaintedCard>
   );
 };
 
@@ -202,19 +205,17 @@ const isText = (part: string | null): part is string => part !== null;
 
 /** Any other item: its age's painting small, its title and facts, and its verb in outline, or none. */
 const ItemRow = ({ item, now, signedIn }: ItemProps) => (
-  <li data-play-item={item.key} className="flex items-center gap-3 border-b border-kit-line py-3 last:border-b-0">
-    <img
-      {...paintingSources(ageOf(item.mode).painting)}
-      sizes="48px"
-      alt=""
-      className="size-12 shrink-0 rounded-thumb object-cover"
-    />
-    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className="truncate font-body text-base font-bold text-kit-cream">{titleOf(item)}</span>
-      <ItemLine item={item} now={now} />
-    </span>
-    <ItemVerbButton item={item} signedIn={signedIn} gold={false} />
-  </li>
+  <ListRow
+    as="li"
+    data-play-item={item.key}
+    gap={3}
+    lead={<RowThumb painting={ageOf(item.mode).painting} size={12} />}
+    title={titleOf(item)}
+    line={<ItemLine item={item} now={now} />}
+    spaced
+    trailing={<ItemVerbButton item={item} signedIn={signedIn} gold={false} />}
+    className="py-3"
+  />
 );
 
 /** A plate of item rows. */

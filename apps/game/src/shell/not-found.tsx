@@ -1,5 +1,6 @@
 import { Button } from "@/ui/design-system/kit/button";
 import { StateCard } from "@/ui/design-system/kit/state-card";
+import { Title } from "@/ui/design-system/kit/title";
 
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
@@ -19,9 +20,9 @@ export const NothingHere = () =>
   ) : (
     <div className="flex justify-center">
       <section className="plate flex w-dialog flex-col items-stretch gap-5 p-6">
-        <p className="text-center font-display text-[34px] leading-none text-kit-cream">
+        <Title level="plate" as="p" className="text-center leading-none">
           {APP_STATE_WORDS.nothingHere}
-        </p>
+        </Title>
         <StepVerb>
           <Button role="primary" word={WORDS.play} icon="play" to="/" />
         </StepVerb>

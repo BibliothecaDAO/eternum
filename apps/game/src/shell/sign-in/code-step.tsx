@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
 
-import { ClockChip } from "../clock-chip";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { useNowSeconds } from "../use-now";
 import { SIGN_IN_WORDS } from "../words";
 import { CodeBoxes } from "./fields";

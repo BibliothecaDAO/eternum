@@ -1,7 +1,7 @@
 import { IDENTITY_PORTRAITS } from "@realms-world/identity";
 
 /** A chosen portrait's asset; callers without a choice resolve the player's stock portrait instead. */
-export const portraitUrl = (portrait: string): string => `/images/avatars/${portrait}.png`;
+const portraitUrl = (portrait: string): string => `/images/avatars/${portrait}.png`;
 
 export function playerPortraitUrl(address: string | bigint, portrait: string | null | undefined): string;
 export function playerPortraitUrl(

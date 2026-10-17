@@ -14,10 +14,10 @@ import {
 
 import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { PROFILE_WORDS } from "../words";
-import { Confirm } from "./confirm";
-import { SettingRow, SettingRows } from "./setting-row";
+import { Confirm } from "@/ui/design-system/kit/confirm";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 
 /** One device key and the shards where it signs for the player's account. */
 interface Device {

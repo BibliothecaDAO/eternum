@@ -58,18 +58,6 @@ export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
 export const PITCH = "A new land every day. Your realm keeps what it earns.";
 
-/** ClockChip's prefix words: a moment that begins something, or one that ends it. */
-export const CLOCK_WORDS = {
-  starts: "Starts",
-  opens: "Opens",
-  ends: "Ends",
-  expires: "Expires",
-  /** A slot's registration: "Entry closes 16:25 · 1h 59m left". */
-  closes: "Entry closes",
-  /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
-  in: "in",
-} as const;
-
 /** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
   discord: "Discord",
@@ -175,8 +163,6 @@ export const PROFILE_WORDS = {
   signOut: "Sign out",
   signOutAsk: "Sign out?",
   signOutCost: "This device forgets your account until you sign in again.",
-  /** The safe choice on a confirm: the primary. */
-  keep: "Keep",
   remove: "Remove",
   removing: "Removing…",
   removeAsk: (device: string) => `Remove ${device}?`,

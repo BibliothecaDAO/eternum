@@ -6,11 +6,13 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
 import { Pill } from "@/ui/design-system/kit/pill";
+import { Title } from "@/ui/design-system/kit/title";
 
 import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, seatedGameOf, slotKeyOf } from "../blitz-rows";
-import { ClockChip } from "../clock-chip";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
+import { formatCountdown } from "@/ui/design-system/kit/time";
 import { useLayout } from "../frame/layout";
 import { type DirectoryGame, useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
@@ -134,13 +136,6 @@ const isClosedSlot = (row: BlitzRow, now: number): boolean => row.kind === "slot
 /** The desktop's countdown words, to the second: "Entry closes in 0:59:12". */
 const COUNTDOWN_WORDS = { closes: BLITZ_WORDS.closesIn, starts: BLITZ_WORDS.startsIn, ends: BLITZ_WORDS.endsIn };
 
-/** Hours, minutes and seconds left: "2:04:12"; never below zero. */
-const countdown = (seconds: number) => {
-  const left = Math.max(0, Math.floor(seconds));
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
-};
-
 /**
  * The lobby's one clock (large on desktop, a chip on a phone), with what stands beside it: Live, Entry closed, Joined
  * while the seat's game is prepared, a game's seats.
@@ -154,7 +149,9 @@ const LobbyClock = ({ row, step, now, large }: { row: BlitzRow; step: LobbyStep;
           <span className="font-ui text-caption leading-normal tracking-[.06em] text-kit-muted">
             {COUNTDOWN_WORDS[moment.prefix]}
           </span>
-          <span className="font-display text-figure leading-none text-kit-cream">{countdown(moment.at - now)}</span>
+          <Title level="countdown" as="span">
+            {formatCountdown(moment.at - now)}
+          </Title>
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">

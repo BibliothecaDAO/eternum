@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
 import { StepVerb } from "@/shell/frame/step-verb";
-import type { Painting } from "@/shell/paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
 import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { Title } from "@/ui/design-system/kit/title";
 
 import type { DoorwayView } from "./doorway-view";
 import { StepTrack } from "./step-track";
@@ -94,7 +95,9 @@ export const DoorwayScreen = ({
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    <h2 className="text-center font-body text-heading font-extrabold text-kit-cream">{realm.name}</h2>
+    <Title level="headline" face="body" as="h2" className="text-center font-extrabold">
+      {realm.name}
+    </Title>
   </div>
 );
 

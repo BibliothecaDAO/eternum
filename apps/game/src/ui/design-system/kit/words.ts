@@ -11,6 +11,18 @@ export const DAY_ENDS = "Day ends";
 export const LEFT = "left";
 export const TOMORROW_LASTS = "Tomorrow lasts";
 export const DAY = "Day";
+
+/** ClockChip's prefix words: a moment that begins something, or one that ends it. */
+export const CLOCK_WORDS = {
+  starts: "Starts",
+  opens: "Opens",
+  ends: "Ends",
+  expires: "Expires",
+  /** A slot's registration: "Entry closes 16:25 · 1h 59m left". */
+  closes: "Entry closes",
+  /** Before the time left to a beginning: "Starts 16:30 · in 2h 4m". */
+  in: "in",
+} as const;
 /** The day-done card: "Day 12 done · Realm kept · Day 13 is open", and its one verb. */
 export const DAY_DONE = "done";
 export const REALM_KEPT = "Realm kept";
@@ -25,6 +37,8 @@ export const OFFLINE = "Offline";
 export const TRY_AGAIN = "Try again";
 export const LATER = "Later";
 export const CLOSE = "Close";
+/** The safe choice on a confirm: the primary. */
+export const KEEP = "Keep";
 
 export const XP = "XP";
 export const LORDS = "LORDS";

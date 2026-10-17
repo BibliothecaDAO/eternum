@@ -11,6 +11,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
 import { Kbd } from "@/ui/design-system/kit/kbd";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
 
 /**
@@ -41,11 +42,13 @@ const useActiveTab = (): string | undefined => {
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
 };
 
-/** You's icon is the player's portrait once signed in. */
-const useSignedInPortrait = (): string | undefined => {
+/** You's icon is the player's portrait once signed in: their chosen one, else their account's. */
+const useSignedInPortrait = (): { account: string | undefined; portrait: string | null | undefined } | undefined => {
   const { session } = useIdentitySession();
-  const address = useAccountStore((state) => state.account?.address);
-  return session ? playerPortraitUrl(address, session.user.image) : undefined;
+  const account = useAccountStore((state) => state.account?.address);
+  return session && playerPortraitUrl(account, session.user.image) !== undefined
+    ? { account, portrait: session.user.image }
+    : undefined;
 };
 
 /** A place's mark: its icon, or on You the signed-in player's portrait. */
@@ -53,11 +56,12 @@ const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: 
   const portrait = useSignedInPortrait();
   if (tab === YOU_TAB && portrait)
     return (
-      <img
-        src={portrait}
-        alt=""
-        style={{ width: size, height: size }}
-        className={cn("rounded-full border-2 object-cover", current ? "border-kit-peach" : "border-kit-line2")}
+      <Portrait
+        account={portrait.account}
+        portrait={portrait.portrait}
+        size={size}
+        weight={2}
+        ring={current ? "lit" : "line"}
       />
     );
   const Icon = tab.icon;

@@ -1,7 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
@@ -12,13 +10,16 @@ import { useLayout } from "../frame/layout";
 import { useDirectory, useLeaderboard, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { OwnRatingLine } from "../rating-line";
-import { paintingSources } from "../paintings";
 import { Panel } from "@/ui/design-system/kit/panel";
+import { Title } from "@/ui/design-system/kit/title";
+import { Figure } from "@/ui/design-system/kit/figure";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 import { AgeLabel } from "../play/age-label";
 import { ageOf } from "../play/ages";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { useNowSeconds } from "../use-now";
 import { PROFILE_WORDS, SEASON_WORDS } from "../words";
 
@@ -61,25 +62,24 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
   const frontier = ageOf("frontier");
   return (
     <section className="plate flex flex-col items-center gap-2 overflow-hidden pb-5">
-      <span className="painted -mb-12 block h-28 w-full rounded-none border-0">
-        <img
-          {...paintingSources(frontier.painting)}
-          sizes="26rem"
-          alt=""
-          className="absolute inset-0 -z-10 size-full object-cover"
-        />
-      </span>
-      <img
-        src={playerPortraitUrl(account, profile.portrait)}
-        alt=""
-        className={cn(
-          "relative size-24 rounded-full border-[3px] object-cover",
-          own ? "border-kit-peach" : "border-kit-line2",
-        )}
+      <PaintedCard
+        as="span"
+        painting={frontier.painting}
+        sizes="26rem"
+        grade="none"
+        className="-mb-12 block h-28 w-full rounded-none border-0"
       />
-      <h2 className="max-w-full px-4 font-display text-[30px] leading-none text-kit-cream">
+      <Portrait
+        account={account}
+        portrait={profile.portrait}
+        size={96}
+        weight={3}
+        ring={own ? "lit" : "line"}
+        className="relative"
+      />
+      <Title level="plate" as="h2" className="max-w-full px-4 text-[30px] leading-none">
         <PlayerName account={account} />
-      </h2>
+      </Title>
       <p className="flex items-center gap-2 text-sm text-kit-muted">
         {standing && <OrderEmblem order={standing.order} size={20} />}
         <b className="font-body text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
@@ -103,24 +103,18 @@ const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
   const { own: standing } = useSeasonStanding(account);
   return (
-    <section className="painted flex h-40 items-start gap-3 rounded-plate p-3">
-      <img
-        {...paintingSources(ageOf("frontier").painting)}
-        sizes="(min-width: 1024px) 50vw, 100vw"
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/90 to-transparent" />
-      <img
-        src={playerPortraitUrl(account, profile.portrait)}
-        alt=""
-        className={cn("size-20 rounded-full border-[3px] object-cover", own ? "border-kit-peach" : "border-kit-line2")}
-      />
+    <PaintedCard
+      painting={ageOf("frontier").painting}
+      sizes="(min-width: 1024px) 50vw, 100vw"
+      grade="top-deep"
+      className="flex h-40 items-start gap-3 p-3"
+    >
+      <Portrait account={account} portrait={profile.portrait} size={80} weight={3} ring={own ? "lit" : "line"} />
       <div className="flex min-h-20 min-w-0 items-center gap-2 font-body text-xl font-bold text-kit-cream">
         {standing && <OrderEmblem order={standing.order} size={26} />}
         <PlayerName account={account} />
       </div>
-    </section>
+    </PaintedCard>
   );
 };
 
@@ -131,9 +125,9 @@ const SeasonFigure = ({ account }: { account: string }) => {
   return (
     <section className="flex items-center gap-3 plate p-3">
       <SemanticIcon name="victory" size={30} />
-      <span className="font-body text-[28px] font-extrabold tabular-nums text-kit-gold">
+      <Figure as="span" tone="gold" className="text-[28px]">
         {own ? `#${own.rank}` : "—"}
-      </span>
+      </Figure>
       <span className="text-base text-kit-muted">
         {SEASON_WORDS.of} {formatAmount(field)}
       </span>

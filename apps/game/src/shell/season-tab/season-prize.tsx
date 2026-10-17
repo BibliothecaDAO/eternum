@@ -6,10 +6,11 @@ import { Button } from "@/ui/design-system/kit/button";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
 
 import { formatDate, formatDuration } from "@/ui/design-system/kit/time";
+import { Figure } from "@/ui/design-system/kit/figure";
 
 import { usePlayerHistory, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
 import { useLedgerPaused } from "../value/use-ledger-paused";
 import { FailureLine } from "../sign-in/failure-line";
@@ -144,10 +145,10 @@ const Share = ({ prize, state, now }: { prize: SeasonPrize; state: NonNullable<B
     <div className="flex flex-col gap-2 rounded-well border border-kit-gold bg-kit-gold/5 px-4 py-3">
       <span className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.yourShare}</span>
       {prize.share !== null && (
-        <b className="inline-flex items-center gap-2 font-body text-title font-extrabold tabular-nums text-kit-cream">
+        <Figure size="title" tone="cream" className="inline-flex items-center gap-2">
           <SemanticIcon name="lords" size={30} />
           {formatExact(lordsOf(prize.share))}
-        </b>
+        </Figure>
       )}
       {line[state]}
     </div>

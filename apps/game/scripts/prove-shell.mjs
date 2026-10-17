@@ -73,7 +73,7 @@ const END = {
   lobbySignIn: `location.pathname === "/sign-in" && (new URLSearchParams(location.search).get("next") ?? "").startsWith("/blitz/")`,
 };
 
-/** Season's rating board, as it says its service did not answer (shell/service-failure.tsx). */
+/** Season's rating board, as it says its service did not answer (ui/design-system/kit/service-failure.tsx). */
 const RATINGS_DOWN = "Ratings did not answer.";
 
 /** The flows, as the shell viewer's direction Q draws them; Blitz's board is a switch away on a phone. */

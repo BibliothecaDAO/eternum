@@ -1,22 +1,31 @@
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
+import { Confirm } from "@/ui/design-system/kit/confirm";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
 import { Field } from "@/ui/design-system/kit/field";
+import { Figure } from "@/ui/design-system/kit/figure";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
 import { Kbd } from "@/ui/design-system/kit/kbd";
+import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { Notice } from "@/ui/design-system/kit/notice";
 import { Panel, PanelTitle } from "@/ui/design-system/kit/panel";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { Pill } from "@/ui/design-system/kit/pill";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 import { PriceChip } from "@/ui/design-system/kit/price-chip";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { SectionLabel } from "@/ui/design-system/kit/section-label";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { FailureCard, StateCard } from "@/ui/design-system/kit/state-card";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
+import { Title } from "@/ui/design-system/kit/title";
+import { formatCountdown } from "@/ui/design-system/kit/time";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
@@ -73,6 +82,13 @@ const Components = () => {
         <TiersSection />
         <SeasonSection />
         <SheetSection />
+        <TitlesSection />
+        <FiguresSection />
+        <PortraitsSection />
+        <PaintedCardsSection />
+        <ClockChipsSection />
+        <ListRowsSection />
+        <ConfirmSection />
       </div>
     </main>
   );
@@ -86,6 +102,189 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
     {children}
   </section>
 );
+
+const TitlesSection = () => (
+  <Section title="Title">
+    <Title level="page" as="p" shadow="title">
+      Season 3
+    </Title>
+    <Title level="page-phone" as="p">
+      Profile
+    </Title>
+    <Title level="plate" as="p">
+      Sign in
+    </Title>
+    <Title level="hero" as="p">
+      The mist lifted
+    </Title>
+    <Title level="card" as="p">
+      Blitz 1630
+    </Title>
+    <Title level="countdown" as="p">
+      0:59:12
+    </Title>
+    <Title level="headline" face="body" as="p">
+      Realm of Ysabeau
+    </Title>
+    <Title level="header" face="body" as="p">
+      Season
+    </Title>
+  </Section>
+);
+
+const FiguresSection = () => (
+  <Section title="Figure">
+    <div className="flex flex-wrap items-baseline gap-4">
+      <Figure size="figure" tone="gold" weight="extrabold" className="leading-none">
+        #12
+      </Figure>
+      <Figure size="figure" tone="cream">
+        412
+      </Figure>
+      <Figure size="title-lg" tone="cream">
+        412
+      </Figure>
+      <Figure size="title" tone="cream">
+        1,840
+      </Figure>
+      <Figure size="heading" tone="gold2">
+        +24
+      </Figure>
+    </div>
+  </Section>
+);
+
+const PortraitsSection = () => (
+  <Section title="Portrait · Portrait.Empty">
+    <div className="flex flex-wrap items-center gap-3">
+      <Portrait portrait="01" size={96} weight={3} ring="lit" />
+      <Portrait portrait="02" size={80} weight={3} />
+      <Portrait portrait="03" size={28} weight={1.5} ring="lit" />
+      <Portrait portrait="04" size={28} weight={1.5} />
+      <Portrait portrait="05" size={24} weight={2} ring="lit" />
+      <span className="size-14">
+        <Portrait portrait="06" size="fill" weight={2} />
+      </span>
+      <span className="size-14">
+        <Portrait.Empty />
+      </span>
+      <span className="w-16 overflow-hidden rounded-full border-[3px] border-kit-line opacity-80">
+        <Portrait portrait="07" className="aspect-square w-full" />
+      </span>
+    </div>
+  </Section>
+);
+
+const PaintedCardsSection = () => (
+  <Section title="PaintedCard">
+    <PaintedCard painting="blitz-spires" sizes="390px" grade="side" className="flex flex-col gap-3 p-4">
+      <Title level="card" as="p">
+        Blitz 1630
+      </Title>
+      <Pill icon="hourglass">Starts 16:30 · in 2h 4m</Pill>
+    </PaintedCard>
+    <PaintedCard painting="frontier-mist" sizes="390px" grade="cover" className="flex flex-col gap-2 p-8">
+      <span className="font-body text-base text-kit-gold">News</span>
+      <Title level="hero" as="p">
+        The mist lifted
+      </Title>
+    </PaintedCard>
+    <PaintedCard painting="winter-fortress" sizes="390px" grade="top" className="flex min-h-44 flex-col gap-3 p-3.5">
+      <Button role="primary" word="Sign in" icon="person" />
+    </PaintedCard>
+    <PaintedCard painting="frontier-mist" sizes="390px" grade="top-deep" className="flex h-40 items-start gap-3 p-3">
+      <Portrait portrait="03" size={80} weight={3} ring="lit" />
+    </PaintedCard>
+    <div className="plate overflow-hidden pb-5">
+      <PaintedCard
+        as="span"
+        painting="frontier-mist"
+        sizes="390px"
+        grade="none"
+        className="block h-28 w-full rounded-none border-0"
+      />
+    </div>
+  </Section>
+);
+
+/** The handoff's "now": 7h 14m before today ends. */
+const NOW = ENDS_AT - 7 * HOUR - 14 * 60;
+
+const ClockChipsSection = () => (
+  <Section title="ClockChip · countdown">
+    <div className="flex flex-wrap gap-2 rounded-control bg-kit-plate2 p-2">
+      <ClockChip prefix="ends" at={ENDS_AT} now={NOW} />
+      <ClockChip prefix="opens" at={ENDS_AT + 30 * HOUR} now={NOW} />
+      <ClockChip prefix={null} at={NOW - 30 * HOUR} now={NOW} />
+    </div>
+    <Title level="countdown" as="p">
+      {formatCountdown(59 * 60 + 12)}
+    </Title>
+  </Section>
+);
+
+const ListRowsSection = () => (
+  <Section title="ListRow · SettingRow">
+    <ul className="plate px-3">
+      <ListRow
+        as="li"
+        gap={3}
+        lead={<RowThumb painting="blitz-spires" size={12} />}
+        title="Blitz 1630"
+        line={<span className="font-body text-sm text-kit-muted">Starts 16:30 · in 2h 4m</span>}
+        spaced
+        trailing={<Button role="secondary" word="Join" />}
+        className="py-3"
+      />
+      <ListRow
+        as="li"
+        to="/lab/kit"
+        height={14}
+        gap={3}
+        lead={<RowThumb painting="frontier-mist" size={10} />}
+        title="Frontier 09:00"
+        line={<span className="text-sm text-kit-muted">7 Oct</span>}
+        className="px-1 py-2"
+      >
+        <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">3rd</span>
+      </ListRow>
+    </ul>
+    <ol className="flex flex-col">
+      <ListRow as="li" height={12} gap={3} className="px-1">
+        <span className="w-8 text-right font-body text-base font-bold tabular-nums text-kit-cream">1</span>
+        <span className="min-w-0 flex-1">Ysabeau</span>
+      </ListRow>
+      <ListRow as="li" height={12} gap={3} own="lit" className="px-1">
+        <span className="w-8 text-right font-body text-base font-bold tabular-nums text-kit-cream">12</span>
+        <span className="min-w-0 flex-1">{YOU}</span>
+      </ListRow>
+    </ol>
+    <SettingRows>
+      <SettingRow icon="person" name="Settings" onOpen={() => undefined} />
+      <SettingRow icon="guide" name="How to play" href="/lab/kit/tokens" />
+      <SettingRow icon="music" name="Music" end={<Pill icon="check" />} />
+      <SettingRow icon="chronicles" name="The mist lifted" value="13 Jan 2025" onOpen={() => undefined} />
+    </SettingRows>
+  </Section>
+);
+
+const ConfirmSection = () => {
+  const [open, setOpen] = useState(false);
+  return (
+    <Section title="Confirm">
+      <Button role="outline" word="Remove" onClick={() => setOpen(true)} />
+      {open && (
+        <Confirm
+          question="Remove this device?"
+          cost="It signs out and forgets its key."
+          verb="Remove"
+          onConfirm={() => setOpen(false)}
+          onKeep={() => setOpen(false)}
+        />
+      )}
+    </Section>
+  );
+};
 
 const ClockSection = () => (
   <Section title="DayDial · ClockLine">

@@ -12,7 +12,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import {
   type EnvironmentLedger,

@@ -1,7 +1,7 @@
 import { buildEntryHref } from "@/play/navigation/play-route";
 
 import type { DirectoryGame } from "./herald";
-import type { Painting } from "./paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { ageOf } from "./play/ages";
 
 export const modeLabel = (game: Pick<DirectoryGame, "mode" | "preset_id">): string => {

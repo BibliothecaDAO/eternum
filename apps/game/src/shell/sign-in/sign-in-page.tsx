@@ -1,4 +1,5 @@
 import { IdentityRequestError } from "@realms-world/identity";
+import { Title } from "@/ui/design-system/kit/title";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -14,7 +15,7 @@ import { failureSentence, type IdentityAction } from "@/ui/modules/identity/iden
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { paintingSources } from "../paintings";
+import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "../words";
 import { CodeStep } from "./code-step";
 import { ProfileStep } from "./profile-step";
@@ -193,16 +194,21 @@ const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
       <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
     </div>
-    <p className="fixed bottom-10 left-gutter-desk max-w-tagline font-display text-hero leading-[1.1] text-kit-cream text-shadow-title-flat wide:left-gutter-wide">
+    <Title
+      level="hero"
+      as="p"
+      shadow="title-flat"
+      className="fixed bottom-10 left-gutter-desk max-w-tagline leading-[1.1] wide:left-gutter-wide"
+    >
       {LORE_LINE}
-    </p>
+    </Title>
     <section
       className={cn(
         "leather fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
         PANEL,
       )}
     >
-      <h1 className="font-display text-[34px] leading-tight text-kit-cream">{title}</h1>
+      <Title level="plate">{title}</Title>
       {children}
     </section>
   </>

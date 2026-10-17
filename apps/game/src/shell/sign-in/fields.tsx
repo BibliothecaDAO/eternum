@@ -1,8 +1,8 @@
 import { IDENTITY_PORTRAITS, SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 
-import { portraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Field } from "@/ui/design-system/kit/field";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 
 import { SIGN_IN_WORDS } from "../words";
 
@@ -91,7 +91,8 @@ export const PortraitGrid = ({ chosen, onChoose }: { chosen: string; onChoose: (
           chosen === id ? "border-kit-peach" : "border-kit-line opacity-80",
         )}
       >
-        <img src={portraitUrl(id)} alt="" className="aspect-square w-full object-cover" />
+        {/* The ring is the button's, so the focus ring and the tap take the whole circle. */}
+        <Portrait portrait={id} className="aspect-square w-full" />
       </button>
     ))}
   </div>
