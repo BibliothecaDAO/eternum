@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Hovers that explain",
+    description:
+      "A realm's level-up says why it waits, what it costs (or that it is free) and what the level gives, and every window shows the same level number. The realm card's numbers, automation and the order buttons explain themselves on hover, relics say what they do, for how long and for how much Essence, and a Hyperstructure site says what founding brings before you confirm it. An army standing on an opened crate shows first.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Points first",
     description:
       'The top bar says how to win ("Most points in 1h wins") beside your points, and the start banner says what scores. Next up walks a first game by points: raise an army, explore, open a crate, take a camp or rift, then a Hyperstructure, and says when an army falls. Events rows say what came of each action, and the game says points everywhere.',

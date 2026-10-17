@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -75,13 +76,13 @@ const StructureStatusStats = ({
   </div>
 );
 
-/** What a realm's next level asks for, against what it holds and what is on its way: the level-up step's hover note. */
-const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
+/**
+ * What a realm's next level asks for and gives: why the step cannot be taken now (when it cannot), each cost against
+ * what the realm holds and what is on its way, or that it costs nothing, and what the level brings. Never a blank.
+ */
+export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
   if (step.mode === "max") {
     return <div className="text-sm text-kit-muted">Castle fully upgraded.</div>;
-  }
-  if (!step.requirements?.length) {
-    return <div className="text-sm text-kit-muted">No upgrade requirements found.</div>;
   }
 
   return (
@@ -90,6 +91,8 @@ const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
         <span className="text-sm text-kit-muted">Upgrade</span>
         {step.nextLevelName && <span className="text-sm text-kit-muted">to {step.nextLevelName}</span>}
       </div>
+      {step.refusal && <p className="text-sm text-red-300">{step.refusal}</p>}
+      {step.requirements.length === 0 && <p className="text-sm text-kit-cream">Nothing to pay for this level.</p>}
       <div className="space-y-1">
         {step.requirements.map((req) => {
           const isMet = req.current !== undefined && req.current >= req.amount;
@@ -119,6 +122,11 @@ const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
           );
         })}
       </div>
+      {step.nextLevel > 0 && (
+        <p className="text-sm text-kit-muted">
+          {step.nextLevelName ?? "It"} gives {describeCastleLevel(step.nextLevel)}.
+        </p>
+      )}
     </div>
   );
 };

@@ -97,7 +97,7 @@ export const IdleArmiesButton = ({ idle, className }: { idle: IdleArmies; classN
     disabled={idle.refusal !== null}
     onClick={() => selectNextIdleArmy(idle.ids)}
     aria-keyshortcuts="I"
-    title={idle.refusal ?? "Select the next idle army"}
+    data-tip={idle.refusal ?? "Select the next idle army"}
     className={cn(
       "pointer-events-auto flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-black/70 px-3 text-sm font-semibold text-kit-cream hover:border-kit-gold disabled:opacity-50",
       className,

@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { relicLine } from "@/ui/features/relics/relic-words";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -324,7 +325,7 @@ export const ResourceChip = ({
           onMouseEnter={(event) =>
             setTooltip({
               anchorElement: event.currentTarget,
-              content: "Activate Relic",
+              content: `Activate · ${relicLine(resourceId)}`,
               position: "bottom",
             })
           }

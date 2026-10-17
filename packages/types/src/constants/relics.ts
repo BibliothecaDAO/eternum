@@ -24,7 +24,6 @@ export interface RelicInfo {
   rateBps: number;
   effect: string;
   bonus: number;
-  duration?: string;
 }
 
 /** What a relic's rate does, in words, and the multiplier it applies. */
@@ -233,11 +232,6 @@ export const RELICS: RelicInfo[] = [
     raises("troop production rate"),
   ),
 ];
-
-export const RELIC_COST_PER_LEVEL = {
-  1: 250,
-  2: 500,
-};
 
 // Helper functions
 export const getRelicInfo = (relicId: ResourcesIds): RelicInfo | undefined => {

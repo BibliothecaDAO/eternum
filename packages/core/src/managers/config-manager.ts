@@ -14,6 +14,11 @@ import {
   TroopType,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
+
+/** The first relic's resource id: the game's relic rules are listed from it (relics.cairo FIRST_RELIC). */
+const FIRST_RELIC_ID = ResourcesIds.StaminaRelic1;
+/** The stamina relics, which last their uses rather than their duration. */
+const STAMINA_RELIC_IDS = new Set<number>([ResourcesIds.StaminaRelic1, ResourcesIds.StaminaRelic2]);
 import { buildingCostModeOf, type BuildingCostMode } from "../utils/building-cost-mode";
 import { enabledHelpTransfers, type HelpTransfer } from "../utils/army-help";
 import { isModeRuleEnabled } from "../utils/mode-rules";
@@ -591,6 +596,21 @@ export class ClientConfigManager {
   }
   getSpireTravelEssenceCost() {
     return this.divideByPrecision(Number(this.rules().spire_travel_essence_cost));
+  }
+  /**
+   * How long a relic's effect lasts, in seconds (0 for one that acts at once), and the Essence it costs to activate,
+   * as the game's relic rules set them: rules are listed from the first relic id, and the stamina relics last their
+   * uses, the others their duration, each in army ticks (relics.cairo, boost_explorer and boost_production).
+   */
+  getRelicActivation(relicId: number): { durationSeconds: number; essenceCost: number } {
+    const rules = this.facts().require("RelicRules", { game_id: this.gameId }).rules;
+    const rule = rules[relicId - FIRST_RELIC_ID];
+    if (!rule) throw new Error(`No relic rule for relic ${relicId}`);
+    const ticks = STAMINA_RELIC_IDS.has(relicId) ? rule.uses : rule.duration;
+    return {
+      durationSeconds: ticks * this.getTick(TickIds.Armies),
+      essenceCost: this.divideByPrecision(Number(rule.essence_cost)),
+    };
   }
   getArtificerConfig() {
     return {

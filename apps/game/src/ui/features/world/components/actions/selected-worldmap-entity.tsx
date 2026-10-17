@@ -22,13 +22,14 @@ import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   biomeTypeOf,
+  configManager,
   hasTileOccupier,
   isTileOccupierArmy,
   isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
-import { type ReactNode, useCallback } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -94,21 +95,18 @@ const SelectedWorldmapEntityContent = ({
   const title = (label: string) => formatTilePanelTitle(label, selectedHex);
   const biomeCard = <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />;
 
-  // A crate opened this session keeps its panel after the tile empties, now listing what it yielded.
-  if (isChest || crateOpening) {
-    return stackParts({
-      occupant: (
-        <RelicCrateTilePanel
-          crateEntityId={isChest ? tile.occupier_id : null}
-          opening={crateOpening}
-          selectedHex={selectedHex}
-          coordsLabel={title("Relic Tile")}
-          headerAction={headerAction}
-        />
-      ),
-      biome: biomeCard,
-    });
-  }
+  // A crate opened this session keeps its panel after the tile empties, now listing what it yielded. An army standing
+  // on the tile comes first, the crate under it: the unit the player can order beats the tile's memory.
+  const cratePanel = (isChest || crateOpening) && (
+    <RelicCrateTilePanel
+      crateEntityId={isChest ? tile.occupier_id : null}
+      opening={crateOpening}
+      selectedHex={selectedHex}
+      coordsLabel={title("Relic Tile")}
+      headerAction={isArmy ? undefined : headerAction}
+    />
+  );
+  if (cratePanel && !isArmy) return stackParts({ occupant: cratePanel, biome: biomeCard });
 
   // A shrine or well is used from Frontier's own card and a dormant spire offers nothing; here its tile reads like any
   // other.
@@ -140,7 +138,7 @@ const SelectedWorldmapEntityContent = ({
   if (isReservedHyperstructure)
     return stackParts({
       occupant: (
-        <TileChrome title={title("Unconstructed Hyperstructure")} headerAction={headerAction}>
+        <TileChrome title={title("Hyperstructure site")} headerAction={headerAction}>
           <ReservedHyperstructurePanel selectedHex={selectedHex} />
         </TileChrome>
       ),
@@ -166,15 +164,18 @@ const SelectedWorldmapEntityContent = ({
 
   return stackParts({
     occupant: (
-      <ArmyBannerEntityDetail
-        armyEntityId={occupierEntityId}
-        showButtons={false}
-        className={scrollableEntityDetailClass}
-        coordsLabel={title("Army Tile")}
-        headerAction={headerAction}
-        compact
-        layoutVariant="banner"
-      />
+      <>
+        <ArmyBannerEntityDetail
+          armyEntityId={occupierEntityId}
+          showButtons={false}
+          className={scrollableEntityDetailClass}
+          coordsLabel={title("Army Tile")}
+          headerAction={headerAction}
+          compact
+          layoutVariant="banner"
+        />
+        {cratePanel}
+      </>
     ),
     biome: <ArmyBiomeCard armyEntityId={occupierEntityId} biome={biome} onSimulateBattle={handleSimulateBattle} />,
   });
@@ -260,10 +261,18 @@ const TileChrome = ({
   </InfoBubble>
 );
 
+/**
+ * A reserved Hyperstructure site: what founding it costs and brings, said before the click, and founded only once
+ * confirmed. Founding is free and cannot be undone: it raises a Hyperstructure held by The Vanguard, behind its guards,
+ * which pays whoever takes it.
+ */
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({ contractHex: selectedHex });
+  const [confirming, setConfirming] = useState(false);
+  const capturePoints = configManager.getVictoryPointGrants().claimHyperstructureFromBandits;
 
   const handleCreateHyperstructure = useCallback(async () => {
+    setConfirming(false);
     try {
       await createHyperstructure();
     } catch (error) {
@@ -276,18 +285,39 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
 
   return (
     <div className="flex flex-col gap-2">
-      <p className={HUD_HEADLINE}>Reserved Hyperstructure</p>
-      <p className={HUD_BODY}>Reserved for a future Hyperstructure. Create it here or double-click the tile.</p>
-      <div>
-        <button
-          type="button"
-          className={HUD_PILL_BUTTON}
-          disabled={!canCreate || isCreating}
-          onClick={() => void handleCreateHyperstructure()}
-        >
-          {isCreating ? "Creating…" : "Create here"}
-        </button>
-      </div>
+      <p className={HUD_BODY}>
+        Founding is free. It raises a Hyperstructure here, held by The Vanguard behind its guards. Take it from them: +
+        {capturePoints.toLocaleString()} points, then points every second.
+      </p>
+      {confirming ? (
+        <div className="flex flex-col gap-2">
+          <p className={HUD_BODY}>Found it? It cannot be undone.</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className={HUD_PILL_BUTTON}
+              disabled={!canCreate || isCreating}
+              onClick={() => void handleCreateHyperstructure()}
+            >
+              Found it
+            </button>
+            <button type="button" className={HUD_PILL_BUTTON} onClick={() => setConfirming(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <button
+            type="button"
+            className={HUD_PILL_BUTTON}
+            disabled={!canCreate || isCreating}
+            onClick={() => setConfirming(true)}
+          >
+            {isCreating ? "Founding…" : "Found a Hyperstructure"}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

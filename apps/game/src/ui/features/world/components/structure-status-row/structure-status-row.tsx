@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -109,11 +110,9 @@ export const StructureStatusRow = memo(
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
-    // Use numeric realm level (1..6) instead of the letter abbreviation —
-    // shorter, sortable at a glance, no Settlement-vs-Hamlet mental lookup.
     const levelBadge =
       capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
-        ? String(Math.max(1, Math.trunc(structure.realmLevel)))
+        ? String(realmLevelNumber(Math.trunc(structure.realmLevel)))
         : null;
     const populationLabel =
       statsVariant === "default" && capabilities.hasPopulationDetails

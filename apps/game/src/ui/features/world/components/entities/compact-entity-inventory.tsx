@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { relicLine, relicShortName } from "@/ui/features/relics/relic-words";
 
 import { memo, useCallback, useMemo } from "react";
 
@@ -190,9 +191,6 @@ const getResourceItemClass = (variant: InventoryItemVariant) =>
 const RELIC_ICON_SIZE = "lg";
 const RELIC_COUNT_CLASS = "text-sm";
 
-/** "Damage Reduction Relic I" reads "Damage Reduction I" on its chip. */
-const relicChipName = (name: string) => name.replace(" Relic", "");
-
 const getRelicItemClass = (item: DisplayItem) => {
   if (item.isActive) {
     return "border-relic2/70 bg-[linear-gradient(180deg,rgba(165,124,255,0.2),rgba(14,10,22,0.92))] shadow-[inset_0_1px_0_rgba(210,185,255,0.18),0_0_12px_rgba(165,124,255,0.16)]";
@@ -331,7 +329,7 @@ export const CompactEntityInventory = memo(
           </span>
           {relicInfo && !options.hero && (
             <span className="mt-1 max-w-full truncate text-xs leading-none text-gold/80">
-              {relicChipName(relicInfo.name)}
+              {relicShortName(item.resourceId)}
             </span>
           )}
           {showLabels && resourceDef && (
@@ -351,7 +349,7 @@ export const CompactEntityInventory = memo(
             className={itemClasses}
             onClick={() => handleRelicClick(item)}
             aria-label={`Activate ${itemName}`}
-            title={`Activate ${itemName}`}
+            data-tip={`Activate · ${relicLine(item.resourceId)}`}
           >
             {itemContent}
           </button>
@@ -362,7 +360,13 @@ export const CompactEntityInventory = memo(
         <div
           key={`inventory-item-${item.resourceId}`}
           className={itemClasses}
-          title={item.isRelic && !item.canActivate ? `${itemName} cannot be used by this entity` : itemName}
+          data-tip={
+            item.isRelic
+              ? item.canActivate
+                ? relicLine(item.resourceId)
+                : `${relicLine(item.resourceId)} It cannot be used by this holder.`
+              : itemName
+          }
         >
           {itemContent}
         </div>

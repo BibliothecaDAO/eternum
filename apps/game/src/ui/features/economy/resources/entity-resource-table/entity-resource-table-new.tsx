@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { structureMapPosition } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -125,7 +126,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         return {
           entityId: safeInteger(structure.entityId),
           label,
-          level: structure.structure.base.level || 1,
+          level: realmLevelNumber(structure.structure.base.level),
           isSelected: selectedStructureId ? safeInteger(structure.entityId) === selectedStructureId : false,
         };
       })

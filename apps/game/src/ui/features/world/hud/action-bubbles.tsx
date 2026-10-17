@@ -42,7 +42,7 @@ const ActionBubble = ({ action }: { action: StructureAction }) => {
       aria-label={action.label}
       aria-pressed={action.active}
       disabled={action.refusal !== null}
-      title={action.refusal ?? action.label}
+      data-tip={action.refusal ?? undefined}
       aria-keyshortcuts={key}
       onClick={action.onClick}
       className="hud-bubble"

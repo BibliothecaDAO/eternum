@@ -209,17 +209,7 @@ export const RelicActivationSelector = ({
 
   const { relicInfo, resourceName, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
 
-  const relicDescription = useMemo(() => {
-    if (!relicInfo) {
-      return undefined;
-    }
-
-    if (!relicInfo.duration) {
-      return relicInfo.effect;
-    }
-
-    return `${relicInfo.effect} (${relicInfo.duration})`;
-  }, [relicInfo]);
+  const relicDescription = relicInfo?.effectLine;
 
   const enrichedHolders = useMemo<EnrichedHolder[]>(() => {
     const resolveParentStructureName = (structureId: ID | null): string | null => {

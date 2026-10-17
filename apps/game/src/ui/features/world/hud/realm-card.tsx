@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { automationRefusal, presetLine } from "@/ui/features/settlement/production/automation-words";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -23,7 +24,7 @@ import type { StructureWithMetadata } from "@/ui/features/world/containers/top-h
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { divideByPrecision, type ResourceManager } from "@bibliothecadao/eternum";
-import { inferRealmPreset, type RealmPresetId } from "@bibliothecadao/eternum/automation";
+import { inferRealmPreset, REALM_PRESETS, type RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { EntityType, type ID, isRelic, RelicRecipientType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
@@ -69,7 +70,6 @@ const RenameButton = ({ entityId }: { entityId: ID }) => {
     <button
       type="button"
       aria-label="Rename"
-      title="Rename"
       onClick={() => rename(safeInteger(entityId))}
       className="flex h-6 w-6 items-center justify-center rounded-md text-kit-muted hover:text-gold"
     >
@@ -104,12 +104,18 @@ const HoldingStats = ({ holding }: { holding: StructureWithMetadata }) => {
       : null;
   return (
     <>
-      <span className="flex items-center gap-1.5" title="Population used / capacity">
+      <span
+        className="flex items-center gap-1.5"
+        data-tip={`Population ${holding.population.toLocaleString()} of ${holding.populationCapacity.toLocaleString()}`}
+      >
         <Icon name="people" size={16} />
         {formatPopulationStatusLabel(holding.population, holding.populationCapacity)}
       </span>
       {tiles && (
-        <span className="flex items-center gap-1.5" title="Building tiles used / open">
+        <span
+          className="flex items-center gap-1.5"
+          data-tip={`Building slots ${holding.buildingTilesOccupied} of ${holding.buildingTilesTotal}`}
+        >
           <Icon name="hexagon" size={16} />
           {tiles}
         </span>
@@ -118,13 +124,6 @@ const HoldingStats = ({ holding }: { holding: StructureWithMetadata }) => {
   );
 };
 
-/** The three automation presets; "idle" is shown as Off, since an idle realm is one whose automation is off. */
-const PRESETS: Array<{ id: RealmPresetId; label: string }> = [
-  { id: "smart", label: "Smart" },
-  { id: "custom", label: "Custom" },
-  { id: "idle", label: "Off" },
-];
-
 const AutomationSelect = ({ entityId, entityType }: { entityId: ID; entityType: "realm" | "village" }) => {
   const showAutomation = useGameModeConfig().ui.showAutomation;
   const realmId = String(entityId);
@@ -132,6 +131,8 @@ const AutomationSelect = ({ entityId, entityType }: { entityId: ID; entityType: 
   const hydrated = useAutomationStore((state) => state.hydrated);
   const ordersAllowed = useUIStore(canIssueOrders);
   if (!showAutomation) return null;
+  const current = inferRealmPreset(automation);
+  const refusal = automationRefusal(ordersAllowed, hydrated);
   const choose = (presetId: RealmPresetId) => {
     const store = useAutomationStore.getState();
     store.upsertRealm(realmId, { entityType, presetId });
@@ -141,12 +142,13 @@ const AutomationSelect = ({ entityId, entityType }: { entityId: ID; entityType: 
     <select
       aria-label="Production automation"
       className="hud-select shrink-0"
-      value={inferRealmPreset(automation)}
-      disabled={!ordersAllowed || !hydrated}
+      value={current}
+      data-tip={refusal ?? presetLine(current)}
+      disabled={refusal !== null}
       onKeyDown={(event) => event.stopPropagation()}
       onChange={(event) => choose(event.target.value as RealmPresetId)}
     >
-      {PRESETS.map((preset) => (
+      {REALM_PRESETS.map((preset) => (
         <option key={preset.id} value={preset.id}>
           {preset.label}
         </option>

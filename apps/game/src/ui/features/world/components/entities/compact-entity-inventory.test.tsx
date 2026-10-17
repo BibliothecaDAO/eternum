@@ -8,6 +8,11 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1 }));
 vi.mock("@/ui/features/relics/components/relic-activation-selector", () => ({ RelicActivationSelector: () => null }));
+// A relic's hover line reads the game's relic rules; relic-words is the one place that words it.
+vi.mock("@/ui/features/relics/relic-words", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/ui/features/relics/relic-words")>()),
+  relicLine: (relicId: number) => `relic ${relicId}`,
+}));
 
 import { CompactEntityInventory } from "./compact-entity-inventory";
 
@@ -53,7 +58,7 @@ it("sizes a tight row's relic chips to what they hold, so a few relics stay with
           ),
           "text/html",
         )
-        .querySelectorAll("[title]"),
+        .querySelectorAll("[data-tip]"),
     ].map((chip) => chip.classList.contains("h-full"));
   // A layout engine stretches an h-full chip to an unrelated ancestor's height; jsdom lays nothing out, so the class is
   // what is checked: grid cells share their row's height, tight chips never stretch.

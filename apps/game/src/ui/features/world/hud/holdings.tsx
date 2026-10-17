@@ -1,4 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { type LeftListFilter, useUIStore } from "@/hooks/store/use-ui-store";
@@ -120,7 +121,6 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
               role="tab"
               aria-selected={entry.kind === holdings.filter}
               aria-label={`${entry.plural}, ${entry.count}`}
-              title={entry.plural}
               className="hud-tab"
               onClick={() => holdings.setFilter(entry.kind)}
             >
@@ -180,7 +180,6 @@ const HoldingRow = memo(
           type="button"
           aria-pressed={structure.isFavorite}
           aria-label={starWord}
-          title={starWord}
           onClick={() => onStar(safeInteger(structure.entityId))}
           className={cn(
             "flex h-8 w-7 shrink-0 items-center justify-center transition-opacity",
@@ -199,7 +198,7 @@ const HoldingRow = memo(
             icon={holdingIcon(structure)}
             size="sm"
             tone={selected ? "lit" : "plain"}
-            corner={hasLevels(structure) ? structure.realmLevel + 1 : undefined}
+            corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
           />
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-kit-cream">{structure.displayName}</span>
         </button>

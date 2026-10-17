@@ -35,6 +35,23 @@ describe("native immutable configuration", () => {
     });
   });
 
+  it("reads a relic's duration and Essence cost from the game's relic rules, in army ticks", () => {
+    const { manager, write } = fixture();
+    const armyTick = Number(preset.rules.tick_config.armies_tick_in_seconds);
+    // Rules are listed from the first relic (Stamina I, 39): the stamina relics last their uses, the others their duration.
+    const rules = Array.from({ length: 18 }, (_, index) => ({
+      rate_bps: 1000,
+      duration: index < 2 ? 0 : 5,
+      uses: index < 2 ? 3 : 0,
+      essence_cost: BigInt(100 + index) * 1_000_000_000n,
+      draw_weight: 1n,
+    }));
+    write("RelicRules", [54], { game_id: 54, rules });
+    expect(manager.getRelicActivation(39)).toEqual({ durationSeconds: 3 * armyTick, essenceCost: 100 });
+    expect(manager.getRelicActivation(41)).toEqual({ durationSeconds: 5 * armyTick, essenceCost: 102 });
+    expect(() => manager.getRelicActivation(39 + 18)).toThrow("No relic rule for relic 57");
+  });
+
   it("reads victory points in the units the game awards them", () => {
     const { manager, write } = fixture();
     write("SeasonWinThreshold", [54], { game_id: 54, points: 10_000_000_000n });

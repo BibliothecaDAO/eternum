@@ -1,4 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
+import { realmLevelNumber } from "@/ui/lib/realm-level";
 import type { LeftListFilter } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -117,7 +118,7 @@ export const HoldingPicker = ({
                 icon={holdingIcon(holding)}
                 size="sm"
                 tone={picked ? "lit" : "plain"}
-                corner={holding.realmLevelLabel !== null ? holding.realmLevel + 1 : undefined}
+                corner={holding.realmLevelLabel !== null ? realmLevelNumber(holding.realmLevel) : undefined}
               />
               {/* The name has the row's width, its note under it: a long name is not cut for "under a minute". */}
               <span className="flex min-w-0 flex-1 flex-col leading-tight">
