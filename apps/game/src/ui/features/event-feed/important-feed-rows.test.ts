@@ -64,23 +64,108 @@ it("keeps only the newest rows inside the quick feed window", () => {
     null,
   );
   const ids = (maxRows: number) =>
-    selectQuickFeedRows(rows, 100_500, new Map(), 20_000, maxRows).visible.map((row) => row.id);
+    selectQuickFeedRows(rows, 100_500, { showing: new Set(), ended: new Set() }, 20_000, maxRows).map((row) => row.id);
   expect(ids(5)).toEqual(["story:future", "story:fresh", "story:older"]);
   expect(ids(1)).toEqual(["story:future"]);
 });
 
-it("keeps a row its whole window from when it first shows, however late its story arrived, then drops it", () => {
-  // The story is stamped at its block (90 s) and reaches the client 10 s later (100 s).
-  const rows = selectImportantFeedRows([battle("late", 90_000)], empty, "all", null);
-  const show = (nowMs: number, firstShown = new Map<string, number>()) =>
-    selectQuickFeedRows(rows, nowMs, firstShown, 20_000, 5);
-  const first = show(100_000);
-  expect(first.visible.map((row) => row.id)).toEqual(["story:late"]);
-  expect(show(119_000, new Map(first.firstShown)).visible.map((row) => row.id)).toEqual(["story:late"]);
-  expect(show(120_000, new Map(first.firstShown)).visible).toEqual([]);
-  // A row already past the window when the card first sees it (history after a reload) never shows.
-  expect(show(111_000).visible).toEqual([]);
+it("keeps pending and completed actions and travelling caravans in Events", () => {
+  const feed = {
+    inFlight: [
+      { kind: "arrival", id: "travelling", at: 50 },
+      { kind: "transaction", id: "pending", at: 40, transaction: { status: "pending", type: TransactionType.SEND } },
+    ],
+    arrived: [],
+    recent: [
+      { kind: "transaction", id: "done", at: 30, transaction: { status: "success" } },
+      { kind: "notice", id: "notice", at: 20 },
+    ],
+  } as unknown as FeedRows;
+  expect(selectImportantFeedRows([], feed, "mine", "0x1").map((row) => row.id)).toEqual([
+    "travelling",
+    "pending",
+    "done",
+    "notice",
+  ]);
 });
+
+it("leaves routine production in Activity but keeps failed and still-checking production visible", () => {
+  const production = (id: string, status: "pending" | "checking" | "success" | "reverted") => ({
+    kind: "transaction" as const,
+    id,
+    at: 10,
+    transaction: {
+      hash: id,
+      submittedAt: 10,
+      description: "Converted resources",
+      status,
+      type: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    },
+  });
+  const feed: FeedRows = {
+    arrived: [],
+    inFlight: [production("pending", "pending"), production("checking", "checking")],
+    recent: [production("done", "success"), production("failed", "reverted")],
+  };
+  expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["checking", "failed"]);
+  expect(feed.recent).toHaveLength(2);
+});
+
+const levelUp = (id: string, at: number, owner: string, tx = `0x${id}`) =>
+  ({
+    ...battle(id, at, owner),
+    story: "StructureLevelUpStory",
+    owner,
+    tx_hash: tx,
+    storyPayload: {},
+  }) as ProcessedStoryEvent;
+
+it("holds the news of the player's own realms from history, never another player's, and not under Combat", () => {
+  const stories = [levelUp("mine", 30, "0x1"), levelUp("theirs", 20, "0x2")];
+  expect(selectImportantFeedRows(stories, empty, "all", "0x01").map((row) => row.id)).toEqual(["story:mine"]);
+  expect(selectImportantFeedRows(stories, empty, "mine", "0x01").map((row) => row.id)).toEqual(["story:mine"]);
+  expect(selectImportantFeedRows(stories, empty, "combat", "0x01")).toEqual([]);
+});
+
+it("shows a completed send once its history story arrives as that story, which a reload brings back", () => {
+  const send = (hash: string) => ({ kind: "transaction", id: hash, at: 25, transaction: { hash, status: "success" } });
+  const feed = { ...empty, recent: [send("0xup"), send("0xother")] } as unknown as FeedRows;
+  const story = levelUp("up", 30, "0x1", "0xup");
+  expect(selectImportantFeedRows([story], feed, "all", "0x1").map((row) => row.id)).toEqual(["story:up", "0xother"]);
+  // After a reload the session's sends are gone; the story is not.
+  expect(selectImportantFeedRows([story], empty, "all", "0x1").map((row) => row.id)).toEqual(["story:up"]);
+});
+
+it("holds each event once, however many sources reach it", () => {
+  const send = { kind: "transaction", id: "0xexplore", at: 25, transaction: { hash: "0xexplore", status: "pending" } };
+  const feed = { ...empty, inFlight: [send], recent: [send] } as unknown as FeedRows;
+  expect(selectImportantFeedRows([], feed, "all", "0x1").map((row) => row.id)).toEqual(["0xexplore"]);
+});
+
+it("keeps a drawn row until its own fade ends, whatever the chain clock does, and lets a hidden row in only while recent", () => {
+  const rows = selectImportantFeedRows(
+    Array.from({ length: 6 }, (_, index) => battle(`row${index}`, 100_000 - index)),
+    empty,
+    "all",
+    null,
+  );
+  const shown = (feed: typeof rows, nowMs: number, showing: string[], ended: string[] = []) =>
+    selectQuickFeedRows(feed, nowMs, { showing: new Set(showing), ended: new Set(ended) }, 20_000, 5).map(
+      (row) => row.id,
+    );
+  const first = shown(rows, 100_000, []);
+  expect(first).not.toContain("story:row5");
+  // A drawn row stays on any chain time, even far past its stamp, until its fade ends.
+  expect(shown(rows, 300_000, first)).toEqual(first);
+  expect(shown(rows, 300_000, first, ["story:row0"])).not.toContain("story:row0");
+  // The hidden sixth row started nothing: when a slot frees while it is still recent, it comes in, then stays.
+  const next = shown(rows.slice(1), 110_000, first);
+  expect(next).toContain("story:row5");
+  expect(shown(rows.slice(1), 125_000, next)).toContain("story:row5");
+  // A hidden row already past the window (history after a reload) never comes in.
+  expect(shown(rows.slice(1), 125_000, [])).toEqual([]);
+});
+
 it("lists a building placed and paid for in one transaction once, and two buildings twice", () => {
   const building = (index: number, story: string, x: number, extra: Record<string, unknown>) =>
     ({

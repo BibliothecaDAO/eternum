@@ -7,7 +7,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import {
   extractRoleLabel,
@@ -42,28 +42,26 @@ export const HeadlineIcon = ({ type }: { type: HeadlineType }) => {
 
 /** One feed row, quick feed or log: icon, one line of text, the time; a row with a place flies the camera. */
 /** One row of the feed: a story opens where it happened (its army for an opened crate), any other row flies to its place. */
-export const FeedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) =>
-  row.kind === "story" ? <StoryRowLine row={row} style={style} /> : <PlacedRowLine row={row} style={style} />;
+export const FeedRowLine = ({ row }: { row: ImportantFeedRow }) =>
+  row.kind === "story" ? <StoryRowLine row={row} /> : <PlacedRowLine row={row} />;
 
-const StoryRowLine = ({ row, style }: { row: Extract<ImportantFeedRow, { kind: "story" }>; style?: CSSProperties }) => (
-  <RowLine row={row} style={style} open={useStoryOpener(row.event)} recipient={null} />
+const StoryRowLine = ({ row }: { row: Extract<ImportantFeedRow, { kind: "story" }> }) => (
+  <RowLine row={row} open={useStoryOpener(row.event)} recipient={null} />
 );
 
-const PlacedRowLine = ({ row, style }: { row: ImportantFeedRow; style?: CSSProperties }) => {
+const PlacedRowLine = ({ row }: { row: ImportantFeedRow }) => {
   const { target, recipient } = useFeedRowPlace(row);
   const navigate = useNavigateToMapView();
-  return <RowLine row={row} style={style} open={target ? () => navigate(target) : null} recipient={recipient} />;
+  return <RowLine row={row} open={target ? () => navigate(target) : null} recipient={recipient} />;
 };
 
 /** The row itself: its words never cut to one line, so a sentence keeps where things went; whole on hover. */
 const RowLine = ({
   row,
-  style,
   open,
   recipient,
 }: {
   row: ImportantFeedRow;
-  style?: CSSProperties;
   open: (() => void) | null;
   recipient: string | null;
 }) => {
@@ -78,18 +76,13 @@ const RowLine = ({
     </>
   );
   if (!open) {
-    return (
-      <div className={FEED_ROW_CLASS} style={style}>
-        {content}
-      </div>
-    );
+    return <div className={FEED_ROW_CLASS}>{content}</div>;
   }
   return (
     <button
       type="button"
       onClick={open}
       className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-black/70")}
-      style={style}
     >
       {content}
     </button>

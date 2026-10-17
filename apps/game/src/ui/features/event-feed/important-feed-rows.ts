@@ -95,29 +95,20 @@ const isEventsStory = (event: ProcessedStoryEvent, filter: ImportantFeedFilter, 
 export const formatFeedTime = (atMs: number): string =>
   new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
-/** When each row the quick feed showed first appeared on screen, in chain time. */
-export type FirstShown = ReadonlyMap<string, number>;
-
 /**
- * The quick feed shows what just happened, newest first, capped: a row is new while its event is within the window of
- * now, and once on screen it stays the whole window from that moment, however late its story reached the client. One
- * clock, chain time, measures both. Returns the rows to show and when each first showed.
+ * The quick feed shows what just happened, newest first, capped. A row on screen stays until its own fade ends
+ * (`ended`), whatever the chain clock does meanwhile; a row not on screen comes in only while its event is within the
+ * window of now, on the chain clock its stamp is on. A hidden row starts nothing: its time begins when it is drawn.
  */
 export function selectQuickFeedRows(
   rows: ImportantFeedRow[],
   nowMs: number,
-  firstShown: FirstShown,
+  screen: { showing: ReadonlySet<string>; ended: ReadonlySet<string> },
   windowMs: number,
   maxRows: number,
-): { visible: ImportantFeedRow[]; firstShown: FirstShown } {
-  const shownAt = new Map<string, number>();
-  for (const row of rows) {
-    const since = firstShown.get(row.id) ?? (Math.abs(nowMs - row.at) < windowMs ? nowMs : null);
-    if (since !== null && nowMs - since < windowMs) shownAt.set(row.id, since);
-  }
-  const visible = rows
-    .filter((row) => shownAt.has(row.id))
-    .sort((left, right) => right.at - left.at)
+): ImportantFeedRow[] {
+  return rows
+    .filter((row) => !screen.ended.has(row.id) && (screen.showing.has(row.id) || Math.abs(nowMs - row.at) < windowMs))
+    .toSorted((left, right) => right.at - left.at)
     .slice(0, maxRows);
-  return { visible, firstShown: shownAt };
 }

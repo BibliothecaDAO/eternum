@@ -12,49 +12,55 @@ import { useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
-import {
-  type FirstShown,
-  type ImportantFeedRow,
-  selectImportantFeedRows,
-  selectQuickFeedRows,
-} from "./important-feed-rows";
+import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
 import { useFeedRows } from "./use-feed-rows";
 
 const QUICK_FEED_WINDOW_MS = 20_000;
 const QUICK_FEED_MAX_ROWS = 5;
 const QUICK_FEED_FADE_MS = 3_000;
 
-/** The feed's pinned notices and its latest rows, each fading over the last seconds of its 20 s on screen. */
+/**
+ * The feed's pinned notices and its latest rows. A row's time on screen is its own: drawn, it fades over the last
+ * seconds of its 20 s and leaves when that fade ends, one clock for both, started only for a row actually drawn.
+ */
 export const QuickFeedRows = () => {
   const { nowMs, rows, pinned } = useImportantFeed();
-  const [firstShown, setFirstShown] = useState<FirstShown>(() => new Map());
-  const quick = selectQuickFeedRows(rows, nowMs, firstShown, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
-  // What the last render first showed is remembered by setting it during render, as React advises: it converges at once.
-  if (!sameFirstShown(quick.firstShown, firstShown)) setFirstShown(quick.firstShown);
+  const [showing, setShowing] = useState<ReadonlySet<string>>(() => new Set());
+  const [ended, setEnded] = useState<ReadonlySet<string>>(() => new Set());
+  const visible = selectQuickFeedRows(rows, nowMs, { showing, ended }, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
+  const drawn = new Set(visible.map((row) => row.id));
+  // What is on screen is remembered by setting it during render, as React advises: it converges at once.
+  if (!sameIds(drawn, showing)) setShowing(drawn);
+  const endRow = (id: string) =>
+    setEnded((previous) => new Set([...previous, id].filter((kept) => rowIds(rows).has(kept))));
   return (
     <>
       <FeedNotices pinned={pinned} />
-      {quick.visible.map((row) => (
-        <QuickFeedRow key={row.id} row={row} shownAt={quick.firstShown.get(row.id)!} nowMs={nowMs} />
+      {visible.map((row) => (
+        <QuickFeedRow key={row.id} row={row} onFaded={() => endRow(row.id)} />
       ))}
     </>
   );
 };
 
-const sameFirstShown = (a: FirstShown, b: FirstShown): boolean =>
-  a.size === b.size && [...a].every(([id, at]) => b.get(id) === at);
+const rowIds = (rows: ImportantFeedRow[]): Set<string> => new Set(rows.map((row) => row.id));
 
-/** A row fades out over its last seconds on the compositor, timed from when it first showed, on the clock that
- *  removes it, so it never lingers faded and holding its height. */
-const QuickFeedRow = ({ row, shownAt, nowMs }: { row: ImportantFeedRow; shownAt: number; nowMs: number }) => {
-  const [delayMs] = useState(() => Math.max(0, shownAt + QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS - nowMs));
-  return (
-    <FeedRowLine
-      row={row}
-      style={{ animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${delayMs}ms forwards` }}
-    />
-  );
-};
+const sameIds = (a: ReadonlySet<string>, b: ReadonlySet<string>): boolean =>
+  a.size === b.size && [...a].every((id) => b.has(id));
+
+/** A drawn row: its fade starts with it on the compositor, and its end takes the row off the card. */
+const QuickFeedRow = ({ row, onFaded }: { row: ImportantFeedRow; onFaded: () => void }) => (
+  <div
+    style={{
+      animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS}ms forwards`,
+    }}
+    onAnimationEnd={(event) => {
+      if (event.target === event.currentTarget) onFaded();
+    }}
+  >
+    <FeedRowLine row={row} />
+  </div>
+);
 
 /** The important rows every layout counts and previews, plus the headlines pinned for the current tick. */
 export function useImportantFeed() {
