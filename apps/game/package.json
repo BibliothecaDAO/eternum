@@ -41,6 +41,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "playtest": "node ./scripts/run-client-playtest.mjs",
+    "styles:inventory": "node ./scripts/style-inventory.mjs",
     "preview": "vite preview",
     "smoke:character-gym": "node ./scripts/run-character-gym-smoke.mjs",
     "smoke:character-benchmark": "node ./scripts/run-character-benchmark-smoke.mjs",

@@ -3,8 +3,13 @@
 What a player can do and how they get there, so a report or a screenshot can be reproduced. Update it in the change that
 adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. In the dev
 build, `/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and
-`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
-`/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with outcomes).
+`/lab/kit` the client's style sheet: its tokens, editable live (Copy gives the changed lines), and every element
+(button, amount field, tooltip and the map's order line, panel, tabs, chip, ring badge, list row, event row, window, map
+plate, minimap frame) in every state, beside the versions the game draws today; a skin switch shows Frontier's warm
+surface. `pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel and chip looks.
+`/lab/kit/frontier` the Frontier kit's components. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a
+player sees them, on a fixture realm. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's
+route, Events rows with outcomes).
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read

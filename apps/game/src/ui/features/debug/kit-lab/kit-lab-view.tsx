@@ -40,15 +40,16 @@ import { Link } from "react-router-dom";
 import { HudLab } from "./hud-lab";
 import { PanelsLab } from "./panels-lab";
 import { GuidanceLab } from "./guidance-lab";
+import { StyleSheetLab } from "./style-sheet-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
 const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 
 /**
- * Dev only: the kit's shared components in their states, on the Frontier ground, at /lab/kit, the Frontier screens
- * built on them at /lab/kit/hud/<state>, and the token file drawn out at /lab/kit/tokens. Nothing here reads a game;
- * every value is the handoff's fiction.
+ * Dev only: the HUD's style sheet at /lab/kit (style-sheet-lab.tsx); the shell kit's components in their states, on the
+ * Frontier ground, at /lab/kit/shell, the Frontier screens built on them at /lab/kit/hud/<state>, and the token file
+ * drawn out at /lab/kit/tokens. Nothing here reads a game; every value is a fixture's.
  */
 export const KitLabView = () => {
   return (
@@ -60,7 +61,8 @@ export const KitLabView = () => {
       <Route path="guidance" element={<GuidanceLab />} />
       <Route path="tokens" element={<TokensLab />} />
       <Route path="hud/:state" element={<HudLab />} />
-      <Route path="*" element={<Components />} />
+      <Route path="shell" element={<Components />} />
+      <Route path="*" element={<StyleSheetLab />} />
     </Routes>
   );
 };
