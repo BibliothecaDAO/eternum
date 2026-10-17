@@ -479,12 +479,6 @@ const PlayerRow = ({
             >
               {player.name}
             </h6>
-            {player.isUser && (
-              <span
-                title={`0x${BigInt(player.address).toString(16)}`}
-                className="block truncate font-mono text-xs text-gold/60"
-              >{`0x${BigInt(player.address).toString(16)}`}</span>
-            )}
             {activitySummary && <span className="block text-sm text-kit-muted md:hidden">{activitySummary}</span>}
           </div>
         </div>

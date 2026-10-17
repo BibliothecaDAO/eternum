@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Troop kinds named when deploying",
+    description:
+      "The deploy picker names Crossbow, Knight and Paladin over their columns, as the Military window does, and your row on the leaderboard shows your name like everyone else's, without an address under it.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "A simpler deploy",
     description:
       "Deploying an army takes one row: type the amount or press Max, beside how many can go. Deploy shows what it costs, and when it cannot go it says why in a few words.",

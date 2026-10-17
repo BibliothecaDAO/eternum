@@ -38,6 +38,29 @@ describe("the shared deployment picker", () => {
     host.remove();
   });
 
+  it("names each kind over its column, as the Military window does, its tiers going down", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store } = frontierDay();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDeploymentPicker structureId={7} isExplorer />
+        </GameProvider>,
+      ),
+    );
+    const cells = [...host.querySelector('[aria-label="Available troops"]')!.children];
+    const kinds = cells.slice(0, 3).map((cell) => cell.textContent);
+    expect(kinds).toEqual(["Crossbow", "Knight", "Paladin"]);
+    // Row by row: each tile sits under its kind's name, T1 first.
+    const tiles = cells.slice(3).map((cell) => cell.getAttribute("aria-label")?.split(":")[0]);
+    expect(tiles).toEqual(["T1", "T2", "T3"].flatMap((tier) => kinds.map((kind) => `${kind} ${tier}`)));
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it("chooses the amount in one row, with the cost on Deploy and one reason under it when it cannot go", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = frontierDay();

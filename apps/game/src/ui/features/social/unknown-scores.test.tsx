@@ -115,6 +115,24 @@ describe("the MMR column", () => {
   });
 });
 
+describe("the player's own row", () => {
+  it("names the player as every other row does, with no address under the name", () => {
+    const own = { ...player, address: 0x29556aae044f8335n, name: "clientlane", isUser: true, points: 10, rank: 1 };
+    const html = renderToStaticMarkup(
+      <PlayerList
+        players={[own, { ...player, address: 2n, name: "uxplay", points: 5, rank: 2 }]}
+        grants={grants}
+        mmr="off"
+        viewPlayerInfo={() => {}}
+        whitelistPlayer={() => {}}
+        isLoading={false}
+      />,
+    );
+    expect(html).toContain("clientlane");
+    expect(html).not.toContain("0x29556aae044f8335");
+  });
+});
+
 describe("unknown subscription scores", () => {
   it("shows a dash for a player's unknown score without giving a rank", () => {
     const html = renderToStaticMarkup(

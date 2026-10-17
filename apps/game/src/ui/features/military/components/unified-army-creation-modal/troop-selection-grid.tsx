@@ -18,6 +18,12 @@ interface TroopSelectionGridProps {
   compact?: boolean;
 }
 
+/** The options' tiers row by row: the first tier of every kind, then the second, so each kind keeps a column. */
+const tierRows = (options: TroopSelectionOption[]) =>
+  Array.from({ length: Math.max(0, ...options.map((option) => option.tiers.length)) }, (_, index) =>
+    options.flatMap((option) => (option.tiers[index] ? [{ option, tier: option.tiers[index] }] : [])),
+  );
+
 export const TroopSelectionGrid = ({
   options,
   selected,
@@ -38,9 +44,15 @@ export const TroopSelectionGrid = ({
 
   if (compact) {
     return (
+      // A column per kind under its name, as the Military window lays them out, its tiers going down.
       <div className="grid grid-cols-3 gap-2 p-1" role="group" aria-label="Available troops">
-        {options.flatMap((option) =>
-          option.tiers.map((tier) => {
+        {options.map((option) => (
+          <span key={option.type} className="text-center text-xs font-semibold text-gold/80">
+            {option.label}
+          </span>
+        ))}
+        {tierRows(options).flatMap((row) =>
+          row.map(({ option, tier }) => {
             const key = `${option.type}-${tier.tier}`;
             const isSelected = selected.type === option.type && selected.tier === tier.tier;
             const reason =
