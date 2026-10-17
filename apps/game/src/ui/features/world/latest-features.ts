@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Transfers open without errors",
+    description:
+      "Transfer windows no longer greet you with a red error. What is still to choose is the button's own words (Choose an amount, Choose where to send), and what keeps a transfer closed, such as a full guard slot, is said calmly. Red is kept for an action that failed.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "Troop kinds named when deploying",
     description:
       "The deploy picker names Crossbow, Knight and Paladin over their columns, as the Military window does, and your row on the leaderboard shows your name like everyone else's, without an address under it.",

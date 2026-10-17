@@ -12,7 +12,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -22,6 +22,7 @@ import { TransferDirection } from "./transfer-troops/transfer-direction";
 const PRECISION = 1_000_000_000n;
 const HYPERSTRUCTURE = 900;
 const EXPLORER = 201;
+const ARMY = 202;
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 const troops = (count: bigint, category = "Knight", tier = "T1") => ({
   ...rowFixture.expected.value.troops,
@@ -36,8 +37,9 @@ afterEach(() => setBlockTimestampSource(null));
 /**
  * The owner's hyperstructure beside his realm's army of 19,145 T1 knights. Each guard slot holds what `guards` gives
  * it: an empty slot is a stored row with no troops (its stale type left as Crossbowman T2), as the chain leaves it.
+ * With `armyBeside`, the transfer goes instead into another of his armies holding those troops.
  */
-const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}) => {
+const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyBeside?: ReturnType<typeof troops>) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = frontierDay();
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
@@ -57,6 +59,9 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}) => {
       }),
     ),
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: EXPLORER, owner: 7, troops: troops(19_145n) }),
+    ...(armyBeside
+      ? [set("0x75", "ExplorerTroops", { game_id: 1, explorer_id: ARMY, owner: 7, troops: armyBeside })]
+      : []),
   ] as never);
 
   const host = document.createElement("div");
@@ -70,10 +75,10 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}) => {
       >
         <TransferTroopsContainer
           selectedEntityId={EXPLORER}
-          targetEntityId={HYPERSTRUCTURE}
+          targetEntityId={armyBeside ? ARMY : HYPERSTRUCTURE}
           selectedHex={{ x: 41, y: 12 }}
           targetHex={{ x: 42, y: 12 }}
-          transferDirection={TransferDirection.ExplorerToStructure}
+          transferDirection={armyBeside ? TransferDirection.ExplorerToExplorer : TransferDirection.ExplorerToStructure}
           onTransferComplete={() => {}}
         />
       </GameProvider>,
@@ -136,6 +141,43 @@ describe("reinforcing a structure from an adjacent army", () => {
     expect(view.text()).toContain("Troop mismatch");
     expect(view.text()).toContain("Tier T1 Knight ≠ Tier T2 Paladin");
     expect(view.transfer()?.disabled).toBe(true);
+    view.unmount();
+  });
+});
+
+describe("a destination already at its deployment cap", () => {
+  /** The most T1 troops one army or guard slot holds, as the game's config sets it. */
+  const cap = () => {
+    frontierDay();
+    return BigInt(configManager.getMaxArmySize(0, "T1" as never));
+  };
+
+  it("says calmly that a full guard slot takes no more, before any amount or press", () => {
+    const full = troops(cap());
+    const view = reinforce({ 0: full, 1: full, 2: full, 3: full });
+    expect(view.errors()).toEqual([]);
+    expect(view.text()).toContain("Deployment cap reached for guard slot");
+    expect(view.send().textContent).toBe("Transfer Troops");
+    expect(view.send().disabled).toBe(true);
+    view.unmount();
+  });
+
+  it("says calmly that a full army takes no more, before any amount or press", () => {
+    const view = reinforce({}, troops(cap()));
+    expect(view.errors()).toEqual([]);
+    expect(view.text()).toContain("Deployment cap reached for destination explorer");
+    expect(view.send().textContent).toBe("Transfer Troops");
+    expect(view.send().disabled).toBe(true);
+    view.unmount();
+  });
+
+  it("tells, without an error, that the amount chosen fills the destination", () => {
+    const view = reinforce({ 0: troops(cap() - 10n) }, undefined);
+    view.choose("Inner Wall");
+    view.sendMax();
+    expect(view.errors()).toEqual([]);
+    expect(view.text()).toContain("will hit its deployment cap");
+    expect(view.send().disabled).toBe(false);
     view.unmount();
   });
 });

@@ -527,13 +527,10 @@ export const TransferTroopsContainer = ({
     return `Deployment cap reached for destination explorer (${limitText} troops for this tier).`;
   }, [capacityBlocked, troopCapacityLimit]);
 
+  // How many troops the receiving side holds at most, and whether this amount fills it: information, never an error.
   const capacityNotice = useMemo(() => {
     if (troopCapacityLimit === null) {
       return null;
-    }
-
-    if (capacityBlockedMessage) {
-      return { tone: "danger" as const, message: capacityBlockedMessage };
     }
 
     if (capacityRemainingDisplay === null) {
@@ -546,16 +543,10 @@ export const TransferTroopsContainer = ({
 
     if (transferDirection === TransferDirection.StructureToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return {
-          tone: "danger" as const,
-          message: `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`,
-        };
+        return `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`;
       }
 
-      return {
-        tone: "muted" as const,
-        message: `Max troops: ${limitText}`,
-      };
+      return `Max troops: ${limitText}`;
     }
 
     if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
@@ -563,35 +554,22 @@ export const TransferTroopsContainer = ({
         GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES] ??
         `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return {
-          tone: "danger" as const,
-          message: `${guardName} will hit its deployment cap (${limitText} troops for this tier).`,
-        };
+        return `${guardName} will hit its deployment cap (${limitText} troops for this tier).`;
       }
 
-      return {
-        tone: "muted" as const,
-        message: `Max troops: ${limitText}`,
-      };
+      return `Max troops: ${limitText}`;
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
-        return {
-          tone: "danger" as const,
-          message: `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`,
-        };
+        return `Destination explorer will hit its deployment cap (${limitText} troops for this tier).`;
       }
 
-      return {
-        tone: "muted" as const,
-        message: `Max troops: ${limitText}`,
-      };
+      return `Max troops: ${limitText}`;
     }
 
     return null;
   }, [
-    capacityBlockedMessage,
     capacityRemainingAfterTransfer,
     capacityRemainingDisplay,
     effectiveTroopAmount,
@@ -891,6 +869,7 @@ export const TransferTroopsContainer = ({
   // A fact of the game that keeps the transfer closed, said calmly: nothing the player did failed.
   const blockReason =
     transferRestriction ??
+    capacityBlockedMessage ??
     troopMismatchMessage ??
     (receivingGuard && receivingGuard.cooldownRemaining > 0
       ? `This slot is rebuilding (${formatTime(receivingGuard.cooldownRemaining)} remaining).`
@@ -1132,14 +1111,8 @@ export const TransferTroopsContainer = ({
                       />
                     </div>
                     {capacityNotice && (
-                      <div
-                        className={`rounded-md border px-3 py-2 text-xs ${
-                          capacityNotice.tone === "danger"
-                            ? "border-danger/40 bg-danger/10 text-danger"
-                            : "border-gold/30 text-gold/60"
-                        }`}
-                      >
-                        {capacityNotice.message}
+                      <div className="rounded-md border border-gold/30 px-3 py-2 text-xs text-gold/60">
+                        {capacityNotice}
                       </div>
                     )}
                     {quickAmountOptions.length > 0 && (
@@ -1211,7 +1184,7 @@ export const TransferTroopsContainer = ({
                     isLoading={loading}
                     className="w-full sm:w-auto"
                   >
-                    {loading ? "Processing..." : (nextStep ?? "Transfer Troops")}
+                    {loading ? "Processing..." : (!blockReason && nextStep) || "Transfer Troops"}
                   </Button>
                 </div>
               </div>
