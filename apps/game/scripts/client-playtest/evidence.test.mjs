@@ -133,7 +133,7 @@ const probeOf = (overrides) => ({
 describe("summarizeStep", () => {
   const startedOn = { name: "pan", t: 1000, heapBytes: 100 * MB, timeOrigin: 1_000_000 };
 
-  it("measures the step's frames, long frames, inputs, heap and Herald messages to their frame", () => {
+  it("measures the step's frames, long frames, inputs, heap, label elements and Herald messages to their frame", () => {
     const summary = summarizeStep(
       probeOf({
         // One frame before the step gives the first in-step frame its interval.
@@ -154,6 +154,11 @@ describe("summarizeStep", () => {
         heap: [
           [1000, 110 * MB],
           [1100, 130 * MB],
+        ],
+        labelNodes: [
+          [990, 900],
+          [1000, 240],
+          [1100, 260],
         ],
         messages: [{ arrived: 1050, start: 1052, end: 1053, bytes: 2048, host: "herald", type: "head" }],
         inputs: [
@@ -188,6 +193,7 @@ describe("summarizeStep", () => {
       ],
       presses: [{ type: "keydown", key: "Enter", atMs: 12, trusted: true }],
       heap: { startMb: 100, endMb: 104, retainedDeltaMb: 4, peakMb: 130 },
+      labelNodes: { n: 2, p50: 240, p95: 260, p99: 260, max: 260 },
       herald: {
         count: 1,
         kb: 2,

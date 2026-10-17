@@ -96,7 +96,7 @@ export function hasEntryFinished(snapshot) {
 
 /**
  * One step's numbers, from the probe read when the step ended: frame intervals, draws, long animation frames, inputs,
- * heap, and Herald messages to the frame after them. A step whose page reloaded is measured on the new page, with what
+ * heap, the map labels' element count, and Herald messages to the frame after them. A step whose page reloaded is measured on the new page, with what
  * the reload cost. Frame intervals and long animation frames are different records: a missed frame need not be long.
  */
 export function summarizeStep(probe, { name, startedOn }) {
@@ -152,6 +152,7 @@ export function summarizeStep(probe, { name, startedOn }) {
       retainedDeltaMb: !reloaded && end ? toMb(end.heapBytes - startedOn.heapBytes) : null,
       peakMb: toMb(Math.max(...probe.heap.filter(([t]) => t >= from && t < to).map(([, bytes]) => bytes))),
     },
+    labelNodes: distribution((probe.labelNodes ?? []).filter(([t]) => t >= from && t < to).map(([, count]) => count)),
     herald: {
       count: messages.length,
       kb: round(sum(messages.map((message) => message.bytes)) / 1024),
