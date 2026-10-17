@@ -378,7 +378,7 @@ body {
 html,
 body {
   font-family: var(--font-body);
-  text-shadow: 2px 2px 4px rgba(255, 255, 0, 0.1);
+  text-shadow: var(--text-shadow-ambient);
   @apply cursor-fancy text-gold;
 }
 
@@ -410,13 +410,6 @@ html.scene-viewport body {
   font-family: var(--font-body);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-/* The overlay surface's gradient, the one warm ink every mode's panels and sheets share. The palette is the token
-   file's (src/tokens.ts). */
-:root {
-  --overlay-surface-from: rgba(38, 29, 17, 0.98);
-  --overlay-surface-to: rgba(16, 12, 8, 0.99);
 }
 
 /* The Blitz and Eternum HUD's type (classic-hud on <html>, set while that HUD is mounted): its War room skin, which the
@@ -509,49 +502,54 @@ html.classic-hud .hud-panel :is(.hud-caps, .hud-caps-tight, .hud-value) {
 html.classic-hud .hud-panel .hud-body {
   font-size: 1.0625rem;
 }
+
+/* The kit's shared classes below draw only the token file's values (src/tokens.ts, the finish's `--<group>-<name>`
+   variables), so each takes the HUD's look on :root and the shell's under data-surface="shell"; `pnpm shell:check`
+   refuses a literal colour or image in them. The overlay surface's gradient is the one warm ink every mode's panels and
+   sheets share. */
 .frontier-sheet {
   /* An opaque base under the translucent gradient: nothing beneath a sheet shows through it. */
   background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to)), var(--ground);
   border: 0;
   border-top: 1px solid var(--line2);
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.7);
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow: var(--sheet-shadow);
 }
 @media (orientation: landscape) {
   .frontier-sheet {
     border: 1px solid var(--line2);
-    border-radius: 24px;
+    border-radius: var(--sheet-radius);
   }
 }
 /* From the desktop width up the sheet is a docked panel in the leaderboard's place: the peek's card edge and corners. */
 @media (min-width: 1024px) {
   .frontier-sheet {
     border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+    border-radius: var(--sheet-radius-docked);
+    box-shadow: var(--sheet-shadow-docked);
   }
 }
 .frontier-handle {
   width: 44px;
   height: 5px;
   border-radius: 3px;
-  background: #5a4a30;
+  background: var(--sheet-handle);
 }
 .frontier-card {
-  background: linear-gradient(180deg, #2a2013, #15100a);
+  background: var(--card-face);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--card-radius);
 }
 .frontier-card[aria-pressed="true"] {
   border: 2px solid var(--hot);
-  box-shadow: 0 0 18px rgba(246, 172, 29, 0.45);
+  box-shadow: var(--card-pressed-glow);
   transform: translateY(-8px);
 }
 .frontier-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(10, 8, 6, 0.72);
+  background: var(--chip-ground);
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: 3px 11px 3px 4px;
@@ -572,23 +570,23 @@ html.classic-hud .hud-panel .hud-body {
   border-color: var(--sage);
 }
 .frontier-chip[data-tone="gain"] .frontier-chip-number {
-  color: #b9e58a;
+  color: var(--chip-gain-text);
 }
 .frontier-chip[data-tone="loss"] {
-  border-color: #e0533f;
+  border-color: var(--chip-loss-rim);
 }
 .frontier-chip[data-tone="loss"] .frontier-chip-number {
-  color: #ff8a73;
+  color: var(--chip-loss-text);
 }
 .frontier-chip[data-tone="lit"] {
   border-color: var(--hot);
-  box-shadow: 0 0 12px rgba(246, 172, 29, 0.35);
+  box-shadow: var(--chip-lit-glow);
 }
 /* A price is a dark well with an amber rim wherever it sits, on a gold button too: the kit's gilded icons read on ink,
    never on gold. */
 .frontier-chip[data-tone="price"] {
-  background: rgba(27, 18, 7, 0.9);
-  border-color: #b76f00;
+  background: var(--chip-price-ground);
+  border-color: var(--chip-price-rim);
 }
 .frontier-chip[data-tone="price"] .frontier-chip-number {
   color: var(--cream);
@@ -627,13 +625,12 @@ html.classic-hud .hud-panel .hud-body {
 }
 .frontier-primary {
   height: 60px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #ffc24a, #e39001 62%, #b76f00);
-  border: 1px solid #ffd98a;
-  box-shadow:
-    0 5px 0 #6d4300,
-    0 10px 22px rgba(227, 144, 1, 0.35);
-  font-family: var(--font-body);
+  border-radius: var(--primary-radius);
+  background: var(--primary-face);
+  border: 1px solid var(--primary-rim);
+  box-shadow: var(--primary-shadow);
+  /* A button's word is a label. */
+  font-family: var(--font-ui);
   font-weight: 800;
   font-size: 22px;
   color: var(--ink);
@@ -644,15 +641,13 @@ html.classic-hud .hud-panel .hud-body {
   opacity: 0.85;
 }
 .frontier-primary[data-warns] {
-  background: linear-gradient(180deg, #ff7a66, #e0392d 62%, #a81f17);
-  border-color: #ffb3a6;
-  box-shadow:
-    0 5px 0 #5e100b,
-    0 10px 22px rgba(224, 57, 45, 0.35);
+  background: var(--primary-warn-face);
+  border-color: var(--primary-warn-rim);
+  box-shadow: var(--primary-warn-shadow);
 }
 .frontier-primary:disabled {
   opacity: 0.45;
-  box-shadow: 0 5px 0 #6d4300;
+  box-shadow: var(--primary-shadow-disabled);
 }
 .frontier-title {
   font-family: var(--font-body);
@@ -1308,11 +1303,10 @@ body.urgency-border-final::before {
 
   @media (min-width: 1024px) {
     .plate {
-      border-color: theme(colors.kit.line2);
+      border-color: var(--line2);
       background-image:
-        url("/images/ornament/corner-top-left.svg"), url("/images/ornament/corner-top-right.svg"),
-        url("/images/ornament/corner-bottom-right.svg"), url("/images/ornament/corner-bottom-left.svg"),
-        url("/images/ornament/leather.svg"), linear-gradient(180deg, theme(colors.kit.plate2), theme(colors.kit.plate));
+        var(--ornament-corner-top-left), var(--ornament-corner-top-right), var(--ornament-corner-bottom-right),
+        var(--ornament-corner-bottom-left), var(--ornament-leather), var(--plate-face);
       background-position:
         top 5px left 5px,
         top 5px right 5px,
@@ -1328,24 +1322,19 @@ body.urgency-border-final::before {
         18px 18px,
         300px 300px,
         100% 100%;
-      box-shadow:
-        inset 0 1px 0 rgb(255 222 160 / 0.1),
-        inset 0 0 0 1px rgb(0 0 0 / 0.6),
-        inset 0 0 0 5px theme(colors.kit.gold / 7%),
-        0 22px 50px rgb(0 0 0 / 0.55);
+      box-shadow: var(--plate-shadow);
     }
 
     /* A plate's title, with a gold rule under it that fades at both ends. */
     .plate-title {
       padding-bottom: 10px;
       margin-bottom: 4px;
-      background: linear-gradient(90deg, transparent, theme(colors.kit.gold / 70%) 30%, transparent) bottom / 100% 1px
-        no-repeat;
+      background: var(--plate-title-rule) bottom / 100% 1px no-repeat;
     }
 
     .painted {
-      border-color: theme(colors.kit.gold / 45%);
-      box-shadow: 0 18px 44px rgb(0 0 0 / 0.6);
+      border-color: var(--painted-rim);
+      box-shadow: var(--painted-shadow);
     }
 
     /* The grain sits on the paint, under the card's words; a backdrop wears it too. */
@@ -1354,8 +1343,8 @@ body.urgency-border-final::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: url("/images/ornament/grain.svg");
-      opacity: 0.32;
+      background: var(--ornament-grain);
+      opacity: var(--grain-opacity);
       mix-blend-mode: overlay;
       pointer-events: none;
     }
@@ -1366,21 +1355,16 @@ body.urgency-border-final::before {
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      box-shadow:
-        inset 0 0 0 1px rgb(0 0 0 / 0.55),
-        inset 0 0 0 4px theme(colors.kit.gold / 18%);
+      box-shadow: var(--painted-keyline);
       pointer-events: none;
     }
 
     /* The sign-in panel's ground. */
     .leather {
-      border-color: theme(colors.kit.line2);
-      background-color: theme(colors.kit.ground);
-      background-image:
-        url("/images/ornament/leather.svg"), linear-gradient(90deg, theme(colors.kit.plate), theme(colors.kit.ground));
-      box-shadow:
-        inset -1px 0 0 rgb(255 222 160 / 0.07),
-        6px 0 24px rgb(0 0 0 / 0.5);
+      border-color: var(--line2);
+      background-color: var(--ground);
+      background-image: var(--ornament-leather), var(--leather-face);
+      box-shadow: var(--leather-shadow);
     }
   }
 }

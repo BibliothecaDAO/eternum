@@ -6,8 +6,7 @@ import { type PriceKind, PriceChip } from "./price-chip";
 
 /**
  * Primary is the one verb a screen asks for; secondary sits beside it; outline is the quiet way out (Cancel, Try again).
- * Primary and secondary stand 56 tall, outline 48, so every tap reaches 48. Every word is in the text face, as the base
- * styles give every button.
+ * Primary and secondary stand 56 tall, outline 48, so every tap reaches 48. Every word is in the labels face (`font-ui`).
  */
 type ButtonRole = "primary" | "secondary" | "outline";
 
@@ -78,7 +77,7 @@ const ButtonFace = ({
     data-warns={warns || undefined}
     onClick={onClick}
     className={cn(
-      "inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap px-4 transition-colors disabled:cursor-not-allowed",
+      "inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap px-4 font-ui transition-colors disabled:cursor-not-allowed",
       ROLES[role],
       className,
     )}

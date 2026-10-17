@@ -77,7 +77,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
         ring={own ? "lit" : "line"}
         className="relative"
       />
-      <Title level="plate" as="h2" className="max-w-full px-4 text-[30px] leading-none">
+      <Title level="plate" as="h2" className="max-w-full px-4 leading-none">
         <PlayerName account={account} />
       </Title>
       <p className="flex items-center gap-2 text-sm text-kit-muted">
@@ -125,7 +125,7 @@ const SeasonFigure = ({ account }: { account: string }) => {
   return (
     <section className="flex items-center gap-3 plate p-3">
       <SemanticIcon name="victory" size={30} />
-      <Figure as="span" tone="gold" className="text-[28px]">
+      <Figure as="span" size="heading" tone="gold">
         {own ? `#${own.rank}` : "—"}
       </Figure>
       <span className="text-base text-kit-muted">

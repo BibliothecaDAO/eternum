@@ -77,20 +77,23 @@ const InstallSheet = ({ onClose }: { onClose: () => void }) => {
         ["menu", APP_STATE_WORDS.file],
         ["download", APP_STATE_WORDS.addToDock],
       ];
+  // Held at the app root, outside any page: the install prompt is the shell's, in a game too.
   return (
-    <Sheet label={APP_STATE_WORDS.install} onClose={onClose}>
-      <ol className="flex flex-col gap-2 py-2">
-        {steps.map(([icon, word], index) => (
-          <li
-            key={word}
-            className="flex min-h-14 items-center gap-3 rounded-control border border-kit-line bg-kit-plate px-3"
-          >
-            <span className="font-body text-xl font-extrabold text-kit-peach">{index + 1}</span>
-            <SemanticIcon name={icon} size={28} />
-            <span className="font-body text-base font-semibold text-kit-cream">{word}</span>
-          </li>
-        ))}
-      </ol>
-    </Sheet>
+    <div data-surface="shell" className="contents">
+      <Sheet label={APP_STATE_WORDS.install} onClose={onClose}>
+        <ol className="flex flex-col gap-2 py-2">
+          {steps.map(([icon, word], index) => (
+            <li
+              key={word}
+              className="flex min-h-14 items-center gap-3 rounded-control border border-kit-line bg-kit-plate px-3"
+            >
+              <span className="font-body text-xl font-extrabold text-kit-peach">{index + 1}</span>
+              <SemanticIcon name={icon} size={28} />
+              <span className="font-body text-base font-semibold text-kit-cream">{word}</span>
+            </li>
+          ))}
+        </ol>
+      </Sheet>
+    </div>
   );
 };

@@ -36,7 +36,7 @@ export const SettingRow = ({
       chevron={(end === undefined || end === null) && opens}
       className="w-full px-2"
     >
-      <span className="min-w-0 text-left font-body text-base font-semibold text-kit-cream">{name}</span>
+      <span className="min-w-0 text-left font-ui text-base font-semibold text-kit-cream">{name}</span>
       <span className="ml-auto max-w-[50%] shrink-0 truncate text-right text-base text-kit-muted">{value}</span>
     </ListRow>
   );

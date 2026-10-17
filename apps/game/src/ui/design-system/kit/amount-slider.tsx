@@ -49,7 +49,7 @@ export const AmountSlider = ({
         {stop !== undefined && (
           <u
             aria-hidden
-            className="absolute bottom-2 top-2 w-[3px] bg-light-red"
+            className="absolute bottom-2 top-2 w-[3px] bg-kit-ember"
             style={{ left: `${share(stop) * 100}%` }}
           />
         )}

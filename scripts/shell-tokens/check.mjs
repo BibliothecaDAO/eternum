@@ -1,8 +1,9 @@
 /**
- * The shell's token guard (`pnpm shell:check`): the shell's code names its sizes, colours, radii, faces and wide screen
- * through the token file (apps/game/src/tokens.ts) and its Tailwind classes, never as one-off values. Each exception
- * still in the code is listed in allowlist.json with its reason and the issue that will remove it; the check also fails
- * on a listed exception that no longer exists, so the list only shrinks.
+ * The shell's token guard (`pnpm shell:check`): the shell's code names its sizes, colours, radii, shadows, gradients,
+ * faces and wide screen through the token file (apps/game/src/tokens.ts) and its Tailwind classes, never as one-off
+ * values, and the index.css classes the shell renders draw only the token file's variables. Each exception still in the
+ * code is listed in allowlist.json with its reason and the issue that will remove it; the check also fails on a listed
+ * exception that no longer exists, so the list only shrinks.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -10,6 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const APP = "apps/game/src";
+const STYLESHEET = `${APP}/index.css`;
 
 /** The shell's code: the shell, the doorway, the install prompt and the kit it shares with the HUD. */
 const SCOPE = ["shell", "ui/features/game-entry/doorway", "pwa", "ui/design-system/kit"].map((dir) => `${APP}/${dir}`);
@@ -32,13 +34,66 @@ const TAILWIND_FONTS = [
   "black",
 ];
 
-/** Each rule, by the value it refuses and where that value belongs instead. */
-export const rules = (fonts) => [
+/** Tailwind's default colour families: a class in one bypasses the palette. */
+const TAILWIND_COLORS = [
+  "black",
+  "white",
+  "slate",
+  "gray",
+  "zinc",
+  "neutral",
+  "stone",
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
+];
+
+/** Every utility that takes a colour (a shadow's own rule refuses an arbitrary shadow whole). */
+const COLOR_UTILITY =
+  "(?:bg|text|border(?:-[xytrblse])?|from|via|to|ring(?:-offset)?|outline|fill|stroke|decoration|divide|caret|accent|placeholder)";
+
+/** A literal colour or image: `#hex`, a colour function, `url(`. */
+const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\(/g;
+
+/**
+ * Each rule, by the value it refuses and where that value belongs instead. `colors` are the colour names the Tailwind
+ * config defines beside the palette (`gold`, `danger`): the HUD's, so a shell class in one bypasses the shell's palette.
+ */
+export const rules = (fonts, colors = []) => [
   {
     rule: "arbitrary text size: use a TYPE step (text-caption … text-figure)",
     pattern: /\btext-\[[\d.]+(?:px|rem)\]/g,
   },
-  { rule: "raw colour: use a COLORS token (kit-*)", pattern: /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z])(?:rgba?|oklch)\(/g },
+  { rule: "raw colour: use a palette colour (kit-*)", pattern: RAW_COLOR },
+  {
+    rule: "colour outside the palette: use a kit-* colour (SHELL_COLORS)",
+    pattern: new RegExp(
+      `(?<![\\w-])(?:${COLOR_UTILITY}|shadow)-(?:${[...colors, ...TAILWIND_COLORS].sort((a, b) => b.length - a.length).join("|")})(?:-[a-z0-9_]+)*(?![\\w-])`,
+      "g",
+    ),
+  },
+  {
+    rule: "arbitrary colour or gradient: use a palette colour (kit-*) or a gradient token (bg-grade … bg-rays)",
+    pattern: new RegExp(`(?<![\\w-])${COLOR_UTILITY}-\\[[^\\]]*(?:theme\\(colors|gradient\\(|url\\()[^\\]]*\\]`, "g"),
+  },
+  {
+    rule: "arbitrary shadow: use a shadow token (shadow-mark … shadow-glow)",
+    pattern: /(?<![\w-])(?:drop-)?shadow-\[(?!var\(--)[^\]]*\]/g,
+  },
   { rule: "arbitrary radius: use a RADII token (rounded-key … rounded-plate)", pattern: /\brounded-\[[^\]]*\]/g },
   { rule: "arbitrary wide screen: use wide:", pattern: /\bmin-\[1800px\]:/g },
   {
@@ -49,15 +104,57 @@ export const rules = (fonts) => [
 ];
 
 /** Every refused value in one file's source, with its line. */
-export const findViolations = (source, path, fonts) =>
+export const findViolations = (source, path, fonts, colors = []) =>
   source.split("\n").flatMap((text, index) =>
-    rules(fonts).flatMap(({ rule, pattern, allows }) =>
+    rules(fonts, colors).flatMap(({ rule, pattern, allows }) =>
       [...text.matchAll(pattern)]
         .map(([match]) => match)
         .filter((match) => !allows?.(match))
         .map((match) => ({ path, line: index + 1, rule, match })),
     ),
   );
+
+/**
+ * index.css's classes the shell renders (the kit's button, sheet, card, chip and the plate family) and the base text
+ * styles it inherits: they draw the token file's variables (`var(--primary-face)`), so each surface's values apply.
+ */
+export const SHELL_CLASSES = [
+  "frontier-primary",
+  "frontier-sheet",
+  "frontier-handle",
+  "frontier-card",
+  "frontier-chip",
+  "frontier-chip-number",
+  "plate",
+  "plate-title",
+  "painted",
+  "grain",
+  "leather",
+];
+
+const isShellSelector = (selector) =>
+  new RegExp(`(?:^|[\\s,>+~(])\\.(?:${SHELL_CLASSES.join("|")})(?![\\w-])`).test(selector) ||
+  selector.split(",").some((part) => /^\s*(?:html|body)\s*$/.test(part));
+
+const STYLESHEET_LITERAL = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch|url|theme)\(/g;
+
+/** Every literal colour, image or theme() in the shell's index.css rules, with its line. */
+export const findStylesheetViolations = (source, path) => {
+  // Comments become spaces (newlines kept), so a comment's words never read as a selector and lines still count.
+  const css = source.replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, " "));
+  const lineAt = (offset) => css.slice(0, offset).split("\n").length;
+  return [...css.matchAll(/([^{};]*)\{([^{}]*)\}/g)]
+    .filter(([, selector]) => isShellSelector(selector.trim()))
+    .flatMap((block) => {
+      const bodyAt = block.index + block[0].indexOf("{") + 1;
+      return [...block[2].matchAll(STYLESHEET_LITERAL)].map((literal) => ({
+        path,
+        line: lineAt(bodyAt + literal.index),
+        rule: "literal in a shell class: name it in tokens.ts (SHELL_FINISH) and read its var(--…)",
+        match: literal[0],
+      }));
+    });
+};
 
 /**
  * What the allowlist does not account for: each violation past its entry's count, and each entry whose value is no
@@ -81,6 +178,13 @@ export const fontsOf = (tokensSource) => {
   return [...block[1].matchAll(/^\s{2}([a-z][\w-]*):/gm)].map(([, name]) => name);
 };
 
+/** The colour names the Tailwind config defines beside the palette (`kit`), read from its source. */
+export const configColorsOf = (configSource) => {
+  const block = configSource.match(/\n {6}colors: \{\n([\s\S]*?)\n {6}\},/);
+  if (!block) throw new Error("colors not found in apps/game/tailwind.config.js");
+  return [...block[1].matchAll(/^ {8}"?([a-z][\w-]*)"?:/gm)].map(([, name]) => name).filter((name) => name !== "kit");
+};
+
 const filesUnder = (dir) =>
   readdirSync(join(ROOT, dir), { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile())
@@ -89,10 +193,14 @@ const filesUnder = (dir) =>
 
 const main = () => {
   const fonts = fontsOf(readFileSync(join(ROOT, APP, "tokens.ts"), "utf8"));
+  const colors = configColorsOf(readFileSync(join(ROOT, "apps/game/tailwind.config.js"), "utf8"));
   const allowlist = JSON.parse(readFileSync(new URL("./allowlist.json", import.meta.url), "utf8"));
-  const violations = SCOPE.flatMap(filesUnder).flatMap((path) =>
-    findViolations(readFileSync(join(ROOT, path), "utf8"), path, fonts),
-  );
+  const violations = [
+    ...SCOPE.flatMap(filesUnder).flatMap((path) =>
+      findViolations(readFileSync(join(ROOT, path), "utf8"), path, fonts, colors),
+    ),
+    ...findStylesheetViolations(readFileSync(join(ROOT, STYLESHEET), "utf8"), STYLESHEET),
+  ];
   const { extra, stale } = unlisted(violations, allowlist);
   for (const { path, line, rule, match } of extra) console.error(`${path}:${line} ${match}: ${rule}`);
   for (const { file, match, count } of stale)

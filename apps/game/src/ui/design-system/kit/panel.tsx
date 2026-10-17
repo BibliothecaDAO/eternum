@@ -26,8 +26,8 @@ export const PanelTitle = ({
     className={cn(
       "flex items-center text-kit-cream",
       rule === "gilded"
-        ? "plate-title gap-2 px-1 font-body text-body font-bold"
-        : "gap-2.5 border-b border-kit-line pb-3 font-body text-lead",
+        ? "plate-title gap-2 px-1 font-ui text-body font-bold"
+        : "gap-2.5 border-b border-kit-line pb-3 font-ui text-lead",
       className,
     )}
   >

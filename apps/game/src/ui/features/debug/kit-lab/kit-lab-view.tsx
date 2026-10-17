@@ -65,9 +65,10 @@ export const KitLabView = () => {
   );
 };
 
+/** The catalogue draws the kit on the shell's surface (src/tokens.ts SHELL_*); /lab/kit/hud draws it on the HUD's. */
 const Components = () => {
   return (
-    <main className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
+    <main data-surface="shell" className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
         <Link to="/lab/kit/tokens">Design tokens</Link>

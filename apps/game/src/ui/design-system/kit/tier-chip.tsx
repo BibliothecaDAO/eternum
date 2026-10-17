@@ -13,7 +13,7 @@ const FRAMES: Record<Tier, string> = {
   2: "border-2 border-kit-muted",
   3: "border-[3px] border-double border-kit-gold",
   4: "border-4 border-double border-kit-gold2",
-  5: "border-[5px] border-double border-kit-hot shadow-[0_0_10px_theme(colors.kit.hot)]",
+  5: "border-[5px] border-double border-kit-hot shadow-glow",
 };
 
 /**

@@ -5,7 +5,7 @@ export const Kbd = ({ keyName, className }: { keyName: string; className?: strin
   <kbd
     aria-hidden
     className={cn(
-      "rounded-key border border-b-2 border-kit-line2 bg-black/30 px-[5px] font-body text-sm font-bold leading-[1.4] text-kit-muted",
+      "rounded-key border border-b-2 border-kit-line2 bg-kit-shade/30 px-[5px] font-body text-sm font-bold leading-[1.4] text-kit-muted",
       className,
     )}
   >

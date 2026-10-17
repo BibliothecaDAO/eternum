@@ -195,7 +195,7 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
         <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-sm font-bold capitalize text-kit-gold2">
           {item?.rarity ?? REWARD_WORDS.cosmetic}
         </span>
-        <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
+        <b className="font-body text-title font-bold leading-tight text-kit-cream">
           {item?.name ?? REWARD_WORDS.cosmetic}
         </b>
         <Pill size="lg" tone="sage" icon="check">
@@ -208,7 +208,7 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
   return (
     <Card>
       <SemanticIcon name={content.kind === "sword" ? "attack" : "defend"} size={96} />
-      <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
+      <b className="font-body text-title font-bold leading-tight text-kit-cream">
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
       <Pill size="lg" tone="muted" icon="lords">
@@ -228,7 +228,7 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   return (
     <Card>
       <SemanticIcon name="lords" size={96} />
-      <Figure tone="gold2" className="text-[60px] leading-none">
+      <Figure size="figure" tone="gold2" className="leading-none">
         {multiple === null ? sum : `${multiple}×`}
       </Figure>
       <span className="font-body text-xl text-kit-muted">
@@ -247,12 +247,7 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
 };
 
 const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boolean; glow?: boolean }) => (
-  <div
-    className={cn(
-      "relative flex h-48 items-center justify-center rounded-control",
-      glow && "bg-[radial-gradient(circle,theme(colors.kit.gold/30%),transparent_65%)]",
-    )}
-  >
+  <div className={cn("relative flex h-48 items-center justify-center rounded-control", glow && "bg-halo")}>
     <img src={chestArt(band, false)} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
     <span className="absolute bottom-1 left-1">
       <Pill size="lg" tone="muted" icon="victory">
@@ -266,7 +261,7 @@ const Stage = ({ children }: { children: ReactNode }) => (
   <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-kit-ink py-4">
     <span
       aria-hidden
-      className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[repeating-conic-gradient(theme(colors.kit.gold/18%)_0_6deg,transparent_6deg_18deg)] [mask-image:radial-gradient(circle,black,transparent_55%)]"
+      className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-rays [mask-image:radial-gradient(circle,black,transparent_55%)]"
     />
     {children}
   </div>

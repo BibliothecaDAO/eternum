@@ -49,7 +49,7 @@ export const PlayPage = () => {
 
 /** The first visit's line, as the page's title. */
 const LoreLine = () => (
-  <Title level="card" shadow="title" className="mb-5 max-w-hero-measure leading-[1.08] lg:text-[52px]">
+  <Title level="card" shadow="title" className="mb-5 max-w-hero-measure leading-[1.08] lg:text-display">
     {LORE_LINE}
   </Title>
 );

@@ -9,11 +9,11 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
  */
 const LEVELS = {
   /** A desktop page's title, a step up on the wide screen. */
-  page: "text-[34px] leading-tight wide:text-title-lg",
+  page: "text-title leading-tight wide:text-title-lg",
   /** A phone page's title beside Back. */
-  "page-phone": "text-[24px] leading-tight",
-  /** A plate's own display title: the sign-in panel, nothing here. */
-  plate: "text-[34px] leading-tight",
+  "page-phone": "text-heading leading-tight",
+  /** A plate's own display title: the sign-in panel, nothing here, a profile's name. */
+  plate: "text-title leading-tight",
   /** The headline across a cover or a page: a post, the sign-in lore, a season's ending. */
   hero: "text-hero leading-[1.05]",
   /** A card's display title: Play's lead game. */
