@@ -1,8 +1,8 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { IDENTITY_PORTRAITS, SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 
-import { portraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Field } from "@/ui/design-system/kit/field";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 
 import { SIGN_IN_WORDS } from "../words";
 
@@ -40,7 +40,7 @@ export const CodeBoxes = ({
         key={index}
         aria-hidden
         className={cn(
-          "flex h-16 w-12 items-center justify-center rounded-xl border-2 bg-kit-plate font-body text-[30px] font-extrabold text-kit-cream",
+          "flex h-16 w-12 items-center justify-center rounded-control border-2 bg-kit-plate font-body text-[30px] font-extrabold text-kit-cream",
           refused ? "border-kit-red" : index === code.length ? "border-kit-peach" : "border-kit-line",
           disabled && "opacity-50",
         )}
@@ -61,24 +61,18 @@ export const NameField = ({
   valid: boolean;
   onName: (name: string) => void;
 }) => (
-  <label
-    className={cn(
-      "flex h-14 items-center gap-2 rounded-2xl border-2 bg-kit-plate px-4",
-      valid ? "border-kit-peach" : "border-kit-red",
-    )}
-  >
-    <span className="sr-only">{SIGN_IN_WORDS.yourName}</span>
-    <input
-      type="text"
-      value={name}
-      maxLength={20}
-      autoComplete="nickname"
-      onChange={(event) => onName(event.target.value)}
-      aria-invalid={!valid}
-      className="min-w-0 flex-1 bg-transparent font-body text-xl font-bold text-kit-cream outline-none"
-    />
-    {valid && <SemanticIcon name="check" size={24} />}
-  </label>
+  <Field
+    size="lg"
+    valid={valid}
+    invalid={!valid}
+    type="text"
+    value={name}
+    maxLength={20}
+    autoComplete="nickname"
+    onChange={(event) => onName(event.target.value)}
+    aria-label={SIGN_IN_WORDS.yourName}
+    className="font-body text-xl font-bold"
+  />
 );
 
 /** The twelve portraits, the chosen one on the peach ring. */
@@ -97,7 +91,8 @@ export const PortraitGrid = ({ chosen, onChoose }: { chosen: string; onChoose: (
           chosen === id ? "border-kit-peach" : "border-kit-line opacity-80",
         )}
       >
-        <img src={portraitUrl(id)} alt="" className="aspect-square w-full object-cover" />
+        {/* The ring is the button's, so the focus ring and the tap take the whole circle. */}
+        <Portrait portrait={id} className="aspect-square w-full" />
       </button>
     ))}
   </div>

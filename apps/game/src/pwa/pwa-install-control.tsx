@@ -83,7 +83,7 @@ const InstallSheet = ({ onClose }: { onClose: () => void }) => {
         {steps.map(([icon, word], index) => (
           <li
             key={word}
-            className="flex min-h-14 items-center gap-3 rounded-xl border border-kit-line bg-kit-plate px-3"
+            className="flex min-h-14 items-center gap-3 rounded-control border border-kit-line bg-kit-plate px-3"
           >
             <span className="font-body text-xl font-extrabold text-kit-peach">{index + 1}</span>
             <SemanticIcon name={icon} size={28} />

@@ -1,4 +1,5 @@
 import { IdentityRequestError } from "@realms-world/identity";
+import { Title } from "@/ui/design-system/kit/title";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -14,7 +15,7 @@ import { failureSentence, type IdentityAction } from "@/ui/modules/identity/iden
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { paintingSources } from "../paintings";
+import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "../words";
 import { CodeStep } from "./code-step";
 import { ProfileStep } from "./profile-step";
@@ -144,9 +145,9 @@ const useIdentityAction = (initialError: () => string | null) => {
 /**
  * The flow's frame on PageFrame, with no tabs: on a phone one column, the painting and the lore line above the first
  * step only; on desktop the window split: the painting with the lore line at its foot, and the steps in a panel the
- * window's height at the right, under the step's title.
+ * window's height at the right, under the step's title. The app lab draws each step in it.
  */
-const SignInFrame = ({
+export const SignInFrame = ({
   next,
   title,
   hero = false,
@@ -184,7 +185,7 @@ const PhoneHero = () => (
 );
 
 /** The panel's width; the painting takes the rest of the window beside it, under the top bar (68 px). */
-const PANEL = "w-[34rem] min-[1800px]:w-[38rem]";
+const PANEL = "w-column wide:w-column-wide";
 
 const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode }) => (
   <>
@@ -193,16 +194,21 @@ const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
       <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
     </div>
-    <p className="fixed bottom-10 left-8 max-w-[36rem] font-display text-[44px] leading-[1.1] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%)] min-[1800px]:left-12">
+    <Title
+      level="hero"
+      as="p"
+      shadow="title-flat"
+      className="fixed bottom-10 left-gutter-desk max-w-tagline leading-[1.1] wide:left-gutter-wide"
+    >
       {LORE_LINE}
-    </p>
+    </Title>
     <section
       className={cn(
         "leather fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
         PANEL,
       )}
     >
-      <h1 className="font-display text-[34px] leading-tight text-kit-cream">{title}</h1>
+      <Title level="plate">{title}</Title>
       {children}
     </section>
   </>

@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
 import { StepVerb } from "@/shell/frame/step-verb";
-import type { Painting } from "@/shell/paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
 import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { Title } from "@/ui/design-system/kit/title";
 
 import type { DoorwayView } from "./doorway-view";
 import { StepTrack } from "./step-track";
@@ -70,7 +71,7 @@ export const DoorwayScreen = ({
       <PageFrame back="/" title={title} tabs={false} painting={painting} stage>
         {desktop ? (
           <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
-            <div className="plate flex w-[34rem] flex-col items-stretch gap-5 p-6">
+            <div className="plate flex w-column flex-col items-stretch gap-5 p-6">
               {realm && <RealmRising realm={realm} />}
               <StepTrack steps={view.steps} />
               {hold}
@@ -78,7 +79,7 @@ export const DoorwayScreen = ({
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 py-6">
+          <div className="mx-auto flex w-full max-w-doorway flex-col items-center gap-6 py-6">
             {realm ? <RealmRising realm={realm} /> : <div className="h-24" aria-hidden />}
             <StepTrack steps={view.steps} />
             {hold}
@@ -94,7 +95,9 @@ export const DoorwayScreen = ({
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    <h2 className="text-center font-body text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
+    <Title level="headline" face="body" as="h2" className="text-center font-extrabold">
+      {realm.name}
+    </Title>
   </div>
 );
 

@@ -15,7 +15,7 @@ import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/boar
 import { rosterWalletOf } from "@/runtime/world/directory";
 
 import { gameKeyOf, gameSlotKeyOf } from "../blitz-rows";
-import { clockLine } from "../clock-chip";
+import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { entryHref } from "../game-links";
 import { formatPoints } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
@@ -25,11 +25,13 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import type { Painting } from "../paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
-import { FailureCard } from "../play/state-card";
+import { FailureCard } from "@/ui/design-system/kit/state-card";
+import { Title } from "@/ui/design-system/kit/title";
+import { Figure } from "@/ui/design-system/kit/figure";
 import { useNowSeconds } from "../use-now";
 import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
@@ -167,7 +169,9 @@ const ResultLayout = ({
 const Placed = ({ lead, place, field }: { lead?: string; place: string; field: number }) => (
   <p className="flex items-baseline gap-2 font-body text-base font-semibold text-kit-cream">
     {lead}
-    <b className="text-[64px] font-extrabold leading-none text-kit-gold">{place}</b>
+    <Figure size="figure" tone="gold" weight="extrabold" className="leading-none">
+      {place}
+    </Figure>
     <span className="text-kit-muted">
       {SEASON_WORDS.of} {formatAmount(field)}
     </span>
@@ -324,7 +328,9 @@ const FrontierResult = ({
       fromList={fromList}
       outcome={
         <>
-          <p className="font-display text-[44px] leading-tight text-kit-cream lg:text-[56px]">{SEASON_OVER}</p>
+          <Title level="hero" as="p" className="leading-tight lg:text-display">
+            {SEASON_OVER}
+          </Title>
           <p className="font-body text-base font-bold text-kit-gold2">{SEASON_ENDINGS.lifted}</p>
           {own && <Placed lead={YOU_PLACED} place={`#${own.rank}`} field={entries.length} />}
           {own && (

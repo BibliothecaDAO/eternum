@@ -5,6 +5,8 @@ import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { identityUsername, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { Button } from "@/ui/design-system/kit/button";
+import { SectionLabel } from "@/ui/design-system/kit/section-label";
+import { Switch } from "@/ui/design-system/kit/switch";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 import type { Session } from "@realms-world/identity";
 
@@ -16,7 +18,7 @@ import { useRealmsPlayer } from "../herald";
 import { WHATS_NEW_PATH } from "../news/posts";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { useRequestSignIn } from "../sign-in/sign-in-route";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WORDS } from "../words";
 import { AccountCard, SignOut } from "./account-card";
@@ -24,8 +26,7 @@ import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
-import { SettingRow, SettingRows } from "./setting-row";
-import { Switch } from "./switch";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
 const HOW_TO_PLAY = "https://docs.realms.world";
@@ -45,7 +46,7 @@ export const ProfilePage = () => (
 
 /** Signed out: the card that says why, then what anyone can read. */
 const SignedOut = ({ card }: { card: ReactNode }) => (
-  <div className="flex max-w-[34rem] flex-col gap-4">
+  <div className="flex max-w-column flex-col gap-4">
     {card}
     <SettingRows>
       <ReadingRows />
@@ -92,7 +93,7 @@ const Settings = () => {
     </div>
   );
   return desktop ? (
-    <div className="grid max-w-[74rem] grid-cols-2 items-start gap-6">
+    <div className="grid max-w-page grid-cols-2 items-start gap-6">
       <div className="flex flex-col gap-6">
         {account}
         {devices}
@@ -123,7 +124,9 @@ const AccountGroup = ({ session }: { session: Session }) => (
 /** A titled group of settings. */
 const Group = ({ title, children }: { title: string; children: ReactNode }) => (
   <section aria-label={title} className="flex flex-col gap-2">
-    <h2 className="px-2 font-body text-base font-bold text-kit-gold">{title}</h2>
+    <SectionLabel tone="gold" size="body" className="px-2">
+      {title}
+    </SectionLabel>
     {children}
   </section>
 );
@@ -172,17 +175,15 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
     requestSignIn();
   };
   return (
-    <section className="painted flex min-h-44 flex-col gap-3 rounded-2xl p-3.5">
-      <img
-        {...paintingSources("winter-fortress")}
-        sizes="(min-width: 1024px) 34rem, 100vw"
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/85 to-transparent" />
+    <PaintedCard
+      painting="winter-fortress"
+      sizes="(min-width: 1024px) 34rem, 100vw"
+      grade="top"
+      className="flex min-h-44 flex-col gap-3 p-3.5"
+    >
       {line && <p className="font-body text-base font-bold text-kit-cream">{line}</p>}
       <Button role="primary" word={verb} icon="person" onClick={() => void signIn()} />
-    </section>
+    </PaintedCard>
   );
 };
 
@@ -196,7 +197,7 @@ const OwnProfile = ({ account }: { account: string }) => {
       </div>
     );
   return (
-    <div className="grid grid-cols-[26rem_minmax(0,1fr)] items-start gap-6">
+    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
       <div className="flex flex-col gap-5">
         <PlayerCard account={account} own />
         <Rows />

@@ -5,11 +5,14 @@ import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
+import { Pill } from "@/ui/design-system/kit/pill";
+import { Title } from "@/ui/design-system/kit/title";
 
 import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, seatedGameOf, slotKeyOf } from "../blitz-rows";
-import { ClockChip } from "../clock-chip";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
+import { formatCountdown } from "@/ui/design-system/kit/time";
 import { useLayout } from "../frame/layout";
 import { type DirectoryGame, useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
@@ -19,7 +22,6 @@ import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { ageOf } from "../play/ages";
 import { usePlayFacts } from "../play/play-facts";
-import { LiveChip, StateChip } from "../play/state-chip";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
@@ -78,7 +80,7 @@ export const BlitzLobbyPage = () => {
       stage
     >
       {desktop ? (
-        <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_theme(width.rail)] items-start gap-6">
           <section className={cn("plate p-6", row.kind === "slot" && "justify-self-start")}>
             {row.kind === "slot" ? (
               <RegisteredCount slot={row.slot} large closed={isClosedSlot(row, facts.now)} />
@@ -134,13 +136,6 @@ const isClosedSlot = (row: BlitzRow, now: number): boolean => row.kind === "slot
 /** The desktop's countdown words, to the second: "Entry closes in 0:59:12". */
 const COUNTDOWN_WORDS = { closes: BLITZ_WORDS.closesIn, starts: BLITZ_WORDS.startsIn, ends: BLITZ_WORDS.endsIn };
 
-/** Hours, minutes and seconds left: "2:04:12"; never below zero. */
-const countdown = (seconds: number) => {
-  const left = Math.max(0, Math.floor(seconds));
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
-};
-
 /**
  * The lobby's one clock (large on desktop, a chip on a phone), with what stands beside it: Live, Entry closed, Joined
  * while the seat's game is prepared, a game's seats.
@@ -151,15 +146,19 @@ const LobbyClock = ({ row, step, now, large }: { row: BlitzRow; step: LobbyStep;
     <div className="flex flex-col gap-3">
       {large && moment && (
         <div className="flex flex-col gap-1">
-          <span className="font-ui text-[14px] tracking-[.06em] text-kit-muted">{COUNTDOWN_WORDS[moment.prefix]}</span>
-          <span className="font-display text-[64px] leading-none text-kit-cream">{countdown(moment.at - now)}</span>
+          <span className="font-ui text-caption leading-normal tracking-[.06em] text-kit-muted">
+            {COUNTDOWN_WORDS[moment.prefix]}
+          </span>
+          <Title level="countdown" as="span">
+            {formatCountdown(moment.at - now)}
+          </Title>
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        {row.startsAt === null && <LiveChip />}
-        {isClosedSlot(row, now) && <StateChip icon="lock" text={ENTRY_WORDS.closed} />}
+        {row.startsAt === null && <Pill tone="live">{WORDS.live}</Pill>}
+        {isClosedSlot(row, now) && <Pill icon="lock">{ENTRY_WORDS.closed}</Pill>}
         {!large && moment && <ClockChip prefix={moment.prefix} at={moment.at} now={now} />}
-        {step.kind === "preparing" && <StateChip icon="check" text={WORDS.joined} />}
+        {step.kind === "preparing" && <Pill icon="check">{WORDS.joined}</Pill>}
         {/* A slot's lobby draws its one number large (RegisteredCount); a game's seats ride here as a chip. */}
         {step.kind !== "preparing" && row.kind === "game" && <SeatsChip row={row} />}
       </div>

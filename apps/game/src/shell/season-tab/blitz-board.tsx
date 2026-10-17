@@ -1,20 +1,21 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { shortAddress } from "@/ui/design-system/kit/address";
 
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { Loading } from "../loading";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
+import { Figure } from "@/ui/design-system/kit/figure";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 import { ageOf } from "../play/ages";
 import { RatingFigure, TierMark } from "../rating-mark";
 import { type RatingProfile, ratingPoints, tierOf, useRatingTop } from "../ratings";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { ListRow } from "@/ui/design-system/kit/list-row";
 import { useNowSeconds } from "../use-now";
 import { lordsOf } from "../value/ledger";
 import { RATING_WORDS } from "../words";
@@ -69,9 +70,9 @@ const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
         <b className="font-body text-base text-kit-cream">{tierOf(ratingPoints(self.rating)).name}</b>
         <span className="text-sm text-kit-muted">{RATING_WORDS.blitzRating}</span>
       </span>
-      <span className="ml-auto font-body text-[34px] font-bold tabular-nums text-kit-cream">
+      <Figure as="span" tone="cream" className="ml-auto text-[34px]">
         {formatExact(ratingPoints(self.rating))}
-      </span>
+      </Figure>
     </div>
   );
 };
@@ -114,12 +115,7 @@ const RatingRow = ({
   share: bigint | undefined;
   own: boolean;
 }) => (
-  <li
-    className={cn(
-      "flex min-h-12 items-center gap-3 border-b border-kit-line px-1 last:border-b-0",
-      own && "rounded-xl border border-kit-gold bg-kit-ground",
-    )}
-  >
+  <ListRow as="li" height={12} gap={3} own={own ? "lit" : undefined} className="px-1">
     <span className="w-8 text-right font-body text-base font-bold tabular-nums text-kit-cream">
       {rank === null ? "—" : rank}
     </span>
@@ -133,7 +129,7 @@ const RatingRow = ({
         {formatExact(lordsOf(share))}
       </span>
     )}
-  </li>
+  </ListRow>
 );
 
 /**
@@ -145,11 +141,7 @@ const RatedOwner = ({ player, profile, own }: { player: string; profile: RatingP
     <PlayerName account={player} you={own} portrait profile={profile ?? undefined} />
   ) : (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <img
-        src={playerPortraitUrl(player, profile?.portrait ?? null)}
-        alt=""
-        className="size-7 shrink-0 rounded-full border-[1.5px] border-kit-line2 object-cover"
-      />
+      <Portrait account={player} portrait={profile?.portrait} size={28} weight={1.5} className="shrink-0" />
       <span className="truncate text-kit-muted">{shortAddress(player)}</span>
     </span>
   );

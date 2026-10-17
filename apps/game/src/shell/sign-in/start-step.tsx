@@ -1,7 +1,7 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
+import { Field } from "@/ui/design-system/kit/field";
 
 import { SIGN_IN_WORDS } from "../words";
 import { FailureLine } from "./failure-line";
@@ -39,20 +39,18 @@ export const StartStep = ({
         </>
       )}
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <label className="flex h-14 items-center gap-2 rounded-2xl border-2 border-kit-line bg-kit-plate px-4 focus-within:border-kit-peach">
-          <SemanticIcon name="mail" size={24} />
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@mail.com"
-            aria-label={SIGN_IN_WORDS.email}
-            className="min-w-0 flex-1 bg-transparent text-base text-kit-cream outline-none placeholder:text-kit-muted"
-          />
-        </label>
+        <Field
+          size="lg"
+          icon="mail"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@mail.com"
+          aria-label={SIGN_IN_WORDS.email}
+        />
         <Button
           role={onDiscord ? "secondary" : "primary"}
           type="submit"

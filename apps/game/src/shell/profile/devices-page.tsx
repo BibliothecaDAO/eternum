@@ -4,6 +4,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { listOpenShards, openKnownShards } from "@/runtime/world/shards";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { Button } from "@/ui/design-system/kit/button";
+import { Pill } from "@/ui/design-system/kit/pill";
 import {
   getOrCreateDeviceKey,
   readAccountDevices,
@@ -13,11 +14,10 @@ import {
 
 import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { StateChip } from "../play/state-chip";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { PROFILE_WORDS } from "../words";
-import { Confirm } from "./confirm";
-import { SettingRow, SettingRows } from "./setting-row";
+import { Confirm } from "@/ui/design-system/kit/confirm";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 
 /** One device key and the shards where it signs for the player's account. */
 interface Device {
@@ -128,7 +128,7 @@ const DeviceRows = ({
           name={own ? PROFILE_WORDS.thisDevice : deviceName(device.key)}
           end={
             own ? (
-              <StateChip icon="check" />
+              <Pill icon="check" />
             ) : (
               <Button
                 role="outline"

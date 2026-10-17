@@ -1,14 +1,16 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
+import { IconLine } from "@/ui/design-system/kit/icon-line";
 
 import { formatDate, formatDuration } from "@/ui/design-system/kit/time";
+import { Figure } from "@/ui/design-system/kit/figure";
 
 import { usePlayerHistory, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
 import { useLedgerPaused } from "../value/use-ledger-paused";
 import { FailureLine } from "../sign-in/failure-line";
@@ -85,7 +87,11 @@ export const PrizeLines = ({
   return (
     <>
       <Share prize={prize} state={state} now={now} />
-      {state === "claim" && paused && <Line icon="lock">{SEASON_PRIZE_WORDS.paused}</Line>}
+      {state === "claim" && paused && (
+        <IconLine tone="cream" iconSize={22} icon="lock">
+          {SEASON_PRIZE_WORDS.paused}
+        </IconLine>
+      )}
       {state === "claim" && !paused && prize.position !== null && <Claim prize={prize} onClaimed={onClaimed} />}
     </>
   );
@@ -112,33 +118,39 @@ const Claim = ({ prize, onClaimed }: { prize: SeasonPrize; onClaimed: () => void
 
 /** After the season: the player's share, and where the season stands with it. */
 const Share = ({ prize, state, now }: { prize: SeasonPrize; state: NonNullable<BoardPrize["state"]>; now: number }) => {
-  if (state === "out") return <Line icon="victory">{SEASON_PRIZE_WORDS.notPaid}</Line>;
+  if (state === "out")
+    return (
+      <IconLine tone="cream" iconSize={22} icon="victory">
+        {SEASON_PRIZE_WORDS.notPaid}
+      </IconLine>
+    );
   const line: Record<string, ReactNode> = {
     review: (
-      <Line icon="hourglass">
+      <IconLine tone="cream" iconSize={22} icon="hourglass">
         {SEASON_PRIZE_WORDS.review} <b>{formatDuration(prize.season.reviewUntil - now)}</b>
-      </Line>
+      </IconLine>
     ),
-    held: <Line icon="explore">{SEASON_PRIZE_WORDS.held}</Line>,
-    claimed: <Line icon="check">{SEASON_PRIZE_WORDS.claimed}</Line>,
+    held: (
+      <IconLine tone="cream" iconSize={22} icon="explore">
+        {SEASON_PRIZE_WORDS.held}
+      </IconLine>
+    ),
+    claimed: (
+      <IconLine tone="cream" iconSize={22} icon="check">
+        {SEASON_PRIZE_WORDS.claimed}
+      </IconLine>
+    ),
   };
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] border border-kit-gold bg-kit-gold/5 px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-well border border-kit-gold bg-kit-gold/5 px-4 py-3">
       <span className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.yourShare}</span>
       {prize.share !== null && (
-        <b className="inline-flex items-center gap-2 font-body text-[32px] font-extrabold tabular-nums text-kit-cream">
+        <Figure size="title" tone="cream" className="inline-flex items-center gap-2">
           <SemanticIcon name="lords" size={30} />
           {formatExact(lordsOf(prize.share))}
-        </b>
+        </Figure>
       )}
       {line[state]}
     </div>
   );
 };
-
-const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-base text-kit-cream">
-    <SemanticIcon name={icon} size={22} />
-    <span>{children}</span>
-  </p>
-);

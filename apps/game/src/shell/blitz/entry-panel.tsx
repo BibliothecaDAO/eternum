@@ -1,16 +1,18 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { lazy, type ReactNode, Suspense, useState } from "react";
+import { type ComponentProps, lazy, type ReactNode, Suspense, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
+import { Panel } from "@/ui/design-system/kit/panel";
+import { Pill } from "@/ui/design-system/kit/pill";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import type { DirectoryGame } from "../herald";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import {
   type EnvironmentLedger,
@@ -131,7 +133,7 @@ const EntryPanel = ({
       <Plate
         icon="skull"
         title={terms.cancelled ? ENTRY_WORDS.cancelled : ENTRY_WORDS.notSeated}
-        right={<WalletChip address={owner} />}
+        aside={<WalletChip address={owner} />}
       >
         <Receipt rows={refundRows(terms)} />
         {sign || (
@@ -140,7 +142,7 @@ const EntryPanel = ({
       </Plate>
     );
   return (
-    <Plate icon="lords" title={ENTRY_WORDS.entry} right={<WalletChip address={owner} />}>
+    <Plate icon="lords" title={ENTRY_WORDS.entry} aside={<WalletChip address={owner} />}>
       <div className="grid grid-cols-3 gap-2.5">
         <Tile
           icon="flag"
@@ -175,7 +177,7 @@ const EntryPanel = ({
           <Lords amount={terms.lords} size={20} />
         </span>
         <span className="flex flex-col items-end">
-          <span className="font-ui text-[14px] text-kit-muted">{ENTRY_WORDS.total}</span>
+          <span className="font-ui text-caption leading-normal text-kit-muted">{ENTRY_WORDS.total}</span>
           <Lords amount={cost.cash} size={28} tone={state === "short" ? "text-kit-red" : "text-kit-cream"} />
         </span>
       </div>
@@ -240,7 +242,7 @@ const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
       {parts.map((part) => (
         <span
           key={part.key}
-          className={cn("inline-flex items-center gap-1 font-body text-[14px] font-bold", part.tone)}
+          className={cn("inline-flex items-center gap-1 font-body text-caption font-bold leading-normal", part.tone)}
         >
           <SemanticIcon name={part.icon} size={18} />
           {formatExact(lordsOf(part.amount))}
@@ -279,7 +281,7 @@ export const SignInToJoin = () => {
 };
 
 const EntryLine = ({ icon, line }: { icon: IconMeaning; line: string }) => (
-  <p className="flex min-h-16 items-center gap-3 rounded-[14px] border border-dashed border-kit-line2 px-3.5 font-body text-[15px] text-kit-muted">
+  <p className="flex min-h-16 items-center gap-3 rounded-well border border-dashed border-kit-line2 px-3.5 font-body text-[15px] text-kit-muted">
     <SemanticIcon name={icon} size={36} />
     {line}
   </p>
@@ -350,19 +352,19 @@ const PaidReceipt = ({ terms }: { terms: EntryTerms }) => {
 /** Listed, and not on the ledger yet: nothing failed and nothing is asked of the player; the panel reads again itself. */
 const Opening = () => (
   <Plate icon="hourglass" title={ENTRY_WORDS.entry}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.openingLine}</p>
+    <p className="font-body text-body text-kit-cream">{ENTRY_WORDS.openingLine}</p>
   </Plate>
 );
 
 const Closed = () => (
   <Plate icon="lock" title={ENTRY_WORDS.closed}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.closedLine}</p>
+    <p className="font-body text-body text-kit-cream">{ENTRY_WORDS.closedLine}</p>
   </Plate>
 );
 
 const Refunded = ({ terms }: { terms: EntryTerms }) => (
   <Plate icon="check" title={ENTRY_WORDS.refunded}>
-    <p className="font-body text-[16px] text-kit-cream">{ENTRY_WORDS.refundedLine}</p>
+    <p className="font-body text-body text-kit-cream">{ENTRY_WORDS.refundedLine}</p>
     <Lords amount={terms.lords} size={22} />
   </Plate>
 );
@@ -404,7 +406,7 @@ const Tile = ({
     disabled={!onToggle}
     onClick={onToggle}
     className={cn(
-      "relative flex flex-col items-center gap-1 rounded-[14px] border-2 px-1 pb-2.5 pt-3",
+      "relative flex flex-col items-center gap-1 rounded-well border-2 px-1 pb-2.5 pt-3",
       on ? "border-kit-gold bg-kit-gold/10" : "border-kit-line opacity-75",
     )}
   >
@@ -414,8 +416,8 @@ const Tile = ({
       </span>
     )}
     <SemanticIcon name={icon} size={44} />
-    <span className="font-ui text-[18px] text-kit-cream">{word}</span>
-    <span className="font-body text-[14px] font-bold text-kit-muted">{effect}</span>
+    <span className="font-ui text-lead leading-normal text-kit-cream">{word}</span>
+    <span className="font-body text-caption font-bold leading-normal text-kit-muted">{effect}</span>
     {credit > 0 ? <CreditChip count={credit} /> : <Lords amount={price} size={18} />}
   </button>
 );
@@ -427,7 +429,7 @@ const Receipt = ({
   rows: { icon: IconMeaning; word: string; value: ReactNode }[];
   total?: bigint;
 }) => (
-  <div className="flex flex-col overflow-hidden rounded-xl border border-kit-line">
+  <div className="flex flex-col overflow-hidden rounded-control border border-kit-line">
     {rows.map(({ icon, word, value }) => (
       <div
         key={word}
@@ -460,43 +462,25 @@ const Lords = ({ amount, size, tone = "text-kit-cream" }: { amount: bigint; size
 );
 
 const CreditChip = ({ count }: { count?: number }) => (
-  <span className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full border border-kit-gold bg-kit-ink pl-1.5 pr-2.5 font-body text-[14px] font-bold text-kit-gold2">
-    <SemanticIcon name="chest" size={18} />
+  <Pill size="sm" tone="gold" rimmed icon="chest">
     {count && count > 1 ? ENTRY_WORDS.credits(count) : ENTRY_WORDS.credit}
-  </span>
+  </Pill>
 );
 
 const Back = () => (
-  <span className="inline-flex items-center gap-1 font-body text-[14px] font-bold text-kit-sage">
+  <span className="inline-flex items-center gap-1 font-body text-caption font-bold leading-normal text-kit-sage">
     <SemanticIcon name="check" size={18} />
     {ENTRY_WORDS.back}
   </span>
 );
 
 const WalletChip = ({ address }: { address: string }) => (
-  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-1.5 pr-3 font-body text-[14px] font-bold text-kit-muted">
-    <SemanticIcon name="backpack" size={20} />
+  <Pill tone="muted" icon="backpack">
     {shortAddress(address)}
-  </span>
+  </Pill>
 );
 
-const Plate = ({
-  icon,
-  title,
-  right,
-  children,
-}: {
-  icon: IconMeaning;
-  title: string;
-  right?: ReactNode;
-  children: ReactNode;
-}) => (
-  <section className="flex flex-col gap-4">
-    <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-ui text-[19px] text-kit-cream">
-      <SemanticIcon name={icon} size={26} />
-      {title}
-      {right && <span className="ml-auto">{right}</span>}
-    </h2>
-    {children}
-  </section>
+/** The entry's plates: a line-ruled Panel inside the lobby's plate, its title 19px until the type scale's snap. */
+const Plate = (props: Omit<ComponentProps<typeof Panel>, "rule" | "surface" | "titleClassName">) => (
+  <Panel rule="line" surface="bare" titleClassName="font-ui text-[19px]" {...props} />
 );

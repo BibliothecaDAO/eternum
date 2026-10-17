@@ -10,7 +10,8 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { WORDS } from "../words";
-import { Kbd } from "./kbd";
+import { Kbd } from "@/ui/design-system/kit/kbd";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
 
 /**
@@ -41,11 +42,13 @@ const useActiveTab = (): string | undefined => {
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
 };
 
-/** You's icon is the player's portrait once signed in. */
-const useSignedInPortrait = (): string | undefined => {
+/** You's icon is the player's portrait once signed in: their chosen one, else their account's. */
+const useSignedInPortrait = (): { account: string | undefined; portrait: string | null | undefined } | undefined => {
   const { session } = useIdentitySession();
-  const address = useAccountStore((state) => state.account?.address);
-  return session ? playerPortraitUrl(address, session.user.image) : undefined;
+  const account = useAccountStore((state) => state.account?.address);
+  return session && playerPortraitUrl(account, session.user.image) !== undefined
+    ? { account, portrait: session.user.image }
+    : undefined;
 };
 
 /** A place's mark: its icon, or on You the signed-in player's portrait. */
@@ -53,11 +56,12 @@ const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: 
   const portrait = useSignedInPortrait();
   if (tab === YOU_TAB && portrait)
     return (
-      <img
-        src={portrait}
-        alt=""
-        style={{ width: size, height: size }}
-        className={cn("rounded-full border-2 object-cover", current ? "border-kit-peach" : "border-kit-line2")}
+      <Portrait
+        account={portrait.account}
+        portrait={portrait.portrait}
+        size={size}
+        weight={2}
+        ring={current ? "lit" : "line"}
       />
     );
   const Icon = tab.icon;
@@ -103,14 +107,14 @@ export const TabBar = () => {
 export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
   const noticeSlot = notice ? (
-    <div data-band="notice" className="max-w-[28rem]">
+    <div data-band="notice" className="max-w-tabs">
       {notice}
     </div>
   ) : null;
   return (
     <header
       data-band="bar"
-      className="sticky top-0 z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground/95 px-8 backdrop-blur min-[1800px]:px-12"
+      className="sticky top-0 z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground/95 px-gutter-desk backdrop-blur wide:px-gutter-wide"
     >
       <div data-role="lockup">
         <Lockup />
@@ -126,7 +130,7 @@ export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode 
                 data-role="tab"
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "flex h-12 items-center gap-2.5 rounded-xl pl-3.5 pr-3 font-body text-base transition-colors",
+                  "flex h-12 items-center gap-2.5 rounded-control pl-3.5 pr-3 font-body text-base transition-colors",
                   current
                     ? "bg-kit-gold/[.14] text-kit-cream"
                     : "text-kit-muted hover:bg-kit-gold/[.06] hover:text-kit-cream",

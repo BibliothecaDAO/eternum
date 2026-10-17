@@ -1,15 +1,17 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/ui/design-system/kit/button";
 
-import { formatContentDay } from "../clock-chip";
+import { formatContentDay } from "@/ui/design-system/kit/time";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import type { ScrollPost } from "../generated/scroll-posts";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
+import { Title } from "@/ui/design-system/kit/title";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
+import { ListRow } from "@/ui/design-system/kit/list-row";
 import { NEWS_WORDS } from "../words";
 import { postHref, postKind, postPainting, publishedPosts, WHATS_NEW_PATH } from "./posts";
 
@@ -44,7 +46,7 @@ export const PostPage = () => {
 const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: ScrollPost | undefined }) => {
   const navigate = useNavigate();
   return (
-    <div className="mx-auto flex w-full max-w-[760px] gap-2">
+    <div className="mx-auto flex w-full max-w-prose gap-2">
       {newer && (
         <Button
           role="outline"
@@ -68,8 +70,10 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
 };
 
 const PhonePost = ({ post }: { post: ScrollPost }) => (
-  <article className="mx-auto flex max-w-[760px] flex-col gap-3">
-    <h1 className="font-body text-[26px] font-bold leading-tight text-kit-cream">{post.title}</h1>
+  <article className="mx-auto flex max-w-prose flex-col gap-3">
+    <Title level="headline" face="body" className="leading-tight">
+      {post.title}
+    </Title>
     <PostDate post={post} />
     <PostBody post={post} />
   </article>
@@ -81,32 +85,34 @@ const PhonePost = ({ post }: { post: ScrollPost }) => (
  */
 const DesktopPost = ({ post }: { post: ScrollPost }) => (
   <div className="flex flex-col gap-8">
-    <header className="painted flex flex-col gap-2 rounded-2xl p-8">
-      <img
-        {...paintingSources(postPainting(post))}
-        sizes="100vw"
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/75 to-kit-ground/30" />
+    <PaintedCard
+      as="header"
+      painting={postPainting(post)}
+      sizes="100vw"
+      grade="cover"
+      className="flex flex-col gap-2 p-8"
+    >
       <span className="font-body text-base text-kit-gold">{postKind(post)}</span>
-      <h1 className="max-w-[60rem] font-display text-[44px] leading-[1.05] text-kit-cream">{post.title}</h1>
+      <Title level="hero" className="max-w-headline">
+        {post.title}
+      </Title>
       <PostDate post={post} />
-    </header>
-    <div className="grid grid-cols-[minmax(0,760px)_20rem] justify-center gap-10">
+    </PaintedCard>
+    <div className="grid grid-cols-[minmax(0,theme(maxWidth.prose))_20rem] justify-center gap-10">
       <PostBody post={post} />
       <aside>
         <Panel icon="chronicles" title={NEWS_WORDS.scroll}>
           {publishedPosts
             .filter((other) => other.slug !== post.slug)
             .map((other) => (
-              <Link
+              <ListRow
                 key={other.slug}
                 to={postHref(other)}
-                className="flex min-h-12 items-center border-b border-kit-line px-1 py-2 font-body text-base text-kit-cream last:border-b-0 hover:text-kit-gold2"
+                height={12}
+                className="px-1 py-2 font-body text-base text-kit-cream hover:text-kit-gold2"
               >
                 {other.title}
-              </Link>
+              </ListRow>
             ))}
         </Panel>
       </aside>
@@ -123,7 +129,7 @@ const PostDate = ({ post }: { post: ScrollPost }) => (
 
 const PostBody = ({ post }: { post: ScrollPost }) => (
   <div
-    className="prose prose-invert max-w-[68ch] text-base leading-[26px] prose-headings:font-body prose-headings:text-kit-cream prose-p:text-kit-cream prose-a:text-kit-peach prose-strong:text-kit-cream prose-li:text-kit-cream prose-blockquote:border-kit-line2 prose-blockquote:text-kit-muted"
+    className="prose prose-invert max-w-measure text-base leading-[26px] prose-headings:font-body prose-headings:text-kit-cream prose-p:text-kit-cream prose-a:text-kit-peach prose-strong:text-kit-cream prose-li:text-kit-cream prose-blockquote:border-kit-line2 prose-blockquote:text-kit-muted"
     dangerouslySetInnerHTML={{ __html: post.html }}
   />
 );

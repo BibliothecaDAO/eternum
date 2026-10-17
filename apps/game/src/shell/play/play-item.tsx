@@ -1,32 +1,33 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
-import type { ReactNode } from "react";
 
+import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
+import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import { DAY } from "@/ui/design-system/kit/words";
+import { Title } from "@/ui/design-system/kit/title";
 
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
 import { useSlotRegistered } from "../blitz/entry";
 import { SeatsChip } from "../blitz/seats-chip";
 import type { PlaytestSlot } from "../blitz-slot";
-import { ClockChip, clockLine } from "../clock-chip";
+import { ClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
 import { useLayout } from "../frame/layout";
 import { StepVerb } from "../frame/step-verb";
 import { entryHref } from "../game-links";
 import type { DirectoryGame } from "../herald";
-import { paintingSources } from "../paintings";
 import { gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { directoryDay } from "../season";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
+import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { signInHref } from "../sign-in/sign-in-route";
 import { BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
-import { GoButton } from "./go-button";
 import type { PlayItem } from "./play-board";
-import { LiveChip, StateChip } from "./state-chip";
 
 type ItemVerb = { word: string; icon: IconMeaning; to: string };
 
@@ -80,12 +81,12 @@ const titleOf = (item: PlayItem): string => {
 const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; firstVisit: boolean }) => {
   if (item.source === "row") {
     const { row } = item;
-    if (row.action === "refund") return <StateChip icon="lock" text={ENTRY_WORDS.closed} />;
+    if (row.action === "refund") return <Pill icon="lock">{ENTRY_WORDS.closed}</Pill>;
     return (
       <>
         {row.startsAt === null ? (
           <>
-            <LiveChip />
+            <Pill tone="live">{WORDS.live}</Pill>
             {row.kind === "game" && <ClockChip prefix="ends" at={row.game.clock.end_at} now={now} />}
           </>
         ) : row.kind === "slot" ? (
@@ -93,15 +94,19 @@ const ItemFacts = ({ item, now, firstVisit }: { item: PlayItem; now: number; fir
         ) : (
           <ClockChip prefix="starts" at={row.startsAt} now={now} />
         )}
-        {row.action === "registered" ? <StateChip icon="check" text={WORDS.joined} /> : <SeatsChip row={row} />}
+        {row.action === "registered" ? <Pill icon="check">{WORDS.joined}</Pill> : <SeatsChip row={row} />}
       </>
     );
   }
   const { game } = item;
   if (item.verb === "results")
-    return <StateChip icon="victory" text={`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`} />;
+    return <Pill icon="victory">{`${PLAY_WORDS.ended} ${clockLine(null, game.clock.end_at, now)}`}</Pill>;
   if (item.mode === "eternum")
-    return item.verb === "enter" ? <LiveChip /> : <ClockChip prefix="opens" at={game.clock.start_main_at} now={now} />;
+    return item.verb === "enter" ? (
+      <Pill tone="live">{WORDS.live}</Pill>
+    ) : (
+      <ClockChip prefix="opens" at={game.clock.start_main_at} now={now} />
+    );
   if (firstVisit) return <p className="font-body text-base text-kit-cream">{PITCH}</p>;
   if (game.status !== "Live") return <ClockChip prefix="starts" at={game.clock.start_main_at} now={now} />;
   const day = directoryDay(game, now);
@@ -126,7 +131,7 @@ const ItemVerbButton = ({ item, signedIn, gold }: { item: PlayItem; signedIn: bo
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
-  return <GoButton role={gold ? "primary" : "secondary"} word={verb.word} icon={verb.icon} to={verb.to} />;
+  return <Button role={gold ? "primary" : "secondary"} word={verb.word} icon={verb.icon} to={verb.to} />;
 };
 
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };
@@ -141,22 +146,23 @@ export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
   const desktop = useLayout() === "desktop";
   const verb = <ItemVerbButton item={item} signedIn={signedIn} gold />;
   return (
-    <section data-play-item={item.key} className="painted flex rounded-2xl">
-      <img
-        {...paintingSources(ageOf(item.mode).painting)}
-        sizes={desktop ? "45vw" : "100vw"}
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/80 to-kit-ground/40" />
+    <PaintedCard
+      data-play-item={item.key}
+      painting={ageOf(item.mode).painting}
+      sizes={desktop ? "45vw" : "100vw"}
+      grade="side"
+      className="flex"
+    >
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 lg:p-6">
-        <h2 className="font-display text-[32px] leading-none text-kit-cream lg:text-[40px]">{titleOf(item)}</h2>
+        <Title level="card" as="h2">
+          {titleOf(item)}
+        </Title>
         <div className="flex flex-wrap items-center gap-2">
           <ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />
         </div>
         {desktop ? <StepVerb>{verb}</StepVerb> : verb}
       </div>
-    </section>
+    </PaintedCard>
   );
 };
 
@@ -199,19 +205,17 @@ const isText = (part: string | null): part is string => part !== null;
 
 /** Any other item: its age's painting small, its title and facts, and its verb in outline, or none. */
 const ItemRow = ({ item, now, signedIn }: ItemProps) => (
-  <li data-play-item={item.key} className="flex items-center gap-3 border-b border-kit-line py-3 last:border-b-0">
-    <img
-      {...paintingSources(ageOf(item.mode).painting)}
-      sizes="48px"
-      alt=""
-      className="size-12 shrink-0 rounded-lg object-cover"
-    />
-    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-      <span className="truncate font-body text-base font-bold text-kit-cream">{titleOf(item)}</span>
-      <ItemLine item={item} now={now} />
-    </span>
-    <ItemVerbButton item={item} signedIn={signedIn} gold={false} />
-  </li>
+  <ListRow
+    as="li"
+    data-play-item={item.key}
+    gap={3}
+    lead={<RowThumb painting={ageOf(item.mode).painting} size={12} />}
+    title={titleOf(item)}
+    line={<ItemLine item={item} now={now} />}
+    spaced
+    trailing={<ItemVerbButton item={item} signedIn={signedIn} gold={false} />}
+    className="py-3"
+  />
 );
 
 /** A plate of item rows. */
@@ -221,9 +225,4 @@ export const ItemRows = ({ items, now, signedIn }: { items: readonly PlayItem[];
       <ItemRow key={item.key} item={item} now={now} signedIn={signedIn} />
     ))}
   </ul>
-);
-
-/** The heading over a Play section: "Now", "Next and done". */
-export const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <h2 className="font-body text-sm font-bold text-kit-peach">{children}</h2>
 );

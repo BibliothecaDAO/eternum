@@ -1,9 +1,6 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
-import { formatClockTime, formatDate, formatDuration } from "@/ui/design-system/kit/time";
-import { LEFT } from "@/ui/design-system/kit/words";
-
-import { CLOCK_WORDS } from "./words";
+import { Pill } from "./pill";
+import { formatClockTime, formatDate, formatDuration } from "./time";
+import { CLOCK_WORDS, LEFT } from "./words";
 
 type ClockPrefix = "starts" | "opens" | "ends" | "expires" | "closes";
 
@@ -29,20 +26,8 @@ export const clockLine = (prefix: ClockPrefix | null, at: number | undefined, no
   return `${word} ${formatDate(at, now)}, ${formatClockTime(at)}`;
 };
 
-/** A post or guide's day, written "2025-01-13" in the bundled content, as the device's local day ("13 Jan 2025"). */
-export const formatContentDay = (day: string): string => {
-  const [year, month, date] = day.split("-").map(Number);
-  return formatDate(new Date(year, month - 1, date).getTime() / 1000);
-};
-
 /** A moment as a chip: the hourglass within a day, the calendar further out or for a finished game's date. */
 export const ClockChip = ({ prefix, at, now }: { prefix: ClockPrefix | null; at: number | undefined; now: number }) => {
-  const Icon =
-    prefix !== null && at !== undefined && isWithinADay(at, now) ? ("hourglass" as const) : ("calendar" as const);
-  return (
-    <span className="frontier-chip h-8 shrink-0 whitespace-nowrap !py-0 !pl-1.5 !pr-3 font-body text-sm font-bold text-kit-cream">
-      <SemanticIcon name={Icon} size={20} />
-      {clockLine(prefix, at, now)}
-    </span>
-  );
+  const icon = prefix !== null && at !== undefined && isWithinADay(at, now) ? "hourglass" : "calendar";
+  return <Pill icon={icon}>{clockLine(prefix, at, now)}</Pill>;
 };

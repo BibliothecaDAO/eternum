@@ -38,3 +38,16 @@ export const formatDate = (unixSeconds: number | undefined, nowSeconds = Date.no
  */
 export const formatMoment = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string =>
   unixSeconds === undefined ? DASH : `${formatDate(unixSeconds, nowSeconds)} ${formatClockTime(unixSeconds)}`;
+
+/** A post or guide's day, written "2025-01-13" in the bundled content, as the device's local day ("13 Jan 2025"). */
+export const formatContentDay = (day: string): string => {
+  const [year, month, date] = day.split("-").map(Number);
+  return formatDate(new Date(year, month - 1, date).getTime() / 1000);
+};
+
+/** A countdown read to the second, hours, minutes and seconds: "2:04:12"; never below zero. */
+export const formatCountdown = (seconds: number): string => {
+  const left = Math.max(0, Math.floor(seconds));
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
+};

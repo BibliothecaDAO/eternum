@@ -23,9 +23,9 @@ import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import { StateChip } from "@/shell/play/state-chip";
+import { Pill } from "@/ui/design-system/kit/pill";
 import { BLITZ_WORDS } from "@/shell/words";
-import { ClockChip } from "@/shell/clock-chip";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";
@@ -606,10 +606,9 @@ export const GameEntryModal = ({
     >
       {phase === "settlement-waiting" && <ClockChip prefix="starts" at={seasonStartAt ?? undefined} now={nowSeconds} />}
       {phase === "settlement" && isBlitzMode && worldMeta && (
-        <StateChip
-          icon="check"
-          text={`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
-        />
+        <Pill icon="check">
+          {`${BLITZ_WORDS.preparing} ${Math.min(worldMeta.player_count, worldMeta.roster_count)}/${worldMeta.roster_count}`}
+        </Pill>
       )}
       {phase === "settlement" && isSeasonMode && !foundsOnItsOwn && settleStage === "idle" && (
         <>

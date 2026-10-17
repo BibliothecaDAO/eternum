@@ -106,6 +106,7 @@
     "teardown": "bun --no-env-file deploy/first/teardown.ts",
     "icons:build": "node scripts/icons/build.mjs",
     "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
+    "shell:check": "node --test scripts/shell-tokens/*.test.mjs && node scripts/shell-tokens/check.mjs",
     "icons:review": "node scripts/icons/review.mjs",
     "icons:prove": "node scripts/icons/prove.mjs",
     "icons:measure": "node scripts/icons/measure.mjs"

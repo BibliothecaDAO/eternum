@@ -1,15 +1,19 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { lazy, type ReactNode, Suspense, useState } from "react";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { type ComponentProps, lazy, type ReactNode, Suspense, useState } from "react";
 
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
+import { IconLine } from "@/ui/design-system/kit/icon-line";
+import { Panel } from "@/ui/design-system/kit/panel";
+import { Pill } from "@/ui/design-system/kit/pill";
+import { Figure } from "@/ui/design-system/kit/figure";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
 import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
@@ -69,11 +73,11 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
     : reward.registration.shield && { icon: "defend" as const, word: "½" };
   return (
     <Plate icon="rating-conqueror" title={REWARD_WORDS.rating}>
-      <p className="flex items-center gap-3 font-body text-[32px] font-extrabold tabular-nums">
+      <Figure as="p" size="title" className="flex items-center gap-3">
         <span className="text-kit-muted">{formatExact(mmrBefore)}</span>
         <SemanticIcon name="arrow-right" size={22} />
         <span className="text-kit-cream">{formatExact(mmrAfter)}</span>
-        <span className={cn("ml-auto text-[26px]", gain ? "text-kit-sage" : "text-kit-red")}>
+        <span className={cn("ml-auto text-heading", gain ? "text-kit-sage" : "text-kit-red")}>
           {gain ? "+" : "−"}
           {formatExact(Math.abs(mmrAfter - mmrBefore))}
         </span>
@@ -83,7 +87,7 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
             {flag.word}
           </span>
         )}
-      </p>
+      </Figure>
     </Plate>
   );
 };
@@ -109,7 +113,9 @@ const ChestPlate = ({
     return (
       <Plate icon="chest" title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="hourglass">{REWARD_WORDS.arrives}</Line>
+        <IconLine tone="muted" icon="hourglass">
+          {REWARD_WORDS.arrives}
+        </IconLine>
       </Plate>
     );
   if (state === "opened")
@@ -133,7 +139,9 @@ const ChestPlate = ({
     return (
       <Plate icon="chest" title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <Line icon="chronicles">{REWARD_WORDS.traded}</Line>
+        <IconLine tone="muted" icon="chronicles">
+          {REWARD_WORDS.traded}
+        </IconLine>
       </Plate>
     );
   const open = signing ? (
@@ -168,9 +176,13 @@ const ChestPlate = ({
  */
 const TokensUntil = ({ shares, seasonEnd, now }: { shares: number; seasonEnd: number; now: number }) =>
   now < seasonEnd ? (
-    <Chip icon="lords" word={REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))} tone="text-kit-gold2" />
+    <Pill size="lg" tone="gold" icon="lords">
+      {REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))}
+    </Pill>
   ) : (
-    <Chip icon="lords" word={REWARD_WORDS.noLords} tone="text-kit-muted" struck />
+    <Pill size="lg" tone="muted" icon="lords" struck>
+      {REWARD_WORDS.noLords}
+    </Pill>
   );
 
 /** What the chest delivered: an item, tokens as a multiple of the slot's entry with the sum sent, or a credit. */
@@ -179,14 +191,16 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
     const item = getChestAssetFromAttributesRaw(content.attributes);
     return (
       <Card>
-        {item && <img src={item.imagePath} alt="" className="size-40 rounded-xl object-cover" />}
+        {item && <img src={item.imagePath} alt="" className="size-40 rounded-control object-cover" />}
         <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-sm font-bold capitalize text-kit-gold2">
           {item?.rarity ?? REWARD_WORDS.cosmetic}
         </span>
         <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
           {item?.name ?? REWARD_WORDS.cosmetic}
         </b>
-        <Chip icon="check" word={REWARD_WORDS.inCollection} tone="text-kit-sage" />
+        <Pill size="lg" tone="sage" icon="check">
+          {REWARD_WORDS.inCollection}
+        </Pill>
       </Card>
     );
   }
@@ -197,7 +211,9 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
       <b className="font-body text-[30px] font-bold leading-tight text-kit-cream">
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
-      <Chip icon="lords" word={REWARD_WORDS.nextEntry} tone="text-kit-muted" />
+      <Pill size="lg" tone="muted" icon="lords">
+        {REWARD_WORDS.nextEntry}
+      </Pill>
     </Card>
   );
 };
@@ -212,14 +228,20 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   return (
     <Card>
       <SemanticIcon name="lords" size={96} />
-      <b className="font-body text-[60px] font-bold leading-none tabular-nums text-kit-gold2">
+      <Figure tone="gold2" className="text-[60px] leading-none">
         {multiple === null ? sum : `${multiple}×`}
-      </b>
+      </Figure>
       <span className="font-body text-xl text-kit-muted">
         {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
       </span>
-      {multiple !== null && <Chip icon="lords" word={`${sum} ${REWARD_WORDS.lords}`} tone="text-kit-gold2" />}
-      <Chip icon="check" word={REWARD_WORDS.lordsSent} tone="text-kit-sage" />
+      {multiple !== null && (
+        <Pill size="lg" tone="gold" icon="lords">
+          {`${sum} ${REWARD_WORDS.lords}`}
+        </Pill>
+      )}
+      <Pill size="lg" tone="sage" icon="check">
+        {REWARD_WORDS.lordsSent}
+      </Pill>
     </Card>
   );
 };
@@ -227,19 +249,21 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
 const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boolean; glow?: boolean }) => (
   <div
     className={cn(
-      "relative flex h-48 items-center justify-center rounded-xl",
+      "relative flex h-48 items-center justify-center rounded-control",
       glow && "bg-[radial-gradient(circle,theme(colors.kit.gold/30%),transparent_65%)]",
     )}
   >
     <img src={chestArt(band, false)} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
     <span className="absolute bottom-1 left-1">
-      <Chip icon="victory" word={REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]} tone="text-kit-muted" />
+      <Pill size="lg" tone="muted" icon="victory">
+        {REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]}
+      </Pill>
     </span>
   </div>
 );
 
 const Stage = ({ children }: { children: ReactNode }) => (
-  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-kit-ink py-4">
+  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-kit-ink py-4">
     <span
       aria-hidden
       className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[repeating-conic-gradient(theme(colors.kit.gold/18%)_0_6deg,transparent_6deg_18deg)] [mask-image:radial-gradient(circle,black,transparent_55%)]"
@@ -249,49 +273,12 @@ const Stage = ({ children }: { children: ReactNode }) => (
 );
 
 const Card = ({ children }: { children: ReactNode }) => (
-  <div className="relative flex w-[85%] flex-col items-center gap-2.5 rounded-2xl border-2 border-kit-gold bg-kit-plate/95 px-4 py-5 text-center">
+  <div className="relative flex w-[85%] flex-col items-center gap-2.5 rounded-plate border-2 border-kit-gold bg-kit-plate/95 px-4 py-5 text-center">
     {children}
   </div>
 );
 
-const Plate = ({ icon, title, children }: { icon: IconMeaning; title: string; children: ReactNode }) => (
-  <section className="plate flex flex-col gap-4 p-5">
-    <h2 className="flex items-center gap-2.5 border-b border-kit-line pb-3 font-body text-lg text-kit-cream">
-      <SemanticIcon name={icon} size={26} />
-      {title}
-    </h2>
-    {children}
-  </section>
-);
-
-const Line = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
-  <p className="flex items-center gap-2.5 font-body text-base text-kit-muted">
-    <SemanticIcon name={icon} size={24} />
-    {children}
-  </p>
-);
-
-const Chip = ({
-  icon,
-  word,
-  tone,
-  struck = false,
-}: {
-  icon: IconMeaning;
-  word: string;
-  tone: string;
-  struck?: boolean;
-}) => (
-  <span
-    className={cn(
-      "inline-flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-kit-ink pl-2 pr-3 font-body text-base font-bold",
-      tone,
-    )}
-  >
-    <span className={cn("relative", struck && "opacity-60")}>
-      <SemanticIcon name={icon} size={20} />
-      {struck && <span aria-hidden className="absolute left-0 top-1/2 h-0.5 w-5 -rotate-45 bg-kit-red" />}
-    </span>
-    {word}
-  </span>
+/** The reward's plates: a line-ruled Panel on a plate with room around its art. */
+const Plate = (props: Omit<ComponentProps<typeof Panel>, "rule" | "surface" | "pad">) => (
+  <Panel rule="line" pad="lg" {...props} />
 );

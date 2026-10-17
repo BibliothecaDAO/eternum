@@ -1,9 +1,12 @@
 import { useSyncExternalStore } from "react";
 
+import { DESKTOP_MIN_PX } from "@/tokens";
+
 /** The two layouts on one foundation: a phone composition below the desktop width, the desktop one at and above it. */
 type Layout = "phone" | "desktop";
 
-const DESKTOP_QUERY = "(min-width: 1024px)";
+// The same width as Tailwind's `lg`, so the JS layout and the stylesheet switch together.
+const DESKTOP_QUERY = `(min-width: ${DESKTOP_MIN_PX}px)`;
 
 const subscribe = (onChange: () => void) => {
   const query = window.matchMedia(DESKTOP_QUERY);

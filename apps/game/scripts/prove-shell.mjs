@@ -73,7 +73,7 @@ const END = {
   lobbySignIn: `location.pathname === "/sign-in" && (new URLSearchParams(location.search).get("next") ?? "").startsWith("/blitz/")`,
 };
 
-/** Season's rating board, as it says its service did not answer (shell/service-failure.tsx). */
+/** Season's rating board, as it says its service did not answer (ui/design-system/kit/service-failure.tsx). */
 const RATINGS_DOWN = "Ratings did not answer.";
 
 /** The flows, as the shell viewer's direction Q draws them; Blitz's board is a switch away on a phone. */
@@ -105,8 +105,8 @@ const flows = (layout, persona) => {
 
 /**
  * The pages the live stack cannot show at will (a running Blitz season, a claim, a sealed chest, a paid entry, a
- * signed-in player without an emailed code), opened in the app lab over its fixtures (`?capture=1`: the lab's own
- * header off) and measured at rest.
+ * signed-in player without an emailed code, sign-in's later steps, the doorway's holds), opened in the app lab over its
+ * fixtures (`?capture=1`: the lab's own header off) and measured at rest, with the reading pages and an unknown path's.
  */
 const LAB_GAME = "0x5245414c4d53-7";
 const LAB_PAGES = [
@@ -119,6 +119,19 @@ const LAB_PAGES = [
   ["home", "profile"],
   ["home", "profile/settings"],
   ["home", "scroll"],
+  ["home", "scroll/infrastructure-autonomous-worlds"],
+  ["first-visit", "terms"],
+  ["first-visit", "privacy"],
+  ["first-visit", "credits"],
+  ["first-visit", "sign-in/start"],
+  ["first-visit", "sign-in/code"],
+  ["first-visit", "sign-in/name"],
+  ["first-visit", "sign-in/name-refused"],
+  ["home", "doorway/map"],
+  ["first-visit", "doorway/sign-in"],
+  ["home", "doorway/waiting"],
+  ["home", "doorway/preparing"],
+  ["home", "no-such-page"],
 ];
 
 /** Measured in the page: what a first-time viewer meets, read from the page's own bands. */

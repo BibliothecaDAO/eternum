@@ -3,6 +3,10 @@ import { StructureType } from "@bibliothecadao/types";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import type { Session } from "@realms-world/identity";
 
+import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
+import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
+import { type DoorwayView, doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
+
 import type { DirectoryGame } from "../herald";
 
 import type { EntryTerms } from "../blitz/entry";
@@ -527,3 +531,44 @@ export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonP
   },
   "season-out": { ...RUNNING, season: { ...OVER, reviewUntil: NOW - 60 } },
 };
+
+/**
+ * A new account at its one step (sign-in's name and portrait): the name suggested at sign-up, which passes the rule, or
+ * one too short to, so the field is drawn refused.
+ */
+export const LAB_NEW_ACCOUNTS = {
+  name: { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: "Maelis" } },
+  "name-refused": { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: "Ma" } },
+} as unknown as Record<"name" | "name-refused", Session>;
+
+/** The sign-in mail the code step names. */
+export const LAB_SIGN_IN_EMAIL = LAB_SESSION.user.email;
+
+/** When the lab's emailed code stops working: five minutes on, as the identity Worker gives it. */
+export const labCodeExpiry = () => Math.floor(Date.now() / 1000) + 300;
+
+/** How long the lab's awaited season is from starting: two hours, so the doorway's chip reads its clock time and the wait. */
+export const LAB_SEASON_WAIT = 2 * 3600 + 4 * 60;
+
+/**
+ * The doorway into Frontier: the map booting under the player's realm, the entry held for a sign-in before the realm
+ * is known, and the realm step with the entry's own chip: the season's start awaited, a Blitz roster filling.
+ */
+export const LAB_DOORWAYS = {
+  map: {
+    view: doorwayView({ source: "boot", phase: "initial_sync", audience: "player" }),
+    realm: { name: "Stolsli", emblem: orderEmblem(1) },
+  },
+  "sign-in": {
+    view: doorwayView({ source: "entry", phase: "account", audience: "player", signedIn: false }),
+    realm: null,
+  },
+  waiting: {
+    view: doorwayView({ source: "entry", phase: "settlement-waiting", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  preparing: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+} satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;
