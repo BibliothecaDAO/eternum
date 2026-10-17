@@ -267,13 +267,18 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: `${getResourceName(Number(payload.resource_type))} / Lords`,
     icon: "resource",
   }),
+  // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
   ResourceTransferStory: (_event, payload, components) => {
-    const destination = subjectOf(payload.to_entity_id, components);
+    const destination = describeEntity(payload.to_entity_id, components);
+    const source = describeEntity(payload.from_entity_id, components);
     const travelTime = formatTravelTime(payload.travel_time);
+    const minted = payload.is_mint === true;
     return {
-      title: payload.is_mint === true ? `Resources minted at ${destination}` : `Resources sent to ${destination}`,
+      title: minted
+        ? `Resources minted${destination ? ` at ${destination}` : ""}`
+        : `Resources sent${destination ? ` to ${destination}` : ""}`,
       description: joinPieces([
-        payload.is_mint === true ? undefined : `from ${subjectOf(payload.from_entity_id, components)}`,
+        source && !minted ? `from ${source}` : undefined,
         formatResourceList(payload.resources),
         travelTime && travelTime !== "Instant" ? `${travelTime} on the road` : undefined,
       ]),
@@ -356,9 +361,12 @@ const BUILDING_STATUS: Record<string, "built" | "demolished" | "paused" | "resum
   Resumed: "resumed",
 };
 
-/** What a structure is called in a story: its shared name, or "a structure" once the store no longer holds it. */
+/**
+ * What a story is about, a structure or an army, as `describeEntity` names it; "a structure" once the store no longer
+ * holds it (every caller passes a structure's id). Never an id.
+ */
 function subjectOf(structureId: unknown, components?: NativeFactStore): string {
-  return describeStructureName(structureId, components) ?? "a structure";
+  return describeEntity(structureId, components) ?? "a structure";
 }
 
 /** A realm's level by its name ("a City"); a level past the realm ladder by its number. */

@@ -407,3 +407,28 @@ describe("a story's subject", () => {
     expect(paid.title).toBe(placed.title);
   });
 });
+
+describe("a resource transfer", () => {
+  it("names each end as the structure or the army it is, and leaves out an end the store no longer holds", () => {
+    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
+    const { store, setStructure, setExplorer } = buildStore();
+    setStructure(5, 1, 1);
+    setExplorer(7, 5, "T1");
+    const sent = (from: number, to: number) =>
+      buildStoryEventPresentation(
+        story("ResourceTransferStory", {
+          from_entity_id: from,
+          to_entity_id: to,
+          resources: [],
+          transfer_type: { Adjacent: {} },
+          travel_time: 0,
+        }),
+        store,
+      );
+    expect(sent(5, 7)).toMatchObject({ title: "Resources sent to Stolsli T1 army", description: "from Stolsli" });
+    expect(sent(7, 5)).toMatchObject({ title: "Resources sent to Stolsli", description: "from Stolsli T1 army" });
+    const gone = sent(98765, 43210);
+    expect(gone.title).toBe("Resources sent");
+    expect(`${gone.title} ${gone.description ?? ""}`).not.toMatch(/\d{4,}|a structure/);
+  });
+});
