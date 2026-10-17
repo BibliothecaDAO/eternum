@@ -1,5 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
+import { HUD_COLUMN_MARK, HUD_FOOT_MARK } from "@/three/utils/labels/hud-clearance";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { SpectatorStandingsBody } from "@/ui/features/world/containers/spectator-standings";
@@ -35,7 +35,10 @@ export const DesktopHud = () => {
     <>
       <LeftColumn />
       <GuidedRail />
-      <div className="pointer-events-none fixed bottom-5 left-[344px] right-[344px] z-[26] flex items-end justify-center gap-4">
+      <div
+        {...HUD_FOOT_MARK}
+        className="pointer-events-none fixed bottom-5 left-[344px] right-[344px] z-[26] flex items-end justify-center gap-4"
+      >
         <ActionBubbles />
         {ordersAllowed && <IdleArmiesButton idle={idleArmies} className="mb-7" />}
       </div>

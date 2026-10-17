@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it } from "vitest";
-import { HUD_COLUMN_MARK, keepLabelsBesideHudColumns } from "./hud-clearance";
+import { HUD_COLUMN_MARK, HUD_FOOT_MARK, keepLabelsBesideHudColumns, openMapArea } from "./hud-clearance";
 
 /** A HUD column at these screen bounds, as the HUD marks it. */
 const column = (left: number, right: number) => {
@@ -43,4 +43,18 @@ it("leaves a label alone clear of the columns, under one, or once it no longer r
   crate.style.transform = "translate(-50%,-50%) translate(700px,200px)";
   keepLabelsBesideHudColumns(layer);
   expect(crate.style.translate).toBe("");
+});
+
+it("finds the map's open area between the columns, below their tops and above the order bubbles", () => {
+  column(12, 332);
+  column(1588, 1908);
+  const foot = document.createElement("div");
+  Object.entries(HUD_FOOT_MARK).forEach(([name, value]) => foot.setAttribute(name, value));
+  foot.getBoundingClientRect = () => ({ left: 344, right: 1576, top: 960, bottom: 1060 }) as DOMRect;
+  document.body.append(foot);
+  expect(openMapArea({ width: 1920, height: 1080 })).toEqual({ left: 332, right: 1588, top: 60, bottom: 960 });
+});
+
+it("is the whole viewport where the HUD marks nothing", () => {
+  expect(openMapArea({ width: 1920, height: 1080 })).toEqual({ left: 0, right: 1920, top: 0, bottom: 1080 });
 });

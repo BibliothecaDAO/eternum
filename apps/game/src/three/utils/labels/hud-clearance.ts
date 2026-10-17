@@ -8,6 +8,38 @@ const HUD_COLUMN_ATTRIBUTE = "data-hud-column";
 /** Spread on a HUD side column's element to mark it. */
 export const HUD_COLUMN_MARK = { [HUD_COLUMN_ATTRIBUTE]: "" };
 
+/** The HUD's foot (the order bubbles between the columns) marks itself with this attribute; labels pass under it. */
+const HUD_FOOT_ATTRIBUTE = "data-hud-foot";
+
+/** Spread on the HUD's foot element to mark it. */
+export const HUD_FOOT_MARK = { [HUD_FOOT_ATTRIBUTE]: "" };
+
+/** A rectangle on screen, in CSS pixels. */
+interface ScreenArea {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/**
+ * The map's open area on screen, where what the HUD sends the camera to stays in sight: between the side columns, below
+ * their tops and above the foot's order bubbles. The whole viewport where the HUD marks nothing.
+ */
+export function openMapArea(viewport: { width: number; height: number }, root: ParentNode = document): ScreenArea {
+  const middle = viewport.width / 2;
+  const columns = [...root.querySelectorAll(`[${HUD_COLUMN_ATTRIBUTE}]`)].map((column) =>
+    column.getBoundingClientRect(),
+  );
+  const feet = [...root.querySelectorAll(`[${HUD_FOOT_ATTRIBUTE}]`)].map((foot) => foot.getBoundingClientRect());
+  return {
+    left: Math.max(0, ...columns.filter((column) => column.right <= middle).map((column) => column.right)),
+    right: Math.min(viewport.width, ...columns.filter((column) => column.left >= middle).map((column) => column.left)),
+    top: columns.length > 0 ? Math.max(0, Math.min(...columns.map((column) => column.top))) : 0,
+    bottom: Math.min(viewport.height, ...feet.map((foot) => foot.top)),
+  };
+}
+
 /** No label is wider than twice this, so one anchored farther from a column never reaches under it. */
 const WIDEST_HALF_LABEL_PX = 240;
 

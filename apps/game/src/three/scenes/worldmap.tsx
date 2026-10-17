@@ -145,7 +145,8 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
-import { Box3, Group, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Group, Plane, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { openMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -8331,9 +8332,34 @@ export default class WorldmapScene extends WarpTravel {
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
     await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
-    if (forSite && getLiveWorldmapEntityActions().selectedEntityId === entityId) {
-      this.openTargetCardForSelectedArmy(forSite);
-    }
+    if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+    this.frameOnOpenMap(forSite ? [position, forSite] : [position]);
+    if (forSite) this.openTargetCardForSelectedArmy(forSite);
+  }
+
+  /**
+   * Frames hexes in the map's open area, between the HUD's columns and above its order bubbles, instead of the screen's
+   * centre, which those cover: their midpoint lands at the open area's centre, at the same zoom and angle.
+   */
+  private frameOnOpenMap(hexes: HexPosition[]): void {
+    const points = hexes.map((hex) => this.hexSpace.positionForHex(hex));
+    const middle = points
+      .reduce((sum, point) => sum.add(new Vector3(point.x, point.y, point.z)), new Vector3())
+      .divideScalar(points.length);
+    this.moveCameraToXYZ(middle.x, middle.y, middle.z, 0);
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    const area = openMapArea(viewport);
+    const aim = new Vector2(
+      (area.left + area.right) / viewport.width - 1,
+      1 - (area.top + area.bottom) / viewport.height,
+    );
+    this.camera.updateMatrixWorld();
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(aim, this.camera);
+    const ground = raycaster.ray.intersectPlane(new Plane(new Vector3(0, 1, 0), -middle.y), new Vector3());
+    if (!ground) return;
+    // The ground now under the open area's centre is where the midpoint should be: move by the difference.
+    this.moveCameraToXYZ(2 * middle.x - ground.x, middle.y, 2 * middle.z - ground.z, 0);
   }
 
   private async focusAndSelectArmy(
