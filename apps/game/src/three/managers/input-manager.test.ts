@@ -123,6 +123,24 @@ describe("InputManager lifecycle", () => {
     expect(removeSpy).not.toHaveBeenCalledWith("click", expect.any(Function));
   });
 
+  it("tells its listeners the pointer left the surface, and drops a move still waiting for its frame", () => {
+    const frameHarness = installAnimationFrameHarness();
+    const moved = vi.fn();
+    const left = vi.fn();
+    const fixture = createSubject();
+
+    fixture.manager.setSurface(fixture.surface);
+    fixture.manager.activate();
+    fixture.manager.addListener("mousemove", moved);
+    fixture.manager.addListener("mouseleave", left);
+    fixture.surface.dispatchEvent(new MouseEvent("mousemove", { clientX: 150, clientY: 250 }));
+    fixture.surface.dispatchEvent(new MouseEvent("mouseleave", { clientX: 99, clientY: 250 }));
+    frameHarness.flushNextFrame();
+
+    expect(left).toHaveBeenCalledTimes(1);
+    expect(moved).not.toHaveBeenCalled();
+  });
+
   it("processes many mousemoves once on the next frame using the latest coordinates", () => {
     const frameHarness = installAnimationFrameHarness();
     const callback = vi.fn();

@@ -32,9 +32,9 @@ export class PointerOrderTip {
     this.say();
   }
 
-  /** What the line reads changed under the still pointer. */
+  /** What the line reads changed under the still pointer; another surface's tooltip keeps the screen. */
   refresh(): void {
-    if (!this.taken) this.say();
+    if (!this.taken && !showsAnotherTip()) this.say();
   }
 
   /** A click took the tile: its preview or its order stands where the line was, until the pointer moves on. */
@@ -48,21 +48,27 @@ export class PointerOrderTip {
   }
 }
 
-let shown = false;
+/** The tooltip this line last put up; the app's one tooltip is cleared only while it is still this one. */
+let shown: Tooltip | null = null;
+type Tooltip = Parameters<ReturnType<typeof useTooltipStore.getState>["setTooltip"]>[0];
+
+const showsAnotherTip = (): boolean => {
+  const { tooltip } = useTooltipStore.getState();
+  return tooltip !== null && tooltip !== shown;
+};
 
 /**
  * A highlighted tile's name on the app's one tooltip, as a chip's name is: the map has no element under the pointer,
- * so the scene says the line and where the tile is on screen. Null takes the line away.
+ * so the scene says the line and where the tile is on screen. Null takes the line away, and only the line.
  */
 function showOrderTip(tip: PlacedOrderTip | null): void {
   const store = useTooltipStore.getState();
   if (!tip) {
-    if (shown) store.setTooltip(null);
-    shown = false;
+    if (!showsAnotherTip()) store.setTooltip(null);
+    shown = null;
     return;
   }
-  shown = true;
-  store.setTooltip({
+  shown = {
     content: (
       <>
         <TipLine line={tip.line} />
@@ -75,5 +81,6 @@ function showOrderTip(tip: PlacedOrderTip | null): void {
       x: Math.max(TIP_ROOM.edge, Math.min(tip.at.x + TIP_OFFSET.x, window.innerWidth - TIP_ROOM.width)),
       y: Math.max(TIP_ROOM.top, Math.min(tip.at.y + TIP_OFFSET.y, window.innerHeight - TIP_ROOM.height)),
     },
-  });
+  };
+  store.setTooltip(shown);
 }
