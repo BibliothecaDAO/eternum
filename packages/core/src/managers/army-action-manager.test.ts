@@ -258,6 +258,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
+    // The map names why: the attack's stamina.
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(targetHex))).toEqual({ reason: "stamina", need: 5 });
   });
 
   it("keeps adjacent enemy structure attack paths when attack stamina meets the required threshold", () => {
@@ -297,7 +299,9 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
 
     expect(actionPaths.get(ActionPaths.posKey(owned))).toBeUndefined();
+    expect(actionPaths.getRefusals().get(ActionPaths.posKey(owned))).toEqual({ reason: "off-limits" });
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(site))!)).toBe(ActionType.Attack);
+    expect(actionPaths.getRefusals().has(ActionPaths.posKey(site))).toBe(false);
   });
 
   it("adds radius-two attack paths for crossbowman armies", () => {
@@ -351,6 +355,8 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
 
 describe("ArmyActionManager food checks", () => {
   beforeEach(() => {
+    vi.spyOn(configManager, "getCombatConfig").mockReturnValue({ stamina_attack_req: 5 } as any);
+    vi.spyOn(configManager, "getTravelStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getExploreStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getMinTravelStaminaCost").mockReturnValue(1);
     vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
@@ -379,6 +385,42 @@ describe("ArmyActionManager food checks", () => {
 
     vi.mocked(manager.getFood).mockReturnValue({ wheat: 100, fish: 0 });
     expect(manager.canExplore(0)).toBe(true);
+  });
+
+  it("says why an unexplored neighbour offers no explore: the owner's wheat, or else the army's stamina", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const fog = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    exploredHexes.get(fog.col - TEST_FELT_CENTER)!.delete(fog.row - TEST_FELT_CENTER);
+    const refusal = () =>
+      manager
+        .findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any)
+        .getRefusals()
+        .get(ActionPaths.posKey(fog));
+
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 99, fish: 0 });
+    expect(refusal()).toEqual({ reason: "food" });
+
+    vi.mocked(manager.getFood).mockReturnValue({ wheat: 999, fish: 0 });
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({ amount: 0n, settled_at: 0, remainder: 0 } as any);
+    expect(refusal()).toEqual({ reason: "stamina", need: 1 });
+  });
+
+  it("names the smallest stamina a route two tiles off needs, and nothing for a tile some route reaches", () => {
+    vi.spyOn(configManager, "getTravelStaminaCost").mockReturnValue(30);
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const near = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    const far = getNeighborHexes(near.col, near.row).find(
+      (hex) =>
+        !getNeighborHexes(oldFeltStart.col, oldFeltStart.row).some((n) => n.col === hex.col && n.row === hex.row),
+    )!;
+    setNestedMapValue(exploredHexes, far.col - TEST_FELT_CENTER, far.row - TEST_FELT_CENTER, 1 as BiomeType);
+
+    const paths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    // 50 stamina: one 30-stamina step, not two.
+    expect(ActionPaths.getActionType(paths.get(ActionPaths.posKey(near))!)).toBe(ActionType.Move);
+    expect(paths.getRefusals().has(ActionPaths.posKey(near))).toBe(false);
+    expect(paths.getRefusals().get(ActionPaths.posKey(far))).toEqual({ reason: "stamina", need: 60 });
   });
 });
 

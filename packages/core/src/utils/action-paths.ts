@@ -27,8 +27,15 @@ const sameStep = (left: ActionPath, right: ActionPath): boolean =>
   left.biomeType === right.biomeType &&
   left.staminaCost === right.staminaCost;
 
+/**
+ * Why the rules gave an actor no order at a tile they looked at: the stamina the order needs (the smallest any route
+ * there needs), the food an explore needs, or a structure the game lets no army attack.
+ */
+export type OrderRefusal = { reason: "stamina"; need: number } | { reason: "food" } | { reason: "off-limits" };
+
 export class ActionPaths {
   private readonly paths: Map<string, ActionPath[]>;
+  private readonly refusals = new Map<string, OrderRefusal>();
   private readonly FELT_CENTER: number;
   constructor() {
     this.paths = new Map();
@@ -45,6 +52,21 @@ export class ActionPaths {
 
   get(key: string): ActionPath[] | undefined {
     return this.paths.get(key);
+  }
+
+  /**
+   * Records why a tile offers no order, as the rule that withheld it decided. A rule's refusal stands; between
+   * stamina shortfalls the smallest need wins, since that route is the first to open.
+   */
+  refuse(key: string, refusal: OrderRefusal): void {
+    const held = this.refusals.get(key);
+    if (held && (held.reason !== "stamina" || (refusal.reason === "stamina" && held.need <= refusal.need))) return;
+    this.refusals.set(key, refusal);
+  }
+
+  /** Why each tile the rules looked at has no order; a tile some route reaches has none to give. */
+  getRefusals(): Map<string, OrderRefusal> {
+    return new Map([...this.refusals].filter(([key]) => !this.paths.has(key)));
   }
 
   has(key: string): boolean {
