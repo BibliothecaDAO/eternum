@@ -20,7 +20,7 @@ const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): n
   return isTwoPlayerMode ? HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE : realmCountWithinRadius;
 };
 
-export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, number> => {
+const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, number> => {
   const structures = [...store.inGame("Structure", configManager.getActiveGameId())];
   const realms = structures.filter((structure) => structure.base.category === StructureType.Realm);
   const radiusSquared = getHyperstructureRealmCheckRadius() ** 2;
