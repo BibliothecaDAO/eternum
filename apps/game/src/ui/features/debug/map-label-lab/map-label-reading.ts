@@ -18,4 +18,12 @@ export const restingGuard = (
   return { kind: "total", total: guards.reduce((sum, slot) => sum + slot.count, 0) };
 };
 
+/**
+ * Guard slots in the order an attacker meets them: the contract attacks the highest occupied slot first, slot zero last
+ * (`GuardState::next`, contracts/l3/world-native/src/logic/guards.cairo). Slots are listed by slot index; empty ones are
+ * skipped.
+ */
+export const attackOrder = (guards: readonly MapLabelTroops[]): MapLabelTroops[] =>
+  [...guards].reverse().filter((slot) => slot.count > 0);
+
 export const formatCount = (count: number) => count.toLocaleString("en-US");

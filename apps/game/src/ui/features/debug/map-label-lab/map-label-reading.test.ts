@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
 
-import { homeCode, restingGuard } from "./map-label-reading";
+import { attackOrder, homeCode, restingGuard } from "./map-label-reading";
 
 const entity = (fields: Partial<MapLabelEntity>): MapLabelEntity => ({
   entityId: 1,
@@ -36,5 +36,12 @@ describe("what a map plate reads", () => {
       ]),
     ).toEqual({ kind: "total", total: 1731 });
     expect(restingGuard([])).toEqual({ kind: "open" });
+  });
+
+  it("lists guard slots as an attacker meets them: the highest occupied slot first, empty slots skipped", () => {
+    const slot0 = { type: "crossbowman", tier: 1, count: 516 } as const;
+    const slot1 = { type: "knight", tier: 2, count: 0 } as const;
+    const slot2 = { type: "paladin", tier: 3, count: 638 } as const;
+    expect(attackOrder([slot0, slot1, slot2])).toEqual([slot2, slot0]);
   });
 });

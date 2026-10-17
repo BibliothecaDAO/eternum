@@ -3,7 +3,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import type { MapLabelEntity, MapLabelTroops } from "@/three/debug/map-label-lab-fixture";
 
 import { stack, type LabelBox } from "./map-label-layout";
-import { formatCount, homeCode, restingGuard } from "./map-label-reading";
+import { attackOrder, formatCount, homeCode, restingGuard } from "./map-label-reading";
 
 /**
  * The owner's pick (rounds 2 and 3 and their amendments): plates that open, in paintings wherever a painting reads
@@ -14,7 +14,7 @@ import { formatCount, homeCode, restingGuard } from "./map-label-reading";
 export const PLATE_RULES = {
   rest: "Army: its owner, above its troops (type painting, tier, count) and stamina bar. Realm and hyperstructure: owner and one guard number: a single slot as its troop painting, tier and count; several as their total (shield); none, an open lock. Camp and rift: its reward and its guard.",
   hover:
-    "Hover the tile: the plate opens with what it does not say at rest: an army's home realm and id; a realm's name and level; a camp's, rift's or hyperstructure's id (a skull: bandits); each guard slot (painting, tier, count) when there are several.",
+    "Hover the tile: the plate opens with what it does not say at rest. An army, inline in its own shape: owner and home realm, then id and troops (one line when it fits). A structure: a realm's name and level, or the id (a skull: bandits); its guard slots on one line, the first an attacker meets first.",
   selected: "Stays open, ringed in gold.",
 } as const;
 
@@ -45,7 +45,9 @@ export const MapPlates = ({
   const grown = openBox &&
     open && {
       ...openBox,
+      x: open.x - openedWidth(open.entity, openBox.width) / 2,
       y: openBox.y - (lifts.get(openBox.id) ?? 0) - OPEN_LINE * openLines(open.entity),
+      width: openedWidth(open.entity, openBox.width),
       height: openBox.height + OPEN_LINE * openLines(open.entity),
     };
   const yields = new Set(
@@ -89,22 +91,95 @@ const ROW_HEIGHT = 30;
 const NAME_LINE = 22;
 const OPEN_LINE = 24;
 
-/** The plate: its row of facts; opened, the lines the row does not hold stand above it. */
-const Plate = ({ entity, open }: { entity: MapLabelEntity; open: boolean }) => (
-  <div className="mll-plate" data-open={open}>
-    {open && <OpenLines entity={entity} />}
-    {entity.army && <div className="mll-plate__name mll-owner">{entity.owner}</div>}
-    <div className="mll-plate__row">{entity.army ? <ArmyRow entity={entity} /> : <StructureRow entity={entity} />}</div>
-    {entity.army && (
-      <span className="mll-plate__meter" title="Stamina">
-        <i style={{ width: `${(100 * entity.army.stamina) / entity.army.staminaMax}%` }} />
-      </span>
-    )}
-  </div>
-);
+/** The plate: a structure's row, opened with what the row does not hold above it; or an army's plate. */
+const Plate = ({ entity, open }: { entity: MapLabelEntity; open: boolean }) =>
+  entity.army ? (
+    <ArmyPlate entity={entity} open={open} />
+  ) : (
+    <div className="mll-plate" data-open={open}>
+      {open && <OpenLines entity={entity} />}
+      <div className="mll-plate__row">
+        <StructureRow entity={entity} />
+      </div>
+    </div>
+  );
 
-/** An army: its troops (its owner stands on the line above). */
-const ArmyRow = ({ entity }: { entity: MapLabelEntity }) => <Troops troops={entity.army!.troops} />;
+/**
+ * An army keeps one shape: its owner over its troops, the stamina bar at its foot. Opened, the same two lines carry more,
+ * inline: the owner and the realm it comes from, then its id and its troops; on one line when that fits.
+ */
+const ArmyPlate = ({ entity, open }: { entity: MapLabelEntity; open: boolean }) => {
+  const army = entity.army!;
+  const owner = <span className="mll-owner">{entity.owner}</span>;
+  const home = (
+    <span className="mll-troops">
+      <Icon name="realm" size={18} />
+      {entity.homeName}
+    </span>
+  );
+  const id = (
+    <span className="mll-troops opacity-85">
+      <Icon name="map-army" size={18} />
+      {homeCode(entity)}
+    </span>
+  );
+  const troops = <Troops troops={army.troops} />;
+  return (
+    <div className="mll-plate" data-open={open}>
+      {!open ? (
+        <>
+          <div className="mll-plate__name">{owner}</div>
+          <div className="mll-plate__row">{troops}</div>
+        </>
+      ) : armyFitsOneLine(entity) ? (
+        <div className="mll-plate__row">
+          {owner}
+          {home}
+          {id}
+          {troops}
+        </div>
+      ) : (
+        <>
+          <div className="mll-plate__name">
+            {owner}
+            {home}
+          </div>
+          <div className="mll-plate__row">
+            {id}
+            {troops}
+          </div>
+        </>
+      )}
+      <span className="mll-plate__meter" title="Stamina">
+        <i style={{ width: `${(100 * army.stamina) / army.staminaMax}%` }} />
+      </span>
+    </div>
+  );
+};
+
+/** The widest opened army that still reads as one line at play zoom. */
+const ONE_LINE_WIDTH = 360;
+
+/** An opened army's two halves (owner and home; id and troops), each as drawn: its words, paintings, gaps, padding. */
+const openedArmyHalves = (entity: MapLabelEntity) => {
+  const troops = entity.army!.troops;
+  return [
+    measure(`${entity.owner} ${entity.homeName}`) + 18 + 3 * 6,
+    measure(`${homeCode(entity)} T${troops.tier} ${formatCount(troops.count)}`) + 18 + 20 + 4 * 6,
+  ];
+};
+
+const armyFitsOneLine = (entity: MapLabelEntity) => {
+  const [first, second] = openedArmyHalves(entity);
+  return first + second + 20 <= ONE_LINE_WIDTH;
+};
+
+/** How wide a plate stands once opened: an army as its inline layout; a structure as at rest, its lines fit within. */
+const openedWidth = (entity: MapLabelEntity, restingWidth: number) => {
+  if (!entity.army) return Math.max(restingWidth, entity.guards.length > 1 ? entity.guards.length * 96 : 0);
+  const [first, second] = openedArmyHalves(entity);
+  return (armyFitsOneLine(entity) ? first + second : Math.max(first, second)) + 20;
+};
 
 /** A structure: its reward (a camp or a rift) or its owner, then one guard number. */
 const StructureRow = ({ entity }: { entity: MapLabelEntity }) => (
@@ -157,8 +232,8 @@ const Troops = ({ troops }: { troops: MapLabelTroops }) => (
 );
 
 /**
- * What the opened plate adds, never what the resting plate says: an army's home realm and id; a realm's name and level;
- * another thing's id, with a skull for bandits; each guard slot when the row showed only their total.
+ * What an opened structure adds, never what its row says: a realm's name and level, another thing's id (a skull for
+ * bandits); and when the row showed only their total, its guard slots on one line, in the order an attacker meets them.
  */
 const OpenLines = ({ entity }: { entity: MapLabelEntity }) => (
   <>
@@ -173,12 +248,6 @@ const OpenLines = ({ entity }: { entity: MapLabelEntity }) => (
         </>
       ) : (
         <>
-          {entity.army && (
-            <span className="mll-troops">
-              <Icon name="realm" size={18} />
-              {entity.homeName}
-            </span>
-          )}
           {entity.kind === "camp" && !entity.owner && <Icon name="skull" size={18} alt="Bandits" />}
           {entity.kind === "camp" && entity.owner && <span className="mll-owner">{entity.owner}</span>}
           <span className="mll-troops opacity-85">
@@ -188,16 +257,21 @@ const OpenLines = ({ entity }: { entity: MapLabelEntity }) => (
         </>
       )}
     </div>
-    {entity.guards.length > 1 &&
-      entity.guards.map((slot, index) => (
-        <div key={index} className="mll-plate__more">
-          <Troops troops={slot} />
-        </div>
-      ))}
+    {entity.guards.length > 1 && (
+      <div className="mll-plate__more" aria-label="Guards, first met first">
+        {attackOrder(entity.guards).map((slot, index) => (
+          <span key={index} className="mll-troops">
+            {index > 0 && <span className="mll-next">›</span>}
+            <Troops troops={slot} />
+          </span>
+        ))}
+      </div>
+    )}
   </>
 );
 
-const openLines = (entity: MapLabelEntity) => 1 + (entity.guards.length > 1 ? entity.guards.length : 0);
+/** An opened structure's lines above its row; an army opens within its own two lines. */
+const openLines = (entity: MapLabelEntity) => (entity.army ? 0 : 1 + (entity.guards.length > 1 ? 1 : 0));
 
 const Pin = ({ entity }: { entity: MapLabelEntity }) => (
   <div className="mll-pin">
