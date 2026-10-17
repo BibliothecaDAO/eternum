@@ -2,7 +2,6 @@ import { useGame } from "@/hooks/context/game-context";
 import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { toast } from "@/ui/features/event-feed/notify";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { DockArmy } from "../hud/dock-armies";

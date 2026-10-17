@@ -10,7 +10,7 @@ import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
-import { type ArmyInfo, type ID, resources, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import { type ArmyInfo, type ID, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import { memo, useMemo, useState } from "react";
 import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";

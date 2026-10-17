@@ -49,14 +49,13 @@ const realmWithEssence = (essence: number) => {
 
 /** What the activation surfaces read for Damage Relic I held by realm 7: its cost and whether the realm can pay it. */
 const activationFor = (store: ReturnType<typeof realmWithEssence>) => {
-  let read: { essenceCost: number; hasEnoughEssence: boolean; shortfall: string } | null = null;
   const Probe = () => {
     const { essenceCost } = useRelicMetadata(ResourcesIds.DamageRelic1);
     const { hasEnoughEssence, shortfall } = useRelicEssenceStatus(7, essenceCost);
-    read = { essenceCost, hasEnoughEssence, shortfall };
-    return null;
+    return <output>{JSON.stringify({ essenceCost, hasEnoughEssence, shortfall })}</output>;
   };
-  const root = createRoot(document.createElement("div"));
+  const host = document.createElement("div");
+  const root = createRoot(host);
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -64,8 +63,13 @@ const activationFor = (store: ReturnType<typeof realmWithEssence>) => {
       </GameProvider>,
     ),
   );
+  const read = JSON.parse(host.textContent ?? "null") as {
+    essenceCost: number;
+    hasEnoughEssence: boolean;
+    shortfall: string;
+  };
   act(() => root.unmount());
-  return read!;
+  return read;
 };
 
 afterEach(() => setBlockTimestampSource(null));
