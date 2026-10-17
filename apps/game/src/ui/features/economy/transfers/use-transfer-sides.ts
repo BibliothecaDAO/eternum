@@ -8,7 +8,7 @@ import {
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
 } from "@/ui/lib/structure-capabilities";
-import { configManager, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
+import { configManager, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
 import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { type Good, type HoldingRole, roleOf } from "./transfer-plan";
@@ -20,8 +20,6 @@ export interface TransferSides {
   destinationRoles: HoldingRole[];
   /** What the source can send to every chosen destination: troops only where the mode lets them travel. */
   goods: Good[];
-  /** Each destination's road from the source in seconds, at the donkeys' pace with goods and with troops aboard. */
-  roads: Array<{ goods: number; troops: number }>;
   donkeysHave: number;
   donkeyCapacityKg: number;
 }
@@ -73,10 +71,6 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
           have: whole(amount),
           weightKg: configManager.getResourceWeightKg(resourceId) ?? 0,
         })),
-      roads: destinationIds.map((id) => ({
-        goods: shipmentTravelSeconds(source.entityId, id, setup.store, false) ?? 0,
-        troops: shipmentTravelSeconds(source.entityId, id, setup.store, true) ?? 0,
-      })),
       donkeysHave: whole(held.find(({ resourceId }) => resourceId === ResourcesIds.Donkey)?.amount ?? 0),
       donkeyCapacityKg: configManager.getCapacityConfigKg(CapacityConfig.Donkey),
     };

@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCoarseNowSeconds, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -127,6 +127,10 @@ const TransferSurface = ({ initial }: { initial: TransferEnds }) => {
 const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
   const [draft, setDraft] = useState<Draft>({ ends: initial, edited: null, revision: 0 });
   const { ends } = draft;
+  const sides = useTransferSides(ends.sourceId, ends.destinationIds);
+  // Until the player edits, the plans follow the owner's rules for the ends chosen now, so adding a rift adds donkeys.
+  const plans = sides ? (draft.edited ?? prefilledPlans(sides)) : null;
+  const landsIn = useLandings(ends, sides, plans);
   // A new source, or swapped ends, start their own amounts.
   const change = (next: Partial<Omit<Draft, "revision">>) => setDraft((current) => revised(current, next));
   return (
@@ -156,15 +160,20 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           chosen={ends.destinationIds}
           otherEnd={ends.sourceId === null ? [] : [ends.sourceId]}
           onPick={(id) => change({ ends: toggleDestination(ends, id) })}
-          note={(id) => <RoadNote sourceId={ends.sourceId} id={id} />}
+          note={(id) => {
+            const seconds = landsIn(id);
+            return seconds === undefined ? null : landsText(seconds);
+          }}
         />
         <div className="flex min-h-0 flex-col gap-3">
-          {ends.sourceId !== null && (
+          {ends.sourceId !== null && sides && plans && (
             <Goods
               key={ends.sourceId}
               sourceId={ends.sourceId}
               destinationIds={ends.destinationIds}
-              edited={draft.edited}
+              sides={sides}
+              plans={plans}
+              landsIn={Math.max(0, ...ends.destinationIds.map((id) => landsIn(id) ?? 0))}
               revision={draft.revision}
               focus={initial.resource}
               onPlans={(edited) => change({ edited })}
@@ -210,13 +219,33 @@ const DonkeysNote = ({ id }: { id: number }) => {
   return <>{amountText(Math.floor(Number(donkeys) / RESOURCE_PRECISION))} donkeys</>;
 };
 
-/** A destination row's note: when goods sent there now would land. */
-const RoadNote = ({ sourceId, id }: { sourceId: number | null; id: number }) => {
+/** The owner's prefill for the ends chosen now: realm to rifts, rift to realms, camp to realms. */
+const prefilledPlans = (sides: TransferSides): Plans =>
+  plansOf(prefillTotals(sides.sourceRole, sides.destinationRoles, sides.goods, sides.donkeyCapacityKg));
+
+/** Whether a destination's shipment carries troops, which slow its donkeys. */
+const troopsAboard = (sides: TransferSides, plans: Plans, destinationIds: number[], index: number) =>
+  sides.goods.some(
+    (good) =>
+      isMilitaryResource(good.resource) && sharesOf(plans.get(good.resource), destinationIds, good.have)[index] > 0,
+  );
+
+/**
+ * Seconds until goods land at a holding, from one chain clock and the chain's own rules: a chosen destination by its
+ * shipment as planned (troops aboard ride slower), any other holding by goods sent there now. Every place the window
+ * says when goods land reads this, so a destination's note and Send never promise different landings.
+ */
+const useLandings = (ends: TransferEnds, sides: TransferSides | null, plans: Plans | null) => {
   const { setup } = useGame();
-  const now = useCoarseNowSeconds(10);
-  if (sourceId === null) return null;
-  const road = shipmentTravelSeconds(sourceId, id, setup.store, false);
-  return <>{road === undefined ? null : landsText(deliveryLandsAt(now, road) - now)}</>;
+  const now = useNowSeconds();
+  return (id: number): number | undefined => {
+    if (ends.sourceId === null) return undefined;
+    const index = ends.destinationIds.indexOf(id);
+    const troops =
+      index >= 0 && sides !== null && plans !== null && troopsAboard(sides, plans, ends.destinationIds, index);
+    const road = shipmentTravelSeconds(ends.sourceId, id, setup.store, troops);
+    return road === undefined ? undefined : deliveryLandsAt(now, road) - now;
+  };
 };
 
 /**
@@ -227,7 +256,9 @@ const RoadNote = ({ sourceId, id }: { sourceId: number | null; id: number }) => 
 const Goods = ({
   sourceId,
   destinationIds,
-  edited,
+  sides,
+  plans,
+  landsIn,
   revision,
   focus,
   onPlans,
@@ -235,26 +266,22 @@ const Goods = ({
 }: {
   sourceId: number;
   destinationIds: number[];
-  edited: Plans | null;
+  sides: TransferSides;
+  plans: Plans;
+  /** Seconds until the last shipment lands (useLandings). */
+  landsIn: number;
   revision: number;
   focus: number | undefined;
   onPlans: (plans: Plans) => void;
   /** A send's outcome, with the draft revision it was sent from and the shipments refused. */
   onSettled: (sentRevision: number, refused: Shipment[], goods: Good[]) => void;
 }) => {
-  const sides = useTransferSides(sourceId, destinationIds);
-  const now = useNowSeconds();
   const [repeat, setRepeat] = useState(false);
   const [interval, setInterval] = useState(5);
   const send = useSend();
-  if (!sides) return null;
-  // Until the player edits, the plans follow the owner's rules for the ends chosen now, so adding a rift adds donkeys.
-  const plans =
-    edited ?? plansOf(prefillTotals(sides.sourceRole, sides.destinationRoles, sides.goods, sides.donkeyCapacityKg));
   const donkeys = donkeysNeeded(plans, sides.goods, destinationIds, sides.donkeyCapacityKg);
   const chosen = sides.goods.filter((good) => sentTotal(plans.get(good.resource), good.have) > 0).length;
   const short = donkeys > sides.donkeysHave;
-  const landsIn = secondsUntilLanded(now, sides, plans, destinationIds);
 
   const sendNow = async () => {
     const sentRevision = revision;
@@ -314,23 +341,6 @@ const Goods = ({
     </>
   );
 };
-
-/**
- * Seconds until every shipment has landed: each destination's road at its pace (donkeys with troops aboard walk
- * slower), landing when the chain lands deliveries, at the end of the delivery tick the road ends in.
- */
-const secondsUntilLanded = (now: number, sides: TransferSides, plans: Plans, destinationIds: number[]) =>
-  Math.max(
-    0,
-    ...destinationIds.map((_, index) => {
-      const troopsAboard = sides.goods.some(
-        (good) =>
-          isMilitaryResource(good.resource) && sharesOf(plans.get(good.resource), destinationIds, good.have)[index] > 0,
-      );
-      const road = sides.roads[index];
-      return deliveryLandsAt(now, troopsAboard ? road.troops : road.goods) - now;
-    }),
-  );
 
 /** The plans that send the refused shipments again, each destination's goods exactly as they were. */
 const plansFor = (refused: Shipment[], goods: Good[]): Plans => {

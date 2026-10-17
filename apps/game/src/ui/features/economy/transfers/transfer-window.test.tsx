@@ -20,6 +20,8 @@ const world = vi.hoisted(() => ({
   sides: { wheat: 100, donkeys: 10, knights: 0, listeners: new Set<() => void>() },
   /** While set, the game's answers wait for it: a shipment the player can act around before its outcome. */
   hold: null as Promise<void> | null,
+  /** Chain time the window reads. */
+  now: 0,
 }));
 
 const A = 22;
@@ -86,7 +88,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   vi.spyOn(actual.configManager, "getTick").mockReturnValue(180);
   return {
     ...actual,
-    shipmentTravelSeconds: () => 45,
+    // 45 s with goods; donkeys with troops aboard take three times as long, as the game's speed config has it.
+    shipmentTravelSeconds: (_from: number, _to: number, _store: unknown, troops: boolean) => (troops ? 135 : 45),
     ResourceManager: class {
       balanceWithProduction() {
         return { balance: 0 };
@@ -98,17 +101,28 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
 const NOW = 1_792_201_060;
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useCurrentDefaultTick: () => 0,
-  useNowSeconds: () => NOW,
-  useCoarseNowSeconds: () => NOW,
+  useNowSeconds: () => world.now,
 }));
-/** Each end as a row of buttons, as the real picker offers them: never the other end. */
+/** Each end as a row of buttons, as the real picker offers them (never the other end), each with its note. */
 vi.mock("./holding-picker", () => ({
-  HoldingPicker: ({ title, otherEnd, onPick }: { title: string; otherEnd: number[]; onPick: (id: number) => void }) => (
+  HoldingPicker: ({
+    title,
+    otherEnd,
+    onPick,
+    note,
+  }: {
+    title: string;
+    otherEnd: number[];
+    onPick: (id: number) => void;
+    note: (id: number) => ReactNode;
+  }) => (
     <section aria-label={title}>
       {[A, B]
         .filter((id) => !otherEnd.includes(id))
         .map((id) => (
-          <button key={id} type="button" data-pick={`${title}:${id}`} onClick={() => onPick(id)} />
+          <button key={id} type="button" data-pick={`${title}:${id}`} onClick={() => onPick(id)}>
+            {title === "Send to" ? note(id) : null}
+          </button>
         ))}
     </section>
   ),
@@ -134,8 +148,6 @@ vi.mock("./use-transfer-sides", () => ({
         { resource: ResourcesIds.Donkey, have: donkeys, weightKg: 0 },
         ...(world.sides.knights > 0 ? [{ resource: ResourcesIds.Knight, have: world.sides.knights, weightKg: 0 }] : []),
       ],
-      // 45 s with goods; donkeys with troops aboard take three times as long, as the game's speed config has it.
-      roads: destinationIds.map(() => ({ goods: 45, troops: 135 })),
       donkeysHave: donkeys,
       donkeyCapacityKg: 50,
     };
@@ -160,6 +172,7 @@ beforeEach(() => {
   world.sides.donkeys = 10;
   world.sides.knights = 0;
   world.hold = null;
+  world.now = NOW;
   host = document.createElement("div");
   root = createRoot(host);
 });
@@ -398,6 +411,8 @@ describe("a shipment's outcome and the draft shown meanwhile", () => {
 
 describe("when the window says goods land", () => {
   const KNIGHTS = iconDefinition(resourceMeaning(ResourcesIds.Knight)).label;
+  /** What a Send to row says beside its holding. */
+  const note = (id: number) => host.querySelector(`[data-pick="Send to:${id}"]`)!.textContent;
 
   it("promises the end of the delivery tick the road ends in, not the road's 45 s", async () => {
     // 45 s from 01:37:40 ends at 01:38:25, in the 01:36-01:39 tick: the goods land at 01:39, in 80 s.
@@ -405,14 +420,27 @@ describe("when the window says goods land", () => {
     await open([A]);
     await type("Wheat: total to send", "1");
     expect(sendButton().textContent).toBe("Send 1 good · lands in 2 min");
+    expect(note(A)).toBe("lands in 2 min");
   });
 
-  it("times a shipment with troops aboard by the troops' slower road", async () => {
+  it("times a destination with troops aboard by the troops' road, beside it and on Send alike", async () => {
     world.sides.knights = 10;
     await open([A]);
     await type(`${KNIGHTS}: total to send`, "1");
     // 135 s from 01:37:40 ends at 01:39:55, in the 01:39-01:42 tick: they land at 01:42, in 260 s.
     expect(sendButton().textContent).toBe("Send 1 good · lands in 5 min");
+    expect(note(A)).toBe("lands in 5 min");
+    // A holding not chosen says when goods sent there now would land.
+    expect(note(B)).toBe("lands in 2 min");
+  });
+
+  it("keeps a destination and Send on the same delivery tick when the road ends on a tick's last second", async () => {
+    // From 01:38:15, 45 s ends exactly at 01:39:00, which the chain files in the 01:39-01:42 tick: it lands at 01:42.
+    world.now = NOW + 35;
+    await open([A]);
+    await type("Wheat: total to send", "1");
+    expect(sendButton().textContent).toBe("Send 1 good · lands in 4 min");
+    expect(note(A)).toBe("lands in 4 min");
   });
 });
 

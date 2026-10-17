@@ -158,4 +158,26 @@ describe("when a delivery lands", () => {
     ] as never);
     expect(Number(filed.arrivesAt)).toBe(deliveryLandsAt(sentAt, 45));
   });
+
+  it("agrees with arrival_key and has_arrived across exact tick and day boundaries", () => {
+    vi.spyOn(configManager, "getTick").mockReturnValue(180);
+    for (const sent of [179, 180, 181, 8639, 8640, 8641, 1_792_201_060])
+      for (const road of [0, 1, 45, 135, 180, 8640]) {
+        const tick = BigInt(sent + road) / 180n;
+        const [filed] = formatArrivals([
+          {
+            game_id: 1,
+            entity_id: 1,
+            day: tick / 48n,
+            slot: Number(tick % 48n) + 1,
+            resources: [{ resource_type: ResourcesIds.Wheat, amount: 1n }],
+          },
+        ] as never);
+        const lands = deliveryLandsAt(sent, road);
+        expect(BigInt(lands)).toBe(filed.arrivesAt);
+        // has_arrived: released at the landing, not a second before.
+        expect(BigInt(lands) / 180n - 1n >= tick).toBe(true);
+        expect(BigInt(lands - 1) / 180n - 1n >= tick).toBe(false);
+      }
+  });
 });
