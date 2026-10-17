@@ -1,5 +1,6 @@
 import { mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
@@ -37,9 +38,7 @@ export interface StructurePlate {
   title?: string;
   /** The kind's painting, drawn where a nameless thing has no name. */
   icon: IconMeaning;
-  owner?: string;
-  /** "Bandits" for an unowned camp, else "Unclaimed": what an opened plate says of nobody's thing. */
-  nobody: string;
+  owner: string;
   level?: number;
   code: string;
   /** What taking it yields (a rift's essence), by its resource. */
@@ -56,6 +55,10 @@ const LOCAL_RANGE = 2 ** 32;
 
 /** A thing's short id, read off its entity id: its home namespace and serial ("19·21"). */
 export const homeCode = (entityId: number): string => `${Math.floor(entityId / LOCAL_RANGE)}·${entityId % LOCAL_RANGE}`;
+
+/** An owner as every surface names it: the Vanguard for nobody's thing (`displayPlayerName`). */
+const ownerOf = (owner: { address: bigint; ownerName: string }) =>
+  displayPlayerName(owner.address.toString(), owner.ownerName.trim() || null);
 
 const relationOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): PlateRelation =>
   thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";
@@ -105,8 +108,7 @@ export const buildStructurePlate = (
       structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structureMeaning(structure.structureType),
-    owner: structure.owner.address === 0n ? undefined : structure.owner.ownerName.trim() || undefined,
-    nobody: structure.structureType === StructureType.Camp ? "Bandits" : "Unclaimed",
+    owner: ownerOf(structure.owner),
     level: structure.structureType === StructureType.Realm ? structure.level + 1 : undefined,
     code: homeCode(Number(structure.entityId)),
     yields: isRift ? ResourcesIds.Essence : undefined,
@@ -133,7 +135,7 @@ export const buildArmyPlate = (
 ): ArmyPlate => ({
   kind: "army",
   relation: relationOf(army),
-  owner: army.owner.ownerName.trim(),
+  owner: ownerOf(army.owner),
   homeName,
   code: homeCode(Number(army.entityId)),
   troops: { type: troopType(army.category), tier: tierOf(army.tier), count: army.troopCount },

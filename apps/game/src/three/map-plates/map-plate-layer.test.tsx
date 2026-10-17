@@ -24,7 +24,6 @@ const realm: StructurePlate = {
   title: "Niziz",
   icon: "realm",
   owner: "Tamsin",
-  nobody: "Unclaimed",
   level: 1,
   code: "3·1",
   guards: [],

@@ -35,7 +35,7 @@ describe("a map plate's facts", () => {
     ]);
   });
 
-  it("shows a nameless thing by its kind's painting, never its id, and an unowned camp as the bandits'", () => {
+  it("shows a nameless thing by its kind's painting, never its id, and nobody's camp as the Vanguard's", () => {
     const camp = buildStructurePlate(
       structure({
         entityId: 129,
@@ -47,8 +47,7 @@ describe("a map plate's facts", () => {
     expect(camp).toMatchObject({
       title: undefined,
       icon: "camp",
-      owner: undefined,
-      nobody: "Bandits",
+      owner: "The Vanguard",
       relation: "neutral",
     });
     const rift = buildStructurePlate(

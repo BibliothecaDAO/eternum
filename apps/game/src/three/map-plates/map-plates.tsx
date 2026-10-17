@@ -53,7 +53,7 @@ const StructurePlateView = ({ plate, open }: { plate: StructurePlate; open: bool
 const StructureOpenLines = ({ plate }: { plate: StructurePlate }) => (
   <>
     <div className="mp-plate__more">
-      <span className="mp-owner">{plate.owner ?? plate.nobody}</span>
+      <span className="mp-owner">{plate.owner}</span>
       <span className="mp-muted">{plate.level !== undefined ? `Level ${plate.level}` : plate.code}</span>
     </div>
     {plate.arrivals.length > 0 && (
