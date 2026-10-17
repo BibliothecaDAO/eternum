@@ -2,7 +2,6 @@ import {
   battleRollsOf,
   extractRoleLabel,
   findSegmentValue,
-  formatWinnerName,
   normalizePresentationTroops,
   parsePresentationDescription,
 } from "@/ui/features/story-events/story-event-utils";
@@ -96,7 +95,7 @@ function BattleDetails({ description }: { description?: string }) {
   const defender = extractRoleLabel(description, "Defender");
   const forces = (role: string) =>
     normalizePresentationTroops(findSegmentValue(segments, (label) => label === `${role} forces`));
-  const winner = formatWinnerName(findSegmentValue(segments, (label) => label === "Winner"));
+  const outcome = findSegmentValue(segments, (label) => label === "Outcome");
   const rolls = battleRollsOf(description);
   return (
     <>
@@ -114,7 +113,7 @@ function BattleDetails({ description }: { description?: string }) {
           d20 {rolls.attacker} <span className="text-gold/40">vs</span> {rolls.defender}
         </span>
       )}
-      {winner && <span className="block text-emerald-300">Winner: {winner}</span>}
+      {outcome && <span className="block text-emerald-300">{outcome}</span>}
     </>
   );
 }

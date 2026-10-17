@@ -9,12 +9,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import type { ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
-import {
-  extractRoleLabel,
-  findSegmentValue,
-  formatWinnerName,
-  parsePresentationDescription,
-} from "../story-events/story-event-utils";
+import { extractRoleLabel, findSegmentValue, parsePresentationDescription } from "../story-events/story-event-utils";
 import { arrivalLabel, transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
 import { useStoryOpener } from "./story-feed-row";
@@ -166,9 +161,7 @@ function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): stri
   const { event } = row;
   if (event.story !== "BattleEvent") return event.presentation.title;
   const description = event.presentation.description;
-  const winner = formatWinnerName(
-    findSegmentValue(parsePresentationDescription(description), (label) => label === "Winner"),
-  );
+  const outcome = findSegmentValue(parsePresentationDescription(description), (label) => label === "Outcome");
   const sides = `${extractRoleLabel(description, "Attacker")} vs ${extractRoleLabel(description, "Defender")}`;
-  return winner ? `${sides} · ${winner} wins` : sides;
+  return outcome ? `${sides} · ${outcome}` : sides;
 }

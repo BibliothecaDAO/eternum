@@ -231,13 +231,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const attackerName = nameOwner(attacker.player, store, resolvePlayerName);
     const defenderName = nameOwner(defender.player, store, resolvePlayerName);
     const winner = Number(payload.winner_id);
-    const victor =
+    // The fight's outcome as every surface shows it, whole: a winner wins; a fight with no winner is a draw.
+    const outcome =
       winner > 0 && winner === Number(payload.attacker_owner)
-        ? `Attacker [${attackerName}]`
+        ? `${attackerName} wins`
         : winner > 0 && winner === Number(payload.defender_owner)
-          ? `Defender [${defenderName}]`
+          ? `${defenderName} wins`
           : BigInt(String(attacker.after)) === 0n && BigInt(String(defender.after)) === 0n
-            ? "Mutual Annihilation"
+            ? "Both sides fall"
             : "Draw";
     const side = (label: string, value: Record<string, unknown>) => [
       `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
@@ -252,7 +253,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
         `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? "Army"}`,
         ...side("Attacker", attacker),
         ...side("Defender", defender),
-        `Winner: ${victor}`,
+        `Outcome: ${outcome}`,
       ]),
       icon: "battle",
     };

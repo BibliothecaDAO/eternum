@@ -131,9 +131,28 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
     }),
   );
   expect(presentation.title).toBe("Battle resolved");
-  expect(presentation.description).toContain("Winner: Attacker");
+  expect(presentation.description).toContain("Outcome: Lord 0123 wins");
   expect(presentation.description).toContain("Attacker d20: 20 (+20% damage)");
   expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
+});
+
+it("names a fight with no winner a draw, never a draw that wins", () => {
+  const battle = (attackerAfter: string, defenderAfter: string, winner: number) =>
+    buildStoryEventPresentation(
+      story("BattleEvent", {
+        attacker_id: 20,
+        defender_id: 21,
+        attacker_owner: 10,
+        defender_owner: 0,
+        winner_id: winner,
+        attacker: { player: "0x123", category: "Knight", tier: "T1", before: "10", after: attackerAfter, roll: 0 },
+        defender: { player: "0x0", category: "Knight", tier: "T1", before: "10", after: defenderAfter, roll: 0 },
+      }),
+    ).description;
+  expect(battle("5", "4", 0)).toContain("Outcome: Draw");
+  expect(battle("0", "0", 0)).toContain("Outcome: Both sides fall");
+  expect(battle("5", "0", 10)).toContain("Outcome: Lord 0123 wins");
+  expect(battle("5", "4", 0)).not.toContain("wins");
 });
 
 it.each([

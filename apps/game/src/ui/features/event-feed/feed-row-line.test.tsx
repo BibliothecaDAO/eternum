@@ -165,3 +165,36 @@ describe("An arrival in Events", () => {
     expect(named + unnamed).not.toContain("12884901895");
   });
 });
+
+describe("A fight in Events", () => {
+  /** A fight against the Vanguard, worded by the game's own story formatter, as the player's Events row. */
+  const fightRow = async (attackerAfter: string, defenderAfter: string, winner: number) => {
+    const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
+    const payload = {
+      attacker_id: 20,
+      defender_id: 21,
+      attacker_owner: 10,
+      defender_owner: 0,
+      winner_id: winner,
+      attacker: { player: PLAYER, category: "Knight", tier: "T1", before: "10", after: attackerAfter, roll: 0 },
+      defender: { player: "0x0", category: "Knight", tier: "T1", before: "10", after: defenderAfter, roll: 0 },
+    };
+    const presentation = buildStoryEventPresentation(
+      { storyType: "BattleEvent", storyPayload: payload, entityId: 20, ownerAddress: PLAYER } as never,
+      undefined,
+      (address) => (BigInt(address) === BigInt(PLAYER) ? "clientlane" : null),
+    );
+    const battle = { ...story("fight", "BattleEvent", PLAYER, payload, presentation.title), presentation };
+    return renderToStaticMarkup(<FeedRowLine row={eventsRows([battle])[0]} />);
+  };
+
+  it("names a fight both sides survive a draw, which no one wins", async () => {
+    const html = await fightRow("5", "4", 0);
+    expect(html).toContain("clientlane vs The Vanguard · Draw");
+    expect(html).not.toContain("wins");
+  });
+
+  it("names the winner of a decided fight", async () => {
+    expect(await fightRow("5", "0", 10)).toContain("clientlane vs The Vanguard · clientlane wins");
+  });
+});
