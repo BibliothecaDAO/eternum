@@ -12,7 +12,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
 import { InfoBubble } from "../entities/collapsible-bubble";
@@ -39,7 +39,7 @@ export function ChestTileDetails({
 }) {
   return (
     <div className="flex shrink-0 flex-col gap-2">
-      <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE)}>
+      <InfoBubble className="min-w-0" bodyClassName="flex flex-col divide-y divide-gold/15 p-0">
         <InfoBubble variant="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
           <div className="flex items-center gap-2 text-gold">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
@@ -60,7 +60,7 @@ export function ChestTileDetails({
             </button>
           )}
         </InfoBubble>
-      </div>
+      </InfoBubble>
     </div>
   );
 }

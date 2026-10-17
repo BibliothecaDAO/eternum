@@ -8,7 +8,6 @@ import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
@@ -177,7 +176,7 @@ const StructureBannerEntityDetailContent = memo(
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
-      <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE, className)}>
+      <InfoBubble className={cn("min-w-0", className)} bodyClassName="flex flex-col divide-y divide-gold/15 p-0">
         <IncomingCaravans structureId={structureEntityId} isOwner={isMine} />
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
@@ -325,7 +324,7 @@ const StructureBannerEntityDetailContent = memo(
             <FaithDevotionActionPanel structureEntityId={structureEntityId} />
           </InfoBubble>
         )}
-      </div>
+      </InfoBubble>
     );
   },
 );

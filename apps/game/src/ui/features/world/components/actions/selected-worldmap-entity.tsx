@@ -7,9 +7,8 @@ import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacen
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import {
   BiomeSummaryCard,
@@ -246,7 +245,7 @@ const StructureBiomeCard = ({ structureEntityId, biomeCard }: { structureEntityI
   return biomeCard;
 };
 
-/** The chrome every occupied tile shares: one surface, a header band with the coordinates, sections below. */
+/** The chrome every occupied tile shares: the HUD panel, a header band with the coordinates, its body below. */
 const TileChrome = ({
   title,
   headerAction,
@@ -256,11 +255,9 @@ const TileChrome = ({
   headerAction?: ReactNode;
   children: ReactNode;
 }) => (
-  <div className={cn("flex min-w-0 flex-col divide-y divide-gold/15 rounded-xl", OVERLAY_SURFACE_BASE)}>
-    <InfoBubble variant="section" title={title} cue={headerAction} bodyClassName="pt-0">
-      {children}
-    </InfoBubble>
-  </div>
+  <InfoBubble title={title} cue={headerAction} className="min-w-0" bodyClassName="pt-0">
+    {children}
+  </InfoBubble>
 );
 
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
