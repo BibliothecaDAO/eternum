@@ -10,7 +10,7 @@ import { TickIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { FeedRowLine } from "./feed-row-line";
-import { type ImportantFeedFilter, selectImportantFeedRows } from "./important-feed-rows";
+import { type ImportantFeedFilter, oneStoryPerAction, selectImportantFeedRows } from "./important-feed-rows";
 import { StoryFeedRow } from "./story-feed-row";
 import { useFeedRows } from "./use-feed-rows";
 
@@ -79,7 +79,7 @@ export const EventLogPanel = ({
           <div className="px-3 py-2">
             <span className={HUD_LABEL}>World history</span>
           </div>
-          {stories.map((event) => (
+          {oneStoryPerAction(stories).map((event) => (
             <StoryFeedRow key={event.id} event={event} />
           ))}
         </section>

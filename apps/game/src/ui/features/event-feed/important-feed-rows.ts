@@ -15,8 +15,18 @@ export type ImportantFeedRow =
 export const involvesPlayer = (event: ProcessedStoryEvent, address: string | null): boolean =>
   storyRecipients(event.story, event.owner, event.storyPayload).some((owner) => feltEquals(owner, address));
 
-export const battleIdentity = (event: ProcessedStoryEvent): string =>
+/** One identity per action, however many stories tell it (a battle's two sides, a building placed and paid for). */
+export const storyActionIdentity = (event: ProcessedStoryEvent): string =>
   logicalStoryIdentity(event.event_id, event.story, event, event.storyPayload);
+
+/** Each action once, at its first (newest) story: a list of stories never tells one action twice. */
+export const oneStoryPerAction = (stories: ProcessedStoryEvent[]): ProcessedStoryEvent[] => {
+  const seen = new Set<string>();
+  return stories.filter((event) => {
+    const identity = storyActionIdentity(event);
+    return !seen.has(identity) && seen.add(identity) !== undefined;
+  });
+};
 
 const routineProductionTypes = new Set<TransactionType>([
   TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
@@ -44,15 +54,7 @@ export function selectImportantFeedRows(
   address: string | null,
   headlines: Headline[] = [],
 ): ImportantFeedRow[] {
-  const battles = new Set<string>();
-  const shown = stories
-    .filter((event) => isEventsStory(event, filter, address))
-    .filter((event) => {
-      const identity = battleIdentity(event);
-      if (battles.has(identity)) return false;
-      battles.add(identity);
-      return true;
-    });
+  const shown = oneStoryPerAction(stories.filter((event) => isEventsStory(event, filter, address)));
   const rows: ImportantFeedRow[] = shown.map((event) => ({
     kind: "story",
     id: `story:${event.id}`,
@@ -93,15 +95,29 @@ const isEventsStory = (event: ProcessedStoryEvent, filter: ImportantFeedFilter, 
 export const formatFeedTime = (atMs: number): string =>
   new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
-/** The quick feed shows what just happened: rows inside the window, newest first, capped. */
+/** When each row the quick feed showed first appeared on screen, in chain time. */
+export type FirstShown = ReadonlyMap<string, number>;
+
+/**
+ * The quick feed shows what just happened, newest first, capped: a row is new while its event is within the window of
+ * now, and once on screen it stays the whole window from that moment, however late its story reached the client. One
+ * clock, chain time, measures both. Returns the rows to show and when each first showed.
+ */
 export function selectQuickFeedRows(
   rows: ImportantFeedRow[],
   nowMs: number,
+  firstShown: FirstShown,
   windowMs: number,
   maxRows: number,
-): ImportantFeedRow[] {
-  return rows
-    .filter((row) => nowMs >= row.at && nowMs - row.at < windowMs)
+): { visible: ImportantFeedRow[]; firstShown: FirstShown } {
+  const shownAt = new Map<string, number>();
+  for (const row of rows) {
+    const since = firstShown.get(row.id) ?? (Math.abs(nowMs - row.at) < windowMs ? nowMs : null);
+    if (since !== null && nowMs - since < windowMs) shownAt.set(row.id, since);
+  }
+  const visible = rows
+    .filter((row) => shownAt.has(row.id))
     .sort((left, right) => right.at - left.at)
     .slice(0, maxRows);
+  return { visible, firstShown: shownAt };
 }

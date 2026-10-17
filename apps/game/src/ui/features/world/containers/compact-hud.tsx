@@ -12,7 +12,6 @@ import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import {
   FeedNotices,
   UnreadFeedBadge,
-  useConnectionNotices,
   useImportantFeed,
   useUnreadFeedCount,
 } from "@/ui/features/event-feed/quick-feed";
@@ -115,7 +114,6 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const unread = useUnreadFeedCount(rows, open === "log");
   const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const logTab = useRef<HTMLButtonElement>(null);
-  useConnectionNotices();
 
   if (showBlankOverlay) return null;
 

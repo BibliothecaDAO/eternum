@@ -8,38 +8,46 @@ import { triggerConnectionForceReconnect } from "@/ui/features/world/components/
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
-import { type ImportantFeedRow, selectImportantFeedRows, selectQuickFeedRows } from "./important-feed-rows";
-import { toast } from "./notify";
+import {
+  type FirstShown,
+  type ImportantFeedRow,
+  selectImportantFeedRows,
+  selectQuickFeedRows,
+} from "./important-feed-rows";
 import { useFeedRows } from "./use-feed-rows";
 
 const QUICK_FEED_WINDOW_MS = 20_000;
 const QUICK_FEED_MAX_ROWS = 5;
 const QUICK_FEED_FADE_MS = 3_000;
-const CONNECTION_NOTICE_ID = "connection";
 
-/** The feed's pinned notices and its latest rows, fading after 20 s. */
+/** The feed's pinned notices and its latest rows, each fading over the last seconds of its 20 s on screen. */
 export const QuickFeedRows = () => {
   const { nowMs, rows, pinned } = useImportantFeed();
-  const visible = selectQuickFeedRows(rows, nowMs, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
-  useConnectionNotices();
+  const [firstShown, setFirstShown] = useState<FirstShown>(() => new Map());
+  const quick = selectQuickFeedRows(rows, nowMs, firstShown, QUICK_FEED_WINDOW_MS, QUICK_FEED_MAX_ROWS);
+  // What the last render first showed is remembered by setting it during render, as React advises: it converges at once.
+  if (!sameFirstShown(quick.firstShown, firstShown)) setFirstShown(quick.firstShown);
   return (
     <>
       <FeedNotices pinned={pinned} />
-      {visible.map((row) => (
-        <QuickFeedRow key={row.id} row={row} />
+      {quick.visible.map((row) => (
+        <QuickFeedRow key={row.id} row={row} shownAt={quick.firstShown.get(row.id)!} nowMs={nowMs} />
       ))}
     </>
   );
 };
 
-/** A row fades out over its last seconds on the compositor: the delay is fixed at mount, so the once-a-second
- *  clock that removes it never restarts or steps the fade. */
-const QuickFeedRow = ({ row }: { row: ImportantFeedRow }) => {
-  const [delayMs] = useState(() => Math.max(0, row.at + QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS - Date.now()));
+const sameFirstShown = (a: FirstShown, b: FirstShown): boolean =>
+  a.size === b.size && [...a].every(([id, at]) => b.get(id) === at);
+
+/** A row fades out over its last seconds on the compositor, timed from when it first showed, on the clock that
+ *  removes it, so it never lingers faded and holding its height. */
+const QuickFeedRow = ({ row, shownAt, nowMs }: { row: ImportantFeedRow; shownAt: number; nowMs: number }) => {
+  const [delayMs] = useState(() => Math.max(0, shownAt + QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS - nowMs));
   return (
     <FeedRowLine
       row={row}
@@ -101,18 +109,6 @@ export const FeedNotices = ({ pinned }: { pinned: Headline[] }) => (
     ))}
   </>
 );
-
-/** Connection transitions become feed rows; the offline state is the pinned red row. */
-export function useConnectionNotices() {
-  useEffect(() => {
-    return useConnectionStore.subscribe((state, previous) => {
-      if (state.status === previous.status) return;
-      if (state.status === "connected") toast.success("Back online", { id: CONNECTION_NOTICE_ID });
-      else if (state.status === "degraded") toast.warning("Reconnecting…", { id: CONNECTION_NOTICE_ID });
-      else toast.dismiss(CONNECTION_NOTICE_ID);
-    });
-  }, []);
-}
 
 function OfflineRow() {
   const status = useConnectionStore((state) => state.status);

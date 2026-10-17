@@ -6,7 +6,9 @@ const PLAYER = "0x1";
 /** The game's history as each story read serves it: by story, and by every player a story names. */
 const history = vi.hoisted(() => [] as { id: string; story: string; owner: string; participants: string[] }[]);
 
-vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => 200_000 }));
+/** Chain time now; the stories below are stamped at 100 s. */
+const clock = vi.hoisted(() => ({ nowMs: 200_000 }));
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => clock.nowMs }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: PLAYER } }),
 }));
@@ -28,8 +30,13 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
 }));
 vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], arrived: [], recent: [] }) }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60 } }));
+vi.mock("./feed-row-line", () => ({
+  FEED_ROW_CLASS: "",
+  FeedRowLine: ({ row }: { row: { id: string } }) => <i>{row.id}</i>,
+  HeadlineIcon: () => null,
+}));
 
-import { useImportantFeed } from "./quick-feed";
+import { QuickFeedRows, useImportantFeed } from "./quick-feed";
 
 const Rows = () => (
   <>
@@ -51,4 +58,13 @@ it("brings the player's opened crate into Events among every battle, without the
       .split(",")
       .toSorted(),
   ).toEqual(["story:battle", "story:crate"]);
+});
+
+it("shows the card's recent rows, and none once they are past the window", () => {
+  history.length = 0;
+  history.push({ id: "battle", story: "BattleEvent", owner: "0x5", participants: ["0x5"] });
+  clock.nowMs = 105_000;
+  expect(renderToStaticMarkup(<QuickFeedRows />)).toContain("story:battle");
+  clock.nowMs = 200_000;
+  expect(renderToStaticMarkup(<QuickFeedRows />)).not.toContain("story:battle");
 });
