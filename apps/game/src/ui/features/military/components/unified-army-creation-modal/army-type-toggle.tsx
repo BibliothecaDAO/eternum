@@ -28,13 +28,14 @@ export const ArmyTypeToggle = ({
 }: ArmyTypeToggleProps) => {
   const hasDefenseArmies = currentGuardsCount !== undefined && currentGuardsCount > 0;
 
+  // A full cap is where the realm stands, not a mistake: said plainly, with what lifts it.
   const limitMessage = armyType
     ? maxExplorers === undefined
       ? "This structure's army limit is unknown."
-      : `Maximum attack armies (${maxExplorers}) created. Delete an existing army to create a new one.`
+      : `All ${maxExplorers} field army slots are in use. Level up the realm or disband an army to raise another.`
     : hasDefenseArmies
-      ? `All defense slots (${maxGuards}) are occupied. Reinforce an existing slot or delete one to free space.`
-      : `This structure does not have available defense slots.`;
+      ? `All ${maxGuards} defense slots hold troops. Pick one to reinforce it.`
+      : `This structure has no defense slots.`;
 
   const shouldShowLimitWarning = (armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy);
 
@@ -44,7 +45,6 @@ export const ArmyTypeToggle = ({
       <div className="flex border-b border-gold/20">
         <button
           onClick={() => onSelect(true)}
-          disabled={!canCreateAttackArmy}
           title={`Field armies: ${currentExplorersCount} of ${maxExplorers ?? "—"}`}
           className={clsx(
             "flex-1 max-lg:min-h-11 flex items-center justify-center gap-1.5 px-3 py-1.5 transition-all duration-150",
@@ -52,7 +52,6 @@ export const ArmyTypeToggle = ({
             armyType
               ? "border-gold text-gold bg-gold/5"
               : "border-transparent text-gold/60 hover:text-gold/80 hover:bg-gold/5",
-            !canCreateAttackArmy && "opacity-40 cursor-not-allowed",
           )}
         >
           <SemanticIcon name="people" className="w-3.5 h-3.5" />
@@ -94,9 +93,9 @@ export const ArmyTypeToggle = ({
 
       {/* Warning Message */}
       {shouldShowLimitWarning && (
-        <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 flex items-center gap-1.5">
-          <SemanticIcon name="warning" className="w-3.5 h-3.5 text-danger flex-shrink-0" />
-          <span className="text-xxs text-danger font-semibold">{limitMessage}</span>
+        <div role="status" className="flex items-center gap-1.5 rounded border-l-2 border-gold/40 bg-gold/5 px-2 py-1">
+          <SemanticIcon name="info" className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />
+          <span className="text-xs text-gold/80">{limitMessage}</span>
         </div>
       )}
     </div>

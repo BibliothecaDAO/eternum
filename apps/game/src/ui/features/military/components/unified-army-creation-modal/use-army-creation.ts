@@ -331,12 +331,10 @@ export const useArmyCreation = ({
   }, [freeDirections, selectedDirection, direction]);
 
   useEffect(() => {
+    // A structure without defense slots shows Attack. A full field army cap never moves the window off Attack: right
+    // after raising an army the player stays with it, not on another tab's notice.
     if (fixedContext) return;
-    if (armyType && !canCreateAttackArmy && canInteractWithDefense) {
-      setArmyType(false);
-    } else if (!armyType && !canInteractWithDefense && canCreateAttackArmy) {
-      setArmyType(true);
-    }
+    if (!armyType && !canInteractWithDefense && canCreateAttackArmy) setArmyType(true);
   }, [armyType, fixedContext, canCreateAttackArmy, canInteractWithDefense]);
 
   useEffect(() => {
