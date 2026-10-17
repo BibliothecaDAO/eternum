@@ -522,15 +522,26 @@ export class ClientConfigManager {
       pointsForWin: wholePoints(this.facts().require("SeasonWinThreshold", { game_id: this.gameId }).points),
     };
   }
-  /** What each scoring action grants in this game, in whole victory points. */
+  /**
+   * What each scoring action grants in this game, in whole victory points. A held hyperstructure earns its rate every
+   * second, times what the contract's multiplier counts (hyperstructures.cairo): 1 without the multiplier rule, 2 in a
+   * Duel, else each realm settled on the six sites around it.
+   */
   getVictoryPointGrants() {
-    const grants = this.rules().victory_points_grant_config;
+    const rules = this.rules();
+    const grants = rules.victory_points_grant_config;
+    const hyperstructureScale: "flat" | "double" | "per-realm" = !isModeRuleEnabled(rules, "HYPERSTRUCTURE_MULTIPLIERS")
+      ? "flat"
+      : this.getSettlementConfig().mode === "Duel"
+        ? "double"
+        : "per-realm";
     return {
       exploreTile: wholePoints(grants.explore_tiles_points),
       claimCampFromBandits: wholePoints(grants.claim_otherstructure_points),
       claimHyperstructureFromBandits: wholePoints(grants.claim_hyperstructure_points),
       openRelicCrate: wholePoints(grants.relic_open_points),
-      hyperstructurePerRealmPerSecond: wholePoints(grants.hyp_points_per_second),
+      hyperstructurePerSecond: wholePoints(grants.hyp_points_per_second),
+      hyperstructureScale,
     };
   }
   getBasePopulationCapacity() {

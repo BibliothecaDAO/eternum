@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Leaderboard points, in VP",
+    description:
+      "The leaderboard's columns say what each action earns in VP, read from the game: 5 VP a tile, 250 VP a crate or camp, 1K VP a hyperstructure taken, and 1 VP/s for each realm around a hyperstructure you hold.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "One panel style",
     description:
       "Every HUD panel now looks like the picked tile's: the holdings, the selected realm, the minimap, Next up, the events and the standings share one frame and one title band, and their text reads a step larger in the same space.",

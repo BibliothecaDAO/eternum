@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GuildRow } from "./guilds/guild-list";
-import { PlayerList, type PlayerCustom, type VictoryPointGrants } from "./player/player-list";
+import { PlayerList, type PlayerCustom } from "./player/player-list";
+import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ ui: { showGuildsTab: false } }),
@@ -38,7 +39,8 @@ const grants: VictoryPointGrants = {
   openRelicCrate: 250,
   claimCampFromBandits: 300,
   claimHyperstructureFromBandits: 1_500,
-  hyperstructurePerRealmPerSecond: 2,
+  hyperstructurePerSecond: 2,
+  hyperstructureScale: "per-realm",
 };
 
 describe("the leaderboard's columns", () => {
@@ -55,11 +57,11 @@ describe("the leaderboard's columns", () => {
     );
     const header = html.slice(0, html.indexOf("Unseen player"));
     for (const [column, grant] of [
-      ["Tiles", "5 each"],
-      ["Crates", "250 each"],
-      ["Rifts/Camps", "300 each"],
-      ["HS Taken", "1.5K each"],
-      ["HS Held", "2/s a realm"],
+      ["Tiles", "5 VP each"],
+      ["Crates", "250 VP each"],
+      ["Rifts/Camps", "300 VP each"],
+      ["HS Taken", "1.5K VP each"],
+      ["HS Held", "2 VP/s × realms"],
     ]) {
       expect(header).toContain(`<span>${column}</span><span class="text-xs font-normal text-gold/55">${grant}</span>`);
     }
@@ -79,7 +81,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(html).toContain(
-      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 each · Crates 250 each · Rifts/Camps 300 each · HS Taken 1.5K each · HS Held 2/s a realm</p>',
+      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 VP each · Crates 250 VP each · Rifts/Camps 300 VP each · HS Taken 1.5K VP each · HS Held 2 VP/s × realms</p>',
     );
   });
 });

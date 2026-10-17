@@ -6,13 +6,13 @@ import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
-import type { configManager } from "@bibliothecadao/eternum";
 import { NEUTRAL_OWNER_NAME, ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
 import type { MmrForecast } from "./mmr-forecast";
+import { describeHyperstructureHold, type VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
 const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -27,9 +27,6 @@ export interface PlayerCustom extends PlayerInfo {
   /** The MMR the player would gain or lose if the game ended now; null where the ledger gave none. */
   mmrDelta: number | null;
 }
-
-/** The points each activity grants, as the game's rules give them. */
-export type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
 
 interface PlayerListProps {
   players: PlayerCustom[];
@@ -67,10 +64,10 @@ const formatActivityValue = (count: number, points: number): string => {
 
 /** The table's columns: fixed widths on wide screens, so the window is exactly the table's width; MMR adds one. */
 const GRID_TEMPLATES = {
-  plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px]",
-  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(5,_96px)_80px_80px]",
-  tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px]",
-  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(5,_96px)_80px_80px]",
+  plain: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_220px_repeat(4,_96px)_112px_80px]",
+  plainMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_220px_repeat(4,_96px)_112px_80px_80px]",
+  tribe: "grid-cols-[44px_minmax(0,_1fr)_auto] md:grid-cols-[48px_200px_120px_repeat(4,_96px)_112px_80px]",
+  tribeMmr: "grid-cols-[44px_minmax(0,_1fr)_auto_auto] md:grid-cols-[48px_200px_120px_repeat(4,_96px)_112px_80px_80px]",
 } as const;
 
 /** A rating change as a player reads it: +26 in green, −11 in red, ±0, or a dash where the ledger gave none. */
@@ -289,7 +286,7 @@ const resolveColumns = (
   grants: VictoryPointGrants,
   mmr: MmrForecast["status"],
 ): PlayerListColumn[] => {
-  const each = (points: number) => `${currencyIntlFormat(points)} each`;
+  const each = (points: number) => `${currencyIntlFormat(points)} VP each`;
   const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
   return [
     { label: "Rank", align: "justify-center text-center" },
@@ -312,8 +309,7 @@ const resolveColumns = (
     {
       label: "HS Held",
       align: activity,
-      grant: `${currencyIntlFormat(grants.hyperstructurePerRealmPerSecond)}/s a realm`,
-      rule: "Control a Hyperstructure: points every second for each realm settled within 8 tiles of it",
+      ...describeHyperstructureHold(grants),
     },
     { label: "Points", align: "justify-end text-right md:justify-center md:text-center" },
     ...(mmr === "off"

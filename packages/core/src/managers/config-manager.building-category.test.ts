@@ -44,13 +44,30 @@ describe("native immutable configuration", () => {
       claimCampFromBandits: 500,
       claimHyperstructureFromBandits: 3_000,
       openRelicCrate: 1_000,
-      hyperstructurePerRealmPerSecond: 1,
+      hyperstructurePerSecond: 1,
+      // This preset runs without the hyperstructure multiplier: a held one earns its rate alone.
+      hyperstructureScale: "flat",
     });
     expect(manager.getHyperstructureConfig()).toEqual({
       timeBetweenSharesChange: 0,
       pointsPerCycle: 1,
       pointsForWin: 10_000,
     });
+  });
+
+  it("says a held hyperstructure's rate counts each realm around it where the multiplier rule is on, and doubles in a Duel", () => {
+    const scale = (mode: "Single" | "Duel") => {
+      const { manager, write } = fixture();
+      write("SliceRules", [54], {
+        ...preset.rules,
+        game_id: 54,
+        mode_rules: preset.rules.mode_rules | nativeRuleConstants.HYPERSTRUCTURE_MULTIPLIERS,
+      });
+      write("SettlementRules", [54], { game_id: 54, registration_start: 1, registration_limit: 2, spacing: 6, mode });
+      return manager.getVictoryPointGrants().hyperstructureScale;
+    };
+    expect(scale("Single")).toBe("per-realm");
+    expect(scale("Duel")).toBe("double");
   });
 
   it("throws for absent building rules instead of granting zero-cost population", () => {
