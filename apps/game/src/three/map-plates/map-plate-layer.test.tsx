@@ -3,6 +3,7 @@ import { act } from "react";
 import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { HUD_COLUMN_MARK } from "../utils/labels/hud-clearance";
 import { MapPlateLayer } from "./map-plate-layer";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";
 
@@ -115,5 +116,52 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(element.style.display).toBe("none");
     layer.setVisible(true);
     expect(element.style.display).toBe("");
+  });
+
+  it("places a plate React committed after a frame had already run, on a still map", async () => {
+    const structures = layer.createScope("structure");
+    structures.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
+    // A game frame runs before the layer's React root commits the new plate.
+    layer.update(camera, 800, 600);
+    await frame();
+    expect(plateOf("Niziz")!.style.display).toBe("");
+    expect(plateOf("Niziz")!.style.transform).toMatch(/^translate\(400px, /);
+  });
+
+  it("moves its plates when the camera's projection changes and its place does not", async () => {
+    layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(2, 0, 0), plate: realm });
+    await frame();
+    const before = plateOf("Niziz")!.style.transform;
+    const zoomed = camera.clone();
+    zoomed.zoom = 2;
+    zoomed.updateProjectionMatrix();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    layer.update(zoomed, 800, 600);
+    expect(plateOf("Niziz")!.style.transform).not.toBe(before);
+  });
+
+  it("steps a plate beside a HUD column it would reach under", async () => {
+    const column = document.createElement("aside");
+    Object.entries(HUD_COLUMN_MARK).forEach(([name, value]) => column.setAttribute(name, value));
+    column.getBoundingClientRect = () => ({ left: 0, right: 300, top: 0, bottom: 600 }) as DOMRect;
+    document.body.append(column);
+    const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth")!;
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList.contains("mp-at") ? 300 : 0;
+      },
+    });
+    try {
+      // Anchored on the open map 100px right of the column, 300px wide: it would reach 50px under it.
+      layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
+      await frame();
+      expect(plateOf("Niziz")!.style.translate).toBe("50px 0");
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", width);
+      column.remove();
+    }
   });
 });

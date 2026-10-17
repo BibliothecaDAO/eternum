@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { type Camera, Matrix4, Vector3 } from "three";
 
 import "./map-plates.css";
+import { keepLabelsBesideHudColumns } from "../utils/labels/hud-clearance";
 import { openedSize, restingSize, stack, type PlateBox } from "./map-plate-layout";
 import type { MapPlate } from "./map-plate-model";
 import { Pin, Plate } from "./map-plates";
@@ -41,6 +42,9 @@ interface PlateEntry {
 const RELATION_PRIORITY = { own: 60, enemy: 40, ally: 30, neutral: 10 } as const;
 const KIND_PRIORITY = { army: 8, structure: 5 } as const;
 
+/** What the layer cannot observe (the HUD's columns, a plate's drawn width) is read again at least this often. */
+const RELAYOUT_MS = 500;
+
 /**
  * The map's plates (map-plates.tsx) over the world renderer: one DOM layer under the HUD, one React root for the plates'
  * content, and per frame only their screen positions, written straight to each element. Where plates meet they stack
@@ -60,7 +64,9 @@ export class MapPlateLayer {
   private renderQueued = false;
   private layoutDirty = true;
   private readonly lastView = new Matrix4();
+  private readonly lastProjection = new Matrix4();
   private lastViewport = "";
+  private lastLayoutAt = -Infinity;
   private readonly point = new Vector3();
 
   /** `container` is where the layer draws: resolved again each frame until it exists (the world UI mounts late). */
@@ -103,7 +109,11 @@ export class MapPlateLayer {
     this.invalidate();
   }
 
-  /** Places every plate for this frame's camera; a frame whose camera and plates did not change costs nothing. */
+  /**
+   * Places every plate for this frame's camera. A frame changes nothing when none of the layout's inputs did: the
+   * plates and their mounted elements, the camera's place and projection, the viewport; what the layer cannot observe
+   * is read again every RELAYOUT_MS.
+   */
   public update(camera: Camera, width: number, height: number): void {
     if (!this.element.isConnected) {
       const container = this.container();
@@ -111,11 +121,21 @@ export class MapPlateLayer {
       container.appendChild(this.element);
     }
     const viewport = `${width}x${height}`;
+    const now = performance.now();
     camera.updateMatrixWorld();
-    if (!this.layoutDirty && viewport === this.lastViewport && this.lastView.equals(camera.matrixWorld)) return;
+    if (
+      !this.layoutDirty &&
+      viewport === this.lastViewport &&
+      this.lastView.equals(camera.matrixWorld) &&
+      this.lastProjection.equals(camera.projectionMatrix) &&
+      now - this.lastLayoutAt < RELAYOUT_MS
+    )
+      return;
     this.layoutDirty = false;
     this.lastViewport = viewport;
     this.lastView.copy(camera.matrixWorld);
+    this.lastProjection.copy(camera.projectionMatrix);
+    this.lastLayoutAt = now;
     this.layout(camera, width, height);
   }
 
@@ -195,8 +215,10 @@ export class MapPlateLayer {
           <div
             key={entry.key}
             ref={(element) => {
+              // A committed element is placed by the next frame's layout, whatever ran before React committed it.
               if (element) this.elements.set(entry.key, element);
               else this.elements.delete(entry.key);
+              this.layoutDirty = true;
             }}
             className="mp-at"
             data-relation={entry.plate.relation}
@@ -264,6 +286,7 @@ export class MapPlateLayer {
           : `translate(${x}px, ${y - lift}px) translate(-50%, -100%)`;
       element.dataset.yields = String(yields);
     }
+    keepLabelsBesideHudColumns(this.element);
     if (!sameSet(pinned, this.pinned)) {
       this.pinned = pinned;
       this.invalidate();
