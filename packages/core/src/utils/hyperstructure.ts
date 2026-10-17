@@ -72,7 +72,7 @@ const SCAN_TURNS = [
  * spacing, two more in a Single game (settlement_grid.cairo `hyperstructure_scan_distance`). A realm anywhere else,
  * however near, is not counted.
  */
-export const realmsInMultiplierScan = (store: NativeFactStore, origin: { x: number; y: number }): number => {
+const realmsInMultiplierScan = (store: NativeFactStore, origin: { x: number; y: number }): number => {
   const game_id = configManager.getActiveGameId();
   const { spacing, mode } = configManager.getSettlementConfig();
   const distance = Number(spacing) + (mode === "Single" ? 2 : 0);
