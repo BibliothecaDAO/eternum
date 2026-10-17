@@ -36,9 +36,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: PLAYER } }),
 }));
-vi.mock("@/hooks/store/use-story-events-store", async (importOriginal) => ({
-  newestOnChainFirst: (await importOriginal<typeof import("@/hooks/store/use-story-events-store")>())
-    .newestOnChainFirst,
+vi.mock("@/hooks/store/use-story-events-store", () => ({
   useStoryEvents: (limit: number, story?: string, owner?: string) => ({
     data: history
       .filter((event) => !story || event.story === story)
@@ -313,10 +311,66 @@ it("tells a delivery's landing in one row: its unloading, then the story that un
   });
 });
 
-it("tells a claim in one row, by its capture: the battle and the capture its transaction wrote are one action", () => {
+/**
+ * One transaction that took a structure, as the contract writes it (combat.cairo): the capture first, inside
+ * `try_capture`, then the battle. Either an army beat the structure's last guard (it attacked), or the structure's
+ * guard attacked an army beside it and fell (the army defended).
+ */
+const capture = (path: "army-attacked" | "guard-fell", captor: string, holder: string) => {
+  const claim = { owner: captor, participants: [captor, holder], at: 101_000, tx: "0xc1a" };
+  const [attacker, defender] = path === "army-attacked" ? [captor, holder] : [holder, captor];
+  return {
+    taken: {
+      ...claim,
+      id: "taken",
+      story: "StructureCapturedStory",
+      index: 1,
+      payload: { previous_owner: holder, new_owner: captor },
+    },
+    fight: {
+      ...claim,
+      id: "fight",
+      story: "BattleEvent",
+      index: 2,
+      payload: { attacker: { player: attacker }, defender: { player: defender } },
+    },
+  };
+};
+
+it.each([
+  ["army-attacked", "who lost it", "0xc1", PLAYER],
+  ["army-attacked", "who took it", PLAYER, "0xa1"],
+  ["guard-fell", "who lost it", "0xc1", PLAYER],
+  ["guard-fell", "who took it", PLAYER, "0xa1"],
+] as const)("tells a capture (%s) in one row, by its capture, to the player %s", (path, _side, captor, holder) => {
+  withFeed([], (feed) => {
+    const { taken, fight } = capture(path, captor, holder);
+    history.push(fight, taken);
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:taken"]);
+  });
+});
+
+it.each([
+  ["the battle, then its capture", ["fight", "taken"]],
+  ["the capture, then its battle", ["taken", "fight"]],
+] as const)("keeps one row, in the same element, when %s arrive in turn", (_order, arrivals) => {
+  withFeed([], (feed) => {
+    const stories = capture("army-attacked", "0xc1", PLAYER);
+    history.push(stories[arrivals[0]]);
+    feed.rerender();
+    const element = feed.wrapper(`story:${arrivals[0]}`);
+    history.push(stories[arrivals[1]]);
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:taken"]);
+    expect(feed.wrapper("story:taken")).toBe(element);
+  });
+});
+
+it("review: tells the capture with actual Cairo event order, capture before battle", () => {
   withFeed([], (feed) => {
     const claim = { owner: "0xc1", participants: ["0xc1", PLAYER], at: 101_000, tx: "0xc1a" };
-    history.push({ ...claim, id: "fight", story: "BattleEvent", index: 0 });
+    history.push({ ...claim, id: "fight", story: "BattleEvent", index: 2 });
     history.push({
       ...claim,
       id: "taken",

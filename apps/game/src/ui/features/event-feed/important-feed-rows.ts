@@ -99,6 +99,13 @@ const quickFeedKey = (row: ImportantFeedRow): string => {
   return row.id;
 };
 
+/**
+ * A capture is the outcome of the fight that won it, so of one transaction's rows it tells the action, wherever the
+ * chain wrote it among them (the contract writes the capture before its battle) and whichever arrived first.
+ */
+const isCapture = (row: ImportantFeedRow): boolean =>
+  row.kind === "story" && row.event.story === "StructureCapturedStory";
+
 /** A send's key, the same however its hash is written (case, leading zeros). */
 export const sendKey = (hash: string): string => `send:${hash.toLowerCase().replace(/^0x0*/, "")}`;
 
@@ -139,7 +146,8 @@ export function nextQuickFeed(
   const latest = new Map<string, ImportantFeedRow>();
   for (const row of rows.toSorted((left, right) => right.at - left.at)) {
     const key = quickFeedKey(row);
-    if (!latest.has(key)) latest.set(key, row);
+    const held = latest.get(key);
+    if (!held || (isCapture(row) && !isCapture(held))) latest.set(key, row);
   }
   const ended = [...feed.ended];
   let shown = feed.shown

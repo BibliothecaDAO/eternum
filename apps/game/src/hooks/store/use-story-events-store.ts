@@ -245,7 +245,7 @@ const namesPlayer = (event: StoryEventData, player: bigint): boolean =>
  * Newest first by place on the chain: a pre-confirmed story (no block yet) above every block, then block, transaction
  * and event, the order the contract wrote them in. Never by time: one block holds many stories at one timestamp.
  */
-export const newestOnChainFirst = (left: StoryEventData, right: StoryEventData): number =>
+const newestOnChainFirst = (left: StoryEventData, right: StoryEventData): number =>
   blockRank(right.position) - blockRank(left.position) ||
   right.position.transactionIndex - left.position.transactionIndex ||
   right.position.eventIndex - left.position.eventIndex;

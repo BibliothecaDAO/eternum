@@ -2,7 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
-import { newestOnChainFirst, useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
@@ -93,8 +93,7 @@ export function useImportantFeed() {
 
 /**
  * The stories the Events card tells, each from a read that holds them: every battle, raid and capture, the crates the
- * player opened (where its relics went) and the deliveries they unloaded (what landed where). Merged in chain order, as
- * each read is, so an action's row tells its last story: a claim's capture, not the battle before it.
+ * player opened (where its relics went) and the deliveries they unloaded (what landed where).
  */
 function useEventsStories(address: string | null) {
   const { data: battles } = useStoryEvents(350, "BattleEvent");
@@ -103,7 +102,7 @@ function useEventsStories(address: string | null) {
   const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
   const { data: deliveries } = useStoryEvents(50, "ResourceReceiveArrivalStory", address ?? undefined);
   return useMemo(
-    () => [...battles, ...raids, ...captures, ...crates, ...deliveries].toSorted(newestOnChainFirst),
+    () => [...battles, ...raids, ...captures, ...crates, ...deliveries],
     [battles, raids, captures, crates, deliveries],
   );
 }
