@@ -31,9 +31,10 @@ export const ResourceIcon = ({ withTooltip = true, tooltipText, ...props }: Prop
   return (
     <div
       data-tip={withTooltip ? tooltipText || name : undefined}
-      className={`flex paper relative rounded-xl justify-center ${props.className}`}
+      className={clsx("relative flex items-center justify-center rounded-xl", props.className)}
     >
-      <div className={`relative ${clsx(STYLES.size[props.size], props.className)} `}>
+      {/* A flex box, so the picture fills it exactly: as an inline image it would sit on the text baseline, low. */}
+      <div className={clsx("relative flex items-center justify-center", STYLES.size[props.size], props.className)}>
         <Icon
           name={meaning}
           size={props.size === "xxl" ? 80 : props.size === "xl" ? 64 : 32}
