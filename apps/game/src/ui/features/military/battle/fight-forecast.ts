@@ -58,3 +58,39 @@ export const aboutTroops = (troops: number): string => {
   const unit = 10 ** (Math.floor(Math.log10(troops)) - 1);
   return (Math.ceil(troops / unit) * unit).toLocaleString();
 };
+
+/** A realm an army can come from, and the largest army it can hold of the attacking troop's tier. */
+interface ArmyCap {
+  name: string;
+  cap: number;
+}
+
+/**
+ * Advice a newcomer can follow after a certain loss. Within the home realm's army cap it is the troops to add. Past
+ * it, the total needed, the cap, and what lifts it: the home's next level, if that holds the army, or another of the
+ * player's realms that already holds it.
+ */
+export const describeSurvivalAdvice = ({
+  extra,
+  current,
+  home,
+  nextLevel,
+  roomier,
+}: {
+  extra: number;
+  current: number;
+  home: ArmyCap | null;
+  nextLevel: ArmyCap | null;
+  roomier: ArmyCap | null;
+}): string => {
+  const total = current + extra;
+  if (home === null || total <= home.cap) return `about ${aboutTroops(extra)} more troops to survive it`;
+  const options = [
+    nextLevel && total <= nextLevel.cap
+      ? `level it to ${nextLevel.name} (cap ${nextLevel.cap.toLocaleString()})`
+      : null,
+    roomier ? `raise one from ${roomier.name} (cap ${roomier.cap.toLocaleString()})` : null,
+  ].filter(Boolean);
+  const needs = `it needs about ${aboutTroops(total)} troops, and ${home.name}'s army cap is ${home.cap.toLocaleString()}`;
+  return options.length ? `${needs}: ${options.join(", or ")}` : `${needs}; no realm of yours holds that many yet`;
+};

@@ -1,6 +1,13 @@
 import { displayPlayerName, type FightForecast } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
-import { aboutTroops, combatTitle, describeFightCost, extraTroopsToSurvive, wholeTroops } from "./fight-forecast";
+import {
+  aboutTroops,
+  combatTitle,
+  describeFightCost,
+  describeSurvivalAdvice,
+  extraTroopsToSurvive,
+  wholeTroops,
+} from "./fight-forecast";
 
 const troops = (whole: number) => ({ count: BigInt(whole) * 1_000_000_000n }) as never;
 
@@ -75,5 +82,40 @@ describe("how many more troops would survive a certain loss", () => {
     expect(aboutTroops(651)).toBe("660");
     expect(aboutTroops(1_234)).toBe("1,300");
     expect(aboutTroops(48)).toBe("48");
+  });
+});
+
+describe("what a newcomer can do about a certain loss", () => {
+  const egonal = { name: "Egonal", cap: 1_500 };
+  it("asks for the troops to add when the army's realm can hold them", () => {
+    expect(describeSurvivalAdvice({ extra: 400, current: 1_000, home: egonal, nextLevel: null, roomier: null })).toBe(
+      "about 400 more troops to survive it",
+    );
+  });
+
+  it("names the cap and what lifts it when the army would outgrow its realm (the audit's 2,400 against 1,500)", () => {
+    expect(
+      describeSurvivalAdvice({
+        extra: 1_400,
+        current: 1_000,
+        home: egonal,
+        nextLevel: { name: "City", cap: 15_000 },
+        roomier: { name: "'oak Leukue", cap: 7_500 },
+      }),
+    ).toBe(
+      "it needs about 2,400 troops, and Egonal's army cap is 1,500: level it to City (cap 15,000), or raise one from 'oak Leukue (cap 7,500)",
+    );
+  });
+
+  it("offers only what would hold the army, and says when nothing within reach would", () => {
+    expect(
+      describeSurvivalAdvice({
+        extra: 30_000,
+        current: 1_000,
+        home: egonal,
+        nextLevel: { name: "City", cap: 15_000 },
+        roomier: null,
+      }),
+    ).toBe("it needs about 31,000 troops, and Egonal's army cap is 1,500; no realm of yours holds that many yet");
   });
 });

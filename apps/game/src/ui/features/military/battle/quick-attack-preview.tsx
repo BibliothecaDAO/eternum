@@ -20,6 +20,8 @@ import {
   COMBAT_DIE_FACES,
   configManager,
   forecastFight,
+  getEntityName,
+  getIsBlitz,
   resolveExchange,
   formatTime,
   getGuardsByStructure,
@@ -33,17 +35,25 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { aboutTroops, combatTitle, describeFightCost, extraTroopsToSurvive, wholeTroops } from "./fight-forecast";
+import {
+  combatTitle,
+  describeFightCost,
+  describeSurvivalAdvice,
+  extraTroopsToSurvive,
+  wholeTroops,
+} from "./fight-forecast";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
 import {
   BiomeType,
   getDirectionBetweenAdjacentHexes,
+  getLevelName,
   getLayeredAttackDistance,
   getTroopAttackRange,
   RESOURCE_PRECISION,
   resources,
+  StructureType,
   type ActorType,
   type ID,
   type Troops,
@@ -263,6 +273,37 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const defenderSide = sides?.defender ?? null;
   // The army falls at every roll: Attack steps back and the forecast says what would survive.
   const certainLoss = attackerSide !== null && survivalOf(attackerSide) === "Eliminated";
+  // What would survive it, within what the player can raise: the army's home realm's cap, its next level, or another
+  // realm of theirs that holds that many.
+  const survivalAdvice = useMemo(() => {
+    if (!fight?.extraToSurvive || !attackerArmyData) return null;
+    const game = configManager.getActiveGameId();
+    const tier = attackerArmyData.troops.tier;
+    const extra = wholeTroops(fight.extraToSurvive);
+    const current = wholeTroops(attackerArmyData.troops.count);
+    const army =
+      attackerType === AttackerType.Army
+        ? store.get("ExplorerTroops", { game_id: game, explorer_id: attacker.id })
+        : undefined;
+    const home = army ? store.get("Structure", { game_id: game, entity_id: Number(army.owner) }) : undefined;
+    if (!home) return describeSurvivalAdvice({ extra, current, home: null, nextLevel: null, roomier: null });
+    const capOf = (row: typeof home) => ({
+      name: getEntityName(Number(row.entity_id), store, getIsBlitz()) ?? "Your realm",
+      cap: configManager.getMaxArmySize(Number(row.base.level), tier),
+    });
+    const level = Number(home.base.level);
+    const nextLevel =
+      level < configManager.getMaxLevel(StructureType.Realm)
+        ? { name: getLevelName(level + 1), cap: configManager.getMaxArmySize(level + 1, tier) }
+        : null;
+    const roomier =
+      [...store.structuresOwnedBy(game, home.owner)]
+        .filter((row) => row.entity_id !== home.entity_id && Number(row.base.category) === StructureType.Realm)
+        .map(capOf)
+        .filter((realm) => realm.cap >= current + extra)
+        .toSorted((left, right) => right.cap - left.cap)[0] ?? null;
+    return describeSurvivalAdvice({ extra, current, home: capOf(home), nextLevel, roomier });
+  }, [fight, attackerArmyData, attackerType, attacker.id, store]);
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -620,10 +661,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           className="modal-no-drag mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-sm text-red-200"
         >
           Certain loss: your army is wiped out at any roll
-          {fight?.extraToSurvive
-            ? ` · about ${aboutTroops(wholeTroops(fight.extraToSurvive))} more troops to survive it`
-            : ""}
-          .
+          {survivalAdvice ? ` · ${survivalAdvice}` : ""}.
         </p>
       )}
 
