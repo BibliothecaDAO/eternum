@@ -600,7 +600,8 @@ export class ClientConfigManager {
   /**
    * How long a relic's effect lasts, in seconds (0 for one that acts at once), and the Essence it costs to activate,
    * as the game's relic rules set them: rules are listed from the first relic id, and the stamina relics last their
-   * uses, the others their duration, each in army ticks (relics.cairo, boost_explorer and boost_production).
+   * uses, the others their duration, each in army ticks (relics.cairo, boost_explorer and boost_production). The rule
+   * holds the cost in whole Essence, which the chain scales to resource precision when it spends it.
    */
   getRelicActivation(relicId: number): { durationSeconds: number; essenceCost: number } {
     const rules = this.facts().require("RelicRules", { game_id: this.gameId }).rules;
@@ -609,7 +610,7 @@ export class ClientConfigManager {
     const ticks = STAMINA_RELIC_IDS.has(relicId) ? rule.uses : rule.duration;
     return {
       durationSeconds: ticks * this.getTick(TickIds.Armies),
-      essenceCost: this.divideByPrecision(Number(rule.essence_cost)),
+      essenceCost: Number(rule.essence_cost),
     };
   }
   getArtificerConfig() {

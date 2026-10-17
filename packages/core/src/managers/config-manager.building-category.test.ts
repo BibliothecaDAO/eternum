@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { BiomeType, BuildingType, CapacityConfig, TickIds, TroopType } from "@bibliothecadao/types";
+import { BiomeType, BuildingType, CapacityConfig, ResourcesIds, TickIds, TroopType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
+import { nativePresetForId, nativePresetIdFor } from "../../../../config/source/native";
 import { ClientConfigManager } from "./config-manager";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -35,20 +36,20 @@ describe("native immutable configuration", () => {
     });
   });
 
-  it("reads a relic's duration and Essence cost from the game's relic rules, in army ticks", () => {
+  it("reads a relic's duration and whole-Essence cost from the Blitz preset's relic rules, in army ticks", () => {
     const { manager, write } = fixture();
     const armyTick = Number(preset.rules.tick_config.armies_tick_in_seconds);
-    // Rules are listed from the first relic (Stamina I, 39): the stamina relics last their uses, the others their duration.
-    const rules = Array.from({ length: 18 }, (_, index) => ({
-      rate_bps: 1000,
-      duration: index < 2 ? 0 : 5,
-      uses: index < 2 ? 3 : 0,
-      essence_cost: BigInt(100 + index) * 1_000_000_000n,
-      draw_weight: 1n,
-    }));
-    write("RelicRules", [54], { game_id: 54, rules });
-    expect(manager.getRelicActivation(39)).toEqual({ durationSeconds: 3 * armyTick, essenceCost: 100 });
-    expect(manager.getRelicActivation(41)).toEqual({ durationSeconds: 5 * armyTick, essenceCost: 102 });
+    // The rules the factory writes for a Blitz game, listed from the first relic (Stamina I, 39): the stamina relics
+    // last their uses, the others their duration.
+    write("RelicRules", [54], { game_id: 54, rules: nativePresetForId(nativePresetIdFor("blitz")).relics });
+    expect(manager.getRelicActivation(ResourcesIds.StaminaRelic1)).toEqual({
+      durationSeconds: 3 * armyTick,
+      essenceCost: 250,
+    });
+    expect(manager.getRelicActivation(ResourcesIds.DamageRelic2)).toEqual({
+      durationSeconds: 3 * armyTick,
+      essenceCost: 500,
+    });
     expect(() => manager.getRelicActivation(39 + 18)).toThrow("No relic rule for relic 57");
   });
 
