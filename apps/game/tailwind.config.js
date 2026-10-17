@@ -1,6 +1,17 @@
 const plugin = require("tailwindcss/plugin");
 
-import { CLASSIC_HUD_FONTS, COLORS, FONT_FACES, FONTS } from "./src/tokens";
+import {
+  CLASSIC_HUD_FONTS,
+  COLORS,
+  FONT_FACES,
+  FONTS,
+  GUTTERS,
+  RADII,
+  SCREENS,
+  TEXT_SHADOWS,
+  TYPE,
+  WIDTHS,
+} from "./src/tokens";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,7 +21,16 @@ export default {
       textShadow: {
         "glow-yellow-xs": "0 0 5px rgba(250, 204, 21, 0.7)", // yellow-400 with 70% opacity
         "glow-brilliance-xs": "0 0 5px rgba(125, 255, 186, 0.7)", // brilliance (#7DFFBA) with 70% opacity
+        ...TEXT_SHADOWS,
       },
+      // The shell's named sizes, radii, widths, gutters and wide screen (src/tokens.ts).
+      // The shell's type scale (TYPE), and the Blitz and Eternum HUD's own small sizes (a7b72331e56).
+      fontSize: { ...TYPE, xs: ".975rem", xxs: ".825rem" },
+      borderRadius: RADII,
+      maxWidth: WIDTHS,
+      width: WIDTHS,
+      spacing: GUTTERS,
+      screens: SCREENS,
       typography: ({ theme }) => ({
         pink: {
           css: {
@@ -159,10 +179,6 @@ export default {
         "dark-wood": "linear-gradient(rgba(12, 10, 8, 0.7), rgba(12, 10, 8, 0.7))", // Modern: solid dark-brown/70 instead of texture
       },
       fontFamily: FONTS,
-      fontSize: {
-        xs: ".975rem",
-        xxs: ".825rem",
-      },
       cursor: {
         fancy: "url(/images/icons/cursor.png), pointer",
         pointer: "url(/images/icons/cursor.png), pointer",
@@ -344,21 +360,18 @@ export default {
         ":root": {
           ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
+          ...Object.fromEntries(Object.entries(RADII).map(([name, value]) => [`--radius-${name}`, value])),
         },
         "html.classic-hud": Object.fromEntries(
           Object.entries(CLASSIC_HUD_FONTS).map(([name, value]) => [`--font-${name}`, value]),
         ),
       });
     }),
-    plugin(function ({ addUtilities, theme, e }) {
-      const textShadowUtilities = {
-        ".text-shadow-glow-yellow-xs": {
-          textShadow: theme("textShadow.glow-yellow-xs"),
-        },
-        ".text-shadow-glow-brilliance-xs": {
-          textShadow: theme("textShadow.glow-brilliance-xs"),
-        },
-      };
+    plugin(function ({ addUtilities, theme }) {
+      // One `.text-shadow-<name>` per textShadow key: the HUD's glows and the shell's title shadows.
+      const textShadowUtilities = Object.fromEntries(
+        Object.entries(theme("textShadow")).map(([name, textShadow]) => [`.text-shadow-${name}`, { textShadow }]),
+      );
       addUtilities(textShadowUtilities, ["responsive", "hover"]);
 
       const newUtilities = {

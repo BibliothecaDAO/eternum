@@ -123,10 +123,10 @@ const Share = ({ prize, state, now }: { prize: SeasonPrize; state: NonNullable<B
     claimed: <Line icon="check">{SEASON_PRIZE_WORDS.claimed}</Line>,
   };
   return (
-    <div className="flex flex-col gap-2 rounded-[14px] border border-kit-gold bg-kit-gold/5 px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-well border border-kit-gold bg-kit-gold/5 px-4 py-3">
       <span className="font-body text-base text-kit-muted">{SEASON_PRIZE_WORDS.yourShare}</span>
       {prize.share !== null && (
-        <b className="inline-flex items-center gap-2 font-body text-[32px] font-extrabold tabular-nums text-kit-cream">
+        <b className="inline-flex items-center gap-2 font-body text-title font-extrabold tabular-nums text-kit-cream">
           <SemanticIcon name="lords" size={30} />
           {formatExact(lordsOf(prize.share))}
         </b>

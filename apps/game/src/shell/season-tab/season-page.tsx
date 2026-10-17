@@ -79,7 +79,12 @@ const DesktopSeason = () => {
 /** No Frontier season runs: the plains and the one line that says so. */
 const NoSeason = () => (
   <section className="plate flex flex-col gap-4 p-4">
-    <img {...paintingSources("brooding-plains")} sizes="50vw" alt="" className="h-40 w-full rounded-xl object-cover" />
+    <img
+      {...paintingSources("brooding-plains")}
+      sizes="50vw"
+      alt=""
+      className="h-40 w-full rounded-control object-cover"
+    />
     <p className="font-body text-xl font-bold text-kit-cream">{WORDS.noSeason}</p>
   </section>
 );

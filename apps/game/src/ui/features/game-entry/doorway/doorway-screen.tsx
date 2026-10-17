@@ -70,7 +70,7 @@ export const DoorwayScreen = ({
       <PageFrame back="/" title={title} tabs={false} painting={painting} stage>
         {desktop ? (
           <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
-            <div className="plate flex w-[34rem] flex-col items-stretch gap-5 p-6">
+            <div className="plate flex w-column flex-col items-stretch gap-5 p-6">
               {realm && <RealmRising realm={realm} />}
               <StepTrack steps={view.steps} />
               {hold}
@@ -78,7 +78,7 @@ export const DoorwayScreen = ({
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[640px] flex-col items-center gap-6 py-6">
+          <div className="mx-auto flex w-full max-w-doorway flex-col items-center gap-6 py-6">
             {realm ? <RealmRising realm={realm} /> : <div className="h-24" aria-hidden />}
             <StepTrack steps={view.steps} />
             {hold}
@@ -94,7 +94,7 @@ export const DoorwayScreen = ({
 const RealmRising = ({ realm }: { realm: DoorwayRealm }) => (
   <div className="flex flex-col items-center gap-3">
     {realm.emblem && <img src={realm.emblem.art} alt={realm.emblem.name} className="size-12 object-contain" />}
-    <h2 className="text-center font-body text-[26px] font-extrabold text-kit-cream">{realm.name}</h2>
+    <h2 className="text-center font-body text-heading font-extrabold text-kit-cream">{realm.name}</h2>
   </div>
 );
 

@@ -141,7 +141,7 @@ export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
   const desktop = useLayout() === "desktop";
   const verb = <ItemVerbButton item={item} signedIn={signedIn} gold />;
   return (
-    <section data-play-item={item.key} className="painted flex rounded-2xl">
+    <section data-play-item={item.key} className="painted flex rounded-plate">
       <img
         {...paintingSources(ageOf(item.mode).painting)}
         sizes={desktop ? "45vw" : "100vw"}
@@ -150,7 +150,7 @@ export const LeadCard = ({ item, now, signedIn }: ItemProps) => {
       />
       <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/80 to-kit-ground/40" />
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-4 lg:p-6">
-        <h2 className="font-display text-[32px] leading-none text-kit-cream lg:text-[40px]">{titleOf(item)}</h2>
+        <h2 className="font-display text-title leading-none text-kit-cream lg:text-title-lg">{titleOf(item)}</h2>
         <div className="flex flex-wrap items-center gap-2">
           <ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />
         </div>
@@ -204,7 +204,7 @@ const ItemRow = ({ item, now, signedIn }: ItemProps) => (
       {...paintingSources(ageOf(item.mode).painting)}
       sizes="48px"
       alt=""
-      className="size-12 shrink-0 rounded-lg object-cover"
+      className="size-12 shrink-0 rounded-thumb object-cover"
     />
     <span className="flex min-w-0 flex-1 flex-col gap-1.5">
       <span className="truncate font-body text-base font-bold text-kit-cream">{titleOf(item)}</span>

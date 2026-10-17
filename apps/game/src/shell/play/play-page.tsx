@@ -47,7 +47,7 @@ export const PlayPage = () => {
 
 /** The first visit's line, as the page's title. */
 const LoreLine = () => (
-  <h1 className="mb-5 max-w-[16ch] font-display text-[32px] leading-[1.08] text-kit-cream [text-shadow:0_2px_0_theme(colors.kit.ink/70%),0_0_24px_theme(colors.kit.ink/60%)] lg:text-[52px]">
+  <h1 className="mb-5 max-w-hero-measure font-display text-title leading-[1.08] text-kit-cream text-shadow-title lg:text-[52px]">
     {LORE_LINE}
   </h1>
 );
@@ -141,7 +141,7 @@ const ModeSwitch = ({
           aria-selected={on}
           onClick={() => onPick(mode)}
           className={cn(
-            "relative min-h-12 flex-1 rounded-xl border px-3 font-body text-base font-bold text-kit-cream",
+            "relative min-h-12 flex-1 rounded-control border px-3 font-body text-base font-bold text-kit-cream",
             on ? "border-kit-gold bg-kit-plate2" : "border-kit-line2 bg-kit-plate hover:border-kit-gold",
           )}
         >

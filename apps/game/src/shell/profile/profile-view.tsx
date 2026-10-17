@@ -45,7 +45,7 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
       <History account={account} />
     </div>
   ) : (
-    <div className="grid grid-cols-[26rem_minmax(0,1fr)] items-start gap-6">
+    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
       <PlayerCard account={account} own={own} />
       <RecentGames account={account} />
     </div>
@@ -103,7 +103,7 @@ const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
   const { own: standing } = useSeasonStanding(account);
   return (
-    <section className="painted flex h-40 items-start gap-3 rounded-2xl p-3">
+    <section className="painted flex h-40 items-start gap-3 rounded-plate p-3">
       <img
         {...paintingSources(ageOf("frontier").painting)}
         sizes="(min-width: 1024px) 50vw, 100vw"

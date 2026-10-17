@@ -1,0 +1,114 @@
+[
+  {
+    "file": "apps/game/src/shell/blitz/entry-panel.tsx",
+    "match": "text-[15px]",
+    "count": 2,
+    "reason": "Muted notes; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 15 to caption (-1px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/blitz/entry-panel.tsx",
+    "match": "text-[17px]",
+    "count": 2,
+    "reason": "Entry rows; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 17 to body (-1px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/blitz/entry-panel.tsx",
+    "match": "text-[19px]",
+    "count": 1,
+    "reason": "EntryPanel title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 19 to lead (-1px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/frame/page-frame.tsx",
+    "match": "text-[24px]",
+    "count": 1,
+    "reason": "Phone page title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 24 to heading (+2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/frame/page-frame.tsx",
+    "match": "text-[34px]",
+    "count": 1,
+    "reason": "Desktop page title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/not-found.tsx",
+    "match": "text-[34px]",
+    "count": 1,
+    "reason": "Not found title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/sign-in/sign-in-page.tsx",
+    "match": "text-[34px]",
+    "count": 1,
+    "reason": "Sign-in title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/season-tab/blitz-board.tsx",
+    "match": "text-[34px]",
+    "count": 1,
+    "reason": "Board figure; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/profile/profile-view.tsx",
+    "match": "text-[28px]",
+    "count": 1,
+    "reason": "Season figure; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 28 to heading (-2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/profile/profile-view.tsx",
+    "match": "text-[30px]",
+    "count": 1,
+    "reason": "Profile name; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 30 to title (+2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/profile/payout-wallet-panel.tsx",
+    "match": "text-[30px]",
+    "count": 1,
+    "reason": "Wallet ready line; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 30 to title (+2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/sign-in/fields.tsx",
+    "match": "text-[30px]",
+    "count": 1,
+    "reason": "Code digits; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 30 to title (+2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/season-tab/reward-panel.tsx",
+    "match": "text-[30px]",
+    "count": 2,
+    "reason": "Reward names; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 30 to title (+2px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/play/play-page.tsx",
+    "match": "text-[52px]",
+    "count": 1,
+    "reason": "Play hero on desktop; Flagged: the nearest step changes it by 4px; the owner chooses the size (Phase 3): 52 to display (+4px) or hero (-8px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/shell/season-tab/reward-panel.tsx",
+    "match": "text-[60px]",
+    "count": 1,
+    "reason": "Gold2 reward figure; Flagged: the nearest step changes it by 4px; the owner chooses the size (Phase 3): 60 to figure (+4px) or display (-4px)",
+    "issue": "#5052"
+  },
+  {
+    "file": "apps/game/src/ui/design-system/kit/sheet.tsx",
+    "match": "rgba(",
+    "count": 1,
+    "reason": "The HUD sheet's close-button drop shadow (black, not a palette colour); HUD-shared, out of the shell's Phase 1",
+    "issue": "#5052"
+  }
+]

@@ -16,7 +16,7 @@ import { postHref, publishedPosts } from "./posts";
  */
 export const WhatsNewPage = () => (
   <PageFrame back="/profile" title={PROFILE_WORDS.whatsNew} footer>
-    <div className="max-w-[48rem]">
+    <div className="max-w-feed">
       <SettingRows>
         <NewsRows items={newsItems()} />
       </SettingRows>

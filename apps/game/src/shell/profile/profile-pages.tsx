@@ -45,7 +45,7 @@ export const ProfilePage = () => (
 
 /** Signed out: the card that says why, then what anyone can read. */
 const SignedOut = ({ card }: { card: ReactNode }) => (
-  <div className="flex max-w-[34rem] flex-col gap-4">
+  <div className="flex max-w-column flex-col gap-4">
     {card}
     <SettingRows>
       <ReadingRows />
@@ -92,7 +92,7 @@ const Settings = () => {
     </div>
   );
   return desktop ? (
-    <div className="grid max-w-[74rem] grid-cols-2 items-start gap-6">
+    <div className="grid max-w-page grid-cols-2 items-start gap-6">
       <div className="flex flex-col gap-6">
         {account}
         {devices}
@@ -172,7 +172,7 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
     requestSignIn();
   };
   return (
-    <section className="painted flex min-h-44 flex-col gap-3 rounded-2xl p-3.5">
+    <section className="painted flex min-h-44 flex-col gap-3 rounded-plate p-3.5">
       <img
         {...paintingSources("winter-fortress")}
         sizes="(min-width: 1024px) 34rem, 100vw"
@@ -196,7 +196,7 @@ const OwnProfile = ({ account }: { account: string }) => {
       </div>
     );
   return (
-    <div className="grid grid-cols-[26rem_minmax(0,1fr)] items-start gap-6">
+    <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
       <div className="flex flex-col gap-5">
         <PlayerCard account={account} own />
         <Rows />

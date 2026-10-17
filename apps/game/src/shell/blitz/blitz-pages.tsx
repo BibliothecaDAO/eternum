@@ -78,7 +78,7 @@ export const BlitzLobbyPage = () => {
       stage
     >
       {desktop ? (
-        <div className="grid grid-cols-[minmax(0,1fr)_26rem] items-start gap-6">
+        <div className="grid grid-cols-[minmax(0,1fr)_theme(width.rail)] items-start gap-6">
           <section className={cn("plate p-6", row.kind === "slot" && "justify-self-start")}>
             {row.kind === "slot" ? (
               <RegisteredCount slot={row.slot} large closed={isClosedSlot(row, facts.now)} />
@@ -151,8 +151,10 @@ const LobbyClock = ({ row, step, now, large }: { row: BlitzRow; step: LobbyStep;
     <div className="flex flex-col gap-3">
       {large && moment && (
         <div className="flex flex-col gap-1">
-          <span className="font-ui text-[14px] tracking-[.06em] text-kit-muted">{COUNTDOWN_WORDS[moment.prefix]}</span>
-          <span className="font-display text-[64px] leading-none text-kit-cream">{countdown(moment.at - now)}</span>
+          <span className="font-ui text-caption leading-normal tracking-[.06em] text-kit-muted">
+            {COUNTDOWN_WORDS[moment.prefix]}
+          </span>
+          <span className="font-display text-figure leading-none text-kit-cream">{countdown(moment.at - now)}</span>
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">

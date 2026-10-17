@@ -38,6 +38,9 @@ jobs:
       - name: Validate painted icons
         run: pnpm icons:check
 
+      - name: Check the shell names its sizes, colours and radii through the tokens
+        run: pnpm shell:check
+
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 

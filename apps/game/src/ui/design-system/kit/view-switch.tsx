@@ -19,7 +19,7 @@ export const ViewSwitch = <Id extends string>({
   <div
     role="radiogroup"
     aria-label={label}
-    className="flex h-12 shrink-0 overflow-hidden rounded-xl border border-kit-line bg-kit-ground"
+    className="flex h-12 shrink-0 overflow-hidden rounded-control border border-kit-line bg-kit-ground"
   >
     {views.map((view) => (
       <button

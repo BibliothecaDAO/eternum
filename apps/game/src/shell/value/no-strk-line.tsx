@@ -10,7 +10,7 @@ const AVNU_SWAP = "https://app.avnu.fi/en";
  * and the client sends no fee for anyone.
  */
 export const NoStrkLine = () => (
-  <p className="flex flex-wrap items-center gap-2.5 rounded-xl border border-dashed border-kit-amber px-3 py-2 font-body text-base font-semibold text-kit-gold2">
+  <p className="flex flex-wrap items-center gap-2.5 rounded-control border border-dashed border-kit-amber px-3 py-2 font-body text-base font-semibold text-kit-gold2">
     <SemanticIcon name="lords" size={22} />
     {VALUE_WORDS.noStrk}
     <a

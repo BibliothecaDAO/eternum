@@ -96,7 +96,7 @@ const Composer = ({ send }: { send: (content: string) => void }) => {
         maxLength={MESSAGE_LIMIT}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        className="h-12 w-full rounded-xl border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-base text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
+        className="h-12 w-full rounded-control border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-base text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
       />
       <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 max-lg:hidden" />
     </form>

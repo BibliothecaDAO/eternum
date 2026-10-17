@@ -103,14 +103,14 @@ export const TabBar = () => {
 export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
   const noticeSlot = notice ? (
-    <div data-band="notice" className="max-w-[28rem]">
+    <div data-band="notice" className="max-w-tabs">
       {notice}
     </div>
   ) : null;
   return (
     <header
       data-band="bar"
-      className="sticky top-0 z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground/95 px-8 backdrop-blur min-[1800px]:px-12"
+      className="sticky top-0 z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground/95 px-gutter-desk backdrop-blur wide:px-gutter-wide"
     >
       <div data-role="lockup">
         <Lockup />
@@ -126,7 +126,7 @@ export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode 
                 data-role="tab"
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "flex h-12 items-center gap-2.5 rounded-xl pl-3.5 pr-3 font-body text-base transition-colors",
+                  "flex h-12 items-center gap-2.5 rounded-control pl-3.5 pr-3 font-body text-base transition-colors",
                   current
                     ? "bg-kit-gold/[.14] text-kit-cream"
                     : "text-kit-muted hover:bg-kit-gold/[.06] hover:text-kit-cream",
