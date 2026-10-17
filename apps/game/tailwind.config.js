@@ -1,6 +1,6 @@
 const plugin = require("tailwindcss/plugin");
 
-import { COLORS, FONT_FACES, FONTS } from "./src/tokens";
+import { COLORS, FONT_FACES, FONTS, GUTTERS, RADII, SCREENS, TEXT_SHADOWS, TYPE, WIDTHS } from "./src/tokens";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,7 +10,15 @@ export default {
       textShadow: {
         "glow-yellow-xs": "0 0 5px rgba(250, 204, 21, 0.7)", // yellow-400 with 70% opacity
         "glow-brilliance-xs": "0 0 5px rgba(125, 255, 186, 0.7)", // brilliance (#7DFFBA) with 70% opacity
+        ...TEXT_SHADOWS,
       },
+      // The shell's named sizes, radii, widths, gutters and wide screen (src/tokens.ts).
+      fontSize: TYPE,
+      borderRadius: RADII,
+      maxWidth: WIDTHS,
+      width: WIDTHS,
+      spacing: GUTTERS,
+      screens: SCREENS,
       typography: ({ theme }) => ({
         pink: {
           css: {
@@ -339,18 +347,15 @@ export default {
         ":root": {
           ...Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [`--${name}`, value])),
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
+          ...Object.fromEntries(Object.entries(RADII).map(([name, value]) => [`--radius-${name}`, value])),
         },
       });
     }),
-    plugin(function ({ addUtilities, theme, e }) {
-      const textShadowUtilities = {
-        ".text-shadow-glow-yellow-xs": {
-          textShadow: theme("textShadow.glow-yellow-xs"),
-        },
-        ".text-shadow-glow-brilliance-xs": {
-          textShadow: theme("textShadow.glow-brilliance-xs"),
-        },
-      };
+    plugin(function ({ addUtilities, theme }) {
+      // One `.text-shadow-<name>` per textShadow key: the HUD's glows and the shell's title shadows.
+      const textShadowUtilities = Object.fromEntries(
+        Object.entries(theme("textShadow")).map(([name, textShadow]) => [`.text-shadow-${name}`, { textShadow }]),
+      );
       addUtilities(textShadowUtilities, ["responsive", "hover"]);
 
       const newUtilities = {

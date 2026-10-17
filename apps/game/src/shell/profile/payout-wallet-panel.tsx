@@ -185,7 +185,7 @@ const ReadyByEmail = ({ onProof }: { onProof: (proof: SignInOptions) => void }) 
       ).map(([icon, word], index) => (
         <li
           key={word}
-          className="relative flex flex-col items-center gap-2 rounded-[14px] border border-kit-line2 bg-kit-ground/50 px-1.5 pb-2.5 pt-4 text-center font-body text-sm text-kit-cream"
+          className="relative flex flex-col items-center gap-2 rounded-well border border-kit-line2 bg-kit-ground/50 px-1.5 pb-2.5 pt-4 text-center font-body text-sm text-kit-cream"
         >
           <span className="absolute -left-1.5 -top-2.5 flex size-[26px] items-center justify-center rounded-full border border-kit-gold bg-kit-ink font-body text-sm font-extrabold text-kit-gold2">
             {index + 1}
@@ -339,7 +339,7 @@ const Track = ({ at }: { at: number }) => (
 );
 
 const WalletCard = ({ address, chip }: { address: string; chip: { icon: IconMeaning; word: string } | null }) => (
-  <div className="flex min-h-[64px] items-center gap-3 rounded-[14px] border border-kit-line2 bg-kit-ground/60 px-3.5">
+  <div className="flex min-h-[64px] items-center gap-3 rounded-well border border-kit-line2 bg-kit-ground/60 px-3.5">
     <SemanticIcon name="backpack" size={38} />
     <span className="whitespace-nowrap font-body text-lg font-bold text-kit-cream">{shortAddress(address)}</span>
     {chip && (
@@ -368,7 +368,7 @@ const ChoiceTile = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "flex flex-col items-center gap-1.5 rounded-2xl border-2 px-2.5 py-4 text-center",
+      "flex flex-col items-center gap-1.5 rounded-plate border-2 px-2.5 py-4 text-center",
       lit ? "border-kit-gold bg-kit-gold/10" : "border-kit-line2 bg-kit-ground/60",
     )}
   >

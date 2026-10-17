@@ -52,7 +52,7 @@ const LEGAL_PAGES = [
 const LegalPage = ({ title, updated, sections }: { title: string; updated: string; sections: LegalSection[] }) => {
   const desktop = useLayout() === "desktop";
   const reading = (
-    <article className="flex max-w-[760px] flex-col gap-5">
+    <article className="flex max-w-prose flex-col gap-5">
       <p className="flex items-center gap-2 text-sm text-kit-muted">
         <SemanticIcon name="clock" size={18} />
         {NEWS_WORDS.updated} {updated}
@@ -73,12 +73,12 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
   return (
     <PageFrame back={WHATS_NEW_PATH} title={title} footer>
       {desktop ? (
-        <div className="grid grid-cols-[20rem_minmax(0,760px)] justify-center gap-10">
+        <div className="grid grid-cols-[20rem_minmax(0,theme(maxWidth.prose))] justify-center gap-10">
           <Contents title={title} sections={sections} />
           {reading}
         </div>
       ) : (
-        <div className="mx-auto max-w-[760px]">{reading}</div>
+        <div className="mx-auto max-w-prose">{reading}</div>
       )}
     </PageFrame>
   );
@@ -94,7 +94,7 @@ const Contents = ({ title, sections }: { title: string; sections: LegalSection[]
         <a
           key={section.title}
           href={`#${sectionId(index)}`}
-          className="flex min-h-10 items-center gap-3 rounded-lg px-1 text-base text-kit-cream hover:bg-kit-gold/[.06]"
+          className="flex min-h-10 items-center gap-3 rounded-thumb px-1 text-base text-kit-cream hover:bg-kit-gold/[.06]"
         >
           <span className="w-6 text-right font-bold tabular-nums text-kit-muted">{index + 1}</span>
           {section.title}

@@ -117,7 +117,7 @@ const RatingRow = ({
   <li
     className={cn(
       "flex min-h-12 items-center gap-3 border-b border-kit-line px-1 last:border-b-0",
-      own && "rounded-xl border border-kit-gold bg-kit-ground",
+      own && "rounded-control border border-kit-gold bg-kit-ground",
     )}
   >
     <span className="w-8 text-right font-body text-base font-bold tabular-nums text-kit-cream">

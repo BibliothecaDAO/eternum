@@ -10,7 +10,7 @@ export const StateCard = ({ painting, children }: { painting: Painting; children
       {...paintingSources(painting)}
       sizes="(min-width: 1024px) 34rem, 100vw"
       alt=""
-      className="h-36 w-full rounded-xl object-cover"
+      className="h-36 w-full rounded-control object-cover"
     />
     {children}
   </section>

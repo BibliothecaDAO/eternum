@@ -139,7 +139,7 @@ export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; l
           <b
             className={cn(
               "font-body font-bold leading-none tabular-nums text-kit-cream",
-              large ? "text-[64px]" : "text-[40px]",
+              large ? "text-figure" : "text-title-lg",
             )}
           >
             {registered === undefined ? "—" : formatAmount(registered)}

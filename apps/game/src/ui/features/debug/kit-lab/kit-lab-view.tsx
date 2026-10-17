@@ -15,6 +15,7 @@ import { Route, Routes } from "react-router-dom";
 
 import { ConstructionLab } from "./construction-lab";
 import { IconLab } from "./icon-lab";
+import { TokensLab } from "./tokens-lab";
 import { Link } from "react-router-dom";
 
 import { HudLab } from "./hud-lab";
@@ -24,14 +25,16 @@ const HOUR = 3600;
 const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 
 /**
- * Dev only: the kit's shared components in their states, on the Frontier ground, at /lab/kit, and the Frontier screens
- * built on them at /lab/kit/hud/<state>. Nothing here reads a game; every value is the handoff's fiction.
+ * Dev only: the kit's shared components in their states, on the Frontier ground, at /lab/kit, the Frontier screens
+ * built on them at /lab/kit/hud/<state>, and the token file drawn out at /lab/kit/tokens. Nothing here reads a game;
+ * every value is the handoff's fiction.
  */
 export const KitLabView = () => {
   return (
     <Routes>
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
+      <Route path="tokens" element={<TokensLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="*" element={<Components />} />
     </Routes>
@@ -43,6 +46,7 @@ const Components = () => {
     <main className="min-h-dvh bg-kit-ground px-4 py-6 font-sans text-kit-cream">
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
+        <Link to="/lab/kit/tokens">Design tokens</Link>
         <Link to="/lab/kit/construction">Construction models</Link>
         <ClockSection />
         <StoresSection />

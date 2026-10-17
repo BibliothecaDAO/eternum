@@ -167,7 +167,7 @@ const ResultLayout = ({
 const Placed = ({ lead, place, field }: { lead?: string; place: string; field: number }) => (
   <p className="flex items-baseline gap-2 font-body text-base font-semibold text-kit-cream">
     {lead}
-    <b className="text-[64px] font-extrabold leading-none text-kit-gold">{place}</b>
+    <b className="text-figure font-extrabold leading-none text-kit-gold">{place}</b>
     <span className="text-kit-muted">
       {SEASON_WORDS.of} {formatAmount(field)}
     </span>
@@ -324,7 +324,7 @@ const FrontierResult = ({
       fromList={fromList}
       outcome={
         <>
-          <p className="font-display text-[44px] leading-tight text-kit-cream lg:text-[56px]">{SEASON_OVER}</p>
+          <p className="font-display text-hero leading-tight text-kit-cream lg:text-display">{SEASON_OVER}</p>
           <p className="font-body text-base font-bold text-kit-gold2">{SEASON_ENDINGS.lifted}</p>
           {own && <Placed lead={YOU_PLACED} place={`#${own.rank}`} field={entries.length} />}
           {own && (

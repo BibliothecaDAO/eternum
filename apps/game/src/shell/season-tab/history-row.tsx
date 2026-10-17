@@ -46,7 +46,7 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
           {...paintingSources(ageOf(ageOfGame(game)).painting)}
           sizes="48px"
           alt=""
-          className="size-10 shrink-0 rounded-lg object-cover"
+          className="size-10 shrink-0 rounded-thumb object-cover"
         />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="truncate font-body text-base font-bold text-kit-cream">{gameTitle(game)}</span>

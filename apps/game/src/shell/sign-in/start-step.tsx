@@ -39,7 +39,7 @@ export const StartStep = ({
         </>
       )}
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <label className="flex h-14 items-center gap-2 rounded-2xl border-2 border-kit-line bg-kit-plate px-4 focus-within:border-kit-peach">
+        <label className="flex h-14 items-center gap-2 rounded-plate border-2 border-kit-line bg-kit-plate px-4 focus-within:border-kit-peach">
           <SemanticIcon name="mail" size={24} />
           <input
             type="email"

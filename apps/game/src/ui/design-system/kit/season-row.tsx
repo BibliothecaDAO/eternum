@@ -33,7 +33,7 @@ export const SeasonRow = ({
     aria-current={own || undefined}
     className={cn(
       "flex h-[52px] w-full shrink-0 items-center gap-2 px-1 text-left text-kit-cream",
-      own ? "rounded-xl border-2 border-kit-gold bg-kit-ground" : "border-b border-kit-line",
+      own ? "rounded-control border-2 border-kit-gold bg-kit-ground" : "border-b border-kit-line",
     )}
   >
     <span className="w-[34px] shrink-0 text-center text-base tabular-nums">{formatAmount(rank)}</span>

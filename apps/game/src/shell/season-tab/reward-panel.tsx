@@ -69,11 +69,11 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
     : reward.registration.shield && { icon: "defend" as const, word: "½" };
   return (
     <Plate icon="rating-conqueror" title={REWARD_WORDS.rating}>
-      <p className="flex items-center gap-3 font-body text-[32px] font-extrabold tabular-nums">
+      <p className="flex items-center gap-3 font-body text-title font-extrabold tabular-nums">
         <span className="text-kit-muted">{formatExact(mmrBefore)}</span>
         <SemanticIcon name="arrow-right" size={22} />
         <span className="text-kit-cream">{formatExact(mmrAfter)}</span>
-        <span className={cn("ml-auto text-[26px]", gain ? "text-kit-sage" : "text-kit-red")}>
+        <span className={cn("ml-auto text-heading", gain ? "text-kit-sage" : "text-kit-red")}>
           {gain ? "+" : "−"}
           {formatExact(Math.abs(mmrAfter - mmrBefore))}
         </span>
@@ -179,7 +179,7 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
     const item = getChestAssetFromAttributesRaw(content.attributes);
     return (
       <Card>
-        {item && <img src={item.imagePath} alt="" className="size-40 rounded-xl object-cover" />}
+        {item && <img src={item.imagePath} alt="" className="size-40 rounded-control object-cover" />}
         <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-sm font-bold capitalize text-kit-gold2">
           {item?.rarity ?? REWARD_WORDS.cosmetic}
         </span>
@@ -227,7 +227,7 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
 const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boolean; glow?: boolean }) => (
   <div
     className={cn(
-      "relative flex h-48 items-center justify-center rounded-xl",
+      "relative flex h-48 items-center justify-center rounded-control",
       glow && "bg-[radial-gradient(circle,theme(colors.kit.gold/30%),transparent_65%)]",
     )}
   >
@@ -239,7 +239,7 @@ const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boo
 );
 
 const Stage = ({ children }: { children: ReactNode }) => (
-  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-kit-ink py-4">
+  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-kit-ink py-4">
     <span
       aria-hidden
       className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[repeating-conic-gradient(theme(colors.kit.gold/18%)_0_6deg,transparent_6deg_18deg)] [mask-image:radial-gradient(circle,black,transparent_55%)]"
@@ -249,7 +249,7 @@ const Stage = ({ children }: { children: ReactNode }) => (
 );
 
 const Card = ({ children }: { children: ReactNode }) => (
-  <div className="relative flex w-[85%] flex-col items-center gap-2.5 rounded-2xl border-2 border-kit-gold bg-kit-plate/95 px-4 py-5 text-center">
+  <div className="relative flex w-[85%] flex-col items-center gap-2.5 rounded-plate border-2 border-kit-gold bg-kit-plate/95 px-4 py-5 text-center">
     {children}
   </div>
 );

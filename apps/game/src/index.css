@@ -1215,7 +1215,8 @@ body.urgency-border-final::before {
 @layer components {
   /* The app's one panel surface. */
   .plate {
-    @apply rounded-2xl border border-kit-line bg-kit-plate;
+    @apply border border-kit-line bg-kit-plate;
+    border-radius: var(--radius-plate);
   }
 
   /* A card whose ground is a painting: the painting at -z-10 inside, the card's words over it. */
