@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Clearer armies and attacks",
+    description:
+      "A resource you find mid-game (your first Essence) now joins the end of your realm's rings instead of moving them all. The Military window says what you have on hand and which army cap applies, and when you have none, which barracks trains the troop and from what. A forecast that your army would be wiped out at any roll now says so in red, with about how many more troops would survive, and Attack steps back.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Leaderboard points, in VP",
     description:
       "The leaderboard's columns say what each action earns in VP, read from the game: 5 VP a tile, 250 VP a crate or camp, 1K VP a hyperstructure taken, and x VP/s for a hyperstructure held (each pays by the realms around it). Opening a player shows only what earns them points: their points by activity and the hyperstructures paying them, with a button to go to each.",
