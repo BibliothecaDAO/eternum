@@ -64,9 +64,7 @@ export function selectImportantFeedRows(
   if (filter !== "combat") {
     const told = new Set(shown.map((event) => sendKey(event.tx_hash)));
     rows.push(
-      ...[...feed.arrived, ...feed.inFlight, ...feed.recent].filter(
-        (row) => isImportantPersonalRow(row) && !isToldByStory(row, told),
-      ),
+      ...[...feed.inFlight, ...feed.recent].filter((row) => isImportantPersonalRow(row) && !isToldByStory(row, told)),
     );
   }
   rows.push(

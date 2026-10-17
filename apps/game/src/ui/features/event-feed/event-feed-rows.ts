@@ -1,69 +1,33 @@
 import { TransactionType } from "@bibliothecadao/provider";
 import { isTransactionInFlight, type Transaction } from "@/hooks/store/use-transaction-store";
-import type { Resource, ResourceArrivalInfo } from "@bibliothecadao/types";
 import type { FeedNotice } from "./event-feed-store";
 
 export type FeedRow =
   | { kind: "transaction"; id: string; at: number; transaction: Transaction }
-  | {
-      kind: "arrival";
-      id: string;
-      at: number;
-      structureEntityId: number;
-      resources: Resource[];
-      arrivesAtSeconds: number;
-      remainingSeconds: number;
-    }
   | { kind: "notice"; id: string; at: number; notice: FeedNotice };
 
 export interface FeedRows {
-  /** Transactions still sending or checking, and caravans still on the road — newest first. */
+  /** Transactions still sending or checking, newest first. */
   inFlight: FeedRow[];
-  /** Caravans that have reached their structure and wait to be claimed. */
-  arrived: FeedRow[];
   /** Completed transactions and notices, newest first. */
   recent: FeedRow[];
 }
 
 interface DeriveFeedRowsInput {
   transactions: readonly Transaction[];
-  ownedStructureIds: readonly number[];
-  arrivals: readonly ResourceArrivalInfo[];
   notices: readonly FeedNotice[];
-  nowSeconds: number;
   maxRecent?: number;
 }
 
 const byNewest = (left: FeedRow, right: FeedRow) => right.at - left.at;
 
-const arrivalRow = (arrival: ResourceArrivalInfo, nowSeconds: number): Extract<FeedRow, { kind: "arrival" }> => {
-  const arrivesAtSeconds = Number(arrival.arrivesAt);
-  return {
-    kind: "arrival",
-    id: `arrival:${arrival.structureEntityId}:${arrival.day}:${arrival.slot}`,
-    at: arrivesAtSeconds * 1000,
-    structureEntityId: arrival.structureEntityId,
-    resources: arrival.resources,
-    arrivesAtSeconds,
-    remainingSeconds: Math.max(0, arrivesAtSeconds - nowSeconds),
-  };
-};
-
 /**
- * The feed is a view: transactions from the transaction store, caravans from the arrivals slice, notices from the
- * feed store. A started transfer is a row the moment its transaction is pending; its caravan is a row the moment
- * the arrival reaches native store; the caravan row flips to arrived when its time passes.
+ * The feed is a view: transactions from the transaction store, notices from the feed store. A started transfer is a
+ * row the moment its transaction is pending. A delivery's landing is told by its story (the arrival it unloads), not by
+ * the caravan on the road: the send told its departure.
  */
-export const deriveFeedRows = ({
-  transactions,
-  ownedStructureIds,
-  arrivals,
-  notices,
-  nowSeconds,
-  maxRecent = 15,
-}: DeriveFeedRowsInput): FeedRows => {
+export const deriveFeedRows = ({ transactions, notices, maxRecent = 15 }: DeriveFeedRowsInput): FeedRows => {
   const inFlight: FeedRow[] = [];
-  const arrived: FeedRow[] = [];
   const recent: FeedRow[] = [];
 
   // One row per transaction: a send the store holds twice (resent under the same hash) is one event.
@@ -81,40 +45,15 @@ export const deriveFeedRows = ({
     }
   }
 
-  const owned = new Set(ownedStructureIds);
-  for (const arrival of arrivals) {
-    if (!owned.has(arrival.structureEntityId)) continue;
-    const row = arrivalRow(arrival, nowSeconds);
-    (row.remainingSeconds > 0 ? inFlight : arrived).push(row);
-  }
-
   for (const notice of notices) {
     recent.push({ kind: "notice", id: notice.id, at: notice.at, notice });
   }
 
-  inFlight.sort(byNewest);
-  arrived.sort(byNewest);
-  recent.sort(byNewest);
-
-  return { inFlight, arrived, recent: recent.slice(0, maxRecent) };
+  return { inFlight: inFlight.toSorted(byNewest), recent: recent.toSorted(byNewest).slice(0, maxRecent) };
 };
 
-/** What just happened: rows whose moment lies inside the ticker window (notices honour their own ttl). */
-export const selectTickerRows = (rows: FeedRows, nowMs: number, windowMs: number): FeedRow[] =>
-  [...rows.inFlight, ...rows.arrived, ...rows.recent]
-    .filter(
-      (row) =>
-        nowMs >= row.at && (row.kind === "notice" ? nowMs - row.at < row.notice.ttlMs : nowMs - row.at < windowMs),
-    )
-    .sort(byNewest);
-
 /** Transfer language is shared by every Events rendering, including Log. */
-/** A caravan to the player's structure: still on the road, or arrived. */
-export const arrivalLabel = (row: Extract<FeedRow, { kind: "arrival" }>): string =>
-  row.remainingSeconds > 0 ? "Caravan sent" : "Caravan arrived";
-
 export function transferRowLabel(row: FeedRow): string | null {
-  if (row.kind === "arrival") return arrivalLabel(row);
   if (
     row.kind === "transaction" &&
     row.transaction.type === TransactionType.SEND &&

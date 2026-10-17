@@ -126,13 +126,7 @@ it.each([
       await send(provider);
     });
     await vi.waitFor(() => expect(useTransactionStore.getState().transactions[0]?.status).toBe("success"));
-    const feed = deriveFeedRows({
-      transactions: useTransactionStore.getState().transactions,
-      ownedStructureIds: [],
-      arrivals: [],
-      notices: [],
-      nowSeconds: Date.now() / 1000,
-    });
+    const feed = deriveFeedRows({ transactions: useTransactionStore.getState().transactions, notices: [] });
     const rows = selectImportantFeedRows([], feed, "all", "0x111");
     expect(rows).toHaveLength(1);
     act(() => root.render(<FeedRowLine row={rows[0]} />));

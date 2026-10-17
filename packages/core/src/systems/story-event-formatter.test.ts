@@ -453,6 +453,9 @@ describe("a story's subject", () => {
     const name = title("RealmCreatedStory", { coord: { x: 1, y: 1 } }).replace(/ founded$/, "");
     expect(name).not.toMatch(/^A realm$|\d{6,}/);
     expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe(`Resources arrived at ${name}`);
+    expect(title("ResourceReceiveArrivalStory", { resources: [{ resource_type: 35, amount: "900000000000" }] })).toBe(
+      `Wheat ×900 arrived at ${name}`,
+    );
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe(`${name} became a City`);
     expect(title("BuildingPlacementStory", { coord: { x: 1, y: 1 }, category: 37, change: "Created" })).toMatch(
       new RegExp(` built at ${name}$`),

@@ -41,7 +41,7 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
       })),
   }),
 }));
-vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], arrived: [], recent: sent }) }));
+vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], recent: sent }) }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60 } }));
 vi.mock("./feed-row-line", () => ({
   FEED_ROW_CLASS: "",
@@ -222,7 +222,7 @@ const original = {
   confirmedAt: 100_000,
 } as Transaction;
 const setTransactions = (transactions: Transaction[]) => {
-  const rows = deriveFeedRows({ transactions, ownedStructureIds: [], arrivals: [], notices: [], nowSeconds: 101 });
+  const rows = deriveFeedRows({ transactions, notices: [] });
   sent.splice(0, sent.length, ...rows.recent);
 };
 const pruneOriginal = () =>
@@ -277,5 +277,24 @@ it("keeps a drawn send until its fade when the real recent list prunes it", () =
     pruneOriginal();
     feed.rerender();
     expect(feed.drawn()).toEqual(["0x0abc"]);
+  });
+});
+
+it("tells a delivery's landing in one row: its unloading, then the story that unloading wrote, in the same element", () => {
+  withFeed([], (feed) => {
+    setTransactions([{ ...original, hash: "0x0off", type: TransactionType.ARRIVALS_OFFLOAD }]);
+    feed.rerender();
+    const element = feed.wrapper("0x0off");
+    history.push({
+      id: "landed",
+      story: "ResourceReceiveArrivalStory",
+      owner: PLAYER,
+      participants: [PLAYER],
+      at: 101_000,
+      tx: "0xoff",
+    });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:landed"]);
+    expect(feed.wrapper("story:landed")).toBe(element);
   });
 });

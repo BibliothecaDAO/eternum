@@ -11,7 +11,7 @@ import {
   selectImportantFeedRows,
   sendKey,
 } from "./important-feed-rows";
-const empty: FeedRows = { inFlight: [], arrived: [], recent: [] };
+const empty: FeedRows = { inFlight: [], recent: [] };
 const battle = (id: string, at: number, owner = "0x1") =>
   ({
     id,
@@ -47,25 +47,22 @@ it("mine includes battles where the player defended, with normalized felt addres
   expect(selectImportantFeedRows([battle("fight", 20)], empty, "mine", "0x02")).toHaveLength(1);
   expect(selectImportantFeedRows([battle("fight", 20)], empty, "mine", "0x03")).toHaveLength(0);
 });
-it("combat excludes personal failures and arrivals", () => {
+it("combat excludes personal failures", () => {
   const feed = {
     ...empty,
-    arrived: [{ kind: "arrival", id: "caravan", at: 30 }],
     recent: [{ kind: "transaction", id: "failed", at: 40, transaction: { status: "reverted" } }],
   } as unknown as FeedRows;
   expect(selectImportantFeedRows([battle("fight", 20)], feed, "all", null).map((row) => row.id)).toEqual([
     "failed",
-    "caravan",
     "story:fight",
   ]);
   expect(selectImportantFeedRows([battle("fight", 20)], feed, "combat", null).map((row) => row.id)).toEqual([
     "story:fight",
   ]);
 });
-it("keeps pending and completed actions and travelling caravans in Events", () => {
+it("keeps pending and completed actions in Events", () => {
   const feed = {
     inFlight: [
-      { kind: "arrival", id: "travelling", at: 50 },
       {
         kind: "transaction",
         id: "pending",
@@ -73,18 +70,12 @@ it("keeps pending and completed actions and travelling caravans in Events", () =
         transaction: { hash: "0xpending", status: "pending", type: TransactionType.SEND },
       },
     ],
-    arrived: [],
     recent: [
       { kind: "transaction", id: "done", at: 30, transaction: { hash: "0xdone", status: "success" } },
       { kind: "notice", id: "notice", at: 20 },
     ],
   } as unknown as FeedRows;
-  expect(selectImportantFeedRows([], feed, "mine", "0x1").map((row) => row.id)).toEqual([
-    "travelling",
-    "pending",
-    "done",
-    "notice",
-  ]);
+  expect(selectImportantFeedRows([], feed, "mine", "0x1").map((row) => row.id)).toEqual(["pending", "done", "notice"]);
 });
 
 it("leaves routine production in Activity but keeps failed and still-checking production visible", () => {
@@ -101,7 +92,6 @@ it("leaves routine production in Activity but keeps failed and still-checking pr
     },
   });
   const feed: FeedRows = {
-    arrived: [],
     inFlight: [production("pending", "pending"), production("checking", "checking")],
     recent: [production("done", "success"), production("failed", "reverted")],
   };

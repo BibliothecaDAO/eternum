@@ -287,8 +287,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "resource",
   }),
   ResourceReceiveArrivalStory: (event, payload, components) => ({
-    title: `Resources arrived at ${subjectOf(event.entityId, components)}`,
-    description: formatResourceList(payload.resources),
+    title: `${formatResourceList(payload.resources) ?? "Resources"} arrived at ${subjectOf(event.entityId, components)}`,
     icon: "resource",
   }),
   GuardAddStory: (event, payload, components) => ({

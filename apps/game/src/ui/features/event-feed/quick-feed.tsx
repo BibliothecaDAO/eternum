@@ -92,14 +92,15 @@ export function useImportantFeed() {
 }
 
 /**
- * The stories the Events card tells, each from a read that holds them: every battle and raid, and the crates the player
- * opened (where its relics went).
+ * The stories the Events card tells, each from a read that holds them: every battle and raid, the crates the player
+ * opened (where its relics went) and the deliveries they unloaded (what landed where).
  */
 function useEventsStories(address: string | null) {
   const { data: battles } = useStoryEvents(350, "BattleEvent");
   const { data: raids } = useStoryEvents(100, "RaidEvent");
   const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
-  return useMemo(() => [...battles, ...raids, ...crates], [battles, raids, crates]);
+  const { data: deliveries } = useStoryEvents(50, "ResourceReceiveArrivalStory", address ?? undefined);
+  return useMemo(() => [...battles, ...raids, ...crates, ...deliveries], [battles, raids, crates, deliveries]);
 }
 
 /** Rows that arrived since the log was last open; zero while it is open. */

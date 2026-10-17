@@ -1,16 +1,12 @@
 import { TransactionType } from "@bibliothecadao/provider";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { getEntityName, getIsBlitz, structureMapPosition } from "@bibliothecadao/eternum";
-
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { configManager, Position } from "@bibliothecadao/eternum";
-import { useGame } from "@/hooks/context/game-context";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { Position } from "@bibliothecadao/eternum";
 import type { ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { extractRoleLabel, findSegmentValue, parsePresentationDescription } from "../story-events/story-event-utils";
-import { arrivalLabel, transactionStatusLine, transferRowLabel } from "./event-feed-rows";
+import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatClockTime } from "@bibliothecadao/eternum";
 import { type ImportantFeedRow } from "./important-feed-rows";
 import { useStoryOpener } from "./story-feed-row";
@@ -42,26 +38,18 @@ export const FeedRowLine = ({ row }: { row: ImportantFeedRow }) =>
   row.kind === "story" ? <StoryRowLine row={row} /> : <PlacedRowLine row={row} />;
 
 const StoryRowLine = ({ row }: { row: Extract<ImportantFeedRow, { kind: "story" }> }) => (
-  <RowLine row={row} open={useStoryOpener(row.event)} recipient={null} />
+  <RowLine row={row} open={useStoryOpener(row.event)} />
 );
 
 const PlacedRowLine = ({ row }: { row: ImportantFeedRow }) => {
-  const { target, recipient } = useFeedRowPlace(row);
+  const target = feedRowPlace(row);
   const navigate = useNavigateToMapView();
-  return <RowLine row={row} open={target ? () => navigate(target) : null} recipient={recipient} />;
+  return <RowLine row={row} open={target ? () => navigate(target) : null} />;
 };
 
 /** The row itself: its words never cut to one line, so a sentence keeps where things went; whole on hover. */
-const RowLine = ({
-  row,
-  open,
-  recipient,
-}: {
-  row: ImportantFeedRow;
-  open: (() => void) | null;
-  recipient: string | null;
-}) => {
-  const { icon, text } = summarizeFeedRow(row, recipient);
+const RowLine = ({ row, open }: { row: ImportantFeedRow; open: (() => void) | null }) => {
+  const { icon, text } = summarizeFeedRow(row);
   const content = (
     <>
       <span className={FEED_ROW_ICON_COLUMN_CLASS}>{icon}</span>
@@ -85,43 +73,23 @@ const RowLine = ({
   );
 };
 
-/** Where a row's camera flies, and whom it names: an arrival's structure, by its shared name. */
-function useFeedRowPlace(row: ImportantFeedRow): { target: Position | null; recipient: string | null } {
-  const {
-    setup: { store },
-  } = useGame();
-  const structure = useNativeRow(
-    "Structure",
-    row.kind === "arrival" ? { game_id: configManager.getActiveGameId(), entity_id: row.structureEntityId } : undefined,
-  );
+/** Where a row's camera flies: a headline's or a notice's place. */
+function feedRowPlace(row: ImportantFeedRow): Position | null {
   if (row.kind === "headline") {
     const { location } = row.headline;
-    return { target: location ? Position.fromContract({ x: location.x, y: location.y }) : null, recipient: null };
-  }
-  if (row.kind === "arrival") {
-    const site = structure && structureMapPosition(store, structure);
-    return {
-      target: site ? Position.fromContract(site) : null,
-      recipient: getEntityName(row.structureEntityId, store, getIsBlitz()) ?? null,
-    };
+    return location ? Position.fromContract({ x: location.x, y: location.y }) : null;
   }
   if (row.kind === "notice") {
-    return { target: row.notice.location ? Position.fromContract(row.notice.location) : null, recipient: null };
+    return row.notice.location ? Position.fromContract(row.notice.location) : null;
   }
-  return { target: null, recipient: null };
+  return null;
 }
 
-function summarizeFeedRow(row: ImportantFeedRow, recipient: string | null): { icon: ReactNode; text: string } {
+function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: string } {
   if (row.kind === "headline") {
     return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
   }
   if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: summarizeStory(row) };
-  if (row.kind === "arrival") {
-    return {
-      icon: <SemanticIcon name="transfer" className="h-4 w-4 shrink-0" />,
-      text: recipient ? `${arrivalLabel(row)} · ${recipient}` : arrivalLabel(row),
-    };
-  }
   if (row.kind === "transaction") {
     const { transaction } = row;
     const failed = transaction.status === "reverted" || transaction.status === "not_sent";

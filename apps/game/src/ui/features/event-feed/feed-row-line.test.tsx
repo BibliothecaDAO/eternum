@@ -5,10 +5,9 @@ import { TransactionType } from "@bibliothecadao/provider";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 
-/** The game as a row reads it: the armies that stand, the names of things, and the view the player is in. */
+/** The game as a row reads it: the armies that stand and the view the player is in. */
 const game = vi.hoisted(() => ({
   armies: new Set<number>(),
-  names: new Map<number, string>(),
   mapView: true,
   navigate: vi.fn(),
   selectArmy: vi.fn(),
@@ -41,8 +40,6 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: { getActiveGameId: () => 1 },
   entityMapPosition: () => ({ x: 50, y: 60 }),
-  getEntityName: (entityId: number) => game.names.get(entityId),
-  getIsBlitz: () => true,
   structureMapPosition: (_store: unknown, structure: { entity_id: bigint }) =>
     structure.entity_id === 5n ? { x: 70, y: 80 } : null,
 }));
@@ -75,14 +72,13 @@ const crateOf = (pack: "War" | "Produce" | "Fortress", title: string) =>
     title,
   );
 const crate = crateOf("War", "War pack: 3 relics to the army Stolsli T1");
-const noFeed = { inFlight: [], arrived: [], recent: [] };
+const noFeed = { inFlight: [], recent: [] };
 
 let host: HTMLDivElement;
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   host = document.createElement("div");
   game.armies = new Set([9]);
-  game.names = new Map();
   game.mapView = true;
   game.navigate.mockClear();
   game.selectArmy.mockClear();
@@ -172,23 +168,30 @@ describe("A structure pack's row", () => {
   });
 });
 
-describe("An arrival in Events", () => {
-  it("names its recipient, never by its entity id", () => {
-    const arrival = {
-      kind: "arrival",
-      id: "arrival",
-      at: 0,
-      structureEntityId: 12884901895,
-      resources: [],
-      arrivesAtSeconds: 0,
-      remainingSeconds: 0,
-    } as unknown as ImportantFeedRow;
-    game.names.set(12884901895, "Egonal");
-    const named = renderToStaticMarkup(<FeedRowLine row={arrival} />);
-    expect(named).toContain("· Egonal");
-    game.names = new Map();
-    const unnamed = renderToStaticMarkup(<FeedRowLine row={arrival} />);
-    expect(named + unnamed).not.toContain("12884901895");
+describe("A delivery in Events", () => {
+  it("is one row, the story of what landed where, once the unloading transaction has written it", () => {
+    const unloading = {
+      kind: "transaction" as const,
+      id: "0x0off",
+      at: 99_000,
+      transaction: {
+        hash: "0x0off",
+        type: TransactionType.ARRIVALS_OFFLOAD,
+        status: "success" as const,
+        submittedAt: 99_000,
+        confirmedAt: 99_000,
+        description: "Arrivals unloaded",
+      },
+    };
+    const landed = {
+      ...story("landed", "ResourceReceiveArrivalStory", PLAYER, {}, "Wheat ×900 arrived at Stolsli"),
+      tx_hash: "0xoff",
+    } as ProcessedStoryEvent;
+    const rows = selectImportantFeedRows([landed], { ...noFeed, recent: [unloading] }, "all", PLAYER);
+    expect(rows.map((row) => row.id)).toEqual(["story:landed"]);
+    const html = renderToStaticMarkup(<FeedRowLine row={rows[0]} />);
+    expect(html).toContain("Wheat ×900 arrived at Stolsli");
+    expect(html).toContain('data-icon="transfer"');
   });
 });
 

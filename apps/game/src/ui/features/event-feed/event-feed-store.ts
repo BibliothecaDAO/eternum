@@ -34,8 +34,8 @@ const repeats = (notice: Pick<FeedNotice, "kind" | "title" | "description">, oth
   other.kind === notice.kind && other.title === notice.title && other.description === notice.description;
 
 /**
- * The event feed's own state: notices. Transaction rows come from the transaction store and arrival rows from the
- * `resourceArrivals` slice — the feed derives its rows from those, it never copies them.
+ * The event feed's own state: notices. Transaction rows come from the transaction store — the feed derives its rows
+ * from it, it never copies them.
  */
 export const useEventFeedStore = create<EventFeedStore>()((set) => ({
   notices: [],
