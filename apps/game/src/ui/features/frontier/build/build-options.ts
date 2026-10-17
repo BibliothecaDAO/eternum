@@ -18,6 +18,7 @@ import {
 import { BuildingType, getProducedResource, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { LABOR, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import { buildingOutputPerSecond } from "@/ui/shared/lib/building-output";
 
 /**
  * What Frontier's build sheet needs for one plot, read from facts with no UI of its own: each building the realm may
@@ -148,27 +149,7 @@ export const readBuildingEffect = (
   if (!isProduct(resource)) throw new Error(`Building ${category} makes nothing a Frontier realm stores`);
   let makes = 0;
   for (let at = 1; at <= tier; at++) if (researchChoice(learned, row!, at) === 0) makes++;
-  return { kind: "produces", resource, perHour: outputPerHour(store, realm, category, makes) };
-};
-
-/**
- * What one building of a producing type makes an hour with `makes` Fields, Tools or Drill picks, as the contract's
- * board_output adds a share of the base output for each.
- */
-export const outputPerHour = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  category: BuildingType,
-  makes: number,
-): number => {
-  const resource = getProducedResource(category);
-  if (resource === undefined) throw new Error(`Building ${category} produces nothing`);
-  const board = store.require("BoardRules", { game_id: realm.game_id });
-  const perSecond =
-    category === BuildingType.ResourceLabor
-      ? board.workshop_rate
-      : store.require("ResourceRule", { game_id: realm.game_id, resource_type: resource }).realm_rate;
-  return ((Number(perSecond) / RESOURCE_PRECISION) * 3600 * (10_000 + makes * board.output_step_bps)) / 10_000;
+  return { kind: "produces", resource, perHour: buildingOutputPerSecond(store, realm, category, makes) * 3600 };
 };
 
 /** A farm adds its wheat; nothing a building produces consumes any (armies pay theirs when they deploy). */

@@ -41,7 +41,8 @@ import { type ReactNode, useState } from "react";
 
 import { KindChoice } from "../army/army-sheet";
 import { ATTRIBUTE_LOOK, type Attribute, nextTierPrice } from "../attributes/attributes";
-import { outputPerHour, PRODUCTS, readBuildingEffect } from "../build/build-options";
+import { PRODUCTS, readBuildingEffect } from "../build/build-options";
+import { buildingOutputPerSecond } from "@/ui/shared/lib/building-output";
 import { buildingIcon, buildingName } from "../build/building-names";
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
@@ -183,8 +184,8 @@ const makeGain = (store: NativeFactStore, realm: NativeRows["Structure"], catego
   const resource =
     category === BuildingType.ResourceKnightT1 ? "troops" : category === BuildingType.ResourceWheat ? "wheat" : "labor";
   const label = resource === "troops" ? TROOPS : resource === "wheat" ? WHEAT : LABOR;
-  const now = outputPerHour(store, realm, category, makes);
-  const next = outputPerHour(store, realm, category, makes + 1);
+  const now = buildingOutputPerSecond(store, realm, category, makes) * 3600;
+  const next = buildingOutputPerSecond(store, realm, category, makes + 1) * 3600;
   return { icon: resource as IconMeaning, label, value: `${formatAmount(now)} → ${formatAmount(next)}/h` };
 };
 

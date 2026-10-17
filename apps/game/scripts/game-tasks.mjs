@@ -166,6 +166,13 @@ export const GAME_TASKS = {
     expect: oneMore,
     done: `document.querySelector(${JSON.stringify(BUILD_PANEL)}) !== null`,
   },
+  "blitz-build-window": {
+    goal: "Blitz: open Build and read what each building costs and makes, at 1920x1080",
+    layouts: ["wide"],
+    view: "map",
+    presses: [{ name: "Build", text: "^Build$" }],
+    done: `document.querySelector(${JSON.stringify(BUILD_PANEL)}) !== null`,
+  },
   "blitz-army": {
     goal: "Blitz: create a field army from the selected realm",
     layouts: ["desktop"],

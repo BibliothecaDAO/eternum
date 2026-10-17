@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Build cards say what they cost and make",
+    description:
+      "Each building in the Build window shows what it makes, named and per minute (+360 Wheat / min, +6 population cap), and what it costs with what you have (10 Labor (you have 1,574)). The switch reads Pay with Resources or Labor.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Clearer armies and attacks",
     description:
       "A resource you find mid-game (your first Essence) now joins the end of your realm's rings instead of moving them all. The Military window says what you have on hand and which army cap applies, and when you have none, which barracks trains the troop and from what. A forecast that your army would be wiped out at any roll now says so in red, with about how many more troops would survive, and Attack steps back.",
