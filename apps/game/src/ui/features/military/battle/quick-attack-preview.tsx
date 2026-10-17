@@ -17,10 +17,7 @@ import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   activeCombatRules,
-  COMBAT_DIE_FACES,
   configManager,
-  forecastFight,
-  resolveExchange,
   formatTime,
   getGuardsByStructure,
   getTroopResourceId,
@@ -33,7 +30,7 @@ import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from ".
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
-import { combatTitle, describeFightCost, extraTroopsToSurvive, wholeTroops } from "./fight-forecast";
+import { combatTitle, describeFightCost, forecastAttack, wholeTroops } from "./fight-forecast";
 import { readSurvivalAdvice } from "./survival-advice";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
@@ -67,25 +64,6 @@ enum AttackerType {
   Structure,
   Army,
 }
-
-/** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
-const exchangeSides = (
-  worst: ReturnType<typeof resolveExchange>,
-  best: ReturnType<typeof resolveExchange>,
-): { attacker: SideRange; defender: SideRange } | null => {
-  if (!worst.ok || !best.ok) return null;
-  const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
-  return {
-    attacker: {
-      worst: side(worst.attackerLoss, worst.attacker.count),
-      best: side(best.attackerLoss, best.attacker.count),
-    },
-    defender: {
-      worst: side(worst.defenderLoss, worst.defender.count),
-      best: side(best.defenderLoss, best.defender.count),
-    },
-  };
-};
 
 export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps) => {
   const {
@@ -199,54 +177,22 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
 
   // Every exchange is the contract's own arithmetic on both sides' troops, stamina and boosts at chain time: this
-  // attack and the whole fight as successive attacks now. Where the game rolls dice, both at the attacker's worst roll
-  // against the defender's best and the reverse; without dice the two ends are one exact result.
+  // attack and the whole fight as successive attacks now, at both ends of the dice.
   const fight = useMemo(() => {
     if (!attackerArmyData || !targetArmyData) return null;
-    const rules = activeCombatRules();
-    const at = (attackerRoll: number, defenderRoll: number) => {
-      const context = {
+    return forecastAttack(
+      attackerArmyData.troops,
+      targetArmyData.troops,
+      {
         timestamp: executionSecond,
         attackDistance: targetDistance,
         attackerBiome: biome,
         defenderBiome: biome,
         attackerIsStructureGuard: attackerType === AttackerType.Structure,
         defenderIsStructureGuard: isStructureTarget,
-        attackerRoll,
-        defenderRoll,
-      };
-      return {
-        exchange: resolveExchange(attackerArmyData.troops, targetArmyData.troops, context, rules),
-        forecast: forecastFight(attackerArmyData.troops, targetArmyData.troops, context, rules),
-      };
-    };
-    const [attackerRoll, defenderRoll] = rollsDice ? [1, COMBAT_DIE_FACES] : [0, 0];
-    const worst = at(attackerRoll, defenderRoll);
-    const best = rollsDice ? at(COMBAT_DIE_FACES, 1) : worst;
-    // A certain loss says how much army would come through: the same exchange at the worst roll, with more troops.
-    const survivesWith = (count: bigint) => {
-      const exchange = resolveExchange(
-        { ...attackerArmyData.troops, count },
-        targetArmyData.troops,
-        {
-          timestamp: executionSecond,
-          attackDistance: targetDistance,
-          attackerBiome: biome,
-          defenderBiome: biome,
-          attackerIsStructureGuard: attackerType === AttackerType.Structure,
-          defenderIsStructureGuard: isStructureTarget,
-          attackerRoll,
-          defenderRoll,
-        },
-        rules,
-      );
-      return exchange.ok && exchange.attacker.count > 0n;
-    };
-    const extraToSurvive =
-      worst.exchange.ok && worst.exchange.attacker.count === 0n
-        ? extraTroopsToSurvive(attackerArmyData.troops.count, survivesWith)
-        : 0n;
-    return { worst, best, extraToSurvive };
+      },
+      { rules: activeCombatRules(), rollsDice },
+    );
   }, [
     attackerArmyData,
     targetArmyData,
@@ -268,11 +214,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Number(targetArmyData.troops.count) / RESOURCE_PRECISION;
   }, [targetArmyData]);
 
-  const sides = fight ? exchangeSides(fight.worst.exchange, fight.best.exchange) : null;
-  const attackerSide = sides?.attacker ?? null;
-  const defenderSide = sides?.defender ?? null;
+  const attackerSide = fight?.sides?.attacker ?? null;
+  const defenderSide = fight?.sides?.defender ?? null;
   // The army falls at every roll: Attack steps back and the forecast says what would survive.
-  const certainLoss = attackerSide !== null && survivalOf(attackerSide) === "Eliminated";
+  const certainLoss = fight?.certainLoss ?? false;
   // What would survive it, within what the player can raise.
   const survivalAdvice = useMemo(() => {
     void revision;

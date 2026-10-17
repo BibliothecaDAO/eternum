@@ -1,5 +1,12 @@
-import type { FightForecast } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import {
+  COMBAT_DIE_FACES,
+  forecastFight,
+  resolveExchange,
+  type CombatRules,
+  type FightForecast,
+} from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
+import { survivalOf, type SideRange } from "./battle-range";
 
 /** Whole troops from a scaled count, as the contract counts them. */
 export const wholeTroops = (scaled: bigint): number => Number(scaled / BigInt(RESOURCE_PRECISION));
@@ -114,4 +121,65 @@ export const describeSurvivalAdvice = ({
   const atMost = Math.min(...[lift, source].map((realm) => realm?.cap ?? Infinity));
   const needs = `it needs about ${aboutTroops(total, atMost)} troops, and ${home.name}'s army cap is ${home.cap.toLocaleString()}`;
   return options.length ? `${needs}: ${options.join(", or ")}` : `${needs}; no realm of yours can raise that many yet`;
+};
+
+/** One attack's circumstances, the dice aside: when, how far, on which biomes, and whether each side is a guard. */
+type AttackCircumstances = Omit<Parameters<typeof resolveExchange>[2], "attackerRoll" | "defenderRoll">;
+
+/**
+ * One attack and the whole fight, as the contract computes them, at both ends of the dice (the attacker's worst roll
+ * against the defender's best, and the reverse; without dice the two ends are one exact result): each side's losses,
+ * how many more troops the attacker needs to come through at its worst roll, and whether it is wiped out at any roll.
+ * The attack preview words it; the coach reads its certain loss.
+ */
+export const forecastAttack = (
+  attacker: Troops,
+  defender: Troops,
+  circumstances: AttackCircumstances,
+  { rules, rollsDice }: { rules: CombatRules; rollsDice: boolean },
+) => {
+  const [attackerRoll, defenderRoll] = rollsDice ? [1, COMBAT_DIE_FACES] : [0, 0];
+  const at = (rolls: { attackerRoll: number; defenderRoll: number }) => {
+    const context = { ...circumstances, ...rolls };
+    return {
+      exchange: resolveExchange(attacker, defender, context, rules),
+      forecast: forecastFight(attacker, defender, context, rules),
+    };
+  };
+  const worst = at({ attackerRoll, defenderRoll });
+  const best = rollsDice ? at({ attackerRoll: COMBAT_DIE_FACES, defenderRoll: 1 }) : worst;
+  // A certain loss says how much army would come through: the same exchange at the worst roll, with more troops.
+  const survivesWith = (count: bigint) => {
+    const exchange = resolveExchange(
+      { ...attacker, count },
+      defender,
+      { ...circumstances, attackerRoll, defenderRoll },
+      rules,
+    );
+    return exchange.ok && exchange.attacker.count > 0n;
+  };
+  const extraToSurvive =
+    worst.exchange.ok && worst.exchange.attacker.count === 0n ? extraTroopsToSurvive(attacker.count, survivesWith) : 0n;
+  const sides = exchangeSides(worst.exchange, best.exchange);
+  const certainLoss = sides !== null && survivalOf(sides.attacker) === "Eliminated";
+  return { worst, best, extraToSurvive, sides, certainLoss };
+};
+
+/** Each side's losses at both ends of the dice, from this attack's exact exchanges; null when the attack is refused. */
+const exchangeSides = (
+  worst: ReturnType<typeof resolveExchange>,
+  best: ReturnType<typeof resolveExchange>,
+): { attacker: SideRange; defender: SideRange } | null => {
+  if (!worst.ok || !best.ok) return null;
+  const side = (loss: bigint, remaining: bigint) => ({ losses: wholeTroops(loss), remaining: wholeTroops(remaining) });
+  return {
+    attacker: {
+      worst: side(worst.attackerLoss, worst.attacker.count),
+      best: side(best.attackerLoss, best.attacker.count),
+    },
+    defender: {
+      worst: side(worst.defenderLoss, worst.defender.count),
+      best: side(best.defenderLoss, best.defender.count),
+    },
+  };
 };
