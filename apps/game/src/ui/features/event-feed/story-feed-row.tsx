@@ -14,7 +14,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
-import { formatFeedTime } from "./important-feed-rows";
+import { formatClockTime } from "@bibliothecadao/eternum";
 import { storyPayloadId } from "@/utils/native-id";
 
 function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
@@ -96,7 +96,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
         <>
           <span className="flex justify-between gap-2 font-normal">
             <span className="truncate">{event.presentation.title}</span>
-            <span className="shrink-0 tabular-nums text-gold/50">{formatFeedTime(event.timestampMs)}</span>
+            <span className="shrink-0 tabular-nums text-gold/50">{formatClockTime(event.timestampMs)}</span>
           </span>
           <span className="line-clamp-2 text-gold/65">{event.presentation.description}</span>
         </>

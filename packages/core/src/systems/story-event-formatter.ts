@@ -19,6 +19,8 @@ import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
+import { deliveryLandsAt } from "../utils/resource-arrivals";
+import { formatClockTime } from "../utils/timestamp";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 type StoryEventIcon =
@@ -263,10 +265,9 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "resource",
   }),
   // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
-  ResourceTransferStory: (_event, payload, components) => {
+  ResourceTransferStory: (event, payload, components) => {
     const destination = describeEntity(payload.to_entity_id, components);
     const source = describeEntity(payload.from_entity_id, components);
-    const travelTime = formatTravelTime(payload.travel_time);
     const minted = payload.is_mint === true;
     return {
       title: minted
@@ -275,7 +276,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       description: joinPieces([
         source && !minted ? `from ${source}` : undefined,
         formatResourceList(payload.resources),
-        travelTime && travelTime !== "Instant" ? `${travelTime} on the road` : undefined,
+        formatLanding(event.timestamp, payload.travel_time),
       ]),
       icon: "resource",
     };
@@ -678,27 +679,15 @@ function formatSlotLabel(value: unknown): string | undefined {
   return name;
 }
 
-function formatTravelTime(seconds: unknown): string | undefined {
-  const numeric = toNumber(seconds);
-  if (numeric === null) return undefined;
-  if (numeric === 0) return "Instant";
-
-  if (numeric < 60) return `${numeric.toLocaleString()} seconds`;
-  if (numeric < 3600) {
-    const minutes = Math.floor(numeric / 60);
-    const secs = numeric % 60;
-    return secs === 0
-      ? `${minutes.toLocaleString()} minutes`
-      : `${minutes.toLocaleString()} minutes ${secs.toLocaleString()} seconds`;
-  }
-  if (numeric < 86400) {
-    const hours = Math.floor(numeric / 3600);
-    const minutes = Math.floor((numeric % 3600) / 60);
-    return minutes === 0
-      ? `${hours.toLocaleString()} hours`
-      : `${hours.toLocaleString()} hours ${minutes.toLocaleString()} minutes`;
-  }
-  return `${numeric.toLocaleString()} ticks`;
+/**
+ * When a delivery's goods land, by the rule the chain lands them (deliveryLandsAt): at the end of the delivery tick
+ * its road ends in, not when the road ends. A story is history, so it says the clock time. An instant transfer has no
+ * road and nothing to say.
+ */
+function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undefined {
+  const road = toNumber(travelSeconds);
+  if (road === null || road === 0) return undefined;
+  return `lands at ${formatClockTime(deliveryLandsAt(Math.floor(sentAtMs / 1000), road) * 1000)}`;
 }
 
 /** An owner is an address (its registered name, else shortened) or an owning structure (its name). */

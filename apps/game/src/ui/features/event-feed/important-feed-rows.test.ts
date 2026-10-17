@@ -4,7 +4,6 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import type { FeedRows } from "./event-feed-rows";
 import {
   endQuickFeedRow,
-  formatFeedTime,
   type ImportantFeedRow,
   nextQuickFeed,
   oneStoryPerAction,
@@ -63,10 +62,6 @@ it("combat excludes personal failures and arrivals", () => {
     "story:fight",
   ]);
 });
-it("formats a row time as HH:MM", () => {
-  expect(formatFeedTime(new Date(2026, 8, 9, 14, 5).getTime())).toBe("14:05");
-});
-
 it("keeps pending and completed actions and travelling caravans in Events", () => {
   const feed = {
     inFlight: [

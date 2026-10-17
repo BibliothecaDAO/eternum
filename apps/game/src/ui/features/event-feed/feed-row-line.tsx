@@ -11,7 +11,8 @@ import type { ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { extractRoleLabel, findSegmentValue, parsePresentationDescription } from "../story-events/story-event-utils";
 import { arrivalLabel, transactionStatusLine, transferRowLabel } from "./event-feed-rows";
-import { formatFeedTime, type ImportantFeedRow } from "./important-feed-rows";
+import { formatClockTime } from "@bibliothecadao/eternum";
+import { type ImportantFeedRow } from "./important-feed-rows";
 import { useStoryOpener } from "./story-feed-row";
 
 /** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, up to two lines
@@ -67,7 +68,7 @@ const RowLine = ({
       <span className="line-clamp-2 min-w-0 flex-1 break-words text-left" title={text}>
         {text}
       </span>
-      <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">{formatFeedTime(row.at)}</span>
+      <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">{formatClockTime(row.at)}</span>
     </>
   );
   if (!open) {

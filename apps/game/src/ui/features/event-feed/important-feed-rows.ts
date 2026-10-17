@@ -91,10 +91,6 @@ const isEventsStory = (event: ProcessedStoryEvent, filter: ImportantFeedFilter, 
   return filter !== "combat" && includesStoryNotification("standard", event.story) && involvesPlayer(event, address);
 };
 
-/** Every feed row shows the wall-clock time it happened. */
-export const formatFeedTime = (atMs: number): string =>
-  new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-
 /**
  * What a quick-feed row is to the player: one action, whichever row tells it, however long its sources keep it. A send
  * and every story its transaction wrote share the transaction's key; any other row is its own.

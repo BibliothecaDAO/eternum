@@ -1,5 +1,5 @@
 import { RELICS, relicChestRelics, StructureType } from "@bibliothecadao/types";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
 import explorerFixture from "../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -499,5 +499,38 @@ describe("a resource transfer", () => {
     const gone = sent(98765, 43210);
     expect(gone.title).toBe("Resources sent");
     expect(`${gone.title} ${gone.description ?? ""}`).not.toMatch(/\d{4,}|a structure/);
+  });
+});
+
+describe("a delivery's story", () => {
+  afterEach(() => vi.restoreAllMocks());
+  /** QA run 3: wheat sent at 02:50:57 local with 27 s on the road landed at 02:54. */
+  const sentAt = (hours: number, minutes: number, seconds: number) => new Date(2026, 9, 17, hours, minutes, seconds);
+  const told = (sent: Date, travel: number) => {
+    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
+    vi.spyOn(configManager, "getTick").mockReturnValue(180);
+    const { store } = buildStore();
+    return buildStoryEventPresentation(
+      {
+        ...story("ResourceTransferStory", {
+          from_entity_id: 98765,
+          to_entity_id: 43210,
+          resources: [],
+          transfer_type: { Delayed: {} },
+          travel_time: travel,
+        }),
+        timestamp: sent.getTime(),
+      },
+      store,
+    ).description;
+  };
+
+  it("says when the goods land, by the chain's delivery tick, not how long the road is", () => {
+    expect(told(sentAt(2, 50, 57), 27)).toBe("lands at 02:54");
+    // A road ending a second before 02:51 lands at 02:51; one ending at 02:51:00 is filed in the next tick.
+    expect(told(sentAt(2, 50, 32), 27)).toBe("lands at 02:51");
+    expect(told(sentAt(2, 50, 33), 27)).toBe("lands at 02:54");
+    // An instant transfer has no road and says nothing of one.
+    expect(told(sentAt(2, 50, 33), 0)).toBeUndefined();
   });
 });

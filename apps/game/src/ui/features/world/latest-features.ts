@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Transfers say when they land",
     description:
-      "The Transfer window now tells when goods land, as the game delivers them: at the end of the 3-minute delivery window their road ends in, troops riding slower. Essence Rifts are listed as Essence Rifts.",
+      "The Transfer window, bank swaps and the Log's delivery rows now tell when goods land, as the game delivers them: at the end of the 3-minute delivery window their road ends in, troops riding slower. Essence Rifts are listed as Essence Rifts.",
     type: "fix",
   },
   {
