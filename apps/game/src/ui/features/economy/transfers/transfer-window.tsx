@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useCoarseNowSeconds, useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -9,8 +9,8 @@ import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning
 import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
-import { computeTravelTime, configManager, ResourceManager } from "@bibliothecadao/eternum";
-import { EntityType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
 import { HoldingPicker } from "./holding-picker";
 import { type Shipment, type ShipmentOutcome, sendShipments } from "./send-shipments";
@@ -56,8 +56,9 @@ export const openTransfer = (ends: TransferEnds) => {
 
 const resourceName = (resource: number) => iconDefinition(resourceMeaning(resource)).label;
 const amountText = (value: number) => value.toLocaleString("en-US");
-/** The donkeys' road time: the travel helper counts whole minutes. */
-const travelText = (minutes: number) => (minutes < 1 ? "under a minute" : `${minutes} min`);
+/** When goods land, in whole minutes rounded up: never sooner than the chain lands them. */
+const landsText = (seconds: number) =>
+  seconds < 60 ? "lands in under a minute" : `lands in ${Math.ceil(seconds / 60)} min`;
 
 /**
  * What the window is about to send: its ends, the amounts the player set (null while the owner's prefill stands), and
@@ -139,13 +140,14 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           onPick={(id) => change({ ends: pickSource(ends, id), edited: null })}
           note={(id) => <DonkeysNote id={id} />}
         />
+        {/* Closed until one holding is chosen to send to, and it looks closed and says so. */}
         <button
           type="button"
           aria-label="Swap from and to"
-          title="Swap from and to"
+          title={ends.destinationIds.length === 1 ? "Swap from and to" : "Choose one holding to send to, then swap"}
           disabled={ends.destinationIds.length !== 1}
           onClick={() => change({ ends: swapEnds(ends), edited: null })}
-          className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:opacity-40 max-lg:rotate-90"
+          className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:cursor-not-allowed disabled:border-gold/10 disabled:text-gold/25 max-lg:rotate-90"
         >
           ⇄
         </button>
@@ -208,12 +210,13 @@ const DonkeysNote = ({ id }: { id: number }) => {
   return <>{amountText(Math.floor(Number(donkeys) / RESOURCE_PRECISION))} donkeys</>;
 };
 
-/** A destination row's note: the donkeys' road from the source. */
+/** A destination row's note: when goods sent there now would land. */
 const RoadNote = ({ sourceId, id }: { sourceId: number | null; id: number }) => {
   const { setup } = useGame();
+  const now = useCoarseNowSeconds(10);
   if (sourceId === null) return null;
-  const minutes = computeTravelTime(sourceId, id, configManager.getSpeedConfig(EntityType.DONKEY), setup.store);
-  return <>{minutes === undefined ? null : travelText(minutes)}</>;
+  const road = shipmentTravelSeconds(sourceId, id, setup.store, false);
+  return <>{road === undefined ? null : landsText(deliveryLandsAt(now, road) - now)}</>;
 };
 
 /**
@@ -240,6 +243,7 @@ const Goods = ({
   onSettled: (sentRevision: number, refused: Shipment[], goods: Good[]) => void;
 }) => {
   const sides = useTransferSides(sourceId, destinationIds);
+  const now = useNowSeconds();
   const [repeat, setRepeat] = useState(false);
   const [interval, setInterval] = useState(5);
   const send = useSend();
@@ -250,6 +254,7 @@ const Goods = ({
   const donkeys = donkeysNeeded(plans, sides.goods, destinationIds, sides.donkeyCapacityKg);
   const chosen = sides.goods.filter((good) => sentTotal(plans.get(good.resource), good.have) > 0).length;
   const short = donkeys > sides.donkeysHave;
+  const landsIn = secondsUntilLanded(now, sides, plans, destinationIds);
 
   const sendNow = async () => {
     const sentRevision = revision;
@@ -264,7 +269,7 @@ const Goods = ({
       <p className="text-sm text-kit-muted">
         {destinationIds.length === 0
           ? `${amountText(sides.donkeysHave)} donkeys at ${sides.sourceName} · pick where to send`
-          : `${travelText(sides.travelMinutes)} by donkey · ${amountText(donkeys)} of ${amountText(sides.donkeysHave)} donkeys`}
+          : `${landsText(landsIn)} · ${amountText(donkeys)} of ${amountText(sides.donkeysHave)} donkeys`}
       </p>
       <GoodsGrid
         goods={sides.goods}
@@ -283,7 +288,7 @@ const Goods = ({
         {sendWords({
           goods: chosen,
           destinations: destinationIds.length,
-          minutes: sides.travelMinutes,
+          landsIn,
           donkeys: { needed: donkeys, held: sides.donkeysHave },
           every: repeat ? interval : null,
         })}
@@ -310,6 +315,23 @@ const Goods = ({
   );
 };
 
+/**
+ * Seconds until every shipment has landed: each destination's road at its pace (donkeys with troops aboard walk
+ * slower), landing when the chain lands deliveries, at the end of the delivery tick the road ends in.
+ */
+const secondsUntilLanded = (now: number, sides: TransferSides, plans: Plans, destinationIds: number[]) =>
+  Math.max(
+    0,
+    ...destinationIds.map((_, index) => {
+      const troopsAboard = sides.goods.some(
+        (good) =>
+          isMilitaryResource(good.resource) && sharesOf(plans.get(good.resource), destinationIds, good.have)[index] > 0,
+      );
+      const road = sides.roads[index];
+      return deliveryLandsAt(now, troopsAboard ? road.troops : road.goods) - now;
+    }),
+  );
+
 /** The plans that send the refused shipments again, each destination's goods exactly as they were. */
 const plansFor = (refused: Shipment[], goods: Good[]): Plans => {
   const plans: Plans = new Map();
@@ -334,13 +356,13 @@ const plansFor = (refused: Shipment[], goods: Good[]): Plans => {
 const sendWords = ({
   goods,
   destinations,
-  minutes,
+  landsIn,
   donkeys,
   every,
 }: {
   goods: number;
   destinations: number;
-  minutes: number;
+  landsIn: number;
   donkeys: { needed: number; held: number };
   every: number | null;
 }) => {
@@ -350,7 +372,7 @@ const sendWords = ({
     return `Not enough donkeys: these loads need ${amountText(donkeys.needed)}, ${amountText(donkeys.held)} here`;
   const to = destinations > 1 ? ` to ${destinations} holdings` : "";
   const repeat = every === null ? "" : ` · every ${every} min`;
-  return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · on the road ${travelText(minutes)}${repeat}`;
+  return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · ${landsText(landsIn)}${repeat}`;
 };
 
 /** Each destination's goods in whole units, as much as the source holds now. */

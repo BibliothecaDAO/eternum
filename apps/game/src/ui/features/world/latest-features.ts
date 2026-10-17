@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Transfers say when they land",
+    description:
+      "The Transfer window now tells when goods land, as the game delivers them: at the end of the 3-minute delivery window their road ends in, troops riding slower. Essence Rifts are listed as Essence Rifts.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-17",
     title: "Transfer from the map",
     description:
       "With a holding chosen in the holdings list or on the map, right-click another of yours: the Transfer window opens between the two. Its holding lists show long names in full, and donkeys are called donkeys.",

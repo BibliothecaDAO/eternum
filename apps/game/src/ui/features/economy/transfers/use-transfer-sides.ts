@@ -8,8 +8,8 @@ import {
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
 } from "@/ui/lib/structure-capabilities";
-import { computeTravelTime, configManager, isMilitaryResource, ResourceManager } from "@bibliothecadao/eternum";
-import { CapacityConfig, EntityType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { configManager, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
+import { CapacityConfig, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { type Good, type HoldingRole, roleOf } from "./transfer-plan";
 
@@ -20,8 +20,8 @@ export interface TransferSides {
   destinationRoles: HoldingRole[];
   /** What the source can send to every chosen destination: troops only where the mode lets them travel. */
   goods: Good[];
-  /** The longest road among the destinations, in whole minutes. */
-  travelMinutes: number;
+  /** Each destination's road from the source in seconds, at the donkeys' pace with goods and with troops aboard. */
+  roads: Array<{ goods: number; troops: number }>;
   donkeysHave: number;
   donkeyCapacityKg: number;
 }
@@ -59,7 +59,6 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
           }),
       );
     const held = new ResourceManager(setup.store, source.entityId).balances(tick) ?? [];
-    const donkeySpeed = configManager.getSpeedConfig(EntityType.DONKEY);
     return {
       sourceName: mode.structure.getName(source.structure).name,
       destinationNames: destinations.map((destination, index) =>
@@ -74,10 +73,10 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
           have: whole(amount),
           weightKg: configManager.getResourceWeightKg(resourceId) ?? 0,
         })),
-      travelMinutes: Math.max(
-        0,
-        ...destinationIds.map((id) => computeTravelTime(source.entityId, id, donkeySpeed, setup.store) ?? 0),
-      ),
+      roads: destinationIds.map((id) => ({
+        goods: shipmentTravelSeconds(source.entityId, id, setup.store, false) ?? 0,
+        troops: shipmentTravelSeconds(source.entityId, id, setup.store, true) ?? 0,
+      })),
       donkeysHave: whole(held.find(({ resourceId }) => resourceId === ResourcesIds.Donkey)?.amount ?? 0),
       donkeyCapacityKg: configManager.getCapacityConfigKg(CapacityConfig.Donkey),
     };

@@ -17,7 +17,7 @@ const world = vi.hoisted(() => ({
   applied: [] as Array<{ to: bigint; resources: Array<{ resource_type: number; amount: bigint }> }>,
   scheduled: vi.fn(),
   notices: { success: vi.fn(), warning: vi.fn(), failed: vi.fn() },
-  sides: { wheat: 100, donkeys: 10, listeners: new Set<() => void>() },
+  sides: { wheat: 100, donkeys: 10, knights: 0, listeners: new Set<() => void>() },
   /** While set, the game's answers wait for it: a shipment the player can act around before its outcome. */
   hold: null as Promise<void> | null,
 }));
@@ -80,16 +80,27 @@ vi.mock("@/ui/design-system/molecules/popover", () => ({
 }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("@/ui/features/event-feed/notify", () => ({ toast: world.notices }));
-vi.mock("@bibliothecadao/eternum", () => ({
-  computeTravelTime: () => 0,
-  configManager: { getSpeedConfig: () => 1 },
-  ResourceManager: class {
-    balanceWithProduction() {
-      return { balance: 0 };
-    }
-  },
+/** The game's own landing rule (deliveryLandsAt) on a 3-minute delivery tick; the holdings' roads come from `sides`. */
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@bibliothecadao/eternum")>();
+  vi.spyOn(actual.configManager, "getTick").mockReturnValue(180);
+  return {
+    ...actual,
+    shipmentTravelSeconds: () => 45,
+    ResourceManager: class {
+      balanceWithProduction() {
+        return { balance: 0 };
+      }
+    },
+  };
+});
+/** Chain time: 100 s into the 01:36-01:39 delivery tick (2026-10-17 01:37:40 UTC). */
+const NOW = 1_792_201_060;
+vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useCurrentDefaultTick: () => 0,
+  useNowSeconds: () => NOW,
+  useCoarseNowSeconds: () => NOW,
 }));
-vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 0 }));
 /** Each end as a row of buttons, as the real picker offers them: never the other end. */
 vi.mock("./holding-picker", () => ({
   HoldingPicker: ({ title, otherEnd, onPick }: { title: string; otherEnd: number[]; onPick: (id: number) => void }) => (
@@ -121,8 +132,10 @@ vi.mock("./use-transfer-sides", () => ({
       goods: [
         { resource: ResourcesIds.Wheat, have: wheat, weightKg: 1 },
         { resource: ResourcesIds.Donkey, have: donkeys, weightKg: 0 },
+        ...(world.sides.knights > 0 ? [{ resource: ResourcesIds.Knight, have: world.sides.knights, weightKg: 0 }] : []),
       ],
-      travelMinutes: 1,
+      // 45 s with goods; donkeys with troops aboard take three times as long, as the game's speed config has it.
+      roads: destinationIds.map(() => ({ goods: 45, troops: 135 })),
       donkeysHave: donkeys,
       donkeyCapacityKg: 50,
     };
@@ -145,6 +158,7 @@ beforeEach(() => {
   Object.values(world.notices).forEach((notice) => notice.mockClear());
   world.sides.wheat = 100;
   world.sides.donkeys = 10;
+  world.sides.knights = 0;
   world.hold = null;
   host = document.createElement("div");
   root = createRoot(host);
@@ -379,5 +393,37 @@ describe("a shipment's outcome and the draft shown meanwhile", () => {
       [A, 5],
       [B, 5],
     ]);
+  });
+});
+
+describe("when the window says goods land", () => {
+  const KNIGHTS = iconDefinition(resourceMeaning(ResourcesIds.Knight)).label;
+
+  it("promises the end of the delivery tick the road ends in, not the road's 45 s", async () => {
+    // 45 s from 01:37:40 ends at 01:38:25, in the 01:36-01:39 tick: the goods land at 01:39, in 80 s.
+    expect(NOW % 180).toBe(100);
+    await open([A]);
+    await type("Wheat: total to send", "1");
+    expect(sendButton().textContent).toBe("Send 1 good · lands in 2 min");
+  });
+
+  it("times a shipment with troops aboard by the troops' slower road", async () => {
+    world.sides.knights = 10;
+    await open([A]);
+    await type(`${KNIGHTS}: total to send`, "1");
+    // 135 s from 01:37:40 ends at 01:39:55, in the 01:39-01:42 tick: they land at 01:42, in 260 s.
+    expect(sendButton().textContent).toBe("Send 1 good · lands in 5 min");
+  });
+});
+
+describe("the swap between the two ends", () => {
+  it("stays closed, and says why, until one holding is chosen to send to", async () => {
+    const swap = () => host.querySelector<HTMLButtonElement>('button[aria-label="Swap from and to"]')!;
+    await open([]);
+    expect(swap().disabled).toBe(true);
+    expect(swap().title).toBe("Choose one holding to send to, then swap");
+    await toggle(A);
+    expect(swap().disabled).toBe(false);
+    expect(swap().title).toBe("Swap from and to");
   });
 });

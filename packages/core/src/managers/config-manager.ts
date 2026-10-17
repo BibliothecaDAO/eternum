@@ -484,9 +484,11 @@ export class ClientConfigManager {
     if (grams === undefined) throw new Error("Unknown capacity category");
     return Number(grams) / 1000;
   }
-  getSpeedConfig(entityType: EntityType): number {
+  /** Seconds a donkey takes per tile; donkeys carrying troops have their own pace. */
+  getSpeedConfig(entityType: EntityType, carriesTroops = false): number {
     if (entityType !== EntityType.DONKEY) throw new Error("Unknown entity speed");
-    return this.rules().speed_config.donkey_sec_per_km;
+    const speed = this.rules().speed_config;
+    return carriesTroops ? speed.donkey_sec_per_km_troops : speed.donkey_sec_per_km;
   }
   getBuildingConfig() {
     return this.rules().building_config;

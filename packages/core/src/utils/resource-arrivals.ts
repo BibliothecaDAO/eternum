@@ -110,6 +110,20 @@ export const summarizeIncomingTroopArrivals = (
   return arrivalsByStructure;
 };
 
+/**
+ * When a delivery tick's deliveries land: once the tick is over (has_arrived). The chain files a delivery in the tick
+ * its road ends in (arrival_key), so a delivery lands at the end of that tick, not when its donkeys arrive.
+ */
+const landingOfDeliveryTick = (tickIndex: bigint, deliveryTickSeconds: bigint): bigint =>
+  (tickIndex + 1n) * deliveryTickSeconds;
+
+/** When goods sent at `sentAt` (seconds) with `travelSeconds` on the road land, as the chain lands them. */
+export const deliveryLandsAt = (sentAt: number, travelSeconds: number): number => {
+  const deliveryTickSeconds = BigInt(configManager.getTick(TickIds.Delivery));
+  const tickIndex = BigInt(Math.floor(sentAt + travelSeconds)) / deliveryTickSeconds;
+  return Number(landingOfDeliveryTick(tickIndex, deliveryTickSeconds));
+};
+
 export const formatArrivals = (arrivals: Iterable<NativeRows["ResourceArrival"]>): ResourceArrivalInfo[] => {
   const deliveryTickSeconds = BigInt(configManager.getTick(TickIds.Delivery));
   return [...arrivals]
@@ -120,7 +134,8 @@ export const formatArrivals = (arrivals: Iterable<NativeRows["ResourceArrival"]>
         resourceId: resource_type as ResourcesIds,
         amount: Number(amount),
       })),
-      arrivesAt: (arrival.day * 48n + BigInt(arrival.slot)) * deliveryTickSeconds,
+      // A key's slot counts its day's ticks from 1.
+      arrivesAt: landingOfDeliveryTick(arrival.day * 48n + BigInt(arrival.slot) - 1n, deliveryTickSeconds),
       day: arrival.day,
       slot: BigInt(arrival.slot),
     }));
