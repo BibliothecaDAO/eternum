@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Clearer events and log",
+    description:
+      "Each event stays its full 20 s on screen before it fades and leaves. The log tells each action once and names what it is about, a realm or an army, in plain words, and connection changes no longer fill it. Labels on the map now stay clear of the side panels.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Transfers open without errors",
     description:
       "Transfer windows no longer greet you with a red error. What is still to choose is the button's own words (Choose an amount, Choose where to send), and what keeps a transfer closed, such as a full guard slot, is said calmly. Red is kept for an action that failed.",
