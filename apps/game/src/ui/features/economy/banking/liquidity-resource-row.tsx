@@ -7,7 +7,6 @@ import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
   MarketManager,
-  computeTravelTime,
   configManager,
   divideByPrecision,
   getClosestBank,
@@ -177,7 +176,7 @@ export const LiquidityResourceRow = ({
                 <TravelInfo
                   entityId={entityId}
                   resources={travelResources}
-                  travelTime={closestBank.travelTime}
+                  bankId={closestBank.bankId}
                   setCanCarry={setCanCarry}
                 />
               </div>
@@ -195,7 +194,6 @@ export const LiquidityResourceRow = ({
     onWithdraw,
     resourceId,
     entityId,
-    computeTravelTime,
     setCanCarry,
     calculateWithdrawAmounts,
   ]);

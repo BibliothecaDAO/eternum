@@ -22,14 +22,6 @@ const journeySeconds = (fromId: ID, toId: ID, secPerKm: number, store: NativeFac
   return journeyDistance(fromPosition, toPosition) * secPerKm;
 };
 
-/** Whole minutes on the road between two structures (twice for a pickup's round trip). */
-export const computeTravelTime = (fromId: ID, toId: ID, secPerKm: number, store: NativeFactStore, pickup?: boolean) => {
-  const seconds = journeySeconds(fromId, toId, secPerKm, store);
-  if (seconds === undefined) return;
-  const onewayTime = Math.floor(seconds / 60);
-  return pickup ? onewayTime * 2 : onewayTime;
-};
-
 /**
  * Seconds a shipment between two structures spends on the road, as the chain times it (transport::travel_time): donkeys
  * carrying troops walk at their own, slower pace.
@@ -41,3 +33,17 @@ export const shipmentTravelSeconds = (
   carriesTroops: boolean,
 ): number | undefined =>
   journeySeconds(fromId, toId, configManager.getSpeedConfig(EntityType.DONKEY, carriesTroops), store);
+
+/**
+ * Seconds a bank pickup spends on the road, as the chain times it (economy::pickup_bank_resources): the donkeys' round
+ * trip between the bank and the structure, at the troops' pace when troops are among the goods picked up.
+ */
+export const bankPickupTravelSeconds = (
+  bankId: ID,
+  structureId: ID,
+  store: NativeFactStore,
+  carriesTroops: boolean,
+): number | undefined => {
+  const oneWay = shipmentTravelSeconds(bankId, structureId, store, carriesTroops);
+  return oneWay === undefined ? undefined : oneWay * 2;
+};

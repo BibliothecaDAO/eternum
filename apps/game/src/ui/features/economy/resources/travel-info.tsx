@@ -1,25 +1,41 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { formatArrivalTime } from "@/ui/utils/utils";
+import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
+import { useGame } from "@/hooks/context/game-context";
 
-import { calculateDonkeysNeeded, divideByPrecision, getTotalResourceWeightKg } from "@bibliothecadao/eternum";
+import {
+  bankPickupTravelSeconds,
+  calculateDonkeysNeeded,
+  deliveryLandsAt,
+  divideByPrecision,
+  getTotalResourceWeightKg,
+  isMilitaryResource,
+} from "@bibliothecadao/eternum";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
+/**
+ * A bank pickup's carriage: when the goods land at the structure, their weight, and the donkeys it burns. The landing
+ * is the chain's: the donkeys' round trip from the bank, at the troops' pace when troops are among the goods, landing
+ * at the end of the delivery tick it ends in.
+ */
 export const TravelInfo = ({
   entityId,
+  bankId,
   resources,
-  travelTime,
   setCanCarry,
   isAmm,
 }: {
   entityId: ID;
+  bankId: ID;
+  /** The goods the donkeys bring back from the bank. */
   resources: Resource[];
-  travelTime?: number;
   setCanCarry?: (canContinue: boolean) => void;
   isAmm?: boolean;
 }) => {
+  const { setup } = useGame();
+  const now = useNowSeconds();
   const resourceManager = useResourceManager(entityId);
   const currentDefaultTick = useCurrentDefaultTick();
   const resourceWeightKg = getTotalResourceWeightKg(resources);
@@ -34,7 +50,15 @@ export const TravelInfo = ({
     (resource) => resource.resourceId === ResourcesIds.Donkey || resource.resourceId === ResourcesIds.Lords,
   );
   const canCarry = onlyWeightlessResources || (donkeyBalance !== undefined && donkeyBalance >= neededDonkeys);
-  const formattedArrivalTime = formatArrivalTime(calculateArrivalTime(travelTime));
+  const road = bankPickupTravelSeconds(
+    bankId,
+    entityId,
+    setup.store,
+    resources.some((resource) => isMilitaryResource(resource.resourceId)),
+  );
+  const formattedArrivalTime = formatArrivalTime(
+    road === undefined ? null : new Date(deliveryLandsAt(now, road) * 1000),
+  );
 
   useEffect(() => {
     setCanCarry?.(canCarry);

@@ -11,7 +11,6 @@ import { formatNumber, knownBalance } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
-  computeTravelTime,
   configManager,
   divideByPrecision,
   getBalance,
@@ -269,7 +268,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
             <TravelInfo
               entityId={entityId}
               resources={resourcesToTransport}
-              travelTime={closestBank.travelTime}
+              bankId={closestBank.bankId}
               setCanCarry={setCanCarry}
               isAmm={true}
             />
@@ -288,7 +287,6 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     isLoading,
     onSwap,
     entityId,
-    computeTravelTime,
     setCanCarry,
   ]);
 

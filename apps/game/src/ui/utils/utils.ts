@@ -1,5 +1,5 @@
 import { SortInterface } from "@/ui/design-system/atoms/sort-button";
-import { divideByPrecision, getBlockTimestamp } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
 import { ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 
@@ -109,21 +109,6 @@ export const getRandomBackgroundImage = () => {
 
 export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
-};
-
-export const calculateArrivalTime = (travelTimeMinutes: number | undefined) => {
-  if (travelTimeMinutes === undefined) return null;
-
-  const currentBlockTimestampMs = getBlockTimestamp().currentBlockTimestamp * 1000;
-  const travelTimeMs = travelTimeMinutes * 60 * 1000;
-  const arrivalTimeMs = currentBlockTimestampMs + travelTimeMs;
-
-  // Round up to the next hour boundary
-  const arrivalDate = new Date(arrivalTimeMs);
-  const nextHourDate = new Date(arrivalDate);
-  nextHourDate.setHours(arrivalDate.getHours() + 1, 0, 0, 0);
-
-  return nextHourDate;
 };
 
 export const formatArrivalTime = (date: Date | null) => {
