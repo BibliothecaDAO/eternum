@@ -6,7 +6,11 @@ import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 import { includesStoryNotification, logicalStoryIdentity, storyRecipients } from "@bibliothecadao/notifications";
 
-export type ImportantFeedFilter = "all" | "mine" | "combat";
+/**
+ * What Events and the Log show, the player's one choice for both: the important events (the default), everything about
+ * the player, or everything Events holds.
+ */
+export type EventsFilter = "important" | "mine" | "all";
 export type ImportantFeedRow =
   | { kind: "headline"; id: string; at: number; headline: Headline }
   | FeedRow
@@ -42,24 +46,24 @@ function isImportantPersonalRow(row: FeedRow): boolean {
 }
 
 /**
- * What Events holds: battles and raids (anyone's, or only the player's under Mine), the news of the player's own
- * realms (level-ups, buildings, deliveries received), their caravans, and this session's sends and notices. Every
- * story comes from the game's history, so it is back after a reload; a send the history has a story for shows as
- * that story, whatever the story's notification level, so a send's row tells its outcome (what an explore found).
- * Routine moves and point accrual remain in the world history.
+ * What Events holds, through the player's filter: battles and raids (anyone's), the news of the player's own realms
+ * (level-ups, buildings, deliveries received), their caravans, this session's sends and notices, and the game's
+ * headlines. Every story comes from the game's history, so it is back after a reload; a send the history has a story
+ * for shows as that story, whatever the story's notification level, so a send's row tells its outcome (what an
+ * explore found). Routine moves and point accrual remain in the world history.
  */
 export function selectImportantFeedRows(
   stories: ProcessedStoryEvent[],
   feed: FeedRows,
-  filter: ImportantFeedFilter,
+  filter: EventsFilter,
   address: string | null,
   headlines: Headline[] = [],
 ): ImportantFeedRow[] {
   const shown = oneStoryPerAction(
     withSendOutcomes(
-      stories.filter((event) => isEventsStory(event, filter, address)),
+      stories.filter((event) => isEventsStory(event, address)),
       stories,
-      filter === "combat" ? [] : [...feed.inFlight, ...feed.recent],
+      [...feed.inFlight, ...feed.recent],
     ),
   );
   const rows: ImportantFeedRow[] = shown.map((event) => ({
@@ -68,17 +72,60 @@ export function selectImportantFeedRows(
     at: event.timestampMs,
     event,
   }));
-  if (filter !== "combat") {
-    const told = new Set(shown.map((event) => sendKey(event.tx_hash)));
-    rows.push(
-      ...[...feed.inFlight, ...feed.recent].filter((row) => isImportantPersonalRow(row) && !isToldByStory(row, told)),
-    );
-  }
+  const told = new Set(shown.map((event) => sendKey(event.tx_hash)));
+  rows.push(
+    ...[...feed.inFlight, ...feed.recent].filter((row) => isImportantPersonalRow(row) && !isToldByStory(row, told)),
+  );
   rows.push(
     ...headlines.map((headline) => ({ kind: "headline" as const, id: headline.id, at: headline.timestamp, headline })),
   );
-  return oneRowPerId(rows.toSorted((left, right) => right.at - left.at));
+  const filtered = rows.filter((row) => matchesEventsFilter(row, filter, address));
+  return oneRowPerId(filtered.toSorted((left, right) => right.at - left.at));
 }
+
+/** Whether a row shows under the filter: every row under All, the player's own under Mine, the important under Important. */
+export const matchesEventsFilter = (row: ImportantFeedRow, filter: EventsFilter, address: string | null): boolean => {
+  if (filter === "all") return true;
+  return filter === "mine" ? isMine(row, address) : isImportantEvent(row, address);
+};
+
+/** A row about the player: a story that names them when it happened, and their own sends and notices. */
+const isMine = (row: ImportantFeedRow, address: string | null): boolean =>
+  row.kind === "story" ? involvesPlayer(row.event, address) : row.kind !== "headline";
+
+/**
+ * The game's milestones: its start, its last five minutes and its end, a Hyperstructure taken (by anyone: the race for
+ * points), a realm fallen and a player eliminated. A tier-three building is news, not a milestone.
+ */
+const MILESTONES = new Set<Headline["type"]>([
+  "game-start",
+  "five-min-warning",
+  "game-end",
+  "hyper-capture",
+  "realm-fall",
+  "elimination",
+]);
+
+/** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened. */
+const IMPORTANT_STORIES = new Set(["BattleEvent", "RaidEvent", "StructureCapturedStory", "RelicChestOpened"]);
+
+/**
+ * Whether a row is important, the default view of Events and the Log: what the player must not miss. Their fights (an
+ * army lost, a realm under attack), raids and captures, by them or of theirs, the crates they opened, the game's
+ * milestones, and an order of theirs refused or not yet settled, or a warning.
+ */
+const isImportantEvent = (row: ImportantFeedRow, address: string | null): boolean => {
+  switch (row.kind) {
+    case "headline":
+      return MILESTONES.has(row.headline.type);
+    case "story":
+      return IMPORTANT_STORIES.has(row.event.story) && involvesPlayer(row.event, address);
+    case "transaction":
+      return needsThePlayersEye.has(row.transaction.status);
+    case "notice":
+      return row.notice.kind === "error" || row.notice.kind === "warning";
+  }
+};
 
 /** Each row once: the same event reached by two sources (a send listed twice, a headline told again) is one row. */
 const oneRowPerId = (rows: ImportantFeedRow[]): ImportantFeedRow[] => {
@@ -114,17 +161,16 @@ const withSendOutcomes = (
 const isToldByStory = (row: FeedRow, told: Set<string>): boolean =>
   row.kind === "transaction" && row.transaction.status === "success" && told.has(sendKey(row.transaction.hash));
 
-/** A battle or raid, anyone's unless the filter asks for the player's; a realm's news only when it is the player's. */
-const isEventsStory = (event: ProcessedStoryEvent, filter: ImportantFeedFilter, address: string | null): boolean => {
-  if (includesStoryNotification("important", event.story)) return filter !== "mine" || involvesPlayer(event, address);
-  return filter !== "combat" && includesStoryNotification("standard", event.story) && involvesPlayer(event, address);
-};
+/** A battle, raid or capture, anyone's; a realm's news only when it is the player's. */
+const isEventsStory = (event: ProcessedStoryEvent, address: string | null): boolean =>
+  includesStoryNotification("important", event.story) ||
+  (includesStoryNotification("standard", event.story) && involvesPlayer(event, address));
 
 /**
- * What a quick-feed row is to the player: one action, whichever row tells it, however long its sources keep it. A send
- * and every story its transaction wrote share the transaction's key; any other row is its own.
+ * What a strip row is to the player: one action, whichever row tells it. A send and every story its transaction wrote
+ * share the transaction's key; any other row is its own.
  */
-const quickFeedKey = (row: ImportantFeedRow): string => {
+const actionKey = (row: ImportantFeedRow): string => {
   if (row.kind === "transaction") return sendKey(row.transaction.hash);
   if (row.kind === "story") return sendKey(row.event.tx_hash);
   return row.id;
@@ -140,90 +186,22 @@ const isCapture = (row: ImportantFeedRow): boolean =>
 /** A send's key, the same however its hash is written (case, leading zeros). */
 export const sendKey = (hash: string): string => `send:${hash.toLowerCase().replace(/^0x0*/, "")}`;
 
-/** Whether a row is about the player: their own sends, caravans and notices, and the stories that name them. */
-const isAboutPlayer = (row: ImportantFeedRow, address: string | null): boolean =>
-  row.kind === "story"
-    ? [row.event.owner, ...row.event.participants].some((player) => player !== null && feltEquals(player, address))
-    : row.kind !== "headline";
-
-/** A row Events shows: its action's key and its latest words. */
+/** A row Events shows: its action's key and the action's latest words. */
 export interface ShownRow {
   key: string;
   row: ImportantFeedRow;
 }
 
-/** What Events holds between renders: the rows shown, top first, and the actions whose time on screen is over. */
-export interface QuickFeed {
-  shown: readonly ShownRow[];
-  ended: readonly string[];
-}
-
-/** How many ended actions Events remembers, so none comes back; far more than can be recent at once. */
-const ENDED_MEMORY = 200;
-
 /**
- * Events' own short list, one rule: a row stays on screen 20 s from when it is first shown (its fade is its clock), in
- * its place, with its action's latest words, even once its sources drop it. Never more than `maxRows` at once. A row
- * about the player comes in on top when it arrives; with every slot taken, it takes the slot of the oldest shown row
- * not about the player (or, when all are the player's, of the oldest of them if it is newer than that one), whose time
- * on screen ends there, so none of the player's newer actions is lost to a full card and an older one never pushes out
- * a newer. A row not about the player comes in only to a free slot, so it never displaces one of the player's. A row
- * comes in only while its event is within the window of now, and an action whose time on screen is over never comes
- * back.
+ * The Events strip, one rule: the newest `count` actions, newest on top, each once with its latest words, and they
+ * stay until newer ones replace them. A send keeps its key as its story arrives, so its row stays the same row.
  */
-export function nextQuickFeed(
-  feed: QuickFeed,
-  rows: ImportantFeedRow[],
-  context: { nowMs: number; address: string | null; windowMs: number; maxRows: number },
-): QuickFeed {
+export const latestActions = (rows: ImportantFeedRow[], count: number): ShownRow[] => {
   const latest = new Map<string, ImportantFeedRow>();
   for (const row of rows.toSorted((left, right) => right.at - left.at)) {
-    const key = quickFeedKey(row);
+    const key = actionKey(row);
     const held = latest.get(key);
     if (!held || (isCapture(row) && !isCapture(held))) latest.set(key, row);
   }
-  const ended = [...feed.ended];
-  let shown = feed.shown
-    .filter((entry) => !ended.includes(entry.key))
-    .map((entry) => ({ ...entry, row: latest.get(entry.key) ?? entry.row }));
-  const arriving = [...latest].filter(
-    ([key, row]) =>
-      !ended.includes(key) &&
-      !shown.some((entry) => entry.key === key) &&
-      Math.abs(context.nowMs - row.at) < context.windowMs,
-  );
-  // Newest first, so a free slot goes to the newest; those let in go on top, newest highest.
-  const admitted: ShownRow[] = [];
-  for (const [key, row] of arriving) {
-    if (admitted.length + shown.length >= context.maxRows) {
-      const displaced = slotGivenTo(row, shown, context.address);
-      if (!displaced) continue;
-      shown = shown.filter((entry) => entry !== displaced);
-      ended.push(displaced.key);
-    }
-    admitted.push({ key, row });
-  }
-  return { shown: [...admitted, ...shown], ended: ended.slice(-ENDED_MEMORY) };
-}
-
-/**
- * The shown row that gives its slot to an arriving one on a full card, if any: only a row about the player takes a
- * slot; the oldest row not about the player gives way, and with every slot the player's own, the oldest of those does
- * when the arriving row is newer, so no newer action of the player's waits until its time to show has passed.
- */
-const slotGivenTo = (row: ImportantFeedRow, shown: readonly ShownRow[], address: string | null): ShownRow | null => {
-  if (!isAboutPlayer(row, address)) return null;
-  const other = shown.findLast((entry) => !isAboutPlayer(entry.row, address));
-  if (other) return other;
-  const oldest = shown.reduce<ShownRow | null>(
-    (held, entry) => (held && held.row.at <= entry.row.at ? held : entry),
-    null,
-  );
-  return oldest && oldest.row.at < row.at ? oldest : null;
+  return [...latest].slice(0, count).map(([key, row]) => ({ key, row }));
 };
-
-/** The feed once an action's time on screen is over: its row leaves, and the action never comes back. */
-export const endQuickFeedRow = (feed: QuickFeed, key: string): QuickFeed => ({
-  shown: feed.shown.filter((entry) => entry.key !== key),
-  ended: [...feed.ended, key].slice(-ENDED_MEMORY),
-});

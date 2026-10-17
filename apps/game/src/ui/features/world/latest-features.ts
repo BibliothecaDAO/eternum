@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Events keep the last three, and filter",
+    description:
+      "The Events strip keeps your three latest events until newer ones replace them. It shows the important ones by default (your fights and captures, armies lost, crates you opened, refused orders and the game's milestones); switch to Mine or All in its header. The Log uses the same filter, and it is remembered for you.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Leaderboard headers on two lines",
     description:
       "Each leaderboard column reads its short name on one line and its points under it on the next: Tiles 5 each, Crates 250 each, Camps & Rifts 250 each, HS taken 1K each, HS held x/s. Hover a column for its full rule.",

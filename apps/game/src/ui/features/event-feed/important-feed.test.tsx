@@ -27,6 +27,8 @@ const history = vi.hoisted(
 );
 /** The client's own sends, as the transaction store reports them. */
 const sent = vi.hoisted(() => [] as unknown[]);
+/** The player's filter for Events: All unless a test chooses another. */
+const filter = vi.hoisted(() => ({ value: "all" as "important" | "mine" | "all" }));
 
 // Chain time is the real store's: anchored, ticked and corrected as the game's heads do. The stories are stamped at 100 s.
 vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
@@ -54,6 +56,7 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
   }),
 }));
 vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], recent: sent }) }));
+vi.mock("@/hooks/store/use-events-filter-store", () => ({ useEventsFilter: () => [filter.value, () => undefined] }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60 } }));
 vi.mock("./feed-row-line", () => ({
   FEED_ROW_CLASS: "",
@@ -88,94 +91,89 @@ it("brings the player's opened crate into Events among every battle, without the
   ).toEqual(["story:battle", "story:crate"]);
 });
 
-/** The card's quick rows, mounted, over this history; returns what it draws and how to end a row's fade. */
+/** The card's strip rows, mounted, over this history (newest first); returns what it draws and each row's element. */
 const mountQuickFeed = (ids: string[]) => {
   history.length = 0;
   sent.length = 0;
-  history.push(...ids.map((id) => ({ id, story: "BattleEvent", owner: "0x5", participants: ["0x5"] })));
+  history.push(
+    ...ids.map((id, index) => ({ id, story: "BattleEvent", owner: "0x5", participants: ["0x5"], at: 100_000 - index })),
+  );
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   act(() => root.render(<QuickFeedRows />));
   const drawn = () => [...host.querySelectorAll("i")].map((row) => row.textContent);
-  const wrapper = (id: string) => [...host.querySelectorAll("i")].find((row) => row.textContent === id)!.parentElement!;
-  /** What the browser does when a row's fade finishes. */
-  const endFade = (id: string) =>
-    act(() => {
-      wrapper(id).dispatchEvent(new Event("animationend", { bubbles: true }));
-    });
+  const wrapper = (id: string) => [...host.querySelectorAll("i")].find((row) => row.textContent === id)!;
   const rerender = () => act(() => root.render(<QuickFeedRows />));
   const unmount = () => {
     act(() => root.unmount());
     host.remove();
   };
-  return { drawn, wrapper, endFade, rerender, unmount };
+  return { drawn, wrapper, rerender, unmount };
 };
 
-it("keeps a drawn row through a chain clock correction, and takes it off the card when its fade ends", () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const prior = useChainTimeStore.getState();
-  useChainTimeStore.getState().anchor({ timestamp: 100_000 });
-  const feed = mountQuickFeed(["battle"]);
-  try {
-    expect(feed.drawn()).toEqual(["story:battle"]);
-    // Its 20 s are its own: a 3 s fade after 17 s on screen, started when drawn.
-    expect(feed.wrapper("story:battle").style.animation).toBe("quickFeedFade 3000ms linear 17000ms forwards");
-    // A delayed head corrects the clock back (the store's lead cap); the row neither leaves early nor outlives its fade.
-    act(() => useChainTimeStore.getState().setHeartbeat({ timestamp: 104_000 }));
-    act(() => useChainTimeStore.getState().anchor({ timestamp: 300_000 }));
-    expect(feed.drawn()).toEqual(["story:battle"]);
-    feed.endFade("story:battle");
-    expect(feed.drawn()).toEqual([]);
-  } finally {
-    feed.unmount();
-    useChainTimeStore.setState(prior);
-  }
-});
-
-it("gives a row hidden behind the five newest its own full time once a slot frees for it", () => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  const prior = useChainTimeStore.getState();
-  useChainTimeStore.getState().anchor({ timestamp: 100_000 });
-  const feed = mountQuickFeed(["r0", "r1", "r2", "r3", "r4", "r5"]);
-  try {
-    expect(feed.drawn()).toHaveLength(5);
-    feed.endFade(feed.drawn()[0]!);
-    const sixth = feed
-      .drawn()
-      .find((id) => !["story:r0", "story:r1", "story:r2", "story:r3", "story:r4"].includes(id!));
-    expect(sixth).toBeDefined();
-    expect(feed.wrapper(sixth!).style.animation).toBe("quickFeedFade 3000ms linear 17000ms forwards");
-  } finally {
-    feed.unmount();
-    useChainTimeStore.setState(prior);
-  }
-});
-
-it("never lets a newer row push a drawn one off or move it: the drawn rows keep their elements and their fades", () => {
+it("keeps the newest three rows with no fade: they stay however long the clock runs on", () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   const prior = useChainTimeStore.getState();
   useChainTimeStore.getState().anchor({ timestamp: 100_000 });
   const feed = mountQuickFeed(["r0", "r1", "r2", "r3", "r4"]);
   try {
-    const before = feed.drawn();
-    const elements = before.map((id) => feed.wrapper(id!));
-    // Another player's battle lands while five rows are drawn.
-    history.push({ id: "newer", story: "BattleEvent", owner: "0x7", participants: ["0x7"], at: 101_000 });
+    expect(feed.drawn()).toEqual(["story:r0", "story:r1", "story:r2"]);
+    act(() => useChainTimeStore.getState().anchor({ timestamp: 3_600_000 }));
     feed.rerender();
-    expect(feed.drawn()).toEqual(before);
-    expect(before.map((id) => feed.wrapper(id!))).toEqual(elements);
-    // When one fade ends, the newcomer comes in on top with its own full time.
-    feed.endFade(before[1]!);
-    expect(feed.drawn()).toEqual(["story:newer", ...before.filter((id) => id !== before[1])]);
-    expect(feed.wrapper("story:newer").style.animation).toBe("quickFeedFade 3000ms linear 17000ms forwards");
+    expect(feed.drawn()).toEqual(["story:r0", "story:r1", "story:r2"]);
   } finally {
     feed.unmount();
     useChainTimeStore.setState(prior);
   }
 });
 
-it("keeps a send and the story that tells it as one row: the same element, its fade running on", () => {
+it("puts a newer row on top and lets the oldest go; the other two keep their elements", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const feed = mountQuickFeed(["r0", "r1", "r2"]);
+  try {
+    const kept = ["story:r0", "story:r1"].map((id) => feed.wrapper(id));
+    history.push({ id: "newer", story: "BattleEvent", owner: "0x7", participants: ["0x7"], at: 101_000 });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:newer", "story:r0", "story:r1"]);
+    expect(["story:r0", "story:r1"].map((id) => feed.wrapper(id))).toEqual(kept);
+  } finally {
+    feed.unmount();
+  }
+});
+
+it("draws under Important the player's fight and not another player's", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  filter.value = "important";
+  const feed = mountQuickFeed([]);
+  try {
+    history.push(
+      {
+        id: "mine",
+        story: "BattleEvent",
+        owner: PLAYER,
+        participants: [PLAYER],
+        at: 101_000,
+        payload: { attacker: { player: PLAYER }, defender: { player: "0x5" } },
+      },
+      {
+        id: "theirs",
+        story: "BattleEvent",
+        owner: "0x5",
+        participants: ["0x5"],
+        at: 102_000,
+        payload: { attacker: { player: "0x5" }, defender: { player: "0x6" } },
+      },
+    );
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:mine"]);
+  } finally {
+    filter.value = "all";
+    feed.unmount();
+  }
+});
+
+it("keeps a send and the story that tells it as one row, in the same element", () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   const prior = useChainTimeStore.getState();
   useChainTimeStore.getState().anchor({ timestamp: 100_000 });
@@ -233,12 +231,12 @@ const withFeed = (ids: string[], run: (feed: ReturnType<typeof mountQuickFeed>) 
   }
 };
 
-it("admits the player's battle even when five unrelated battles occupy Events", () => {
-  withFeed(["r0", "r1", "r2", "r3", "r4"], (feed) => {
+it("draws the player's newest battle even when three other battles fill the strip", () => {
+  withFeed(["r0", "r1", "r2"], (feed) => {
     history.push({ id: "attacked", story: "BattleEvent", owner: PLAYER, participants: [PLAYER], at: 101_000 });
     feed.rerender();
-    expect(feed.drawn().length).toBeLessThanOrEqual(5);
-    expect(feed.drawn()).toContain("story:attacked");
+    expect(feed.drawn()).toHaveLength(3);
+    expect(feed.drawn()[0]).toBe("story:attacked");
   });
 });
 
@@ -279,32 +277,6 @@ it("retains the same story element when its send leaves the real 15-row recent l
     feed.rerender();
     expect(feed.drawn()).toEqual(["story:fight"]);
     expect(feed.wrapper("story:fight")).toBe(element);
-  });
-});
-
-it("does not redisplay a finished action after its send leaves the real recent list", () => {
-  withFeed([], (feed) => {
-    setTransactions([original]);
-    feed.rerender();
-    addStory();
-    feed.rerender();
-    act(() => useChainTimeStore.getState().anchor({ timestamp: 120_000 }));
-    feed.endFade("story:fight");
-    expect(feed.drawn()).toEqual([]);
-    pruneOriginal();
-    feed.rerender();
-    expect(feed.drawn()).toEqual([]);
-  });
-});
-
-it("keeps a drawn send until its fade when the real recent list prunes it", () => {
-  withFeed([], (feed) => {
-    setTransactions([original]);
-    feed.rerender();
-    expect(feed.drawn()).toEqual(["0x0abc"]);
-    pruneOriginal();
-    feed.rerender();
-    expect(feed.drawn()).toEqual(["0x0abc"]);
   });
 });
 

@@ -13,82 +13,48 @@ import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headl
 import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
 import {
-  endQuickFeedRow,
   type ImportantFeedRow,
-  nextQuickFeed,
-  type QuickFeed,
+  latestActions,
+  matchesEventsFilter,
   selectImportantFeedRows,
-  type ShownRow,
 } from "./important-feed-rows";
 import { useFeedRows } from "./use-feed-rows";
+import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 
-const QUICK_FEED_WINDOW_MS = 20_000;
-const QUICK_FEED_MAX_ROWS = 5;
-const QUICK_FEED_FADE_MS = 3_000;
+/** How many rows the Events strip keeps: the owner's three. */
+const STRIP_ROWS = 3;
 
 /**
- * The feed's pinned notices and its own short list of rows (`nextQuickFeed` holds its one rule): each on screen 20 s
- * from when it is first shown, fading over its last seconds and leaving when the fade ends.
+ * The strip's pinned notices, then the newest actions through the player's filter (`latestActions` holds its one
+ * rule): three rows that stay until newer ones replace them.
  */
 export const QuickFeedRows = () => {
-  const { nowMs, rows, pinned, address } = useImportantFeed();
-  const [feed, setFeed] = useState<QuickFeed>({ shown: [], ended: [] });
-  const next = nextQuickFeed(feed, rows, {
-    nowMs,
-    address,
-    windowMs: QUICK_FEED_WINDOW_MS,
-    maxRows: QUICK_FEED_MAX_ROWS,
-  });
-  // What Events shows is remembered by setting it during render, as React advises: it converges at once.
-  if (!sameShown(next.shown, feed.shown) || next.ended.length !== feed.ended.length) setFeed(next);
+  const { rows, pinned } = useImportantFeed();
   return (
     <>
       <FeedNotices pinned={pinned} />
-      {next.shown.map((entry) => (
-        <QuickFeedRow
-          key={entry.key}
-          entry={entry}
-          onFaded={() => setFeed((current) => endQuickFeedRow(current, entry.key))}
-        />
+      {latestActions(rows, STRIP_ROWS).map(({ key, row }) => (
+        <FeedRowLine key={key} row={row} />
       ))}
     </>
   );
 };
 
-/** The same rows, in the same order, telling the same: only then is there nothing new to remember. */
-const sameShown = (a: readonly ShownRow[], b: readonly ShownRow[]): boolean =>
-  a.length === b.length &&
-  a.every((entry, index) => entry.key === b[index].key && rowWords(entry.row) === rowWords(b[index].row));
-
-/** What a row says, for telling whether it changed: its source and, for a send, how it stands. */
-const rowWords = (row: ImportantFeedRow): string =>
-  `${row.id}:${row.kind === "transaction" ? row.transaction.status : ""}`;
-
-/** A shown row: its fade starts with it on the compositor (17 s, then 3 s), and its end takes it off the card for good. */
-const QuickFeedRow = ({ entry, onFaded }: { entry: ShownRow; onFaded: () => void }) => (
-  <div
-    style={{
-      animation: `quickFeedFade ${QUICK_FEED_FADE_MS}ms linear ${QUICK_FEED_WINDOW_MS - QUICK_FEED_FADE_MS}ms forwards`,
-    }}
-    onAnimationEnd={(event) => {
-      if (event.target === event.currentTarget) onFaded();
-    }}
-  >
-    <FeedRowLine row={entry.row} />
-  </div>
-);
-
-/** The important rows every layout counts and previews, plus the headlines pinned for the current tick. */
+/** The rows every layout counts and previews through the player's filter, plus the headlines pinned for this tick. */
 export function useImportantFeed() {
   const nowMs = useNowMs();
   const tickSeconds = Number(configManager.getTick(TickIds.Armies));
   const address = useAccountStore((state) => state.account?.address ?? null);
+  const [filter] = useEventsFilter();
   const headlines = useHeadlineFeedStore((state) => state.headlines);
   const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
   const stories = useEventsStories(address);
   const feed = useFeedRows();
-  const rows = selectImportantFeedRows(stories, feed, "all", address, headlineFeed.recent);
-  return { nowMs, rows, pinned: headlineFeed.pinned, address };
+  const rows = selectImportantFeedRows(stories, feed, filter, address, headlineFeed.recent);
+  const pinned = headlineFeed.pinned.filter((headline) =>
+    matchesEventsFilter({ kind: "headline", id: headline.id, at: headline.timestamp, headline }, filter, address),
+  );
+  return { nowMs, rows, pinned, address };
 }
 
 /**

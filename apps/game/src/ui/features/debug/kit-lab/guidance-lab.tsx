@@ -6,7 +6,15 @@ import type { Transaction } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
-import type { ImportantFeedRow } from "@/ui/features/event-feed/important-feed-rows";
+import {
+  type ImportantFeedRow,
+  latestActions,
+  matchesEventsFilter,
+} from "@/ui/features/event-feed/important-feed-rows";
+import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
+import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import type { Headline } from "@/ui/features/news-headlines/headline-types";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { PlayerLabel } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
@@ -40,90 +48,158 @@ const installFixtureGame = () => {
   return store;
 };
 
-/** A story of the player's, worded by the game's one story formatter as the Log and Events both read it. */
-const story = (store: NativeFactStore, id: string, kind: string, payload: Record<string, unknown>) =>
+/** The lab's players by address. */
+const NAMES: Record<string, string> = { [PLAYER]: "clientlane", "0x5": "uxplay", "0x6": "mira" };
+
+/** A story told at `at` (ms), by its owner, worded by the game's one story formatter as the Log and Events read it. */
+const story = (
+  store: NativeFactStore,
+  id: string,
+  kind: string,
+  payload: Record<string, unknown>,
+  at: number,
+  owner = PLAYER,
+) =>
   ({
     id,
     event_id: id,
     story: kind,
-    owner: PLAYER,
-    participants: [PLAYER],
+    owner,
+    participants: [owner],
     tx_hash: `0x${id}`,
-    timestamp: "350",
-    timestampMs: 350_000,
+    timestamp: String(at / 1_000),
+    timestampMs: at,
     storyPayload: payload,
     presentation: buildStoryEventPresentation(
-      {
-        storyType: kind,
-        storyPayload: payload,
-        ownerAddress: PLAYER,
-        viewerAddress: PLAYER,
-        timestamp: 350_000,
-      } as never,
+      { storyType: kind, storyPayload: payload, ownerAddress: owner, viewerAddress: PLAYER, timestamp: at } as never,
       store,
-      (address) => (BigInt(address) === BigInt(PLAYER) ? "clientlane" : null),
+      (address) => NAMES[`0x${BigInt(address).toString(16)}`] ?? null,
     ),
   }) as unknown as ProcessedStoryEvent;
 
 const storyRow = (event: ProcessedStoryEvent): ImportantFeedRow => ({
   kind: "story",
   id: `story:${event.id}`,
-  at: 350_000,
+  at: event.timestampMs,
   event,
 });
 
-/** What a newcomer's first minutes write to Events: an explore with no find, one that found Essence, a crate, a fight lost. */
+const headlineRow = (id: string, type: Headline["type"], description: string, at: number): ImportantFeedRow => ({
+  kind: "headline",
+  id,
+  at,
+  headline: { id, type, title: description, description, icon: type, timestamp: at },
+});
+
+/**
+ * What a newcomer's first minutes write to Events, newest last: the game's start, an explore with no find, one that
+ * found Essence, a level-up, a crate, a fight lost, a tier-three building, another player's fight, a refused order.
+ */
 const eventsRows = (store: NativeFactStore): ImportantFeedRow[] => {
   const chest = { pack: "War", lucky: false } as const;
   const scaledPoints = (points: number) => BigInt(points) * 1_000_000n;
-  return [
-    {
+  const send = (hash: string, status: Transaction["status"], at: number, type: TransactionType, description: string) =>
+    ({
       kind: "transaction",
-      id: "0xe1",
-      at: 350_000,
-      transaction: {
-        hash: "0xe1",
-        type: TransactionType.EXPLORE,
-        status: "success",
-        submittedAt: 350_000,
-        confirmedAt: 350_000,
-        description: "Scouts sent to explore new lands",
-      } satisfies Transaction,
-    },
-    storyRow(
-      story(store, "found", "ExplorationReward", {
-        explorer_id: 70,
-        receiver: 7,
-        coord: { x: 2147483650, y: 2147483652 },
-        resource_type: ResourcesIds.Essence,
-        amount: "200000000000",
-      }),
+      id: hash,
+      at,
+      transaction: { hash, type, status, submittedAt: at, confirmedAt: at, description } satisfies Transaction,
+    }) as const;
+  const side = (player: string, category: string, before: string, after: string) => ({
+    player,
+    category,
+    tier: "T1",
+    before,
+    after,
+    roll: 0,
+  });
+  return [
+    headlineRow(
+      "start",
+      "game-start",
+      "Most points in 1h wins: explore, open crates, take camps and Hyperstructures.",
+      300_000,
     ),
+    send("0xe1", "success", 340_000, TransactionType.EXPLORE, "Scouts sent to explore new lands"),
     storyRow(
-      story(store, "crate", "RelicChestOpened", {
-        explorer_id: 70,
-        coord: { x: 2147483651, y: 2147483652 },
-        chest,
-        relics: relicChestRelics(chest),
-        points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
-      }),
-    ),
-    storyRow(
-      story(store, "fight", "BattleEvent", {
-        attacker_id: 70,
-        defender_id: 900,
-        attacker: { player: PLAYER, category: "Paladin", tier: "T1", before: "1000000000000", after: "0", roll: 0 },
-        defender: {
-          player: "0x0",
-          category: "Knight",
-          tier: "T2",
-          before: "5066000000000",
-          after: "4800000000000",
-          roll: 0,
+      story(
+        store,
+        "found",
+        "ExplorationReward",
+        {
+          explorer_id: 70,
+          receiver: 7,
+          coord: { x: 2147483650, y: 2147483652 },
+          resource_type: ResourcesIds.Essence,
+          amount: "200000000000",
         },
-      }),
+        341_000,
+      ),
     ),
+    storyRow(story(store, "up", "StructureLevelUpStory", { new_level: 1 }, 345_000)),
+    storyRow(
+      story(
+        store,
+        "crate",
+        "RelicChestOpened",
+        {
+          explorer_id: 70,
+          coord: { x: 2147483651, y: 2147483652 },
+          chest,
+          relics: relicChestRelics(chest),
+          points: scaledPoints(configManager.getVictoryPointGrants().openRelicCrate),
+        },
+        346_000,
+      ),
+    ),
+    storyRow(
+      story(
+        store,
+        "fight",
+        "BattleEvent",
+        {
+          attacker_id: 70,
+          defender_id: 900,
+          attacker: side(PLAYER, "Paladin", "1000000000000", "0"),
+          defender: side("0x0", "Knight", "5066000000000", "4800000000000"),
+        },
+        348_000,
+      ),
+    ),
+    headlineRow("t3", "t3-building", "uxplay built a tier-three barracks.", 352_000),
+    storyRow(
+      story(
+        store,
+        "theirs",
+        "BattleEvent",
+        {
+          attacker_id: 71,
+          defender_id: 72,
+          attacker: side("0x5", "Knight", "2000000000000", "1500000000000"),
+          defender: side("0x6", "Crossbowman", "1000000000000", "0"),
+        },
+        355_000,
+        "0x5",
+      ),
+    ),
+    send("0xr1", "reverted", 360_000, TransactionType.EXPLORE, "Scouts sent to explore new lands"),
   ];
+};
+
+/**
+ * Events as the rail draws it, on the lab's rows: the player's filter (its switch works here) and the newest three
+ * rows through it.
+ */
+const LabEvents = ({ store }: { store: NativeFactStore }) => {
+  const [filter] = useEventsFilter();
+  const rows = eventsRows(store).filter((row) => matchesEventsFilter(row, filter, PLAYER));
+  return (
+    <InfoBubble label="Events" title="Events" cue={<EventsFilterSwitch />} bodyClassName="flex flex-col gap-1">
+      {latestActions(rows, 3).map(({ key, row }) => (
+        <FeedRowLine key={key} row={row} />
+      ))}
+    </InfoBubble>
+  );
 };
 
 /** The fixture realm's army, standing at (10, 10). */
@@ -215,9 +291,7 @@ export const GuidanceLab = () => {
           ))}
         </div>
         <div data-lab="events" className="flex w-[320px] flex-col gap-1">
-          {eventsRows(store).map((row) => (
-            <FeedRowLine key={row.id} row={row} />
-          ))}
+          <LabEvents store={store} />
         </div>
       </div>
     </GameProvider>
