@@ -1,5 +1,6 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import type { MapLabelEntity, MapLabelTroops } from "@/three/debug/map-label-lab-fixture";
 
 import { stack, type LabelBox } from "./map-label-layout";
@@ -216,7 +217,7 @@ const RestingGuard = ({ entity }: { entity: MapLabelEntity }) => {
 const Troops = ({ troops }: { troops: MapLabelTroops }) => (
   <span className="mll-troops">
     <Icon name={`${troops.type}-t${troops.tier}` as IconMeaning} size={20} />
-    <span className="mll-tier">T{troops.tier}</span>
+    <TroopTierChip tier={`T${troops.tier}`} size="label" />
     <span className="tabular-nums">{formatCount(troops.count)}</span>
   </span>
 );

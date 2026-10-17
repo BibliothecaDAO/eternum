@@ -98,13 +98,6 @@
   align-items: center;
   gap: 2px;
 }
-.mll-tier {
-  border-radius: 3px;
-  background: rgba(223, 170, 84, 0.18);
-  padding: 2px 3px;
-  color: var(--mll-own);
-  font-weight: 700;
-}
 
 /* A troop stack: its painting (type and tier), the tier, the count. */
 .mll-troops {

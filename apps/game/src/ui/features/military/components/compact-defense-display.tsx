@@ -10,7 +10,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getTierStyle } from "@/ui/utils/tier-styles";
+import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
   getGuardSlotCooldownRemaining,
@@ -227,11 +227,7 @@ export const CompactDefenseDisplay = ({
         ) : (
           <div className="flex min-w-0 w-full flex-col gap-0.5">
             <div className="flex items-center gap-1 min-w-0">
-              <span
-                className={`px-1 py-0.5 rounded text-[10px] font-bold border relative ${getTierStyle(defense.troops.tier)}`}
-              >
-                <span className="relative z-10">{defense.troops.tier}</span>
-              </span>
+              <TroopTierChip tier={defense.troops.tier} size="xs" />
               <ResourceIcon
                 withTooltip={false}
                 resource={getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier)}
