@@ -1,4 +1,5 @@
 import { useQuery } from "@/hooks/helpers/use-query";
+import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
@@ -20,6 +21,7 @@ export const GuidedRail = () => {
   const { isMapView } = useQuery();
   return (
     <aside
+      {...HUD_COLUMN_MARK}
       aria-label="Guided rail"
       className="pointer-events-none fixed bottom-4 right-3 top-[60px] z-30 flex w-[320px] flex-col gap-2"
     >

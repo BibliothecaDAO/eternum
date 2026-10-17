@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SpectatorStandingsBody } from "@/ui/features/world/containers/spectator-standings";
@@ -49,6 +50,7 @@ const LeftColumn = () => {
   if (ordersAllowed && !account) return null;
   return (
     <aside
+      {...HUD_COLUMN_MARK}
       aria-label="Holdings"
       className="pointer-events-none fixed bottom-4 left-3 top-[60px] z-20 flex w-[320px] flex-col gap-2"
     >
