@@ -51,7 +51,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "Hovers that explain",
     description:
-      "A realm's level-up says why it waits, what it costs (or that it is free) and what the level gives, and every window shows the same level number. The realm card's numbers, automation and the order buttons explain themselves on hover, relics say what they do, for how long and for how much Essence, and a Hyperstructure site says what founding brings before you confirm it. An army standing on an opened crate shows first.",
+      "A realm's level-up says why it waits, what it costs (or that it is free) and what the level gives, and every window shows the same level number. The realm card's numbers, automation and the order buttons explain themselves on hover, and relics say what they do, for how long and for how much Essence. An army standing on an opened crate shows first.",
     type: "improvement",
   },
   {

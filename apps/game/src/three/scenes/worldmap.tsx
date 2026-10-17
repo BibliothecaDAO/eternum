@@ -42,7 +42,12 @@ import {
 } from "@/game-entry/play-route-readiness-store";
 import { buildPlayHref, mapRouteHex, parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
-import { clearPendingReservedHyperstructureCreation } from "@/services/blitz/blitz-hyperstructure-creation";
+import {
+  clearPendingReservedHyperstructureCreation,
+  isPendingReservedHyperstructureCreation,
+  submitActiveWorldBlitzHyperstructureCreation,
+} from "@/services/blitz/blitz-hyperstructure-creation";
+import { runWorldmapDoubleClick } from "./worldmap-double-click";
 import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
@@ -2440,10 +2445,12 @@ export default class WorldmapScene extends WarpTravel {
     return TARGET_MARKS[siteKindOf(structure.base.category)].word;
   }
 
-  // Double-click enters a structure. A reserved Hyperstructure site is founded only from its panel, which says what
-  // founding costs and brings before it is confirmed.
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    this.enterStructureFromSelectedHex(hexCoords);
+    runWorldmapDoubleClick(hexCoords, {
+      isReservedHyperstructureSite: (hex) => this.isReservedHyperstructureHex(hex),
+      foundHyperstructure: (hex) => void this.createReservedHyperstructureFromWorldmap(hex),
+      enterStructure: (hex) => this.enterStructureFromSelectedHex(hex),
+    });
   }
 
   private enterStructureFromSelectedHex(hexCoords: HexPosition) {
@@ -2453,6 +2460,43 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     void this.enterStructureFromWorldmap(structure, hexCoords);
+  }
+
+  private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
+    if (!canIssueOrders()) return;
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const contractHex = { col: contract.x, row: contract.y };
+    if (isPendingReservedHyperstructureCreation(contractHex)) {
+      return;
+    }
+
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      toast.error("Wait for your gameplay account before creating a Hyperstructure.");
+      return;
+    }
+
+    try {
+      const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
+        account,
+        contractHex,
+        systemCalls: this.game.systemCalls,
+      });
+
+      if (!didSubmit) {
+        return;
+      }
+    } catch (error) {
+      console.error("[Worldmap] Failed to create reserved hyperstructure", error);
+      toast.failed(error, "Unable to create this Hyperstructure right now.");
+    }
+  }
+
+  private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
+    const contractPosition = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return this.worldSpatialProjection
+      .getStructuresAtHex({ alt: activeMapLayer(), col: contractPosition.x, row: contractPosition.y })
+      .some((structure) => structure.reserved);
   }
 
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {

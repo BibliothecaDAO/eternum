@@ -22,7 +22,6 @@ import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   biomeTypeOf,
-  configManager,
   hasTileOccupier,
   isTileOccupierArmy,
   isTileOccupierChest,
@@ -30,7 +29,6 @@ import {
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
 import { type ReactNode, useCallback } from "react";
-import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -139,7 +137,7 @@ const SelectedWorldmapEntityContent = ({
   if (isReservedHyperstructure)
     return stackParts({
       occupant: (
-        <TileChrome title={title("Hyperstructure site")} headerAction={headerAction}>
+        <TileChrome title={title("Unconstructed Hyperstructure")} headerAction={headerAction}>
           <ReservedHyperstructurePanel selectedHex={selectedHex} />
         </TileChrome>
       ),
@@ -262,18 +260,10 @@ const TileChrome = ({
   </InfoBubble>
 );
 
-/**
- * A reserved Hyperstructure site: what founding it costs and brings, said before the click, and founded only once
- * confirmed. Founding is free and cannot be undone: it raises a Hyperstructure held by The Vanguard, behind its guards,
- * which pays whoever takes it.
- */
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({ contractHex: selectedHex });
-  const { confirming, ask, close } = useConfirmFor(`${selectedHex.col}:${selectedHex.row}`);
-  const capturePoints = configManager.getVictoryPointGrants().claimHyperstructureFromBandits;
 
   const handleCreateHyperstructure = useCallback(async () => {
-    close();
     try {
       await createHyperstructure();
     } catch (error) {
@@ -282,38 +272,22 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
         location: { x: selectedHex.col, y: selectedHex.row },
       });
     }
-  }, [close, createHyperstructure, selectedHex.col, selectedHex.row]);
+  }, [createHyperstructure, selectedHex.col, selectedHex.row]);
 
   return (
     <div className="flex flex-col gap-2">
-      <p className={HUD_BODY}>
-        Founding is free. It raises a Hyperstructure here, held by The Vanguard behind its guards. Take it from them: +
-        {capturePoints.toLocaleString()} points, then points every second.
-      </p>
-      {confirming ? (
-        <div className="flex flex-col gap-2">
-          <p className={HUD_BODY}>Found it? It cannot be undone.</p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              className={HUD_PILL_BUTTON}
-              disabled={!canCreate || isCreating}
-              onClick={() => void handleCreateHyperstructure()}
-            >
-              Found it
-            </button>
-            <button type="button" className={HUD_PILL_BUTTON} onClick={close}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <button type="button" className={HUD_PILL_BUTTON} disabled={!canCreate || isCreating} onClick={ask}>
-            {isCreating ? "Founding…" : "Found a Hyperstructure"}
-          </button>
-        </div>
-      )}
+      <p className={HUD_HEADLINE}>Reserved Hyperstructure</p>
+      <p className={HUD_BODY}>Reserved for a future Hyperstructure. Create it here or double-click the tile.</p>
+      <div>
+        <button
+          type="button"
+          className={HUD_PILL_BUTTON}
+          disabled={!canCreate || isCreating}
+          onClick={() => void handleCreateHyperstructure()}
+        >
+          {isCreating ? "Creating…" : "Create here"}
+        </button>
+      </div>
     </div>
   );
 };
