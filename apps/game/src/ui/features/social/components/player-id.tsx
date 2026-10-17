@@ -2,6 +2,8 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
@@ -116,7 +118,8 @@ interface HyperstructurePaying {
 
 /** One hyperstructure paying the player: its name, their share, what it pays them a second, and where it stands. */
 const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
-  const setNavigationTarget = useUIStore((state) => state.setNavigationTarget);
+  const navigateToMapView = useNavigateToMapView();
+  const selectOnMap = useUIStore((state) => state.selectOnMap);
   const at = holding.position?.getNormalized();
   return (
     <li className="flex items-center gap-2">
@@ -127,7 +130,12 @@ const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
         <button
           type="button"
           title="Go to it on the map"
-          onClick={() => setNavigationTarget({ col: at.x, row: at.y })}
+          onClick={() => {
+            // The map, on the hyperstructure, with it selected; the leaderboard closes so it shows.
+            usePopoverStore.getState().close("leaderboard");
+            navigateToMapView(holding.position!);
+            selectOnMap({ kind: "structure", entityId: holding.id });
+          }}
           className="rounded-md border border-gold/30 px-1.5 text-sm tabular-nums text-gold/80 hover:bg-gold/10"
         >
           ({at.x}, {at.y})
@@ -137,19 +145,18 @@ const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
   );
 };
 
-/** The hyperstructures paying the player share points now, read as the leaderboard reads them. */
+/** The hyperstructures paying the player now: their current shares at each allocation's rate, not what has accrued. */
 const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying[] => {
   const {
     setup: { store },
   } = useGame();
-  const revision = useNativeRevision(["HyperstructureShares", "PlayerPoints", "Structure"]);
+  const revision = useNativeRevision(["HyperstructureShares", "SliceRules", "GameRegistry", "Structure"]);
   const now = useCoarseNowSeconds(30);
   return useMemo(() => {
     void revision;
     void now;
     return LeaderboardManager.instance(store)
-      .getPlayerHyperstructurePointsBreakdown(player)
-      .filter((share) => share.pointsPerSecond > 0)
+      .getPlayerHyperstructuresPaying(player)
       .map((share) => {
         const structure = store.get("Structure", {
           game_id: configManager.getActiveGameId(),
