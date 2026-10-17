@@ -10,7 +10,7 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { TransactionType } from "@bibliothecadao/provider";
 import { relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 
-/** The kit labs' one fixture game: the deploy fixture's realm, its player, and what a newcomer's Events show. */
+/** The panels lab's and the style sheet's fixture game: the deploy fixture's realm, its player, and Events rows. */
 
 /** The fixture's player, who holds its realm (entity 7) and has no army in the field. */
 export const PLAYER = "0x111";

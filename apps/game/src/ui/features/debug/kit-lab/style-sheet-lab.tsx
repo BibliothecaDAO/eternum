@@ -18,20 +18,43 @@ import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
-  HudAmountField,
+  HudAmountSlider,
+  HudBubble,
   HudButton,
+  HudCheck,
   HudChip,
+  HudConfirm,
+  HudEmpty,
   HudEventRow,
+  HudField,
   HudIconButton,
+  HudLoading,
+  HudMenu,
+  HudMeter,
   HudMinimapFrame,
+  HudNotice,
   HudPanel,
+  HudPill,
+  HudPortrait,
   HudRing,
   HudRow,
+  HudSelect,
+  HudSetting,
+  HudSkeleton,
+  HudSwitch,
   HudTabs,
   HudTierChip,
   HudTip,
+  HudTransfer,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
+import { Checkbox } from "@/ui/design-system/atoms/checkbox";
+import { Confirm } from "@/ui/design-system/kit/confirm";
+import { Notice } from "@/ui/design-system/kit/notice";
+import { Switch } from "@/ui/design-system/kit/switch";
+import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
+import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { TroopAmount } from "@/ui/features/military/components/unified-army-creation-modal/troop-amount";
@@ -50,6 +73,18 @@ import { Link } from "react-router-dom";
 import { eventsRows, installFixtureGame, PLAYER } from "./fixture-game";
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
+
+/** Each game as its age of the lore, and the age's painting its colours come from (public/images/landscapes). */
+const AGE_NAMES: Record<HudMode, string> = {
+  blitz: "Blitz · Age I",
+  frontier: "Frontier · Age II",
+  eternum: "Eternum · Age III",
+};
+const AGE_PAINTINGS: Record<HudMode, string> = {
+  blitz: "/images/landscapes/blitz-spires-800.webp",
+  frontier: "/images/landscapes/frontier-mist-800.webp",
+  eternum: "/images/landscapes/eternum-restoration-800.webp",
+};
 
 type Device = "desktop" | "phone";
 /** Which device the lab draws the sheet for: on a phone, the sheet's column alone, at a phone's width and sizes. */
@@ -87,7 +122,7 @@ export const StyleSheetLab = () => {
             >
               {(Object.keys(HUD_MODES) as HudMode[]).map((key) => (
                 <option key={key} value={key}>
-                  {key[0].toUpperCase() + key.slice(1)}
+                  {AGE_NAMES[key]}
                 </option>
               ))}
             </select>
@@ -121,17 +156,27 @@ export const StyleSheetLab = () => {
                   : "flex min-w-0 flex-1 flex-col gap-6"
               }
             >
+              <AgesSection />
               <TypeSection />
               <ButtonsSection />
+              <BubbleSection />
               <AmountSection />
+              <TransferSection />
+              <FieldSection />
+              <MenuSection />
+              <SettingsSection />
               <TooltipSection />
               <PanelSection />
               <TabsSection />
               <ChipsSection />
               <RingSection />
+              <MeterSection />
               <RowsSection />
               <EventsSection store={store} />
               <WindowSection />
+              <ConfirmSection />
+              <LoadingSection />
+              <TopBarSection />
               <PlatesSection />
               <MinimapSection />
             </main>
@@ -327,30 +372,368 @@ const ButtonsSection = () => (
 );
 
 const AmountSection = () => {
-  const [value, setValue] = useState(200);
+  const [value, setValue] = useState(1_200);
   const [today, setToday] = useState(200);
   return (
     <Element
-      name="Amount field"
-      rule="How many: the field, 'of N', and its quick buttons at one height; full, the quick buttons rest disabled."
+      name="Troop amount"
+      rule="How many troops: the amount typed beside its name, a slider between its ends, a stop where the army's room runs out, quick steps for a share."
       sheet={
-        <div className="flex flex-col gap-3">
-          <HudAmountField value={value} of={500} step={500} onChange={setValue} />
-          <HudAmountField value={500} of={500} step={500} onChange={() => undefined} />
-          <HudAmountField value={200} of={500} step={500} onChange={() => undefined} state="focus" />
-          <HudAmountField value={0} of={0} step={500} onChange={() => undefined} disabled />
+        <div className="flex max-w-xl flex-col gap-6">
+          <HudAmountSlider
+            name="Paladins"
+            value={value}
+            max={2_000}
+            stop={1_800}
+            note="1,800 fit in the army"
+            onChange={setValue}
+          />
+          <HudAmountSlider
+            name="Knights"
+            value={0}
+            max={0}
+            disabled
+            onChange={() => undefined}
+            note="No knights on hand"
+          />
         </div>
       }
       today={
         <div className="flex w-full flex-col gap-3">
           <TroopAmount troopCount={today} maxAffordable={500} held={500} onChange={setToday} disabled={false} />
           <TroopAmount troopCount={500} maxAffordable={500} held={500} onChange={() => undefined} disabled={false} />
-          <NumberInput value={today} onChange={setToday} max={500} className="w-40" />
+          <span data-lab-chrome className="text-xs text-white/50">
+            The kit's slider (shell, Frontier):
+          </span>
+          <AmountSlider label="Troops" icon="troops" value={today} max={500} stop={450} onChange={setToday} />
         </div>
       }
     />
   );
 };
+
+const TransferSection = () => {
+  const [rows, setRows] = useState([
+    { icon: "wheat" as const, name: "Wheat", held: 6_400, value: 1_200 },
+    { icon: "wood" as const, name: "Wood", held: 2_100, value: 0 },
+    { icon: "essence" as const, name: "Essence", held: 380, value: 380 },
+  ]);
+  return (
+    <Element
+      name="Transfer sliders"
+      rule="What a transfer moves: one row per resource, its painting, name and what is held, a slider and the amount typed (sliders, as the transfer had them)."
+      sheet={
+        <div className="max-w-2xl">
+          <HudTransfer
+            rows={rows.map((row, index) => (index === 1 ? { ...row, state: "hover" } : row))}
+            onChange={(index, amount) =>
+              setRows((current) => current.map((row, at) => (at === index ? { ...row, value: amount } : row)))
+            }
+          />
+        </div>
+      }
+      today={
+        <span className="text-sm text-white/70">
+          Today the Transfer window types each amount in a field (economy/transfers/transfer-window.tsx); the owner
+          found the sliders it had before worked better.
+        </span>
+      }
+    />
+  );
+};
+
+const BubbleSection = () => (
+  <Element
+    name="Action bubble and badge"
+    rule="The HUD's round actions: a painting in a disc, its word under it, a count to act on as a badge on the rim."
+    sheet={
+      <>
+        <StateHeads />
+        <StateRow
+          label="bubble"
+          render={(state) => (
+            <HudBubble
+              icon="military"
+              word="Military"
+              count={state === "rest" ? 2 : undefined}
+              state={forced(state)}
+              disabled={state === "disabled"}
+            />
+          )}
+        />
+        <StateRow label="open" render={() => <HudBubble icon="transfer" word="Transfer" pressed />} />
+      </>
+    }
+    today={<CircleButton size="lg" image="military" label="Military" onClick={() => undefined} variant="hud" />}
+  />
+);
+
+const FieldSection = () => {
+  const [name, setName] = useState("Egonal");
+  return (
+    <Element
+      name="Field"
+      rule="What is typed (a name, a search), in a well; focus rings it in the accent."
+      sheet={
+        <div className="flex flex-wrap gap-4">
+          <HudField value={name} onChange={setName} />
+          <HudField value="" placeholder="Search a realm" icon="search" onChange={() => undefined} />
+          <HudField value="Egonal" state="focus" onChange={() => undefined} />
+          <HudField value="Egonal" disabled onChange={() => undefined} />
+        </div>
+      }
+      today={<NumberInput value={200} onChange={() => undefined} className="w-40" />}
+    />
+  );
+};
+
+const MenuSection = () => (
+  <Element
+    name="Select and menu"
+    rule="A choice opened from its trigger, or a right-click on the map: the items, the chosen one checked, a rule between groups."
+    sheet={
+      <div className="flex flex-wrap items-start gap-6">
+        <div className="flex flex-col gap-3">
+          <HudSelect value="Smart" />
+          <HudSelect value="Smart" state="hover" />
+          <HudSelect value="Smart" state="focus" />
+        </div>
+        <HudMenu
+          items={[
+            { label: "Smart", checked: true },
+            { label: "Custom", state: "hover" },
+            { label: "Off" },
+            { kind: "rule" },
+            { label: "Idle", disabled: true, hint: "Level 2" },
+          ]}
+        />
+        <HudMenu
+          items={[
+            { label: "Move here", icon: "map-army", hint: "2 wheat" },
+            { label: "Explore", icon: "search", disabled: true, hint: "30 stamina" },
+            { kind: "rule" },
+            { label: "Attack", icon: "military", tone: "bad" },
+          ]}
+        />
+      </div>
+    }
+    today={
+      <span className="text-sm text-white/70">
+        Today: the atoms Select and the dropdown list (design-system/atoms/select, molecules/dropdown-list), the realm
+        card's automation select and the map's structure context menu, each styled on its own.
+      </span>
+    }
+  />
+);
+
+const SettingsSection = () => {
+  const [tips, setTips] = useState(true);
+  const [music, setMusic] = useState(false);
+  const [checked, setChecked] = useState(true);
+  return (
+    <Element
+      name="Switch, checkbox and settings"
+      rule="On or off at once (a switch), one of several chosen together (a checkbox); a setting row names what it sets and what that does."
+      sheet={
+        <div className="flex max-w-md flex-col">
+          <HudSetting name="Next up tips" about="The coach's steps; alerts always show">
+            <HudSwitch on={tips} label="Next up tips" onChange={setTips} />
+          </HudSetting>
+          <HudSetting name="Music">
+            <HudSwitch on={music} label="Music" onChange={setMusic} state="focus" />
+          </HudSetting>
+          <HudSetting name="Show armies" about="On the minimap">
+            <HudCheck checked={checked} label="Show armies" onChange={setChecked} />
+          </HudSetting>
+          <HudSetting name="Sound" about="Unavailable in this browser">
+            <HudSwitch on={false} label="Sound" disabled onChange={() => undefined} />
+          </HudSetting>
+        </div>
+      }
+      today={
+        <div className="flex flex-col gap-3">
+          <Switch on={tips} label="Next up tips" onToggle={() => setTips(!tips)} />
+          <Checkbox enabled={checked} onClick={() => setChecked(!checked)} text="Show armies" />
+        </div>
+      }
+    />
+  );
+};
+
+const MeterSection = () => (
+  <Element
+    name="Meter"
+    rule="How full a thing is: stamina, production, a load; the fill in a tone."
+    sheet={
+      <div className="flex max-w-xs flex-col gap-3">
+        <HudMeter share={0.62} tone="good" label="Stamina" />
+        <HudMeter share={0.35} label="Production" />
+        <HudMeter share={0.9} tone="warn" label="Storage" />
+        <HudMeter share={0.1} tone="bad" label="Food" />
+      </div>
+    }
+    today={
+      <span className="text-sm text-white/70">
+        Today: the stamina bar, the guard slot bars and the store bars, each drawn on its own.
+      </span>
+    }
+  />
+);
+
+const ConfirmSection = () => (
+  <Element
+    name="Confirm"
+    rule="A question that stops the task: what it does and costs, the way back, the verb; red when it cannot be undone."
+    sheet={
+      <div className="flex flex-wrap gap-4">
+        <HudConfirm
+          question="Level up Egonal to City?"
+          verb="Level up"
+          onConfirm={() => undefined}
+          onBack={() => undefined}
+        >
+          <span className="ui-row__detail">Costs 1,200 wheat and 600 wood.</span>
+        </HudConfirm>
+        <HudConfirm
+          question="Attack Moonhand's army?"
+          verb="Attack"
+          tone="bad"
+          onConfirm={() => undefined}
+          onBack={() => undefined}
+        >
+          <HudNotice
+            tone="bad"
+            line="Your army will be lost"
+            why="The forecast: 1,000 Paladins against 2,400 Knights."
+          />
+        </HudConfirm>
+      </div>
+    }
+    today={
+      <div className="relative h-96 w-[36rem] overflow-hidden [transform:translateZ(0)]">
+        <Confirm
+          question="Level up Egonal?"
+          cost="1,200 wheat"
+          verb="Level up"
+          onConfirm={() => undefined}
+          onKeep={() => undefined}
+        />
+      </div>
+    }
+  />
+);
+
+const LoadingSection = () => (
+  <Element
+    name="Loading and empty"
+    rule="An answer on its way (a spinner and what is awaited), rows standing in for a list, and nothing yet said once with what would fill it."
+    sheet={
+      <div className="flex flex-wrap items-start gap-8">
+        <HudLoading line="Loading your realms…" />
+        <div className="w-56">
+          <HudSkeleton rows={3} />
+        </div>
+        <div className="w-64">
+          <HudPanel title="Events">
+            <HudEmpty icon="clock" line="Nothing has happened yet." />
+          </HudPanel>
+        </div>
+        <div className="w-64">
+          <HudPanel title="Armies">
+            <HudEmpty
+              icon="military"
+              line="No army in the field."
+              action={
+                <HudButton kind="secondary" size="sm">
+                  Raise an army
+                </HudButton>
+              }
+            />
+          </HudPanel>
+        </div>
+      </div>
+    }
+    today={
+      <div className="flex flex-col gap-3">
+        <LoadingAnimation />
+        <span className="text-sm text-white/70">
+          Empty states today: each panel's own sentence and style ("No resources yet.").
+        </span>
+      </div>
+    }
+  />
+);
+
+const TopBarSection = () => (
+  <Element
+    name="Top bar and portrait"
+    rule="The HUD's top line in one rounded strip, a rule between its readings; a portrait centred in its disc."
+    sheet={
+      <div className="flex flex-col items-start gap-4">
+        <HudPill>
+          {[
+            <span key="p" className="flex items-center gap-2">
+              <HudPortrait icon="knight-t1" label="clientlane" />
+              <span className="font-semibold">clientlane</span>
+            </span>,
+            <span key="r" className="ui-row__detail">
+              #1 · 310 points
+            </span>,
+            <span key="t" className="flex items-center gap-1">
+              <HudChip>42m left</HudChip>
+            </span>,
+          ]}
+        </HudPill>
+      </div>
+    }
+    today={
+      <div className={cn(TOP_PILL)}>
+        <span className="text-gold">clientlane · #1 · 310 points</span>
+      </div>
+    }
+  />
+);
+
+/** The three ages side by side: each its painting, then the same elements in its colours. */
+const AgesSection = () => (
+  <Element
+    name="Ages"
+    rule="Each game wears its age of the lore: the accent and surface from its painting; the elements never change, the primary stays gold."
+    sheet={
+      <div className="grid grid-cols-3 gap-4">
+        {(Object.keys(HUD_MODES) as HudMode[]).map((mode) => (
+          <div key={mode} data-hud-mode={mode} className="ui flex flex-col gap-3">
+            <img src={AGE_PAINTINGS[mode]} alt={AGE_NAMES[mode]} className="h-28 w-full rounded-lg object-cover" />
+            <span data-lab-chrome className="text-sm font-bold text-white">
+              {AGE_NAMES[mode]}
+            </span>
+            <HudPanel title="Structure Tile" cue="3/4">
+              <HudRow title="Egonal" detail="Kingdom · 1,455 guarding" selected />
+            </HudPanel>
+            <HudTabs
+              tabs={[
+                { key: "a", label: "Realms", count: 3 },
+                { key: "b", label: "Camps", count: 1 },
+              ]}
+              value="a"
+              onChange={() => undefined}
+            />
+            <div className="flex gap-2">
+              <HudButton kind="secondary">Transfer</HudButton>
+              <HudButton kind="primary">Deploy</HudButton>
+            </div>
+            <HudMeter share={0.6} label="Production" />
+          </div>
+        ))}
+      </div>
+    }
+    today={
+      <span className="text-sm text-white/70">
+        Today: Blitz and Eternum share the War room's teal and gold, Frontier the warm ink; no game has its own colour.
+      </span>
+    }
+  />
+);
 
 /** An element that shows today's tooltip on hover the way the game does: through the app's one tooltip store. */
 const TodayTipAnchor = ({ label, content }: { label: string; content: ReactNode }) => {
@@ -534,12 +917,12 @@ const ChipsSection = () => (
 const RingSection = () => (
   <Element
     name="Ring badge"
-    rule="A painting in a round well; buildings top left, the amount on the foot, the time left on the right; an arc for production."
+    rule="A painting in a round well; buildings top left and the time left top right in one badge, the amount on the foot; an arc for production."
     sheet={
       <div className="flex items-center gap-6 pb-2">
-        <HudRing icon="wheat" label="Wheat" corner={3} foot="1.2K" side="17m" progress={0.6} />
+        <HudRing icon="wheat" label="Wheat" corner={3} timer="17m" foot="1.2K" progress={0.6} />
         <HudRing icon="essence" label="Essence" foot="6.4K" />
-        <HudRing icon="labor" label="Labor" corner={1} foot="240" progress={0.2} side="3m" />
+        <HudRing icon="labor" label="Labor" corner={1} timer="3m" foot="240" progress={0.2} />
       </div>
     }
     today={
@@ -570,12 +953,12 @@ const LabHoldings = () => <HoldingsList holdings={useHoldings()} />;
 const RowsSection = () => (
   <Element
     name="List row"
-    rule="One thing of a list: what it is, what it says, its value; hover lights it, the chosen one carries a gold bar."
+    rule="One thing of a list: what it is and what it says; hover lights it, the chosen one carries a bar in the age's accent."
     sheet={
       <div className="flex w-80 flex-col gap-1">
-        <HudRow title="Egonal" detail="Settlement · 1,000 guarding" trail="2" selected />
-        <HudRow title="Noykkuynoyk" detail="City · Undefended" trail="1" state="hover" />
-        <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" trail="3" />
+        <HudRow title="Egonal" detail="Settlement · 1,000 guarding" selected />
+        <HudRow title="Noykkuynoyk" detail="City · Undefended" state="hover" />
+        <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" />
       </div>
     }
     today={
@@ -588,8 +971,8 @@ const RowsSection = () => (
 
 const EventsSection = ({ store }: { store: NativeFactStore }) => (
   <Element
-    name="Event row"
-    rule="What happened, said once: its time, a mark in its tone, the words; a notice is one too (no separate toast)."
+    name="Event row and notice"
+    rule="What happened, said once: its time, a mark in its tone, the words (every toast is a row in Events); a notice says a line about the screen it sits in."
     sheet={
       <div className="flex w-96 flex-col">
         <HudEventRow time="12:04">
@@ -604,6 +987,11 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
         <HudEventRow time="12:08" tone="warn">
           Not sent: the army needs 30 stamina
         </HudEventRow>
+        <div className="mt-4 flex flex-col gap-2">
+          <HudNotice tone="good" line="Transfer sent" why="Arrives at Egonal in 4m." />
+          <HudNotice tone="warn" line="Storage full" why="Wheat stops at 6,000 until some is spent." />
+          <HudNotice tone="bad" line="Not sent" why="The army needs 30 stamina; ready in under a minute." />
+        </div>
       </div>
     }
     today={
@@ -611,6 +999,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
         {eventsRows(store).map((row) => (
           <FeedRowLine key={row.id} row={row} />
         ))}
+        <Notice icon="wheat" line="Storage full" verb="Spend" onVerb={() => undefined} />
       </div>
     }
   />
@@ -619,17 +1008,24 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
 const WindowSection = () => (
   <Element
     name="Window"
-    rule="A panel the size of a task (Military, Transfer): its title bar with a way out, then its body."
+    rule="A panel the size of a task: its title bar with a way out, its body, and a foot with what it costs on the left, the way out and the one verb on the right."
     sheet={
       <div className="w-[34rem]">
-        <HudWindow title="Military" icon="military" onClose={() => undefined}>
-          <HudAmountField value={200} of={500} step={500} onChange={() => undefined} />
-          <div className="mt-4 flex justify-end gap-2">
-            <HudButton kind="quiet">Cancel</HudButton>
-            <HudButton kind="primary" icon="military">
-              Deploy
-            </HudButton>
-          </div>
+        <HudWindow
+          title="Military"
+          icon="military"
+          onClose={() => undefined}
+          note="Deploying costs 1,000 wheat"
+          actions={
+            <>
+              <HudButton kind="quiet">Cancel</HudButton>
+              <HudButton kind="primary" icon="military">
+                Deploy
+              </HudButton>
+            </>
+          }
+        >
+          <HudAmountSlider name="Paladins" value={1_200} max={2_000} stop={1_800} onChange={() => undefined} />
         </HudWindow>
       </div>
     }
@@ -701,7 +1097,7 @@ const PlateAt = ({
 const PlatesSection = () => (
   <Element
     name="Map plate"
-    rule="Two short rows at rest, three opened, on the panel's surface; the side's colour on its bar and its player."
+    rule="Two short rows at rest, three opened (map-labels rounds 1 to 5), every row at one size and height; a name told by weight and the accent, a rank, id or time by colour; the side's colour on its bar and its player."
     sheet={
       <div className="flex flex-wrap items-end gap-4">
         <PlateAt plate={ARMY} />
@@ -743,7 +1139,7 @@ const MinimapSection = () => (
                 cx={20 + (index % 7) * 40 + (Math.floor(index / 7) % 2) * 20}
                 cy={20 + Math.floor(index / 7) * 28}
                 r={12}
-                fill={index % 5 === 0 ? "rgb(223 170 84 / 0.6)" : "rgb(255 255 255 / 0.08)"}
+                fill={index % 5 === 0 ? "rgb(var(--hud-accent) / 0.6)" : "rgb(255 255 255 / 0.08)"}
               />
             ))}
           </svg>
@@ -768,7 +1164,7 @@ const tokenGroups = (mode: HudMode): readonly { group: string; names: readonly s
   },
   { group: `Surface (HUD_MODES.${mode})`, names: Object.keys(HUD_MODES[mode]).map((name) => `--hud-${name}`) },
   { group: "Sheet (HUD_SHEET)", names: Object.keys(HUD_SHEET).map((name) => `--hud-${name}`) },
-  { group: "Built from gold (HUD_DERIVED)", names: Object.keys(HUD_DERIVED).map((name) => `--hud-${name}`) },
+  { group: "Built from the accent (HUD_DERIVED)", names: Object.keys(HUD_DERIVED).map((name) => `--hud-${name}`) },
 ];
 
 const TokenEditor = ({ target, mode }: { target: React.RefObject<HTMLDivElement | null>; mode: HudMode }) => {

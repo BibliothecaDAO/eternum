@@ -436,7 +436,7 @@ export const HUD_TYPE = {
 
 /** The HUD's colours, sizes, lines, shadows and motion, by role; the HUD's gold and ink are the kit's. */
 export const HUD_SHEET = {
-  /** The gold of every line, title and label, as channels: its strengths below are built from it. */
+  /** The primary button's face and what is earned (a place, LORDS), in every age, as channels. */
   gold: channels(HUD_COLORS.gold),
   /** What is read on a HUD surface. */
   ink: channels(HUD_COLORS.cream),
@@ -471,26 +471,31 @@ export const HUD_SHEET = {
 
 /** The HUD's values built from others, declared again on every mode's root so a changed gold reaches each of them. */
 export const HUD_DERIVED = {
-  line: "rgb(var(--hud-gold) / 0.25)",
-  "line-strong": "rgb(var(--hud-gold) / 0.5)",
-  divider: "rgb(var(--hud-gold) / 0.15)",
-  label: "rgb(var(--hud-gold) / 0.75)",
-  cue: "rgb(var(--hud-gold) / 0.6)",
-  hover: "rgb(var(--hud-gold) / 0.1)",
-  chosen: "rgb(var(--hud-gold) / 0.18)",
-  "shadow-panel": "0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(var(--hud-gold) / 0.18)",
+  line: "rgb(var(--hud-accent) / 0.25)",
+  "line-strong": "rgb(var(--hud-accent) / 0.5)",
+  divider: "rgb(var(--hud-accent) / 0.15)",
+  label: "rgb(var(--hud-accent) / 0.75)",
+  cue: "rgb(var(--hud-accent) / 0.6)",
+  hover: "rgb(var(--hud-accent) / 0.1)",
+  chosen: "rgb(var(--hud-accent) / 0.18)",
+  "shadow-panel": "0 8px 24px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(var(--hud-accent) / 0.18)",
   "shadow-control": "0 1px 2px rgb(0 0 0 / 0.4)",
-  focus: "0 0 0 2px rgb(var(--hud-gold) / 0.65)",
+  focus: "0 0 0 2px rgb(var(--hud-accent) / 0.65)",
 } as const;
 
 /**
- * What a game mode changes: its surface only, so the three read as one HUD with their own air. Blitz keeps the War
- * room's teal glass, Eternum a deeper night of it, Frontier the warm ink every mode's sheets share.
+ * Each game is an age of the lore ("Realms · The Lost Ages"), and wears its age's colours (owner, 17 October 2026: "a
+ * different color for each game, like in the lore each game is one age"), taken from the age's painting
+ * (public/images/landscapes): its accent (every line, title, label, tab and focus ring, as channels) and its surface.
+ * The elements never change; the primary button stays gold in every age.
  */
 export const HUD_MODES = {
-  blitz: { "surface-from": "#192930", "surface-to": "#101c23" },
-  eternum: { "surface-from": "#18222e", "surface-to": "#0e141d" },
-  frontier: { "surface-from": "rgb(38 29 17 / 0.98)", "surface-to": "rgb(16 12 8 / 0.99)" },
+  /** Age I, Blitz (`blitz-spires`): the storm's violet over an obsidian spire. */
+  blitz: { accent: "180 156 240", "surface-from": "#1e1b28", "surface-to": "#121019" },
+  /** Age II, Frontier (`frontier-mist`): torchlight carried through a slate mist. */
+  frontier: { accent: "232 166 90", "surface-from": "#1b2628", "surface-to": "#101718" },
+  /** Age III, Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
+  eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },
 } as const;
 
 export type HudMode = keyof typeof HUD_MODES;

@@ -1,5 +1,7 @@
-/* The style sheet's elements (elements.tsx), built only from its tokens (tokens.css). A state reads the same whether the
-   pointer or the lab asks for it: hover, pressed and focus also answer to data-state, so /lab/kit can show each one. */
+/* The HUD's elements (hud-elements.tsx), built only from the HUD scope of src/tokens.ts (the --hud-* variables) and the
+   one spacing scale. Each age's accent (HUD_MODES) draws every line, title, label, tab and focus ring; the primary
+   button and what is earned stay gold. A state reads the same whether the pointer or the lab asks for it: hover,
+   pressed and focus also answer to data-state, so /lab/kit can show each one. */
 .ui {
   font-family: var(--hud-font);
   color: rgb(var(--hud-ink));
@@ -76,7 +78,7 @@
 .ui-button[data-kind="secondary"] {
   border-color: var(--hud-line-strong);
   background: transparent;
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-accent));
 }
 .ui-button[data-kind="quiet"] {
   background: transparent;
@@ -84,7 +86,7 @@
 }
 .ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-accent));
 }
 .ui-button[data-icon-only] {
   width: var(--hud-control);
@@ -112,12 +114,7 @@
   transform: none;
 }
 
-/* ── Amount: a field for how many, "of N" beside it, and its quick buttons (+500, Max) at the field's height. ── */
-.ui-amount {
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.2);
-}
+/* ── Field: what is typed (a name, a search, an amount), in a well. ── */
 .ui-field {
   display: inline-flex;
   height: var(--hud-control);
@@ -146,15 +143,6 @@
 .ui-field:has(input:disabled) {
   opacity: 0.45;
 }
-.ui-amount__of {
-  color: var(--hud-label);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.ui-amount .ui-button {
-  height: var(--hud-control);
-}
-
 /* ── Tooltip: the app's one tooltip, and the map's order line in it. Its words are its own: no caller restyles them. ── */
 .ui-tip {
   display: inline-flex;
@@ -221,8 +209,8 @@
   color: var(--hud-label);
 }
 .ui-tab[aria-selected="true"] {
-  border-bottom-color: rgb(var(--hud-gold));
-  color: rgb(var(--hud-gold));
+  border-bottom-color: rgb(var(--hud-accent));
+  color: rgb(var(--hud-accent));
 }
 .ui-tab:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;
@@ -238,7 +226,7 @@
   border-radius: var(--hud-radius-chip);
   background: var(--hud-hover);
   padding: 1px theme(spacing[1.5]);
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-accent));
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -276,8 +264,8 @@
   color: white;
 }
 
-/* ── Ring: a painting in a round well, its numbers on badges pinned to the rim: buildings top left, the amount on the
-   foot, the time left on the right; a production arc around it. ── */
+/* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,
+   the time left top right, the amount on the foot; a production arc around it. ── */
 .ui-ring {
   position: relative;
   display: inline-grid;
@@ -289,7 +277,7 @@
   position: absolute;
   inset: 0;
   border-radius: var(--hud-radius-round);
-  background: conic-gradient(var(--hud-good) var(--ring-arc, 0deg), rgb(var(--hud-gold) / 0.2) 0);
+  background: conic-gradient(var(--hud-good) var(--ring-arc, 0deg), rgb(var(--hud-accent) / 0.2) 0);
   mask: radial-gradient(circle, transparent 22px, black 23px);
 }
 .ui-ring__face {
@@ -322,11 +310,9 @@
   left: 50%;
   transform: translateX(-50%);
 }
-.ui-ring__badge[data-at="side"] {
-  top: 50%;
-  right: -10px;
-  transform: translateY(-50%);
-  color: var(--hud-good);
+.ui-ring__badge[data-at="timer"] {
+  top: -2px;
+  right: -2px;
 }
 
 /* ── List row: one thing of a list (a holding, a player): what it is, what it says, its value; chosen, a gold bar. ── */
@@ -345,7 +331,7 @@
   background: var(--hud-hover);
 }
 .ui-row[aria-selected="true"] {
-  border-left-color: rgb(var(--hud-gold));
+  border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
 .ui-row__title {
@@ -408,7 +394,7 @@
   color: rgb(var(--hud-ink));
 }
 .ui-event__text strong {
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-accent));
   font-weight: var(--hud-weight-strong);
 }
 
@@ -427,7 +413,7 @@
   gap: theme(spacing.2);
   border-bottom: 1px solid var(--hud-divider);
   padding: theme(spacing.2) theme(spacing.2) theme(spacing.2) theme(spacing.4);
-  color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-accent));
   font-size: var(--hud-text-display);
   line-height: var(--hud-line-display);
   font-weight: var(--hud-weight-display);
@@ -452,7 +438,7 @@
 
 /* ── Map plates (three/map-plates): the plates take their face from these tokens. ── */
 .ui .mp {
-  --mp-gold: var(--hud-gold);
+  --mp-gold: var(--hud-accent);
   --mp-own: var(--hud-own);
   --mp-ally: var(--hud-ally);
   --mp-enemy: var(--hud-enemy);
@@ -460,19 +446,576 @@
   --overlay-surface-from: var(--hud-surface-from);
   --overlay-surface-to: var(--hud-surface-to);
 }
-/* The plates' type, by role: a row reads as body, a place's name as a title, an id or a time as a label. */
+/* The plates' type: every reading at the body size and every row the same height, so no row reads smaller than the
+   one above it (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"). A place's name is
+   told by its weight and the age's accent, a count by its weight, a rank, an id, a reward or a time by its colour. */
 .ui .mp-plate {
   font-family: var(--hud-font);
   font-size: var(--hud-text-body);
   font-weight: var(--hud-weight-body);
+  line-height: var(--hud-line-body);
+}
+.ui .mp-plate__row {
+  height: var(--hud-line-body);
+  min-height: 24px;
+}
+.ui .mp-plate :is(.mp-title, .mp-word, .mp-owner, .mp-label, .mp-cue, .mp-count) {
+  font-size: var(--hud-text-body);
 }
 .ui .mp-title {
-  font-size: var(--hud-text-title);
+  font-weight: var(--hud-weight-title);
+  color: rgb(var(--hud-accent));
+}
+.ui .mp-owner,
+.ui .mp-word {
   font-weight: var(--hud-weight-title);
 }
+.ui .mp-label,
 .ui .mp-cue {
-  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-body);
+  color: var(--hud-label);
 }
 .ui .mp-count {
   font-weight: var(--hud-weight-strong);
+}
+.ui .mp-divider {
+  background: var(--hud-line-strong);
+}
+
+/* ── Window footer: what the task costs or says on the left, its way out and its one verb on the right, the verb last. */
+.ui-window__foot {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border-top: 1px solid var(--hud-divider);
+  padding: theme(spacing.3) theme(spacing.4);
+}
+.ui-window__note {
+  margin-right: auto;
+  color: var(--hud-label);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+
+/* ── Slider: how many, by dragging: its ends take their amount, a stop marks what fits, the field types it exactly,
+   quick steps take a share. ── */
+.ui-slider {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+}
+.ui-slider__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.ui-slider__name {
+  margin-right: auto;
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-line-title);
+  font-weight: var(--hud-weight-title);
+  color: var(--hud-label);
+}
+.ui-slider__track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.ui-slider__end {
+  min-width: 3.5rem;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  padding: 2px theme(spacing[1.5]);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+}
+.ui-slider__end:is(:hover, [data-state="hover"]) {
+  border-color: var(--hud-line-strong);
+}
+.ui-slider__rail {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.ui-slider input[type="range"] {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--hud-accent)) var(--fill, 0%),
+    rgb(var(--hud-accent) / 0.18) var(--fill, 0%)
+  );
+  cursor: pointer;
+}
+.ui-slider input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  appearance: none;
+  border: 2px solid rgb(var(--hud-dark));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-accent));
+  box-shadow: var(--hud-shadow-control);
+}
+.ui-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(var(--hud-dark));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-accent));
+}
+.ui-slider input[type="range"]:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-slider input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-slider__stop {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--hud-warn);
+}
+.ui-slider__steps {
+  display: flex;
+  gap: theme(spacing.1);
+}
+.ui-slider__note {
+  color: var(--hud-label);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+
+/* ── Transfer: one slider row per resource, its painting and name, the slider, the amount typed. ── */
+.ui-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+}
+.ui-transfer__row {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) 6.5rem;
+  align-items: center;
+  gap: theme(spacing.3);
+  border-radius: var(--hud-radius-chip);
+  padding: theme(spacing.1) theme(spacing.2);
+}
+.ui-transfer__row:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+}
+.ui-transfer__what {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+}
+.ui-transfer__held {
+  color: var(--hud-label);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-transfer .ui-field input {
+  width: 100%;
+  text-align: right;
+}
+
+/* ── Select and menu: a choice opened from its trigger; a context menu is the same list. ── */
+.ui-select {
+  display: inline-flex;
+  height: var(--hud-control);
+  min-width: 10rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: 0 theme(spacing.3);
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  cursor: pointer;
+}
+.ui-select:is(:hover, [data-state="hover"]) {
+  border-color: rgb(var(--hud-accent));
+}
+.ui-select:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-menu {
+  display: flex;
+  min-width: 12rem;
+  flex-direction: column;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: theme(spacing.1);
+}
+.ui-menu__item {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 0;
+  border-radius: var(--hud-radius-chip);
+  background: transparent;
+  padding: 0 theme(spacing.2);
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  text-align: left;
+  cursor: pointer;
+}
+.ui-menu__item:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+}
+.ui-menu__item[aria-checked="true"] {
+  color: rgb(var(--hud-accent));
+  font-weight: var(--hud-weight-title);
+}
+.ui-menu__item:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-menu__item[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.ui-menu__hint {
+  margin-left: auto;
+  color: var(--hud-cue);
+  font-size: var(--hud-text-label);
+}
+.ui-menu__rule {
+  height: 1px;
+  margin: theme(spacing.1) 0;
+  background: var(--hud-divider);
+}
+
+/* ── Switch and checkbox: on or off; a setting row names what it sets. ── */
+.ui-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-switch::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-ink) / 0.8);
+  content: "";
+  transition: transform var(--hud-fast) var(--hud-ease);
+}
+.ui-switch[aria-checked="true"] {
+  background: rgb(var(--hud-accent));
+}
+.ui-switch[aria-checked="true"]::after {
+  background: rgb(var(--hud-dark));
+  transform: translateX(18px);
+}
+.ui-check {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-well);
+  color: rgb(var(--hud-dark));
+  cursor: pointer;
+}
+.ui-check[aria-checked="true"] {
+  border-color: rgb(var(--hud-accent));
+  background: rgb(var(--hud-accent));
+}
+:is(.ui-switch, .ui-check):is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+:is(.ui-switch, .ui-check):is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-setting {
+  display: flex;
+  min-height: var(--hud-control);
+  align-items: center;
+  gap: theme(spacing.3);
+  border-bottom: 1px solid var(--hud-divider);
+  padding: theme(spacing.2) 0;
+}
+.ui-setting__words {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.ui-setting__name {
+  color: rgb(var(--hud-ink));
+  font-weight: var(--hud-weight-title);
+}
+.ui-setting__about {
+  color: var(--hud-label);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+
+/* ── Confirm: a question that stops the task, what it costs, the way back and the verb. ── */
+.ui-confirm {
+  display: flex;
+  width: 26rem;
+  flex-direction: column;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
+.ui-confirm__body {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  padding: theme(spacing.4);
+}
+.ui-confirm__question {
+  color: rgb(var(--hud-accent));
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-line-title);
+  font-weight: var(--hud-weight-title);
+}
+.ui-confirm[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 55%, transparent);
+}
+.ui-confirm[data-tone="bad"] .ui-confirm__question {
+  color: var(--hud-bad);
+}
+
+/* ── Notice: a line the game says about the screen it sits in (a refusal, a warning, a success); in Events it is a row. */
+.ui-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: theme(spacing.2);
+  border: 1px solid var(--hud-line);
+  border-left: 3px solid var(--hud-label);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  padding: theme(spacing.2) theme(spacing.3);
+}
+.ui-notice[data-tone="good"] {
+  border-left-color: var(--hud-good);
+}
+.ui-notice[data-tone="bad"] {
+  border-left-color: var(--hud-bad);
+}
+.ui-notice[data-tone="warn"] {
+  border-left-color: var(--hud-warn);
+}
+.ui-notice__why {
+  color: var(--hud-label);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+
+/* ── Action bubble: one of the HUD's round actions, its word under it, a count on its rim. ── */
+.ui-bubble {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 0;
+  background: transparent;
+  color: var(--hud-label);
+  font-family: inherit;
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+  cursor: pointer;
+}
+.ui-bubble__disc {
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: radial-gradient(circle at 50% 35%, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.ui-bubble:is(:hover, [data-state="hover"]) .ui-bubble__disc {
+  border-color: rgb(var(--hud-accent));
+}
+.ui-bubble:is(:active, [data-state="pressed"]) .ui-bubble__disc {
+  background: var(--hud-chosen);
+}
+.ui-bubble:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+}
+.ui-bubble:is(:focus-visible, [data-state="focus"]) .ui-bubble__disc {
+  box-shadow: var(--hud-focus);
+}
+.ui-bubble:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-bubble[aria-pressed="true"] .ui-bubble__disc {
+  border-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+}
+/* A count to act on: a badge on the rim, the same badge everywhere. */
+.ui-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-accent));
+  padding: 0 theme(spacing.1);
+  color: rgb(var(--hud-dark));
+  font-size: var(--hud-text-badge);
+  line-height: 18px;
+  font-weight: var(--hud-weight-badge);
+  text-align: center;
+}
+.ui-badge[data-tone="bad"] {
+  background: var(--hud-bad);
+}
+
+/* ── Meter: how full (stamina, production, a load): a track and its fill, in a tone. ── */
+.ui-meter {
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-ink) / 0.14);
+}
+.ui-meter > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(var(--hud-accent));
+}
+.ui-meter[data-tone="good"] > i {
+  background: var(--hud-good);
+}
+.ui-meter[data-tone="warn"] > i {
+  background: var(--hud-warn);
+}
+.ui-meter[data-tone="bad"] > i {
+  background: var(--hud-bad);
+}
+
+/* ── Loading: a spinner where an answer is awaited, rows standing in for a list, a line while the game comes in. ── */
+.ui-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(var(--hud-accent) / 0.25);
+  border-top-color: rgb(var(--hud-accent));
+  border-radius: var(--hud-radius-round);
+  animation: ui-spin 0.8s linear infinite;
+}
+@keyframes ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ui-skeleton {
+  height: 12px;
+  border-radius: var(--hud-radius-chip);
+  background: linear-gradient(90deg, var(--hud-hover), var(--hud-chosen), var(--hud-hover));
+  background-size: 200% 100%;
+  animation: ui-shimmer 1.4s var(--hud-ease) infinite;
+}
+@keyframes ui-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner,
+  .ui-skeleton {
+    animation: none;
+  }
+}
+.ui-loading {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  color: var(--hud-label);
+}
+
+/* ── Empty: nothing to show yet, said once, with the one thing that would fill it. ── */
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.2);
+  padding: theme(spacing.4) theme(spacing.3);
+  color: var(--hud-label);
+  text-align: center;
+}
+.ui-empty__line {
+  color: rgb(var(--hud-ink) / 0.85);
+}
+
+/* ── Top bar pill: the HUD's top line (the clock, the player and the points), one rounded strip. ── */
+.ui-pill {
+  display: inline-flex;
+  height: var(--hud-control);
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: 0 theme(spacing.4);
+}
+.ui-pill__rule {
+  width: 1px;
+  height: 16px;
+  background: var(--hud-divider);
+}
+
+/* ── Portrait: a player's or an army's painting, centred in its disc. ── */
+.ui-portrait {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.ui-portrait > * {
+  display: block;
+  margin: auto;
 }

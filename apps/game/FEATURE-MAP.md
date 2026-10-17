@@ -4,13 +4,15 @@ What a player can do and how they get there, so a report or a screenshot can be 
 adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. In the dev
 build, `/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and
 `/lab/kit` the HUD's style sheet, the HUD scope of `src/tokens.ts` (HUD_TYPE, HUD_SHEET, HUD_MODES, HUD_PHONE): its
-tokens, editable live (Copy gives the changed values), the type scale by role first, then every element (button, amount
-field, tooltip and the map's order line, panel, tabs, chip, ring badge, list row, event row, window, map plate, minimap
-frame) in every state, beside the versions the game draws today; Mode switches Blitz, Eternum and Frontier, Device a
-phone. `pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel and chip looks.
-`/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/panels` the HUD's holdings and
-selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/guidance` the points-first guidance (the goal
-in the top bar, Next up's route, Events rows with outcomes).
+tokens, editable live (Copy gives the changed values); each game as its age of the lore (Blitz I, Frontier II, Eternum
+III: an accent and a surface from the age's painting); the type scale by role; then every element the HUD draws (button,
+action bubble and badge, troop amount slider, transfer sliders, field, select and menu, switch, checkbox and settings,
+tooltip and the map's order line, panel, tabs, chip, ring badge, meter, list row, event row and notice, window, confirm,
+loading and empty, top bar and portrait, map plate, minimap frame) in every state, beside the versions the game draws
+today; Mode switches the age, Device a phone. `pnpm --dir apps/game styles:inventory` counts the client's distinct
+button, input, tab, panel and chip looks. `/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token
+file). `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with outcomes).
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
