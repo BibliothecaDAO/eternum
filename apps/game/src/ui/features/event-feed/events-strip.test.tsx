@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -7,7 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const PLAYER = "0x1";
 
-/** The game's history as each story read serves it: by story, and by every player a story names, newest first. */
+/** The game's history, which each story read filters as Herald does. */
 const history = vi.hoisted(
   () =>
     [] as {
@@ -17,11 +17,13 @@ const history = vi.hoisted(
       participants: string[];
       at: number;
       tx?: string;
+      /** The structure the story is about; 900 unless it says. */
+      entity?: number;
       payload?: Record<string, unknown>;
     }[],
 );
-/** The player's filter for Events, and whether structure 900 is a Hyperstructure. */
-const world = vi.hoisted(() => ({ filter: "all" as "important" | "mine" | "all", category: 0 }));
+/** The player's filter for Events, and the game's Hyperstructures. */
+const world = vi.hoisted(() => ({ filter: "all" as "important" | "mine" | "all", hyperstructures: [] as number[] }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
   const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
@@ -30,35 +32,49 @@ vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: PLAYER } }),
 }));
-vi.mock("@/hooks/store/use-story-events-store", () => ({
-  useStoryEvents: (limit: number, story?: string, owner?: string) => ({
-    data: history
+vi.mock("@/hooks/store/use-story-events-store", () => {
+  type Read = { limit: number; story?: string; owner?: string; entityId?: number };
+  /** One read as Herald serves it: its newest `limit` stories of its story, naming its player, about its entity. */
+  const serve = ({ limit, story, owner, entityId }: Read) =>
+    history
       .toSorted((left, right) => right.at - left.at)
       .filter((event) => !story || event.story === story)
       .filter((event) => !owner || event.participants.some((address) => BigInt(address) === BigInt(owner)))
+      .filter((event) => entityId === undefined || (event.entity ?? 900) === entityId)
       .slice(0, limit)
       .map((event) => ({
         ...event,
         event_id: event.id,
-        // A story names its subject: here structure 900 for every story.
-        entity_id: 900,
+        entity_id: event.entity ?? 900,
         tx_hash: event.tx ?? `0x${event.id}`,
         timestamp: String(event.at / 1_000),
         timestampMs: event.at,
         storyPayload: event.payload ?? {},
-      })),
-  }),
-}));
+      }));
+  return {
+    useStoryReads: (reads: Read[]) => ({
+      data: [...new Map(reads.flatMap(serve).map((event) => [event.id, event])).values()],
+      queries: [],
+    }),
+    useStoryEvents: (limit: number) => ({ data: serve({ limit }), isError: false, refetch: () => undefined }),
+  };
+});
 vi.mock("@/hooks/store/use-events-filter-store", () => ({ useEventsFilter: () => [world.filter, () => undefined] }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
-      store: { get: () => ({ base: { category: world.category } }) },
+      store: { inGame: () => world.hyperstructures.map((entity_id) => ({ entity_id })) },
     },
   }),
 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60, getActiveGameId: () => 1 } }));
+vi.mock("@/ui/design-system/molecules/popover", () => ({
+  PopoverPanel: ({ children }: { children: ReactNode }) => <>{children}</>,
+  SurfaceFrame: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+vi.mock("./events-filter-switch", () => ({ EventsFilterSwitch: () => null }));
+vi.mock("./story-feed-row", () => ({ StoryFeedRow: () => null }));
 vi.mock("./feed-row-line", () => ({
   FEED_ROW_CLASS: "",
   FeedRowLine: ({ event }: { event: { id: string } }) => <i>{event.id}</i>,
@@ -66,9 +82,9 @@ vi.mock("./feed-row-line", () => ({
   HeadlineIcon: () => null,
 }));
 
-import { StructureType } from "@bibliothecadao/types";
 import { useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { useEventFeedStore } from "./event-feed-store";
+import { EventLogPanel } from "./event-log-panel";
 import { QuickFeedRows, useEventsFeed } from "./quick-feed";
 
 const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
@@ -80,6 +96,25 @@ const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   payload: { attacker: { player: attacker }, defender: { player: defender } },
 });
 
+const capture = (id: string, at: number, taker: string, holder: string) => ({
+  id,
+  story: "StructureCapturedStory",
+  owner: taker,
+  participants: [taker, holder],
+  at,
+  payload: { previous_owner: holder, new_owner: taker },
+});
+const othersFights = (count: number, from: number) =>
+  Array.from({ length: count }, (_, index) => fight(`theirs${index}`, from + index));
+const routineStories = (count: number, from: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `made${index}`,
+    story: "ProductionStory",
+    owner: PLAYER,
+    participants: [PLAYER],
+    at: from + index,
+  }));
+
 let host: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 const draw = () => act(() => root.render(<QuickFeedRows />));
@@ -90,7 +125,7 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   history.length = 0;
   world.filter = "all";
-  world.category = StructureType.Realm;
+  world.hyperstructures = [];
   useEventFeedStore.setState({ notices: [] });
   useHeadlineFeedStore.setState({ headlines: [] });
   useChainTimeStore.getState().anchor({ timestamp: 100_000 });
@@ -154,7 +189,7 @@ it("keeps the player's crate under Important however many routine stories of the
 
 it("shows under Important a Hyperstructure taken by other players, and the player's fight, not others' fights", () => {
   world.filter = "important";
-  world.category = StructureType.Hyperstructure;
+  world.hyperstructures = [900];
   history.push(fight("mine", 97_000, PLAYER, "0x5"), fight("theirs", 98_000), {
     id: "seized",
     story: "StructureCapturedStory",
@@ -165,6 +200,48 @@ it("shows under Important a Hyperstructure taken by other players, and the playe
   });
   draw();
   expect(rows()).toEqual(["seized", "mine"]);
+});
+
+it("keeps the player's three fights under Important through other players' fights and their own routine stories", () => {
+  world.filter = "important";
+  history.push(fight("mine3", 99_000, PLAYER), fight("mine2", 98_000, "0x5", PLAYER), fight("mine1", 97_000, PLAYER));
+  draw();
+  expect(rows()).toEqual(["mine3", "mine2", "mine1"]);
+  history.push(...othersFights(350, 200_000), ...routineStories(150, 300_000));
+  draw();
+  expect(rows()).toEqual(["mine3", "mine2", "mine1"]);
+  history.push(fight("newer", 400_000, "0x5", PLAYER));
+  draw();
+  expect(rows()).toEqual(["newer", "mine3", "mine2"]);
+});
+
+it("keeps the player's fight under Mine through their own routine stories", () => {
+  world.filter = "mine";
+  history.push(fight("mine", 99_000, PLAYER), ...routineStories(150, 200_000));
+  draw();
+  expect(rows()).toEqual(["mine"]);
+});
+
+it("keeps a Hyperstructure's capture under Important through other structures' captures", () => {
+  world.filter = "important";
+  world.hyperstructures = [900];
+  history.push(capture("seized", 99_000, "0xb", "0xc"));
+  history.push(
+    ...Array.from({ length: 150 }, (_, index) => ({
+      ...capture(`realm${index}`, 200_000 + index, "0xd", "0xe"),
+      entity: 7,
+    })),
+  );
+  draw();
+  expect(rows()).toEqual(["seized"]);
+});
+
+it("opens the Log on the same Important stories the strip keeps", () => {
+  world.filter = "important";
+  history.push(fight("mine3", 99_000, PLAYER), fight("mine2", 98_000, PLAYER), fight("mine1", 97_000, PLAYER));
+  history.push(fight("mine0", 96_000, PLAYER), ...othersFights(350, 200_000), ...routineStories(150, 300_000));
+  act(() => root.render(<EventLogPanel onDismiss={() => undefined} isInsideAnchor={() => false} />));
+  expect(rows()).toEqual(["mine3", "mine2", "mine1", "mine0"]);
 });
 
 it("tells a capture and the fight that won it as one row, by its capture", () => {

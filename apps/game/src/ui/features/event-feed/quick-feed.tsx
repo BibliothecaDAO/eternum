@@ -5,17 +5,18 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { type ProcessedStoryEvent, useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { type ProcessedStoryEvent, useStoryReads } from "@/hooks/store/use-story-events-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
-import { StructureType, TickIds } from "@bibliothecadao/types";
+import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { TickIds } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useEventFeedStore } from "./event-feed-store";
-import { type IsHyperstructure, selectEventStories } from "./event-stories";
+import { eventsReads, selectEventStories } from "./event-stories";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon, ToastRow } from "./feed-row-line";
 
 /** How many rows the Events strip shows: the owner's three. */
@@ -34,40 +35,36 @@ export const QuickFeedRows = () => {
   );
 };
 
-/** Events' stories through the player's filter, newest first: the strip shows the first three, the Log them all. */
+/**
+ * Events' stories through the player's filter, newest first, read by what the filter shows: the strip shows the first
+ * three, the Log them all.
+ */
 export function useEventsFeed() {
   const address = useAccountStore((state) => state.account?.address ?? null);
   const [filter] = useEventsFilter();
-  const isHyperstructure = useIsHyperstructure();
-  const stories = useEventsStories(address);
-  return { stories: selectEventStories(stories, filter, address, isHyperstructure), filter, address };
+  const hyperstructures = useHyperstructureIds();
+  const { data, queries } = useStoryReads(eventsReads(filter, address, hyperstructures));
+  const stories = useMemo(
+    () => selectEventStories(data, filter, address, (structureId) => hyperstructures.includes(structureId)),
+    [data, filter, address, hyperstructures],
+  );
+  const failed = queries.filter((query) => query.isError);
+  const retry = () => failed.forEach((query) => void query.refetch());
+  return { stories, filter, address, isError: failed.length > 0, retry };
 }
 
-/** Whether a structure is a Hyperstructure, read from the game's facts as they change. */
-export const useIsHyperstructure = (): IsHyperstructure => {
+/** The game's Hyperstructures, read from its facts as they change: a capture of one is everyone's news. */
+const useHyperstructureIds = (): number[] => {
   const { setup } = useGame();
-  useNativeRevision(["Structure"]);
-  return (structureId) =>
-    setup.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structureId })?.base
-      .category === StructureType.Hyperstructure;
+  const revision = useNativeRevision(["Hyperstructure"]);
+  return useMemo(
+    () =>
+      [...setup.store.inGame("Hyperstructure", configManager.getActiveGameId())].map((row) =>
+        safeInteger(row.entity_id),
+      ),
+    [setup, revision],
+  );
 };
-
-/**
- * The stories the Events card tells, each from a read that holds them, so what one read leaves out never pushes
- * another's off: every battle, raid and capture, the crates the player opened, and every story of the player's own.
- */
-function useEventsStories(address: string | null) {
-  const { data: battles } = useStoryEvents(350, "BattleEvent");
-  const { data: raids } = useStoryEvents(100, "RaidEvent");
-  const { data: captures } = useStoryEvents(100, "StructureCapturedStory");
-  const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
-  const { data: own } = useStoryEvents(150, undefined, address ?? undefined);
-  return useMemo(() => {
-    const read = [...battles, ...raids, ...captures, ...(address ? [...crates, ...own] : [])];
-    const seen = new Set<string>();
-    return read.filter(({ id }) => !seen.has(id) && seen.add(id) !== undefined);
-  }, [battles, raids, captures, crates, own, address]);
-}
 
 /** Stories that arrived since the log was last open; zero while it is open. */
 export function useUnreadFeedCount(stories: ProcessedStoryEvent[], logOpen: boolean): number {

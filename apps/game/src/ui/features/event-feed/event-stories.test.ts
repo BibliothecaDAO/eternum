@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { type EventsFilter, oneStoryPerAction, selectEventStories } from "./event-stories";
+import { type EventsFilter, eventsReads, oneStoryPerAction, selectEventStories } from "./event-stories";
 
 /** A story at `at`, its own transaction unless one is given, between the players its payload names. */
 const story = (
@@ -121,4 +121,46 @@ it("lists a building placed and paid for in one transaction once, and two buildi
     building(1, "BuildingPlacementStory", 4, { change: "Created" }),
   ];
   expect(oneStoryPerAction(stories).map((event) => event.id)).toEqual(["b4", "b2"]);
+});
+
+it("reads under Important only the player's fights, raids, captures and crates, and each Hyperstructure's captures", () => {
+  expect(eventsReads("important", "0x1", [900, 901])).toEqual([
+    { limit: 100, story: "BattleEvent", owner: "0x1" },
+    { limit: 100, story: "RaidEvent", owner: "0x1" },
+    { limit: 100, story: "StructureCapturedStory", owner: "0x1" },
+    { limit: 100, story: "RelicChestOpened", owner: "0x1" },
+    { limit: 100, story: "StructureCapturedStory", entityId: 900 },
+    { limit: 100, story: "StructureCapturedStory", entityId: 901 },
+  ]);
+  expect(eventsReads("important", null, [900])).toEqual([
+    { limit: 100, story: "StructureCapturedStory", entityId: 900 },
+  ]);
+});
+
+it("reads under Mine each Events story naming the player, and under All the world's fights and the player's stories", () => {
+  const mine = eventsReads("mine", "0x1", [900]);
+  expect(mine.every((read) => read.owner === "0x1" && read.entityId === undefined)).toBe(true);
+  expect(mine.map((read) => read.story)).toEqual([
+    "BattleEvent",
+    "RaidEvent",
+    "StructureCapturedStory",
+    "RealmCreatedStory",
+    "SpireDiscovered",
+    "BuildingPlacementStory",
+    "StructureLevelUpStory",
+    "ResourceReceiveArrivalStory",
+    "RelicChestOpened",
+    "BuildingPaymentStory",
+    "ExplorationReward",
+    "ExplorerCreateStory",
+    "ResourceTransferStory",
+  ]);
+  const all = eventsReads("all", "0x1", [900]);
+  expect(all.slice(0, 3)).toEqual([
+    { limit: 100, story: "BattleEvent" },
+    { limit: 100, story: "RaidEvent" },
+    { limit: 100, story: "StructureCapturedStory" },
+  ]);
+  expect(all.slice(3)).toEqual(mine.slice(3));
+  expect(eventsReads("mine", null, [900])).toEqual([]);
 });

@@ -27,6 +27,7 @@ import {
   resetGameSyncStoryEvents,
   useSeasonWinner,
   useStoryEvents,
+  useStoryReads,
 } from "./use-story-events-store";
 
 const scope = { chainId: "0x1", worldAddress: "0xabc", gameId: 1 };
@@ -126,6 +127,71 @@ const PlayerBattles = () => (
     ))}
   </ol>
 );
+
+/** A streamed capture of structure `structure`, block `index`. */
+const captureStreamed = (index: number, structure: number) =>
+  acceptGameSyncStoryEvent(
+    {
+      model: "StoryEvent",
+      key: `0xcapture${index}`,
+      value: {
+        game_id: "0x1",
+        order: `0x${index.toString(16)}`,
+        index: "0x0",
+        owner: "0x0e",
+        entity_id: `0x${structure.toString(16)}`,
+        tx_hash: `0xc${index.toString(16)}`,
+        story: { StructureCapturedStory: { previous_owner: "0x0f", new_owner: "0x0e" } },
+        timestamp: `0x${(100 + index).toString(16)}`,
+        event_position: {
+          block_number: index,
+          transaction_hash: `0xc${index.toString(16)}`,
+          transaction_index: 0,
+          event_index: 0,
+        },
+      },
+    },
+    scope,
+    { block: index, preconfirmed: false },
+  );
+
+const PlayerFightsAndStructureCaptures = () => (
+  <ol>
+    {useStoryReads([
+      { limit: 2, story: "BattleEvent", owner: "0x0a" },
+      { limit: 2, story: "StructureCapturedStory", entityId: 7 },
+    ]).data.map((event) => (
+      <li key={event.id}>{`${event.story}@${event.position.block}`}</li>
+    ))}
+  </ol>
+);
+
+describe("several story reads", () => {
+  it("keep each its own newest, so what one leaves out never takes another's room, all newest on the chain first", async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerFightsAndStructureCaptures />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => {
+      battleStreamed(1, "0x0a", "0x0b");
+      captureStreamed(2, 7);
+      battleStreamed(3, "0x0c", "0x0a");
+      for (let index = 10; index < 40; index++) battleStreamed(index, "0x0c", "0x0d");
+      for (let index = 40; index < 70; index++) captureStreamed(index, 8);
+    });
+    expect([...log.querySelectorAll("li")].map((item) => item.textContent)).toEqual([
+      "BattleEvent@3",
+      "StructureCapturedStory@2",
+      "BattleEvent@1",
+    ]);
+    await act(async () => logRoot.unmount());
+  });
+});
 
 describe("a story read", () => {
   it("keeps, for a player's read, each streamed story naming the player, as their attacker or their defender", async () => {

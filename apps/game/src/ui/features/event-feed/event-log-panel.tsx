@@ -1,17 +1,15 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { FeedRowLine } from "./feed-row-line";
-import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { EventsFilterSwitch } from "./events-filter-switch";
-import { oneStoryPerAction, selectEventStories } from "./event-stories";
-import { useIsHyperstructure } from "./quick-feed";
+import { oneStoryPerAction } from "./event-stories";
+import { useEventsFeed } from "./quick-feed";
 import { StoryFeedRow } from "./story-feed-row";
 
 /**
- * The full history: Events' stories behind the player's filter (Important, Mine or All, the same as the strip), newest
- * first, then every world story.
+ * The full history: Events' stories behind the player's filter (Important, Mine or All), from the strip's own reads, so
+ * what the strip shows the Log shows; newest first, then every world story.
  */
 export const EventLogPanel = ({
   onDismiss,
@@ -20,10 +18,13 @@ export const EventLogPanel = ({
   onDismiss: () => void;
   isInsideAnchor: (target: EventTarget | null) => boolean;
 }) => {
-  const [filter] = useEventsFilter();
-  const address = useAccountStore((state) => state.account?.address ?? null);
-  const { data: stories, isError, refetch } = useStoryEvents(350);
-  const told = selectEventStories(stories, filter, address, useIsHyperstructure());
+  const events = useEventsFeed();
+  const world = useStoryEvents(350);
+  const failed = events.isError || world.isError;
+  const retry = () => {
+    events.retry();
+    if (world.isError) void world.refetch();
+  };
 
   return (
     <PopoverPanel
@@ -36,17 +37,17 @@ export const EventLogPanel = ({
     >
       <SurfaceFrame title="Log" icon={"chronicles" as const} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
         <EventsFilterSwitch className="border-b border-gold/15 px-3 py-2" />
-        {isError && (
+        {failed && (
           <p className="px-3 py-2 text-xs text-danger">
             Event history could not load.{" "}
-            <button type="button" className="font-sans text-xs underline" onClick={() => void refetch()}>
+            <button type="button" className="font-sans text-xs underline" onClick={retry}>
               Retry
             </button>
           </p>
         )}
-        {!isError && told.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">Nothing here yet.</p>}
+        {!failed && events.stories.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">Nothing here yet.</p>}
         <div className="flex flex-col gap-1 px-2 py-2">
-          {told.map((event) => (
+          {events.stories.map((event) => (
             <FeedRowLine key={event.id} event={event} />
           ))}
         </div>
@@ -54,7 +55,7 @@ export const EventLogPanel = ({
           <div className="px-3 py-2">
             <span className={HUD_LABEL}>World history</span>
           </div>
-          {oneStoryPerAction(stories).map((event) => (
+          {oneStoryPerAction(world.data).map((event) => (
             <StoryFeedRow key={event.id} event={event} />
           ))}
         </section>
