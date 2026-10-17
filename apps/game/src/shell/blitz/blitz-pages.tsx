@@ -5,6 +5,7 @@ import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
+import { Pill } from "@/ui/design-system/kit/pill";
 
 import type { PlaytestSlot } from "../blitz-slot";
 
@@ -19,7 +20,6 @@ import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { ageOf } from "../play/ages";
 import { usePlayFacts } from "../play/play-facts";
-import { LiveChip, StateChip } from "../play/state-chip";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
@@ -158,10 +158,10 @@ const LobbyClock = ({ row, step, now, large }: { row: BlitzRow; step: LobbyStep;
         </div>
       )}
       <div className="flex flex-wrap items-center gap-2">
-        {row.startsAt === null && <LiveChip />}
-        {isClosedSlot(row, now) && <StateChip icon="lock" text={ENTRY_WORDS.closed} />}
+        {row.startsAt === null && <Pill tone="live">{WORDS.live}</Pill>}
+        {isClosedSlot(row, now) && <Pill icon="lock">{ENTRY_WORDS.closed}</Pill>}
         {!large && moment && <ClockChip prefix={moment.prefix} at={moment.at} now={now} />}
-        {step.kind === "preparing" && <StateChip icon="check" text={WORDS.joined} />}
+        {step.kind === "preparing" && <Pill icon="check">{WORDS.joined}</Pill>}
         {/* A slot's lobby draws its one number large (RegisteredCount); a game's seats ride here as a chip. */}
         {step.kind !== "preparing" && row.kind === "game" && <SeatsChip row={row} />}
       </div>

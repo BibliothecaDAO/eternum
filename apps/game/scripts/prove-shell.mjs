@@ -129,6 +129,8 @@ const LAB_PAGES = [
   ["first-visit", "sign-in/name-refused"],
   ["home", "doorway/map"],
   ["first-visit", "doorway/sign-in"],
+  ["home", "doorway/waiting"],
+  ["home", "doorway/preparing"],
   ["home", "no-such-page"],
 ];
 

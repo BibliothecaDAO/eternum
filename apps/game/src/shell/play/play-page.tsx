@@ -1,7 +1,9 @@
 import { useState } from "react";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
+import { FailureCard, StateCard } from "@/ui/design-system/kit/state-card";
+import { SectionLabel } from "@/ui/design-system/kit/section-label";
+import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
@@ -9,11 +11,10 @@ import { LORE_LINE, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
 import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
-import { ItemRows, LeadCard, SectionLabel } from "./play-item";
+import { ItemRows, LeadCard } from "./play-item";
 import { Loading } from "../loading";
 import { ServiceFailure } from "../service-failure";
 import type { SourceGap } from "./play-facts";
-import { FailureCard, StateCard } from "./state-card";
 
 /**
  * Play: what the player can do now, then each mode's next and finished games. "Now" leads and stays in view: the lead
@@ -119,6 +120,7 @@ const LaterSection = ({ facts, board }: { facts: PlayFacts; board: PlayBoard }) 
   );
 };
 
+/** The modes as tabs: each changes what the section below is about. A dot marks a mode holding the player's own. */
 const ModeSwitch = ({
   modes,
   shown,
@@ -130,30 +132,14 @@ const ModeSwitch = ({
   marked: readonly PlayMode[];
   onPick: (mode: PlayMode) => void;
 }) => (
-  <div role="tablist" aria-label={PLAY_WORDS.modes} className="flex gap-2">
-    {modes.map((mode) => {
-      const on = mode === shown;
-      return (
-        <button
-          key={mode}
-          type="button"
-          role="tab"
-          aria-selected={on}
-          onClick={() => onPick(mode)}
-          className={cn(
-            "relative min-h-12 flex-1 rounded-control border px-3 font-body text-base font-bold text-kit-cream",
-            on ? "border-kit-gold bg-kit-plate2" : "border-kit-line2 bg-kit-plate hover:border-kit-gold",
-          )}
-        >
-          {ageOf(mode).name}
-          {!on && marked.includes(mode) && (
-            <span
-              aria-label={PLAY_WORDS.yours}
-              className="absolute right-2.5 top-2 size-2.5 rounded-full bg-kit-peach"
-            />
-          )}
-        </button>
-      );
-    })}
-  </div>
+  <ViewSwitch
+    label={PLAY_WORDS.modes}
+    variant="split"
+    semantics="tab"
+    views={modes.map((mode) => ({ id: mode, word: ageOf(mode).name }))}
+    lit={shown}
+    onChange={onPick}
+    marked={marked}
+    markWord={PLAY_WORDS.yours}
+  />
 );

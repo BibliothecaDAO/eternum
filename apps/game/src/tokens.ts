@@ -35,6 +35,8 @@ export const COLORS = {
   hot: "#f6ac1d",
   /** Text on a gold face. */
   ink: "#1b1207",
+  /** A chip's dark glass, always translucent (72%): the HUD's chip token and the shell's state pills. */
+  veil: "#0a0806",
 } as const;
 
 /**

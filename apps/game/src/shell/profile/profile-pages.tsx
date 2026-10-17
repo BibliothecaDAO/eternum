@@ -5,6 +5,7 @@ import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { identityUsername, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { Button } from "@/ui/design-system/kit/button";
+import { SectionLabel } from "@/ui/design-system/kit/section-label";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 import type { Session } from "@realms-world/identity";
@@ -123,7 +124,9 @@ const AccountGroup = ({ session }: { session: Session }) => (
 /** A titled group of settings. */
 const Group = ({ title, children }: { title: string; children: ReactNode }) => (
   <section aria-label={title} className="flex flex-col gap-2">
-    <h2 className="px-2 font-body text-base font-bold text-kit-gold">{title}</h2>
+    <SectionLabel tone="gold" size="body" className="px-2">
+      {title}
+    </SectionLabel>
     {children}
   </section>
 );

@@ -1,15 +1,18 @@
 import { useParams } from "react-router-dom";
 
 import { gamePainting } from "@/shell/game-links";
+import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 
+import { ClockChip } from "../clock-chip";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
 import { ProfileStep } from "../sign-in/profile-step";
 import { SignInFrame } from "../sign-in/sign-in-page";
 import { StartStep } from "../sign-in/start-step";
-import { SIGN_IN_WORDS, WORDS } from "../words";
-import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, labCodeExpiry } from "./app-lab-fixtures";
+import { useNowSeconds } from "../use-now";
+import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "../words";
+import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, LAB_SEASON_WAIT, labCodeExpiry } from "./app-lab-fixtures";
 
 const noop = () => undefined;
 
@@ -58,6 +61,7 @@ export const LabSignIn = () => {
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */
 export const LabDoorway = () => {
   const { state } = useParams();
+  const now = useNowSeconds();
   const doorway = state && Object.hasOwn(LAB_DOORWAYS, state) ? LAB_DOORWAYS[state as keyof typeof LAB_DOORWAYS] : null;
   if (!doorway) return <NotFoundPage />;
   return (
@@ -68,6 +72,10 @@ export const LabDoorway = () => {
       painting={gamePainting({ mode: "frontier" })}
       onRetry={noop}
       onSignIn={noop}
-    />
+    >
+      {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
+      {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
+      {state === "preparing" && <Pill icon="check">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
+    </DoorwayScreen>
   );
 };

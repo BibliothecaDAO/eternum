@@ -1,14 +1,19 @@
 import { Button } from "@/ui/design-system/kit/button";
+import { Chip } from "@/ui/design-system/kit/chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
 import { Field } from "@/ui/design-system/kit/field";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
 import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Notice } from "@/ui/design-system/kit/notice";
+import { Panel, PanelTitle } from "@/ui/design-system/kit/panel";
+import { Pill } from "@/ui/design-system/kit/pill";
 import { PriceChip } from "@/ui/design-system/kit/price-chip";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
+import { SectionLabel } from "@/ui/design-system/kit/section-label";
 import { Sheet } from "@/ui/design-system/kit/sheet";
+import { FailureCard, StateCard } from "@/ui/design-system/kit/state-card";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
@@ -58,6 +63,11 @@ const Components = () => {
         <FieldsSection />
         <ControlsSection />
         <LinesSection />
+        <PillsSection />
+        <SwitchesSection />
+        <LabelsSection />
+        <PanelsSection />
+        <StateCardsSection />
         <ReasonsSection />
         <NoticesSection />
         <TiersSection />
@@ -182,6 +192,127 @@ const LinesSection = () => (
     <IconLine tone="cream" iconSize={22} icon="check">
       Claimed.
     </IconLine>
+  </Section>
+);
+
+const PillsSection = () => (
+  <Section title="Pill">
+    {/* On a painting: a state, a clock, the icon alone, a game under way. */}
+    <div className="flex flex-wrap gap-2 rounded-control bg-kit-plate2 p-2">
+      <Pill icon="lock">Closed</Pill>
+      <Pill icon="hourglass">Starts 16:30 · in 2h 4m</Pill>
+      <Pill icon="check" />
+      <Pill tone="live">Live</Pill>
+    </div>
+    {/* On a plate: a credit, a wallet, a step to press, a prize and one that does not come. */}
+    <div className="flex flex-wrap items-center gap-2">
+      <Pill size="sm" tone="gold" rimmed icon="chest">
+        Credit ×2
+      </Pill>
+      <Pill tone="muted" icon="backpack">
+        0x04a1…9c2e
+      </Pill>
+      <Pill as="button" size="lg" tone="muted" icon="refresh" onClick={() => undefined}>
+        Another wallet
+      </Pill>
+      <Pill size="lg" tone="gold" icon="lords">
+        2,000 LORDS
+      </Pill>
+      <Pill size="lg" tone="sage" icon="check">
+        In your collection
+      </Pill>
+      <Pill size="lg" tone="muted" icon="lords" struck>
+        No LORDS
+      </Pill>
+    </div>
+    {/* The HUD's amounts stay on its chip token: Chip, PriceChip. */}
+    <div className="flex flex-wrap gap-2">
+      <Chip icons={["person"]} value="17/24" label="Seats" />
+    </div>
+  </Section>
+);
+
+const SwitchesSection = () => {
+  const [board, setBoard] = useState<"frontier" | "blitz">("frontier");
+  const [mode, setMode] = useState<"blitz" | "eternum">("blitz");
+  return (
+    <Section title="ViewSwitch · joined, split">
+      <ViewSwitch
+        label="Boards"
+        views={[
+          { id: "frontier", word: "Frontier", icon: "crown" },
+          { id: "blitz", word: "Blitz", icon: "attack" },
+        ]}
+        lit={board}
+        onChange={setBoard}
+      />
+      <ViewSwitch
+        label="Modes"
+        variant="split"
+        semantics="tab"
+        views={[
+          { id: "blitz", word: "Blitz" },
+          { id: "eternum", word: "Eternum" },
+        ]}
+        lit={mode}
+        onChange={setMode}
+        marked={["blitz", "eternum"]}
+        markWord="Yours"
+      />
+    </Section>
+  );
+};
+
+const LabelsSection = () => (
+  <Section title="SectionLabel">
+    <SectionLabel>Now</SectionLabel>
+    <SectionLabel tone="gold" size="body" className="px-2">
+      Notifications
+    </SectionLabel>
+  </Section>
+);
+
+const PanelsSection = () => (
+  <Section title="Panel · PanelTitle">
+    <Panel icon="crown" title="Frontier" aside={<span className="text-kit-gold">12th</span>}>
+      <p className="px-1 text-base text-kit-muted">Gilded, on a plate, small padding.</p>
+    </Panel>
+    <Panel rule="line" pad="lg" icon="chest" title="Chest">
+      <p className="text-base text-kit-muted">Line, on a plate, large padding.</p>
+    </Panel>
+    <div className="plate p-5">
+      <Panel
+        rule="line"
+        surface="bare"
+        icon="lords"
+        title="Entry"
+        aside={
+          <Pill tone="muted" icon="backpack">
+            0x04a1…9c2e
+          </Pill>
+        }
+      >
+        <p className="text-base text-kit-muted">Line, bare, inside a plate.</p>
+      </Panel>
+    </div>
+    <PanelTitle rule="line" icon="backpack">
+      Payout wallet
+    </PanelTitle>
+  </Section>
+);
+
+const StateCardsSection = () => (
+  <Section title="StateCard · FailureCard">
+    <StateCard painting="brooding-plains">
+      <p className="font-body text-lg font-bold text-kit-cream">No season running</p>
+    </StateCard>
+    <StateCard painting="brooding-plains" image="md" pad="4" sizes="50vw">
+      <p className="font-body text-xl font-bold text-kit-cream">No season running</p>
+    </StateCard>
+    <StateCard painting="stormy" image="lg" sizes="100vw">
+      <p className="font-body text-lg font-bold text-kit-cream">Nothing here</p>
+    </StateCard>
+    <FailureCard service="season" error={new Error("lab")} retry={() => undefined} />
   </Section>
 );
 

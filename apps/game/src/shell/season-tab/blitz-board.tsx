@@ -10,7 +10,7 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { Loading } from "../loading";
-import { Panel } from "../panel";
+import { Panel } from "@/ui/design-system/kit/panel";
 import { ageOf } from "../play/ages";
 import { RatingFigure, TierMark } from "../rating-mark";
 import { type RatingProfile, ratingPoints, tierOf, useRatingTop } from "../ratings";

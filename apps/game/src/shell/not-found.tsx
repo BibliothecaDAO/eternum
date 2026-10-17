@@ -1,9 +1,9 @@
 import { Button } from "@/ui/design-system/kit/button";
+import { StateCard } from "@/ui/design-system/kit/state-card";
 
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
 import { StepVerb } from "./frame/step-verb";
-import { paintingSources } from "./paintings";
 import { APP_STATE_WORDS, WORDS } from "./words";
 
 /**
@@ -12,11 +12,10 @@ import { APP_STATE_WORDS, WORDS } from "./words";
  */
 export const NothingHere = () =>
   useLayout() === "phone" ? (
-    <section className="flex flex-col gap-3 plate p-3.5">
-      <img {...paintingSources("stormy")} sizes="100vw" alt="" className="h-44 w-full rounded-control object-cover" />
+    <StateCard painting="stormy" image="lg" sizes="100vw">
       <p className="font-body text-lg font-bold text-kit-cream">{APP_STATE_WORDS.nothingHere}</p>
       <Button role="primary" word={WORDS.play} icon="play" to="/" />
-    </section>
+    </StateCard>
   ) : (
     <div className="flex justify-center">
       <section className="plate flex w-dialog flex-col items-stretch gap-5 p-6">
