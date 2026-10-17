@@ -47,6 +47,8 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
       .map((event) => ({
         ...event,
         event_id: event.id,
+        // A story names its subject: a captured structure's id, here one for every story.
+        entity_id: 900,
         tx_hash: event.tx ?? `0x${event.id}`,
         timestamp: "100",
         timestampMs: event.at ?? 100_000,
@@ -57,7 +59,12 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
 }));
 vi.mock("./use-feed-rows", () => ({ useFeedRows: () => ({ inFlight: [], recent: sent }) }));
 vi.mock("@/hooks/store/use-events-filter-store", () => ({ useEventsFilter: () => [filter.value, () => undefined] }));
-vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60 } }));
+vi.mock("@bibliothecadao/eternum", () => ({
+  configManager: { getTick: () => 60 },
+  // What a capture's headline reads, as the game's own words have it.
+  CAPTURE_AFTERMATH: "Its armies and incoming deliveries went with it",
+  isViewerOwner: (owner: bigint, viewer: bigint | null) => viewer !== null && owner === viewer,
+}));
 vi.mock("./feed-row-line", () => ({
   FEED_ROW_CLASS: "",
   FeedRowLine: ({ row }: { row: { id: string } }) => <i>{row.id}</i>,
@@ -67,7 +74,13 @@ vi.mock("./feed-row-line", () => ({
 import { deriveFeedRows } from "./event-feed-rows";
 import { TransactionType } from "@bibliothecadao/provider";
 import type { Transaction } from "@/hooks/store/use-transaction-store";
-import { QuickFeedRows, useImportantFeed } from "./quick-feed";
+import { QuickFeedRows, useImportantFeed, useStripRows } from "./quick-feed";
+import { useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
+import { buildCaptureHeadline } from "../news-headlines/capture-headline";
+import type { FeedNotice } from "./event-feed-store";
+
+/** The Events card's strip, as the card draws it. */
+const Strip = () => <QuickFeedRows shown={useStripRows()} />;
 
 const Rows = () => (
   <>
@@ -101,10 +114,10 @@ const mountQuickFeed = (ids: string[]) => {
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  act(() => root.render(<QuickFeedRows />));
+  act(() => root.render(<Strip />));
   const drawn = () => [...host.querySelectorAll("i")].map((row) => row.textContent);
   const wrapper = (id: string) => [...host.querySelectorAll("i")].find((row) => row.textContent === id)!;
-  const rerender = () => act(() => root.render(<QuickFeedRows />));
+  const rerender = () => act(() => root.render(<Strip />));
   const unmount = () => {
     act(() => root.unmount());
     host.remove();
@@ -369,4 +382,137 @@ it("review: tells the capture with actual Cairo event order, capture before batt
     feed.rerender();
     expect(feed.drawn()).toEqual(["story:taken"]);
   });
+});
+
+/** This session's sends and notices, as the stores hold them and the real feed derives its (bounded) rows. */
+const setFeed = (transactions: Transaction[], notices: FeedNotice[] = []) => {
+  const rows = deriveFeedRows({ transactions, notices });
+  sent.splice(0, sent.length, ...rows.recent);
+};
+/** Fifteen routine production orders, settled after `from`: what Important leaves out, and what fills the bounded list. */
+const routine = (from: number) =>
+  Array.from({ length: 15 }, (_, i) => ({
+    ...original,
+    hash: `0x${(4096 + i).toString(16)}`,
+    type: TransactionType.BURN_RESOURCE_FOR_RESOURCE_PRODUCTION,
+    submittedAt: from + i,
+    confirmedAt: from + i,
+  }));
+const underImportant = (run: () => void) => {
+  filter.value = "important";
+  try {
+    run();
+  } finally {
+    filter.value = "all";
+  }
+};
+
+it("keeps a refused order, an unanswered one and a warning through traffic Important leaves out, until newer important ones replace them", () => {
+  underImportant(() =>
+    withFeed([], (feed) => {
+      const refused = { ...original, status: "reverted" as const };
+      const unanswered = {
+        ...original,
+        hash: "0x0bad",
+        status: "no_answer" as const,
+        submittedAt: 100_500,
+        confirmedAt: 100_500,
+      };
+      const warning: FeedNotice = { id: "warn", kind: "warning", title: "Storage is full", at: 100_800 } as FeedNotice;
+      setFeed([refused, unanswered], [warning]);
+      feed.rerender();
+      expect(feed.drawn()).toEqual(["warn", "0x0bad", "0x0abc"]);
+      // Fifteen routine orders push all three out of the bounded recent list: the strip keeps them.
+      setFeed(routine(102_000));
+      feed.rerender();
+      expect(feed.drawn()).toEqual(["warn", "0x0bad", "0x0abc"]);
+      // Newer important events replace them, newest first.
+      history.push(
+        {
+          id: "f1",
+          story: "BattleEvent",
+          owner: PLAYER,
+          participants: [PLAYER],
+          at: 200_000,
+          payload: { attacker: { player: PLAYER }, defender: { player: "0x5" } },
+        },
+        {
+          id: "f2",
+          story: "BattleEvent",
+          owner: PLAYER,
+          participants: [PLAYER],
+          at: 201_000,
+          payload: { attacker: { player: PLAYER }, defender: { player: "0x5" } },
+        },
+      );
+      feed.rerender();
+      expect(feed.drawn()).toEqual(["story:f2", "story:f1", "warn"]);
+    }),
+  );
+});
+
+/** A headline published for the strip, and the headlines put back as they were after. */
+const withHeadlines = (
+  run: (
+    publish: (headline: Parameters<ReturnType<typeof useHeadlineFeedStore.getState>["publish"]>[0]) => void,
+  ) => void,
+) => {
+  const previous = useHeadlineFeedStore.getState().headlines;
+  try {
+    run((headline) => act(() => useHeadlineFeedStore.getState().publish(headline)));
+  } finally {
+    act(() => useHeadlineFeedStore.setState({ headlines: previous }));
+  }
+};
+
+it("counts a milestone among the strip's three rows, in its own tick and after it", () => {
+  withHeadlines((publish) =>
+    withFeed(["r0", "r1", "r2"], (feed) => {
+      useChainTimeStore.getState().anchor({ timestamp: 101_000 });
+      publish({
+        id: "end",
+        type: "game-end",
+        title: "Game ended",
+        description: "Game ended",
+        timestamp: 101_000,
+        icon: "game-end",
+      });
+      feed.rerender();
+      expect(feed.drawn()).toEqual(["end", "story:r0", "story:r1"]);
+      act(() => useChainTimeStore.getState().anchor({ timestamp: 500_000 }));
+      feed.rerender();
+      expect(feed.drawn()).toEqual(["end", "story:r0", "story:r1"]);
+    }),
+  );
+});
+
+it.each([
+  ["the story, then its headline", "story-first"],
+  ["the headline, then its story", "headline-first"],
+] as const)("tells a capture once, by its story, when %s arrive", (_order, order) => {
+  const headline = buildCaptureHeadline({
+    structureId: 900,
+    isHyperstructure: false,
+    structureName: "Stolsli",
+    previousOwner: 0xa1n,
+    newOwner: BigInt(PLAYER),
+    site: null,
+    viewer: BigInt(PLAYER),
+    nameOf: () => "clientlane",
+    at: 101_000,
+  });
+  const { taken, fight } = capture("army-attacked", PLAYER, "0xa1");
+  underImportant(() =>
+    withHeadlines((publish) =>
+      withFeed([], (feed) => {
+        if (order === "story-first") history.push(taken, fight);
+        else publish(headline);
+        feed.rerender();
+        if (order === "story-first") publish(headline);
+        else history.push(taken, fight);
+        feed.rerender();
+        expect(feed.drawn()).toEqual(["story:taken"]);
+      }),
+    ),
+  );
 });

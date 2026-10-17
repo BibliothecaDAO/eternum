@@ -8,8 +8,8 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import {
   type ImportantFeedRow,
-  latestActions,
   matchesEventsFilter,
+  nextStripRows,
 } from "@/ui/features/event-feed/important-feed-rows";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
@@ -192,10 +192,10 @@ const eventsRows = (store: NativeFactStore): ImportantFeedRow[] => {
  */
 const LabEvents = ({ store }: { store: NativeFactStore }) => {
   const [filter] = useEventsFilter();
-  const rows = eventsRows(store).filter((row) => matchesEventsFilter(row, filter, PLAYER));
+  const shown = nextStripRows([], eventsRows(store), (row) => matchesEventsFilter(row, filter, PLAYER), 3);
   return (
     <InfoBubble label="Events" title="Events" cue={<EventsFilterSwitch />} bodyClassName="flex flex-col gap-1">
-      {latestActions(rows, 3).map(({ key, row }) => (
+      {shown.map(({ key, row }) => (
         <FeedRowLine key={key} row={row} />
       ))}
     </InfoBubble>

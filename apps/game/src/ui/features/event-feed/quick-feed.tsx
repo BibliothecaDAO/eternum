@@ -14,9 +14,10 @@ import type { Headline } from "../news-headlines/headline-types";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon } from "./feed-row-line";
 import {
   type ImportantFeedRow,
-  latestActions,
   matchesEventsFilter,
+  nextStripRows,
   selectImportantFeedRows,
+  type ShownRow,
 } from "./important-feed-rows";
 import { useFeedRows } from "./use-feed-rows";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
@@ -25,22 +26,45 @@ import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 const STRIP_ROWS = 3;
 
 /**
- * The strip's pinned notices, then the newest actions through the player's filter (`latestActions` holds its one
- * rule): three rows that stay until newer ones replace them.
+ * The strip's rows: the last three actions the player's filter admits (`nextStripRows` holds its one rule), which stay
+ * until newer ones it admits replace them, whatever the bounded sources drop meanwhile. What it showed is remembered for
+ * each player and filter, three rows apiece, by the Events card, which stays mounted while its body is collapsed.
  */
-export const QuickFeedRows = () => {
-  const { rows, pinned } = useImportantFeed();
-  return (
-    <>
-      <FeedNotices pinned={pinned} />
-      {latestActions(rows, STRIP_ROWS).map(({ key, row }) => (
-        <FeedRowLine key={key} row={row} />
-      ))}
-    </>
-  );
+export const useStripRows = (): ShownRow[] => {
+  const { allRows, filter, address } = useImportantFeed();
+  const memoryKey = `${address ?? "anyone"}:${filter}`;
+  const [memory, setMemory] = useState<Record<string, ShownRow[]>>({});
+  const remembered = memory[memoryKey] ?? NOTHING_SHOWN;
+  const shown = nextStripRows(remembered, allRows, (row) => matchesEventsFilter(row, filter, address), STRIP_ROWS);
+  // What the strip shows is remembered by setting it during render, as React advises: it converges at once.
+  if (!sameShown(shown, remembered)) setMemory((current) => ({ ...current, [memoryKey]: shown }));
+  return shown;
 };
+const NOTHING_SHOWN: ShownRow[] = [];
 
-/** The rows every layout counts and previews through the player's filter, plus the headlines pinned for this tick. */
+/** The strip: the offline row, then its rows. */
+export const QuickFeedRows = ({ shown }: { shown: readonly ShownRow[] }) => (
+  <>
+    <FeedNotices pinned={[]} />
+    {shown.map(({ key, row }) => (
+      <FeedRowLine key={key} row={row} />
+    ))}
+  </>
+);
+
+/** The same rows, in the same order, telling the same: only then is there nothing new to remember. */
+const sameShown = (a: readonly ShownRow[], b: readonly ShownRow[]): boolean =>
+  a.length === b.length &&
+  a.every((entry, index) => entry.key === b[index].key && rowWords(entry.row) === rowWords(b[index].row));
+
+/** What a row says, for telling whether it changed: its source and, for a send, how it stands. */
+const rowWords = (row: ImportantFeedRow): string =>
+  `${row.id}:${row.kind === "transaction" ? row.transaction.status : ""}`;
+
+/**
+ * Every row Events holds and those the player's filter admits, with the game's headlines among them; and, for the
+ * phone, the headlines of this tick, which it shows on their own.
+ */
 export function useImportantFeed() {
   const nowMs = useNowMs();
   const tickSeconds = Number(configManager.getTick(TickIds.Armies));
@@ -50,11 +74,15 @@ export function useImportantFeed() {
   const headlineFeed = orderHeadlineFeed(headlines, nowMs, tickSeconds);
   const stories = useEventsStories(address);
   const feed = useFeedRows();
-  const rows = selectImportantFeedRows(stories, feed, filter, address, headlineFeed.recent);
+  const allRows = selectImportantFeedRows(stories, feed, "all", address, [
+    ...headlineFeed.pinned,
+    ...headlineFeed.recent,
+  ]);
+  const admitted = (row: ImportantFeedRow) => matchesEventsFilter(row, filter, address);
   const pinned = headlineFeed.pinned.filter((headline) =>
-    matchesEventsFilter({ kind: "headline", id: headline.id, at: headline.timestamp, headline }, filter, address),
+    admitted({ kind: "headline", id: headline.id, at: headline.timestamp, headline }),
   );
-  return { nowMs, rows, pinned, address };
+  return { nowMs, rows: allRows.filter(admitted), allRows, pinned, filter, address };
 }
 
 /**

@@ -65,6 +65,8 @@ const story = (id: string, kind: string, owner: string, payload: Record<string, 
     owner,
     participants: [owner],
     tx_hash: `0x${id}`,
+    // Its subject: the structure a capture took, here one for every story.
+    entity_id: 5,
     timestamp: "100",
     timestampMs: 100_000,
     storyPayload: payload,

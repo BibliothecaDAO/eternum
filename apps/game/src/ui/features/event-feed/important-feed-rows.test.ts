@@ -6,7 +6,7 @@ import {
   type ImportantFeedRow,
   oneStoryPerAction,
   type EventsFilter,
-  latestActions,
+  nextStripRows,
   type ShownRow,
   selectImportantFeedRows,
   sendKey,
@@ -110,8 +110,8 @@ it("shows under Important a crate the player opened, and their captures; not a l
   const stories = [
     story("crate", 10, "RelicChestOpened", "0x1"),
     story("their-crate", 20, "RelicChestOpened", "0x2"),
-    story("took", 30, "StructureCapturedStory", "0x1", { previous_owner: "0x0" }),
-    story("lost", 40, "StructureCapturedStory", "0x2", { previous_owner: "0x1" }),
+    story("took", 30, "StructureCapturedStory", "0x1", { previous_owner: "0x0", new_owner: "0x1" }),
+    story("lost", 40, "StructureCapturedStory", "0x2", { previous_owner: "0x1", new_owner: "0x2" }),
     story("up", 50, "StructureLevelUpStory", "0x1"),
   ];
   const important = selectImportantFeedRows(stories, empty, "important", "0x1").map((row) => row.id);
@@ -244,13 +244,15 @@ it("lists a building placed and paid for in one transaction once, and two buildi
 
 const eventsRows = (events: ProcessedStoryEvent[]) => selectImportantFeedRows(events, empty, "all", "0x1");
 const keysOf = (shown: ShownRow[]) => shown.map(({ key }) => key);
+/** The strip's rows over these rows, from a strip that showed nothing yet. */
+const latest = (rows: ImportantFeedRow[], count: number) => nextStripRows([], rows, () => true, count);
 
 it("keeps the newest three actions, newest on top, however old: they stay until newer ones replace them", () => {
   const events = Array.from({ length: 5 }, (_, index) => battle(`b${index}`, 1_000 - index * 100));
-  const three = latestActions(eventsRows(events), 3);
+  const three = latest(eventsRows(events), 3);
   expect(keysOf(three)).toEqual(events.slice(0, 3).map((event) => sendKey(event.tx_hash)));
   const newer = battle("newer", 2_000);
-  expect(keysOf(latestActions(eventsRows([newer, ...events]), 3))).toEqual(
+  expect(keysOf(latest(eventsRows([newer, ...events]), 3))).toEqual(
     [newer, ...events.slice(0, 2)].map((event) => sendKey(event.tx_hash)),
   );
 });
@@ -262,12 +264,12 @@ it("tells one action once, with its latest words: a send, then the story it wrot
     at: 100_000,
     transaction: { hash: "0x0abc", status: "success", type: TransactionType.ATTACK_EXPLORER_VS_GUARD },
   };
-  const sending = latestActions(
+  const sending = latest(
     selectImportantFeedRows([], { ...empty, recent: [send] } as unknown as FeedRows, "all", "0x1"),
     3,
   );
   const story = { ...battle("fight", 101_000), tx_hash: "0xabc" } as unknown as ProcessedStoryEvent;
-  const told = latestActions(
+  const told = latest(
     selectImportantFeedRows([story], { ...empty, recent: [send] } as unknown as FeedRows, "all", "0x1"),
     3,
   );
