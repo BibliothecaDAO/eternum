@@ -7,7 +7,8 @@ import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { Kbd } from "../frame/kbd";
+import { Field } from "@/ui/design-system/kit/field";
+import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Panel } from "../panel";
 import { ServiceFailure } from "../service-failure";
 import { CHAT_WORDS } from "../words";
@@ -88,17 +89,17 @@ const Composer = ({ send }: { send: (content: string) => void }) => {
     setDraft("");
   };
   return (
-    <form onSubmit={submit} className="relative">
-      <input
+    <form onSubmit={submit}>
+      <Field
+        size="md"
         aria-label={CHAT_WORDS.message}
         placeholder={CHAT_WORDS.message}
         enterKeyHint="send"
         maxLength={MESSAGE_LIMIT}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        className="h-12 w-full rounded-control border-2 border-kit-line2 bg-kit-ground px-3 pr-16 text-base text-kit-cream placeholder:text-kit-muted focus:border-kit-peach focus:outline-none"
+        trailing={<Kbd keyName="Enter" className="pointer-events-none max-lg:hidden" />}
       />
-      <Kbd keyName="Enter" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 max-lg:hidden" />
     </form>
   );
 };

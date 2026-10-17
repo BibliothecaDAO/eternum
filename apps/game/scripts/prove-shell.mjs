@@ -105,8 +105,8 @@ const flows = (layout, persona) => {
 
 /**
  * The pages the live stack cannot show at will (a running Blitz season, a claim, a sealed chest, a paid entry, a
- * signed-in player without an emailed code), opened in the app lab over its fixtures (`?capture=1`: the lab's own
- * header off) and measured at rest.
+ * signed-in player without an emailed code, sign-in's later steps, the doorway's holds), opened in the app lab over its
+ * fixtures (`?capture=1`: the lab's own header off) and measured at rest, with the reading pages and an unknown path's.
  */
 const LAB_GAME = "0x5245414c4d53-7";
 const LAB_PAGES = [
@@ -119,6 +119,17 @@ const LAB_PAGES = [
   ["home", "profile"],
   ["home", "profile/settings"],
   ["home", "scroll"],
+  ["home", "scroll/infrastructure-autonomous-worlds"],
+  ["first-visit", "terms"],
+  ["first-visit", "privacy"],
+  ["first-visit", "credits"],
+  ["first-visit", "sign-in/start"],
+  ["first-visit", "sign-in/code"],
+  ["first-visit", "sign-in/name"],
+  ["first-visit", "sign-in/name-refused"],
+  ["home", "doorway/map"],
+  ["first-visit", "doorway/sign-in"],
+  ["home", "no-such-page"],
 ];
 
 /** Measured in the page: what a first-time viewer meets, read from the page's own bands. */

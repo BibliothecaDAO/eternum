@@ -1,12 +1,16 @@
 import { Button } from "@/ui/design-system/kit/button";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
+import { Field } from "@/ui/design-system/kit/field";
+import { IconLine } from "@/ui/design-system/kit/icon-line";
+import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Notice } from "@/ui/design-system/kit/notice";
 import { PriceChip } from "@/ui/design-system/kit/price-chip";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
+import { Switch } from "@/ui/design-system/kit/switch";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
@@ -57,6 +61,9 @@ const Components = () => {
         <ClockSection />
         <StoresSection />
         <ButtonsSection />
+        <FieldsSection />
+        <ControlsSection />
+        <LinesSection />
         <ReasonsSection />
         <NoticesSection />
         <TiersSection />
@@ -124,6 +131,63 @@ const ButtonsSection = () => (
       <Button role="secondary" word="Refill" prices={[{ of: "lords", amount: 60 }]} className="flex-1" />
       <Button role="primary" word="Upgrade" prices={[{ of: "xp", amount: 100 }]} className="flex-1" />
     </div>
+    {/* `to`: a verb that leads to a route (Play on an unknown page, a card's Enter). */}
+    <Button role="secondary" word="Tokens" icon="play" to="/lab/kit/tokens" />
+  </Section>
+);
+
+const FieldsSection = () => {
+  const [draft, setDraft] = useState("");
+  return (
+    <Section title="Field">
+      <Field
+        size="md"
+        aria-label="Message"
+        placeholder="Message"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        trailing={<Kbd keyName="Enter" className="pointer-events-none max-lg:hidden" />}
+      />
+      <Field size="lg" icon="mail" type="email" aria-label="Email" placeholder="you@mail.com" />
+      <Field size="lg" valid aria-label="Name" defaultValue="Maelis" className="font-body text-xl font-bold" />
+      <Field size="lg" invalid aria-label="Name" defaultValue="Ma" className="font-body text-xl font-bold" />
+    </Section>
+  );
+};
+
+const ControlsSection = () => {
+  const [music, setMusic] = useState(true);
+  const [guide, setGuide] = useState(false);
+  return (
+    <Section title="Switch · Kbd">
+      <div className="flex items-center gap-3">
+        <span className="flex-1 text-base">Music</span>
+        <Switch on={music} label="Music" onToggle={() => setMusic(!music)} />
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="flex-1 text-base">Guide</span>
+        <Switch on={guide} label="Guide" onToggle={() => setGuide(!guide)} />
+      </div>
+      <div className="flex items-center gap-2">
+        {["1", "2", "3", "Esc", "Enter"].map((key) => (
+          <Kbd key={key} keyName={key} />
+        ))}
+      </div>
+    </Section>
+  );
+};
+
+const LinesSection = () => (
+  <Section title="IconLine">
+    <IconLine tone="cream" icon="lock">
+      Your keys stay with you.
+    </IconLine>
+    <IconLine tone="muted" icon="hourglass">
+      Arrives when the season closes.
+    </IconLine>
+    <IconLine tone="cream" iconSize={22} icon="check">
+      Claimed.
+    </IconLine>
   </Section>
 );
 

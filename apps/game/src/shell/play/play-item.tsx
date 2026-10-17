@@ -1,6 +1,7 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 
+import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { formatAmount } from "@/ui/design-system/kit/amount";
@@ -24,7 +25,6 @@ import { ServiceFailure } from "../service-failure";
 import { signInHref } from "../sign-in/sign-in-route";
 import { BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
-import { GoButton } from "./go-button";
 import type { PlayItem } from "./play-board";
 import { LiveChip, StateChip } from "./state-chip";
 
@@ -126,7 +126,7 @@ const ItemVerbButton = ({ item, signedIn, gold }: { item: PlayItem; signedIn: bo
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
-  return <GoButton role={gold ? "primary" : "secondary"} word={verb.word} icon={verb.icon} to={verb.to} />;
+  return <Button role={gold ? "primary" : "secondary"} word={verb.word} icon={verb.icon} to={verb.to} />;
 };
 
 type ItemProps = { item: PlayItem; now: number; signedIn: boolean };

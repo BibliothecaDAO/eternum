@@ -1,8 +1,9 @@
+import { Button } from "@/ui/design-system/kit/button";
+
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
 import { StepVerb } from "./frame/step-verb";
 import { paintingSources } from "./paintings";
-import { GoButton } from "./play/go-button";
 import { APP_STATE_WORDS, WORDS } from "./words";
 
 /**
@@ -14,7 +15,7 @@ export const NothingHere = () =>
     <section className="flex flex-col gap-3 plate p-3.5">
       <img {...paintingSources("stormy")} sizes="100vw" alt="" className="h-44 w-full rounded-control object-cover" />
       <p className="font-body text-lg font-bold text-kit-cream">{APP_STATE_WORDS.nothingHere}</p>
-      <GoButton role="primary" word={WORDS.play} icon="play" to="/" />
+      <Button role="primary" word={WORDS.play} icon="play" to="/" />
     </section>
   ) : (
     <div className="flex justify-center">
@@ -23,7 +24,7 @@ export const NothingHere = () =>
           {APP_STATE_WORDS.nothingHere}
         </p>
         <StepVerb>
-          <GoButton role="primary" word={WORDS.play} icon="play" to="/" />
+          <Button role="primary" word={WORDS.play} icon="play" to="/" />
         </StepVerb>
       </section>
     </div>

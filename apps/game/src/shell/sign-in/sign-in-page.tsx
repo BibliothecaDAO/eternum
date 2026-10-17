@@ -144,9 +144,9 @@ const useIdentityAction = (initialError: () => string | null) => {
 /**
  * The flow's frame on PageFrame, with no tabs: on a phone one column, the painting and the lore line above the first
  * step only; on desktop the window split: the painting with the lore line at its foot, and the steps in a panel the
- * window's height at the right, under the step's title.
+ * window's height at the right, under the step's title. The app lab draws each step in it.
  */
-const SignInFrame = ({
+export const SignInFrame = ({
   next,
   title,
   hero = false,

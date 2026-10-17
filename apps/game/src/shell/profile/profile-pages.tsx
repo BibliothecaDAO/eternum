@@ -5,6 +5,7 @@ import { isAccountStatePrompt } from "@/hooks/context/gameplay-account-sync";
 import { identityUsername, signOutIdentitySession, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { Button } from "@/ui/design-system/kit/button";
+import { Switch } from "@/ui/design-system/kit/switch";
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 import type { Session } from "@realms-world/identity";
 
@@ -25,7 +26,6 @@ import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
 import { SettingRow, SettingRows } from "./setting-row";
-import { Switch } from "./switch";
 
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
 const HOW_TO_PLAY = "https://docs.realms.world";
