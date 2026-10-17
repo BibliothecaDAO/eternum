@@ -42,6 +42,9 @@ export interface StoryEventPresentation {
   owner?: string | null;
 }
 
+/** What a capture takes with the structure: what the structure owns (its armies, the deliveries bound for it) is the captor's. */
+export const CAPTURE_AFTERMATH = "Its armies and incoming deliveries went with it";
+
 type StoryFormatter = (
   event: StoryEventSystemUpdate,
   payload: Record<string, unknown>,
@@ -86,11 +89,12 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "prize",
   }),
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: "Structure captured",
-    description: joinPieces([
-      describeEntity(event.entityId, components),
-      `${nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "—"} → ${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "—"}`,
-    ]),
+    title: `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+      isViewer(payload.previous_owner, event.viewerAddress)
+        ? "you"
+        : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+    }`,
+    description: toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : undefined,
     icon: "battle",
   }),
   TradeCreated: (_event, payload) => {
@@ -239,7 +243,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const side = (label: string, value: Record<string, unknown>) => [
       `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
-      `${label} Troops Left: ${formatResourceAmount(value.after)} Troops`,
+      `${label} Troops Left: ${formatResourceAmount(value.after)}`,
       Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
     ];
     return {
@@ -315,7 +319,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   TroopsTransferred: (event, payload, components) => ({
     title: `Troops moved: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
-    description: `${formatResourceAmount(payload.amount) ?? "Some"} troops`,
+    description: troopCount(payload.amount),
     icon: "troop",
   }),
 };
@@ -662,6 +666,19 @@ function toBigIntSafe(value: unknown): bigint | null {
   return null;
 }
 
+/** Whether an address is the player the story is told to. */
+function isViewer(address: unknown, viewerAddress: string | null): boolean {
+  const player = toBigIntSafe(address);
+  return player !== null && player !== 0n && viewerAddress !== null && player === BigInt(viewerAddress);
+}
+
+/** A number of troops, one troop or many ("1 troop", "1,000 troops"). */
+function troopCount(amount: unknown): string {
+  const count = formatResourceAmount(amount);
+  if (count === undefined) return "Some troops";
+  return `${count} ${count === "1" ? "troop" : "troops"}`;
+}
+
 function formatResourceAmount(amount: unknown): string | undefined {
   const bigIntAmount = amountToBigInt(amount);
   if (bigIntAmount === null) return undefined;
@@ -689,12 +706,6 @@ function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undef
   return `lands at ${formatClockTime(deliveryLandsAt(Math.floor(sentAtMs / 1000), road) * 1000)}`;
 }
 
-/** An owner is an address (its registered name, else shortened) or an owning structure (its name). */
-/**
- * The one way a story names an owner: the ownerless address reads as Neutral, an address goes to the client's
- * resolver, then the chain name (the registration fallback reads as none), then the shortened address; anything
- * else is a structure id and reads by its name.
- */
 /**
  * A fight's outcome as every surface shows it, whole, decided as the contract decides its winner (combat.cairo's
  * `battle_winner` and its guard branch): the side left standing when the other has no troops wins; both standing is
@@ -707,6 +718,11 @@ function battleOutcome(attacker: { name?: string; standing: boolean }, defender:
   return attacker.standing ? "Draw" : "Both sides fall";
 }
 
+/**
+ * The one way a story names an owner: the ownerless address reads as Neutral, an address goes to the client's
+ * resolver, then the chain name (the registration fallback reads as none), then the shortened address; anything
+ * else is a structure id and reads by its name.
+ */
 function nameOwner(
   owner: unknown,
   components?: NativeFactStore,

@@ -115,6 +115,21 @@ it("holds the news of the player's own realms from history, never another player
   expect(selectImportantFeedRows(stories, empty, "combat", "0x01")).toEqual([]);
 });
 
+it("holds a capture for both sides, from history, so a player who was away finds the realm they lost", () => {
+  const capture = (owner: string, previousOwner: string, at: number) =>
+    ({
+      ...battle(`taken-from-${previousOwner}`, at, owner),
+      story: "StructureCapturedStory",
+      storyPayload: { previous_owner: previousOwner, new_owner: owner },
+    }) as ProcessedStoryEvent;
+  const lost = capture("0x7", "0x1", 30);
+  const elsewhere = capture("0x7", "0x8", 31);
+  expect(selectImportantFeedRows([lost, elsewhere], empty, "mine", "0x1").map((row) => row.id)).toEqual([
+    "story:taken-from-0x1",
+  ]);
+  expect(selectImportantFeedRows([lost, elsewhere], empty, "all", "0x1")).toHaveLength(2);
+});
+
 it("shows a completed send once its history story arrives as that story, which a reload brings back", () => {
   const send = (hash: string) => ({ kind: "transaction", id: hash, at: 25, transaction: { hash, status: "success" } });
   const feed = { ...empty, recent: [send("0xup"), send("0xother")] } as unknown as FeedRows;

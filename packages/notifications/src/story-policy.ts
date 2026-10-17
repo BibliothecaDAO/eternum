@@ -6,7 +6,6 @@ type StoryRule = { level: Exclude<NotificationLevel, "off">; recipients: Recipie
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const STORY_RULES = {
-  StructureCapturedStory: { level: "all", recipients: "capture" },
   BitcoinAwardStory: { level: "all", recipients: "owner" },
   TradeCreated: { level: "all", recipients: "owner" },
   TradeAccepted: { level: "all", recipients: "owner" },
@@ -24,6 +23,7 @@ const STORY_RULES = {
   RelicCrafted: { level: "all", recipients: "owner" },
 
   BattleEvent: { level: "important", recipients: "nativeBattle" },
+  StructureCapturedStory: { level: "important", recipients: "capture" },
   RaidEvent: { level: "important", recipients: "raid" },
   RealmCreatedStory: { level: "standard", recipients: "owner" },
   SpireDiscovered: { level: "standard", recipients: "owner" },

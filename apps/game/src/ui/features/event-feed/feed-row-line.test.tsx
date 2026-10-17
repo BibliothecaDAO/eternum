@@ -195,6 +195,32 @@ describe("A delivery in Events", () => {
   });
 });
 
+describe("A capture in Events", () => {
+  it("tells the player who lost a structure who took it from them, and what went with it, under Mine", async () => {
+    const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
+    const payload = { previous_owner: PLAYER, new_owner: "0xc1", points: 0 };
+    const presentation = buildStoryEventPresentation(
+      {
+        storyType: "StructureCapturedStory",
+        storyPayload: payload,
+        ownerAddress: "0xc1",
+        viewerAddress: PLAYER,
+      } as never,
+      undefined,
+      (address) => (BigInt(address) === 0xc1n ? "clientlane" : null),
+    );
+    const taken = {
+      ...story("taken", "StructureCapturedStory", "0xc1", payload, presentation.title),
+      participants: ["0xc1", PLAYER],
+      presentation,
+    } as ProcessedStoryEvent;
+    const [row] = selectImportantFeedRows([taken], noFeed, "mine", PLAYER);
+    expect(renderToStaticMarkup(<FeedRowLine row={row} />)).toContain(
+      "clientlane took a structure from you · Its armies and incoming deliveries went with it",
+    );
+  });
+});
+
 describe("A fight in Events", () => {
   /** A fight against the Vanguard, worded by the game's own story formatter, as the player's Events row. */
   const fightRow = async (attackerAfter: string, defenderAfter: string, winner: number) => {

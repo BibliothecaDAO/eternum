@@ -56,7 +56,7 @@ const buildStore = () => {
 };
 
 const story = (storyType: string, storyPayload: Record<string, unknown>, entityId: number | null = null): Event =>
-  ({ storyType, storyPayload, entityId, ownerAddress: "0x123" }) as Event;
+  ({ storyType, storyPayload, entityId, ownerAddress: "0x123", viewerAddress: null }) as Event;
 
 describe("owner naming", () => {
   it("names owners through the injected resolver, the zero address as the Vanguard, and the rest by the one rule", () => {
@@ -79,6 +79,7 @@ describe("owner naming", () => {
           defender: { player: "0x0", category: "Knight", tier: "T1", before: "10", after: "0", roll: 0 },
         },
         rawStory: {},
+        viewerAddress: null,
       },
       undefined,
       resolve,
@@ -96,6 +97,7 @@ describe("owner naming", () => {
         storyType: "BlitzFinalized",
         storyPayload: {},
         rawStory: {},
+        viewerAddress: null,
       },
       undefined,
       resolve,
@@ -442,6 +444,51 @@ it("names a gone army's chest delivery without its names", () => {
     story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
   );
   expect(title).toBe("Produce pack: 3 relics to its realm");
+});
+
+describe("a capture", () => {
+  const names = (address: string) => ({ "0xc1": "clientlane", "0xa1": "uxplay" })[address] ?? null;
+  const captured = (previousOwner: string, viewerAddress: string | null) => {
+    const { store, setStructure } = buildStore();
+    setStructure(5, 1, 1);
+    const realm = buildStoryEventPresentation(story("RealmCreatedStory", { coord: { x: 1, y: 1 } }, 5), store).title;
+    const presentation = buildStoryEventPresentation(
+      {
+        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1", points: 0 }, 5),
+        viewerAddress,
+      },
+      store,
+      names,
+    );
+    return { ...presentation, realm: realm.replace(/ founded$/, "") };
+  };
+
+  it("names who took which structure from whom, and what went with it", () => {
+    const { title, description, realm } = captured("0xa1", null);
+    expect(title).toBe(`clientlane took ${realm} from uxplay`);
+    expect(description).toBe("Its armies and incoming deliveries went with it");
+  });
+
+  it("tells the player who lost it that it was taken from them, with or without leading zeros", () => {
+    const { title, realm } = captured("0x00a1", "0xa1");
+    expect(title).toBe(`clientlane took ${realm} from you`);
+    expect(captured("0xa1", "0xc1").title).toBe(`clientlane took ${realm} from uxplay`);
+  });
+
+  it("has nothing that went with it when no player held it", () => {
+    const { title, description, realm } = captured("0x0", "0xc1");
+    expect(title).toBe(`clientlane took ${realm} from The Vanguard`);
+    expect(description).toBeUndefined();
+  });
+});
+
+it("counts one troop as one", () => {
+  const moved = (amount: string) =>
+    buildStoryEventPresentation(
+      story("TroopsTransferred", { source: { Explorer: 7 }, target: { Explorer: 8 }, amount }),
+    ).description;
+  expect(moved("1000000000")).toBe("1 troop");
+  expect(moved("2000000000")).toBe("2 troops");
 });
 
 describe("a story's subject", () => {

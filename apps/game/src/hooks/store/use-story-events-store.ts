@@ -16,6 +16,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { create } from "zustand";
+import { useAccountAddress } from "./use-account-store";
 import { useConnectionStore } from "./use-connection-store";
 
 /** Where a story's event sits on the chain; a pre-confirmed one has no block yet. */
@@ -203,9 +204,11 @@ export const isPresentableStory = (event: Pick<StoryEventData, "story">): boolea
   return false;
 };
 
+/** A story as the viewer reads it: its words name the viewer "you" where it names them. */
 const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
   store: Parameters<typeof buildStoryEventPresentation>[1],
+  viewerAddress: string | null,
 ): ProcessedStoryEvent => {
   const timestampMs = Number(BigInt(event.timestamp)) * 1_000;
   const presentation = buildStoryEventPresentation(
@@ -218,6 +221,7 @@ const processStoryEvent = (
       storyType: event.story,
       storyPayload: event.storyPayload,
       rawStory: event.rawStory,
+      viewerAddress,
     },
     store,
     getPlayerName,
@@ -241,7 +245,7 @@ const namesPlayer = (event: StoryEventData, player: bigint): boolean =>
  * Newest first by place on the chain: a pre-confirmed story (no block yet) above every block, then block, transaction
  * and event, the order the contract wrote them in. Never by time: one block holds many stories at one timestamp.
  */
-const newestOnChainFirst = (left: StoryEventData, right: StoryEventData): number =>
+export const newestOnChainFirst = (left: StoryEventData, right: StoryEventData): number =>
   blockRank(right.position) - blockRank(left.position) ||
   right.position.transactionIndex - left.position.transactionIndex ||
   right.position.eventIndex - left.position.eventIndex;
@@ -269,6 +273,8 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
     setup: { store },
   } = useGame();
   const streamed = useStoryEventsStore((state) => state.streamed);
+  const viewer = useAccountAddress();
+  const viewerAddress = viewer === null ? null : `0x${viewer.toString(16)}`;
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   const scope = { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId };
@@ -316,8 +322,8 @@ export const useStoryEvents = (limit: number = 100, story?: string, owner?: stri
     () =>
       latestStories([...delivered, ...(query.data ?? [])], limit)
         .filter(isPresentableStory)
-        .map((event) => processStoryEvent(event, store)),
-    [store, limit, query.data, delivered],
+        .map((event) => processStoryEvent(event, store, viewerAddress)),
+    [store, limit, query.data, delivered, viewerAddress],
   );
 
   return { ...query, data };

@@ -28,6 +28,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowMs: () => world.no
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => world.revision }));
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: "0xabc" } }),
+  useAccountAddress: () => 0xabcn,
 }));
 vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: (state: unknown) => unknown) => select({ arrivedArrivalStructureIds: [] }),

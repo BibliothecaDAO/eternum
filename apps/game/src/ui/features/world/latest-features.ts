@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Captures tell both sides",
+    description:
+      "A realm's owner now learns who took it: Events and the Log tell the capture to both sides, even after time away, and a notification reaches them. Both are told that the realm's armies and incoming deliveries went with it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Minimap follows the camera again",
     description:
       "The minimap centres on the camera and zooms with it, closer than the whole map it showed before. Names shown on hover, such as a resource ring's, now draw above every panel instead of under the next row.",

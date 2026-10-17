@@ -11,7 +11,7 @@ it("covers every native story and tests every cumulative level", () => {
   const storyType = event.event.members.find((member: { name: string }) => member.name === "story").type;
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
-    important: ["BattleEvent", "RaidEvent"],
+    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory"],
     standard: [
       "RealmCreatedStory",
       "SpireDiscovered",
@@ -30,7 +30,6 @@ it("covers every native story and tests every cumulative level", () => {
       "ExplorerDeleteStory",
       "GuardAddStory",
       "GuardDeleteStory",
-      "StructureCapturedStory",
       "BitcoinAwardStory",
       "TradeCreated",
       "TradeAccepted",

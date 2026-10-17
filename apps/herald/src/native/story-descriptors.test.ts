@@ -39,6 +39,7 @@ function renderedStory(storyType: string, payload: number[]) {
     txHash: "0x55",
     timestamp: 140,
     rawStory: { [storyType]: storyPayload },
+    viewerAddress: null,
   });
   return `${title} · ${description ?? ""}`;
 }

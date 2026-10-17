@@ -90,6 +90,8 @@ export type StoryEventSystemUpdate = {
   storyType: string;
   storyPayload: Record<string, unknown> | null;
   rawStory: unknown;
+  /** The player the story is told to, who reads as "you" where a story names them; null for a spectator. */
+  viewerAddress: string | null;
 };
 
 export enum StructureProgress {

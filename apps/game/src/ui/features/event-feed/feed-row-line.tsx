@@ -128,6 +128,9 @@ const StoryIcon = ({ story }: { story: string }) => {
 
 function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>): string {
   const { event } = row;
+  // A capture says what went with the structure, beside who took it.
+  if (event.story === "StructureCapturedStory")
+    return [event.presentation.title, event.presentation.description].filter(Boolean).join(" · ");
   if (event.story !== "BattleEvent") return event.presentation.title;
   const description = event.presentation.description;
   const outcome = findSegmentValue(parsePresentationDescription(description), (label) => label === "Outcome");

@@ -9,13 +9,9 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useHeadlineFeedStore } from "./headline-feed-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore — module resolution handled by bundler at runtime
-import { isViewerOwner, Position, structureMapPosition } from "@bibliothecadao/eternum";
+import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-// @ts-ignore
 import { ContractAddress, StructureType } from "@bibliothecadao/types";
-// @ts-ignore
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -26,17 +22,9 @@ import { AudioManager } from "@/audio/core/AudioManager";
 
 import { type Headline, HEADLINE_DISPLAY_MS } from "./headline-types";
 import { NewsHeadlineBanner } from "./news-headline-banner";
+import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
-
-const NEWSWORTHY_CAPTURES = new Set<StructureType>([StructureType.Realm, StructureType.Hyperstructure]);
-
-const resolveCaptureTitle = (isHyperstructure: boolean, playerTook: boolean, playerLost: boolean) => {
-  if (isHyperstructure) return "Hyperstructure seized";
-  if (playerTook) return "Realm captured";
-  if (playerLost) return "Realm lost";
-  return "Realm falls";
-};
 
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
@@ -69,18 +57,24 @@ export function NewsHeadlineBridge() {
     navRef.current = { goToStructure, navigateToMapView, selectOnMap, isMapView };
   }, [goToStructure, navigateToMapView, selectOnMap, isMapView]);
 
-  // --- Enqueue helper ---
-  const enqueue = useCallback((headline: Headline) => {
+  // --- Banner, then the feed ---
+  const announce = useCallback((headline: Headline) => {
     if (shownIdsRef.current.has(headline.id)) return;
     shownIdsRef.current.add(headline.id);
     setQueue((prev) => [...prev, headline]);
-    useHeadlineFeedStore.getState().publish(headline);
     try {
       AudioManager.getInstance().play("combat.victory");
     } catch {
       // audio not critical
     }
   }, []);
+  const enqueue = useCallback(
+    (headline: Headline) => {
+      announce(headline);
+      useHeadlineFeedStore.getState().publish(headline);
+    },
+    [announce],
+  );
 
   useEffect(() => {
     return () => useHeadlineFeedStore.setState({ headlines: [] });
@@ -98,8 +92,8 @@ export function NewsHeadlineBridge() {
     return () => clearTimeout(timer);
   }, [currentHeadline, dismiss]);
 
-  // Ownership headlines follow the same native row transition for realms and hyperstructures. Rifts and camps
-  // change hands too often to be news.
+  // Ownership headlines follow the native row transition for realms and hyperstructures. A capture's row in the feed is
+  // its story, which history keeps for a player who was away; the headline is only the banner.
   useEffect(() => {
     return setup.store.subscribe((changes) => {
       for (const change of changes) {
@@ -109,31 +103,24 @@ export function NewsHeadlineBridge() {
           continue;
         if (!NEWSWORTHY_CAPTURES.has(current.base.category as StructureType)) continue;
         if (!entityReader) continue;
-        const isHyperstructure = current.base.category === StructureType.Hyperstructure;
-        const player = address ? BigInt(address) : null;
         const structureId = safeInteger(current.entity_id);
-        const structureName =
-          entityReader.getStructure(structureId)?.structureName ??
-          (isHyperstructure ? "a hyperstructure" : "a structure");
-        const captor = entityReader.getPlayerName(ContractAddress(current.owner).toString());
-        const previousOwner = entityReader.getPlayerName(ContractAddress(previous.owner).toString());
         const site = structureMapPosition(setup.store, current);
-        enqueue({
-          id: `capture:${structureId}:${previous.owner}:${current.owner}:${Date.now()}`,
-          type: isHyperstructure ? "hyper-capture" : "realm-fall",
-          icon: isHyperstructure ? "hyper-capture" : "realm-fall",
-          title: resolveCaptureTitle(
-            isHyperstructure,
-            isViewerOwner(current.owner, player),
-            isViewerOwner(previous.owner, player),
-          ),
-          description: `${captor} took ${structureName} from ${previousOwner}`,
-          location: site ? { ...site, entityId: structureId } : undefined,
-          timestamp: Date.now(),
-        });
+        announce(
+          buildCaptureHeadline({
+            structureId,
+            isHyperstructure: current.base.category === StructureType.Hyperstructure,
+            structureName: entityReader.getStructure(structureId)?.structureName ?? null,
+            previousOwner: BigInt(previous.owner),
+            newOwner: BigInt(current.owner),
+            site,
+            viewer: address ? BigInt(address) : null,
+            nameOf: (owner) => entityReader.getPlayerName(ContractAddress(owner).toString()),
+            at: Date.now(),
+          }),
+        );
       }
     });
-  }, [setup.store, entityReader, address, enqueue]);
+  }, [setup.store, entityReader, address, announce]);
 
   useEffect(() => {
     if (!startAt) return;

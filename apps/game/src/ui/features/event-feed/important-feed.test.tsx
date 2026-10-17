@@ -12,7 +12,18 @@ const PLAYER = "0x1";
 
 /** The game's history as each story read serves it: by story, and by every player a story names. */
 const history = vi.hoisted(
-  () => [] as { id: string; story: string; owner: string; participants: string[]; at?: number; tx?: string }[],
+  () =>
+    [] as {
+      id: string;
+      story: string;
+      owner: string;
+      participants: string[];
+      at?: number;
+      tx?: string;
+      /** Its place in its transaction's receipt. */
+      index?: number;
+      payload?: Record<string, unknown>;
+    }[],
 );
 /** The client's own sends, as the transaction store reports them. */
 const sent = vi.hoisted(() => [] as unknown[]);
@@ -25,7 +36,9 @@ vi.mock("@/hooks/helpers/use-block-timestamp", async () => {
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: (select: (state: unknown) => unknown) => select({ account: { address: PLAYER } }),
 }));
-vi.mock("@/hooks/store/use-story-events-store", () => ({
+vi.mock("@/hooks/store/use-story-events-store", async (importOriginal) => ({
+  newestOnChainFirst: (await importOriginal<typeof import("@/hooks/store/use-story-events-store")>())
+    .newestOnChainFirst,
   useStoryEvents: (limit: number, story?: string, owner?: string) => ({
     data: history
       .filter((event) => !story || event.story === story)
@@ -37,7 +50,8 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
         tx_hash: event.tx ?? `0x${event.id}`,
         timestamp: "100",
         timestampMs: event.at ?? 100_000,
-        storyPayload: {},
+        position: { block: 1, transactionIndex: 0, eventIndex: event.index ?? 0 },
+        storyPayload: event.payload ?? {},
       })),
   }),
 }));
@@ -296,5 +310,21 @@ it("tells a delivery's landing in one row: its unloading, then the story that un
     feed.rerender();
     expect(feed.drawn()).toEqual(["story:landed"]);
     expect(feed.wrapper("story:landed")).toBe(element);
+  });
+});
+
+it("tells a claim in one row, by its capture: the battle and the capture its transaction wrote are one action", () => {
+  withFeed([], (feed) => {
+    const claim = { owner: "0xc1", participants: ["0xc1", PLAYER], at: 101_000, tx: "0xc1a" };
+    history.push({ ...claim, id: "fight", story: "BattleEvent", index: 0 });
+    history.push({
+      ...claim,
+      id: "taken",
+      story: "StructureCapturedStory",
+      index: 1,
+      payload: { previous_owner: PLAYER, new_owner: "0xc1" },
+    });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:taken"]);
   });
 });
