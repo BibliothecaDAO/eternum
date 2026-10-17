@@ -236,7 +236,7 @@ const siteVerb = ({
       kind: "move",
       prices: [
         { of: "stamina", amount: approach.stamina.cost },
-        { of: "wheat", amount: Math.ceil(approach.wheat.cost) },
+        { of: "wheat", amount: approach.wheat.cost },
       ],
       onMove: () => requestOrderAt(approach.target),
     };

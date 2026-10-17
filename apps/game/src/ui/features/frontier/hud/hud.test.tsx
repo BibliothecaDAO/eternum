@@ -353,6 +353,33 @@ describe("the order bar", () => {
     expect(onGo).toHaveBeenCalled();
   });
 
+  it("names a fractional wheat charge as charged, covered or short", () => {
+    const bar = (wheat: { cost: number; held: number }) =>
+      root.render(
+        <OrderBar
+          kind="move"
+          tiles={1}
+          stamina={covered}
+          wheat={{ ...wheat, wait: undefined }}
+          revealYield={null}
+          xp={undefined}
+          onCancel={() => {}}
+          onGo={() => {}}
+        />,
+      );
+    const wheatChip = () =>
+      [...host.querySelectorAll('[role="img"]')]
+        .map((chip) => chip.getAttribute("aria-label"))
+        .find((label) => label?.startsWith("wheat"));
+
+    // 30 troops' step at 0.02 wheat each.
+    act(() => bar({ cost: 0.6, held: 10 }));
+    expect(wheatChip()).toBe("wheat −0.6");
+    // Short: what is held counts down to whole units, so 0.5 held never reads as the 0.6 it needs.
+    act(() => bar({ cost: 0.6, held: 0.5 }));
+    expect(wheatChip()).toBe("wheat 0 / 0.6");
+  });
+
   it("confirms on Enter and takes the key, but never while the player types", () => {
     const onGo = vi.fn();
     act(() =>

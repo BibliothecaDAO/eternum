@@ -21,4 +21,4 @@ export const formatExact = (value: number | undefined): string => (value === und
  * A charge as the chain takes it, to the resource's last unit ("0.05 wheat", "1,000 wheat"): a fraction stays, so a
  * real charge never reads as nothing.
  */
-export const formatCharge = (value: number): string => charge.format(value);
+export const formatCharge = (value: number | undefined): string => (value === undefined ? "—" : charge.format(value));

@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { formatExact } from "./amount";
+import { formatCharge } from "./amount";
 
 import { ESSENCE, LABOR, LORDS, STAMINA, TROOPS, WHEAT, XP } from "./words";
 
@@ -16,10 +16,10 @@ export const PRICE_FACES: Record<PriceKind, { word: string; icon?: IconMeaning }
   xp: { word: XP },
 };
 
-/** A price: its resource (or XP) and the amount, on the price chip a button carries. Unknown is a dash. */
+/** A price: its resource (or XP) and the amount it charges, on the price chip a button carries. Unknown is a dash. */
 export const PriceChip = ({ of, amount }: { of: PriceKind; amount: number | undefined }) => {
   const { word, icon } = PRICE_FACES[of];
-  const shown = formatExact(amount);
+  const shown = formatCharge(amount);
   return (
     <span
       role="img"
