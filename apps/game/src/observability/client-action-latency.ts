@@ -124,7 +124,11 @@ export function recordClientActionSendStage(
   publish();
 }
 
-/** An unattributed send and the action that sent the same transaction become one record: the action, with its send. */
+/**
+ * An unattributed send and the action that sent the same transaction become one record: the action, with its send and
+ * every phase either saw. The stream can report the transaction before the action learns its hash; where both saw a
+ * phase, the earlier time stands.
+ */
 function joinSendToAction(transactionHash: string): void {
   const hash = normalizeTransactionHash(transactionHash);
   const sameHash = (measurement: ClientActionLatencyMeasurement) =>
@@ -136,8 +140,24 @@ function joinSendToAction(transactionHash: string): void {
   if (!send || !action) return;
   measurements = measurements
     .filter((measurement) => measurement !== send)
-    .map((measurement) => (measurement === action ? { ...measurement, send: send.send } : measurement));
+    .map((measurement) =>
+      measurement === action
+        ? { ...measurement, phases: earliestOfEach(measurement.phases, send.phases), send: send.send }
+        : measurement,
+    );
 }
+
+const earliestOfEach = (
+  left: ClientActionLatencyMeasurement["phases"],
+  right: ClientActionLatencyMeasurement["phases"],
+): ClientActionLatencyMeasurement["phases"] => {
+  const phases = { ...left };
+  for (const [phase, at] of Object.entries(right) as Array<[ClientActionLatencyPhase, number]>) {
+    const known = phases[phase];
+    phases[phase] = known === undefined ? at : Math.min(known, at);
+  }
+  return phases;
+};
 
 /**
  * Every action's admission to visible, as the provider measures it: from sending the invoke to the stream reporting

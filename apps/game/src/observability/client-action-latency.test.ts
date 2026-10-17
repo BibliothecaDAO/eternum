@@ -122,6 +122,60 @@ describe("an action's send, as the game client reports its stages", () => {
     ]);
   });
 
+  it("keeps the stream's phases when the action learns its hash after Herald reported the transaction", () => {
+    at(10);
+    const move = beginClientActionLatency({ operation: "army_move", surface: "worldmap" });
+    at(12);
+    const explore = beginClientActionLatency({ operation: "explore_reveal", surface: "worldmap" });
+    at(20);
+    recordClientActionSendStage("1:1", "command");
+    recordClientActionSendStage("1:2", "command");
+    at(30);
+    recordClientActionSendStage("1:1", "nonce", "known", "0x00a");
+    recordClientActionSendStage("1:2", "nonce", "known", "0x0b");
+    at(100);
+    recordClientActionDiffReceived("0xa");
+    at(101);
+    recordClientActionStoreApplied("0x0a");
+    at(102);
+    recordClientActionRendered(move);
+    recordClientActionDiffReceived("0xB");
+    at(103);
+    recordClientActionSendStage("1:1", "answered", "herald", "0xa");
+    recordClientActionSubmitted(move, "0xA");
+    at(104);
+    recordClientActionSubmitted(explore, "0x0b");
+
+    const [first, second] = snapshotClientActionLatency();
+    expect(snapshotClientActionLatency()).toHaveLength(2);
+    expect(first).toMatchObject({
+      actionId: move,
+      operation: "army_move",
+      transactionHash: "0xA",
+      send: { key: "1:1" },
+    });
+    expect(first?.phases).toEqual({ click: 10, diff_received: 100, store_applied: 101, rendered: 102, submitted: 103 });
+    expect(second).toMatchObject({ actionId: explore, transactionHash: "0x0b", send: { key: "1:2" } });
+    expect(second?.phases).toEqual({ click: 12, diff_received: 102, submitted: 104 });
+  });
+
+  it("keeps the earlier time of a phase both the action and its send saw", () => {
+    at(10);
+    const action = beginClientActionLatency({ operation: "explore_reveal", surface: "worldmap" });
+    recordClientActionSendStage("1:1", "command");
+    at(20);
+    recordClientActionSendStage("1:1", "nonce", "known", "0xa");
+    at(30);
+    recordClientActionDiffReceived("0xa");
+    at(40);
+    recordClientActionPhase(action, "diff_received");
+    recordClientActionSubmitted(action, "0xa");
+
+    expect(snapshotClientActionLatency().map((record) => record.phases)).toEqual([
+      { click: 10, diff_received: 30, submitted: 40 },
+    ]);
+  });
+
   it("keeps a send no action claimed as its own record, hash and stream phases included", () => {
     at(5);
     recordClientActionSendStage("2:7", "command");
