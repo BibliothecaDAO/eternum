@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { pinsOrder } from "@/three/scenes/worldmap-order-request";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
-import { orderWheat } from "./order-tip";
+import { orderFood } from "./order-tip";
 import {
   ActionPaths,
   ActionType,
@@ -69,7 +69,8 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
 
   const staminaCost = computeEffectiveStaminaCost(path.slice(1), actionType, configManager.getExploreStaminaCost());
   const staminaHeld = troops ? Number(StaminaManager.getStamina(troops, tick).amount) : undefined;
-  const wheatCost = orderWheat(path, army.troops);
+  // Frontier's preset charges no fish; the wheat is the order's whole food.
+  const wheatCost = orderFood(path, army.troops).wheat;
   const wheatBalance = getBalance(safeInteger(army.owner), ResourcesIds.Wheat, tick, setup.store).balance;
   const wheatHeld = wheatBalance === undefined ? undefined : divideByPrecision(wheatBalance);
   const wheatPerHour = new ResourceManager(setup.store, safeInteger(army.owner)).wheatPerHour(tick);

@@ -72,7 +72,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-17",
     title: "The map says what a right-click does",
     description:
-      "With an army selected, hover a tile: it says what a right-click does there, what it costs and what it scores (Explore · 21 stamina · +5 points, Open crate · +250 points). Where no order is possible it says why: too far, or the stamina it needs and when it is ready.",
+      "With an army selected, hover a tile: it says what a right-click does there, what it costs and what it scores (Explore · 21 stamina · +5 points, Open crate · +250 points). Every food an order burns is listed as it is charged, fish too where the game charges it. Where no order is possible it says the rules' reason: the stamina it needs and when it is ready, the food, a structure no army may attack, or a target too far. The line keeps up when that changes under a resting pointer.",
     type: "improvement",
   },
   {

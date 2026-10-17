@@ -115,6 +115,16 @@ const LEADERBOARD_DETAIL_FITS = `(() => {
 })()`;
 
 /** Before play opens: the entrance is pressed, nothing opens and the player is told when play opens. */
+// Each reason the planner gives a tile no order, as the map's line words it (order-tip.ts).
+const ORDER_REFUSAL = [
+  "Needs \\d+ stamina",
+  "Not enough food for the army",
+  "Only unclaimed structures can be attacked",
+  "This game allows no transfer here",
+  "No army can enter this tile",
+  "Too far: move next to it",
+].join("|");
+
 const REFUSED_BEFORE_PLAY = {
   view: "map",
   reading: ORDER_SURFACES,
@@ -326,9 +336,9 @@ export const GAME_TASKS = {
     view: "map",
     presses: [
       { name: "the next army", key: "Tab" },
-      { name: "a tile it cannot order, hovered", hover: "Too far: move next to it|Needs \\d+ stamina" },
+      { name: "a tile it cannot order, hovered", hover: ORDER_REFUSAL },
     ],
-    done: `/Too far: move next to it|Needs \\d+ stamina/.test(document.body.innerText)`,
+    done: `/${ORDER_REFUSAL}/.test(document.body.innerText)`,
   },
   "blitz-standings": {
     goal: "Blitz: see the standings, in a window as large as its table and rows",

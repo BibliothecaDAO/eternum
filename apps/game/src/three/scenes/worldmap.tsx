@@ -267,9 +267,9 @@ import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-or
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { type OrderTip, orderTip, orderWheat } from "@/ui/features/frontier/hud/order-tip";
+import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
-import { showOrderTip } from "./worldmap-order-tip";
+import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
@@ -938,6 +938,8 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     // The flight tween is leaving this scene: no target-hex, terrain-window or chunk-refresh churn on its way out.
     if (this.cameraOwnedByFlight) return;
+    // The line follows its tile across the screen.
+    this.pointerOrderTip.refresh();
     this.updateCameraTargetHexThrottled?.();
     this.refreshVisualTerrainWindowThrottled?.();
 
@@ -1005,6 +1007,8 @@ export default class WorldmapScene extends WarpTravel {
   private actionPathsTransitionToken: number | null = null;
   /** Why each tile the selected army's rules looked at offers no order; set with its paths (updateEntityActionPaths). */
   private orderRefusals: Map<string, OrderRefusal> = new Map();
+  /** The line under the pointer: the order a right-click sends at its tile, or why none. */
+  private readonly pointerOrderTip = new PointerOrderTip((hex) => this.placeOrderTip(hex));
   private readonly selectedArmyOrders = new SelectedArmyOrders({
     reach: (entityId) =>
       findArmyReach(requireActiveGameClient(), {
@@ -2379,10 +2383,14 @@ export default class WorldmapScene extends WarpTravel {
    */
   private showOrderUnderPointer(hexCoords: HexPosition | null): void {
     if (!this.hudCarriesOrderVerb()) this.state.updateEntityActionHoveredHex(hexCoords);
-    // The tile's line: the order a right-click sends there, or why none; with an army selected in every mode.
-    if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return;
-    const tip = hexCoords && this.nameOrderAt(hexCoords);
-    showOrderTip(tip && hexCoords ? { ...tip, at: projectHexToScreen(hexCoords, this.camera) } : null);
+    this.pointerOrderTip.point(hexCoords);
+  }
+
+  /** The tile's line where it sits on screen now; with an army selected in every mode, and always where the HUD names tiles. */
+  private placeOrderTip(hexCoords: HexPosition): PlacedOrderTip | null {
+    if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return null;
+    const tip = this.nameOrderAt(hexCoords);
+    return tip && { ...tip, at: projectHexToScreen(hexCoords, this.camera) };
   }
 
   /** The army whose orders the map shows, or null when the selection is no army. */
@@ -2393,7 +2401,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
-    const { structure, army, chest } = this.getHexagonEntity(hexCoords);
+    const { structure } = this.getHexagonEntity(hexCoords);
     const key = ActionPaths.posKey(hexCoords, true);
     const refusal = this.orderRefusals.get(key);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
@@ -2402,10 +2410,8 @@ export default class WorldmapScene extends WarpTravel {
       path,
       target: structure ? this.siteWord(structure.id) : null,
       exploreStamina: configManager.getExploreStaminaCost(),
-      wheat: armyTroops ? orderWheat(path, armyTroops) : 0,
+      food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
-      // The selected army's own tile is where it stands, not a target out of reach.
-      occupied: Boolean(structure || chest || (army && Number(army.id) !== Number(this.selectedArmyId()))),
       refusal,
       staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
       points: configManager.getVictoryPointGrants(),
@@ -2728,7 +2734,7 @@ export default class WorldmapScene extends WarpTravel {
       {
         // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
         order: () => {
-          showOrderTip(null);
+          this.pointerOrderTip.take();
           this.actAtHex(hexCoords);
         },
         transfer: openTransfer,
@@ -2772,7 +2778,7 @@ export default class WorldmapScene extends WarpTravel {
       this.openTargetCardForSelectedArmy({ col: contractHex.x, row: contractHex.y });
     }
     // The preview has the tile now; its name on the tooltip would only sit over it.
-    if (order !== null) showOrderTip(null);
+    if (order !== null) this.pointerOrderTip.take();
     return order !== null;
   }
 
@@ -3618,6 +3624,8 @@ export default class WorldmapScene extends WarpTravel {
   private followSelectedArmyReach(): void {
     const entityId = this.selectedOrderableArmyId();
     if (entityId !== null) this.selectedArmyOrders.followConfirmedHead(entityId, this.getArmyOwnerAddress(entityId));
+    // A stamina wait counts down even where the orders stay the same.
+    this.pointerOrderTip.refresh();
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3889,13 +3897,16 @@ export default class WorldmapScene extends WarpTravel {
     // Stamp token before publishing store updates to avoid transient null-token
     // windows inside synchronous subscribers.
     this.actionPathsTransitionToken = actionPaths.size > 0 ? this.chunkTransitionToken : null;
-    if (ActionPaths.samePaths(getLiveWorldmapEntityActions().actionPaths, actionPaths)) return;
-    this.isApplyingLocalActionPathUpdate = true;
-    try {
-      this.state.updateEntityActionActionPaths(actionPaths);
-    } finally {
-      this.isApplyingLocalActionPathUpdate = false;
+    if (!ActionPaths.samePaths(getLiveWorldmapEntityActions().actionPaths, actionPaths)) {
+      this.isApplyingLocalActionPathUpdate = true;
+      try {
+        this.state.updateEntityActionActionPaths(actionPaths);
+      } finally {
+        this.isApplyingLocalActionPathUpdate = false;
+      }
     }
+    // The same paths can come with other reasons: the line under the pointer reads both again.
+    this.pointerOrderTip.refresh();
   }
 
   private syncEntityActionPathsTransitionToken(): void {
@@ -3919,10 +3930,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private clearEntitySelection() {
     showArmyDeploymentTooltip(null);
-    showOrderTip(null);
     this.highlightHexManager.highlightHexes([]);
     this.updateEntityActionPaths(new Map());
     this.state.deselectEntity();
+    this.pointerOrderTip.refresh();
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
     this.attachWorldmapManagerLabels();
   }
@@ -8797,6 +8808,7 @@ export default class WorldmapScene extends WarpTravel {
       this.actionPathsTransitionToken = null;
       this.previouslyHoveredHex = null;
       this.lastHoverReconciliation = null;
+      this.pointerOrderTip.point(null);
       document.body.style.cursor = "default";
       this.applyContextualHoverPalette(null);
     } finally {
