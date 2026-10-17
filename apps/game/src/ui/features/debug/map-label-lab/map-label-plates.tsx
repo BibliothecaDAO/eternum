@@ -6,15 +6,16 @@ import { stack, type LabelBox } from "./map-label-layout";
 import { attackOrder, formatCount, homeCode, restingGuard } from "./map-label-reading";
 
 /**
- * The owner's pick (rounds 2 and 3 and their amendments): plates that open, in paintings wherever a painting reads
- * clearly, words only for names and numbers. At rest: an army's owner over its troops and stamina; a structure's owner
- * and one guard number; a camp's or rift's reward and guard. Hovering the tile a thing stands on opens its plate upward,
- * adding only what the plate does not say. Plates that meet stack upward, two steps at most, then drop to a pin.
+ * The owner's pick (rounds 2 to 4 and their amendments): plates that open. A painting only where it reads faster than a
+ * word (troop type, resource, the open lock); a place's name set as a title, a player's in the side's colour. At rest:
+ * a realm's name and its one guard number; an army's owner over its troops and stamina; a camp's or rift's reward and
+ * guard. Hovering the tile a thing stands on opens its plate upward, adding only what the plate does not say. Plates
+ * that meet stack upward, two steps at most, then drop to a pin.
  */
 export const PLATE_RULES = {
-  rest: "Army: its owner, above its troops (type painting, tier, count) and stamina bar. Realm and hyperstructure: owner and one guard number: a single slot as its troop painting, tier and count; several as their total (shield); none, an open lock. Camp and rift: its reward and its guard.",
+  rest: "Realm: its name (title), then one guard number: a single slot as its troop painting, tier and count; several as their total; none, an open lock. Hyperstructure, camp, rift: its painting (a camp or rift, its reward), then its guard. Army: its owner, above its troops and stamina bar.",
   hover:
-    "Hover the tile: the plate opens with what it does not say at rest. An army, inline in its own shape: owner and home realm, then id and troops (one line when it fits). A structure: a realm's name and level, or the id (a skull: bandits); its guard slots on one line, the first an attacker meets first.",
+    "Hover the tile: the plate opens with what it does not say at rest. A structure: its owner (in the side's colour) and level or id; its guard slots on one line, the first an attacker meets first. An army, inline in its own shape: owner and home realm, then id and troops (one line when it fits).",
   selected: "Stays open, ringed in gold.",
 } as const;
 
@@ -66,6 +67,7 @@ export const MapPlates = ({
           <div
             key={item.key}
             className="mll-at"
+            data-entity={item.key}
             data-relation={item.entity.relation}
             data-selected={item.key === selected}
             data-yields={yields.has(item.key)}
@@ -111,18 +113,8 @@ const Plate = ({ entity, open }: { entity: MapLabelEntity; open: boolean }) =>
 const ArmyPlate = ({ entity, open }: { entity: MapLabelEntity; open: boolean }) => {
   const army = entity.army!;
   const owner = <span className="mll-owner">{entity.owner}</span>;
-  const home = (
-    <span className="mll-troops">
-      <Icon name="realm" size={18} />
-      {entity.homeName}
-    </span>
-  );
-  const id = (
-    <span className="mll-troops opacity-85">
-      <Icon name="map-army" size={18} />
-      {homeCode(entity)}
-    </span>
-  );
+  const home = <span className="mll-title">{entity.homeName}</span>;
+  const id = <span className="mll-muted">{homeCode(entity)}</span>;
   const troops = <Troops troops={army.troops} />;
   return (
     <div className="mll-plate" data-open={open}>
@@ -164,8 +156,8 @@ const ONE_LINE_WIDTH = 360;
 const openedArmyHalves = (entity: MapLabelEntity) => {
   const troops = entity.army!.troops;
   return [
-    measure(`${entity.owner} ${entity.homeName}`) + 18 + 3 * 6,
-    measure(`${homeCode(entity)} T${troops.tier} ${formatCount(troops.count)}`) + 18 + 20 + 4 * 6,
+    measure(`${entity.owner} `) + measure(entity.homeName, true) + 2 * 6 + 8,
+    measure(`${homeCode(entity)} T${troops.tier} ${formatCount(troops.count)}`) + 20 + 4 * 6,
   ];
 };
 
@@ -182,16 +174,19 @@ const openedWidth = (entity: MapLabelEntity, restingWidth: number) => {
 };
 
 /** A structure: its reward (a camp or a rift) or its owner, then one guard number. */
+/** A structure: a realm by its name; a nameless one by its painting (a camp or a rift, with its reward); then its guard. */
 const StructureRow = ({ entity }: { entity: MapLabelEntity }) => (
   <>
-    <Icon name={kindIcon(entity)} size={20} />
-    {entity.reward ? (
+    {entity.kind === "realm" ? (
+      <span className="mll-title">{entity.name}</span>
+    ) : (
+      <Icon name={kindIcon(entity)} size={20} />
+    )}
+    {entity.reward && (
       <span className="mll-reward">
         <Icon name={resourceMeaning(entity.reward.resource)} size={18} />
         <span className="tabular-nums">{formatCount(entity.reward.amount)}</span>
       </span>
-    ) : (
-      entity.owner && <span className="mll-owner">{entity.owner}</span>
     )}
     <RestingGuard entity={entity} />
   </>
@@ -213,12 +208,7 @@ const RestingGuard = ({ entity }: { entity: MapLabelEntity }) => {
         </span>
       );
     case "total":
-      return (
-        <span className="mll-guard">
-          <Icon name="defend" size={16} />
-          <span className="tabular-nums">{formatCount(guard.total)}</span>
-        </span>
-      );
+      return <span className="mll-guard tabular-nums">{formatCount(guard.total)}</span>;
   }
 };
 
@@ -232,30 +222,15 @@ const Troops = ({ troops }: { troops: MapLabelTroops }) => (
 );
 
 /**
- * What an opened structure adds, never what its row says: a realm's name and level, another thing's id (a skull for
- * bandits); and when the row showed only their total, its guard slots on one line, in the order an attacker meets them.
+ * What an opened structure adds, never what its row says: whose it is, in the side's colour (bandits, or nobody), and a
+ * realm's level or a nameless thing's id; and when the row showed only their total, its guard slots on one line, in the
+ * order an attacker meets them.
  */
 const OpenLines = ({ entity }: { entity: MapLabelEntity }) => (
   <>
     <div className="mll-plate__more">
-      {entity.kind === "realm" ? (
-        <>
-          <span>{entity.name}</span>
-          <span className="mll-troops">
-            <Icon name="upgrade" size={18} alt="Level" />
-            {entity.level + 1}
-          </span>
-        </>
-      ) : (
-        <>
-          {entity.kind === "camp" && !entity.owner && <Icon name="skull" size={18} alt="Bandits" />}
-          {entity.kind === "camp" && entity.owner && <span className="mll-owner">{entity.owner}</span>}
-          <span className="mll-troops opacity-85">
-            <Icon name={kindIcon(entity)} size={18} />
-            {homeCode(entity)}
-          </span>
-        </>
-      )}
+      <span className="mll-owner">{entity.owner ?? (entity.kind === "camp" ? "Bandits" : "Unclaimed")}</span>
+      <span className="mll-muted">{entity.kind === "realm" ? `Level ${entity.level + 1}` : homeCode(entity)}</span>
     </div>
     {entity.guards.length > 1 && (
       <div className="mll-plate__more" aria-label="Guards, first met first">
@@ -300,12 +275,13 @@ const KIND_WEIGHT: Record<MapLabelEntity["kind"], number> = {
   camp: 2,
 };
 
+/** A text's drawn width: in the plate's face, or as a title (a place's name in Cinzel). */
 const measure = (() => {
   let context: CanvasRenderingContext2D | null = null;
-  return (text: string) => {
+  return (text: string, title = false) => {
     context ??= document.createElement("canvas").getContext("2d");
-    if (!context) return text.length * 8;
-    context.font = '600 15px "Exo 2"';
+    if (!context) return text.length * (title ? 10 : 8);
+    context.font = title ? '700 16px "Cinzel"' : '600 15px "Exo 2"';
     return context.measureText(text).width;
   };
 })();
@@ -322,9 +298,12 @@ const plateBox = (item: ProjectedEntity, hovered: string | null, selected: strin
         : formatCount(guard.total);
   const words = entity.army
     ? `T${entity.army.troops.tier} ${formatCount(entity.army.troops.count)}`
-    : `${entity.reward ? formatCount(entity.reward.amount) : (entity.owner ?? "")} ${guardWords}`;
-  const icons = entity.army ? 20 : 20 + (entity.reward ? 18 : 0) + 20;
-  const width = Math.ceil(Math.max(measure(words) + icons, entity.army ? measure(entity.owner ?? "") : 0) + 48);
+    : `${entity.reward ? formatCount(entity.reward.amount) : ""} ${guardWords}`;
+  const icons = entity.army
+    ? 20
+    : (entity.kind === "realm" ? 0 : 20) + (entity.reward ? 18 : 0) + (guard.kind === "total" ? 0 : 20);
+  const title = entity.kind === "realm" ? measure(entity.name, true) : 0;
+  const width = Math.ceil(Math.max(measure(words) + title + icons, entity.army ? measure(entity.owner ?? "") : 0) + 48);
   const height = ROW_HEIGHT + (entity.army ? NAME_LINE : 0);
   return {
     id: item.key,
