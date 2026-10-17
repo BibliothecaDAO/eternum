@@ -43,6 +43,8 @@ export interface MapLabelEntity {
   guards: readonly MapLabelTroops[];
   /** An army's troops and stamina. */
   army?: { troops: MapLabelTroops; stamina: number; staminaMax: number };
+  /** Troops on their way to a structure of the viewer's, with the seconds until each arrives. */
+  arrivals?: readonly { troops: MapLabelTroops; secondsLeft: number }[];
 }
 
 const LOCAL_RANGE = 2 ** 32;
@@ -222,8 +224,15 @@ const realmEntity = (position: Vector3, index: number): MapLabelEntity => {
     homeName: name,
     level: index % 4,
     guards: realmGuards(index),
+    arrivals: relation === "own" ? REINFORCEMENTS : [],
   };
 };
+
+/** Reinforcements on their way to each of the viewer's realms. */
+const REINFORCEMENTS = [
+  { troops: { type: "paladin", tier: 2, count: 300 }, secondsLeft: 754 },
+  { troops: { type: "knight", tier: 1, count: 1200 }, secondsLeft: 2_480 },
+] as const;
 
 const siteEntity = (
   kind: "camp" | "rift",

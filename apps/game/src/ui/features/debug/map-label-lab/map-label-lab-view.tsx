@@ -1,3 +1,4 @@
+import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { StructureType, type ID } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -247,6 +248,16 @@ const plateOf = (entity: MapLabelEntity): MapPlate => {
       category: CATEGORY[slot.type],
       tier: slot.tier,
       count: slot.count,
+    })),
+    incomingTroopArrivals: (entity.arrivals ?? []).map((arrival) => ({
+      structureEntityId: entity.entityId,
+      resourceId: getTroopResourceId(CATEGORY[arrival.troops.type], `T${arrival.troops.tier}`),
+      troopType: CATEGORY[arrival.troops.type],
+      troopTier: `T${arrival.troops.tier}`,
+      count: arrival.troops.count,
+      arrivesAt: BigInt(arrival.secondsLeft),
+      day: 0,
+      slot: 0n,
     })),
   });
 };
