@@ -61,7 +61,7 @@ const LeftColumn = () => {
           <SpectatorStandingsBody />
         </section>
       )}
-      <HudMinimap className="min-h-[200px] w-full flex-1" />
+      <HudMinimap className="min-h-[160px] w-full shrink" />
     </aside>
   );
 };

@@ -33,3 +33,30 @@ it("names each relic on its chip beside its count, not only in a tooltip", () =>
   expect(text(html)).toContain("|2|Stamina I|");
   expect(text(html)).toContain("|1|Damage II|");
 });
+
+it("sizes a tight row's relic chips to what they hold, so a few relics stay within the card", () => {
+  const chips = (variant: "tight" | "default") =>
+    [
+      ...new DOMParser()
+        .parseFromString(
+          renderToStaticMarkup(
+            <CompactEntityInventory
+              resources={holding([
+                [ResourcesIds.StaminaRelic1, 1],
+                [ResourcesIds.DamageRelic1, 1],
+                [ResourcesIds.ExplorationRelic1, 1],
+              ])}
+              recipientType={RelicRecipientType.Explorer}
+              variant={variant}
+              filter="relics"
+            />,
+          ),
+          "text/html",
+        )
+        .querySelectorAll("[title]"),
+    ].map((chip) => chip.classList.contains("h-full"));
+  // A layout engine stretches an h-full chip to an unrelated ancestor's height; jsdom lays nothing out, so the class is
+  // what is checked: grid cells share their row's height, tight chips never stretch.
+  expect(chips("tight")).toEqual([false, false, false]);
+  expect(chips("default")).toEqual([true, true, true]);
+});

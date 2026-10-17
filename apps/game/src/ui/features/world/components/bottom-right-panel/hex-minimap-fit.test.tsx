@@ -134,3 +134,13 @@ it("leaves the fit for the camera once the revealed terrain needs less than the 
   expect(shown().y).toBeCloseTo(camera.y, 0);
   expect(await idleWork()).toEqual({ commits: 0, frames: 0 });
 });
+
+it("gives the panel the fitted map's shape: wide for a wide revealed area, square-ish for a cross, none before any", async () => {
+  const { fittedMapAspect } = await import("./hex-minimap");
+  const wide = fittedMapAspect(revealed([-8, -6, -4, -2, 0, 2, 4, 6, 8]))!;
+  const cross = fittedMapAspect(EXPLORED)!;
+  expect(wide).toBeGreaterThan(cross);
+  expect(wide).toBeGreaterThan(1);
+  expect(fittedMapAspect([...EXPLORED, knownStructure(30, 20)])).toBe(cross);
+  expect(fittedMapAspect([knownStructure(30, 20)])).toBeNull();
+});

@@ -272,6 +272,16 @@ const FIT_MAX_SCALE = 6;
 const FIT_MARGIN = HEX_SIZE * 2;
 
 /** The scale and centre that show every explored tile in the box, or null once they no longer fit at a readable size. */
+/**
+ * The shape the fitted map takes, width over height: the revealed terrain's bounds with their margin, as the fit draws
+ * them; null before any terrain is revealed. A panel of this shape shows the fitted map without empty bands.
+ */
+export const fittedMapAspect = (tiles: MinimapTile[]): number | null => {
+  const explored = buildCenteredIndex(tiles).explored;
+  if (!explored) return null;
+  return (explored.maxX - explored.minX + FIT_MARGIN * 2) / (explored.maxY - explored.minY + FIT_MARGIN * 2);
+};
+
 const fitExploredView = (
   bounds: Bounds,
   viewport: { width: number; height: number },

@@ -304,7 +304,9 @@ export const CompactEntityInventory = memo(
       const widthClass = variant === "tight" && !options.hero ? (item.isRelic ? "w-auto min-w-14" : "w-14") : "w-full";
 
       const itemClasses = cn(
-        "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        "flex appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        // Grid cells share a row's height; a tight row's chips are as tall as what they hold.
+        variant === "tight" && !options.hero ? undefined : "h-full",
         widthClass,
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
