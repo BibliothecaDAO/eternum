@@ -10,18 +10,17 @@ import {
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
-  getRealmCountPerHyperstructure,
+  getHyperstructureRates,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   structureMapPosition,
   isViewerOwner,
 } from "@bibliothecadao/eternum";
-import { hyperstructurePointsPerSecond as sharedPointsPerSecond } from "@bibliothecadao/eternum/game-sync";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ContractAddress, ID, RelicEffect, StructureType, wholePoints } from "@bibliothecadao/types";
+import { ContractAddress, ID, RelicEffect, StructureType } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -79,21 +78,14 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const structureDetails = structure
     ? { structure, resources, playerGuild, guards, isAlly, isMine, relicEffects }
     : null;
-  const hyperstructureRealmCount =
-    structure?.base.category === StructureType.Hyperstructure
-      ? getRealmCountPerHyperstructure(store).get(structureEntityId)
-      : undefined;
-  // The realm count only feeds the multiplier at claim time, so the panel reads the multiplier the chain holds. A
-  // hyperstructure with no share allocation yet grants nothing and shows no rate.
-  const hyperstructurePointsPerSecond =
-    structure?.base.category === StructureType.Hyperstructure && shares
-      ? wholePoints(
-          sharedPointsPerSecond(
-            store.require("SliceRules", { game_id: keys.game_id }).victory_points_grant_config.hyp_points_per_second,
-            shares.multiplier,
-          ),
-        )
-      : undefined;
+  // The rate the map's label shows too: what it pays its holder, or what taking it would pay.
+  const hyperstructureRate = useMemo(
+    () =>
+      structure?.base.category === StructureType.Hyperstructure
+        ? getHyperstructureRates(store).get(structureEntityId)
+        : undefined,
+    [structure, store, structureEntityId, shares, revision],
+  );
 
   const ownerDisplayName = displayPlayerName(structure?.owner ?? 0n, ownerProfile.name);
 
@@ -183,8 +175,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     ownerDisplayName,
     isMine,
     isAlly,
-    hyperstructureRealmCount,
-    hyperstructurePointsPerSecond,
+    hyperstructureRate,
     isHyperstructure,
     typeLabel,
     backgroundImage,

@@ -3,6 +3,8 @@ import { type ID, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibli
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
+
+type VictoryPointGrants = ReturnType<typeof configManager.getVictoryPointGrants>;
 import { structureMapPosition } from "./expeditions";
 
 const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
@@ -41,6 +43,44 @@ export const getRealmCountPerHyperstructure = (store: NativeFactStore): Map<ID, 
 
   return realmCounts;
 };
+
+/** A Hyperstructure's rate: the whole points a second it pays whoever holds it, and whether a player holds it now. */
+export interface HyperstructureRate {
+  pointsPerSecond: number;
+  taken: boolean;
+}
+
+/**
+ * The one rate every surface shows for a Hyperstructure. A held one pays the game's rate times the multiplier its share
+ * allocation was struck at when it was taken; an untaken one shows what taking it now would pay: the game's rate times
+ * 1, or, where the multiplier rule is on, 2 in a Duel or the realms around it (the contract's `multiplier`, estimated
+ * by the realms in range).
+ */
+export const getHyperstructureRates = (store: NativeFactStore): Map<ID, HyperstructureRate> => {
+  const game_id = configManager.getActiveGameId();
+  const grants = configManager.getVictoryPointGrants();
+  const rates = new Map<ID, HyperstructureRate>();
+  for (const [entity_id, realmsAround] of getRealmCountPerHyperstructure(store)) {
+    const taken = (store.get("Structure", { game_id, entity_id })?.owner ?? 0n) !== 0n;
+    const struckMultiplier = Number(store.get("HyperstructureShares", { game_id, entity_id })?.multiplier ?? 0);
+    rates.set(entity_id, hyperstructureRate(grants, { taken, struckMultiplier, realmsAround }));
+  }
+  return rates;
+};
+
+/** One Hyperstructure's rate, by the rule above, from what the chain and the map say about it. */
+export const hyperstructureRate = (
+  grants: Pick<VictoryPointGrants, "hyperstructurePerSecond" | "hyperstructureScale">,
+  hyperstructure: { taken: boolean; struckMultiplier: number; realmsAround: number },
+): HyperstructureRate => {
+  const { taken, struckMultiplier, realmsAround } = hyperstructure;
+  const multiplier =
+    taken && struckMultiplier > 0 ? struckMultiplier : grants.hyperstructureScale === "flat" ? 1 : realmsAround;
+  return { pointsPerSecond: grants.hyperstructurePerSecond * multiplier, taken };
+};
+
+/** The words after a Hyperstructure's rate, the same on its map label and its panel. */
+export const hyperstructureRateUnit = (taken: boolean): string => (taken ? "points/s" : "points/s once taken");
 
 export const getHyperstructureProgress = (hyperstructureId: number, store: NativeFactStore) => {
   const game = configManager.getActiveGameId();

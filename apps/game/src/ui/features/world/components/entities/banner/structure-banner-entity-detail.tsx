@@ -89,8 +89,7 @@ const StructureBannerEntityDetailContent = memo(
       guardSlotsUsed,
       guardSlotsMax,
       isMine,
-      hyperstructureRealmCount,
-      hyperstructurePointsPerSecond,
+      hyperstructureRate,
       isHyperstructure,
       isLoadingStructure,
     } = useStructureEntityDetail({ structureEntityId });
@@ -164,8 +163,7 @@ const StructureBannerEntityDetailContent = memo(
     // duplicating the Resources bubble cue (which is the primary affordance).
     const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
-    const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
-    const showHyperstructureVP = isHyperstructure && hyperstructurePointsPerSecond !== undefined;
+    const showHyperstructureVP = isHyperstructure && hyperstructureRate !== undefined;
     const occupiedGuardSlots = guards?.filter((guard) => guard.troops.count > 0n).length;
     const guardCue =
       occupiedGuardSlots === undefined
@@ -224,12 +222,7 @@ const StructureBannerEntityDetailContent = memo(
             <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
               <div className="mt-2 border-t border-gold/15 pt-2">
-                <HyperstructureVPDisplay
-                  pointsPerSecond={hyperstructurePointsPerSecond}
-                  realmCount={hyperstructureRealmCount ?? 0}
-                  isOwned={isHyperstructureOwned}
-                  className="w-full"
-                />
+                <HyperstructureVPDisplay rate={hyperstructureRate} className="w-full" />
               </div>
             )}
           </InfoBubble>

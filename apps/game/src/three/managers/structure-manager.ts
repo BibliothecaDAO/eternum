@@ -1,6 +1,6 @@
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds } from "@bibliothecadao/types";
-import { configManager, getRealmCountPerHyperstructure, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import { configManager, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   fallenRealmBeastModelIndex,
@@ -607,9 +607,6 @@ export class StructureManager {
       guardArmies: guards.length > 0 || configManager.hasGuardSlots() ? this.resolveGuardArmies(guards) : undefined,
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
-      hyperstructureRealmCount: this.store
-        ? getRealmCountPerHyperstructure(this.store).get(renderable.entityId)
-        : undefined,
       attackedFromDegrees: battleDirections?.attackedFromDegrees,
       attackedTowardDegrees: battleDirections?.attackedTowardDegrees,
       battleCooldownEnd,

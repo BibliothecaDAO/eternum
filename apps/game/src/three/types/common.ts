@@ -42,7 +42,6 @@ export interface StructureInfo {
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
-  hyperstructureRealmCount?: number;
   attackedFromDegrees?: number; // Degrees from which this structure has been attacked
   attackedTowardDegrees?: number; // Degrees in which this structure has attacked someone
   battleCooldownEnd?: number; // Unix timestamp when battle cooldown ends
