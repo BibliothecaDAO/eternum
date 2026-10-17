@@ -2,6 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
+import { TroopAmount } from "./unified-army-creation-modal/troop-amount";
 import { formatNumber } from "@/ui/utils/utils";
 
 import {
@@ -628,15 +629,6 @@ export const TransferTroopsContainer = ({
     currentBlockTimestamp,
   ]);
 
-  // Handle troop amount change
-  const handleTroopAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      // Ensure we don't exceed available troops
-      setTroopAmount(Math.min(value, maxTroops));
-    }
-  };
-
   useEffect(() => {
     setTroopAmount(0);
   }, [transferDirection, guardSlot]);
@@ -875,31 +867,6 @@ export const TransferTroopsContainer = ({
       ? `This slot is rebuilding (${formatTime(receivingGuard.cooldownRemaining)} remaining).`
       : null);
 
-  const quickAmountOptions = useMemo(() => {
-    if (maxTroops <= 0) return [];
-
-    const options: Array<{ label: string; value: number }> = [];
-    const percentToAmount = (fraction: number) => Math.min(maxTroops, Math.max(1, Math.round(maxTroops * fraction)));
-
-    const quarter = percentToAmount(0.25);
-    if (quarter > 0 && quarter < maxTroops) {
-      options.push({ label: "25%", value: quarter });
-    }
-
-    const half = percentToAmount(0.5);
-    if (half > 0 && half < maxTroops && half !== quarter) {
-      options.push({ label: "50%", value: half });
-    }
-
-    options.push({ label: "Max", value: maxTroops });
-
-    return options;
-  }, [maxTroops]);
-
-  const handleQuickAmountSelect = (value: number) => {
-    setTroopAmount(Math.min(value, maxTroops));
-  };
-
   const transferBalanceCards = useMemo<TransferBalanceCardData[]>(() => {
     if (troopAmount <= 0) return [];
     const cards: TransferBalanceCardData[] = [];
@@ -1091,53 +1058,15 @@ export const TransferTroopsContainer = ({
                   )}
 
                   <div className="flex flex-col space-y-2">
-                    <div className="flex items-center gap-3">
-                      <input
-                        id="troopAmountInput"
-                        type="range"
-                        min="0"
-                        max={maxTroops}
-                        value={troopAmount}
-                        onChange={handleTroopAmountChange}
-                        className="w-full accent-gold"
-                      />
-                      <input
-                        type="number"
-                        min="0"
-                        max={maxTroops}
-                        value={troopAmount}
-                        onChange={handleTroopAmountChange}
-                        className="w-24 rounded-md border border-gold/30 bg-dark-brown px-3 py-1 text-gold"
-                      />
-                    </div>
+                    <TroopAmount
+                      troopCount={troopAmount}
+                      maxAffordable={maxTroops}
+                      onChange={(value) => setTroopAmount(Math.min(value, maxTroops))}
+                      disabled={!guardFactsKnown || maxTroops <= 0}
+                    />
                     {capacityNotice && (
                       <div className="rounded-md border border-gold/30 px-3 py-2 text-xs text-gold/60">
                         {capacityNotice}
-                      </div>
-                    )}
-                    {quickAmountOptions.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-gold/60">Quick set:</span>
-                        {quickAmountOptions.map((option) => {
-                          const isActive = troopAmount === option.value;
-                          if (!guardFactsKnown) return <LoadingAnimation />;
-
-                          return (
-                            <button
-                              key={option.label}
-                              type="button"
-                              onClick={() => handleQuickAmountSelect(option.value)}
-                              className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
-                                isActive
-                                  ? "border-gold bg-gold/20 text-gold"
-                                  : "border-gold/30 bg-dark-brown text-gold/70 hover:bg-gold/10"
-                              }`}
-                              aria-pressed={isActive}
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
                       </div>
                     )}
                   </div>

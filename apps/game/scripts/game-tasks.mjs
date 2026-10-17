@@ -168,14 +168,14 @@ export const GAME_TASKS = {
     done: `document.body.innerText.includes("Existing armies")`,
   },
   "blitz-deploy": {
-    goal: "Blitz: deploy a field army from a free tile beside a structure, all its troops of one kind",
+    goal: "Blitz: deploy a field army of 500 (or all, if fewer) from a free tile beside a structure, with +500",
     layouts: ["desktop"],
     view: "map",
     presses: [
       // The structure selected on the map: its free neighbours then offer Create Army.
       { name: "the next structure", key: "Shift+Tab" },
       { name: "a free tile beside it, right-clicked", tile: "Create Army", button: "right" },
-      { name: "Max", within: DEPLOY_PANEL, text: "^Max$" },
+      { name: "+500", within: DEPLOY_PANEL, text: "^\\+500$" },
       { name: "Deploy", within: DEPLOY_PANEL, text: "^Deploy" },
     ],
     reading: TROOPS_HELD,

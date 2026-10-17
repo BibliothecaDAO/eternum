@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "+500 is back",
+    description:
+      "Wherever you choose how many troops go (deploying an army, the Military window, transferring troops), +500 adds 500 with each press, up to what you can send, beside Max.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Transfers say when they land",
     description:
       "The Transfer window, bank swaps and the Log's delivery rows now tell when goods land, as the game delivers them: at the end of the 3-minute delivery window their road ends in, troops riding slower. Essence Rifts are listed as Essence Rifts.",
