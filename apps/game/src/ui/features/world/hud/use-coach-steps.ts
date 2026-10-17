@@ -11,7 +11,6 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView, playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { LeftView } from "@/types";
-import { lostArmyLine } from "@/ui/features/event-feed/row-outcomes";
 import { forecastAttack } from "@/ui/features/military/battle/fight-forecast";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { knownBalance } from "@/ui/utils/utils";
@@ -22,6 +21,7 @@ import {
   configManager,
   getGuardsByStructure,
   getTileAt,
+  lostArmyLine,
   readResourceManager,
   structureMapPosition,
 } from "@bibliothecadao/eternum";

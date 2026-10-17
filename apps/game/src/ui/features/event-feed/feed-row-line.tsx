@@ -3,16 +3,13 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager, Position } from "@bibliothecadao/eternum";
-import { useAccountAddress } from "@/hooks/store/use-account-store";
-import type { PointsGrants } from "@/ui/features/world/hud/points-goal";
-import { type ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
-import { extractRoleLabel, findSegmentValue, parsePresentationDescription } from "../story-events/story-event-utils";
 import { transactionStatusLine, transferRowLabel } from "./event-feed-rows";
 import { formatClockTime } from "@bibliothecadao/eternum";
 import { type ImportantFeedRow } from "./important-feed-rows";
 import { useStoryOpener } from "./story-feed-row";
-import { lostArmyLine, sendOutcome, storyOutcome } from "./row-outcomes";
+import { sendOutcome } from "./row-outcomes";
 
 /** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, up to two lines
  *  of text (a row grows to fit them and never spills over the next), the time flush right. */
@@ -55,7 +52,7 @@ const PlacedRowLine = ({ row }: { row: ImportantFeedRow }) => {
  * headline (the game's start and what scores, an announcement) is never cut.
  */
 const RowLine = ({ row, open }: { row: ImportantFeedRow; open: (() => void) | null }) => {
-  const { icon, text } = summarizeFeedRow(row, useOutcomeContext());
+  const { icon, text } = summarizeFeedRow(row);
   const whole = row.kind === "headline";
   const content = (
     <>
@@ -95,24 +92,15 @@ function feedRowPlace(row: ImportantFeedRow): Position | null {
   return null;
 }
 
-/** What a row's outcome is read against: the game's points grants (read by a scoring row), and its viewer. */
-interface OutcomeContext {
-  grants: () => PointsGrants;
-  viewer: string | null;
-}
-
+/** The game's points grants, read only by a row that scores. */
 const readGrants = () => configManager.getVictoryPointGrants();
 
-const useOutcomeContext = (): OutcomeContext => {
-  const viewer = useAccountAddress();
-  return useMemo(() => ({ grants: readGrants, viewer: viewer === null ? null : `0x${viewer.toString(16)}` }), [viewer]);
-};
-
-function summarizeFeedRow(row: ImportantFeedRow, context: OutcomeContext): { icon: ReactNode; text: string } {
+function summarizeFeedRow(row: ImportantFeedRow): { icon: ReactNode; text: string } {
   if (row.kind === "headline") {
     return { icon: <HeadlineIcon type={row.headline.type} />, text: row.headline.description };
   }
-  if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: summarizeStory(row, context) };
+  // A story reads as the Log tells it: one sentence per event, with what came of it.
+  if (row.kind === "story") return { icon: <StoryIcon story={row.event.story} />, text: row.event.presentation.title };
   if (row.kind === "transaction") {
     const { transaction } = row;
     const failed = transaction.status === "reverted" || transaction.status === "not_sent";
@@ -127,7 +115,7 @@ function summarizeFeedRow(row: ImportantFeedRow, context: OutcomeContext): { ico
     return {
       icon: <SemanticIcon name={Icon} className={cn("h-4 w-4 shrink-0", failed && "text-danger")} />,
       text:
-        sendOutcome(transaction, context.grants) ??
+        sendOutcome(transaction, readGrants) ??
         `${transferRowLabel(row) ?? transaction.description} · ${transactionStatusLine(transaction)}`,
     };
   }
@@ -150,16 +138,3 @@ const StoryIcon = ({ story }: { story: string }) => {
         : ("realm" as const);
   return <SemanticIcon name={Icon} className="h-4 w-4 shrink-0" />;
 };
-
-/** A story's line with what came of it: what an explore found, a crate's or a capture's points, the army a fight cost. */
-function summarizeStory(row: Extract<ImportantFeedRow, { kind: "story" }>, context: OutcomeContext): string {
-  const { event } = row;
-  if (event.story !== "BattleEvent") return storyOutcome(event, context.grants) ?? event.presentation.title;
-  const description = event.presentation.description;
-  const outcome = findSegmentValue(parsePresentationDescription(description), (label) => label === "Outcome");
-  const sides = `${extractRoleLabel(description, "Attacker")} vs ${extractRoleLabel(description, "Defender")}`;
-  // The player's own loss leads: who won is then plain, and the army it cost is what they need to read.
-  const lost = lostArmyLine(event.storyPayload, context.viewer);
-  if (lost) return `${lost} · ${sides}`;
-  return outcome ? `${sides} · ${outcome}` : sides;
-}

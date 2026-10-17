@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    title: "Next up: the one step that scores now",
+    description:
+      "Next up shows the step that scores most for where you are: open a crate your army stands beside, explore, go for a crate or a camp, or level up first when an attack would wipe your army out. After a loss it raises the next army where your troops are. Paging to other steps is a look: it comes back to the current one. The camera frames what it shows clear of the side panels, and Events and the Log tell every event in the same sentence, with what came of it.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-17",
     title: "Map labels you can read at a glance",
     description:
       "Every army, realm, camp and rift on the map wears a small label in the HUD's panel style: an army's player over its troops and stamina, a realm's player and rank (City, Kingdom, Empire) over its name and guard, or Undefended, and a camp or rift's reward (\"Essence Rift | 1,200 Essence\", \"Camp | 250 points\") over its guard. Hover a tile, or select it, to open its label: an army's home realm, a structure's guards in the order an attacker meets them, and troops on their way.",

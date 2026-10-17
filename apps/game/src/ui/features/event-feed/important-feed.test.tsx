@@ -203,6 +203,22 @@ it("keeps a send and the story that tells it as one row: the same element, its f
   }
 });
 
+it('tells a done build by the story it wrote, a routine one the Events level leaves out, not by "· Done"', () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const prior = useChainTimeStore.getState();
+  useChainTimeStore.getState().anchor({ timestamp: 100_000 });
+  const feed = mountQuickFeed([]);
+  try {
+    sent.push({ kind: "transaction", id: "0x0b1d", at: 100_000, transaction: { hash: "0x0b1d", status: "success" } });
+    history.push({ id: "farm", story: "BuildingPaymentStory", owner: PLAYER, participants: [PLAYER], tx: "0xb1d" });
+    feed.rerender();
+    expect(feed.drawn()).toEqual(["story:farm"]);
+  } finally {
+    feed.unmount();
+    useChainTimeStore.setState(prior);
+  }
+});
+
 // Review regressions: the bound holds the player's news, and an action keeps one row and one life across its sources.
 const withFeed = (ids: string[], run: (feed: ReturnType<typeof mountQuickFeed>) => void) => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });

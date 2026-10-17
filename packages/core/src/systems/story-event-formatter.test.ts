@@ -13,6 +13,14 @@ vi.stubGlobal("localStorage", { getItem: () => null });
 beforeEach(() => {
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(2147483647);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
+    exploreTile: 5,
+    openRelicCrate: 250,
+    claimCampFromBandits: 250,
+    claimHyperstructureFromBandits: 1000,
+    hyperstructurePerSecond: 1,
+    hyperstructureScale: "flat",
+  });
 });
 
 type Event = Parameters<typeof buildStoryEventPresentation>[0];
@@ -132,7 +140,7 @@ it("formats native battle sides and positive Ethereal rolls without a legacy row
       defender: { player: "0x456", category: "Knight", tier: "T1", before: "10000000000", after: "0", roll: 1 },
     }),
   );
-  expect(presentation.title).toBe("Battle resolved");
+  expect(presentation.title).toBe("Lord 0123 vs Lord 0456 · Lord 0123 wins");
   expect(presentation.description).toContain("Outcome: Lord 0123 wins");
   expect(presentation.description).toContain("Attacker d20: 20 (+20% damage)");
   expect(presentation.description).toContain("Defender d20: 1 (+1% damage)");
@@ -448,13 +456,13 @@ it("names a gone army's chest delivery without its names", () => {
 
 describe("a capture", () => {
   const names = (address: string) => ({ "0xc1": "clientlane", "0xa1": "uxplay" })[address] ?? null;
-  const captured = (previousOwner: string, viewerAddress: string | null) => {
+  const captured = (previousOwner: string, viewerAddress: string | null, points = 0n) => {
     const { store, setStructure } = buildStore();
     setStructure(5, 1, 1);
     const realm = buildStoryEventPresentation(story("RealmCreatedStory", { coord: { x: 1, y: 1 } }, 5), store).title;
     const presentation = buildStoryEventPresentation(
       {
-        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1", points: 0 }, 5),
+        ...story("StructureCapturedStory", { previous_owner: previousOwner, new_owner: "0xc1", points }, 5),
         viewerAddress,
       },
       store,
@@ -463,22 +471,23 @@ describe("a capture", () => {
     return { ...presentation, realm: realm.replace(/ founded$/, "") };
   };
 
-  it("names who took which structure from whom, and what went with it", () => {
+  const aftermath = "Its armies and incoming deliveries went with it";
+
+  it("names who took which structure from whom, and what went with it, in one line", () => {
     const { title, description, realm } = captured("0xa1", null);
-    expect(title).toBe(`clientlane took ${realm} from uxplay`);
-    expect(description).toBe("Its armies and incoming deliveries went with it");
+    expect(title).toBe(`clientlane took ${realm} from uxplay. ${aftermath}`);
+    expect(description).toBeUndefined();
   });
 
   it("tells the player who lost it that it was taken from them, with or without leading zeros", () => {
     const { title, realm } = captured("0x00a1", "0xa1");
-    expect(title).toBe(`clientlane took ${realm} from you`);
-    expect(captured("0xa1", "0xc1").title).toBe(`clientlane took ${realm} from uxplay`);
+    expect(title).toBe(`clientlane took ${realm} from you. ${aftermath}`);
+    expect(captured("0xa1", "0xc1").title).toBe(`clientlane took ${realm} from uxplay. ${aftermath}`);
   });
 
-  it("has nothing that went with it when no player held it", () => {
-    const { title, description, realm } = captured("0x0", "0xc1");
-    expect(title).toBe(`clientlane took ${realm} from The Vanguard`);
-    expect(description).toBeUndefined();
+  it("has nothing that went with it when no player held it, and the points taking it from The Vanguard paid", () => {
+    const { title, realm } = captured("0x0", "0xc1", 250_000_000n);
+    expect(title).toBe(`clientlane took ${realm} from The Vanguard · +250 points`);
   });
 });
 
@@ -583,4 +592,49 @@ describe("a delivery's story", () => {
     // An instant transfer has no road and says nothing of one.
     expect(told(sentAt(2, 50, 33), 0)).toBeUndefined();
   });
+});
+
+it("leads a fight the viewer's army fell in with the army it cost", () => {
+  const fight = (viewerAddress: string | null) =>
+    buildStoryEventPresentation({
+      ...story("BattleEvent", {
+        attacker_id: 20,
+        defender_id: 21,
+        attacker: {
+          player: "0x123",
+          category: "Crossbowman",
+          tier: "T2",
+          before: "10000000000",
+          after: "9000000000",
+          roll: 0,
+        },
+        defender: { player: "0x456", category: "Knight", tier: "T1", before: "1000000000000", after: "0", roll: 0 },
+      }),
+      viewerAddress,
+    }).title;
+  expect(fight("0x456")).toBe("Army lost: 1,000 Knights · Lord 0123 vs Lord 0456");
+  expect(fight("0x0456")).toBe("Army lost: 1,000 Knights · Lord 0123 vs Lord 0456");
+  expect(fight("0x123")).toBe("Lord 0123 vs Lord 0456 · Lord 0123 wins");
+  expect(fight(null)).toBe("Lord 0123 vs Lord 0456 · Lord 0123 wins");
+});
+
+it("says where an explore found something, the points it scored and what it found", () => {
+  const title = buildStoryEventPresentation(
+    story("ExplorationReward", {
+      explorer_id: 7,
+      receiver: 5,
+      coord: { x: 2147483651, y: 2147483653 },
+      resource_type: 38,
+      amount: "200000000000",
+    }),
+  ).title;
+  expect(title).toBe("Explored · (4, 6): +5 points, +200 Essence");
+});
+
+it("adds the points an opened crate scored", () => {
+  const chest = { pack: "War", lucky: false } as const;
+  const { title } = buildStoryEventPresentation(
+    story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest), points: 250_000_000n }),
+  );
+  expect(title).toBe("Crate opened: 3 relics to the army · +250 points");
 });

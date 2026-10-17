@@ -9,6 +9,7 @@ import {
   relicChestDelivery,
   resources,
   type ResourcesIds,
+  wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
@@ -17,6 +18,8 @@ import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
+import { feltEquals } from "../client/herald-http";
+import { divideByPrecision } from "../utils/utils";
 import { deliveryLandsAt } from "../utils/resource-arrivals";
 import { formatClockTime } from "../utils/timestamp";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -65,7 +68,7 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
   ExplorationReward: (_event, payload, components) => ({
-    title: `+${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
+    title: `${exploredAt(payload.coord)}: +${configManager.getVictoryPointGrants().exploreTile.toLocaleString()} points, +${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "resource",
   }),
@@ -75,7 +78,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "prize",
   }),
   RelicChestOpened: (_event, payload, components) => ({
-    title: describeRelicChestOpening(payload, components),
+    title: withPoints(describeRelicChestOpening(payload, components), payload.points),
     description: chestRelics(payload)
       .map((relic) => getResourceName(relic))
       .join(", "),
@@ -86,13 +89,21 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: getResourceName(Number(payload.value)),
     icon: "prize",
   }),
+  // Who took what from whom; from a player, what went with it; from The Vanguard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
-    title: `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
-      isViewer(payload.previous_owner, event.viewerAddress)
-        ? "you"
-        : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
-    }`,
-    description: toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : undefined,
+    title: withPoints(
+      [
+        `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
+          isViewer(payload.previous_owner, event.viewerAddress)
+            ? "you"
+            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+        }`,
+        toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
+      ]
+        .filter(Boolean)
+        .join(". "),
+      payload.points,
+    ),
     icon: "battle",
   }),
   TradeCreated: (_event, payload) => {
@@ -244,8 +255,11 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       `${label} Troops Left: ${formatResourceAmount(value.after)}`,
       Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
     ];
+    const sides = `${attackerName ?? "Attacker"} vs ${defenderName ?? "Defender"}`;
+    // The viewer's own loss leads: who won is then plain, and the army it cost is what they need to read.
+    const lost = lostArmyLine(payload, event.viewerAddress ?? null);
     return {
-      title: "Battle resolved",
+      title: lost ? `${lost} · ${sides}` : `${sides} · ${outcome}`,
       description: joinPieces([
         `Attacker [${attackerName}]: ${describeEntity(payload.attacker_id, store) ?? "Army"}`,
         `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? "Army"}`,
@@ -710,6 +724,33 @@ function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undef
  * a draw; neither is both falling. The event's `winner_id` is not read: it records the winner as a home structure, a
  * guarded structure or an attacking structure depending on who attacked whom.
  */
+/** A line and the points it scored, when it scored any: "… · +250 points". Story points are at contract precision. */
+const withPoints = (line: string, points: unknown): string => {
+  const whole = points === undefined || points === null ? 0 : wholePoints(BigInt(String(points)));
+  return whole > 0 ? `${line} · +${whole.toLocaleString()} points` : line;
+};
+
+/** Where an explore revealed its find: "Explored · (4, 6)", in the map's own coordinates. */
+const exploredAt = (coord: unknown): string => {
+  const { x, y } = (coord ?? {}) as { x?: unknown; y?: unknown };
+  if (x === undefined || y === undefined) return "Explored";
+  const normalized = Position.fromContract({ x: Number(x), y: Number(y) }).getNormalized();
+  return `Explored · (${normalized.x}, ${normalized.y})`;
+};
+
+const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
+
+/** The viewer's side of a fight, when it fell: "Army lost: 1,000 Knights". Null when it stood, or is not theirs. */
+export const lostArmyLine = (payload: Record<string, unknown>, viewer: string | null): string | null => {
+  const side = [payload.attacker, payload.defender].find(
+    (entry): entry is Record<string, unknown> =>
+      typeof entry === "object" && entry !== null && feltEquals((entry as Record<string, unknown>).player, viewer),
+  );
+  if (!side || BigInt(String(side.after ?? 1)) !== 0n) return null;
+  const troops = divideByPrecision(Number(side.before ?? 0)).toLocaleString();
+  return `Army lost: ${troops} ${TROOP_PLURALS[String(side.category ?? "")] ?? "troops"}`;
+};
+
 function battleOutcome(attacker: { name?: string; standing: boolean }, defender: { name?: string; standing: boolean }) {
   if (attacker.standing && !defender.standing) return `${attacker.name ?? "Attacker"} wins`;
   if (defender.standing && !attacker.standing) return `${defender.name ?? "Defender"} wins`;

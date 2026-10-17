@@ -92,21 +92,20 @@ export function useImportantFeed() {
 }
 
 /**
- * The stories the Events card tells, each from a read that holds them: every battle, raid and capture, the crates the
- * player opened (where its relics went), the deliveries they unloaded (what landed where) and what their explores
- * found (each explore's outcome).
+ * The stories the Events card tells, each from a read that holds them: every battle, raid and capture, and every story
+ * of the player's own, so each of their actions is told by the story it wrote (a crate's relics, a delivery, an
+ * explore's find, a building, a level-up, a send) in the Log's words, whatever that story's level.
  */
 function useEventsStories(address: string | null) {
   const { data: battles } = useStoryEvents(350, "BattleEvent");
   const { data: raids } = useStoryEvents(100, "RaidEvent");
   const { data: captures } = useStoryEvents(100, "StructureCapturedStory");
-  const { data: crates } = useStoryEvents(50, "RelicChestOpened", address ?? undefined);
-  const { data: deliveries } = useStoryEvents(50, "ResourceReceiveArrivalStory", address ?? undefined);
-  const { data: finds } = useStoryEvents(50, "ExplorationReward", address ?? undefined);
-  return useMemo(
-    () => [...battles, ...raids, ...captures, ...crates, ...deliveries, ...finds],
-    [battles, raids, captures, crates, deliveries, finds],
-  );
+  const { data: own } = useStoryEvents(150, undefined, address ?? undefined);
+  return useMemo(() => {
+    const told = [...battles, ...raids, ...captures];
+    const ids = new Set(told.map(({ id }) => id));
+    return [...told, ...(address ? own.filter(({ id }) => !ids.has(id)) : [])];
+  }, [battles, raids, captures, own, address]);
 }
 
 /** Rows that arrived since the log was last open; zero while it is open. */

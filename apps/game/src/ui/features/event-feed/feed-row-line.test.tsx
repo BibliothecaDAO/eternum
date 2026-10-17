@@ -221,7 +221,7 @@ describe("A capture in Events", () => {
     } as ProcessedStoryEvent;
     const [row] = selectImportantFeedRows([taken], noFeed, "mine", PLAYER);
     expect(renderToStaticMarkup(<FeedRowLine row={row} />)).toContain(
-      "clientlane took a structure from you · Its armies and incoming deliveries went with it",
+      "clientlane took a structure from you. Its armies and incoming deliveries went with it",
     );
   });
 });
