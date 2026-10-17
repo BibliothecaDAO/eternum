@@ -6,7 +6,7 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: (state: unknown) => unknown) =>
     select({ structureEntityId: 1, arrivedArrivalStructureIds: [1] }),
 }));
-vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
+vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true, useActNowRefusal: () => null }));
 // The coach's route reads the map and the history; coach.test.ts covers it. Here Next up holds the realm's own steps.
 vi.mock("./use-coach-steps", () => ({ useCoachSteps: () => [], useLostArmyAlert: () => [] }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: { inGame: () => [] } } }) }));

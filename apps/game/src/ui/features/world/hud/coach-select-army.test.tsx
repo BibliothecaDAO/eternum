@@ -49,6 +49,7 @@ const showMap = () => {
 
 const Probe = () => {
   const [step] = useCoachSteps();
+  if (step.kind !== "order" || !step.run) throw new Error("The coach's step has no button");
   return <button onClick={step.run}>{step.verb}</button>;
 };
 

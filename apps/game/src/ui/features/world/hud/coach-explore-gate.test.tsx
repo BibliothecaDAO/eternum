@@ -84,7 +84,7 @@ const coachLines = (store: ReturnType<typeof realmWithExplorer>): string => {
   const Probe = () => (
     <p>
       {useCoachSteps()
-        .map((step) => step.line)
+        .map((step) => (step.kind === "order" ? step.line : step.why))
         .join(" | ")}
     </p>
   );

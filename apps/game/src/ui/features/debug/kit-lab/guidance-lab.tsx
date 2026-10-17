@@ -12,8 +12,9 @@ import { PlayerLabel } from "@/ui/features/world/containers/top-header/identity-
 import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { type NextStep, NextUpView } from "@/ui/features/world/hud/next-up";
-import { coachSteps } from "@/ui/features/world/hud/coach";
+import { NextUpView } from "@/ui/features/world/hud/next-up";
+import type { NextStep } from "@/ui/features/world/hud/next-step";
+import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
 import { configManager } from "@bibliothecadao/eternum";
 import { TransactionType } from "@bibliothecadao/provider";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -96,24 +97,76 @@ const ROWS: ImportantFeedRow[] = [
   },
 ];
 
-/**
- * The coach's route for an army in the field that can explore, a crate, a camp and a Hyperstructure in sight, as Next up
- * shows it (its verbs do nothing here).
- */
-const coachRoute = (): NextStep[] =>
+/** The fixture realm's army, standing at (10, 10). */
+const ARMY: CoachArmy = {
+  entityId: 1,
+  hex: { col: 10, row: 10 },
+  home: { realmId: 7, name: "Egonal" },
+  canExplore: true,
+  selected: false,
+};
+const CRATE: CoachTarget = { kind: "crate", name: "the relic crate", hex: { col: 12, row: 10 } };
+const CAMP: CoachTarget = { kind: "site", name: "Camp", hex: { col: 14, row: 10 } };
+const HYPERSTRUCTURE: CoachTarget = {
+  kind: "hyperstructure",
+  name: "Obsidian Hyperstructure",
+  hex: { col: 18, row: 10 },
+};
+const TROOPS = { realmId: 7, realmName: "'oak Leukue", troops: 1_000 };
+
+/** The coach's steps for a state, as Next up shows them (their buttons do nothing here). */
+const coached = (state: Partial<Parameters<typeof coachSteps>[0]>): NextStep[] =>
   coachSteps({
-    armies: [{ entityId: 1, hex: { col: 10, row: 10 }, canExplore: true }],
-    targets: [
-      { kind: "crate", name: "the relic crate", hex: { col: 12, row: 10 } },
-      { kind: "site", name: "Camp", hex: { col: 14, row: 10 } },
-      { kind: "hyperstructure", name: "Obsidian Hyperstructure", hex: { col: 18, row: 10 } },
-    ],
+    armies: [],
+    targets: [],
+    troopsOnHand: TROOPS,
+    certainLoss: () => false,
     grants: configManager.getVictoryPointGrants(),
-  }).map(({ key, line, verb }) => ({ key, kind: "order", line, verb, busy: false, run: () => undefined }));
+    ...state,
+  }).map(labStep);
+
+const labStep = ({ key, line, verb, act }: CoachStep): NextStep =>
+  act?.kind === "level-up"
+    ? { key, kind: "level-up", realmId: act.realmId, name: act.name, why: line }
+    : { key, kind: "order", line, verb, busy: false, run: act ? () => undefined : null };
+
+/** Next up in each state the coach reads, the step it puts first named above it. */
+const NEXT_UP_STATES: { label: string; steps: NextStep[]; refusal?: string }[] = [
+  { label: "Before play opens", steps: coached({}), refusal: "Starts in 2m 42s" },
+  {
+    label: "Army lost: raise where troops are",
+    steps: [
+      {
+        key: "lost",
+        kind: "order",
+        line: "Army lost: 1,000 Paladins. Raise another at 'oak Leukue (1,000 troops on hand).",
+        verb: "Raise an army",
+        busy: false,
+        run: () => undefined,
+      },
+    ],
+  },
+  { label: "No troops anywhere", steps: coached({ troopsOnHand: null }) },
+  {
+    label: "Army beside a crate",
+    steps: coached({ armies: [ARMY], targets: [{ ...CRATE, hex: { col: 11, row: 10 } }, CAMP, HYPERSTRUCTURE] }),
+  },
+  { label: "Army idle, can explore", steps: coached({ armies: [ARMY], targets: [CRATE, CAMP, HYPERSTRUCTURE] }) },
+  { label: "Army selected", steps: coached({ armies: [{ ...ARMY, selected: true }] }) },
+  {
+    label: "Fight unwinnable",
+    steps: coached({
+      armies: [{ ...ARMY, canExplore: false }],
+      targets: [HYPERSTRUCTURE],
+      certainLoss: () => true,
+    }),
+  },
+];
 
 /**
  * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,
- * at /lab/kit/guidance: the top bar's goal beside the points, Next up's coach, and Events rows with their outcomes.
+ * at /lab/kit/guidance: the top bar's goal beside the points, Next up in each state its coach reads, and Events rows
+ * with their outcomes.
  */
 export const GuidanceLab = () => {
   useDocumentClass("classic-hud");
@@ -124,8 +177,13 @@ export const GuidanceLab = () => {
         <div data-lab="top-bar" className={cn(TOP_PILL, HUD_LABEL_BRIGHT)}>
           <PlayerLabel name="clientlane" standing={{ rank: 1, points: 310 }} />
         </div>
-        <div data-lab="next-up" className="w-[320px]">
-          <NextUpView steps={coachRoute()} />
+        <div data-lab="next-up" className="grid grid-cols-4 gap-4">
+          {NEXT_UP_STATES.map(({ label, steps, refusal }) => (
+            <div key={label} className="flex w-[320px] flex-col gap-1">
+              <span className="text-xs text-gold/60">{label}</span>
+              <NextUpView steps={steps} refusal={refusal} />
+            </div>
+          ))}
         </div>
         <div data-lab="events" className="flex w-[320px] flex-col gap-1">
           {ROWS.map((row) => (
