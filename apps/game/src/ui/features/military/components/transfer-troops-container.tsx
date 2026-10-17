@@ -398,8 +398,10 @@ export const TransferTroopsContainer = ({
     return null;
   })();
 
-  const { maxTroops, capacityBlocked } = useMemo<{
+  // `held` is what the source holds; `maxTroops` what of it fits where it goes (and may leave), never more.
+  const { maxTroops, held, capacityBlocked } = useMemo<{
     maxTroops: number;
+    held: number;
     capacityBlocked: { type: "explorer" } | { type: "guard"; slotIndex: number } | null;
   }>(() => {
     const cap = troopCapacityLimit;
@@ -408,7 +410,7 @@ export const TransferTroopsContainer = ({
     if (transferDirection === TransferDirection.StructureToExplorer) {
       const targetCapacity = Math.max(0, capLimit - targetExplorerCount);
       if (cap !== null && targetCapacity <= 0) {
-        return { maxTroops: 0, capacityBlocked: { type: "explorer" as const } };
+        return { maxTroops: 0, held: 0, capacityBlocked: { type: "explorer" as const } };
       }
       const sourceAvailable = isBalanceSelected
         ? structureBalanceCount
@@ -418,33 +420,41 @@ export const TransferTroopsContainer = ({
               return Number.isFinite(availableValue) ? availableValue : 0;
             })()
           : 0;
-      return { maxTroops: Math.min(sourceAvailable, targetCapacity), capacityBlocked: null };
+      return { maxTroops: Math.min(sourceAvailable, targetCapacity), held: sourceAvailable, capacityBlocked: null };
     }
 
     if (transferDirection === TransferDirection.ExplorerToStructure) {
       if (typeof guardSlot !== "number") {
-        return { maxTroops: 0, capacityBlocked: null };
+        return { maxTroops: 0, held: 0, capacityBlocked: null };
       }
       const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
       const targetGuardCountValue = targetGuard?.troops?.count ?? 0;
       const targetGuardCount = Number.isFinite(targetGuardCountValue) ? targetGuardCountValue : 0;
       const guardCapacity = Math.max(0, capLimit - targetGuardCount);
       if (cap !== null && guardCapacity <= 0) {
-        return { maxTroops: 0, capacityBlocked: { type: "guard" as const, slotIndex: guardSlot } };
+        return { maxTroops: 0, held: 0, capacityBlocked: { type: "guard" as const, slotIndex: guardSlot } };
       }
       const availableFromExplorer = Math.max(0, selectedExplorerCount - 1);
-      return { maxTroops: Math.min(availableFromExplorer, guardCapacity), capacityBlocked: null };
+      return {
+        maxTroops: Math.min(availableFromExplorer, guardCapacity),
+        held: availableFromExplorer,
+        capacityBlocked: null,
+      };
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       const targetCapacity = Math.max(0, capLimit - targetExplorerCount);
       if (cap !== null && targetCapacity <= 0) {
-        return { maxTroops: 0, capacityBlocked: { type: "explorer" as const } };
+        return { maxTroops: 0, held: 0, capacityBlocked: { type: "explorer" as const } };
       }
-      return { maxTroops: Math.min(selectedExplorerCount, targetCapacity), capacityBlocked: null };
+      return {
+        maxTroops: Math.min(selectedExplorerCount, targetCapacity),
+        held: selectedExplorerCount,
+        capacityBlocked: null,
+      };
     }
 
-    return { maxTroops: 0, capacityBlocked: null };
+    return { maxTroops: 0, held: 0, capacityBlocked: null };
   }, [
     troopCapacityLimit,
     transferDirection,
@@ -1061,6 +1071,7 @@ export const TransferTroopsContainer = ({
                     <TroopAmount
                       troopCount={troopAmount}
                       maxAffordable={maxTroops}
+                      held={held}
                       onChange={(value) => setTroopAmount(Math.min(value, maxTroops))}
                       disabled={!guardFactsKnown || maxTroops <= 0}
                     />

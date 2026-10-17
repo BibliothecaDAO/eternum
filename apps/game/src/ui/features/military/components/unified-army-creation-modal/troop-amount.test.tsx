@@ -11,13 +11,15 @@ let host: HTMLDivElement;
 afterEach(() => host.remove());
 
 /** The control as a form holds it: the count it shows is the last one it reported. */
-const mount = (maxAffordable: number) => {
+const mount = (maxAffordable: number, held = maxAffordable) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   host = document.createElement("div");
   document.body.append(host);
   const Form = () => {
     const [count, setCount] = useState(0);
-    return <TroopAmount troopCount={count} maxAffordable={maxAffordable} onChange={setCount} disabled={false} />;
+    return (
+      <TroopAmount troopCount={count} maxAffordable={maxAffordable} held={held} onChange={setCount} disabled={false} />
+    );
   };
   act(() => createRoot(host).render(<Form />));
   const button = (text: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === text)!;
@@ -25,6 +27,7 @@ const mount = (maxAffordable: number) => {
     press: (text: string) => act(() => button(text).click()),
     button,
     count: () => host.querySelector<HTMLInputElement>("input")!.value,
+    text: () => host.textContent,
   };
 };
 
@@ -45,5 +48,14 @@ describe("the troop amount", () => {
     const amount = mount(1_200);
     amount.press("Max");
     expect(amount.count()).toBe("1,200");
+  });
+
+  it("says the count is out of what fits when fewer fit than are held, so Max and +500 read against that", () => {
+    // A guard of 1,000 into an army with room for 500: half the guard is not what Max or +500 measure.
+    const amount = mount(500, 1_000);
+    expect(amount.text()).toContain("of 500 that fit");
+    amount.press("+500");
+    expect(amount.count()).toBe("500");
+    expect(mount(1_000, 1_000).text()).not.toContain("that fit");
   });
 });

@@ -132,6 +132,7 @@ export const UnifiedArmyCreationBody = ({
             <TroopAmount
               troopCount={form.troopCount}
               maxAffordable={form.maxAffordable}
+              held={form.selectedAvailable}
               onChange={form.handleTroopCountChange}
               disabled={form.troopAvailabilityReason !== null}
             />

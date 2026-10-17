@@ -54,6 +54,7 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
       <TroopAmount
         troopCount={form.troopCount}
         maxAffordable={form.maxAffordable}
+        held={form.selectedAvailable}
         onChange={form.handleTroopCountChange}
         disabled={form.troopAvailabilityReason !== null}
       />
