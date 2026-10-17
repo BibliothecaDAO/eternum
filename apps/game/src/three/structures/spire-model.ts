@@ -103,7 +103,10 @@ export class SpireModel extends InstancedModel {
       const portal = dormant ? null : this.portalMaterials.create(this.prepared.portals);
       placement = { matrix: matrix.clone(), phase: 0, orbScale: 1, portal };
       this.placements.set(index, placement);
-      if (portal) this.group.add(portal.group);
+      if (portal) {
+        portal.group.userData.spireSlot = index;
+        this.group.add(portal.group);
+      }
     }
     placement.matrix.copy(matrix);
     placement.phase = placedModelPhase(matrix.elements[12], matrix.elements[14]);
@@ -128,6 +131,10 @@ export class SpireModel extends InstancedModel {
     if (placement.orbScale === scale) return;
     placement.orbScale = scale;
     this.writePose(index, placement);
+  }
+
+  get orbGeometry() {
+    return this.prepared.core.geometry;
   }
 
   /** Authored orb frame before contraction, for effects emitted from its centre. */

@@ -18,9 +18,9 @@ import MeshBasicNodeMaterial from "three/src/materials/nodes/MeshBasicNodeMateri
 import type NodeMaterial from "three/src/materials/nodes/NodeMaterial.js";
 import type Node from "three/src/nodes/core/Node.js";
 import type { SpireModel } from "@/three/structures/spire-model";
-import { ENDGAME_SEQUENCE, type EndgameSettings, type endgameFrame } from "./sequence";
+import { ENDGAME_SEQUENCE, type endgameFrame } from "./sequence";
 
-/** The existing orb is the source of the burst; all temporary materials are owned by this preview. */
+/** The existing orb is the source of the burst; all temporary materials are owned by the end event. */
 export class SpireEndEvent {
   private readonly appearance = uniform(0);
   private readonly orbPresence = uniform(0);
@@ -36,7 +36,8 @@ export class SpireEndEvent {
   constructor(
     private readonly model: SpireModel,
     geometry: BufferGeometry,
-    private readonly settings: EndgameSettings,
+    private materialise: boolean,
+    private count: number,
     private readonly frost: (surface: Node<"vec3">) => Node<"vec3">,
     allowed: Node<"float">,
   ) {
@@ -52,7 +53,7 @@ export class SpireEndEvent {
       .mul(smoothstep(0.38, 0.7, smoke))
       .mul(this.burstOpacity)
       .mul(float(allowed));
-    this.bursts = [0, 1].map(() => {
+    this.bursts = Array.from({ length: count }, () => {
       const mesh = new Mesh(geometry, material);
       mesh.name = "Mist from the spire orb";
       mesh.matrixAutoUpdate = false;
@@ -68,8 +69,13 @@ export class SpireEndEvent {
     return this.bursts;
   }
 
+  setSources(count: number, materialise: boolean): void {
+    this.count = count;
+    this.materialise = materialise;
+  }
+
   update(frame: ReturnType<typeof endgameFrame>): void {
-    this.appearance.value = this.settings.spires === "awaken" ? 1 : frame.materialisation;
+    this.appearance.value = this.materialise ? frame.materialisation : 1;
     this.orbPresence.value = frame.materialisation;
     const afterBurst = frame.seconds - ENDGAME_SEQUENCE.burstAt;
     this.flash.value = afterBurst < 0 ? 0 : Math.max(0, 1 - afterBurst / 0.25);
@@ -78,12 +84,12 @@ export class SpireEndEvent {
     this.origins = [];
     this.bursts.forEach((mesh, index) => {
       this.model.setOrbScale(index, frame.orbScale);
-      const hasOrb = this.model.getOrbTransform(index, this.transform);
+      const hasOrb = index < this.count && this.model.getOrbTransform(index, this.transform);
       if (hasOrb) {
         this.position.setFromMatrixPosition(this.transform);
         this.origins.push({ x: this.position.x, y: this.position.y, z: this.position.z });
       }
-      mesh.visible = hasOrb && !this.settings.shipped && afterBurst >= 0 && frame.burst < 1;
+      mesh.visible = hasOrb && afterBurst >= 0 && frame.burst < 1;
       mesh.matrix.copy(this.transform).scale(this.size.setScalar(0.06 + frame.burst * 20));
       mesh.matrixWorldNeedsUpdate = true;
     });
@@ -97,6 +103,9 @@ export class SpireEndEvent {
     const present = new Set<Mesh>();
     this.model.group.traverse((object) => {
       if (!(object instanceof Mesh)) return;
+      for (let parent = object.parent; parent; parent = parent.parent) {
+        if (typeof parent.userData.spireSlot === "number" && parent.userData.spireSlot >= this.count) return;
+      }
       present.add(object);
       if (this.replacements.has(object)) return;
       const original = object.material;

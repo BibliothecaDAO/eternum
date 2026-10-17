@@ -1,7 +1,7 @@
 import { AdditiveBlending, DoubleSide } from "three";
 import { attribute, float, mix, smoothstep, uniform, uv } from "three/tsl";
 import { MeshBasicNodeMaterial } from "three/webgpu";
-import { mapAnimationTime } from "../effects/game-end-freeze";
+import { mapAnimationTime } from "../effects/endgame/state";
 
 /** Local additive diffusion provides glow on both backends without a full-screen bloom pass. */
 export function createEtherealBorderMaterial() {

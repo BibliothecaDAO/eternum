@@ -1,9 +1,21 @@
 import { BiomeType, StructureType } from "@bibliothecadao/types";
 import { createTerrainVerificationRequest } from "@/three/terrain/verification/terrain-verification-fixtures";
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
-import type { EndgameSettings } from "./sequence";
+export interface EndgameLabSettings {
+  busy: boolean;
+  spires: "awaken" | "materialise";
+  spared: "none" | "realm";
+}
+export function readEndgameSettings(search: string): EndgameLabSettings {
+  const q = new URLSearchParams(search);
+  return {
+    busy: q.get("busy") === "1",
+    spires: q.get("spires") === "awaken" ? "awaken" : "materialise",
+    spared: q.get("gameMode") === "frontier" ? "realm" : "none",
+  };
+}
 
-export function createEndgameFixture(settings: EndgameSettings) {
+export function createEndgameFixture(settings: EndgameLabSettings) {
   const columns = settings.busy ? 36 : 20;
   const rows = settings.busy ? 28 : 16;
   const realm = { col: Math.floor(columns / 2), row: Math.floor(rows / 2) };

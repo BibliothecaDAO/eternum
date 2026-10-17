@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-17",
+    type: "feature",
+    title: "The mist returns",
+    description:
+      "At game end, spires contract their orbs and release a fractured veil across the map. Frontier keeps your realm clear. Results stays available; Escape skips the animation.",
+  },
+  {
+    date: "2026-10-17",
     title: "Events keep the last three, and filter",
     description:
       "The Events strip shows the game's three latest events. It shows the important ones by default (your fights and captures, armies lost, crates you opened, and any Hyperstructure taken); switch to Mine or All in its header. The Log uses the same filter, and it is remembered for you. Notices and the game's milestones show above it as they happen.",

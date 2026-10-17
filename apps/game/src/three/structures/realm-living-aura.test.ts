@@ -3,11 +3,11 @@ import { afterEach, expect, it, vi } from "vitest";
 import type NodeFrame from "three/src/nodes/core/NodeFrame.js";
 import type { MeshBasicNodeMaterial } from "three/webgpu";
 import { time } from "three/tsl";
-import { mapAnimationTime, updateGameEndFreeze } from "../effects/game-end-freeze";
+import { mapAnimationTime, advanceGameEnd, resetGameEnd } from "../effects/endgame/state";
 import { RealmLivingAura } from "./realm-living-aura";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 
-afterEach(() => updateGameEndFreeze(0, false, 0));
+afterEach(() => resetGameEnd());
 
 it("freezes both aura shader outputs at game end and resumes in the same game, a new game and the lab", () => {
   const source = new Group();
@@ -25,20 +25,20 @@ it("freezes both aura shader outputs at game end and resumes in the same game, a
     mapAnimationTime.update({ time: seconds } as NodeFrame);
     return mapAnimationTime.value;
   };
-  updateGameEndFreeze(13, false, 0.1);
+  advanceGameEnd(13, false, 0.1);
   expect(frame(12)).toBe(12);
-  updateGameEndFreeze(13, true, 0.1);
+  advanceGameEnd(13, true, 9);
   expect(frame(20)).toBe(12);
   expect(frame(21)).toBe(12);
-  updateGameEndFreeze(13, false, 0.1);
+  advanceGameEnd(13, false, 0.1);
   expect(frame(22)).toBe(22);
-  updateGameEndFreeze(13, true, 0.1);
+  advanceGameEnd(13, true, 9);
   expect(frame(23)).toBe(22);
-  updateGameEndFreeze(14, false, 0.1);
+  advanceGameEnd(14, false, 0.1);
   expect(frame(24)).toBe(24);
-  updateGameEndFreeze(14, true, 0.1);
+  advanceGameEnd(14, true, 9);
   expect(frame(25)).toBe(24);
-  updateGameEndFreeze(0, false, 0);
+  resetGameEnd();
   expect(frame(26)).toBe(26);
   expect(frame(27)).toBe(27);
   aura.dispose();

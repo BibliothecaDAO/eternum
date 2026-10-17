@@ -34,7 +34,7 @@ it("mounts one renderer under development remount, opens Results during the effe
   vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
     frames.delete(id);
   });
-  renderer.mount.mockResolvedValue({ ...renderer, getStats: () => ({}), seekEndgame: vi.fn() });
+  renderer.mount.mockResolvedValue({ ...renderer, getStats: () => ({}), focusEndgameSpire: vi.fn() });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -61,7 +61,7 @@ it("mounts one renderer under development remount, opens Results during the effe
     expect(button.disabled).toBe(false);
     await act(async () => button.click());
   };
-  await click("End game preview");
+  await click("End game");
   expect(renderer.playEndgame).toHaveBeenCalledTimes(1);
   await click("See the results");
   expect(renderer.skipEndgame).toHaveBeenCalledTimes(1);

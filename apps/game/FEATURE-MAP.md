@@ -386,15 +386,22 @@ components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords`
 fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path. It includes
 the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1`.
 
-## Endgame mist preview
+## End of game: Fractured veil
 
-Dev lab only: `/lab/endgame` previews **Fractured veil (9 s)**. Appearing spires materialise in place without changing
-their hex's biome. Their actual spherical orbs contract into singularities, burst, and release the fractured mist.
-**Spires** switches existing dormant spires versus materialisation; **World** switches Blitz (all hexes freeze) versus
-Frontier (the central realm hex is spared). **Inspect orb** focuses the first source; **Whole map** returns to the map.
-**End game preview** starts the event, **Reset map** restores it, **See the results** opens the labelled fixture
-immediately, and **Escape** skips to the frozen map. Production end-of-game and Results paths are unchanged.
+A live game ending starts the nine-second spire-orb contraction, burst and fractured mist. Blitz freezes the whole map;
+Frontier spares the signed-in player's expedition realm. **See the results** opens Results immediately; **Escape** skips
+the cosmetic event. Opening an already-ended game shows the frozen state. Terrain and game facts stay intact.
 
-`pnpm --dir apps/game prove:endgame --port 4199 --mode gallery --out <fresh-directory>` starts the app, drives these
-controls and the timeline, records map/orb captures for both entrances and worlds, and cleans up its browser and server.
-`--mode cost --iterations 3` measures the busy fixture on WebGPU and WebGL at 1920×1080. See `src/lab/README.md`.
+The client uses at most two discovered/rule-defined spires. With none, it materialises on two actual unoccupied observed
+hexes, on opposite sides of the explored map. It never claims to know hidden spire coordinates. A map with no empty
+hexes gets mist from its observed centre without adding a spire. A Frontier realm or rule spire also supplies a known
+anchor when no Tile rows have been explored.
+
+Dev-only `/lab/endgame` is the offline production smoke/cost fixture: **End game** updates its native GameRegistry fact;
+**Reset map** restores live state; **Inspect orb** focuses a source. It covers Blitz/Frontier and discovered/absent
+spires using the production SpireManager, end timeline, material field and event. Its Results panel is explicitly a
+fixture.
+
+`pnpm --dir apps/game prove:endgame --port 4199 --mode gallery --out <fresh-directory>` starts the app, drives visible
+controls, records map/orb captures, checks Results/Escape and cleans up. `--mode cost --iterations 3` measures the busy
+fixture on WebGPU and WebGL at 1920×1080. See `src/lab/README.md`.

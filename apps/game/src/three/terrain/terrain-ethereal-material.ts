@@ -1,4 +1,4 @@
-import { applyGameEndFrost } from "../effects/game-end-freeze";
+import { applyEndgameFrost } from "../effects/endgame/field";
 import type Node from "three/src/nodes/core/Node.js";
 import { attribute, color, float, fwidth, mix, positionWorld, smoothstep, vec2, vec3 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
@@ -9,7 +9,7 @@ import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.9 });
   material.name = "terrain-ethereal-basalt";
-  material.colorNode = applyGameEndFrost(
+  material.colorNode = applyEndgameFrost(
     createBasaltSurface(positionWorld.xz).color.mul(attribute("terrainColor", "vec3")),
   );
   return material;

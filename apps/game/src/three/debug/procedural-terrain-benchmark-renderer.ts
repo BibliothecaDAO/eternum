@@ -1,5 +1,5 @@
 import { createRealmDensityFixture } from "./realm-density-fixture";
-import { updateGameEndFreeze } from "../effects/game-end-freeze";
+import { resetGameEnd } from "../effects/endgame/state";
 import {
   AmbientLight,
   Color,
@@ -164,7 +164,7 @@ const ASSET_REQUEST_TIMELINE_CAPACITY = 4096;
 export async function mountProceduralTerrainBenchmarkRenderer(
   input: MountProceduralTerrainBenchmarkRendererInput,
 ): Promise<ProceduralTerrainBenchmarkRendererHandle> {
-  updateGameEndFreeze(0, false, 0);
+  resetGameEnd();
   const debugWindow = window as TerrainBenchmarkWindow;
   const runtime = await createBenchmarkRuntime(input);
   const resizeObserver = observeCanvas(input.canvas, runtime);

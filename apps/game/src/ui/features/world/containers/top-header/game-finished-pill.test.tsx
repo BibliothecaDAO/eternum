@@ -1,3 +1,4 @@
+import { advanceGameEnd, resetGameEnd } from "@/three/effects/endgame/state";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
@@ -32,10 +33,15 @@ it("leads from a finished game to that game's Results page", async () => {
     ),
   );
   try {
+    resetGameEnd();
+    advanceGameEnd(5, false, 0);
+    advanceGameEnd(5, true, 0.1);
     await press("Game finished");
     await press("See the results");
     expect(document.querySelector('[data-testid="results"]')?.textContent).toBe("0xa-5");
+    expect(advanceGameEnd(5, true, 0).finished).toBe(true);
   } finally {
+    resetGameEnd();
     await act(async () => root.unmount());
     container.remove();
   }

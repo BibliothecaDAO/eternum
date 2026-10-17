@@ -1,3 +1,4 @@
+import type { endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
@@ -75,6 +76,8 @@ import {
   Position,
   isOpenSpawnHex,
   isViewerOwner,
+  isExpeditionRealm,
+  structureMapPosition,
   siteKindOf,
 } from "@bibliothecadao/eternum";
 import {
@@ -1269,6 +1272,7 @@ export default class WorldmapScene extends WarpTravel {
       this.getTerrainSurface(),
       this.markLabelsDirty,
       this.createRuleSpires(),
+      this.compilePipelines,
     );
     this.mapSiteManager = new MapSiteManager(this.scene, this.worldSpatialProjection, this.getTerrainSurface());
     this.chestManager = new ChestManager(
@@ -7822,6 +7826,23 @@ export default class WorldmapScene extends WarpTravel {
       recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
       this.retryPendingHoverLabelRecovery("non_critical_manager_catch_up");
     }
+  }
+
+  public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
+    if (frame.phase === "live") {
+      this.spireManager.advanceGameEnd(frame, delta, this.camera, null);
+      return;
+    }
+    let sparedHex = null;
+    const viewer = accountAddress();
+    if (getGameModeId() === "frontier" && viewer !== null) {
+      const owned = this.game.store.structuresOwnedBy(configManager.getActiveGameId(), viewer);
+      const realm = [...owned].find((row) => isExpeditionRealm(this.game.store, row));
+      const position = realm ? structureMapPosition(this.game.store, realm) : null;
+      if (position && position.alt === activeMapLayer())
+        sparedHex = { col: position.x - FELT_CENTER(), row: position.y - FELT_CENTER() };
+    }
+    this.spireManager.advanceGameEnd(frame, delta, this.camera, sparedHex);
   }
 
   update(deltaTime: number) {

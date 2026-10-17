@@ -5,22 +5,21 @@ import {
   type ProceduralTerrainDebugRendererHandle,
   type ProceduralTerrainDebugStats,
 } from "@/three/debug/procedural-terrain-debug-renderer";
-import { ENDGAME_SEQUENCE, readEndgameSettings } from "./sequence";
+import { readEndgameSettings } from "./fixture";
 import "./view.css";
 
-/** Compare the same shipped world before and after an end event. */
+/** Exercise the production native-fact end trigger and renderer without waiting for a chain game to end. */
 export function EndgameMistLabView() {
   const [query, setQuery] = useSearchParams();
   const search = query.toString();
   const settings = readEndgameSettings(search);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const runtime = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
-  const [stats, setStats] = useState<ProceduralTerrainDebugStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [results, showResults] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [inspecting, setInspecting] = useState(false);
-  const choice = ENDGAME_SEQUENCE;
+  const canvas = useRef<HTMLCanvasElement>(null),
+    runtime = useRef<ProceduralTerrainDebugRendererHandle | null>(null);
+  const [stats, setStats] = useState<ProceduralTerrainDebugStats | null>(null),
+    [ready, setReady] = useState(false),
+    [error, setError] = useState<string | null>(null),
+    [results, showResults] = useState(false),
+    [inspecting, setInspecting] = useState(false);
   const change = (name: string, value: string) =>
     setQuery((previous) => {
       const next = new URLSearchParams(previous);
@@ -30,11 +29,11 @@ export function EndgameMistLabView() {
   useEffect(() => {
     let active = true;
     setReady(false);
-    setInspecting(false);
-    setError(null);
     setStats(null);
+    setError(null);
     showResults(false);
-    const mountFrame = window.requestAnimationFrame(() => {
+    setInspecting(false);
+    const frame = requestAnimationFrame(() => {
       void mountProceduralTerrainDebugRenderer({
         canvas: canvas.current!,
         captureMode: false,
@@ -56,28 +55,26 @@ export function EndgameMistLabView() {
             return;
           }
           runtime.current = renderer;
-          const time = new URLSearchParams(search).get("time");
-          if (time !== null) renderer.seekEndgame(Number(time));
           setReady(true);
         })
         .catch((reason) => {
           if (active) setError(String(reason));
         });
     });
-    const poll = window.setInterval(() => {
+    const poll = setInterval(() => {
       if (runtime.current) setStats(runtime.current.getStats());
     }, 100);
     return () => {
       active = false;
-      window.cancelAnimationFrame(mountFrame);
+      cancelAnimationFrame(frame);
       clearInterval(poll);
       runtime.current?.dispose();
       runtime.current = null;
     };
   }, [search]);
   useEffect(() => {
-    const skip = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+    const skip = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
         runtime.current?.skipEndgame();
         showResults(false);
       }
@@ -85,15 +82,13 @@ export function EndgameMistLabView() {
     window.addEventListener("keydown", skip);
     return () => window.removeEventListener("keydown", skip);
   }, []);
-  const snapshot = stats?.endgame;
+  const state = stats?.endgame;
   return (
     <main className="endgame-lab" data-ready={ready} data-endgame-lab>
       <canvas ref={canvas} aria-label="Endgame world map" />
       <aside className="endgame-lab-panel">
-        <h1>{settings.shipped ? "Shipped end" : "Fractured veil"}</h1>
-        <p>
-          Materialise, contract, burst. {settings.shipped ? "Shipped frost comparison." : "9 seconds · preview only."}
-        </p>
+        <h1>Fractured veil</h1>
+        <p>Production effect · fixture facts · 9 seconds.</p>
         <label>
           World
           <select
@@ -101,10 +96,8 @@ export function EndgameMistLabView() {
             value={settings.spared === "realm" ? "frontier" : "blitz"}
             onChange={(e) => change("gameMode", e.target.value)}
           >
-            <option value="blitz">Blitz · freeze every hex</option>
-            <option value="frontier">
-              {settings.shipped ? "Frontier · shipped freeze" : "Frontier · spare your realm"}
-            </option>
+            <option value="blitz">Blitz · whole map</option>
+            <option value="frontier">Frontier · realm spared</option>
           </select>
         </label>
         <label>
@@ -114,8 +107,8 @@ export function EndgameMistLabView() {
             value={settings.spires}
             onChange={(e) => change("spires", e.target.value)}
           >
+            <option value="materialise">No discovered spires · materialise</option>
             <option value="awaken">Discovered · awaken</option>
-            <option value="materialise">Appearing · materialise in place</option>
           </select>
         </label>
         <label>
@@ -125,8 +118,8 @@ export function EndgameMistLabView() {
             value={settings.busy ? "1" : "0"}
             onChange={(e) => change("busy", e.target.value)}
           >
-            <option value="0">Study · 320 hexes, 5 realms</option>
-            <option value="1">Busy Blitz · 1,008 hexes, 25 realms</option>
+            <option value="0">320 hexes · 5 realms</option>
+            <option value="1">1,008 hexes · 25 realms</option>
           </select>
         </label>
         <label>
@@ -142,13 +135,13 @@ export function EndgameMistLabView() {
         </label>
         <div className="endgame-lab-actions">
           <button className="primary" disabled={!ready} onClick={() => runtime.current?.playEndgame()}>
-            End game preview
+            End game
           </button>
           <button disabled={!ready} onClick={() => runtime.current?.resetEndgame()}>
             Reset map
           </button>
           <button
-            disabled={!ready || settings.shipped}
+            disabled={!ready || !state?.orbOrigins?.length}
             onClick={() => {
               if (inspecting) runtime.current?.resetCamera();
               else runtime.current?.focusEndgameSpire();
@@ -160,36 +153,17 @@ export function EndgameMistLabView() {
         </div>
         <p className="endgame-lab-phase" role="status">
           {error ??
-            (!ready
-              ? "Loading shipped world…"
-              : `${snapshot?.phase ?? "live"} · ${(snapshot?.seconds ?? 0).toFixed(1)} / ${settings.shipped ? 2 : choice.duration}s`)}
+            (!ready ? "Loading world…" : `${state?.phase ?? "live"} · ${(state?.seconds ?? 0).toFixed(1)} / 9s`)}
         </p>
-        <label>
-          Sequence position
-          <input
-            aria-label="Sequence position"
-            type="range"
-            min="0"
-            max={settings.shipped ? 2 : choice.duration}
-            step="0.05"
-            value={snapshot?.seconds ?? 0}
-            disabled={!ready}
-            onChange={(e) => {
-              runtime.current?.seekEndgame(Number(e.target.value));
-              if (runtime.current) setStats(runtime.current.getStats());
-            }}
-          />
-        </label>
-        <p>Drag to pan, scroll to zoom. Escape skips to the frozen map.</p>
+        <p>Drag to pan, scroll to zoom. Escape skips the event.</p>
         <details>
           <summary>Renderer cost</summary>
           <p>
-            {stats?.activeMode} · {stats?.drawCalls ?? 0} draws · {snapshot?.realmCount ?? 0} realms ·{" "}
-            {snapshot?.armyCount ?? 0} armies
+            {stats?.activeMode} · {stats?.drawCalls ?? 0} draws · {state?.armyCount ?? 0} armies
           </p>
           <p>
             Frame p95 {stats?.frameP95Ms.toFixed(1) ?? "0"} ms · submission p95{" "}
-            {snapshot?.renderSubmissionP95Ms.toFixed(2) ?? "0"} ms · n={stats?.frameSampleCount ?? 0}
+            {state?.renderSubmissionP95Ms.toFixed(2) ?? "0"} ms
           </p>
         </details>
       </aside>
@@ -211,8 +185,7 @@ export function EndgameMistLabView() {
       {results && (
         <section className="endgame-lab-results" role="dialog" aria-label="Results fixture">
           <h2>Results</h2>
-          <p>Results opens immediately, including during materialisation and mist spread.</p>
-          <p>This is a local fixture. The live Results page is unchanged.</p>
+          <p>This offline fixture opens Results immediately. Live play keeps the game's existing Results route.</p>
           <button onClick={() => showResults(false)}>Back to the frozen map</button>
         </section>
       )}

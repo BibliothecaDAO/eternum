@@ -1,4 +1,7 @@
-import { CameraView } from "@/three/scenes/hexagon-scene";
+import { advanceGameEnd } from "./effects/endgame/state";
+import { setEndgameView } from "./effects/endgame/field";
+import type { endgameFrame } from "./effects/endgame/sequence";
+import { CameraView } from "@/three/scenes/camera-view";
 import type { Camera, Scene } from "three";
 import { runWithFrameWorkOwner } from "./frame-work-owner";
 import { setRendererDiagnosticSceneName } from "./renderer-diagnostics";
@@ -49,16 +52,21 @@ interface RunRendererFrameInput {
   currentTime: number;
   cycleProgress: number;
   deltaTime: number;
-  animationsPaused?: boolean;
+  gameEnd: { gameId: number; ended: boolean; frontier: boolean };
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
   labelRuntime: Pick<RendererLabelRuntime, "render" | "shouldRender">;
   now?: () => number;
-  worldmapScene: RendererFrameSceneController;
+  worldmapScene: RendererFrameSceneController & {
+    advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void;
+  };
 }
 
 export function runRendererFrame(input: RunRendererFrameInput): boolean {
-  const weatherState = advanceHudAndResolveWeatherState(input);
+  const endgame = advanceGameEnd(input.gameEnd.gameId, input.gameEnd.ended, input.deltaTime);
+  input.worldmapScene.advanceGameEnd(endgame, input.deltaTime);
+  setEndgameView(input.currentScene === SceneName.WorldMap, input.gameEnd.frontier, endgame.spread);
+  const weatherState = advanceHudAndResolveWeatherState({ ...input, animationsPaused: endgame.finished });
   const resolvedFrame = resolveRendererFrame({
     camera: input.camera,
     currentScene: input.currentScene,
@@ -70,7 +78,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     return false;
   }
 
-  resolvedFrame.sceneController.setAnimationsPaused?.(input.animationsPaused ?? false);
+  resolvedFrame.sceneController.setAnimationsPaused?.(endgame.finished);
   resolvedFrame.sceneController.setWeatherAtmosphereState(weatherState);
   resolvedFrame.sceneController.update(input.deltaTime);
   // Keep the transition frame while asynchronous preparation owns the incoming scene.
@@ -98,7 +106,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
 }
 
 function advanceHudAndResolveWeatherState(
-  input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene" | "animationsPaused">,
+  input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene"> & { animationsPaused: boolean },
 ): RendererWeatherState {
   if (!input.animationsPaused) input.hudScene.update(input.deltaTime, input.cycleProgress);
   return input.hudScene.getWeatherState() as RendererWeatherState;

@@ -1,10 +1,10 @@
-import { EndgameMistPresentation } from "@/lab/endgame-mist/presentation";
+import { EndgameFixtureScene } from "@/lab/endgame-mist/fixture-scene";
 import { createEndgameFixture } from "@/lab/endgame-mist/fixture";
-import type { EndgameSettings } from "@/lab/endgame-mist/sequence";
+import type { EndgameLabSettings } from "@/lab/endgame-mist/fixture";
 import type { GameModeId } from "@/config/game-modes";
 import { createPipelineCompiler } from "@/three/pipeline-compiler";
 import { WeatherLabRuntime } from "./weather-lab-runtime";
-import { updateGameEndFreeze } from "@/three/effects/game-end-freeze";
+import { resetGameEnd } from "@/three/effects/endgame/state";
 import { GameMapMaterialLibrary } from "@/three/effects/game-map-material-library";
 import { WeatherType } from "../managers/weather-manager";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
@@ -60,7 +60,7 @@ const LAB_LIGHTING_OPTIONS = {
 } as const;
 
 export interface ProceduralTerrainDebugStats {
-  endgame?: ReturnType<EndgameMistPresentation["getSnapshot"]> & {
+  endgame?: ReturnType<EndgameFixtureScene["getSnapshot"]> & {
     renderSubmissionP50Ms: number;
     renderSubmissionP95Ms: number;
     renderSubmissionSamples: number;
@@ -145,10 +145,8 @@ export interface ProceduralTerrainDebugRendererHandle {
   removeBuilding(clearAll?: boolean): Promise<void>;
   setPreview(preview: TerrainLabPreview): Promise<void>;
   setCycleProgress(progress: number): void;
-  setGameEnded(ended: boolean): void;
   playEndgame(): void;
   resetEndgame(): void;
-  seekEndgame(seconds: number): void;
   skipEndgame(): void;
   focusEndgameSpire(): void;
   setMoonEnabled(enabled: boolean): void;
@@ -158,7 +156,7 @@ export interface ProceduralTerrainDebugRendererHandle {
 }
 
 interface MountProceduralTerrainDebugRendererInput {
-  endgame?: EndgameSettings;
+  endgame?: EndgameLabSettings;
   gameMode?: GameModeId;
   canvas: HTMLCanvasElement;
   captureMode: boolean;
@@ -186,13 +184,12 @@ type TerrainDebugRendererConstructor = new (options: {
 }) => TerrainDebugRendererSurface;
 
 interface TerrainDebugRuntime {
-  endgame: EndgameMistPresentation | null;
+  endgame: EndgameFixtureScene | null;
   renderSubmissionMs: number[];
   gameMode: GameModeId;
   atmosphere: WorldAtmosphereController;
   weather: WeatherLabRuntime;
   cycleProgress: number;
-  gameEnded: boolean;
   camera: PerspectiveCamera;
   cameraFrame: TerrainDebugCameraFrame;
   controls: MapControls;
@@ -259,7 +256,7 @@ export async function mountProceduralTerrainDebugRenderer(
         runtime.atmosphere.dispose();
         runtime.renderer.dispose();
         if (debugWindow.__terrainVerification === verification) {
-          updateGameEndFreeze(0, false, 0);
+          resetGameEnd();
           delete debugWindow.__terrainVerification;
         }
       },
@@ -273,7 +270,6 @@ export async function mountProceduralTerrainDebugRenderer(
       setWeatherEvolving: (enabled) => runtime.weather.setEvolving(enabled),
       playEndgame: () => runtime.endgame?.play(),
       resetEndgame: () => runtime.endgame?.reset(),
-      seekEndgame: (seconds) => runtime.endgame?.seek(seconds),
       skipEndgame: () => runtime.endgame?.skip(),
       focusEndgameSpire: () => {
         const origin = runtime.endgame?.getSnapshot().orbOrigins?.[0];
@@ -282,10 +278,6 @@ export async function mountProceduralTerrainDebugRenderer(
         runtime.camera.position.set(origin.x + 3.2, origin.y + 3.5, origin.z + 5);
         runtime.camera.lookAt(runtime.controls.target);
         runtime.controls.update();
-      },
-      setGameEnded: (ended) => {
-        runtime.gameEnded = ended;
-        updateGameEndFreeze(0, ended, 0);
       },
       setWeather: (type) => runtime.weather.setWeather(type),
       strike: () => runtime.weather.strike(),
@@ -314,11 +306,11 @@ export async function mountProceduralTerrainDebugRenderer(
 }
 
 async function createRuntime(input: MountProceduralTerrainDebugRendererInput): Promise<TerrainDebugRuntime> {
-  updateGameEndFreeze(0, false, 0);
+  resetGameEnd();
   const Renderer = WebGPURenderer as unknown as TerrainDebugRendererConstructor;
   const renderer = new Renderer({ canvas: input.canvas, antialias: true, forceWebGL: input.forceWebGL });
-  const endgame = input.endgame ? new EndgameMistPresentation(input.endgame) : null;
-  renderer.library = endgame?.library ?? new GameMapMaterialLibrary();
+  const endgame = input.endgame ? new EndgameFixtureScene(input.endgame) : null;
+  renderer.library = new GameMapMaterialLibrary();
   const background = new Color(TERRAIN_DEEP_FOG_COLOR);
   configureRendererColorOutput(renderer);
   renderer.setPixelRatio(1);
@@ -437,7 +429,12 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
   terrain.setGroundTextureDetailEnabled(input.texturedGround);
   if (endgame) {
     try {
-      await endgame.prepare(scene, terrain, camera);
+      await endgame.prepare(
+        scene,
+        terrain,
+        camera,
+        createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera }),
+      );
     } catch (error) {
       endgame.dispose();
       terrain.dispose();
@@ -471,7 +468,6 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     weather,
     cycleProgress: 50,
     gameMode: input.gameMode ?? "blitz",
-    gameEnded: false,
     interaction,
     camera,
     cameraFrame,
@@ -707,12 +703,6 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
         ? 0
         : Math.min(0.05, Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1_000));
     const endgameFrozen = runtime.endgame?.getSnapshot().finished === true;
-    const stockEnd = input.endgame?.shipped === true && runtime.endgame?.getSnapshot().phase !== "live";
-    updateGameEndFreeze(
-      0,
-      runtime.endgame ? stockEnd || endgameFrozen : runtime.gameEnded,
-      runtime.endgame && !input.endgame?.shipped ? 0 : deltaSeconds,
-    );
     runtime.controls.update();
     runtime.atmosphere.update(
       runtime.cycleProgress,
@@ -720,7 +710,7 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
       LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
     );
     runtime.endgame?.update(Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.terrain, runtime.camera);
-    if (!runtime.gameEnded && !endgameFrozen) {
+    if (!endgameFrozen) {
       runtime.terrain.update(deltaSeconds);
       runtime.weather.update(deltaSeconds, runtime.atmosphere);
       runtime.interaction.update(deltaSeconds, runtime.weather.getWind());

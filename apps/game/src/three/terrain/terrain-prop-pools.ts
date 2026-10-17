@@ -1,4 +1,4 @@
-import { mapAnimationTime as time } from "../effects/game-end-freeze";
+import { mapAnimationTime as time } from "../effects/endgame/state";
 import { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
 import { queueInstanceUpdate } from "../utils/instance-update-ranges";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";

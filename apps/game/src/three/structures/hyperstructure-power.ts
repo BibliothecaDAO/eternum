@@ -12,7 +12,7 @@ import {
   uniform,
   vec3,
 } from "three/tsl";
-import { applyGameEndFrost } from "../effects/game-end-freeze";
+import { applyEndgameFrost } from "../effects/endgame/field";
 
 /** Violet essence churns inside its shell; refined teal essence stays pure and steady. */
 export function createHyperstructurePower(capacity: number) {
@@ -30,6 +30,6 @@ export function createHyperstructurePower(capacity: number) {
   const surface = mix(essence, turbulence, unstable);
   const material = new MeshBasicNodeMaterial();
   material.name = "Hyperstructure essence";
-  material.colorNode = applyGameEndFrost(surface);
+  material.colorNode = applyEndgameFrost(surface);
   return { instances, time, material };
 }

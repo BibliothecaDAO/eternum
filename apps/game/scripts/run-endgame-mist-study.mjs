@@ -1,4 +1,4 @@
-import { createBrowserSession } from "./client-playtest/browser-session.mjs";
+import { createBrowserSession, openPageDevTools } from "./client-playtest/browser-session.mjs";
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { loadavg, tmpdir } from "node:os";
@@ -12,7 +12,8 @@ const arg = (name, fallback) => {
 const base = arg("--base-url", null);
 const port = arg("--port", "4199");
 const mode = arg("--mode", "gallery");
-const output = resolve(arg("--out", ".context/endgame-study-" + Date.now()));
+const tracing = process.argv.includes("--trace");
+const output = resolve(arg("--out", ".context/endgame-proof-" + Date.now()));
 const entrance = arg("--spires", null);
 if (entrance !== null && entrance !== "awaken" && entrance !== "materialise") throw new Error("Unknown spire entrance");
 const iterations = Number(arg("--iterations", "3"));
@@ -89,25 +90,34 @@ function waitUntilFrozen(browser, duration) {
     browser.run(["wait", "200"]);
   }
 }
-function seek(browser, seconds) {
-  browser.run(["focus", "input[aria-label='Sequence position']"]);
-  browser.press("Home");
-  const steps = Math.round(seconds / 0.05);
-  if (steps) browser.run(["batch", ...Array(steps).fill("press ArrowRight")]);
-  browser.run(["wait", "150"]);
-  check(Math.abs(snapshot(browser).endgame.seconds - seconds) < 0.01, "Scrubber did not seek to requested time");
+async function captureTimedStage(devTools, seconds, name) {
+  const { result, exceptionDetails } = await devTools.send("Runtime.evaluate", {
+    expression: `(async()=>{while(window.__terrainVerification.getSnapshot().endgame.seconds<${seconds})await new Promise(requestAnimationFrame);return window.__terrainVerification.getSnapshot();})()`,
+    awaitPromise: true,
+    returnByValue: true,
+  });
+  check(!exceptionDetails, "Stage observation failed");
+  const { data } = await devTools.send("Page.captureScreenshot", { format: "png" });
+  writeFileSync(join(output, name + ".png"), Buffer.from(data, "base64"));
+  return result.value;
 }
-function gallery(browser, world, spires) {
+async function gallery(browser, world, spires) {
   const url = urlBase + "/lab/endgame?gameMode=" + world + "&spires=" + spires;
   const adapter = openScenario(browser, url);
   const name = "fracture-" + world + "-" + spires;
   const before = capture(browser, name + "-before");
   check(before.endgame.phase === "live" && before.endgame.mistDraws === 0, "Effect ran before end");
   let recording = false;
+  const devTools = await openPageDevTools(browser);
+  const captureStage = (seconds, name) => captureTimedStage(devTools, seconds, name);
   try {
     browser.run(["record", "start", join(output, name + ".webm"), "--fps", "12"]);
     recording = true;
-    browser.click("End game preview");
+    browser.click("End game");
+    const wideStages = {};
+    for (const [stage, time] of Object.entries({ materialising: 0.4, contracting: 1.3, burst: 2.3, spreading: 4.75 })) {
+      wideStages[stage] = await captureStage(time, name + "-" + stage);
+    }
     waitUntilFrozen(browser, duration);
     const frozen = capture(browser, name + "-frozen");
     browser.run(["record", "stop"]);
@@ -117,25 +127,24 @@ function gallery(browser, world, spires) {
     capture(browser, name + "-orb-before");
     browser.run(["record", "start", join(output, name + "-orb.webm"), "--fps", "12"]);
     recording = true;
-    browser.click("End game preview");
-    waitUntilFrozen(browser, duration);
-    browser.run(["record", "stop"]);
-    recording = false;
+    browser.click("End game");
     const stages = {};
-    for (const [stage, seconds] of Object.entries({
+    for (const [stage, time] of Object.entries({
       materialising: 0.4,
       singularity: 1,
-      contracted: 1.95,
-      burst: 2.15,
+      contracted: 1.8,
+      burst: 2.4,
       spreading: 4.75,
-      frozen: 9,
     })) {
-      seek(browser, seconds);
-      stages[stage] = capture(browser, name + "-orb-" + stage);
+      stages[stage] = await captureStage(time, name + "-orb-" + stage);
     }
+    waitUntilFrozen(browser, duration);
+    stages.frozen = capture(browser, name + "-orb-frozen");
+    browser.run(["record", "stop"]);
+    recording = false;
     browser.click("Whole map");
     browser.click("Reset map");
-    browser.click("End game preview");
+    browser.click("End game");
     browser.run(["wait", "300"]);
     browser.click("See the results");
     check(
@@ -146,7 +155,7 @@ function gallery(browser, world, spires) {
     check(results.endgame.finished, "Results did not finish the cosmetic sequence");
     browser.click("Back to the frozen map");
     browser.click("Reset map");
-    browser.click("End game preview");
+    browser.click("End game");
     browser.press("Escape");
     check(snapshot(browser).endgame.finished, "Escape did not skip");
     const errors = browser.run(["errors"]);
@@ -160,12 +169,14 @@ function gallery(browser, world, spires) {
       before,
       frozen,
       stages,
+      wideStages,
       results,
       escapeSkipped: true,
       errors,
     });
   } finally {
     if (recording) browser.run(["record", "stop"], { allowFailure: true });
+    devTools.close();
   }
 }
 const sample = (browser, count, includeBurst = false) =>
@@ -176,9 +187,9 @@ const sample = (browser, count, includeBurst = false) =>
       includeBurst +
       ")burstSnapshot=window.__terrainVerification.getSnapshot();}return JSON.stringify({intervals:values,burstSnapshot,snapshot:window.__terrainVerification.getSnapshot()});})()",
   );
-function cost(browser, rendererMode, iteration) {
+async function cost(browser, rendererMode, iteration) {
   const url = urlBase + "/lab/endgame?capture=1&gameMode=blitz&spires=awaken&busy=1&rendererMode=" + rendererMode;
-  const adapter = openScenario(browser, url + "&shipped=1");
+  const adapter = openScenario(browser, url);
   const drawingBuffer = browser.read(
     'JSON.stringify((()=>{const c=document.querySelector("canvas");return {width:c.width,height:c.height,viewportWidth:innerWidth,viewportHeight:innerHeight,dpr:devicePixelRatio};})())',
   );
@@ -191,28 +202,59 @@ function cost(browser, rendererMode, iteration) {
   );
   const sites = snapshot(browser).endgame;
   check(
-    new Set([...sites.realmSites, ...sites.spireSites].map((p) => p.col + ":" + p.row)).size === 27,
+    new Set(sites.realmSites.map((p) => p.col + ":" + p.row)).size === 25,
     "Busy fixture contains overlapping sites",
   );
   const loadBefore = loadavg();
   check(loadBefore[0] <= 12, "Shared machine load exceeded 12");
   browser.run(["wait", "1500"]);
-  const baseline = sample(browser, 120);
-  openScenario(browser, url);
-  browser.run(["wait", "2000"]);
-  const armed = sample(browser, 120);
+  const live = sample(browser, 120);
   check(
-    baseline.snapshot.cellCount === 1008 &&
-      baseline.snapshot.endgame.realmCount === 25 &&
-      baseline.snapshot.endgame.armyCount === 50,
+    live.snapshot.cellCount === 1008 &&
+      live.snapshot.endgame.realmCount === 25 &&
+      live.snapshot.endgame.armyCount === 50,
     "Busy fixture incomplete",
   );
   check(
-    baseline.snapshot.activeMode === (rendererMode === "webgpu-auto" ? "webgpu" : "webgl2-fallback"),
+    live.snapshot.activeMode === (rendererMode === "webgpu-auto" ? "webgpu" : "webgl2-fallback"),
     "Renderer mismatch",
   );
-  browser.click("End game preview");
+  let devTools;
+  let traceComplete;
+  if (tracing) {
+    devTools = await openPageDevTools(browser);
+    traceComplete = new Promise((resolve) =>
+      devTools.onEvent((event) => {
+        if (event.method === "Tracing.tracingComplete") resolve(event.params.stream);
+      }),
+    );
+    await devTools.send("Profiler.enable");
+    await devTools.send("Profiler.start");
+    await devTools.send("Tracing.start", {
+      categories: "devtools.timeline,v8,disabled-by-default-v8.gc",
+      transferMode: "ReturnAsStream",
+    });
+  }
+  browser.click("End game");
   const active = sample(browser, Math.floor((duration - 0.5) * 60), true);
+  if (devTools) {
+    try {
+      const { profile } = await devTools.send("Profiler.stop");
+      writeFileSync(join(output, "profile-" + rendererMode + "-" + iteration + ".cpuprofile"), JSON.stringify(profile));
+      await devTools.send("Tracing.end");
+      const handle = await traceComplete;
+      let trace = "";
+      for (;;) {
+        const part = await devTools.send("IO.read", { handle });
+        trace += part.data;
+        if (part.eof) break;
+      }
+      await devTools.send("IO.close", { handle });
+      writeFileSync(join(output, "trace-" + rendererMode + "-" + iteration + ".json"), trace);
+    } finally {
+      devTools.close();
+    }
+  }
   check(active.burstSnapshot?.endgame.burstDraws === 2, "Active sample missed the orb burst");
   waitUntilFrozen(browser, duration);
   browser.run(["wait", "1500"]);
@@ -232,8 +274,7 @@ function cost(browser, rendererMode, iteration) {
     drawingBuffer,
     loadBefore,
     loadAfter,
-    baseline,
-    armed,
+    live,
     active,
     frozen,
     errors,
@@ -268,8 +309,8 @@ try {
         const profile = mkdtempSync(join(tmpdir(), "endgame-study-"));
         const browser = createBrowserSession("endgame-" + Date.now().toString(36), { profile, headed: false });
         try {
-          if (mode === "gallery") gallery(browser, scenario, spires);
-          else cost(browser, scenario, i + 1);
+          if (mode === "gallery") await gallery(browser, scenario, spires);
+          else await cost(browser, scenario, i + 1);
         } finally {
           browser.close();
           rmSync(profile, { recursive: true, force: true });
