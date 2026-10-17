@@ -18,7 +18,7 @@ import { canIssueOrders, refusedBeforePlay } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { isTransferPair } from "@/ui/features/economy/transfers/transfer-pair";
-import { transferGesture } from "./worldmap-transfer-gesture";
+import { dispatchRightClick } from "./worldmap-right-click";
 import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
@@ -2652,58 +2652,48 @@ export default class WorldmapScene extends WarpTravel {
 
     const { structure } = this.getHexagonEntity(hexCoords);
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
-    const hasActiveEntityAction = selectedEntityId !== null && selectedEntityId !== undefined && actionPaths.size > 0;
     const clickedHexKey = ActionPaths.posKey(hexCoords, true);
+    const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
 
     this.logInteractionDebug("right_click_received", {
       hexCoords,
       clickedHexKey,
       hasAccount: Boolean(account),
-      isMineStructure: structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false,
+      isMineStructure,
       ...this.getInteractionDebugSnapshot(),
     });
 
-    const isMineStructure = structure?.owner !== undefined ? isAddressEqualToAccount(structure.owner) : false;
-
-    // Before the selection's own orders: a holding selected on the map draws its deploy tiles, which must not swallow
-    // the right-click on another holding.
-    const transfer = structure && isMineStructure ? this.transferFromSelectedHolding(Number(structure.id)) : null;
-    if (transfer) {
-      openTransfer(transfer);
-      return;
-    }
-
-    if (structure && isMineStructure && !hasActiveEntityAction) {
-      this.logInteractionDebug("opening_owned_structure_context_menu", {
-        structureId: structure.id,
-        hexCoords,
-        ...this.getInteractionDebugSnapshot(),
-      });
-      this.interactionAdapter.openOwnedStructureContextMenu({
-        event,
-        structure,
-        hexCoords,
-      });
-      return;
-    }
-
-    // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
-    showOrderTip(null);
-    this.actAtHex(hexCoords);
-  }
-
-  /** The transfer a right-click on one of your holdings opens from the selected holding, if it is one. */
-  private transferFromSelectedHolding(clickedId: number) {
     const ui = useUIStore.getState();
-    const { selectedEntityId } = getLiveWorldmapEntityActions();
-    const armyActing = selectedEntityId != null && this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined;
-    return transferGesture({
-      selectedHoldingId: Number(ui.structureEntityId),
-      armySelected: ui.mapSelection?.kind === "army" || armyActing,
-      clickedId,
-      canTransferBetween: isTransferPair,
-      transfersAllowed: configManager.isCommandEnabled("SendResources"),
-    });
+    const actorSelected = selectedEntityId !== null && selectedEntityId !== undefined;
+    dispatchRightClick(
+      {
+        orderAtTarget: actorSelected && actionPaths.has(clickedHexKey),
+        armySelected:
+          ui.mapSelection?.kind === "army" ||
+          (actorSelected && this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined),
+        selectedHoldingId: Number(ui.structureEntityId),
+        clickedHoldingId: structure && isMineStructure ? Number(structure.id) : null,
+        canTransferBetween: isTransferPair,
+        transfersAllowed: configManager.isCommandEnabled("SendResources"),
+      },
+      {
+        // The fast order: an explore or a move leaves at once, and an attack opens its forecast, never sent unseen.
+        order: () => {
+          showOrderTip(null);
+          this.actAtHex(hexCoords);
+        },
+        transfer: openTransfer,
+        menu: () => {
+          if (!structure) return;
+          this.logInteractionDebug("opening_owned_structure_context_menu", {
+            structureId: structure.id,
+            hexCoords,
+            ...this.getInteractionDebugSnapshot(),
+          });
+          this.interactionAdapter.openOwnedStructureContextMenu({ event, structure, hexCoords });
+        },
+      },
+    );
   }
 
   /**
