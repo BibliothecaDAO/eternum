@@ -18,6 +18,7 @@ import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
+import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { BalancesView } from "./balances-view";
 import { HoldingPicker } from "./holding-picker";
 import { type Shipment, type ShipmentOutcome, sendShipments } from "./send-shipments";
@@ -550,6 +551,10 @@ const GoodsGrid = ({
 }) => {
   const several = destinationIds.length > 1;
   const template = `minmax(7rem,1fr) 4rem 5rem 2.5rem${several ? ` repeat(${destinationIds.length}, 4.25rem)` : ""}`;
+  // The goods sit as the holding's card shows them; one the card never shows comes last, by id.
+  const tiers = useGameModeConfig().resources.getTiers() as Record<string, ResourcesIds[]>;
+  const rank = new Map(resourcesInTierOrder(tiers).map((resource, index) => [Number(resource), index]));
+  const cardOrder = (good: Good) => rank.get(good.resource) ?? Number.MAX_SAFE_INTEGER;
   return (
     <div role="table" aria-label="Goods" className="flex min-h-0 flex-col gap-1 overflow-auto">
       <div
@@ -573,7 +578,7 @@ const GoodsGrid = ({
           ))}
       </div>
       {goods
-        .toSorted((a, b) => a.resource - b.resource)
+        .toSorted((a, b) => cardOrder(a) - cardOrder(b) || a.resource - b.resource)
         .map((good) => (
           <GoodRow
             key={good.resource}

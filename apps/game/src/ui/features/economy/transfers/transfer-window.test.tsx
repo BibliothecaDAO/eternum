@@ -82,7 +82,11 @@ vi.mock("@/ui/design-system/molecules/popover", () => ({
 }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
-  useGameModeConfig: () => ({ ui: { showAutomation: true } }),
+  // The card's order: food before transport, so it differs from the goods' ids (Donkey 25, Wheat 35).
+  useGameModeConfig: () => ({
+    ui: { showAutomation: true },
+    resources: { getTiers: () => ({ food: [35], transport: [25], military: [26] }) },
+  }),
 }));
 /** The window's other views, each its tab's panel. */
 vi.mock("@/ui/features/economy/trading", () => ({ ResourceArrivals: () => <p>Arrivals list</p> }));
@@ -483,5 +487,20 @@ describe("the window's views", () => {
     await act(async () => tabs()[0].click());
     expect(transferPanel().hasAttribute("hidden")).toBe(false);
     expect(field("Wheat: total to send")!.value).toBe("7");
+  });
+});
+
+describe("the goods' order", () => {
+  it("is the holding card's: by tier, food before transport here, troops last", async () => {
+    world.sides.knights = 10;
+    await open([A]);
+    const goods = [...host.querySelectorAll('[role="table"][aria-label="Goods"] [role="row"]')]
+      .slice(1)
+      .map((row) => row.querySelector("input")?.getAttribute("aria-label")?.replace(": total to send", ""));
+    expect(goods).toEqual([
+      "Wheat",
+      iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label,
+      iconDefinition(resourceMeaning(ResourcesIds.Knight)).label,
+    ]);
   });
 });
