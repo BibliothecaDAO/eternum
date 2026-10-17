@@ -18,7 +18,7 @@ import { useRealmsPlayer } from "../herald";
 import { WHATS_NEW_PATH } from "../news/posts";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { useRequestSignIn } from "../sign-in/sign-in-route";
 import { PROFILE_WORDS, SIGN_IN_WORDS, WORDS } from "../words";
 import { AccountCard, SignOut } from "./account-card";
@@ -26,7 +26,7 @@ import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
-import { SettingRow, SettingRows } from "./setting-row";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 
 /** The docs site, where each mode's rules are written down (apps/game-docs). */
 const HOW_TO_PLAY = "https://docs.realms.world";
@@ -175,17 +175,15 @@ const SignInCard = ({ line, verb }: { line: string | null; verb: string }) => {
     requestSignIn();
   };
   return (
-    <section className="painted flex min-h-44 flex-col gap-3 rounded-plate p-3.5">
-      <img
-        {...paintingSources("winter-fortress")}
-        sizes="(min-width: 1024px) 34rem, 100vw"
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground/85 to-transparent" />
+    <PaintedCard
+      painting="winter-fortress"
+      sizes="(min-width: 1024px) 34rem, 100vw"
+      grade="top"
+      className="flex min-h-44 flex-col gap-3 p-3.5"
+    >
       {line && <p className="font-body text-base font-bold text-kit-cream">{line}</p>}
       <Button role="primary" word={verb} icon="person" onClick={() => void signIn()} />
-    </section>
+    </PaintedCard>
   );
 };
 

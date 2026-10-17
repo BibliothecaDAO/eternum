@@ -17,9 +17,10 @@ import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { Panel } from "@/ui/design-system/kit/panel";
+import { Title } from "@/ui/design-system/kit/title";
 import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, seasonTitle } from "../season";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import { SEASON_WORDS, WORDS } from "../words";
 import { BlitzBoard } from "./blitz-board";
@@ -64,7 +65,11 @@ const DesktopSeason = () => {
     <PageFrame title={season ? seasonTitle(season) : WORDS.season}>
       <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
         {season || directory.isPending || directory.isError ? (
-          <Panel icon="victory" title={ageOf("frontier").name} aside={season && <SeasonDay season={season} />}>
+          <Panel
+            icon="victory"
+            title={ageOf("frontier").name}
+            aside={season && <DayLine season={season} className="font-normal" />}
+          >
             <FrontierBoard rowsShown={ROWS_SHOWN.desktop} framed={false} />
           </Panel>
         ) : (
@@ -83,10 +88,11 @@ const NoSeason = () => (
   </StateCard>
 );
 
-const SeasonDay = ({ season }: { season: DirectoryGame }) => {
+/** The season's day by the hourglass, "Day 12", on the clock. */
+const DayLine = ({ season, className }: { season: DirectoryGame; className?: string }) => {
   const now = useNowSeconds();
   return (
-    <span className="flex items-center gap-1 text-base font-normal text-kit-muted">
+    <span className={cn("flex items-center gap-1 text-base text-kit-muted", className)}>
       <SemanticIcon name="hourglass" size={20} />
       {`${DAY} ${directoryDay(season, now).day ?? "—"}`}
     </span>
@@ -102,19 +108,12 @@ const useSeason = (): { season: DirectoryGame | undefined; directory: ReturnType
 /** Season and its day: the trophy and the word, and "Season 3" with "Day 12" while a season runs. */
 const SeasonHeader = () => {
   const { season } = useSeason();
-  const now = useNowSeconds();
-  const day = season && directoryDay(season, now).day;
   return (
-    <h1 className="flex items-center gap-2 font-body text-xl font-bold text-kit-cream">
+    <Title level="header" face="body" className="flex items-center gap-2">
       <SemanticIcon name="victory" size={26} />
       {season ? seasonTitle(season) : WORDS.season}
-      {season && (
-        <span className="ml-auto flex items-center gap-1 text-base text-kit-muted">
-          <SemanticIcon name="hourglass" size={20} />
-          {`${DAY} ${day ?? "—"}`}
-        </span>
-      )}
-    </h1>
+      {season && <DayLine season={season} className="ml-auto" />}
+    </Title>
   );
 };
 

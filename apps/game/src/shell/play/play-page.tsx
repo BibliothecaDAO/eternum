@@ -4,6 +4,7 @@ import { Button } from "@/ui/design-system/kit/button";
 import { FailureCard, StateCard } from "@/ui/design-system/kit/state-card";
 import { SectionLabel } from "@/ui/design-system/kit/section-label";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
+import { Title } from "@/ui/design-system/kit/title";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
@@ -13,7 +14,7 @@ import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import type { SourceGap } from "./play-facts";
 
 /**
@@ -48,9 +49,9 @@ export const PlayPage = () => {
 
 /** The first visit's line, as the page's title. */
 const LoreLine = () => (
-  <h1 className="mb-5 max-w-hero-measure font-display text-title leading-[1.08] text-kit-cream text-shadow-title lg:text-[52px]">
+  <Title level="card" shadow="title" className="mb-5 max-w-hero-measure leading-[1.08] lg:text-[52px]">
     {LORE_LINE}
-  </h1>
+  </Title>
 );
 
 /** The lead and everything else under way; the directory's failure, the wait, or the quiet card in the lead's place. */

@@ -4,7 +4,7 @@ import { gamePainting } from "@/shell/game-links";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 
-import { ClockChip } from "../clock-chip";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
 import { ProfileStep } from "../sign-in/profile-step";

@@ -25,7 +25,7 @@ import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { BLITZ_WORDS } from "@/shell/words";
-import { ClockChip } from "@/shell/clock-chip";
+import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";
 import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync";

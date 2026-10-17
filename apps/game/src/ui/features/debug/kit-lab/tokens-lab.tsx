@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import { paintingSources } from "@/shell/paintings";
+import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { COLORS, FONTS, GUTTERS, RADII, SCREENS, TEXT_SHADOWS, TYPE, WIDTHS } from "@/tokens";
 
 /**

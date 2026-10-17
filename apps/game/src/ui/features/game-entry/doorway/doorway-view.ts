@@ -2,7 +2,7 @@ import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
 import type { PlayScene } from "@/play/navigation/play-route";
 
 import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
-import { failureLine } from "@/shell/service-failure";
+import { failureLine } from "@/ui/design-system/kit/service-failure";
 import { DOORWAY_WORDS } from "@/shell/words";
 
 import type { BlitzEntry, GameEntryModalPhase } from "../game-entry-phase";

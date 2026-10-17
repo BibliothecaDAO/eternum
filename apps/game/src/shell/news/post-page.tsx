@@ -1,15 +1,17 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/ui/design-system/kit/button";
 
-import { formatContentDay } from "../clock-chip";
+import { formatContentDay } from "@/ui/design-system/kit/time";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import type { ScrollPost } from "../generated/scroll-posts";
 import { NothingHere } from "../not-found";
-import { paintingSources } from "../paintings";
 import { Panel } from "@/ui/design-system/kit/panel";
+import { Title } from "@/ui/design-system/kit/title";
+import { PaintedCard } from "@/ui/design-system/kit/painted-card";
+import { ListRow } from "@/ui/design-system/kit/list-row";
 import { NEWS_WORDS } from "../words";
 import { postHref, postKind, postPainting, publishedPosts, WHATS_NEW_PATH } from "./posts";
 
@@ -69,7 +71,9 @@ const Stepper = ({ newer, older }: { newer: ScrollPost | undefined; older: Scrol
 
 const PhonePost = ({ post }: { post: ScrollPost }) => (
   <article className="mx-auto flex max-w-prose flex-col gap-3">
-    <h1 className="font-body text-heading font-bold leading-tight text-kit-cream">{post.title}</h1>
+    <Title level="headline" face="body" className="leading-tight">
+      {post.title}
+    </Title>
     <PostDate post={post} />
     <PostBody post={post} />
   </article>
@@ -81,18 +85,19 @@ const PhonePost = ({ post }: { post: ScrollPost }) => (
  */
 const DesktopPost = ({ post }: { post: ScrollPost }) => (
   <div className="flex flex-col gap-8">
-    <header className="painted flex flex-col gap-2 rounded-plate p-8">
-      <img
-        {...paintingSources(postPainting(post))}
-        sizes="100vw"
-        alt=""
-        className="absolute inset-0 -z-10 size-full object-cover"
-      />
-      <span className="absolute inset-0 -z-10 bg-gradient-to-r from-kit-ground/95 via-kit-ground/75 to-kit-ground/30" />
+    <PaintedCard
+      as="header"
+      painting={postPainting(post)}
+      sizes="100vw"
+      grade="cover"
+      className="flex flex-col gap-2 p-8"
+    >
       <span className="font-body text-base text-kit-gold">{postKind(post)}</span>
-      <h1 className="max-w-headline font-display text-hero leading-[1.05] text-kit-cream">{post.title}</h1>
+      <Title level="hero" className="max-w-headline">
+        {post.title}
+      </Title>
       <PostDate post={post} />
-    </header>
+    </PaintedCard>
     <div className="grid grid-cols-[minmax(0,theme(maxWidth.prose))_20rem] justify-center gap-10">
       <PostBody post={post} />
       <aside>
@@ -100,13 +105,14 @@ const DesktopPost = ({ post }: { post: ScrollPost }) => (
           {publishedPosts
             .filter((other) => other.slug !== post.slug)
             .map((other) => (
-              <Link
+              <ListRow
                 key={other.slug}
                 to={postHref(other)}
-                className="flex min-h-12 items-center border-b border-kit-line px-1 py-2 font-body text-base text-kit-cream last:border-b-0 hover:text-kit-gold2"
+                height={12}
+                className="px-1 py-2 font-body text-base text-kit-cream hover:text-kit-gold2"
               >
                 {other.title}
-              </Link>
+              </ListRow>
             ))}
         </Panel>
       </aside>

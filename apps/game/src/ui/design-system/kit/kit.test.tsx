@@ -9,19 +9,26 @@ import { Button } from "./button";
 import { ClockLine } from "./clock-line";
 import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
+import { Confirm } from "./confirm";
 import { Field } from "./field";
+import { Figure } from "./figure";
+import { ListRow } from "./list-row";
 import { Notice } from "./notice";
+import { PaintedCard } from "./painted-card";
 import { Panel, PanelTitle } from "./panel";
 import { Pill } from "./pill";
+import { Portrait } from "./portrait";
 import { PriceChip } from "./price-chip";
 import { ReasonPlate, shortfallLine } from "./reason-plate";
 import { SeasonRow } from "./season-row";
 import { SectionLabel } from "./section-label";
+import { SettingRow } from "./setting-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { FailureCard, StateCard } from "./state-card";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
+import { Title } from "./title";
 import { formatClockTime, formatDuration, formatMoment } from "./time";
 import { ViewSwitch } from "./view-switch";
 
@@ -311,6 +318,145 @@ describe("ViewSwitch as tabs", () => {
 describe("SectionLabel", () => {
   it("heads a group in its words", () => {
     expect(renderToStaticMarkup(<SectionLabel>Now</SectionLabel>)).toMatch(/^<h2 [^>]*>Now<\/h2>$/);
+  });
+});
+
+describe("Title", () => {
+  it("is the element the page's outline needs, in its words", () => {
+    expect(renderToStaticMarkup(<Title level="page">Season 3</Title>)).toMatch(/^<h1 [^>]*>Season 3<\/h1>$/);
+    expect(
+      renderToStaticMarkup(
+        <Title level="countdown" as="span">
+          0:59:12
+        </Title>,
+      ),
+    ).toMatch(/^<span [^>]*>0:59:12<\/span>$/);
+  });
+
+  it("takes a site's own size in place of its level's, never both", () => {
+    const name = renderToStaticMarkup(
+      <Title level="plate" as="h2" className="text-[30px] leading-none">
+        Ysabeau
+      </Title>,
+    );
+    expect(name).toContain("text-[30px]");
+    expect(name).toContain("leading-none");
+    expect(name).not.toContain("text-[34px]");
+    expect(name).not.toContain("leading-tight");
+  });
+});
+
+describe("Figure", () => {
+  it("draws a bold figure in tabular numerals, and an extrabold one in proportional numerals", () => {
+    const bold = renderToStaticMarkup(<Figure size="title">1,840</Figure>);
+    expect(bold).toMatch(/^<b [^>]*>1,840<\/b>$/);
+    expect(bold).toContain("tabular-nums");
+    expect(
+      renderToStaticMarkup(
+        <Figure size="figure" weight="extrabold">
+          #12
+        </Figure>,
+      ),
+    ).not.toContain("tabular-nums");
+  });
+});
+
+describe("Portrait", () => {
+  it("shows the chosen portrait, else the account's stock one, and a dash for a player not named", () => {
+    const chosen = renderToStaticMarkup(<Portrait account="0x1" portrait="04" size={28} weight={1.5} />);
+    expect(chosen).toContain('src="/images/avatars/04.png"');
+    expect(renderToStaticMarkup(<Portrait account="0x1" size={28} weight={1.5} />)).toMatch(
+      /src="\/images\/avatars\/[^"]+\.png"/,
+    );
+    expect(renderToStaticMarkup(<Portrait portrait="04" size={24} weight={2} />)).toContain("width:24px");
+    expect(text(renderToStaticMarkup(<Portrait.Empty />))).toBe("—");
+  });
+});
+
+describe("PaintedCard", () => {
+  it("lays its words over its painting, and keeps the hook a page names it by", () => {
+    const card = renderToStaticMarkup(
+      <PaintedCard data-play-item="blitz-1" painting="blitz-spires" sizes="100vw" grade="side">
+        <h2>Blitz 1630</h2>
+      </PaintedCard>,
+    );
+    expect(card).toMatch(/^<section [^>]*data-play-item="blitz-1"/);
+    expect(card).toContain('src="/images/landscapes/blitz-spires-800.webp"');
+    expect(text(card)).toBe("Blitz 1630");
+  });
+});
+
+describe("ListRow", () => {
+  it("taps as a whole when it opens something, and only shows otherwise", () => {
+    const onClick = vi.fn();
+    act(() => root.render(<ListRow onClick={onClick} title="Settings" chevron />));
+    const button = host.querySelector("button");
+    expect(button?.getAttribute("type")).toBe("button");
+    expect(button?.textContent).toBe("Settings");
+    expect(button?.querySelector('[data-icon="chevron-right"]')).not.toBeNull();
+    act(() => button?.click());
+    expect(onClick).toHaveBeenCalledOnce();
+    const shown = renderToStaticMarkup(<ListRow title="Music" trailing={<input />} />);
+    expect(shown).toMatch(/^<div /);
+  });
+
+  it("in a list, the item holds the row's hook and the link inside it the tap", () => {
+    const item = renderToStaticMarkup(
+      <MemoryRouter>
+        <ul>
+          <ListRow as="li" to="/results/1" title="Blitz 15:00" line={<span>7 Oct</span>} />
+          <ListRow as="li" data-play-item="blitz-1" title="Blitz 1630" />
+        </ul>
+      </MemoryRouter>,
+    );
+    expect(item).toMatch(/<li [^>]*><a [^>]*href="\/results\/1"/);
+    expect(item).toMatch(/<li [^>]*data-play-item="blitz-1"/);
+  });
+
+  it("opens another site in a new tab, and says the reader's own row", () => {
+    const link = renderToStaticMarkup(<ListRow href="https://realms.world" current title="Guide" />);
+    expect(link).toContain('target="_blank"');
+    expect(link).toContain('rel="noopener noreferrer"');
+    expect(link).toContain('aria-current="true"');
+  });
+});
+
+describe("SettingRow", () => {
+  it("is a button that opens, a link to another site, or a row with its own control and no chevron", () => {
+    const opens = renderToStaticMarkup(<SettingRow icon="person" name="Settings" onOpen={() => undefined} />);
+    expect(opens).toMatch(/^<button type="button"/);
+    expect(opens).toContain('data-icon="chevron-right"');
+    expect(renderToStaticMarkup(<SettingRow icon="guide" name="Guide" href="https://realms.world" />)).toMatch(/^<a /);
+    const control = renderToStaticMarkup(
+      <SettingRow icon="music" name="Music" end={<b>on</b>} onOpen={() => undefined} />,
+    );
+    expect(control).toMatch(/^<div /);
+    expect(control).not.toContain('data-icon="chevron-right"');
+    expect(text(control)).toBe("Musicon");
+  });
+});
+
+describe("Confirm", () => {
+  it("asks first, with Keep as the safe step and the destructive verb after it", () => {
+    const onConfirm = vi.fn();
+    const onKeep = vi.fn();
+    act(() =>
+      root.render(
+        <MemoryRouter>
+          <Confirm
+            question="Remove this device?"
+            cost="It forgets its key."
+            verb="Remove"
+            onConfirm={onConfirm}
+            onKeep={onKeep}
+          />
+        </MemoryRouter>,
+      ),
+    );
+    const buttons = [...document.querySelectorAll("button")].map((button) => button.textContent);
+    expect(buttons.indexOf("Keep")).toBeLessThan(buttons.indexOf("Remove"));
+    act(() => [...document.querySelectorAll("button")].find((button) => button.textContent === "Remove")?.click());
+    expect(onConfirm).toHaveBeenCalledOnce();
   });
 });
 

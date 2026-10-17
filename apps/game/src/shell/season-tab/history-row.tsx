@@ -1,17 +1,17 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import { formatClockTime } from "@/ui/design-system/kit/time";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
-import { clockLine } from "../clock-chip";
+import { clockLine } from "@/ui/design-system/kit/clock-chip";
+import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { openedFrom } from "../frame/opened-from";
 import { ordinal } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { type DirectoryGame, useLeaderboard } from "../herald";
-import { paintingSources } from "../paintings";
 import { ageOf, type AgeMode } from "../play/ages";
 import { resultsHref } from "./results-link";
 
@@ -40,28 +40,26 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
   const { rank, lords } = usePlace(game, player);
   const here = useLocation();
   return (
-    <li className="border-b border-kit-line last:border-b-0">
-      <Link to={resultsHref(game)} state={openedFrom(here)} className="flex min-h-14 items-center gap-3 px-1 py-2">
-        <img
-          {...paintingSources(ageOf(ageOfGame(game)).painting)}
-          sizes="48px"
-          alt=""
-          className="size-10 shrink-0 rounded-thumb object-cover"
-        />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate font-body text-base font-bold text-kit-cream">{gameTitle(game)}</span>
-          <span className="text-sm text-kit-muted">{clockLine(null, game.clock.end_at, now)}</span>
+    <ListRow
+      as="li"
+      to={resultsHref(game)}
+      state={openedFrom(here)}
+      height={14}
+      gap={3}
+      lead={<RowThumb painting={ageOf(ageOfGame(game)).painting} size={10} />}
+      title={gameTitle(game)}
+      line={<span className="text-sm text-kit-muted">{clockLine(null, game.clock.end_at, now)}</span>}
+      className="px-1 py-2"
+    >
+      {lords !== undefined && (
+        <span className="flex items-center gap-1 font-body text-base font-bold tabular-nums text-kit-gold">
+          <SemanticIcon name="lords" size={18} />
+          {formatAmount(lords)}
         </span>
-        {lords !== undefined && (
-          <span className="flex items-center gap-1 font-body text-base font-bold tabular-nums text-kit-gold">
-            <SemanticIcon name="lords" size={18} />
-            {formatAmount(lords)}
-          </span>
-        )}
-        <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">
-          {rank === undefined ? "—" : ordinal(rank)}
-        </span>
-      </Link>
-    </li>
+      )}
+      <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">
+        {rank === undefined ? "—" : ordinal(rank)}
+      </span>
+    </ListRow>
   );
 };

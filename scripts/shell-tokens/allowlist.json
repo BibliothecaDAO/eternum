@@ -21,31 +21,17 @@
     "issue": "#5052"
   },
   {
-    "file": "apps/game/src/shell/frame/page-frame.tsx",
+    "file": "apps/game/src/ui/design-system/kit/title.tsx",
     "match": "text-[24px]",
     "count": 1,
-    "reason": "Phone page title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 24 to heading (+2px)",
+    "reason": "Title level page-phone (the phone page title); Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 24 to heading (+2px)",
     "issue": "#5052"
   },
   {
-    "file": "apps/game/src/shell/frame/page-frame.tsx",
+    "file": "apps/game/src/ui/design-system/kit/title.tsx",
     "match": "text-[34px]",
-    "count": 1,
-    "reason": "Desktop page title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
-    "issue": "#5052"
-  },
-  {
-    "file": "apps/game/src/shell/not-found.tsx",
-    "match": "text-[34px]",
-    "count": 1,
-    "reason": "Not found title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
-    "issue": "#5052"
-  },
-  {
-    "file": "apps/game/src/shell/sign-in/sign-in-page.tsx",
-    "match": "text-[34px]",
-    "count": 1,
-    "reason": "Sign-in title; Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
+    "count": 2,
+    "reason": "Title levels page and plate (the desktop page title; the sign-in panel and nothing-here titles); Snaps to the scale in Phase 1 step 6 (needs owner sign-off with before/after screenshots): 34 to title (-2px)",
     "issue": "#5052"
   },
   {

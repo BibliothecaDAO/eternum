@@ -5,12 +5,13 @@ import { Link, type To } from "react-router-dom";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { BACK } from "@/ui/design-system/kit/words";
 
-import { paintingSources, type Painting } from "../paintings";
+import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
 import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
 import { Kbd } from "@/ui/design-system/kit/kbd";
+import { Title } from "@/ui/design-system/kit/title";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { PLACES, TabBar, TopBar } from "./tabs";
@@ -142,7 +143,9 @@ const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string })
       </Link>
     )}
     {title ? (
-      <h1 className="font-display text-[34px] leading-tight text-shadow-title wide:text-title-lg">{title}</h1>
+      <Title level="page" shadow="title">
+        {title}
+      </Title>
     ) : null}
   </>
 );
@@ -172,6 +175,10 @@ const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (
     >
       <SemanticIcon name="arrow-left" size={26} />
     </Link>
-    {title ? <h1 className="truncate font-display text-[24px] leading-tight">{title}</h1> : null}
+    {title ? (
+      <Title level="page-phone" className="truncate">
+        {title}
+      </Title>
+    ) : null}
   </>
 );

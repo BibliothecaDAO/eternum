@@ -1,5 +1,5 @@
 import { type ScrollPost, scrollPosts } from "../generated/scroll-posts";
-import type { Painting } from "../paintings";
+import type { Painting } from "@/ui/design-system/kit/paintings";
 import { AGES } from "../play/ages";
 import { NEWS_WORDS } from "../words";
 

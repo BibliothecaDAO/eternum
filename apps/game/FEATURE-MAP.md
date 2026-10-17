@@ -81,7 +81,9 @@ which only Play offers) sits in the desktop's top bar before You, and on a phone
   chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who did not play sees
   the game and the board.
 - **Settings** opens the payout wallet directly when a page sent you to link one (`/profile/settings?next=…`) and
-  returns you there once it is linked.
+  returns you there once it is linked. Each setting is one row of the kit (`SettingRow`,
+  `ui/design-system/kit/setting-row.tsx`), and a destructive step (sign out, remove a device) asks first in the kit's
+  `Confirm` (`ui/design-system/kit/confirm.tsx`).
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
   lobby's title names the start time).
 

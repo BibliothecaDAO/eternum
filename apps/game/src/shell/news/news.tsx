@@ -4,9 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { latestFeatures } from "@/ui/features/world/latest-features";
 
-import { formatContentDay } from "../clock-chip";
+import { formatContentDay } from "@/ui/design-system/kit/time";
 import { PageFrame } from "../frame/page-frame";
-import { SettingRow, SettingRows } from "../profile/setting-row";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { PROFILE_WORDS } from "../words";
 import { postHref, publishedPosts } from "./posts";
 

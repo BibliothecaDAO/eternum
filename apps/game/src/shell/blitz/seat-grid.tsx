@@ -1,10 +1,10 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { Figure } from "@/ui/design-system/kit/figure";
+import { Portrait } from "@/ui/design-system/kit/portrait";
 
 import { RatingFigure } from "../rating-mark";
 import { useRatings } from "../ratings";
@@ -42,31 +42,24 @@ export const SeatGrid = ({
 
 const TakenSocket = ({ seat, preparing }: { seat: Seat; preparing: boolean }) => (
   <>
-    {seat.account === null ? <UnnamedPortrait /> : <Portrait account={seat.account} own={seat.own} />}
+    {seat.account === null ? <Portrait.Empty /> : <SeatPortrait account={seat.account} own={seat.own} />}
     {preparing && <PreparedMark prepared={seat.prepared} />}
   </>
 );
 
-const Portrait = ({ account, own }: { account: string; own: boolean }) => {
+/** A taken seat's player, the player's own on the heavier peach ring. */
+const SeatPortrait = ({ account, own }: { account: string; own: boolean }) => {
   const profile = usePlayerProfile(account);
   return (
-    <img
-      src={playerPortraitUrl(account, profile.portrait)}
-      alt=""
-      className={cn(
-        "size-full rounded-full border-2 object-cover",
-        own ? "border-[3px] border-kit-peach" : "border-kit-line2",
-      )}
+    <Portrait
+      account={account}
+      portrait={profile.portrait}
+      size="fill"
+      weight={own ? 3 : 2}
+      ring={own ? "lit" : "line"}
     />
   );
 };
-
-/** A seat known taken whose player Herald does not name. */
-const UnnamedPortrait = () => (
-  <span className="flex size-full items-center justify-center rounded-full border-2 border-kit-line2 bg-kit-plate2 text-kit-muted">
-    —
-  </span>
-);
 
 /** The socket's corner while the roster prepares: a tick once the realm is ready, a dash while unknown. */
 const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
@@ -136,14 +129,10 @@ export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; l
       <SemanticIcon name="person" size={large ? 56 : 40} />
       <span className="flex flex-col gap-1">
         <span className="flex items-baseline gap-2">
-          <b
-            className={cn(
-              "font-body font-bold leading-none tabular-nums text-kit-cream",
-              large ? "text-figure" : "text-title-lg",
-            )}
-          >
+          {/* No leading of its own: the line's, as it has always drawn (a size class dropped its leading-none). */}
+          <Figure size={large ? "figure" : "title-lg"} tone="cream">
             {registered === undefined ? "—" : formatAmount(registered)}
-          </b>
+          </Figure>
           <span className="font-body text-base text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>
         </span>
         {!closed && <span className="text-sm text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>}

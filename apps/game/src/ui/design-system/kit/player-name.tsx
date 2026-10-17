@@ -1,8 +1,8 @@
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
+import { Portrait } from "./portrait";
 import { YOU } from "./words";
 
 /**
@@ -27,13 +27,13 @@ export const PlayerName = ({
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-2">
       {portrait && (
-        <img
-          src={playerPortraitUrl(account, profile.portrait)}
-          alt=""
-          className={cn(
-            "size-7 shrink-0 rounded-full border-[1.5px] object-cover",
-            you ? "border-kit-peach" : "border-kit-line2",
-          )}
+        <Portrait
+          account={account}
+          portrait={profile.portrait}
+          size={28}
+          weight={1.5}
+          ring={you ? "lit" : "line"}
+          className="shrink-0"
         />
       )}
       <span className={cn("truncate", !you && profile.name === null && "text-kit-muted")}>

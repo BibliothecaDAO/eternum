@@ -8,9 +8,9 @@ import { Switch } from "@/ui/design-system/kit/switch";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import type { NotificationLevel } from "@bibliothecadao/notifications";
 
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { LEVEL_WORDS, PROFILE_WORDS } from "../words";
-import { SettingRow, SettingRows } from "./setting-row";
+import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 
 /**

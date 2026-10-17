@@ -7,12 +7,13 @@ import { Button } from "@/ui/design-system/kit/button";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
 import { Panel } from "@/ui/design-system/kit/panel";
 import { Pill } from "@/ui/design-system/kit/pill";
+import { Figure } from "@/ui/design-system/kit/figure";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 
 import { Loading } from "../loading";
-import { ServiceFailure } from "../service-failure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
 import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
@@ -72,7 +73,7 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
     : reward.registration.shield && { icon: "defend" as const, word: "½" };
   return (
     <Plate icon="rating-conqueror" title={REWARD_WORDS.rating}>
-      <p className="flex items-center gap-3 font-body text-title font-extrabold tabular-nums">
+      <Figure as="p" size="title" className="flex items-center gap-3">
         <span className="text-kit-muted">{formatExact(mmrBefore)}</span>
         <SemanticIcon name="arrow-right" size={22} />
         <span className="text-kit-cream">{formatExact(mmrAfter)}</span>
@@ -86,7 +87,7 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
             {flag.word}
           </span>
         )}
-      </p>
+      </Figure>
     </Plate>
   );
 };
@@ -227,9 +228,9 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   return (
     <Card>
       <SemanticIcon name="lords" size={96} />
-      <b className="font-body text-[60px] font-bold leading-none tabular-nums text-kit-gold2">
+      <Figure tone="gold2" className="text-[60px] leading-none">
         {multiple === null ? sum : `${multiple}×`}
-      </b>
+      </Figure>
       <span className="font-body text-xl text-kit-muted">
         {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
       </span>

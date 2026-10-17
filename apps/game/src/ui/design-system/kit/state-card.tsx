@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { paintingSources, type Painting } from "@/shell/paintings";
-import { ServiceFailure } from "@/shell/service-failure";
+import { paintingSources, type Painting } from "./paintings";
+import { ServiceFailure } from "./service-failure";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 const IMAGES = { sm: "h-36", md: "h-40", lg: "h-44" } as const;
