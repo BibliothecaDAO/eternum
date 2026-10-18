@@ -8,7 +8,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudChip, HudRelic, type RelicKind } from "@/ui/design-system/kit/hud-elements";
+import { HudChip, HudRelic } from "@/ui/design-system/kit/hud-elements";
+import { RELIC_KIND } from "./relic-kind";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/relic-activation-selector";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
@@ -18,7 +19,6 @@ import {
   getRelicInfo,
   ID,
   isRelic,
-  type RelicInfo,
   RelicRecipientType,
   resources as resourceDefs,
   ResourcesIds,
@@ -173,15 +173,6 @@ export const countDisplayItems = (items: DisplayItem[]) => {
 
 const sumDisplayItemAmounts = (items: DisplayItem[]) =>
   items.reduce((total, item) => total + Math.max(0, Math.floor(item.amount)), 0);
-
-/** What a relic works on, as the sheet's relic chip colours it. */
-const RELIC_KIND: Record<RelicInfo["type"], RelicKind> = {
-  Stamina: "stamina",
-  Damage: "damage",
-  "Damage Reduction": "damage-reduction",
-  Exploration: "exploration",
-  Production: "production",
-};
 
 export const CompactEntityInventory = memo(
   ({

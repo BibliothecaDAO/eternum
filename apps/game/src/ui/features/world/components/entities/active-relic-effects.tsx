@@ -1,10 +1,11 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudRelic, type RelicKind } from "@/ui/design-system/kit/hud-elements";
+import { HudRelic } from "@/ui/design-system/kit/hud-elements";
+import { RELIC_KIND } from "./relic-kind";
 import { formatRelicBonusText } from "@/ui/utils/relic-utils";
 import { bonusActive, formatTime } from "@bibliothecadao/eternum";
-import { getRelicInfo, ID, RelicEffect, RelicInfo, ResourcesIds } from "@bibliothecadao/types";
+import { getRelicInfo, ID, RelicEffect, ResourcesIds } from "@bibliothecadao/types";
 
 import { useMemo } from "react";
 
@@ -12,15 +13,6 @@ interface ActiveRelicEffectsProps {
   relicEffects: RelicEffect[];
   entityId: ID;
 }
-
-/** What a relic works on, as the sheet's relic chip colours it. */
-const RELIC_KIND: Record<RelicInfo["type"], RelicKind> = {
-  Stamina: "stamina",
-  Damage: "damage",
-  "Damage Reduction": "damage-reduction",
-  Exploration: "exploration",
-  Production: "production",
-};
 
 /** How short a relic's time runs: under five minutes it is about to go, under an hour it is going. */
 const timeLeftTone = (remainingSeconds: number) =>
