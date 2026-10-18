@@ -76,6 +76,7 @@ import { siteName } from "@/three/map-plates/site-name";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import "@/three/map-plates/map-plates.css";
+import { AppSurfacesSection } from "./app-surfaces-section";
 import { DeployOptionsSection } from "./deploy-options";
 import { MapContextSection } from "./map-context-section";
 import { DeviceContext, Element, type Device } from "./sheet-element";
@@ -195,6 +196,7 @@ export const StyleSheetLab = () => {
               <PlatesSection />
               <MapContextSection />
               <MinimapSection />
+              <AppSurfacesSection />
             </main>
           </DeviceContext.Provider>
         </div>

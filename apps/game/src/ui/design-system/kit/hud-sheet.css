@@ -1383,6 +1383,11 @@ button.ui-relic:focus-visible {
   border-radius: var(--hud-radius-round);
   animation: ui-spin 0.8s linear infinite;
 }
+/* Inside a button the spinner takes the button's own ink, so it reads on the gold primary as on a secondary. */
+.ui-button .ui-spinner {
+  border-color: color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+}
 @keyframes ui-spin {
   to {
     transform: rotate(360deg);
