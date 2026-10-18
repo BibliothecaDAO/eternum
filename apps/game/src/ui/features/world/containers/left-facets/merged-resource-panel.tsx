@@ -260,7 +260,6 @@ export const MergedResourcePanel = memo(
             entityId={structureEntityId}
             entityType={EntityType.STRUCTURE}
             allowRelicActivation={isMine}
-            variant="tight"
             filter="relics"
             emptyMessage=""
             showHiddenCount={false}

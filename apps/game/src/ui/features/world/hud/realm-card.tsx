@@ -246,7 +246,6 @@ const HeldRelics = ({
       entityId={safeInteger(entityId)}
       entityType={EntityType.STRUCTURE}
       allowRelicActivation
-      variant="tight"
       filter="relics"
       emptyMessage=""
       showHiddenCount={false}

@@ -175,7 +175,6 @@ const ArmyBannerEntityDetailContent = memo(
               entityId={armyEntityId}
               entityType={EntityType.ARMY}
               allowRelicActivation
-              variant="tight"
               maxItems={combatRelicActionLimit}
               filter="relics"
               showHiddenCount={false}
@@ -190,7 +189,6 @@ const ArmyBannerEntityDetailContent = memo(
               recipientType={RelicRecipientType.Explorer}
               entityId={armyEntityId}
               entityType={EntityType.ARMY}
-              variant="tight"
               maxItems={inventoryLimit}
               filter="resources"
               emptyMessage="No resources carried."

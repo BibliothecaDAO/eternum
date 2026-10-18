@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useRelicPayerEssence } from "@/ui/features/relics/hooks/use-relic-activation";
 import { coversRelicCost, relicLine, relicShortName } from "@/ui/features/relics/relic-words";
 
@@ -8,7 +7,8 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { HudChip, HudRelic, type RelicKind } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/relic-activation-selector";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
@@ -18,6 +18,7 @@ import {
   getRelicInfo,
   ID,
   isRelic,
+  type RelicInfo,
   RelicRecipientType,
   resources as resourceDefs,
   ResourcesIds,
@@ -31,19 +32,11 @@ interface CompactEntityInventoryProps {
   entityId?: ID;
   entityType?: EntityType;
   className?: string;
-  variant?: "default" | "tight";
-  showLabels?: boolean;
   allowRelicActivation?: boolean;
   maxItems?: number;
   filter?: CompactInventoryFilter;
   emptyMessage?: string;
   showHiddenCount?: boolean;
-  /**
-   * When > 0, renders the first `heroCount` items in a larger, higher-contrast
-   * row above the tight grid. Useful for surfacing the highest-priority
-   * resources (lords / relics / food) at a glance.
-   */
-  heroCount?: number;
 }
 
 type CompactInventoryFilter = "all" | "resources" | "relics" | "usableRelics";
@@ -55,8 +48,6 @@ interface DisplayItem {
   isActive: boolean;
   canActivate: boolean;
 }
-
-type InventoryItemVariant = "default" | "hero";
 
 const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -183,29 +174,14 @@ export const countDisplayItems = (items: DisplayItem[]) => {
 const sumDisplayItemAmounts = (items: DisplayItem[]) =>
   items.reduce((total, item) => total + Math.max(0, Math.floor(item.amount)), 0);
 
-const getResourceItemClass = (variant: InventoryItemVariant) =>
-  variant === "hero"
-    ? "border-hud-line-strong bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
-    : "border-hud-line bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
-
-/** A relic reads at a glance wherever its chip shows: its painting large, its count at 14 px, its name beneath. */
-const RELIC_ICON_SIZE = "lg";
-const RELIC_COUNT_CLASS = "text-hud-body";
-
-const getRelicItemClass = (item: DisplayItem) => {
-  if (item.isActive) {
-    return "border-relic2/70 bg-[linear-gradient(180deg,rgba(165,124,255,0.2),rgba(14,10,22,0.92))] shadow-[inset_0_1px_0_rgba(210,185,255,0.18),0_0_12px_rgba(165,124,255,0.16)]";
-  }
-
-  if (item.canActivate) {
-    return "border-hud-line-strong bg-[linear-gradient(180deg,rgba(166,117,34,0.22),rgba(22,12,30,0.94))] shadow-[inset_0_1px_0_rgba(255,214,102,0.22),0_0_14px_rgba(223,170,84,0.16)]";
-  }
-
-  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-hud-muted";
+/** What a relic works on, as the sheet's relic chip colours it. */
+const RELIC_KIND: Record<RelicInfo["type"], RelicKind> = {
+  Stamina: "stamina",
+  Damage: "damage",
+  "Damage Reduction": "damage-reduction",
+  Exploration: "exploration",
+  Production: "production",
 };
-
-const getInventoryItemClass = (item: DisplayItem, variant: InventoryItemVariant) =>
-  item.isRelic ? getRelicItemClass(item) : getResourceItemClass(variant);
 
 export const CompactEntityInventory = memo(
   ({
@@ -215,14 +191,11 @@ export const CompactEntityInventory = memo(
     entityId,
     entityType,
     className,
-    variant = "default",
-    showLabels = false,
     allowRelicActivation = false,
     maxItems,
     filter = "all",
     emptyMessage = "No inventory.",
     showHiddenCount = true,
-    heroCount = 0,
   }: CompactEntityInventoryProps) => {
     const openSurface = usePopoverStore((state) => state.openSurface);
     const closeSurface = usePopoverStore((state) => state.closeSurface);
@@ -275,120 +248,22 @@ export const CompactEntityInventory = memo(
       return <p className="text-hud-label text-hud-muted italic">{emptyMessage}</p>;
     }
 
-    // Tight tiles are a fixed width in a wrapping row so they stay the same size
-    // regardless of how wide the host panel is (a stretching grid made the same
-    // relic look bigger in the wide left panel than in the narrow right one).
-    const baseGrid =
-      variant === "tight"
-        ? "flex flex-wrap justify-start gap-1.5"
-        : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
-
-    const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
-    const iconSize = variant === "tight" ? "xs" : "sm";
-    const amountClass = variant === "tight" ? "text-hud-label" : "text-hud-label";
-
-    const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
-    const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
-    const regularItems = effectiveHeroCount > 0 ? visibleItems.slice(effectiveHeroCount) : visibleItems;
-
-    const renderItem = (item: DisplayItem, options: { hero: boolean }) => {
-      const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
-      const relicInfo = item.isRelic ? getRelicInfo(item.resourceId) : undefined;
-      const itemName = relicInfo?.name ?? resourceDef?.trait ?? ResourcesIds[item.resourceId] ?? "resource";
-      const isActivatableRelic = item.isRelic && item.canActivate && !item.isActive;
-      const isClickableRelic = allowRelicActivation && isActivatableRelic && entityId && entityType != null;
-      // A relic its holder cannot pay to activate stays clickable (its activation says what is missing) but not ready.
-      const isAffordable = isClickableRelic && coversRelicCost(item.resourceId, payerEssence);
-
-      const heroPadding = "px-2.5 py-2";
-      const heroIconSize = "sm";
-      const heroAmountClass = HUD_VALUE;
-      const itemVariant = options.hero ? "hero" : "default";
-
-      // Tight (non-hero) tiles get a fixed width; grid/hero tiles fill their cell.
-      const widthClass = variant === "tight" && !options.hero ? (item.isRelic ? "w-auto min-w-14" : "w-14") : "w-full";
-
-      const itemClasses = cn(
-        "flex appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
-        // Grid cells share a row's height; a tight row's chips are as tall as what they hold.
-        variant === "tight" && !options.hero ? undefined : "h-full",
-        widthClass,
-        options.hero ? heroPadding : compactItemClass,
-        getInventoryItemClass(item, itemVariant),
-        isClickableRelic &&
-          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-hud-line-strong hover:bg-hud-hover hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
-        isClickableRelic && (isAffordable ? "animate-relic-ready" : "opacity-60"),
-      );
-
-      const itemContent = (
-        <>
-          <ResourceIcon
-            resource={item.resourceId}
-            size={options.hero ? heroIconSize : item.isRelic ? RELIC_ICON_SIZE : iconSize}
-            withTooltip={false}
-          />
-          <span
-            className={cn(
-              options.hero ? heroAmountClass : item.isRelic ? RELIC_COUNT_CLASS : amountClass,
-              "font-semibold leading-none text-hud-ink",
-            )}
-          >
-            {formatInventoryAmount(item.amount, { compact: !options.hero })}
-          </span>
-          {relicInfo && !options.hero && (
-            <span className="mt-1 max-w-full truncate text-hud-label leading-none text-hud-ink">
-              {relicShortName(item.resourceId)}
-            </span>
-          )}
-          {showLabels && resourceDef && (
-            <span className="mt-0.5 text-hud-label text-hud-muted truncate" title={resourceDef.trait}>
-              {resourceDef.ticker ?? resourceDef.trait}
-            </span>
-          )}
-          {item.isRelic && item.isActive && <SemanticIcon name="relics" className="mt-1 h-3 w-3 text-relic2" />}
-        </>
-      );
-
-      if (isClickableRelic) {
-        return (
-          <button
-            key={`inventory-item-${item.resourceId}`}
-            type="button"
-            className={itemClasses}
-            onClick={() => handleRelicClick(item)}
-            aria-label={`Activate ${itemName}`}
-            data-tip={`Activate · ${relicLine(item.resourceId, payerEssence)}`}
-          >
-            {itemContent}
-          </button>
-        );
-      }
-
-      return (
-        <div
-          key={`inventory-item-${item.resourceId}`}
-          className={itemClasses}
-          data-tip={
-            item.isRelic
-              ? item.canActivate
-                ? relicLine(item.resourceId)
-                : `${relicLine(item.resourceId)} It cannot be used by this holder.`
-              : itemName
-          }
-        >
-          {itemContent}
-        </div>
-      );
-    };
-
     return (
       <div className={cn("flex flex-col gap-2", className)}>
-        {heroItems.length > 0 && (
-          <div className="grid grid-cols-3 gap-2">{heroItems.map((item) => renderItem(item, { hero: true }))}</div>
-        )}
-        {regularItems.length > 0 && (
-          <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
-        )}
+        <div className="flex flex-wrap justify-start gap-1.5">
+          {visibleItems.map((item) =>
+            item.isRelic ? (
+              <InventoryRelic
+                key={`inventory-item-${item.resourceId}`}
+                item={item}
+                payerEssence={payerEssence}
+                onActivate={allowRelicActivation && entityId && entityType != null ? handleRelicClick : null}
+              />
+            ) : (
+              <InventoryResource key={`inventory-item-${item.resourceId}`} item={item} />
+            ),
+          )}
+        </div>
         {showHiddenCount && hiddenCount > 0 && (
           <span className="text-hud-label text-hud-muted">
             Showing {visibleItems.length} of {displayItems.length}
@@ -398,5 +273,64 @@ export const CompactEntityInventory = memo(
     );
   },
 );
+
+/**
+ * A held relic: its painting, its short name and how many are held, in its kind's colour; working, ready to set to work
+ * (pressable when its holder can pay), or only held (pressable but short, or not usable by this holder).
+ */
+const InventoryRelic = ({
+  item,
+  payerEssence,
+  onActivate,
+}: {
+  item: DisplayItem;
+  payerEssence: number | undefined;
+  onActivate: ((item: DisplayItem) => void) | null;
+}) => {
+  const relicInfo = getRelicInfo(item.resourceId as ResourcesIds);
+  const name = relicInfo?.name ?? ResourcesIds[item.resourceId] ?? "relic";
+  const pressable = onActivate !== null && item.canActivate && !item.isActive;
+  const state = item.isActive
+    ? "active"
+    : pressable && coversRelicCost(item.resourceId, payerEssence)
+      ? "ready"
+      : pressable || !item.canActivate
+        ? "held"
+        : undefined;
+  return (
+    <HudRelic
+      icon={resourceMeaning(item.resourceId as ResourcesIds)}
+      kind={relicInfo ? RELIC_KIND[relicInfo.type] : "stamina"}
+      gives={relicShortName(item.resourceId)}
+      trail={formatInventoryAmount(item.amount, { compact: true })}
+      state={state}
+      onPress={pressable ? () => onActivate(item) : undefined}
+      label={pressable ? `Activate ${name}` : undefined}
+      tip={
+        pressable
+          ? `Activate · ${relicLine(item.resourceId, payerEssence)}`
+          : item.canActivate
+            ? relicLine(item.resourceId)
+            : `${relicLine(item.resourceId)} It cannot be used by this holder.`
+      }
+    />
+  );
+};
+
+/** A carried resource: its painting and how much, named on hover. */
+const InventoryResource = ({ item }: { item: DisplayItem }) => {
+  const name =
+    resourceDefs.find((resource) => resource.id === item.resourceId)?.trait ??
+    ResourcesIds[item.resourceId] ??
+    "resource";
+  return (
+    <span data-tip={name}>
+      <HudChip>
+        <ResourceIcon resource={item.resourceId} size="xs" withTooltip={false} />
+        {formatInventoryAmount(item.amount, { compact: true })}
+      </HudChip>
+    </span>
+  );
+};
 
 CompactEntityInventory.displayName = "CompactEntityInventory";

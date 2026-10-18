@@ -179,7 +179,6 @@
   "apps/game/src/ui/features/world/components/bottom-right-panel/bottom-right-panel.tsx": 5,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 9,
   "apps/game/src/ui/features/world/components/entities/banner/entity-banner-tab-cue.tsx": 12,
-  "apps/game/src/ui/features/world/components/entities/compact-entity-inventory.tsx": 33,
   "apps/game/src/ui/features/world/components/entities/hooks/use-army-entity-detail.ts": 6,
   "apps/game/src/ui/features/world/components/entities/hooks/use-structure-entity-detail.ts": 8,
   "apps/game/src/ui/features/world/components/entities/layout/entity-detail-primitives.tsx": 2,

@@ -36,39 +36,11 @@ it("names each relic on its chip beside its count, not only in a tooltip", () =>
         [ResourcesIds.DamageRelic2, 1],
       ])}
       recipientType={RelicRecipientType.Explorer}
-      variant="tight"
       filter="relics"
     />,
   );
-  expect(text(html)).toContain("|2|Stamina I|");
-  expect(text(html)).toContain("|1|Damage II|");
-});
-
-it("sizes a tight row's relic chips to what they hold, so a few relics stay within the card", () => {
-  const chips = (variant: "tight" | "default") =>
-    [
-      ...new DOMParser()
-        .parseFromString(
-          renderToStaticMarkup(
-            <CompactEntityInventory
-              resources={holding([
-                [ResourcesIds.StaminaRelic1, 1],
-                [ResourcesIds.DamageRelic1, 1],
-                [ResourcesIds.ExplorationRelic1, 1],
-              ])}
-              recipientType={RelicRecipientType.Explorer}
-              variant={variant}
-              filter="relics"
-            />,
-          ),
-          "text/html",
-        )
-        .querySelectorAll("[data-tip]"),
-    ].map((chip) => chip.classList.contains("h-full"));
-  // A layout engine stretches an h-full chip to an unrelated ancestor's height; jsdom lays nothing out, so the class is
-  // what is checked: grid cells share their row's height, tight chips never stretch.
-  expect(chips("tight")).toEqual([false, false, false]);
-  expect(chips("default")).toEqual([true, true, true]);
+  expect(text(html)).toContain("|Stamina I|2|");
+  expect(text(html)).toContain("|Damage II|1|");
 });
 
 it("dims a relic its holder cannot pay to activate, and says what it lacks; one it can pay for is ready", () => {
@@ -86,10 +58,8 @@ it("dims a relic its holder cannot pay to activate, and says what it lacks; one 
     return new DOMParser().parseFromString(markup, "text/html").querySelector("button")!;
   };
   const short = chip(200);
-  expect(short.className).toContain("opacity-60");
-  expect(short.className).not.toContain("animate-relic-ready");
+  expect(short.dataset.state).toBe("held");
   expect(short.getAttribute("data-tip")).toBe(`Activate · relic ${ResourcesIds.DamageRelic2}; you have 200`);
   const ready = chip(500);
-  expect(ready.className).toContain("animate-relic-ready");
-  expect(ready.className).not.toContain("opacity-60");
+  expect(ready.dataset.state).toBe("ready");
 });
