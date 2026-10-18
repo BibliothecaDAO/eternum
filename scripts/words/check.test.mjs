@@ -55,7 +55,7 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "const done = <p>{formatGameClock(s)}{' '}min</p>;", // 36
     'const slots = `${n} ${n === 1 ? "slot" : "slots"}`;', // 37: a plural picked by hand
     'const line = `${n} building${n !== 1 ? "s" : ""}`;', // 38
-    'const army = count > 1 ? "armies" : "army";', // 39
+    'const armyLabel = count > 1 ? "armies" : "army";', // 39
     'const verb = `${n} ${n === 1 ? "is" : "are"} in use`;', // 40
     // 41: the deploy sheet as it shipped in 7ba1001dc0c (army-type-toggle.tsx), which read "All 1 field army slots"
     "const limitMessage = armyType ? `All ${maxExplorers} field army slots are in use.` : '';",
@@ -163,6 +163,12 @@ test("leaves code alone: arithmetic, coordinates, logs, CSS, keys and components
     "throw new Error(`${slots} slots × ${pool.count} pool instances`);",
     "let html = `<h2>Palette (${playerCount} players)</h2>`;",
     "const key = `${rows.length} rows`;",
+    // A route, a key or a diagnostic picked by count is code: formatCount would write a count into it.
+    'const route = n === 1 ? "/realm" : "/realms";',
+    'const key = count === 1 ? "army" : "armies";',
+    'console.log(count === 1 ? "request" : "requests");',
+    'throw new Error(count === 1 ? "invalid record" : "invalid records");',
+    'throw new Error(count === 1 ? "1 invalid record" : `${count} invalid records`);',
   ].join("\n");
   assert.deepEqual(scan(source), []);
 });

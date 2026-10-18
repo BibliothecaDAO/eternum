@@ -270,6 +270,28 @@ const wordsOf = (node) => {
   return null;
 };
 
+// Text no player reads: a log line, or a thrown error's message.
+const inDiagnostic = (node) => {
+  if (inConsole(node)) return true;
+  for (let up = node.parent; up && !ts.isSourceFile(up); up = up.parent) {
+    if (ts.isThrowStatement(up)) return true;
+    if (ts.isNewExpression(up) && /Error$/.test(up.expression.getText())) return true;
+  }
+  return false;
+};
+/** A branch that writes its count before its noun ("1 exchange", `${count} exchanges`): words, never a route or a key. */
+const writesCount = (branch) =>
+  (ts.isStringLiteralLike(branch) && /^\d/.test(branch.text)) ||
+  (ts.isTemplateExpression(branch) && branch.head.text === "");
+/**
+ * A hand-picked plural a player reads: the fixed-plural check's boundary (not in a log, read as text), or a branch
+ * that writes the count itself, which only words do. A route, a key or a diagnostic picked by count is code.
+ */
+const handPluralText = (node) =>
+  handPlural(node) &&
+  !inDiagnostic(node) &&
+  (readsAsText(node) || writesCount(node.whenTrue) || writesCount(node.whenFalse));
+
 // A count written before a noun in its plural, whatever the count: "All 1 field army slots are in use". Read where the
 // count is plainly one (a length, a count, a maximum) and the noun is lower case, in text a player reads.
 const COUNT_NAME = /(?:^|\.)(?:length|\w*[cC]ount|max[A-Z]\w*)$/;
@@ -437,8 +459,8 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (readsBackWritten(node)) hit("number.parse", node);
     if (compactPoints(node)) hit("number.points", node);
     if (writtenTwice(node)) hit("words.doubled", node);
-    if (handPlural(node)) hit("number.plural", node);
-    if (ts.isTemplateExpression(node) && !inConsole(node) && !handPlural(node.parent) && readsAsText(node))
+    if (handPluralText(node)) hit("number.plural", node);
+    if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))
       for (const span of node.templateSpans) if (fixedPlural(span)) hit("number.plural", span);
     if (
       ts.isCallExpression(node) &&
