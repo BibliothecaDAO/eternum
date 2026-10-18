@@ -9,7 +9,6 @@ import {
   AppField,
   AppFigure,
   AppGameCard,
-  AppKey,
   AppNotice,
   AppPageHead,
   AppPanel,
@@ -323,7 +322,6 @@ const ButtonSection = () => (
           <AppButton kind="primary" busy="Joining…">
             Pay and join
           </AppButton>
-          <AppKey>Esc</AppKey>
         </div>
       </>
     }

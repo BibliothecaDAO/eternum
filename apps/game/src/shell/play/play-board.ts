@@ -4,7 +4,7 @@ import type { BlitzRow } from "../blitz-rows";
 import type { DirectoryGame } from "../herald";
 import { chooseSeason, seasonRealm } from "../season";
 
-/** The modes Play offers, in the order its switch shows them. */
+/** The modes Play offers, in the order its ages stand side by side. */
 export const PLAY_MODES = ["blitz", "frontier", "eternum"] as const;
 export type PlayMode = (typeof PLAY_MODES)[number];
 
@@ -26,18 +26,15 @@ export type PlayItem = {
 } & ({ source: "row"; row: BlitzRow } | { source: "game"; game: DirectoryGame });
 
 /**
- * Play: the lead (the step the player most likely came for, with the one gold verb), everything else under way now,
- * and each mode's next and finished games. Every game appears once.
+ * Play: the lead (the step the player most likely came for, with the one gold verb), then each age's other games,
+ * those under way now first, then the next, then the finished. Every game appears once.
  */
 export type PlayBoard = {
   lead: PlayItem | null;
-  now: PlayItem[];
-  later: Record<PlayMode, PlayItem[]>;
-  /** The mode the switch opens on: the first with something to do, else the first with anything. */
-  openMode: PlayMode;
-  /** The modes holding something of the player's (a dot on their switch). */
-  marked: PlayMode[];
+  ages: Record<PlayMode, PlayItem[]>;
 };
+
+const WHEN_ORDER: readonly PlayItem["when"][] = ["now", "next", "done"];
 
 export type PlayBoardFacts = {
   signedIn: boolean;
@@ -78,19 +75,13 @@ export const playBoard = (facts: PlayBoardFacts): PlayBoard => {
   ];
   const lead = LEAD_ORDER.map((matches) => items.find(matches)).find((item) => item !== undefined) ?? null;
   const rest = items.filter((item) => item !== lead);
-  const later = Object.fromEntries(
-    PLAY_MODES.map((mode) => [mode, rest.filter((item) => item.mode === mode && item.when !== "now")]),
+  const ages = Object.fromEntries(
+    PLAY_MODES.map((mode) => [
+      mode,
+      WHEN_ORDER.flatMap((when) => rest.filter((item) => item.mode === mode && item.when === when)),
+    ]),
   ) as Record<PlayMode, PlayItem[]>;
-  return {
-    lead,
-    now: rest.filter((item) => item.when === "now"),
-    later,
-    openMode:
-      PLAY_MODES.find((mode) => later[mode].some((item) => item.verb !== null)) ??
-      PLAY_MODES.find((mode) => later[mode].length > 0) ??
-      PLAY_MODES[0],
-    marked: PLAY_MODES.filter((mode) => later[mode].some((item) => item.mine)),
-  };
+  return { lead, ages };
 };
 
 const rowItem = (row: BlitzRow, when: PlayItem["when"], verb: PlayVerb | null, mine: boolean): PlayItem => ({

@@ -177,11 +177,16 @@ export const fontsOf = (tokensSource) => {
   return [...block[1].matchAll(/^\s{2}([a-z][\w-]*):/gm)].map(([, name]) => name);
 };
 
-/** The colour names the Tailwind config defines beside the palette (`kit`), read from its source. */
+/** The shell's palettes: the shell kit's (`kit`) and the app sheet's colour roles (`app`, src/tokens.ts APP_SHEET). */
+const SHELL_PALETTES = ["kit", "app"];
+
+/** The colour names the Tailwind config defines beside the shell's palettes, read from its source. */
 export const configColorsOf = (configSource) => {
   const block = configSource.match(/\n {6}colors: \{\n([\s\S]*?)\n {6}\},/);
   if (!block) throw new Error("colors not found in apps/game/tailwind.config.js");
-  return [...block[1].matchAll(/^ {8}"?([a-z][\w-]*)"?:/gm)].map(([, name]) => name).filter((name) => name !== "kit");
+  return [...block[1].matchAll(/^ {8}"?([a-z][\w-]*)"?:/gm)]
+    .map(([, name]) => name)
+    .filter((name) => !SHELL_PALETTES.includes(name));
 };
 
 const filesUnder = (dir) =>

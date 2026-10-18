@@ -74,21 +74,11 @@
   opacity: 0.8;
   cursor: progress;
 }
-.app-button .app-key {
+/* ── Key: the key that presses a control on a desktop (`data-key`), drawn after its word and never read as part of
+   it; a phone has none. ── */
+[data-key]::after {
+  content: attr(data-key) / "";
   margin-left: theme(spacing.1);
-}
-.app-button[data-kind="primary"] .app-key {
-  border-color: rgb(0 0 0 / 0.3);
-  color: var(--app-dark);
-}
-
-/* ── Key: a key that presses something on a desktop; a phone has none. ── */
-@media (max-width: 1023px) {
-  .app-key {
-    display: none;
-  }
-}
-.app-key {
   border: 1px solid var(--app-line-strong);
   border-bottom-width: 2px;
   border-radius: var(--app-radius-chip);
@@ -98,6 +88,15 @@
   line-height: var(--app-line-label);
   font-weight: var(--app-weight-label);
   color: var(--app-muted);
+}
+.app-button[data-kind="primary"][data-key]::after {
+  border-color: rgb(0 0 0 / 0.3);
+  color: var(--app-dark);
+}
+@media (max-width: 1023px) {
+  [data-key]::after {
+    content: none;
+  }
 }
 
 /* ── Field: label, value, a helping or failing line. ── */
@@ -396,6 +395,57 @@
   padding: theme(spacing.1) 0;
 }
 
+/* ── Age column: an age, tall on its painting, its games in its well. ── */
+.app-age-column {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 22rem;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  box-shadow: var(--app-shadow-panel);
+}
+.app-age-column__painting {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.app-age-column__body {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+  margin-top: auto;
+  background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
+  padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
+}
+.app-age-column__numeral {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: rgb(var(--app-age));
+}
+.app-age-column__name {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-line-title);
+  color: var(--app-ink);
+}
+
+/* ── Well: a list's recess inside a painted surface. ── */
+.app-well {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+}
+
 /* ── Game card: a game on its age's painting, in its age's accent. ── */
 .app-game-card {
   position: relative;
@@ -472,8 +522,11 @@
 }
 
 /* ── Row: one thing of a list; the player's own lit. ── */
+/* A row in a narrow list (a phone, an age's column) gives its words the width; what follows them wraps under, at the
+   right. */
 .app-row {
   display: flex;
+  flex-wrap: wrap;
   min-height: 56px;
   align-items: center;
   gap: theme(spacing.3);
@@ -500,7 +553,7 @@
 .app-row__words {
   display: flex;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 12rem;
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
@@ -525,6 +578,7 @@
 .app-row__trail {
   display: flex;
   flex: none;
+  margin-left: auto;
   align-items: center;
   gap: theme(spacing.3);
   font-variant-numeric: tabular-nums;

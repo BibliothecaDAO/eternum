@@ -1,4 +1,5 @@
 import { formatClockTime, formatDate, formatDuration } from "@bibliothecadao/types";
+import { AppChip } from "./app-elements";
 import { Pill } from "./pill";
 import { CLOCK_WORDS, LEFT } from "./words";
 
@@ -26,8 +27,18 @@ export const clockLine = (prefix: ClockPrefix | null, at: number | undefined, no
   return `${word} ${formatDate(at, now)}, ${formatClockTime(at)}`;
 };
 
-/** A moment as a chip: the hourglass within a day, the calendar further out or for a finished game's date. */
-export const ClockChip = ({ prefix, at, now }: { prefix: ClockPrefix | null; at: number | undefined; now: number }) => {
-  const icon = prefix !== null && at !== undefined && isWithinADay(at, now) ? "hourglass" : "calendar";
-  return <Pill icon={icon}>{clockLine(prefix, at, now)}</Pill>;
-};
+type ClockMoment = { prefix: ClockPrefix | null; at: number | undefined; now: number };
+
+/** A moment's icon: the hourglass within a day, the calendar further out or for a finished game's date. */
+const clockIcon = ({ prefix, at, now }: ClockMoment) =>
+  prefix !== null && at !== undefined && isWithinADay(at, now) ? "hourglass" : "calendar";
+
+/** A moment as the shell kit's chip. */
+export const ClockChip = (moment: ClockMoment) => (
+  <Pill icon={clockIcon(moment)}>{clockLine(moment.prefix, moment.at, moment.now)}</Pill>
+);
+
+/** A moment as the app sheet's chip. */
+export const AppClockChip = (moment: ClockMoment) => (
+  <AppChip icon={clockIcon(moment)}>{clockLine(moment.prefix, moment.at, moment.now)}</AppChip>
+);

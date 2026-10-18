@@ -85,18 +85,11 @@ const AppButtonFace = ({
     data-kind={kind}
     data-size={size}
     data-tone={tone}
+    data-key={step && busy === undefined ? "Enter" : undefined}
   >
     {icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />}
     <span>{busy ?? children}</span>
-    {step && busy === undefined && <AppKey>Enter</AppKey>}
   </button>
-);
-
-/** A key that presses something on a desktop: Enter on a page's one verb, Esc on Back. */
-export const AppKey = ({ children }: { children: ReactNode }) => (
-  <kbd aria-hidden className="app-key">
-    {children}
-  </kbd>
 );
 
 /** A field: its label above, its value, a line under it that helps or, in the bad tone, says what is wrong. */
@@ -242,6 +235,39 @@ export const AppPanel = ({
       </header>
     )}
     <div className="app-panel__body">{children}</div>
+  </section>
+);
+
+/**
+ * An age as a tall column on its painting: its numeral and its name over what it holds (Play's games of that age), in
+ * the age's accent, the painting showing above.
+ */
+export const AppAgeColumn = ({
+  age,
+  painting,
+  numeral,
+  name,
+  children,
+}: {
+  age: Age;
+  painting: Painting;
+  /** "Age II". */
+  numeral: string;
+  name: string;
+  children: ReactNode;
+}) => (
+  <section className="app-age-column" data-age={age} aria-label={name}>
+    <img
+      className="app-age-column__painting"
+      alt=""
+      {...paintingSources(painting)}
+      sizes="(min-width: 1024px) 25vw, 100vw"
+    />
+    <div className="app-age-column__body">
+      <span className="app-age-column__numeral">{numeral}</span>
+      <h2 className="app-age-column__name">{name}</h2>
+      {children}
+    </div>
   </section>
 );
 
@@ -496,10 +522,9 @@ export const AppPortrait = ({
 export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: To; aside?: ReactNode }) => (
   <header className="app-page-head">
     {back !== undefined && (
-      <Link to={back} data-role="back" aria-label={BACK} className="app-page-head__back">
+      <Link to={back} data-role="back" data-key="Esc" aria-label={BACK} className="app-page-head__back">
         <Icon name="arrow-left" size={22} />
         {BACK}
-        <AppKey>Esc</AppKey>
       </Link>
     )}
     <h1>{title}</h1>

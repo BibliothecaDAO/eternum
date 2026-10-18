@@ -349,12 +349,6 @@ export const FOOTER_WORDS = {
 
 /** Play: what is under way now, and each mode's next and finished games behind its switch. */
 export const PLAY_WORDS = {
-  now: "Now",
-  later: "Next and done",
-  /** The modes' switch, named for assistive technology. */
-  modes: "Modes",
-  /** A switch's dot, named for assistive technology: the mode holds something of the player's. */
-  yours: "Something of yours",
   ended: "Ended",
   players: "Players",
 } as const;

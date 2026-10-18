@@ -14,12 +14,15 @@ test("the token file's faces are read from its FONTS", () => {
   assert.deepEqual(fontsOf(tokens).sort(), [...FONTS].sort());
 });
 
-test("the Tailwind config's own colour names are read from its colors, without the palette's kit", () => {
+test("the Tailwind config's own colour names are read from its colors, without the shell's palettes", () => {
   const config = readFileSync(new URL("../../apps/game/tailwind.config.js", import.meta.url), "utf8");
   const colors = configColorsOf(config);
   assert.ok(colors.includes("gold") && colors.includes("danger") && colors.includes("order"));
-  assert.ok(!colors.includes("kit"));
+  assert.ok(!colors.includes("kit") && !colors.includes("app"));
 });
+
+test("the app sheet's colour roles pass: they are the shell's palette too", () =>
+  assert.deepEqual(matches(`className="text-app-ink bg-app-well border-app-line text-app-age"`), []));
 
 test("token classes pass", () =>
   assert.deepEqual(

@@ -128,28 +128,21 @@ describe("everything else, each game once", () => {
   );
   const keys = (items: readonly { key: string }[]) => items.map((item) => item.key);
 
-  it("keeps under way now what the lead is not: the day to resume and the game to watch", () => {
+  it("leads with the seat to enter, and keeps each age's other games under it, those under way now first", () => {
     expect(board.lead?.key).toBe("game:0xa:7");
-    expect(board.now.map((item) => `${item.mode} ${item.verb}`)).toEqual(["blitz watch", "frontier resume"]);
-  });
-
-  it("puts each mode's next and finished games behind its switch, the player's own marked", () => {
-    expect(keys(board.later.blitz)).toEqual(["slot:next", "game:0xa:10", gameKey(finishedBlitz)]);
-    expect(board.later.blitz.map((item) => item.verb)).toEqual(["join", "lobby", "results"]);
-    expect(keys(board.later.eternum)).toEqual(["0xa:5"]);
-    expect(board.later.frontier).toEqual([]);
-    expect(board.marked).toEqual(["blitz"]);
+    expect(board.ages.blitz.map((item) => `${item.when} ${item.verb}`)).toEqual([
+      "now watch",
+      "next join",
+      "next lobby",
+      "done results",
+    ]);
+    expect(keys(board.ages.blitz)).toEqual(["game:0xa:8", "slot:next", "game:0xa:10", gameKey(finishedBlitz)]);
+    expect(board.ages.frontier.map((item) => `${item.when} ${item.verb}`)).toEqual(["now resume"]);
+    expect(keys(board.ages.eternum)).toEqual(["0xa:5"]);
   });
 
   it("never shows a game twice", () => {
-    const all = [board.lead!, ...board.now, ...Object.values(board.later).flat()];
+    const all = [board.lead!, ...Object.values(board.ages).flat()];
     expect(new Set(keys(all)).size).toBe(all.length);
-  });
-
-  it("opens the switch on the first mode with something to do, else on the first with anything", () => {
-    expect(board.openMode).toBe("blitz");
-    expect(playBoard(facts({ games: [game("eternum", { status: "Registration" }), frontier] })).openMode).toBe(
-      "eternum",
-    );
   });
 });
