@@ -251,7 +251,6 @@
   "apps/game/src/ui/modules/boot-loader/segmented-bracket-loader.tsx": 5,
   "apps/game/src/ui/modules/entity-details/realm/realm-details.tsx": 20,
   "apps/game/src/ui/modules/identity/wallet-actions.tsx": 21,
-  "apps/game/src/ui/modules/settings/settings.tsx": 26,
   "apps/game/src/ui/motion/landing-counter.tsx": 2,
   "apps/game/src/ui/motion/motion-layer.tsx": 7,
   "apps/game/src/ui/motion/motion-scale.ts": 4,

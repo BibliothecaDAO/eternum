@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -16,9 +15,17 @@ import {
 } from "@/three/graphics-preferences";
 import { readRenderMode, RENDER_MODE_OPTIONS, type RenderMode, writeRenderMode } from "@/three/render-profile";
 import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
+import {
+  HudButton,
+  HudChip,
+  HudField,
+  HudNotice,
+  HudPortrait,
+  HudSelect,
+  HudSetting,
+  HudSlider,
+  HudSwitch,
+} from "@/ui/design-system/kit/hud-elements";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
@@ -78,34 +85,30 @@ function ProfileHeader() {
   ].filter(Boolean);
 
   return (
-    <header className="flex items-center gap-3 border-b border-gold/20 pb-3">
-      {address && (
-        <img src={playerAvatarUrl(address, profile)} alt="" className="h-10 w-10 rounded-full border border-gold/30" />
-      )}
+    <header className="flex items-center gap-3 border-b border-hud-divider pb-3">
+      {address && <HudPortrait src={playerAvatarUrl(address, profile)} label={name ?? "Player"} />}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           {session && !spectating ? (
             <UsernameEditor name={name} />
           ) : (
-            <p className={cn("truncate", HUD_HEADLINE)}>{spectating ? "Spectating" : (name ?? "Not signed in")}</p>
+            <p className="truncate text-hud-title text-hud-ink">
+              {spectating ? "Spectating" : (name ?? "Not signed in")}
+            </p>
           )}
           {address && (
-            <button
-              type="button"
+            <HudButton
+              kind="quiet"
+              size="sm"
               aria-label="Copy address"
-              className="shrink-0 font-mono text-[11px] text-gold/60 max-lg:min-h-11"
               onClick={() => navigator.clipboard.writeText(address).catch(() => setError("Could not copy address"))}
             >
               {shortAddress(address)} ⧉
-            </button>
+            </HudButton>
           )}
         </div>
-        {facts.length > 0 && <p className={cn("truncate", HUD_BODY)}>{facts.join(" · ")}</p>}
-        {error && (
-          <p role="alert" className="text-xs text-danger">
-            {error}
-          </p>
-        )}
+        {facts.length > 0 && <p className="truncate text-hud-body text-hud-muted">{facts.join(" · ")}</p>}
+        {error && <HudNotice tone="bad" line={error} />}
       </div>
     </header>
   );
@@ -143,18 +146,9 @@ function UsernameEditor({ name }: { name: string | null }) {
 
   if (!editing) {
     return (
-      <button
-        type="button"
-        aria-label="Change username"
-        onClick={startEditing}
-        className={cn(
-          "flex min-w-0 items-center gap-1.5 font-sans normal-case tracking-normal max-lg:min-h-11",
-          HUD_HEADLINE,
-        )}
-      >
-        <span className="truncate">{name ?? "Choose a username"}</span>
-        <SemanticIcon name="edit" className="h-3 w-3 shrink-0 text-gold/60" />
-      </button>
+      <HudButton kind="quiet" icon="edit" aria-label="Change username" onClick={startEditing}>
+        {name ?? "Choose a username"}
+      </HudButton>
     );
   }
   return (
@@ -165,26 +159,27 @@ function UsernameEditor({ name }: { name: string | null }) {
         void save();
       }}
     >
-      <input
-        aria-label="Username"
-        autoFocus
-        value={draft}
-        maxLength={31}
-        disabled={pending}
-        onChange={(event) => setDraft(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") setEditing(false);
-          event.stopPropagation();
-        }}
-        className="min-w-0 flex-1 rounded-md border border-gold/30 bg-black/40 px-2 py-0.5 font-sans text-sm text-gold outline-none focus:border-gold/60 max-lg:min-h-11"
-      />
-      <button type="submit" disabled={pending} className={HUD_PILL_BUTTON}>
-        {pending ? "Saving…" : "Save"}
-      </button>
+      <div className="min-w-0 flex-1">
+        <HudField
+          aria-label="Username"
+          autoFocus
+          value={draft}
+          maxLength={31}
+          disabled={pending}
+          onChange={setDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setEditing(false);
+            event.stopPropagation();
+          }}
+        />
+      </div>
+      <HudButton kind="secondary" type="submit" busy={pending ? "Saving…" : undefined}>
+        Save
+      </HudButton>
       {error && (
-        <p role="alert" className="basis-full text-xs text-danger">
-          {error}
-        </p>
+        <div className="basis-full">
+          <HudNotice tone="bad" line={error} />
+        </div>
       )}
     </form>
   );
@@ -192,32 +187,18 @@ function UsernameEditor({ name }: { name: string | null }) {
 
 function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={title} className="space-y-2">
-      <h2 className={cn("font-sans", HUD_LABEL)}>{title}</h2>
+    <section aria-label={title} className="flex flex-col">
+      <h2 className="text-hud-label text-hud-muted">{title}</h2>
       {children}
     </section>
   );
 }
-function SelectedOption({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={onClick}
-      className={cn(HUD_PILL_BUTTON, selected && "border-gold bg-gold text-dark-brown")}
-    >
-      {children}
-    </button>
-  );
-}
+
+const QUALITY_OPTIONS = [
+  { value: "balanced", label: "Balanced" },
+  { value: "high", label: "High" },
+] as const;
+
 function VideoSettings() {
   const preferences = readGraphicsPreferences(localStorage);
   const renderMode = readRenderMode(localStorage);
@@ -232,38 +213,31 @@ function VideoSettings() {
   };
   return (
     <SettingsSection title="Video & Graphics">
-      <div className="flex flex-wrap gap-2">
-        {(["balanced", "high"] as const).map((quality) => (
-          <SelectedOption
-            key={quality}
-            selected={preferences.quality === quality}
-            onClick={() => changeGraphics({ quality })}
-          >
-            {quality === "high" ? "High" : "Balanced"}
-          </SelectedOption>
-        ))}
-        {RENDER_MODE_OPTIONS.map((option) => (
-          <SelectedOption
-            key={option.mode}
-            selected={renderMode === option.mode}
-            onClick={() => changeRenderMode(option.mode)}
-          >
-            {option.label}
-          </SelectedOption>
-        ))}
-        <SelectedOption
-          selected={preferences.shadows}
-          onClick={() => changeGraphics({ shadows: !preferences.shadows })}
-        >
-          Shadows
-        </SelectedOption>
-        <SelectedOption selected={reducedMotion} onClick={() => setReducedMotion(!reducedMotion)}>
-          Reduced motion
-        </SelectedOption>
-        <SelectedOption selected={haptics} onClick={() => setHaptics(!haptics)}>
-          Haptics
-        </SelectedOption>
-      </div>
+      <HudSetting name="Quality" about="The game reloads to apply it">
+        <HudSelect
+          label="Quality"
+          value={preferences.quality}
+          options={QUALITY_OPTIONS}
+          onChange={(quality) => changeGraphics({ quality })}
+        />
+      </HudSetting>
+      <HudSetting name="Renderer" about="The game reloads to apply it">
+        <HudSelect
+          label="Renderer"
+          value={renderMode}
+          options={RENDER_MODE_OPTIONS.map((option) => ({ value: option.mode, label: option.label }))}
+          onChange={changeRenderMode}
+        />
+      </HudSetting>
+      <HudSetting name="Shadows" about="The game reloads to apply it">
+        <HudSwitch on={preferences.shadows} label="Shadows" onChange={(shadows) => changeGraphics({ shadows })} />
+      </HudSetting>
+      <HudSetting name="Reduced motion">
+        <HudSwitch on={reducedMotion} label="Reduced motion" onChange={setReducedMotion} />
+      </HudSetting>
+      <HudSetting name="Haptics">
+        <HudSwitch on={haptics} label="Haptics" onChange={setHaptics} />
+      </HudSetting>
     </SettingsSection>
   );
 }
@@ -273,30 +247,21 @@ function NextUpSettings() {
   const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
   return (
     <SettingsSection title="Next up">
-      <div className="flex flex-wrap gap-2">
-        <SelectedOption selected={nextUpTips} onClick={() => setNextUpTips(!nextUpTips)}>
-          Tips
-        </SelectedOption>
-      </div>
+      <HudSetting name="Tips" about="The coach's steps; alerts always show">
+        <HudSwitch on={nextUpTips} label="Next up tips" onChange={setNextUpTips} />
+      </HudSetting>
     </SettingsSection>
   );
 }
 
 function VolumeSlider({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
   return (
-    <label className="grid grid-cols-[4rem_1fr_2.5rem] items-center gap-2">
-      <span className={HUD_BODY}>{label}</span>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={value}
-        aria-label={label}
-        className="w-full accent-gold max-lg:h-11"
-        onChange={(event) => onChange(Number(event.target.value))}
-      />
-      <span className={cn("text-right tabular-nums", HUD_BODY)}>{value}</span>
-    </label>
+    <HudSetting name={label}>
+      <span className="flex w-48 items-center gap-2">
+        <HudSlider label={label} value={value} max={100} onChange={onChange} />
+        <span className="w-8 text-right text-hud-body tabular-nums">{value}</span>
+      </span>
+    </HudSetting>
   );
 }
 function RendererSettings() {
@@ -326,9 +291,9 @@ function AudioSettings() {
         value={Math.round((audioState?.categoryVolumes[AudioCategory.UI] ?? 0) * 100)}
         onChange={(value) => effectsCategories.forEach((category) => setCategoryVolume(category, value / 100))}
       />
-      <SelectedOption selected={audioState?.muted ?? false} onClick={() => setMuted(!audioState?.muted)}>
-        Mute
-      </SelectedOption>
+      <HudSetting name="Mute">
+        <HudSwitch on={audioState?.muted ?? false} label="Mute" onChange={setMuted} />
+      </HudSetting>
     </SettingsSection>
   );
 }
@@ -361,11 +326,13 @@ function ShortcutsSection() {
   }
   return (
     <SettingsSection title="Shortcuts">
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+      <dl className="flex flex-col gap-1">
         {[...bindings].map(([key, meanings]) => (
-          <div key={key} className="contents">
-            <dt className="rounded border border-gold/30 px-1.5 text-center font-mono text-[11px] text-gold">{key}</dt>
-            <dd className={cn("truncate", HUD_BODY)}>{meanings.join(" · ")}</dd>
+          <div key={key} className="flex items-center gap-3">
+            <dt>
+              <HudChip>{key}</HudChip>
+            </dt>
+            <dd className="min-w-0 truncate text-hud-body text-hud-ink">{meanings.join(" · ")}</dd>
           </div>
         ))}
       </dl>
@@ -390,20 +357,16 @@ function SessionActions() {
     }
   };
   return (
-    <section aria-label="Session" className="flex flex-wrap items-center gap-2 border-t border-gold/20 pt-3">
+    <section aria-label="Session" className="flex flex-wrap items-center gap-2 border-t border-hud-divider pt-3">
       {canSignOut && (
-        <button type="button" disabled={pending} onClick={signOut} className={HUD_PILL_BUTTON}>
-          {pending ? "Signing out…" : "Sign out"}
-        </button>
+        <HudButton kind="secondary" busy={pending ? "Signing out…" : undefined} onClick={signOut}>
+          Sign out
+        </HudButton>
       )}
-      <button type="button" onClick={() => window.location.assign("/")} className={HUD_PILL_BUTTON}>
+      <HudButton kind="secondary" onClick={() => window.location.assign("/")}>
         Leave game
-      </button>
-      {error && (
-        <p role="alert" className="text-xs text-danger">
-          {error}
-        </p>
-      )}
+      </HudButton>
+      {error && <HudNotice tone="bad" line={error} />}
     </section>
   );
 }
