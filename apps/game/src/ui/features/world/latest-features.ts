@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Relic artwork comparison",
+    description:
+      "The resource icon lab compares the original relic designs with painted Facets versions at four sizes. The game keeps the original relics during review.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Recognizable resources and landmarks",
     description:
       "Essence and Research have distinct icons, the original relic symbols return, and Farm, Workers Hut and map landmarks match their game models.",

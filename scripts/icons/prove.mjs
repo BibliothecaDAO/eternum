@@ -302,7 +302,7 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
       record.checks.push({ check: name, ok: (await b.evaluate(expression)) === true });
     await b.run("set", "viewport", String(width), String(height));
     await b.run("open", baseUrl + "/lab/kit/resource-icons", "--ignore-https-errors");
-    await b.run("wait", "[data-change=essence]");
+    await b.run("wait", "[data-change=stamina-relic-1]");
     record.ready = true;
     for (const section of ["Resources", "Relics", "Models", "Kept", "Inventory"]) {
       record.presses.push({ tab: section });
@@ -333,7 +333,7 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
         const rows=[...document.querySelectorAll('[data-resource-comparison]')];
         return rows.length===expected.length && expected.every(meaning=>{
           const row=rows.find(r=>r.dataset.resourceComparison===meaning);
-          const versions=section==='Kept'?['current']:section==='Inventory'?['old','current']:section==='Relics'?['old','before','current']:['before','current'];
+          const versions=section==='Kept'?['current']:section==='Inventory'?['old','current']:section==='Relics'?['current','facets']:['before','current'];
           return row && versions.every(version=>{
             const group=row.querySelector('[data-version='+version+']');
             if(!group)return false;
@@ -341,7 +341,7 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
             const images=[...group.querySelectorAll('img')];
             return images.length===4 && images.every((i,n)=>{
               const size=[16,24,32,40][n],pixels=size>32?128:64;
-              const url=version==='old'?'/lab/rss-icons/history/'+meaning+'.png':version==='before'?'/lab/rss-icons/before/'+pixels+'/'+meaning+'.webp':meanings[meaning].token?'/tokens/lords.svg':'/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
+              const url=version==='facets'?'/lab/rss-icons/relics/'+pixels+'/'+meaning+'.webp':version==='old'?'/lab/rss-icons/history/'+meaning+'.png':version==='before'?'/lab/rss-icons/before/'+pixels+'/'+meaning+'.webp':meanings[meaning].token?'/tokens/lords.svg':'/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
               return i.width===size && i.getAttribute('src')===url;
             });
           });

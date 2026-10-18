@@ -110,3 +110,18 @@
     margin-left: 0 !important;
   }
 }
+
+@media (max-width: 600px) {
+  .rss-comparison {
+    width: 100%;
+  }
+  .rss-versions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .rss-sizes {
+    display: grid;
+    grid-template-columns: repeat(2, 48px);
+  }
+}

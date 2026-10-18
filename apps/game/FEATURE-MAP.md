@@ -402,16 +402,20 @@ the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture
 
 ### Resource icon comparison
 
-`/lab/kit/resource-icons` opens **Resources**: before/current Essence and Research. **Relics** compares all 18 original,
-previous Facets and restored production icons. **Models** shows before/current icons beside the actual renders for Farm,
-Workers Hut, camp, rift, Hyperstructure site, spire and crate. Workshop waits for its model. **Kept** shows unchanged
-Labor, nine troop tiers and UI glyphs. **Inventory** compares all 58 historical and current resources.
+`/lab/kit/resource-icons` opens **Relics**: all 18 old designs beside their Facets-style proposals at 16/24/32/40 px.
+The proposals preserve each original symbol, composition and tier distinction. Old uses the production renderer;
+production retains the old relics until the owner chooses. Prefer 40 px for larger relic chips, with 32 px the practical
+minimum. No relic size or production mapping changes in this review.
 
-Every comparison uses 16/24/32/40 px. Current is the production `Icon` renderer; no proposal assets or templates remain.
-Prefer 40 px for larger relic chips, with 32 px the practical minimum. Construction cards retain model thumbnails.
-`asset-sources/facets/catalog.json` pins each replacement's source and hashes. `pnpm icons:check` verifies sources and
-exact normalized deliveries. `pnpm icons:study [--check]` builds/verifies before snapshots and model references. Start
-`pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run
+**Resources** retains before/current Essence and Research. **Models** shows before/current icons beside actual renders
+for Farm, Workers Hut, camp, rift, Hyperstructure site, spire and crate. Workshop waits for its model. **Kept** shows
+unchanged Labor, nine troop tiers and UI glyphs. **Inventory** compares all 58 historical and current resources.
+Construction cards retain model thumbnails.
+
+`asset-sources/rss-icons/relics/` holds the 18 review masters, exact prompts, source/style reference hashes and proposal
+verdicts. `pnpm icons:study [--check]` delivers them using the same Facets normalizer and 64/128/256 WebP settings,
+validates source and delivery hashes and rejects missing or unwired assets. `pnpm icons:check` validates production.
+Start `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run
 `pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` for desktop/phone comparisons, exact URL,
 decode, pixel-size and overflow checks. Regeneration commands are in `asset-sources/rss-icons/README.md`.
 

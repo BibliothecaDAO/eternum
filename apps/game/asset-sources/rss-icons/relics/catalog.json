@@ -1,0 +1,159 @@
+{
+  "productionRevision": "7a0ee1cded3fe9a5f6618a55c3bd72dc9def318c",
+  "styleReferences": [
+    {
+      "meaning": "knight-t2",
+      "sha256": "6fb7c98887e6e0b5a1fe873475c041005c60bdaea82f0df0261e6c06f1814c37"
+    },
+    {
+      "meaning": "wheat",
+      "sha256": "033574c57d5b075304638d82bf530e24d3d9e5710076e1119336b27f277c5671"
+    }
+  ],
+  "icons": [
+    {
+      "meaning": "stamina-relic-1",
+      "design": "Bronze/gold winged boot toe pointing lower left, tall wing rising upper right, two lime-green curved speed strokes around it. Tier I stays warm bronze, not silver.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "7ea1812f98bc5f3d681b4059c70d3905ebecc2debfa29e3aed1589b47f318168",
+      "masterSha256": "715326102f7b37fdb8c3ea9789a2c54a8715bf8d190711a08ed5d69fe9bbbbf4"
+    },
+    {
+      "meaning": "stamina-relic-2",
+      "design": "Blue steel/silver winged boot toe pointing lower left, tall wing upper right, mint/green curved speed strokes. Tier II stays blue steel, visibly unlike the bronze Tier I.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "5135d4f55ef92b7c1be06e194a6c475db50ff5989597a74441985c1d74c25205",
+      "masterSha256": "07f721d2e5dfbfbe1caf4d366caee5e6f03388b930501ae8883b5e4a55f59500"
+    },
+    {
+      "meaning": "damage-relic-1",
+      "design": "Single broad stone sword diagonal from hilt at upper left to tip lower right, bronze guard, glowing red angular runes down the blade, red swirling arcs. Tier I is a SWORD, never an axe.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "529c35e361c3c24593e8e44123f46984cd801ded8a3f1996beb7cf2c1503bcb1",
+      "masterSha256": "17942b322c5058670f0c1a39a6313230ecc2528f9e4a3f61df1e7933889bc66a"
+    },
+    {
+      "meaning": "damage-relic-2",
+      "design": "Double-headed dark stone battle AXE, shaft from lower left toward upper right, silver cutting edges, glowing red runes and red central gem, red swirl around it. Tier II is an AXE, never a sword.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "66617ff07bf0f6eea5a784bea8c61e4ddf75cdadc6cbe98f239e18e0d2bc9a37",
+      "masterSha256": "fcbbdf74d5d87235f1b202231c84506402306184c8064c251ac79e8dfd7c0989"
+    },
+    {
+      "meaning": "damage-reduction-relic-1",
+      "design": "Round dark blue steel shield with circular center boss, broad silver riveted rim and branching cyan energy cracks radiating from boss; cyan curved swirl around it. Tier I is ROUND.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "f59f1657d4d20cbd9c987c9a1d6248f5111ba5fec43ea0888ec8a9504853c7ac",
+      "masterSha256": "e5c9ebfaf6574ff122333e1ee8bd7ed373c2e91370fa03fbdfe9926f9749a4a1"
+    },
+    {
+      "meaning": "damage-reduction-relic-2",
+      "design": "Tall pointed kite shield, blue steel with silver rim, vertical cyan rune column (forked star above diamond above arrow), larger blue magical aura. Tier II stays a KITE SHIELD.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "d102caf6e1a76a6b10a8db5bd59b190159c431f4e7f5f0750e15f12327eca8aa",
+      "masterSha256": "1971cd71c6160e6a97e9efaa535c3e8f9e8f743af284c0eca21199b23318dcc4"
+    },
+    {
+      "meaning": "exploration-relic-1",
+      "design": "Round gold compass/pendant with cream face and large golden slit-pupil EYE in its center, suspension loop at top, gold arc and blue crossing orbit. Tier I is the EYE pendant.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "92990f3d248bb7f7a01cfe490ee7a0afce66ee1569d6d3c295bf22331ec1efca",
+      "masterSha256": "35b49b59728d2fcd41b1b1dfbcc66271152d508cde8393e8d8b042ee34f6d565"
+    },
+    {
+      "meaning": "exploration-relic-2",
+      "design": "Open golden compass ring with sideways gold points and elongated purple crystalline north/south points, violet-pink looping aura. Tier II is the purple COMPASS ROSE, not the eye pendant.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "b812057399798b654d17ee5081f1d5992e585779ab97022577bee7433896e495",
+      "masterSha256": "fe9e2a60d91f11268eda1f2bd920625d9cb53fba6285295b56e83776e4b33221"
+    },
+    {
+      "meaning": "exploration-reward-relic-1",
+      "design": "Unrolled warm parchment treasure map slanted in depth, large X, one cyan gem upper left, one green gem upper right and two gold coins left and lower right, warm gold glow. Tier I is the MAP without chest.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "7bd13cca6a120299188b0276e81813ec2e8eb2ea787f58bccafecc860e288bab",
+      "masterSha256": "67ee63ffc7a17389a16277c8ce935120926421bdfcd71b9985296754f7cf9163"
+    },
+    {
+      "meaning": "exploration-reward-relic-2",
+      "design": "OPEN wooden treasure chest full of green emeralds, lid up, sitting on a parchment map with X, violet-pink halo and pale jewel light beams. Tier II adds the CHEST.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "46e18e015da781fd27a503d1410308882f8a0c517328c9f30a1be8f4f3af7cac",
+      "masterSha256": "b7c70556e586a545fa9ebc5b848888bc2884bf91c3169ef7abc8878a9beab9f3"
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-1",
+      "design": "Low stone battlement wall with a central wooden arched gate, crenellations, contained blue protective aura. Tier I is a LOW WALL.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "a57f1093f959f34d7d7755a32e132d2a360cf9eadaeda250b08b95d8dd353643",
+      "masterSha256": "b1e0d6e9d0cdd997e53959bc65605b16b78da23c11cab23f212ef7165c8d34a2"
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-2",
+      "design": "Full fortified castle with multiple blue conical turret roofs and a tallest central tower, enclosing cyan protective shield aura. Tier II is a TALL CASTLE.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "41851ef5f3dae3ae043e3a0680428c013baf71bc8088a53c3bce1784d86bd981",
+      "masterSha256": "14b5ec1dfa667da379aa3c85f2eb470db7ac10461090ba8900a9157d94f28858"
+    },
+    {
+      "meaning": "production-relic-1",
+      "design": "Iron pickaxe on a wooden shaft slanting from upper left head toward lower right grip, striking a small dark rock pile with yellow-orange impact light and warm circular aura. Tier I is a PICKAXE over rock.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "27698138dd83d7dd8d88a82cda32cd4a290e4e5583dd1fd2c402b27da6083b2f",
+      "masterSha256": "7ff34ce1d2c8f1202ca1dd873918862f00bce8f3724913e91dfd7c726679de4d"
+    },
+    {
+      "meaning": "production-relic-2",
+      "design": "Squat cylindrical stone furnace with open black top and arched blazing orange mouth, glowing golden ore spilling out onto rocks, warm circular aura. Tier II is a FURNACE.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "d5b6114256e164823bcf955bac01225b9e49176262495626082a1b085cc8aab7",
+      "masterSha256": "85a45cf19e37f4328d3df96eb15c583fad16b21ff4f07550a351f3a4ebd8f6bd"
+    },
+    {
+      "meaning": "labor-production-relic-1",
+      "design": "Two overlapping brown leather work gloves with fingers upwards and broad cuffs low left and low right, warm golden aura. Tier I is a PAIR OF GLOVES, no people.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "22dbb31fb1c62fd81ece2c933b21272a2cb10bd0009b4e4b59f94f2d188e297c",
+      "masterSha256": "d369aa255a09cbe8606490a201e5b8f1d34e01c234d3b9fd925904129379fdd3"
+    },
+    {
+      "meaning": "labor-production-relic-2",
+      "design": "Single heavy block-headed iron hammer with wood/leather handle diagonal lower left to upper right, warm golden aura. Tier II is a HAMMER, no people.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "369b1ff53998a47cf19915496f2583f2ec595c6974030bf166b17f98eda2d460",
+      "masterSha256": "d61b10c52b3e5e28c47c8d9e492010308057c140cb21fd88158e6b7a2f3c7f97"
+    },
+    {
+      "meaning": "troop-production-relic-1",
+      "design": "Warm stone twin-tower barracks gate with closed wooden door; several teal helmeted soldier silhouettes rising behind the wall, teal sweeping aura. Tier I is the BARRACKS AND SOLDIERS.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "3484c1c00b2fda5fc092ebd385197962d155ce6f077afc8b2f33abe883630507",
+      "masterSha256": "921d7ef4aa7ab64bf7e511aa6c765f4244837318e3bba78442244db1989be6b7"
+    },
+    {
+      "meaning": "troop-production-relic-2",
+      "design": "Large gold/brass rally horn on a square dark pedestal, horn bell upper left, surrounded by three red flags on poles and warm gold aura. Tier II is the HORN AND RED BANNERS.",
+      "verdict": "proposal",
+      "reason": "Preserves the original symbol, composition and tier design with broad Facets brush planes; pending owner choice.",
+      "sourceSha256": "bcbb23d24243e8a295ce0f0f29638ce1f29cb1d796262ae6547789754176a4e1",
+      "masterSha256": "8b879a3ff050cf04c001a467464d043e6f8c79f4c3819b971c5cd42d0cd2a317"
+    }
+  ]
+}

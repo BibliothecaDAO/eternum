@@ -6,9 +6,21 @@ import study from "../../../../../asset-sources/rss-icons/catalog.json";
 import history from "../../../../../asset-sources/rss-icons/history.json";
 import "./resource-icons-lab.css";
 
-type Version = "old" | "before" | "current";
+type Version = "old" | "before" | "current" | "facets";
 function Artwork({ meaning, version, size }: { meaning: string; version: Version; size: number }) {
   if (version === "current") return <Icon name={meaning as IconMeaning} size={size} />;
+  if (version === "facets")
+    return (
+      <img
+        data-relic-proposal={meaning}
+        src={`/lab/rss-icons/relics/${size > 32 ? 128 : 64}/${meaning}.webp`}
+        width={size}
+        height={size}
+        style={{ width: size, height: size }}
+        alt=""
+        draggable={false}
+      />
+    );
   const previous = history.entries[meaning as keyof typeof history.entries];
   const url = version === "before" ? `/lab/rss-icons/before/${size > 32 ? 128 : 64}/${meaning}.webp` : previous.url;
   return url ? (
@@ -48,7 +60,15 @@ function Comparison({ meaning, versions }: { meaning: string; versions: Version[
         {versions.map((version) => (
           <figure data-version={version} key={version}>
             <figcaption>
-              {version === "old" ? "Pre-Facets" : version === "before" ? "Before" : "Current · production"}
+              {version === "old"
+                ? "Pre-Facets"
+                : version === "before"
+                  ? "Before"
+                  : version === "facets"
+                    ? "Facets style · proposal"
+                    : meaning.includes("-relic-")
+                      ? "Old · production"
+                      : "Current · production"}
             </figcaption>
             <Sizes meaning={meaning} version={version} />
           </figure>
@@ -58,12 +78,15 @@ function Comparison({ meaning, versions }: { meaning: string; versions: Version[
   );
 }
 export function ResourceIconsLab() {
-  const [section, setSection] = useState("Resources");
+  const [section, setSection] = useState("Relics");
   return (
     <main className="rss-lab">
       <header>
         <h1>Resource icons</h1>
-        <p>The approved set, compared at 16, 24, 32 and 40 px. Current uses the same icons as the game.</p>
+        <p>
+          Old relic designs repainted in Facets, compared at 16, 24, 32 and 40 px. The old relics stay in production
+          until selected.
+        </p>
       </header>
       <nav aria-label="Resource review sections">
         {["Resources", "Relics", "Models", "Kept", "Inventory"].map((name) => (
@@ -74,8 +97,8 @@ export function ResourceIconsLab() {
       </nav>
       {section === "Relics" && (
         <p>
-          All 18 original relics restored. Prefer 40 px for the larger sheet; 32 px is the practical minimum for
-          identifying the family and tier at a glance.
+          All 18 proposals preserve the old symbols, compositions and tier distinctions. Prefer 40 px for the larger
+          sheet; compare 32 px for family and tier recognition, and 16/24 px for compact use.
         </p>
       )}
       {section === "Models" && (
@@ -90,7 +113,7 @@ export function ResourceIconsLab() {
           <article key={entry.meaning} data-change={entry.meaning}>
             <Comparison
               meaning={entry.meaning}
-              versions={section === "Relics" ? ["old", "before", "current"] : ["before", "current"]}
+              versions={section === "Relics" ? ["current", "facets"] : ["before", "current"]}
             />
             {section === "Models" && (
               <figure className="rss-model">
@@ -103,7 +126,7 @@ export function ResourceIconsLab() {
                 <figcaption>Actual model render</figcaption>
               </figure>
             )}
-            <p>{entry.note}</p>
+            {section !== "Relics" && <p>{entry.note}</p>}
           </article>
         ))}
       {section === "Kept" && (
