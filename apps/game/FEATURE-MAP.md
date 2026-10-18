@@ -479,3 +479,8 @@ See `/lab/kit/icons` (Controls, Actions, Statuses, HUD or Shell) and the UI glyp
 app fixtures show the production components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --glyphs`
 captures the selected-army HUD, HUD menu, app Home and Settings at desktop and phone sizes and decodes their artwork.
 `pnpm icons:check` requires the approved utility style and checks master hashes, regenerated delivery bytes and fill.
+
+`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --app` checks the app entry, Play, lobby, Season, results,
+reward, profile, Settings, news, legal and sign-in fixtures at desktop and phone sizes. Every rendered utility image
+must decode and match the committed Ivory delivery SHA-256, independently of the served manifest. The incoming app sheet
+uses the same `Icon` / `IconMeaning` contract; its page migration needs no icon migration.

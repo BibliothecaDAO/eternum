@@ -1,4 +1,5 @@
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { runProof } from "../../apps/game/scripts/prove-run.mjs";
@@ -19,6 +20,8 @@ const pages = [
   ["account", "/lab/app/home/profile?capture=1", "[data-layout]"],
   ["settings", "/lab/app/home/profile/settings?capture=1", "[data-layout]"],
   ["news", "/lab/app/home/scroll?capture=1", "[data-layout]"],
+  ["sign-in", "/lab/app/first-visit/sign-in/code?capture=1", "[data-icon=mail]"],
+  ["legal", "/lab/app/home/terms?capture=1", "[data-layout]"],
 ];
 
 async function readRealmEmblems(selector) {
@@ -121,7 +124,31 @@ export async function proveMinimapEmblems(b, out, records, url) {
   await b.run("open", "about:blank");
 }
 
+/** Expected bytes come from the checkout being proved, not the server's own manifest. */
+function ivoryDeliveries() {
+  const source = new URL("../../apps/game/asset-sources/facets/", import.meta.url);
+  const { icons } = JSON.parse(readFileSync(new URL("catalog.json", source), "utf8"));
+  const meanings = JSON.parse(readFileSync(new URL("semantic-map.json", source), "utf8"));
+  const utilities = Object.entries(meanings).filter(([, entry]) =>
+    ["Controls", "Actions", "Statuses", "HUD", "Shell"].includes(entry.family),
+  );
+  const hashes = {};
+  for (const [, entry] of utilities) {
+    if (icons.find((icon) => icon.id === entry.art)?.source?.kind !== "ivory-relief")
+      throw new Error(`Utility ${entry.art} must use the approved Ivory relief master.`);
+    for (const size of [64, 128, 256]) {
+      const url = `/icons/facets/${size}/${entry.art}.webp`;
+      if (!hashes[url])
+        hashes[url] = createHash("sha256")
+          .update(readFileSync(new URL(`../../apps/game/public${url}`, import.meta.url)))
+          .digest("hex");
+    }
+  }
+  return { hashes, meanings: utilities.map(([name]) => name) };
+}
+
 export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages, missingSvg = false) {
+  const ivory = ivoryDeliveries();
   mkdirSync(out, { recursive: true });
   for (const [layout, width, height] of [
     ["desktop", 1440, 1000],
@@ -146,13 +173,14 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       }
       const state = await b.evaluate(`(async () => {
         const {meanings} = await (await fetch('/icons/facets/manifest.json')).json();
+        const utilityMeanings = ${JSON.stringify(ivory.meanings)};
         const icons = await Promise.all([...document.querySelectorAll('img[data-icon],image[data-icon]')].map(async element => {
           const html = element instanceof HTMLImageElement;
           const url = element.getAttribute(html ? 'src' : 'href');
           const meaning = element.dataset.icon, entry = meanings[meaning];
           const pixels = url?.split('/')[3] ?? '64';
           const expected = entry?.token ? '/tokens/'+entry.token+'.svg' : entry?.rewardChest ? '/images/blitz-chests/'+entry.rewardChest+'.webp' : '/icons/facets/'+pixels+'/'+entry?.art+'.webp';
-          const result = {meaning, kind: html ? 'html' : 'svg', url, expected, loaded: false};
+          const result = {meaning, kind: html ? 'html' : 'svg', url, expected, loaded: false, utility: utilityMeanings.includes(meaning)};
           try {
             if (!url) throw new Error('Missing artwork URL');
             result.resolvedUrl = new URL(url, document.baseURI).href;
@@ -162,6 +190,12 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
             result.loaded = image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
             result.width = image.naturalWidth;
             result.height = image.naturalHeight;
+            if (result.utility) {
+              const response = await fetch(url);
+              if (!response.ok) throw new Error('Icon request failed: ' + response.status);
+              const digest = await crypto.subtle.digest('SHA-256', await response.arrayBuffer());
+              result.sha256 = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+            }
           } catch (error) {
             result.error = String(error);
           }
@@ -174,6 +208,13 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       record.checks.push({
         check: "All rendered HTML and SVG icon URLs decode as semantic artwork",
         ok: state.icons.length > 0 && state.icons.every((i) => i.loaded && i.url === i.expected),
+      });
+      const utilities = state.icons.filter((icon) => icon.utility);
+      record.checks.push({
+        check: "Rendered UI glyphs use the approved Ivory relief delivery bytes",
+        ok:
+          utilities.length > 0 &&
+          utilities.every((icon) => typeof icon.sha256 === "string" && ivory.hashes[icon.url] === icon.sha256),
       });
       const lords = state.icons.filter((icon) => icon.meaning === "lords");
       if (["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"].includes(name)) {
@@ -478,13 +519,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
                 records,
                 baseUrl,
                 missingSvg ? "desktop" : undefined,
-                process.argv.includes("--glyphs")
-                  ? ["hud", "hud-menu", "play", "settings"]
-                  : missingSvg || process.argv.includes("--catalog")
-                    ? ["catalog"]
-                    : process.argv.includes("--lords")
-                      ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
-                      : undefined,
+                process.argv.includes("--app")
+                  ? pages.filter(([, path]) => path.startsWith("/lab/app/")).map(([name]) => name)
+                  : process.argv.includes("--glyphs")
+                    ? ["hud", "hud-menu", "play", "settings"]
+                    : missingSvg || process.argv.includes("--catalog")
+                      ? ["catalog"]
+                      : process.argv.includes("--lords")
+                        ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
+                        : undefined,
                 missingSvg,
               ),
   );
