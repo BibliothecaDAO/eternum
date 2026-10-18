@@ -271,10 +271,15 @@ export class MapSheetPresentation {
     }
   }
   private casing(p: THREE.Vector3, color: string, scale = 1) {
-    const shape = createCasedHexagonBandGeometry(0.98 * scale, 0.96 * scale, 0.018 * scale, {
-      core: new THREE.Color(color).toArray() as [number, number, number],
-      casing: new THREE.Color(MAP_SHEET.casing).toArray() as [number, number, number],
-    });
+    const shape = createCasedHexagonBandGeometry(
+      MAP_SHEET.ring.outerRadius * scale,
+      MAP_SHEET.ring.innerRadius * scale,
+      MAP_SHEET.ring.casingWidth * scale,
+      {
+        core: new THREE.Color(color).toArray() as [number, number, number],
+        casing: new THREE.Color(MAP_SHEET.casing).toArray() as [number, number, number],
+      },
+    );
     const geometry = drapeHexRingCopies(shape, [p], this.terrain, 0.07);
     geometry.setAttribute("color", shape.getAttribute("color").clone());
     const mesh = new THREE.Mesh(

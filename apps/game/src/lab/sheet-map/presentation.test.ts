@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Color, Mesh, MeshBasicMaterial, PerspectiveCamera, Scene } from "three";
-import { HUD_SHEET, MAP_SHEET, hudVariables, mapAgeAccent } from "@/tokens";
+import { HUD_SHEET, MAP_SHEET, mapAgeAccent } from "@/tokens";
 import type { ProceduralTerrain } from "@/three/terrain/procedural-terrain";
 import { MapSheetPresentation } from "./presentation";
 import { createMapSheetFixture } from "./fixture";
@@ -33,10 +33,6 @@ describe("map sheet comparison", () => {
       expect(casedColours.has(new Color(role).getHex()), role).toBe(true);
     }
     expect(MAP_SHEET.ownership.unowned).toBe(HUD_SHEET.neutral);
-    expect(hudVariables()).toMatchObject({
-      "--hud-map-explored": "rgb(var(--hud-ink) / 0.1)",
-      "--hud-map-fog": "var(--hud-well)",
-    });
     expect(casedHeights.length).toBeGreaterThan(100);
     expect(casedHeights.every((height) => Math.abs(height - 0.77) < 0.00001)).toBe(true);
     expect(overlay.querySelectorAll(".map-sheet-label")).toHaveLength(24);

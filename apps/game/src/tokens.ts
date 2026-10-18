@@ -625,8 +625,6 @@ export const hudVariables = (): Record<string, string> => ({
     ]),
   ),
   "--hud-font": CLASSIC_HUD_FONTS.ui,
-  "--hud-map-explored": MAP_SHEET.minimap.explored,
-  "--hud-map-fog": MAP_SHEET.minimap.fog,
 });
 
 /** Each mode's variables, and the derived values again, so a mode root (and the lab's editor on it) restyles them. */
@@ -652,7 +650,6 @@ export const MAP_SHEET = {
   line: { width: 0.045, casingWidth: 0.09, opacity: 0.9, previewOpacity: 0.45 },
   marker: { size: 0.85 },
   fogEdge: { opacity: 0.16, width: 0.025 },
-  minimap: { explored: "rgb(var(--hud-ink) / 0.1)", fog: "var(--hud-well)" },
 } as const;
 
 export function mapAgeAccent(age: HudMode): string {

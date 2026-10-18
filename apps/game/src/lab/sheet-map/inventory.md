@@ -54,6 +54,6 @@ There is no standalone `/lab/sheet-map`. All four columns stay visible together 
 fog mask and assets. The minimap samples use the existing HexMarker and biome-colour resolver; their colour key is not a
 second minimap navigation implementation.
 
-The DOM minimap can read `--hud-map-explored` and `--hud-map-fog`, installed by `hudVariables()`. They come from
-`MAP_SHEET.minimap.explored` (`rgb(var(--hud-ink) / 0.1)`) and `.fog` (`var(--hud-well)`), so they still follow the HUD
-editor's ink and well. Ownership continues to use `--hud-own/ally/enemy/neutral`.
+The lab's minimap samples compare ownership badges and the existing biome-colour key. There are no separate explored
+land or fog roles in `MAP_SHEET`. The production minimap is unchanged; its ownership uses
+`--hud-own/ally/enemy/neutral`.
