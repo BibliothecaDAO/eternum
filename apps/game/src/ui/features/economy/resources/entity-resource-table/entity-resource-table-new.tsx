@@ -24,6 +24,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { getBuildingFromResource, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import clsx from "clsx";
+import { HudChip, HudIconButton, HudPanel, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -236,7 +237,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
   const tiers = useMemo(() => Object.entries(mode.resources.getTiers()), [mode.resources]);
 
   if (structureColumns.length === 0) {
-    return <div className="p-3 text-xs text-gold/70">Own a structure to begin tracking your resources.</div>;
+    return <p className="p-3 text-hud-muted">Own a structure to begin tracking your resources.</p>;
   }
 
   const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
@@ -333,149 +334,77 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     localStorage.setItem("hideResourceTableHelp", "true");
   };
 
+  const filter = (label: string, on: boolean, toggle: () => void) => (
+    <span className="inline-flex items-center gap-2 text-hud-label">
+      <span className={on ? "text-hud-accent" : undefined}>{label}</span>
+      <HudSwitch on={on} label={label} onChange={toggle} />
+    </span>
+  );
+
   return (
-    <div className="flex h-full flex-col gap-4 p-2">
-      {/* Help Banner */}
+    <div className="flex h-full flex-col gap-4">
       {showHelpBanner && (
-        <div className="rounded-xl border border-blueish/30 bg-blueish/10 p-3 shadow-lg">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-blueish">💡 Quick Tips</span>
-              </div>
-              <ul className="space-y-1 text-xs text-blueish/90">
-                <li className="flex items-start gap-2">
-                  <span className="text-blueish/70">•</span>
-                  <span>
-                    <strong>Drag & Drop:</strong> Drag resources between columns to transfer them across realms
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blueish/70">•</span>
-                  <span>
-                    <strong>Cycle Realms:</strong> Click column headers to navigate between realms in{" "}
-                    {isMapView ? "world" : "local"} view
-                  </span>
-                </li>
-              </ul>
-            </div>
-            <button
-              onClick={handleDismissHelp}
-              className="text-blueish/60 hover:text-blueish transition-colors"
-              title="Dismiss"
-            >
-              <SemanticIcon name="close" className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <HudPanel
+          kind="section"
+          title="Quick Tips"
+          collapsible={false}
+          cue={<HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" onClick={handleDismissHelp} />}
+        >
+          <ul className="flex flex-col gap-1">
+            <li>
+              <strong>Drag & Drop:</strong> Drag resources between columns to transfer them across realms
+            </li>
+            <li>
+              <strong>Cycle Realms:</strong> Click column headers to navigate between realms in{" "}
+              {isMapView ? "world" : "local"} view
+            </li>
+          </ul>
+        </HudPanel>
       )}
 
-      <div className="rounded-2xl border border-gold/25 bg-brown/80 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.4)]">
-        <div className="sticky top-0 z-20 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-brown/95 backdrop-blur border-b border-gold/15">
+      <div className="flex flex-col">
+        <div className="sticky top-0 z-20 border-b border-hud-divider bg-hud-surface pb-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resource overview</h4>
-              <p className="text-[11px] text-gold/60">
+            <div className="flex flex-col gap-1">
+              <h4 className="text-hud-title text-hud-accent">Resource overview</h4>
+              <p className="text-hud-label text-hud-muted">
                 {structureColumns.length} structures synced
                 {highlightedStructure ? ` • ${highlightedStructure} highlighted` : " • select a structure to manage"}
               </p>
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 text-[11px] text-gold/70 sm:w-auto sm:justify-end">
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
-                  <span className={clsx(pinSelectedColumn && "text-gold")}>Pin Selected Realm</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="peer sr-only"
-                      checked={pinSelectedColumn}
-                      onChange={() => {
-                        const newValue = !pinSelectedColumn;
-                        setPinSelectedColumn(newValue);
-                        localStorage.setItem("pinSelectedColumn", String(newValue));
-                      }}
-                    />
-                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                    </div>
-                  </div>
-                </label>
-                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
-                  <span className={clsx(!showAllResources && "text-gold")}>Hide empty</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="peer sr-only"
-                      checked={!showAllResources}
-                      onChange={() => setShowAllResources((prev) => !prev)}
-                    />
-                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                    </div>
-                  </div>
-                </label>
-                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
-                  <span className={clsx(showProductionOnly && "text-gold")}>Production only</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="peer sr-only"
-                      checked={showProductionOnly}
-                      onChange={() => {
-                        const nextValue = !showProductionOnly;
-                        setShowProductionOnly(nextValue);
-                        localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
-                      }}
-                    />
-                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                    </div>
-                  </div>
-                </label>
-                <label className="inline-flex items-center gap-2 rounded-full border border-gold/20 bg-gold/5 px-3 py-1">
-                  <span className={clsx(showMilitaryOnly && "text-gold")}>Military only</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      className="peer sr-only"
-                      checked={showMilitaryOnly}
-                      onChange={() => {
-                        const nextValue = !showMilitaryOnly;
-                        setShowMilitaryOnly(nextValue);
-                        localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
-                      }}
-                    />
-                    <div className="h-5 w-9 rounded-full bg-brown/50 transition peer-checked:bg-gold/30">
-                      <div className="absolute top-[2px] left-[2px] h-4 w-4 rounded-full bg-gold transition peer-checked:translate-x-4" />
-                    </div>
-                  </div>
-                </label>
-              </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {filter("Pin Selected Realm", pinSelectedColumn, () => {
+                const newValue = !pinSelectedColumn;
+                setPinSelectedColumn(newValue);
+                localStorage.setItem("pinSelectedColumn", String(newValue));
+              })}
+              {filter("Hide empty", !showAllResources, () => setShowAllResources((prev) => !prev))}
+              {filter("Production only", showProductionOnly, () => {
+                const nextValue = !showProductionOnly;
+                setShowProductionOnly(nextValue);
+                localStorage.setItem("entityResourceTableShowProductionOnly", String(nextValue));
+              })}
+              {filter("Military only", showMilitaryOnly, () => {
+                const nextValue = !showMilitaryOnly;
+                setShowMilitaryOnly(nextValue);
+                localStorage.setItem("entityResourceTableShowMilitaryOnly", String(nextValue));
+              })}
             </div>
           </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-xl border border-gold/15 bg-brown/60">
-          <table className="min-w-full text-left text-xxs">
-            <thead className="sticky top-0 bg-brown/80 backdrop-blur">
-              <tr className="border-b border-gold/15 text-[10px] uppercase text-gold/70">
-                <th className="px-3 py-2 font-semibold border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
-                  <div className="flex items-center gap-1.5">
-                    <span>Resource</span>
-                  </div>
-                </th>
-                <th className="px-3 py-2 font-semibold border-r border-gold/[0.07]">
-                  <div className="flex items-center gap-1">
-                    <span>Total</span>
-                    <span className="text-[9px] text-gold/50 normal-case"></span>
-                  </div>
-                </th>
+        <div className="mt-4 overflow-x-auto">
+          <table className="min-w-full text-left text-hud-label">
+            <thead className="sticky top-0 bg-hud-surface">
+              <tr className="border-b border-hud-divider text-hud-muted">
+                <th className="sticky left-0 z-10 border-r border-hud-divider bg-hud-surface px-3 py-2">Resource</th>
+                <th className="border-r border-hud-divider px-3 py-2">Total</th>
                 {structureColumns.map((structure) => (
                   <th
                     key={structure.entityId}
                     className={clsx(
-                      "px-3 py-2 cursor-pointer border-r border-gold/[0.07] last:border-r-0 transition-colors hover:bg-gold/5",
-                      structure.isSelected && "bg-gold/10",
+                      "cursor-pointer border-r border-hud-divider px-3 py-2 last:border-r-0 hover:bg-hud-hover",
+                      structure.isSelected && "bg-hud-chosen",
                     )}
                     role="button"
                     tabIndex={0}
@@ -488,17 +417,12 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                     }}
                   >
                     <div className="flex items-center gap-1.5">
-                      {structure.isSelected && <SemanticIcon name="target" className="h-3 w-3 text-gold" />}
+                      {structure.isSelected && <SemanticIcon name="target" className="h-3 w-3 text-hud-accent" />}
                       <div className="flex flex-col gap-0.5">
-                        <span
-                          className={clsx(
-                            "font-semibold leading-tight text-[11px]",
-                            structure.isSelected && "text-gold",
-                          )}
-                        >
+                        <span className={structure.isSelected ? "text-hud-accent" : "text-hud-ink"}>
                           {structure.label}
                         </span>
-                        <span className="text-[9px] text-gold/50 font-normal">Level {structure.level}</span>
+                        <span className="text-hud-badge text-hud-cue">Level {structure.level}</span>
                       </div>
                     </div>
                   </th>
@@ -523,7 +447,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
                 return (
                   <React.Fragment key={tier}>
-                    <tr className="bg-gold/5 text-[10px] uppercase tracking-wide text-gold/70">
+                    <tr className="bg-hud-hover text-hud-muted">
                       <td className="px-2 py-1" colSpan={structureColumns.length + 2}>
                         <button
                           type="button"
@@ -531,7 +455,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                           className="flex w-full items-center justify-between text-left"
                         >
                           <span>{TIER_DISPLAY_NAMES[tier] || tier}</span>
-                          <span className="flex items-center gap-2 text-[9px] font-medium text-gold/60">
+                          <span className="flex items-center gap-2 text-hud-cue">
                             {rows.length}
                             {isCollapsed ? (
                               <SemanticIcon name="arrow-down" className="h-3 w-3" />
@@ -548,33 +472,27 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                         const resourceKey = ResourcesIds[resourceId];
 
                         return (
-                          <tr
-                            key={resourceId}
-                            className="border-b border-gold/10 last:border-b-0 hover:bg-gold/[0.02] transition-colors"
-                          >
-                            <td className="px-3 py-2 border-r border-gold/[0.07] sticky left-0 bg-brown/95 backdrop-blur z-10 shadow-sm">
+                          <tr key={resourceId} className="border-b border-hud-divider last:border-b-0">
+                            <td className="sticky left-0 z-10 border-r border-hud-divider bg-hud-surface px-3 py-2">
                               <div className="flex items-center gap-2">
                                 <ResourceIcon resource={resourceId} size="md" />
-                                <span className="text-[11px] font-semibold text-gold/90">{resourceKey}</span>
+                                <span className="text-hud-ink">{resourceKey}</span>
                               </div>
                             </td>
-                            <td className="px-3 py-2 border-r border-gold/[0.07]">
+                            <td className="border-r border-hud-divider px-3 py-2">
                               {summary ? (
                                 <div className="flex items-baseline gap-1.5">
-                                  <span className="text-[11px] font-bold text-gold">
+                                  <span className="text-hud-strong text-hud-accent">
                                     {formatResourceAmount(summary.totalAmount)}
                                   </span>
                                   <span
-                                    className={clsx(
-                                      "text-[10px]",
-                                      summary.totalProductionPerSecond > 0 ? "text-green/70" : "text-gold/40",
-                                    )}
+                                    className={summary.totalProductionPerSecond > 0 ? "text-hud-good" : "text-hud-cue"}
                                   >
                                     {formatProductionPerHour(summary.totalProductionPerSecond)}
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-[11px] text-gold/30">—</span>
+                                <span className="text-hud-cue">—</span>
                               )}
                             </td>
                             {structureColumns.map((structure) => {
@@ -599,8 +517,8 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                 <td
                                   key={structure.entityId}
                                   className={clsx(
-                                    "px-2 py-1.5 align-top cursor-pointer border-r border-gold/[0.07] last:border-r-0",
-                                    structure.isSelected && "bg-gold/10",
+                                    "cursor-pointer border-r border-hud-divider px-2 py-1.5 align-top last:border-r-0",
+                                    structure.isSelected && "bg-hud-chosen",
                                   )}
                                   role="button"
                                   tabIndex={0}
@@ -633,18 +551,18 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                                   ) : (
                                     <div
                                       className={clsx(
-                                        "min-h-[40px] flex items-center justify-center rounded-md transition-all",
+                                        "flex min-h-10 items-center justify-center rounded-md",
                                         dragState.isDragging &&
                                           dragState.dragOverStructureId === structure.entityId &&
                                           dragState.dragData?.resourceId === resourceId &&
                                           dragState.dragData.structureId !== structure.entityId
-                                          ? "bg-gold/20 border-2 border-dashed border-gold/60"
+                                          ? "border-2 border-dashed border-hud-line-strong bg-hud-chosen"
                                           : "border border-transparent",
                                       )}
                                       onDragOver={(e) => handleDragOver(e, structure.entityId)}
                                       onDrop={handleDrop}
                                     >
-                                      <span className="text-[11px] text-gold/30">-</span>
+                                      <span className="text-hud-cue">-</span>
                                     </div>
                                   )}
                                 </td>
@@ -717,10 +635,10 @@ const TransferCell = React.memo((props: TransferCellProps) => {
   return (
     <div
       className={clsx(
-        "min-h-[40px] p-1.5 rounded-md transition-all duration-200 relative group",
-        isSelectedStructure && "bg-gold/5",
-        isDragTarget && "bg-gold/20 border-2 border-dashed border-gold/60 scale-105",
-        isHovered && !isDragTarget && "bg-gold/10",
+        "group relative min-h-10 rounded-md p-1.5",
+        isSelectedStructure && "bg-hud-hover",
+        isDragTarget && "scale-105 border-2 border-dashed border-hud-line-strong bg-hud-chosen",
+        isHovered && !isDragTarget && "bg-hud-chosen",
       )}
       draggable={cell.amount > 0}
       onDragStart={() => cell.amount > 0 && onDragStart(structureId, resourceId, cell.amount)}
@@ -732,101 +650,69 @@ const TransferCell = React.memo((props: TransferCellProps) => {
       onMouseLeave={() => setIsHovered(false)}
       title={`Double-click to transfer • Drag to another structure`}
     >
-      {/* Main Content */}
       <div className="flex items-start justify-between gap-2">
-        {/* Left: Resource info */}
-        <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-[11px] font-medium text-gold/90">{formatResourceAmount(cell.amount)}</span>
-            {canCraftRelic && (
-              <span className="rounded border border-relic/40 bg-relic/15 px-1 py-0 text-[9px] uppercase tracking-[0.08em] text-relic2">
-                Forge
-              </span>
-            )}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-hud-ink">{formatResourceAmount(cell.amount)}</span>
+            {canCraftRelic && <HudChip>Forge</HudChip>}
           </div>
           {cell.isProducing && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gold/60">{formatProductionPerHour(cell.productionPerSecond)}</span>
+            <div className="flex items-center gap-1.5 text-hud-cue">
+              <span>{formatProductionPerHour(cell.productionPerSecond)}</span>
               {cell.outputRemaining > 0 && !cell.isStorageCapped && !HIDE_TIME_REMAINING_FOR.includes(resourceId) && (
-                <span className="text-[10px] text-blueish/60" title="Time until production runs out">
-                  ({formatTimeRemaining(cell.timeRemainingSeconds)})
-                </span>
+                <span title="Time until production runs out">({formatTimeRemaining(cell.timeRemainingSeconds)})</span>
               )}
             </div>
           )}
-          {cell.isStorageCapped && <span className="text-[10px] text-danger/70">Storage full</span>}
+          {cell.isStorageCapped && <span className="text-hud-bad">Storage full</span>}
         </div>
 
-        {/* Right: Action Buttons */}
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="flex flex-shrink-0 items-center gap-0.5" onClick={(event) => event.stopPropagation()}>
           {hasProductionBuilding && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onManageProduction();
-              }}
-              className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20"
-              title="Manage production"
-            >
-              <SemanticIcon name="production" className="h-2.5 w-2.5" />
-            </button>
+            <HudIconButton
+              icon="production"
+              label="Manage production"
+              kind="quiet"
+              size="sm"
+              onClick={onManageProduction}
+            />
           )}
           {canCraftRelic && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onCraftRelic();
-              }}
-              className="rounded border border-relic/35 bg-relic/15 p-0.5 text-relic2 transition hover:bg-relic/25"
-              title="Craft relic from research"
-              aria-label="Craft relic from research"
-            >
-              <SemanticIcon name="research" className="h-2.5 w-2.5" />
-            </button>
+            <HudIconButton
+              icon="research"
+              label="Craft relic from research"
+              kind="quiet"
+              size="sm"
+              onClick={onCraftRelic}
+            />
           )}
           {isSelectedStructure && (
-            <>
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openTransfer({ sourceId: structureId, destinationIds: [], resource: resourceId });
-                }}
-                className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
-                title="Transfer"
-              >
-                <SemanticIcon name="swap" className="h-2.5 w-2.5" />
-              </button>
+            // Transfer and burn show on the hovered cell of the selected holding.
+            <span className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100">
+              <HudIconButton
+                icon="swap"
+                label="Transfer"
+                kind="quiet"
+                size="sm"
+                onClick={() => openTransfer({ sourceId: structureId, destinationIds: [], resource: resourceId })}
+              />
               {cell.amount > 0 && (
                 <ResourceBurnPopover
                   structureId={structureId}
                   resourceId={resourceId}
                   trigger={(toggle) => (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        toggle();
-                      }}
-                      className="rounded border border-gold/20 bg-gold/10 p-0.5 text-gold transition hover:bg-gold/20 opacity-0 group-hover:opacity-100"
-                      title="Burn"
-                    >
-                      <SemanticIcon name="flame" className="h-2.5 w-2.5" />
-                    </button>
+                    <HudIconButton icon="flame" label="Burn" kind="quiet" size="sm" onClick={toggle} />
                   )}
                 />
               )}
-            </>
+            </span>
           )}
         </div>
       </div>
 
-      {/* Drag Feedback */}
       {isDragTarget && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gold/20 rounded-md">
-          <SemanticIcon name="target" className="h-6 w-6 text-gold animate-bounce" />
+        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-hud-chosen">
+          <SemanticIcon name="target" className="h-6 w-6 animate-bounce text-hud-accent" />
         </div>
       )}
     </div>

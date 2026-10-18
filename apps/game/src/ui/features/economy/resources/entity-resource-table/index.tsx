@@ -24,10 +24,6 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   const [useNewVersion, setUseNewVersion] = useState(() => localStorage.getItem("useNewResourceTable") === "true");
   const disableButtons = useResourceActionsDisabled();
 
-  const [hasInteractedWithToggle, setHasInteractedWithToggle] = useState(
-    () => localStorage.getItem("hasUsedResourceTableToggle") === "true",
-  );
-
   const [OldTable, setOldTable] = useState<TableComponent | null>(null);
   const [NewTable, setNewTable] = useState<TableComponent | null>(null);
 
@@ -43,18 +39,10 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
     }
   }, [useNewVersion, OldTable, NewTable]);
 
-  const handleToggle = useCallback(
-    (newValue: boolean) => {
-      setUseNewVersion(newValue);
-      localStorage.setItem("useNewResourceTable", String(newValue));
-
-      if (!hasInteractedWithToggle) {
-        setHasInteractedWithToggle(true);
-        localStorage.setItem("hasUsedResourceTableToggle", "true");
-      }
-    },
-    [hasInteractedWithToggle],
-  );
+  const handleToggle = useCallback((newValue: boolean) => {
+    setUseNewVersion(newValue);
+    localStorage.setItem("useNewResourceTable", String(newValue));
+  }, []);
 
   const TableComponent = useNewVersion ? NewTable : OldTable;
 
@@ -65,13 +53,8 @@ export const EntityResourceTable = React.memo(({ entityId }: { entityId: ID | un
   return (
     <div className="flex flex-col gap-4">
       {!disableButtons && (
-        <div className="flex justify-center pb-2 border-b border-gold/20">
-          <ViewToggle
-            useNewVersion={useNewVersion}
-            onToggle={handleToggle}
-            showAnimation={!hasInteractedWithToggle}
-            variant="full"
-          />
+        <div className="flex justify-center border-b border-hud-divider pb-2">
+          <ViewToggle useNewVersion={useNewVersion} onToggle={handleToggle} />
         </div>
       )}
       <TableComponent entityId={entityId} disableButtons={disableButtons} />

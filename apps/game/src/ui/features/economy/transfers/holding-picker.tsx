@@ -3,12 +3,9 @@ import { realmLevelNumber } from "@/ui/lib/realm-level";
 import type { LeftListFilter } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { Icon } from "@/ui/design-system/icon";
+import { HudField, HudRing, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "@/ui/features/world/hud/holdings-model";
-import { Medallion } from "@/ui/features/world/hud/medallion";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
@@ -52,7 +49,7 @@ export const HoldingPicker = ({
   const rows = listHoldings(holdings, kind, searchable ? query : "");
 
   // The first chosen holding stays in view, as the holdings panel keeps its selected row.
-  const chosenRow = useRef<HTMLButtonElement>(null);
+  const chosenRow = useRef<HTMLSpanElement>(null);
   const firstChosenId = chosen[0];
   useEffect(() => {
     chosenRow.current?.scrollIntoView({ block: "nearest" });
@@ -60,78 +57,60 @@ export const HoldingPicker = ({
 
   return (
     <section aria-label={title} className="flex min-h-0 flex-col gap-2">
-      <h3 className={HUD_LABEL}>{title}</h3>
+      <h3 className="text-hud-label text-hud-muted">{title}</h3>
       {/* The kinds held as tabs, one even when only one is held: the lit tab names the kind its list shows. */}
-      <div role="tablist" aria-label={`${title} by kind`} className="hud-tabs">
-        {kinds.map((entry) => {
-          const selected = entry.kind === kind;
-          return (
-            <button
-              key={entry.kind}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-label={`${entry.plural}, ${entry.count}`}
-              title={entry.plural}
-              className="hud-tab"
-              style={{ flexGrow: selected ? 3 : 1 }}
-              onClick={() => setAsked(entry.kind)}
-            >
-              <Icon name={entry.icon} size={22} />
-              <span className="truncate">{selected ? `${entry.plural} ${entry.count}` : entry.count}</span>
-            </button>
-          );
-        })}
-      </div>
+      <HudTabs
+        tabs={kinds.map((entry) => ({
+          key: entry.kind,
+          label: entry.kind === kind ? entry.plural : undefined,
+          icon: entry.icon,
+          count: entry.count,
+          ariaLabel: `${entry.plural}, ${entry.count}`,
+          title: entry.plural,
+        }))}
+        value={kind}
+        onChange={setAsked}
+      />
       {searchable && (
-        <input
-          type="search"
-          aria-label={`Find a holding to ${title.toLowerCase()}`}
-          placeholder="Find a holding…"
-          className="hud-search shrink-0"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => event.stopPropagation()}
-        />
+        <span className="shrink-0" onKeyDown={(event) => event.stopPropagation()}>
+          <HudField
+            type="search"
+            icon="search"
+            aria-label={`Find a holding to ${title.toLowerCase()}`}
+            placeholder="Find a holding…"
+            value={query}
+            onChange={setQuery}
+          />
+        </span>
       )}
-      <div
-        role="tabpanel"
-        className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 scrollbar-thin max-lg:max-h-56"
-      >
+      <div role="tabpanel" className="flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain max-lg:max-h-56">
         {rows.map((holding) => {
           const id = Number(holding.entityId);
-          const picked = chosen.includes(id);
           return (
-            <button
-              key={id}
-              ref={id === firstChosenId ? chosenRow : undefined}
-              type="button"
-              value={id}
-              aria-pressed={picked}
-              onClick={() => onPick(id)}
-              className={cn(
-                "flex h-12 w-full items-center gap-2 rounded-lg border px-1.5 text-left transition-colors",
-                picked ? "border-gold/60 bg-gold/10" : "border-transparent hover:border-gold/30",
-              )}
-            >
-              <Medallion
-                icon={holdingIcon(holding)}
-                size="sm"
-                tone={picked ? "lit" : "plain"}
-                corner={holding.realmLevelLabel !== null ? realmLevelNumber(holding.realmLevel) : undefined}
+            <span key={id} ref={id === firstChosenId ? chosenRow : undefined}>
+              <HudRow
+                lead={
+                  <HudRing
+                    icon={holdingIcon(holding)}
+                    label={holding.displayName}
+                    size="sm"
+                    corner={holding.realmLevelLabel !== null ? realmLevelNumber(holding.realmLevel) : undefined}
+                  />
+                }
+                title={
+                  <span className="truncate" title={holding.displayName}>
+                    {holding.isFavorite && <span className="mr-1 text-hud-accent">★</span>}
+                    {holding.displayName}
+                  </span>
+                }
+                detail={note(id)}
+                selected={chosen.includes(id)}
+                onClick={() => onPick(id)}
               />
-              {/* The name has the row's width, its note under it: a long name is not cut for "under a minute". */}
-              <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                <span className="truncate text-base font-semibold text-kit-cream" title={holding.displayName}>
-                  {holding.isFavorite && <span className="mr-1 text-gold">★</span>}
-                  {holding.displayName}
-                </span>
-                <span className="truncate text-sm text-kit-muted">{note(id)}</span>
-              </span>
-            </button>
+            </span>
           );
         })}
-        {rows.length === 0 && <p className="px-2 py-3 text-base text-kit-muted">No holding matches.</p>}
+        {rows.length === 0 && <p className="px-2 py-3 text-hud-muted">No holding matches.</p>}
       </div>
     </section>
   );

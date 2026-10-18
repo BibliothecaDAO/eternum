@@ -14,7 +14,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, getBuildingFromResource, ID, ResourcesIds } from "@bibliothecadao/types";
-import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import React, { useCallback, useMemo, useState } from "react";
@@ -75,8 +75,8 @@ export const EntityResourceTableOld = React.memo(
 
     return (
       <div className="flex flex-col gap-3">
-        <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-gold/15 bg-[#101c23]/95 px-1 pb-2 pt-1 backdrop-blur">
-          <span className={HUD_LABEL}>Resources</span>
+        <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 border-b border-hud-divider bg-hud-surface px-1 pb-2 pt-1">
+          <span className="text-hud-label text-hud-muted">Resources</span>
           <div className="flex flex-wrap items-center gap-1.5">
             <FilterToggle
               label="Hide empty"
@@ -147,10 +147,10 @@ export const EntityResourceTableOld = React.memo(
                   type="button"
                   onClick={() => handleToggleTierVisibility(tier)}
                   aria-expanded={!isCollapsed}
-                  className="flex w-full items-center justify-between border-b border-gold/10 px-1 pb-1 text-left"
+                  className="flex w-full items-center justify-between border-b border-hud-divider px-1 pb-1 text-left"
                 >
-                  <span className={HUD_LABEL}>{TIER_DISPLAY_NAMES[tier]}</span>
-                  <span className={cn(HUD_CUE, "flex items-center gap-1")}>
+                  <span className="text-hud-label text-hud-muted">{TIER_DISPLAY_NAMES[tier]}</span>
+                  <span className="flex items-center gap-1 text-hud-label text-hud-cue">
                     {resourcesForTier.length}
                     <SemanticIcon
                       name="chevron-down"
@@ -196,19 +196,9 @@ export const EntityResourceTableOld = React.memo(
   },
 );
 
-/** One filter switch in the balances header: a small caps label that lights while it is on. */
+/** One filter in the balances header: a small toggle that stays pressed while it is on. */
 const FilterToggle = ({ label, checked, onToggle }: { label: string; checked: boolean; onToggle: () => void }) => (
-  <button
-    type="button"
-    role="switch"
-    aria-checked={checked}
-    onClick={onToggle}
-    className={cn(
-      "rounded-md border px-2 py-1 transition",
-      HUD_CUE,
-      checked ? "border-gold/60 bg-gold/15 text-gold" : "border-gold/15 bg-black/20 hover:border-gold/40",
-    )}
-  >
+  <HudButton kind="secondary" size="sm" aria-pressed={checked} onClick={onToggle}>
     {label}
-  </button>
+  </HudButton>
 );

@@ -1,7 +1,5 @@
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { EntityResourceTable } from "@/ui/features/economy/resources";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
@@ -17,7 +15,7 @@ export const BalancesView = () => {
     setSelectedId(structures[0]?.entityId ?? null);
   }, [selectedId, structures]);
 
-  if (!structures.length) return <p className={cn(HUD_BODY_MUTED, "p-4")}>No structures yet.</p>;
+  if (!structures.length) return <p className="p-4 text-hud-muted">No structures yet.</p>;
 
   return (
     <StructureWorkspace
@@ -34,7 +32,7 @@ export const BalancesView = () => {
         {selectedId ? (
           <EntityResourceTable entityId={selectedId} />
         ) : (
-          <p className={HUD_BODY_MUTED}>Select a structure.</p>
+          <p className="text-hud-muted">Select a structure.</p>
         )}
       </div>
     </StructureWorkspace>
