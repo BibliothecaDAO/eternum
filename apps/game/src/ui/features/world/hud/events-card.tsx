@@ -1,6 +1,5 @@
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { QuickFeedRows, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { useRef } from "react";
@@ -28,20 +27,17 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
         cue={
           <span className="inline-flex items-center gap-3">
             <EventsFilterSwitch />
-            <button
+            <HudButton
               ref={button}
-              type="button"
+              kind="quiet"
+              size="sm"
               aria-label="Log"
               aria-expanded={logOpen}
               onClick={onLogToggle}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-1 font-semibold text-kit-cream hover:text-gold",
-                logOpen && "text-gold",
-              )}
             >
               Log
               <UnreadFeedBadge count={unread} />
-            </button>
+            </HudButton>
           </span>
         }
         bodyClassName="flex flex-col gap-1 empty:hidden"

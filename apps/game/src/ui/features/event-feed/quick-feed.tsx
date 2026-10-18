@@ -18,6 +18,7 @@ import type { HeadlineType } from "../news-headlines/headline-types";
 import { useEventFeedStore } from "./event-feed-store";
 import { eventsReads, selectEventStories } from "./event-stories";
 import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon, ToastRow } from "./feed-row-line";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 /** How many rows the Events strip shows: the owner's three. */
 const STRIP_ROWS = 3;
@@ -78,8 +79,8 @@ export function useUnreadFeedCount(stories: ProcessedStoryEvent[], logOpen: bool
 
 export const UnreadFeedBadge = ({ count }: { count: number }) =>
   count > 0 ? (
-    <span aria-label="Unread events" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
-      {count}
+    <span aria-label="Unread events">
+      <HudChip>{count}</HudChip>
     </span>
   ) : null;
 

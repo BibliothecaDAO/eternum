@@ -7,7 +7,7 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { selectableArmiesView } from "@/sync/fact-views";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -92,18 +92,22 @@ export const selectNextIdleArmy = (idle: readonly number[]) => {
 
 /** The minimap's Idle armies button: how many wait, and `I` or a click selects the next one; shut with its reason. */
 export const IdleArmiesButton = ({ idle, className }: { idle: IdleArmies; className?: string }) => (
-  <button
-    type="button"
-    disabled={idle.refusal !== null}
-    onClick={() => selectNextIdleArmy(idle.ids)}
-    aria-keyshortcuts="I"
-    data-tip={idle.refusal ?? "Select the next idle army"}
-    className={cn(
-      "pointer-events-auto flex h-9 items-center gap-1.5 rounded-full border border-kit-line2 bg-black/70 px-3 text-sm font-semibold text-kit-cream hover:border-kit-gold disabled:opacity-50",
-      className,
-    )}
-  >
-    <Icon name="military" size={18} />
-    Idle {idle.ids.length}
-  </button>
+  <div className={cn("pointer-events-auto", className)}>
+    <HudPill>
+      {[
+        <HudButton
+          key="idle"
+          kind="secondary"
+          size="sm"
+          icon="military"
+          disabled={idle.refusal !== null}
+          onClick={() => selectNextIdleArmy(idle.ids)}
+          aria-keyshortcuts="I"
+          data-tip={idle.refusal ?? "Select the next idle army"}
+        >
+          Idle {idle.ids.length}
+        </HudButton>,
+      ]}
+    </HudPill>
+  </div>
 );

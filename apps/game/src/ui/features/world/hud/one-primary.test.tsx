@@ -100,7 +100,7 @@ describe("one filled gold action at a time", () => {
     const shown: string[] = [];
     for (let step = 0; step < 3; step += 1) {
       expect(filledGold()).toHaveLength(1);
-      expect(nextUp().contains(host.querySelector("button.frontier-primary"))).toBe(true);
+      expect(nextUp().contains(host.querySelector('.ui-button[data-kind="primary"]'))).toBe(true);
       shown.push(nextUp().querySelector("p")!.textContent!);
       advance();
     }

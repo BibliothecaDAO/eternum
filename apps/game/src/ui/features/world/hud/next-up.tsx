@@ -5,8 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Button } from "@/ui/design-system/kit/button";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useEmpireSuggestions } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
 import {
   isOrderSuggestion,
@@ -67,13 +66,9 @@ export const NextUpView = ({ steps, refusal = null }: { steps: NextStep[]; refus
       title="Next up"
       cue={
         steps.length > 1 && (
-          <button
-            type="button"
-            onClick={pageOn}
-            className="rounded-md px-1 font-semibold text-kit-cream hover:text-gold"
-          >
+          <HudButton kind="quiet" size="sm" onClick={pageOn}>
             {index + 1} of {steps.length} ›
-          </button>
+          </HudButton>
         )
       }
     >
@@ -108,14 +103,14 @@ const StepBody = ({
     <div className="flex flex-col gap-2">
       <p className="text-hud-body text-hud-ink">{line}</p>
       {verb !== null && run !== null && (
-        <Button
-          role="primary"
-          word={verb}
-          loading={busy ? "Sending…" : undefined}
+        <HudButton
+          kind="primary"
+          busy={busy ? "Sending…" : undefined}
           disabled={disabled || refusal !== null}
           onClick={run}
-          className="!h-10 w-full"
-        />
+        >
+          {verb}
+        </HudButton>
       )}
       {verb !== null && refusal !== null && <p className="text-hud-label text-hud-muted">{refusal}</p>}
     </div>

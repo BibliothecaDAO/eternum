@@ -44,7 +44,7 @@
   "apps/game/src/ui/features/event-feed/event-log-panel.tsx": 8,
   "apps/game/src/ui/features/event-feed/events-filter-switch.tsx": 3,
   "apps/game/src/ui/features/event-feed/feed-row-line.tsx": 9,
-  "apps/game/src/ui/features/event-feed/quick-feed.tsx": 8,
+  "apps/game/src/ui/features/event-feed/quick-feed.tsx": 5,
   "apps/game/src/ui/features/event-feed/story-feed-row.tsx": 12,
   "apps/game/src/ui/features/frontier/army/army-sheet.tsx": 36,
   "apps/game/src/ui/features/frontier/army/refill.tsx": 5,
@@ -219,11 +219,7 @@
   "apps/game/src/ui/features/world/containers/top-header/structure-picker/chip.tsx": 62,
   "apps/game/src/ui/features/world/containers/top-header/top-header.tsx": 5,
   "apps/game/src/ui/features/world/hud/action-bubbles.tsx": 4,
-  "apps/game/src/ui/features/world/hud/events-card.tsx": 4,
   "apps/game/src/ui/features/world/hud/hud.css": 30,
-  "apps/game/src/ui/features/world/hud/idle-armies.tsx": 6,
-  "apps/game/src/ui/features/world/hud/next-up.tsx": 3,
-  "apps/game/src/ui/features/world/hud/realm-card.tsx": 2,
   "apps/game/src/ui/shared/components/production-status-badge.tsx": 40,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }

@@ -15,7 +15,7 @@ import {
   useStructureProductionSummary,
 } from "@/ui/features/world/components/entities/structure-production-summary";
 import { Icon } from "@/ui/design-system/icon";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   formatPopulationStatusLabel,
   formatUsedBuildingTilesLabel,
@@ -67,14 +67,7 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
 const RenameButton = ({ entityId }: { entityId: ID }) => {
   const rename = useUIStore((state) => state.setPendingRenameStructureEntityId);
   return (
-    <button
-      type="button"
-      aria-label="Rename"
-      onClick={() => rename(safeInteger(entityId))}
-      className="flex h-6 w-6 items-center justify-center rounded-md text-kit-muted hover:text-gold"
-    >
-      <Icon name="edit" size={14} />
-    </button>
+    <HudIconButton icon="edit" label="Rename" kind="quiet" size="sm" onClick={() => rename(safeInteger(entityId))} />
   );
 };
 
