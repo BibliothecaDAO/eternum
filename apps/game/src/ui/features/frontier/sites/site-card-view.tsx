@@ -1,9 +1,17 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { HudButton, HudChip, HudMeter, HudPanel, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudChip,
+  HudMeter,
+  HudPanel,
+  HudRarity,
+  HudRow,
+  HudSheet,
+} from "@/ui/design-system/kit/hud-elements";
 import { hudPrices, type Price } from "../hud-prices";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   ARMY_WILL_BE_LOST,
@@ -298,7 +306,7 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
       <SemanticIcon name="lords" size={22} />
       <span className="text-hud-display leading-none tabular-nums text-hud-gold">+{formatExact(chest.lords)}</span>
     </span>
-    <TierChip tier={chest.tier} showWord />
+    <HudRarity tier={chest.tier} word />
   </>
 );
 

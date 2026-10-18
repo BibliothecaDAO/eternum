@@ -99,7 +99,7 @@ describe("the status strip", () => {
     expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
     expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
     expect(text(markup)).toContain("—");
-    expect(text(markup)).toContain("Tomorrow lasts16h");
+    expect(text(markup)).toContain("Tomorrow lasts 16h");
   });
 });
 

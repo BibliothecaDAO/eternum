@@ -1,6 +1,6 @@
 import { formatCharge } from "@/ui/design-system/kit/amount";
 import type { HudButton } from "@/ui/design-system/kit/hud-elements";
-import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-chip";
+import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { ComponentProps } from "react";
 
 /** What a Frontier verb pays: one of the game's stores and how much, unknown until its facts arrive. */

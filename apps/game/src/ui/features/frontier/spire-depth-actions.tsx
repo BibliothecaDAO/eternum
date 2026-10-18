@@ -3,8 +3,7 @@ import { researchedDepth } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { sendOnce } from "@/hooks/store/use-actions-in-flight";
-import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
@@ -67,25 +66,25 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border border-gold/20 bg-black/25 p-2">
-      <p className={HUD_HEADLINE}>The spire</p>
-      <p className={HUD_BODY}>
+    <div className="flex flex-col gap-2">
+      <p className="text-hud-body text-hud-ink">
         {besideSpire
           ? "Pick a depth. Deeper ground pays more and guards harder; the trip costs stamina."
           : "Bring this army to your realm's spire to enter it."}
       </p>
       <div className="flex flex-wrap gap-1.5">
         {depths.map(({ depth, cost }) => (
-          <button
+          <HudButton
             key={depth}
-            type="button"
-            className={HUD_PILL_BUTTON}
+            kind="secondary"
+            size="sm"
+            busy={pending === depth ? "Entering…" : undefined}
             disabled={!besideSpire || stamina === undefined || stamina < cost || pending !== null}
             title={stamina === undefined ? "Stamina —" : stamina < cost ? `Needs ${cost} stamina` : `${cost} stamina`}
             onClick={() => void enter(depth)}
           >
-            {pending === depth ? "Entering…" : `${DEPTH_NAMES[depth]} · ${cost} stamina`}
-          </button>
+            {`${DEPTH_NAMES[depth]} · ${cost} stamina`}
+          </HudButton>
         ))}
       </div>
     </div>

@@ -411,7 +411,7 @@ const WonderTable = ({
   selectedId: bigint | null;
   onSelect: (wonderId: bigint) => void;
 }) => (
-  <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto">
+  <div>
     <HudTableHead cols={WONDER_COLUMNS}>
       <span>Wonder</span>
       <span className="text-right">FP/sec</span>

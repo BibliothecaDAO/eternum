@@ -1,11 +1,19 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { HudButton, HudChip, HudMeter, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudChip,
+  HudMeter,
+  HudNotice,
+  HudRarity,
+  HudRow,
+  HudSheet,
+} from "@/ui/design-system/kit/hud-elements";
 import { FullIn } from "../full-in";
+import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import { hudPrices } from "../hud-prices";
 
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { ATTRIBUTES, FIND_KINDS, FULL, STAMINA, TROOPS, UPGRADE, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -162,7 +170,7 @@ const AttributeRow = ({
     onClick={onChoose}
     trail={
       <>
-        <TierChip tier={state.tier} showWord={false} />
+        <HudRarity tier={state.tier} />
         {price === undefined ? (
           <SemanticIcon name="check" size={22} />
         ) : (
@@ -206,7 +214,7 @@ const ChosenTier = ({
   if (price === undefined)
     return (
       <div className="flex items-center justify-center gap-2">
-        <TierChip tier={5} showWord />
+        <HudRarity tier={5} word />
         <HudChip icons={[mark]} label={ATTRIBUTES[ATTRIBUTE_KEYS.indexOf(attribute)]}>
           {effects[4]}
         </HudChip>
@@ -220,11 +228,11 @@ const ChosenTier = ({
         <KindChoice rates={kindRates} lifted={kind} onKind={onKind} />
       ) : (
         <div className="flex items-center justify-center gap-2">
-          <TierChip tier={state.tier} showWord />
+          <HudRarity tier={state.tier} word />
           <span aria-hidden className="text-hud-title text-hud-muted">
             →
           </span>
-          <TierChip tier={next} showWord />
+          <HudRarity tier={next} word />
         </div>
       )}
       <div className="flex items-center justify-center gap-2">
@@ -246,7 +254,7 @@ const ChosenTier = ({
           {UPGRADE}
         </HudButton>
       ) : (
-        <ReasonPlate reason={{ kind: "short", of: "xp", held: xp, need: price }} />
+        <HudNotice line={shortfallLine({ kind: "short", of: "xp", held: xp, need: price })} />
       )}
     </>
   );

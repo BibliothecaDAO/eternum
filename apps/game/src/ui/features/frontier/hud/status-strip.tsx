@@ -1,12 +1,23 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { ClockLine } from "@/ui/design-system/kit/clock-line";
-import { DayDial } from "@/ui/design-system/kit/day-dial";
-import { HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { formatDuration } from "@/ui/design-system/kit/time";
+import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { formatClockTime, formatDuration } from "@/ui/design-system/kit/time";
 import type { Tone } from "@/ui/design-system/kit/tone";
-import { AN_HOUR, ESSENCE, FULL, FULL_IN, LABOR, OF, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+import {
+  AN_HOUR,
+  DAY,
+  DAY_ENDS,
+  ESSENCE,
+  FULL,
+  FULL_IN,
+  LABOR,
+  LEFT,
+  OF,
+  TOMORROW_LASTS,
+  TROOPS,
+  WHEAT,
+} from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -62,17 +73,40 @@ export const StatusStrip = ({
   <HudPanel collapsible={false} bodyClassName="flex flex-col">
     <div className="flex h-12 items-center gap-1.5">
       <span className="flex w-11 shrink-0 justify-center">
-        <DayDial day={clock.day} shareLeft={clock.shareLeft} tone={clock.tone} />
+        <HudDial
+          value={clock.day ?? "—"}
+          share={clock.shareLeft ?? 0}
+          tone={STORE_TONES[clock.tone].meter}
+          label={clock.day === undefined ? DAY : `${DAY} ${clock.day}`}
+        />
       </span>
       <Stores stores={stores} onOpen={onOpenStores} />
     </div>
-    <ClockLine
-      endsAt={clock.endsAt}
-      secondsLeft={clock.secondsLeft}
-      tomorrowSeconds={clock.tomorrowSeconds}
-      tone={clock.tone}
-    />
+    <DayClockLine clock={clock} />
   </HudPanel>
+);
+
+/** The day's clock in words, in the day's tone: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h"; unknown a dash. */
+const DayClockLine = ({ clock }: { clock: DayClock }) => (
+  <p
+    role="timer"
+    className={cn(
+      "flex flex-wrap items-baseline justify-center gap-x-1 text-hud-label tabular-nums",
+      STORE_TONES[clock.tone].text,
+    )}
+  >
+    <span>
+      {DAY_ENDS} {formatClockTime(clock.endsAt)}
+    </span>
+    <span aria-hidden>·</span>
+    <span>
+      {formatDuration(clock.secondsLeft)} {LEFT}
+    </span>
+    <span aria-hidden>·</span>
+    <span>
+      {TOMORROW_LASTS} {formatDuration(clock.tomorrowSeconds)}
+    </span>
+  </p>
 );
 
 const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => void }) => {

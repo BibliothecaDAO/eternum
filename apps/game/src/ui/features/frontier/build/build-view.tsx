@@ -1,13 +1,13 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { HudButton, HudCard, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
+import { HudButton, HudCard, HudChip, HudNotice, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refused-verb";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
 import { hudPrices, type Price } from "../hud-prices";
+import { shortfallLine } from "@/ui/design-system/kit/reasons";
 
 /**
  * One building on the build sheet: its icon and name, then its labor price (ember when short), a tick when the realm
@@ -87,7 +87,7 @@ export const BuildView = ({
     </div>
     {refusal ? (
       <>
-        <ReasonPlate reason={refusal.reason} />
+        <HudNotice line={refusal.reason.kind === "short" ? shortfallLine(refusal.reason) : refusal.reason.line} />
         {refusal.fix && <FixVerb fix={refusal.fix} />}
       </>
     ) : (
@@ -125,7 +125,7 @@ const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
       <span className="flex items-center gap-1">
         <SemanticIcon name="lock" size={16} />
         <SemanticIcon name="barracks" size={16} />
-        <TierChip tier={foot.gate} showWord={false} />
+        <HudRarity tier={foot.gate} />
       </span>
     );
   return (

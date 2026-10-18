@@ -1,9 +1,10 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { formatAmount } from "@/ui/design-system/kit/amount";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
 import { BARRACKS, BUILDINGS, FARM, HUT, WORKSHOP } from "@/ui/design-system/kit/words";
 import { buildableRadius } from "@bibliothecadao/eternum";
@@ -33,21 +34,18 @@ export const BuildingsRow = ({
   onOpen: (category: BuildingType) => void;
 }) => (
   <nav aria-label={BUILDINGS} className="pointer-events-auto flex items-center justify-center gap-1.5">
-    <span className="text-sm font-semibold text-kit-cream">{BUILDINGS}</span>
+    <span className="text-hud-label text-hud-ink">{BUILDINGS}</span>
     {TYPES.map(({ category, icon, word }) => (
-      <button
+      <HudButton
         key={category}
-        type="button"
+        kind="secondary"
+        icon={icon}
         aria-label={`${word} ${formatAmount(counts[category])}`}
         disabled={!counts[category]}
         onClick={() => onOpen(category)}
-        className="frontier-chip h-12 w-[60px] justify-center !rounded-[14px] !px-2 disabled:opacity-50"
       >
-        <span className="contents">
-          <SemanticIcon name={icon} size={22} />
-          <span className="frontier-chip-number tabular-nums !text-base">{formatAmount(counts[category])}</span>
-        </span>
-      </button>
+        {formatAmount(counts[category])}
+      </HudButton>
     ))}
   </nav>
 );
