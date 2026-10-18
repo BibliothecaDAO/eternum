@@ -19,7 +19,7 @@ export const GuideLinesSheet = ({
 }) => (
   <HudSheet label={GUIDE} onClose={onClose}>
     <span className="flex items-center gap-2">
-      <SemanticIcon name="order-skill" size={22} />
+      <SemanticIcon name="guide" size={22} />
       <span className="flex-1 text-hud-label">{GUIDE}</span>
       <HudSwitch on={on} label={GUIDE} onChange={onToggle} />
     </span>

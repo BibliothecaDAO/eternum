@@ -478,11 +478,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
                 records,
                 baseUrl,
                 missingSvg ? "desktop" : undefined,
-                missingSvg || process.argv.includes("--catalog")
-                  ? ["catalog"]
-                  : process.argv.includes("--lords")
-                    ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
-                    : undefined,
+                process.argv.includes("--glyphs")
+                  ? ["hud", "hud-menu", "play", "settings"]
+                  : missingSvg || process.argv.includes("--catalog")
+                    ? ["catalog"]
+                    : process.argv.includes("--lords")
+                      ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
+                      : undefined,
                 missingSvg,
               ),
   );

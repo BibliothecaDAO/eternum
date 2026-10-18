@@ -48,40 +48,40 @@
     "reason": "Actual chest body only, retaining its runtime material; terrain, pedestal, seal rings and orbit gems removed."
   },
   "faceted/move": {
-    "verdict": "equal",
-    "reason": "Leather boots retain material detail at 64 px. The old footprints are faster as a pure sign at 32 px."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/explore": {
-    "verdict": "equal",
-    "reason": "The map and lens have convincing depth; the old eye is simpler at 32 px. The map distinguishes this from a watch-only spyglass."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/attack": {
-    "verdict": "equal",
-    "reason": "A lit blade is clean and free of the old shield frame. Its narrow silhouette is less prominent but remains legible at 32 px."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/build": {
-    "verdict": "equal",
-    "reason": "The mallet and block match the shipped material quality; removing the second tool makes the 32 px subject cleaner."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/trade": {
-    "verdict": "equal",
-    "reason": "The iron balance keeps the familiar scale silhouette with clear pans. Small chains still merge at 32 px as in the old art."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/stamina": {
-    "verdict": "equal",
-    "reason": "Amber depth is stronger at 64 px; the old lightning silhouette is equally clear at 32 px. This meaning is reserved for stamina."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/victory": {
     "verdict": "beats shipped",
-    "reason": "The silver trophy and green laurel have clearer volume than the flat old cup at 32 and 64 px."
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/settings": {
     "verdict": "beats shipped",
-    "reason": "One iron gear reads more clearly than the framed dial and key, with enough face shading to feel physical."
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/chat": {
     "verdict": "beats shipped",
-    "reason": "Two painted speech forms preserve the conversation meaning and remove the gold rim; ivory faces stay clear at 32 px."
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/map-army": {
     "verdict": "equal",
@@ -148,8 +148,8 @@
     "reason": "Pack donkey, upright ears and laden saddlebags remain identifiable at 24 and 32 px. Carries the Transfer meaning without resembling Move boots."
   },
   "faceted/production": {
-    "verdict": "equal",
-    "reason": "Anvil, hammer and orange heated ingot read as a forge at 24 and 32 px, distinct from the Settings wheel."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/obsidian": {
     "verdict": "equal",
@@ -300,328 +300,328 @@
     "reason": "S A T: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
   "faceted/military": {
-    "verdict": "equal",
-    "reason": "Military: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/automation": {
-    "verdict": "equal",
-    "reason": "Automation: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/map": {
-    "verdict": "equal",
-    "reason": "World Map: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/guild": {
-    "verdict": "equal",
-    "reason": "Guild: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/close": {
-    "verdict": "equal",
-    "reason": "Close: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/check": {
-    "verdict": "equal",
-    "reason": "Check: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/chevron-down": {
-    "verdict": "equal",
-    "reason": "Chevron Down: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/arrow-right": {
-    "verdict": "equal",
-    "reason": "Arrow Right: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/plus": {
-    "verdict": "equal",
-    "reason": "Plus: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/search": {
-    "verdict": "equal",
-    "reason": "Search: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/pause": {
-    "verdict": "equal",
-    "reason": "Pause: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/play": {
-    "verdict": "equal",
-    "reason": "Play: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/refresh": {
-    "verdict": "equal",
-    "reason": "Refresh: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/warning": {
-    "verdict": "equal",
-    "reason": "Warning: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/info": {
-    "verdict": "equal",
-    "reason": "Info: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/copy": {
-    "verdict": "equal",
-    "reason": "Copy: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/eye": {
-    "verdict": "equal",
-    "reason": "Eye: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/lock": {
-    "verdict": "equal",
-    "reason": "Lock: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/unlock": {
-    "verdict": "equal",
-    "reason": "Unlock: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/edit": {
-    "verdict": "equal",
-    "reason": "Edit: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/trash": {
-    "verdict": "equal",
-    "reason": "Trash: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/mail": {
-    "verdict": "equal",
-    "reason": "Mail: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/crown": {
-    "verdict": "equal",
-    "reason": "Crown: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/pickaxe": {
-    "verdict": "equal",
-    "reason": "Pickaxe: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/people": {
-    "verdict": "equal",
-    "reason": "People: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/person": {
-    "verdict": "equal",
-    "reason": "Person: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/skull": {
-    "verdict": "equal",
-    "reason": "Skull: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/star": {
-    "verdict": "equal",
-    "reason": "Star: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/flame": {
-    "verdict": "equal",
-    "reason": "Flame: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/sun": {
-    "verdict": "equal",
-    "reason": "Sun: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/moon": {
-    "verdict": "equal",
-    "reason": "Moon: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/location": {
-    "verdict": "equal",
-    "reason": "Location: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/target": {
-    "verdict": "equal",
-    "reason": "Target: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/calendar": {
-    "verdict": "equal",
-    "reason": "Calendar: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/expand": {
-    "verdict": "equal",
-    "reason": "Expand: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/collapse": {
-    "verdict": "equal",
-    "reason": "Collapse: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/menu": {
-    "verdict": "equal",
-    "reason": "Menu: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/volume": {
-    "verdict": "equal",
-    "reason": "Volume: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/mute": {
-    "verdict": "equal",
-    "reason": "Mute: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/music": {
-    "verdict": "equal",
-    "reason": "Music: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/camera": {
-    "verdict": "equal",
-    "reason": "Camera: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/video": {
-    "verdict": "equal",
-    "reason": "Video: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/bug": {
-    "verdict": "equal",
-    "reason": "Bug: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/dice": {
-    "verdict": "equal",
-    "reason": "Dice: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/gauge": {
-    "verdict": "equal",
-    "reason": "Gauge: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/anchor": {
-    "verdict": "equal",
-    "reason": "Anchor: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/ship": {
-    "verdict": "equal",
-    "reason": "Ship: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/waves": {
-    "verdict": "equal",
-    "reason": "Waves: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/flag": {
-    "verdict": "equal",
-    "reason": "Flag: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/layers": {
-    "verdict": "equal",
-    "reason": "Layers: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/hexagon": {
-    "verdict": "equal",
-    "reason": "Hexagon: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/hash": {
-    "verdict": "equal",
-    "reason": "Hash: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/share": {
-    "verdict": "equal",
-    "reason": "Share: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/notifications": {
-    "verdict": "equal",
-    "reason": "Bell: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/book": {
-    "verdict": "equal",
-    "reason": "Book: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/rocket": {
-    "verdict": "equal",
-    "reason": "Rocket: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/wrench": {
-    "verdict": "equal",
-    "reason": "Wrench: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/mountain": {
-    "verdict": "equal",
-    "reason": "Mountain: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/trees": {
-    "verdict": "equal",
-    "reason": "Trees: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/watch": {
-    "verdict": "equal",
-    "reason": "Telescope: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/route": {
-    "verdict": "equal",
-    "reason": "Route: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/network-off": {
-    "verdict": "equal",
-    "reason": "Network Off: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/monitor": {
-    "verdict": "equal",
-    "reason": "Monitor: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/activity": {
-    "verdict": "equal",
-    "reason": "Activity: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/cloud-lightning": {
-    "verdict": "equal",
-    "reason": "Cloud Lightning: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/download": {
-    "verdict": "equal",
-    "reason": "Download: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/external-link": {
-    "verdict": "equal",
-    "reason": "External Link: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/swap": {
-    "verdict": "equal",
-    "reason": "Swap: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/skip": {
-    "verdict": "equal",
-    "reason": "Skip: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/step": {
-    "verdict": "equal",
-    "reason": "Step: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/minus": {
-    "verdict": "equal",
-    "reason": "Minus: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/pin": {
-    "verdict": "equal",
-    "reason": "Pin: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/backpack": {
-    "verdict": "equal",
-    "reason": "Backpack: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/resources": {
     "verdict": "equal",
     "reason": "Storage crates: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
   "faceted/defend": {
-    "verdict": "equal",
-    "reason": "Defend: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/home": {
-    "verdict": "equal",
-    "reason": "Home: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/exit": {
-    "verdict": "equal",
-    "reason": "Leave: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/guide": {
-    "verdict": "equal",
-    "reason": "Guide: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/chronicles": {
-    "verdict": "equal",
-    "reason": "Chronicles: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/news": {
-    "verdict": "equal",
-    "reason": "News: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/help": {
-    "verdict": "equal",
-    "reason": "Help: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/bank": {
     "verdict": "equal",
@@ -632,36 +632,36 @@
     "reason": "Portal: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
   "faceted/relics": {
-    "verdict": "equal",
-    "reason": "Relics: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/health": {
-    "verdict": "equal",
-    "reason": "Health: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/strength": {
-    "verdict": "equal",
-    "reason": "Strength: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/claim": {
-    "verdict": "equal",
-    "reason": "Claim: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/raid": {
-    "verdict": "equal",
-    "reason": "Raid: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/deploy": {
-    "verdict": "equal",
-    "reason": "Deploy: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/upgrade": {
-    "verdict": "equal",
-    "reason": "Upgrade: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/travel": {
-    "verdict": "equal",
-    "reason": "Travel: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/shrine": {
     "verdict": "equal",
@@ -820,36 +820,36 @@
     "reason": "Rations: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
   "faceted/final-seal": {
-    "verdict": "equal",
-    "reason": "Final seal: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/army-capacity": {
-    "verdict": "equal",
-    "reason": "Army capacity: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/clock": {
-    "verdict": "equal",
-    "reason": "Match clock: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/hourglass": {
-    "verdict": "equal",
-    "reason": "Time remaining: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/depth-1": {
-    "verdict": "equal",
-    "reason": "Ethereal reach I: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/depth-2": {
-    "verdict": "equal",
-    "reason": "Ethereal reach II: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/depth-3": {
-    "verdict": "equal",
-    "reason": "Ethereal reach III: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/reward": {
-    "verdict": "equal",
-    "reason": "Reward: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/stable": {
     "verdict": "equal",
@@ -920,8 +920,8 @@
     "reason": "White ceramic emblem preserves the Discord silhouette at 24 and 32 px; removing the gilded plaque improves shape separation. Compared in round-4/review-03."
   },
   "faceted/picks": {
-    "verdict": "equal",
-    "reason": "Two light cards remain a distinct fan; indigo star and red rear stripe separate the fronts. Painted paper replaces the flat gilded placeholder."
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
   "faceted/twitter": {
     "verdict": "equal",
@@ -954,5 +954,9 @@
     "publishedLogo": "https://assets.coingecko.com/coins/images/22171/standard/Frame_1.png?1696521515",
     "officialSource": "https://github.com/BibliothecaDAO/account-portal/blob/e1b438f3da7f7573d2c754588d91fb315b77d520/apps/account-portal/src/components/icons/lords.svg",
     "sha256": "b76b505ed14093b21d5c686670789d3f7e581bc3695e07374a2e0e8c90ca921d"
+  },
+  "faceted/transfer": {
+    "verdict": "beats shipped",
+    "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   }
 }

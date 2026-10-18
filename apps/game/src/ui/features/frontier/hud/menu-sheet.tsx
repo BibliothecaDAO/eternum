@@ -1,7 +1,16 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, GUIDE, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
+
+const MENU_WORDS = {
+  clock: TODAY,
+  victory: SEASON,
+  production: PRODUCTION,
+  realm: REALMS,
+  guide: GUIDE,
+  settings: SETTINGS,
+} as const;
 
 /**
  * The Menu: the ways that are not places (Today, Season with the player's rank, Production, the guide, Settings), then
@@ -33,31 +42,20 @@ export const MenuSheet = ({
 }) => (
   <HudSheet label={MENU} onClose={onClose}>
     <nav className="flex flex-col">
-      <MenuRow icon="clock" word={TODAY} onClick={onToday} />
-      <MenuRow
-        icon="victory"
-        word={SEASON}
-        badge={<span className="text-hud-body tabular-nums">{rank}</span>}
-        onClick={onSeason}
-      />
-      {onProduction && <MenuRow icon="wheat" word={PRODUCTION} onClick={onProduction} />}
+      <MenuRow icon="clock" onClick={onToday} />
+      <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
+      {onProduction && <MenuRow icon="production" onClick={onProduction} />}
       {realms && (
         <MenuRow
           icon="realm"
-          word={REALMS}
           badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-hud-gold" />}
           onClick={realms.onOpen}
         />
       )}
       {guide && (
-        <MenuRow
-          icon="order-skill"
-          word={GUIDE}
-          badge={guide.on && <SemanticIcon name="check" size={20} />}
-          onClick={guide.onOpen}
-        />
+        <MenuRow icon="guide" badge={guide.on && <SemanticIcon name="check" size={20} />} onClick={guide.onOpen} />
       )}
-      <MenuRow icon="menu" word={SETTINGS} onClick={onSettings} />
+      <MenuRow icon="settings" onClick={onSettings} />
     </nav>
     <div className="grid grid-cols-3 gap-2">
       <HudButton kind="secondary" icon="exit" onClick={onExit}>
@@ -74,18 +72,16 @@ export const MenuSheet = ({
 
 const MenuRow = ({
   icon,
-  word,
   badge,
   onClick,
 }: {
-  icon: IconMeaning;
-  word: string;
+  icon: keyof typeof MENU_WORDS;
   badge?: ReactNode;
   onClick: () => void;
 }) => (
   <HudRow
     lead={<SemanticIcon name={icon} size={22} />}
-    title={word}
+    title={MENU_WORDS[icon]}
     trail={
       <>
         {badge}

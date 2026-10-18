@@ -17,7 +17,7 @@ const valid = () => structuredClone({ icons, meanings, resources, verdicts });
 test("every semantic meaning and all 58 resources have reviewed artwork", () =>
   assert.doesNotThrow(() => validateIcons(valid())));
 for (const [meaning, wrongArt, expected] of [
-  ["transfer", "move", "donkey"],
+  ["transfer", "move", "transfer"],
   ["production", "settings", "production"],
 ]) {
   test(`${meaning} rejects the previously reused ${wrongArt} painting`, () => {
@@ -81,4 +81,25 @@ test("reward tiers reject the map-crate mapping and another band's artwork", () 
   const wrongBand = valid();
   wrongBand.meanings["reward-chest-0"].rewardChest = "band-4-sealed";
   assert.throws(() => validateIcons(wrongBand), /must use its approved reward tier/);
+});
+
+test("UI glyph validation rejects the former style even with a passing review", () => {
+  const input = valid();
+  delete input.icons.find(({ id }) => id === "settings").source;
+  assert.throws(() => validateIcons(input), /UI glyph settings must use the approved Ivory relief master/);
+});
+
+test("new UI meanings cannot introduce an unrelated content painting", () => {
+  const input = valid();
+  input.meanings.newUtility = { art: "farm", label: "New utility", family: "Controls" };
+  assert.throws(() => validateIcons(input), /UI glyph newUtility must use the approved Ivory relief master/);
+});
+
+test("Transfer cannot reuse the Donkey resource painting and resource 25 cannot become a utility", () => {
+  const input = valid();
+  input.meanings.transfer.art = "donkey";
+  assert.throws(() => validateIcons(input), /transfer must use transfer/);
+  const wrongResource = valid();
+  wrongResource.resources[25].meaning = "transfer";
+  assert.throws(() => validateIcons(wrongResource), /Resource 25 must retain the Donkey resource painting/);
 });

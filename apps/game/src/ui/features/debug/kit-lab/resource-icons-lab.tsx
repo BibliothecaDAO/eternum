@@ -138,7 +138,8 @@ export function ResourceIconsLab() {
       {section === "Kept" && (
         <>
           <p>
-            All other resources, all nine troop tiers, Labor and UI glyphs are unchanged. Workshop waits for its model.
+            Other resources, all nine troop tiers and Labor keep their art. Utilities use the approved Ivory relief
+            style. Workshop waits for its model.
           </p>
           <div className="rss-inventory">
             {study.kept.map((meaning) => (

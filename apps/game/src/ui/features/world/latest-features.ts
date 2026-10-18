@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Clearer Ivory relief icons",
+    description:
+      "Game and app controls share clearer cream silhouettes, consistent light and stronger outlines. Resources keep their own paintings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Facets relic paintings",
     description: "All 18 relics now use the Facets paintings while keeping their familiar symbols and tier designs.",
     type: "improvement",

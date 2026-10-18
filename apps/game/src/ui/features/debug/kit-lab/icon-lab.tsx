@@ -23,8 +23,8 @@ export function IconLab() {
       <header>
         <h1>Facets icons</h1>
         <p>
-          Production artwork at actual HUD sizes. LORDS keeps its official token mark. Every meaning uses the same
-          renderer as the game.
+          Production artwork at actual HUD sizes. Utilities use Ivory relief; resources keep their paintings and LORDS
+          its official mark. Every meaning uses the same renderer as the game.
         </p>
       </header>
       <RealmHexFillComparison />

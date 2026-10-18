@@ -31,13 +31,21 @@ export function validateIcons({ icons, meanings, resources, verdicts }) {
     if (!meanings[resources[id]?.meaning]) throw new Error(`Missing resource meaning: ${id}`);
   }
   for (const [meaning, art] of Object.entries({
-    transfer: "donkey",
+    transfer: "transfer",
     move: "move",
     production: "production",
     settings: "settings",
   })) {
     if (meanings[meaning]?.art !== art)
       throw new Error(`${meaning} must use ${art}; use the semantic meaning instead of choosing another action's art.`);
+  }
+  if (resources[25]?.meaning !== "donkey" || meanings.donkey?.art !== "donkey")
+    throw new Error("Resource 25 must retain the Donkey resource painting, separate from Transfer.");
+  const utilityFamilies = new Set(["Controls", "Actions", "Statuses", "HUD", "Shell"]);
+  for (const [name, entry] of Object.entries(meanings)) {
+    if (!utilityFamilies.has(entry.family)) continue;
+    if (icons.find((icon) => icon.id === entry.art)?.source?.kind !== "ivory-relief")
+      throw new Error(`UI glyph ${name} must use the approved Ivory relief master through the Facets catalog.`);
   }
   for (const kind of ["knight", "crossbowman", "paladin"])
     for (const tier of [1, 2, 3])

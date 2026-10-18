@@ -32,7 +32,9 @@ describe("semantic icons", () => {
     expect(img.getAttribute("width")).toBe("32");
   });
   it("keeps Transfer, Move, Production and Settings distinct", () => {
-    expect(iconDefinition("transfer").art).toBe("donkey");
+    expect(iconDefinition("transfer").art).toBe("transfer");
+    expect(iconUrl("transfer")).toBe("/icons/facets/64/transfer.webp");
+    expect(iconUrl(resourceMeaning(25))).toBe("/icons/facets/64/donkey.webp");
     expect(iconDefinition("move").art).toBe("move");
     expect(iconDefinition("production").art).toBe("production");
     expect(iconDefinition("settings").art).toBe("settings");

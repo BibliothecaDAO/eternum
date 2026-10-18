@@ -311,8 +311,9 @@ npx -y agent-browser --session spectator-check errors
 
 Use `Icon` with an `IconMeaning`, `SvgIcon` inside SVG, and `iconUrl` only for texture or DOM APIs. Resource, troop,
 Order and building inputs resolve through the central meaning helpers. Action buttons derive their icon from the action
-ID. Do not choose an unrelated action's art: Transfer is the pack donkey, Move the boots, Production the forge, and
-Settings the wheel. Do not add icon paths or independent icon components.
+ID. Do not choose an unrelated action's art: Transfer is the Ivory pack donkey (`transfer`), distinct from the Donkey
+resource (`donkey`); Move is the boot, Production the anvil, and Settings the wheel. Do not add icon paths or
+independent icon components.
 
 Construction card artwork uses `BuildingThumbnail`: a render of the current building GLB, not a semantic icon. Its
 source and image hashes live in `asset-sources/building-thumbnails.json`; regenerate after a model changes with

@@ -110,7 +110,7 @@
     "camp": {
       "art": "camp",
       "label": "Camp",
-      "family": "Controls"
+      "family": "Structures"
     },
     "hyperstructure": {
       "art": "hyperstructure",
@@ -120,7 +120,7 @@
     "chest": {
       "art": "chest",
       "label": "Chest",
-      "family": "Controls"
+      "family": "Structures"
     },
     "move": {
       "art": "move",
@@ -202,7 +202,7 @@
     "donkey": {
       "art": "donkey",
       "label": "Donkey",
-      "family": "Actions",
+      "family": "Resources",
       "resourceId": 25
     },
     "production": {
@@ -429,7 +429,7 @@
     "research": {
       "art": "research",
       "label": "Research",
-      "family": "Controls"
+      "family": "Resources"
     },
     "s-a-t": {
       "art": "s-a-t",
@@ -438,7 +438,7 @@
       "resourceId": 58
     },
     "transfer": {
-      "art": "donkey",
+      "art": "transfer",
       "label": "Transfer resources",
       "family": "Actions"
     },
@@ -1339,7 +1339,7 @@
     "twitter": {
       "art": "twitter",
       "label": "Twitter",
-      "family": "HUD"
+      "family": "Brands"
     },
     "map-realm-0": {
       "art": "map-realm-0",

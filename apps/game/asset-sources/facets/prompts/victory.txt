@@ -1,2 +1,1 @@
-Subject: A green laurel wreath tied with a small deep red ribbon around a simple upright silver victory pennant. Broad dark-green leaves, silver cloth-lit banner face, no gold, crown or lightning. Compact achievement emblem.
-Old counterpart: apps/game/public/images/buildings/thumb/trophy.png.
+A three-point crown. Ivory relief: cream face, sand bevel, dark brown contour, upper-left light, broad value planes and restrained teal accent. One clear silhouette, no ornamental frame. Owner-selected utility style; normalize to 90% subject fill for delivery.

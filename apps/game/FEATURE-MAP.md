@@ -422,8 +422,8 @@ unchanged.
 **Resources** compares 22 live production resource designs, shipped Essence and teal Research with their previous
 paintings. **Models** shows before/current icons beside actual renders for Farm, Workers Hut, camp, rift, the completed
 Hyperstructure, spire and the chest body without its tile. Workshop waits for its model. **Kept** shows the existing
-Labor, nine troop tiers and UI glyph designs with tighter crops. **Inventory** compares all 58 historical and current
-resources. Construction cards retain model thumbnails.
+Labor and nine troop tiers with tighter crops, alongside the current Ivory relief utilities. **Inventory** compares all
+58 historical and current resources. Construction cards retain model thumbnails.
 
 The approved relic masters, prompts, source hashes and verdicts now live in `asset-sources/facets/`; the separate
 proposal deliveries are removed. `pnpm icons:build` delivers the selected paintings through the existing semantic path.
@@ -467,3 +467,15 @@ artwork.
 
 `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --rewards` drives the comparison links on desktop and phone,
 decodes every tier and checks the real results page selects the right chest in each state.
+
+### Ivory relief utilities
+
+Game and app controls use the approved Ivory relief artwork through `Icon`, `SvgIcon` and `iconUrl`. The 108 utility
+masters and their 64/128/256 deliveries replace the previous art in the Facets catalog; there is no style switch or
+alternate renderer. Transfer has its own Ivory pack donkey, while resource 25 keeps the Donkey resource painting.
+Resources, soldiers, world objects, reward tiers and brand marks retain their content identity.
+
+See `/lab/kit/icons` (Controls, Actions, Statuses, HUD or Shell) and the UI glyphs on `/lab/kit`. The existing HUD and
+app fixtures show the production components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --glyphs`
+captures the selected-army HUD, HUD menu, app Home and Settings at desktop and phone sizes and decodes their artwork.
+`pnpm icons:check` requires the approved utility style and checks master hashes, regenerated delivery bytes and fill.

@@ -1,6 +1,7 @@
 Use case: stylized-concept.
 Asset type: premium painted strategy-game inventory/HUD icon, read at 24, 32 and 64 pixels.
 Style anchor: shipped resource paintings — warm upper-left key light, cool lower-right fill, rich natural material colours, dark umber edge separation and volumetric forms. Rework to a higher standard: intentional brushwork, convincing materials, economical highlights and a clear silhouette.
-Composition: one meaningful subject, tightly composed, three-quarter view where useful, centered on a square transparent canvas. Subject fills about 82% of the canvas with clear safe margins. Read the object first, details second.
+UI utilities: use the approved Ivory relief style — cream face, sand bevel, dark brown contour, upper-left light, three broad value groups and at most one restrained teal accent. The silhouette carries the meaning at 16 pixels. Resource and world-object paintings keep their own materials.
+Composition: one meaningful subject, tightly composed, three-quarter view where useful, centered on a square transparent canvas. Subject fills about 90% of the canvas with clear safe margins; encoded deliveries must retain at least 85% visible subject fill. Read the object first, details second.
 No gilding, gold frame, border, medallion, plate, UI tile, ground, cast shadow outside the object, text, watermark, sparkles or decorative particles. Gold is allowed only when it is the actual named material, never as generic trim. Do not create flat glyphs, vector logos or outline symbols.
 Output: square painted master, request 1024 × 1024 pixels, true transparent background. Preserve natural antialiased alpha edges. One icon only.
