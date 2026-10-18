@@ -3,6 +3,8 @@ const LORE = [800, 1536] as const;
 const KIT = [800, 1600, 1920, 2688] as const;
 
 const WIDTHS = {
+  "season-citadel": LORE,
+  "blitz-aftermath": LORE,
   "blitz-spires": LORE,
   "frontier-mist": LORE,
   "eternum-restoration": LORE,

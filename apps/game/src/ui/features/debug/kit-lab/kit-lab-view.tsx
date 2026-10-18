@@ -46,6 +46,7 @@ import { StyleSheetLab } from "./style-sheet-lab";
 import { ChatLab } from "./chat-lab";
 import { WindowsLab } from "./windows-lab";
 import { WordsLab } from "./words-lab";
+import { AppArtLab } from "./app-art-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
@@ -59,6 +60,7 @@ const ENDS_AT = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
 export const KitLabView = () => {
   return (
     <Routes>
+      <Route path="app-art" element={<AppArtLab />} />
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
       <Route path="reward-chests" element={<RewardChestsLab />} />
@@ -87,6 +89,7 @@ const Components = () => {
         <Link to="/lab/kit/tokens">Design tokens</Link>
         <Link to="/lab/kit/reward-chests">Reward chest tiers</Link>
         <Link to="/lab/kit/resource-icons">Resource icon review</Link>
+        <Link to="/lab/kit/app-art">App background paintings</Link>
         <Link to="/lab/kit/construction">Construction models</Link>
         <ClockSection />
         <StoresSection />

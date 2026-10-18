@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "New app landscapes",
+    description: "Season has its own citadel painting, and Blitz Results shows the battlefield after the fighting.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Clearer Ivory relief icons",
     description:
       "Game and app controls share clearer cream silhouettes, consistent light and stronger outlines. Resources keep their own paintings.",

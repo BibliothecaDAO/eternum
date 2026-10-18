@@ -233,7 +233,7 @@ const BlitzResult = ({
   const rows = own && !top.includes(own) ? [...top, own] : top;
   return (
     <ResultLayout
-      painting={ageOf("blitz").painting}
+      painting="blitz-aftermath"
       fromList={fromList}
       outcome={own ? <ScoreCard own={own} game={game} /> : <GameLine game={game} />}
       rows={

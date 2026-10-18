@@ -1,5 +1,10 @@
 # Lab tools
 
+App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
+each page link to see the painting on its real component with local app fixtures. Run
+`pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image
+assertions and browser errors; the command owns and closes its server and browser.
+
 Open `/lab` in the dev environment. The Tool selector groups 14 tools by their users' work. Switching tools unmounts the
 previous view and remembers its full URL for the next visit. The Eternum Lab link exits to the game home page.
 `capture=1` keeps the tool's full viewport and removes the shared header.

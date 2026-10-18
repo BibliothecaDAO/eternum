@@ -39,7 +39,7 @@ export const SeasonPage = () => (useLayout() === "phone" ? <PhoneSeason /> : <De
 const PhoneSeason = () => {
   const [view, setView] = useState<SeasonView>("frontier");
   return (
-    <PageFrame>
+    <PageFrame painting="season-citadel">
       <div className="flex min-h-0 flex-col gap-3">
         <SeasonHeader />
         <ViewSwitch
@@ -61,7 +61,7 @@ const PhoneSeason = () => {
 const DesktopSeason = () => {
   const { season, directory } = useSeason();
   return (
-    <PageFrame title={season ? seasonTitle(season) : WORDS.season}>
+    <PageFrame title={season ? seasonTitle(season) : WORDS.season} painting="season-citadel">
       <div className="grid grid-cols-[minmax(0,1fr)_34rem] items-start gap-6">
         {season || directory.isPending || directory.isError ? (
           <Panel
