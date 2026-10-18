@@ -1,7 +1,8 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
 
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import { HudRarity } from "@/ui/design-system/kit/hud-elements";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { LORDS, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -54,7 +55,7 @@ export const RuinChestMoment = ({
           <SemanticIcon name="lords" size={34} />
           <span className="text-hud-display tabular-nums text-hud-gold">+{formatExact(lords)}</span>
         </span>
-        <TierChip tier={tier} showWord />
+        <HudRarity tier={tier} word />
         <span className="flex items-center gap-2">
           {xp !== undefined && <FigureChip icons={[]} label={XP} value={`+${formatExact(xp)}`} unit={XP} />}
           <FigureChip icons={["skull"]} label={TROOPS} value={`−${formatExact(troopsLost)}`} />

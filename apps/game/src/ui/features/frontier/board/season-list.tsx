@@ -6,11 +6,12 @@ import {
   HudEmpty,
   HudIconButton,
   HudPanel,
+  HudRarity,
   HudSkeleton,
 } from "@/ui/design-system/kit/hud-elements";
 
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
   LORDS,
@@ -193,7 +194,7 @@ const ChestChip = ({ tier, lords, rank }: { tier: Tier; lords: number; rank: num
   >
     <HudChip>
       <SemanticIcon name="chest" size={16} />
-      <TierChip tier={tier} showWord={false} />
+      <HudRarity tier={tier} />
       <SemanticIcon name="lords" size={16} />
       <span className="tabular-nums">{formatAmount(lords)}</span>
       {rank !== null && (
