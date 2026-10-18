@@ -12,10 +12,7 @@ export const Tab = ({ className, children, noText, ...props }: TabProps) => {
 
   return (
     // @ts-ignore
-    <HeadlessTab
-      className={clsx("group ui-tab", VARIANTS[variant].tab, className)}
-      {...props}
-    >
+    <HeadlessTab className={clsx("group ui-tab", VARIANTS[variant].tab, className)} {...props}>
       {({ selected }) => (
         <span data-selected={selected ? "true" : "false"} className="flex items-center gap-1">
           {children}
