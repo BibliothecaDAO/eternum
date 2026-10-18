@@ -33,13 +33,7 @@ const base64url = (text: string): Uint8Array<ArrayBuffer> => {
 };
 const json = (part: string): Record<string, unknown> => JSON.parse(decoder.decode(base64url(part)));
 
-/** The team's signing keys, kept for a few minutes: Access rotates them with overlap. */
-const signingKeys = async (teamDomain: string, send: Send, nowMs: number): Promise<Jwk[]> => {
-  const cached = certs.get(teamDomain);
-  if (cached && cached.until > nowMs) return cached.keys;
-  return fetchSigningKeys(teamDomain, send, nowMs);
-};
-
+/** The team's signing keys, read fresh and kept for a few minutes: Access rotates them with overlap. */
 const fetchSigningKeys = async (teamDomain: string, send: Send, nowMs: number): Promise<Jwk[]> => {
   const response = await send(`https://${teamDomain}/cdn-cgi/access/certs`);
   if (!response.ok) throw new Error(`Access certificates answered ${response.status}`);
@@ -49,10 +43,15 @@ const fetchSigningKeys = async (teamDomain: string, send: Send, nowMs: number): 
   return keys;
 };
 
-/** The key a token names; a name the cached keys lack means Access rotated since, so the keys are read again once. */
+/**
+ * The key a token names; a name the cached keys lack means Access rotated since, so the keys are read again, once: a
+ * request fetches them at most one time, whether the cache was cold or only missing that key.
+ */
 const signingKey = async (teamDomain: string, kid: unknown, send: Send, nowMs: number): Promise<Jwk | undefined> => {
   const named = (keys: Jwk[]) => keys.find((key) => key.kid === kid);
-  return named(await signingKeys(teamDomain, send, nowMs)) ?? named(await fetchSigningKeys(teamDomain, send, nowMs));
+  const cached = certs.get(teamDomain);
+  const kept = cached && cached.until > nowMs ? named(cached.keys) : undefined;
+  return kept ?? named(await fetchSigningKeys(teamDomain, send, nowMs));
 };
 
 const hasAudience = (claim: unknown, audience: string) =>
