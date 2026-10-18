@@ -1,7 +1,7 @@
 import { useState, useSyncExternalStore } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { useInstall } from "@/pwa/pwa-install-control";
+import { useInstall } from "@/pwa/install-state";
 import { usePwaUpdate } from "@/pwa/pwa-update-prompt";
 import { appQueryClient } from "@/runtime/query-client";
 import { Notice } from "@/ui/design-system/kit/notice";

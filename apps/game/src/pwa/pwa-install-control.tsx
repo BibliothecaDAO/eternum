@@ -1,24 +1,12 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useEffect } from "react";
-import { create } from "zustand";
 
 import { APP_STATE_WORDS } from "@/shell/words";
-import { Button } from "@/ui/design-system/kit/button";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
 
 import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
-
-interface InstallPrompt extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
-const useInstallState = create<{ prompt: InstallPrompt | null; installed: boolean; steps: boolean }>(() => ({
-  prompt: null,
-  installed: false,
-  steps: false,
-}));
+import { type InstallPrompt, useInstallState } from "./install-state";
 
 /**
  * Listen at the app root so a later Install cannot miss Chrome's install event, and hold the install steps' sheet for
@@ -42,27 +30,6 @@ export function PwaInstallRuntime() {
     };
   }, []);
   return steps ? <InstallSheet onClose={() => useInstallState.setState({ steps: false })} /> : null;
-}
-
-/** Install: the browser's own prompt where it offers one (Chrome, Edge), else its steps as pictograms in a sheet. */
-export const useInstall = () => {
-  const installed = useInstallState((state) => state.installed);
-  const install = async () => {
-    const { prompt } = useInstallState.getState();
-    if (!prompt) return useInstallState.setState({ steps: true });
-    useInstallState.setState({ prompt: null });
-    // Keep prompt() inside this user gesture.
-    await prompt.prompt();
-    await prompt.userChoice;
-  };
-  return { installed, install };
-};
-
-/** The game's Settings: Install, until the app is installed. */
-export function PwaInstallControl() {
-  const { installed, install } = useInstall();
-  if (installed) return null;
-  return <Button role="outline" word={APP_STATE_WORDS.install} icon="download" onClick={() => void install()} />;
 }
 
 /** The browser's steps, as its own words on pictograms: Safari on an iPhone, or on a Mac. */

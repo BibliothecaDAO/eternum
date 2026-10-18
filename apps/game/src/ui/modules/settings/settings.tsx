@@ -37,10 +37,10 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress } from "@bibliothecadao/types";
 
 import { type ReactNode, useState } from "react";
-import { NotificationsCard } from "@/shell/profile/notifications";
 import { PROFILE_WORDS } from "@/shell/words";
-import { PwaInstallControl } from "@/pwa/pwa-install-control";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { InstallSetting } from "./install-setting";
+import { NotificationSettings } from "./notification-settings";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
@@ -53,10 +53,12 @@ export const SettingsPanel = () => (
     <VideoSettings />
     <NextUpSettings />
     <SettingsSection title={PROFILE_WORDS.notifications}>
-      <NotificationsCard />
+      <NotificationSettings />
     </SettingsSection>
     <ShortcutsSection />
-    <PwaInstallControl />
+    <SettingsSection title="App">
+      <InstallSetting />
+    </SettingsSection>
     <RendererSettings />
     <SessionActions />
   </div>

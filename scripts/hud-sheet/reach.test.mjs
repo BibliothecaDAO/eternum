@@ -66,15 +66,54 @@ test("an old look fails unless its owner is named, and a named one fails once no
   );
 });
 
-test("a control the sheet replaced stays retired however it draws now, and only it", () =>
+test("a control the sheet replaced stays retired however it draws now: every kit component, InfoBubble, the old atoms", () =>
   assert.deepEqual(
     [
       "ui/design-system/atoms/number-input.tsx",
       "ui/design-system/atoms/tab/tab-list.tsx",
       "ui/design-system/kit/sheet.tsx",
-      "ui/design-system/kit/sheet-closes.tsx",
+      "ui/design-system/kit/tier-chip.tsx",
+      "ui/design-system/kit/season-row.tsx",
+      "ui/design-system/kit/pill.tsx",
+      "ui/design-system/kit/reason-plate.tsx",
+      "ui/features/world/components/entities/collapsible-bubble.tsx",
+    ].map(isRetired),
+    [true, true, true, true, true, true, true, true],
+  ));
+
+test("only what the sheet is made of passes in the kit: its elements, the sheet's close behaviour, the tip line, helpers", () =>
+  assert.deepEqual(
+    [
       "ui/design-system/kit/hud-elements.tsx",
+      "ui/design-system/kit/sheet-closes.tsx",
+      "ui/design-system/kit/named-tips.tsx",
+      "ui/design-system/kit/time.ts",
+      "ui/design-system/kit/failure-lines.ts",
       "ui/design-system/atoms/button-group.tsx",
     ].map(isRetired),
-    [true, true, true, false, false, false],
+    [false, false, false, false, false, false],
   ));
+
+test("an area that renders a kit control through another area's child fails, the way there named", () => {
+  const app = mkdtempSync(join(tmpdir(), "hud-reach-kit-"));
+  try {
+    const files = {
+      "ui/features/a/window.tsx": `import { Panel } from "@/ui/features/b/panel";\nexport const Window = () => <Panel />;`,
+      "ui/features/b/panel.tsx": `import { Pill } from "@/ui/design-system/kit/pill";\nexport const Panel = () => <Pill />;`,
+      "ui/design-system/kit/pill.tsx": `export const Pill = () => <span className="ui-pill" />;`,
+    };
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(app, path)), { recursive: true });
+      writeFileSync(join(app, path), text);
+    }
+    const reached = legacyReached([join(app, "ui/features/a/window.tsx")], importGraph(app), (file) =>
+      isRetired(file.slice(app.length + 1)),
+    );
+    assert.deepEqual(
+      reached.map(({ path }) => path.map((file) => file.slice(app.length + 1))),
+      [["ui/features/a/window.tsx", "ui/features/b/panel.tsx", "ui/design-system/kit/pill.tsx"]],
+    );
+  } finally {
+    rmSync(app, { recursive: true, force: true });
+  }
+});

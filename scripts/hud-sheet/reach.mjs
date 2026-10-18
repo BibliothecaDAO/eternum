@@ -1,9 +1,10 @@
 /**
  * The migrated areas' guard (`pnpm hud:check` runs it after the sheet guard): a HUD area is on the sheet when nothing
- * it renders, itself or through what it imports, still draws a look of its own or a control the sheet replaced. It
- * follows each area's imports, each imported name to the file that defines it (through barrels, never a type), and
- * fails on any module that still holds one-off looks (a line in allowlist.json) or is RETIRED, however it looks now: the
- * sheet's element is the one way. A module another area still has to migrate is named in WAITING with its owner; the
+ * it renders, itself or through anything it imports (another area's child included, not only shared wrappers), still
+ * draws a look of its own or a control the sheet replaced. It follows each area's imports, each imported name to the
+ * file that defines it (through barrels, never a type), and fails on any module that still holds one-off looks (a
+ * line in allowlist.json) or is retired, however it looks now: the old atoms, InfoBubble, and every kit component but
+ * what the sheet itself is made of. A module another area still has to migrate is named in WAITING with its owner; the
  * list only shrinks: a waiting module no area reaches any more, or one that is no longer old, fails until its line goes.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -14,41 +15,52 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const APP = "apps/game/src";
 const ALLOWLIST = new URL("./allowlist.json", import.meta.url);
 
-/** Each migrated area by the folders and files it owns. An area joins when its migration lands. */
+/**
+ * Each migrated area by the folders and files it owns. An area joins in the change that lands its migration on this
+ * branch (B, C and D add theirs as they land).
+ */
 const AREAS = {
-  "B. Windows and modals": [
-    "ui/features/settlement",
-    "ui/features/relics",
-    "ui/features/progression/hints",
-    "ui/features/economy/trading",
-    "ui/features/economy/banking",
-    "ui/features/event-feed",
-    "ui/features/economy/resources/craft-relic-popup.tsx",
-    "ui/features/economy/resources/relic-activation-popup.tsx",
-    "ui/features/world/components/structure-edit-popup.tsx",
-    "ui/features/world/containers/construction-modal.tsx",
-    "ui/features/world/containers/military-modal.tsx",
+  "E. Map plates, order line, structure menu": [
+    "three/map-plates",
+    "three/scenes/context-menu",
+    "three/scenes/worldmap-order-tip.tsx",
+    "ui/features/world/components/context-menu",
   ],
-  "C. Transfer": ["ui/features/economy/transfers", "ui/features/economy/resources"],
+  "F. Shared surfaces": [
+    "ui/modules/settings",
+    "ui/modules/boot-loader",
+    "ui/modules/loading-screen.tsx",
+    "ui/modules/loading-oroborus.tsx",
+    "ui/modules/construction-gate.tsx",
+    "ui/modules/entity-details/realm/realm-details.tsx",
+    "ui/shared/error-boundary.tsx",
+    "ui/shared/components/world-loading.tsx",
+    "ui/shared/components/count-up-number.tsx",
+    "ui/features/news-headlines",
+    "ui/features/game-entry/realm-number-picker.tsx",
+    "ui/motion",
+    "ui/design-system/hex-marker.tsx",
+    "ui/design-system/molecules/headline.tsx",
+    "ui/design-system/molecules/popover.tsx",
+    "ui/design-system/molecules/requirement-chips.tsx",
+    "ui/design-system/molecules/resource-cost.tsx",
+    "ui/design-system/molecules/structure-select.tsx",
+    "ui/design-system/molecules/structure-workspace.tsx",
+    "ui/design-system/molecules/tooltip.tsx",
+  ],
 };
 
 /** Modules an area renders that another area has still to migrate, each with the area that owns it. */
 const WAITING = {
-  "ui/design-system/atoms/hud-typography.ts": "A (hud): the structure sidebar's type",
-  "ui/features/world/components/structure-status-row/structure-status-row.tsx": "A (hud)",
-  "ui/features/world/containers/left-facets/structure-category-filter.tsx": "A (hud)",
-  "ui/features/world/containers/top-header/structure-groups.ts": "A (hud)",
-  "ui/features/world/components/entities/hooks/use-structure-entity-detail.ts": "A (hud)",
-  "ui/features/military/components/troop-chip.tsx": "D (rings)",
-  "ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx": "D (rings)",
-  "ui/features/military/components/unified-army-creation-modal/existing-armies-panel.tsx": "D (rings)",
-  "ui/design-system/molecules/requirement-chips.tsx": "F (shell)",
-  "ui/shared/components/production-status-badge.tsx": "F (shell)",
+  "ui/design-system/molecules/requirement-chips.tsx":
+    "B (blitz-ux): REQUIREMENT_CHIP's last uses (market, order, faith); the export goes when they land",
+  "ui/features/military/components/army-deployment-picker.tsx":
+    "D (rings): the map's deploy picker, built in the deploy layout the owner picks",
 };
 
 /**
  * The controls the sheet replaced, by module or folder: the HUD reaches none of them even once they draw the sheet's
- * look (the shell's pages keep the kit's). Each names the sheet element that took its place.
+ * look. Each names the sheet element that took its place.
  */
 const RETIRED = {
   "ui/design-system/atoms/button": "HudButton",
@@ -60,17 +72,22 @@ const RETIRED = {
   "ui/design-system/atoms/tab": "HudTabs",
   "ui/design-system/atoms/overlay-surface": "HudPanel, HudWindow",
   "ui/design-system/atoms/hud-typography": "the text-hud-* roles",
-  "ui/design-system/molecules/circle-button": "HudIconButton",
-  "ui/design-system/kit/sheet": "HudSheet",
-  "ui/design-system/kit/button": "HudButton",
-  "ui/design-system/kit/chip": "HudChip",
-  "ui/design-system/kit/store-bar": "HudMeter",
-  "ui/design-system/kit/price-chip": "HudButton prices",
-  "ui/design-system/kit/refused-verb": "a disabled HudButton and its HudNotice",
+  "ui/design-system/molecules/circle-button": "HudBubble, HudIconButton",
+  "ui/features/world/components/entities/collapsible-bubble": "HudPanel",
 };
 
-/** Whether an app file is a retired control, or inside a retired folder (the old tabs), whatever it draws now. */
+/**
+ * The kit is the shell's: every component in it (sheet, button, chip, store bar, tier chip, season row…) is a control
+ * the HUD does not draw, whatever it looks like. Only what the HUD sheet itself is made of passes: its elements, the
+ * sheet's close behaviour (no look of its own) and the tooltip's line (the sheet's tip). The kit's .ts helpers (time,
+ * words, amounts) draw nothing.
+ */
+const KIT = "ui/design-system/kit/";
+const KIT_FOR_HUD = new Set(["hud-elements.tsx", "sheet-closes.tsx", "named-tips.tsx"]);
+
+/** Whether an app file is a retired control, a retired folder's (the old tabs), or a kit component, whatever it draws now. */
 export const isRetired = (path) => {
+  if (path.startsWith(KIT)) return path.endsWith(".tsx") && !KIT_FOR_HUD.has(path.slice(KIT.length));
   const module = path.replace(/\.tsx?$/, "").replace(/\/index$/, "");
   return Object.keys(RETIRED).some((retired) => module === retired || module.startsWith(`${retired}/`));
 };
