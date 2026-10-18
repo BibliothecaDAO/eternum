@@ -157,10 +157,10 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     // 100 wheat deploys 50 troops: the thumb stops at the line however far it is dragged.
-    expect(host.querySelector("u")).not.toBeNull();
+    expect(host.querySelector(".ui-slider__stop")).not.toBeNull();
     setSlider(host, 300);
     expect(deployButton(host)?.textContent).toBe("Deploy100");
-    expect(host.querySelector('[aria-label="wheat left at home 0"]')?.getAttribute("data-tone")).toBe("loss");
+    expect(host.querySelector('[aria-label="wheat left at home 0"]')?.getAttribute("data-tone")).toBe("bad");
     // Maximum takes what the wheat allows, not what the troops would.
     expect(host.querySelector('button[aria-label^="Maximum"]')!.getAttribute("aria-label")).toBe("Maximum 50");
     act(() => root.unmount());

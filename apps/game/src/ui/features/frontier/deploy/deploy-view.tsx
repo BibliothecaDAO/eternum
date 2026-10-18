@@ -1,20 +1,18 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-import { DayEnds } from "@/ui/design-system/kit/clock-line";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudButton, HudChip, HudNotice, HudPortrait, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import { BUILD, DEPLOY, DEPLOY_FIGURES, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";
 import type { Direction } from "@bibliothecadao/types";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 
+import { AmountRange } from "../amount-range";
 import { AttributeMarks } from "../attributes/attribute-marks";
+import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
+import { hudPrices } from "../hud-prices";
 import { DeployRing } from "./deploy-ring";
 
 type RingTile = { direction: Direction; open: boolean; explored: boolean };
@@ -74,13 +72,14 @@ export const DeployView = ({
 }) => {
   const noTroops = troopsAtHome === 0;
   return (
-    <Sheet label={DEPLOY} onClose={onClose}>
-      <header className="flex items-center justify-between">
-        <h2 className="frontier-title !text-xl">{DEPLOY}</h2>
-        {slots && <SlotMarks used={slots.used} allowed={slots.allowed} />}
-      </header>
+    <HudSheet label={DEPLOY} onClose={onClose}>
+      {slots && (
+        <span className="flex justify-end">
+          <SlotMarks used={slots.used} allowed={slots.allowed} />
+        </span>
+      )}
       <Hero art={art} count={count} />
-      <AmountSlider
+      <AmountRange
         label={TROOPS}
         icon="explore"
         value={count ?? 0}
@@ -90,41 +89,49 @@ export const DeployView = ({
         onChange={onCount}
       />
       {noTroops ? (
-        <ReasonPlate
-          reason={{ kind: "short", of: "troops", held: 0, need: 1 }}
-          step={<Button role="primary" word={BUILD} className="w-[140px]" onClick={onBuild} />}
-        />
+        <>
+          <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "troops", held: 0, need: 1 })} />
+          <HudButton kind="primary" onClick={onBuild}>
+            {BUILD}
+          </HudButton>
+        </>
       ) : (
         <>
           <Equation equation={equation} rations={rations} />
-          <div className="flex items-center justify-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
             {count === 1 ? (
-              <Chip icons={["explore"]} label={DEPLOY_FIGURES.scout} value="" />
+              <HudChip icons={["explore"]} label={DEPLOY_FIGURES.scout}>
+                {""}
+              </HudChip>
             ) : (
-              <Chip
-                icons={["essence", "labor"]}
-                label={DEPLOY_FIGURES.revealSends}
-                value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
-              />
+              <HudChip icons={["essence", "labor"]} label={DEPLOY_FIGURES.revealSends}>
+                {revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
+              </HudChip>
             )}
-            <Chip icons={["stamina"]} label={DEPLOY_FIGURES.startingStamina} value={formatAmount(startingStamina)} />
+            <HudChip icons={["stamina"]} label={DEPLOY_FIGURES.startingStamina}>
+              {formatAmount(startingStamina)}
+            </HudChip>
             {startingTiers && <AttributeMarks tiers={startingTiers} />}
           </div>
-          <DayEnds endsAt={clock?.endsAt} secondsLeft={clock?.secondsLeft} tone={clock?.tone ?? "calm"} />
+          <span className="flex justify-center">
+            <DayEnds endsAt={clock?.endsAt} secondsLeft={clock?.secondsLeft} tone={clock?.tone ?? "calm"} />
+          </span>
           {ring && <DeployRing ring={ring.tiles} chosen={ring.chosen} onChoose={ring.onPick} />}
         </>
       )}
       {canDeploy && equation && (
-        <Button
-          role="primary"
-          word={DEPLOY}
-          prices={[{ of: "wheat", amount: equation.wheatCost }]}
-          loading={sending ? DEPLOYING : undefined}
+        <HudButton
+          kind="primary"
+          icon="military"
+          prices={hudPrices([{ of: "wheat", amount: equation.wheatCost }])}
+          busy={sending ? DEPLOYING : undefined}
           onClick={onDeploy}
-        />
+        >
+          {DEPLOY}
+        </HudButton>
       )}
-      {wheatShort && <ReasonPlate reason={{ kind: "short", of: "wheat", ...wheatShort }} />}
-    </Sheet>
+      {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
+    </HudSheet>
   );
 };
 
@@ -137,36 +144,26 @@ const Equation = ({
   rations: boolean;
 }) => (
   <div className="flex items-center justify-center gap-1.5">
-    <Chip
-      icons={rations ? ["wheat", "rations"] : ["wheat"]}
-      label={DEPLOY_FIGURES.wheatToDeploy}
-      value={`−${formatExact(equation?.wheatCost)}`}
-    />
-    <span aria-hidden className="text-base text-kit-muted">
+    <HudChip icons={rations ? ["wheat", "rations"] : ["wheat"]} label={DEPLOY_FIGURES.wheatToDeploy}>
+      {`−${formatExact(equation?.wheatCost)}`}
+    </HudChip>
+    <span aria-hidden className="text-hud-muted">
       →
     </span>
-    <Chip
-      icons={["wheat"]}
-      label={DEPLOY_FIGURES.wheatLeft}
-      value={formatExact(equation?.wheatLeft)}
-      ember={equation?.wheatLeft === 0}
-    />
-    <Chip
-      icons={["move"]}
-      label={DEPLOY_FIGURES.tilesPaid}
-      value={formatAmount(equation?.tiles)}
-      ember={equation?.tiles === 0}
-    />
+    <HudChip icons={["wheat"]} label={DEPLOY_FIGURES.wheatLeft} tone={equation?.wheatLeft === 0 ? "bad" : undefined}>
+      {formatExact(equation?.wheatLeft)}
+    </HudChip>
+    <HudChip icons={["move"]} label={DEPLOY_FIGURES.tilesPaid} tone={equation?.tiles === 0 ? "bad" : undefined}>
+      {formatAmount(equation?.tiles)}
+    </HudChip>
   </div>
 );
 
 /** The troops as their portrait, and the count large beside it. */
 const Hero = ({ art, count }: { art: IconMeaning | undefined; count: number | undefined }) => (
   <div className="flex items-center justify-center gap-3.5">
-    <span className="size-16 overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
-      {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
-    </span>
-    <span role="img" aria-label={`${TROOPS} ${formatExact(count)}`} className="frontier-hero tabular-nums">
+    {art && <HudPortrait icon={art} label={TROOPS} />}
+    <span role="img" aria-label={`${TROOPS} ${formatExact(count)}`} className="text-hud-display tabular-nums">
       {formatExact(count)}
     </span>
   </div>
@@ -174,11 +171,11 @@ const Hero = ({ art, count }: { art: IconMeaning | undefined; count: number | un
 
 /** The day's army slots: one mark each, lit where an army stands. */
 const SlotMarks = ({ used, allowed }: { used: number; allowed: number }) => (
-  <span role="img" aria-label={`${DEPLOY_FIGURES.slots} ${used} / ${allowed}`} className="flex gap-[3px]">
+  <span role="img" aria-label={`${DEPLOY_FIGURES.slots} ${used} / ${allowed}`} className="flex gap-1">
     {Array.from({ length: allowed }, (_, index) => (
       <i
         key={index}
-        className={cn("h-[18px] w-3 rounded-b-md rounded-t-sm border-2 border-kit-gold", index < used && "bg-kit-gold")}
+        className={`h-4 w-3 rounded-b-md rounded-t-sm border-2 border-hud-accent ${index < used ? "bg-hud-accent" : ""}`}
       />
     ))}
   </span>
