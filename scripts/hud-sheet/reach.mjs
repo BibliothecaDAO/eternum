@@ -1,10 +1,10 @@
 /**
  * The migrated areas' guard (`pnpm hud:check` runs it after the sheet guard): a HUD area is on the sheet when nothing
- * it renders, itself or through what it imports, still draws a look of its own. It follows each area's imports, each
- * imported name to the file that defines it (through barrels, never a type), and fails on any module that still holds
- * one-off looks (a line in allowlist.json) or is an old kit component (ui/design-system/kit, but the sheet's own
- * hud-elements.tsx). A module another area still has to migrate is named in WAITING with its owner; the list only
- * shrinks: a waiting module no area reaches any more, or one that has lost its looks, fails until its line is deleted.
+ * it renders, itself or through what it imports, still draws a look of its own or a control the sheet replaced. It
+ * follows each area's imports, each imported name to the file that defines it (through barrels, never a type), and
+ * fails on any module that still holds one-off looks (a line in allowlist.json) or is RETIRED, however it looks now: the
+ * sheet's element is the one way. A module another area still has to migrate is named in WAITING with its owner; the
+ * list only shrinks: a waiting module no area reaches any more, or one that is no longer old, fails until its line goes.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -44,6 +44,35 @@ const WAITING = {
   "ui/features/military/components/unified-army-creation-modal/existing-armies-panel.tsx": "D (rings)",
   "ui/design-system/molecules/requirement-chips.tsx": "F (shell)",
   "ui/shared/components/production-status-badge.tsx": "F (shell)",
+};
+
+/**
+ * The controls the sheet replaced, by module or folder: the HUD reaches none of them even once they draw the sheet's
+ * look (the shell's pages keep the kit's). Each names the sheet element that took its place.
+ */
+const RETIRED = {
+  "ui/design-system/atoms/button": "HudButton",
+  "ui/design-system/atoms/max-button": "HudButton",
+  "ui/design-system/atoms/checkbox": "HudCheck",
+  "ui/design-system/atoms/number-input": "HudNumberField",
+  "ui/design-system/atoms/select": "HudSelect",
+  "ui/design-system/atoms/text-input": "HudField",
+  "ui/design-system/atoms/tab": "HudTabs",
+  "ui/design-system/atoms/overlay-surface": "HudPanel, HudWindow",
+  "ui/design-system/atoms/hud-typography": "the text-hud-* roles",
+  "ui/design-system/molecules/circle-button": "HudIconButton",
+  "ui/design-system/kit/sheet": "HudSheet",
+  "ui/design-system/kit/button": "HudButton",
+  "ui/design-system/kit/chip": "HudChip",
+  "ui/design-system/kit/store-bar": "HudMeter",
+  "ui/design-system/kit/price-chip": "HudButton prices",
+  "ui/design-system/kit/refused-verb": "a disabled HudButton and its HudNotice",
+};
+
+/** Whether an app file is a retired control, or inside a retired folder (the old tabs), whatever it draws now. */
+export const isRetired = (path) => {
+  const module = path.replace(/\.tsx?$/, "").replace(/\/index$/, "");
+  return Object.keys(RETIRED).some((retired) => module === retired || module.startsWith(`${retired}/`));
 };
 
 /** Files the sheet guard counts that draw nothing: the class-name merge its colour roles are taught to. */
@@ -182,7 +211,7 @@ const main = () => {
     const path = inApp(file);
     if (NOT_A_LOOK.has(path)) return false;
     if (allowlist[`${APP}/${path}`]) return true;
-    return path.startsWith("ui/design-system/kit/") && path.endsWith(".tsx") && !path.endsWith("hud-elements.tsx");
+    return isRetired(path);
   };
   const edgesOf = importGraph(app);
   const reachedByArea = Object.fromEntries(

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 
-import { importGraph, legacyReached, verdict } from "./reach.mjs";
+import { importGraph, isRetired, legacyReached, verdict } from "./reach.mjs";
 
 /** A small app: a window that draws a row through a barrel, the row drawing an old button. */
 const FILES = {
@@ -65,3 +65,16 @@ test("an old look fails unless its owner is named, and a named one fails once no
     { unowned: [], stale: ["old-button.tsx"] },
   );
 });
+
+test("a control the sheet replaced stays retired however it draws now, and only it", () =>
+  assert.deepEqual(
+    [
+      "ui/design-system/atoms/number-input.tsx",
+      "ui/design-system/atoms/tab/tab-list.tsx",
+      "ui/design-system/kit/sheet.tsx",
+      "ui/design-system/kit/sheet-closes.tsx",
+      "ui/design-system/kit/hud-elements.tsx",
+      "ui/design-system/atoms/button-group.tsx",
+    ].map(isRetired),
+    [true, true, true, false, false, false],
+  ));
