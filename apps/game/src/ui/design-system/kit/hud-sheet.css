@@ -365,6 +365,58 @@ button.ui-panel__name {
   color: white;
 }
 
+/* ── Rarity: a chest's tier, common to legendary; its frame thickens and warms with the tier, its pips fill. ── */
+.ui-rarity {
+  --rarity: var(--hud-rarity-1);
+  display: inline-flex;
+  height: 26px;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--rarity);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-surface-to);
+  padding: 0 theme(spacing.2);
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+  white-space: nowrap;
+}
+.ui-rarity[data-tier="2"] {
+  --rarity: var(--hud-rarity-2);
+  border-width: 2px;
+}
+.ui-rarity[data-tier="3"] {
+  --rarity: var(--hud-rarity-3);
+  border-width: 3px;
+  border-style: double;
+}
+.ui-rarity[data-tier="4"] {
+  --rarity: var(--hud-rarity-4);
+  border-width: 4px;
+  border-style: double;
+}
+.ui-rarity[data-tier="5"] {
+  --rarity: var(--hud-rarity-5);
+  border-width: 5px;
+  border-style: double;
+  box-shadow: 0 0 10px var(--hud-rarity-5);
+}
+.ui-rarity__pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.ui-rarity__pips > i {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+}
+.ui-rarity__pips > i[data-filled] {
+  background: rgb(var(--hud-gold));
+}
+
 /* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,
    the time left top right, the amount on the foot; a production arc around it. ── */
 .ui-ring {

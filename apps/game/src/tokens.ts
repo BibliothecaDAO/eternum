@@ -463,6 +463,12 @@ export const HUD_SHEET = {
   t1: "96 165 250",
   t2: "52 211 153",
   t3: "147 51 234",
+  /** A chest's rarity, common to legendary, by order: each frame warmer than the last. */
+  "rarity-1": "#6b5230",
+  "rarity-2": "#a2926f",
+  "rarity-3": "#dfaa54",
+  "rarity-4": "#f3d08a",
+  "rarity-5": "#f6ac1d",
   /** A control's height; a touch target's is HUD_PHONE's. */
   control: "36px",
   /** Corners: a chip's, a control's, a panel's, a round thing's. */

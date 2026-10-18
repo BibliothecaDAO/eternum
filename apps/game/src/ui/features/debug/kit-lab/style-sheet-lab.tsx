@@ -38,6 +38,7 @@ import {
   HudMinimapFrame,
   HudNotice,
   HudPanel,
+  HudRarity,
   HudPill,
   HudPortrait,
   HudRelic,
@@ -1092,7 +1093,7 @@ const RelicSection = () => (
 const ChipsSection = () => (
   <Element
     name="Chip"
-    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
+    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour; a chest's rarity, common to legendary, on its own framed chip. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
     sheet={
       <div className="flex flex-wrap items-center gap-3">
         <HudChip>3</HudChip>
@@ -1112,6 +1113,11 @@ const ChipsSection = () => (
         <HudTierChip tier={1} />
         <HudTierChip tier={2} />
         <HudTierChip tier={3} />
+        <HudRarity tier={1} />
+        <HudRarity tier={2} />
+        <HudRarity tier={3} word />
+        <HudRarity tier={4} />
+        <HudRarity tier={5} word />
       </div>
     }
     today={

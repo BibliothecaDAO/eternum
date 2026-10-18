@@ -15,6 +15,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { TIER_WORDS } from "./words";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { SheetHandle, useSheetCloses } from "./sheet-closes";
@@ -585,6 +586,21 @@ const textOf = (node: ReactNode): string =>
 export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
   <span className="ui-chip" data-tier={tier}>
     T{tier}
+  </span>
+);
+
+/**
+ * A chest's rarity, common to legendary: its pips filled to its tier on a frame that thickens and warms with it, its
+ * word beside them where there is room. Not a troop tier: a rarity has five steps and no colours of its own kind.
+ */
+export const HudRarity = ({ tier, word = false }: { tier: 1 | 2 | 3 | 4 | 5; word?: boolean }) => (
+  <span className="ui-rarity" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
+    <span aria-hidden className="ui-rarity__pips">
+      {TIER_WORDS.map((name, index) => (
+        <i key={name} data-filled={index < tier || undefined} />
+      ))}
+    </span>
+    {word && <span aria-hidden>{TIER_WORDS[tier - 1]}</span>}
   </span>
 );
 
