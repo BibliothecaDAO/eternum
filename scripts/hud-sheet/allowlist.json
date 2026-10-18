@@ -92,7 +92,6 @@
   "apps/game/src/ui/features/frontier/value/realms-sheet.tsx": 13,
   "apps/game/src/ui/features/frontier/value/season-withdraw.tsx": 4,
   "apps/game/src/ui/features/frontier/value/withdraw-sheet.tsx": 13,
-  "apps/game/src/ui/features/game-entry/realm-number-picker.tsx": 9,
   "apps/game/src/ui/features/game-review/game-review-modal.tsx": 104,
   "apps/game/src/ui/features/game-review/score-card-content.tsx": 8,
   "apps/game/src/ui/features/military/battle/battle-cooldown-timer.tsx": 2,
@@ -239,7 +238,6 @@
   "apps/game/src/ui/features/world/hud/next-up.tsx": 7,
   "apps/game/src/ui/features/world/hud/realm-card.tsx": 7,
   "apps/game/src/ui/modules/identity/wallet-actions.tsx": 21,
-  "apps/game/src/ui/motion/motion-scale.ts": 4,
   "apps/game/src/ui/shared/components/production-status-badge.tsx": 40,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }
