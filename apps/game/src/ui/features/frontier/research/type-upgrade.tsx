@@ -3,7 +3,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Chip } from "@/ui/design-system/kit/chip";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { Reason } from "@/ui/design-system/kit/reasons";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -256,7 +256,9 @@ const hutPopulationStep = (store: NativeFactStore, realm: NativeRows["Structure"
 
 const HutGives = ({ store, realm, tier }: { store: NativeFactStore; realm: NativeRows["Structure"]; tier: number }) => (
   <span className="flex justify-center">
-    <Chip icons={["person"]} label={POPULATION} value={hutPopulationStep(store, realm, tier)} />
+    <HudChip icons={["person"]} label={POPULATION}>
+      {hutPopulationStep(store, realm, tier)}
+    </HudChip>
   </span>
 );
 

@@ -44,15 +44,19 @@ describe("a research in flight on the castle's tree", () => {
         />,
       ),
     );
-    const named = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
-    expect(named("Farm").getAttribute("aria-busy")).toBe("true");
-    expect(named("Farm").querySelector('[role="status"]')?.textContent).toBe("Upgrading…");
-    expect(named("Farm").textContent).not.toContain("4,000");
-    expect(named("Shrine").querySelector('[role="status"]')?.textContent).toBe("Researching…");
-    // The rows beside them keep their price and stay free.
-    expect(named("Hut").getAttribute("aria-busy")).toBe("false");
-    expect(named("Hut").textContent).toContain("500");
-    expect(named("Well").textContent).toContain("2,000");
+    // A type's row is the row around its title; a castle row is its ring, named, with its name beside it.
+    const rowNamed = (name: string) =>
+      [...host.querySelectorAll<HTMLElement>(".ui-row")].find(
+        (each) => each.querySelector(".ui-row__title")?.textContent === name,
+      )!;
+    const ring = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    expect(rowNamed("Farm").querySelector('[role="status"]')?.textContent).toBe("Upgrading…");
+    expect(rowNamed("Farm").textContent).not.toContain("4,000");
+    expect(ring("Shrine").querySelector('[role="status"]')?.textContent).toBe("Researching…");
+    // The rows beside them keep their price and say nothing is under way.
+    expect(rowNamed("Hut").querySelector('[role="status"]')).toBeNull();
+    expect(rowNamed("Hut").textContent).toContain("500");
+    expect(ring("Well").textContent).toContain("2,000");
   });
 });
 
@@ -103,16 +107,21 @@ describe("the castle's tree", () => {
         />,
       ),
     );
-    const farm = host.querySelector<HTMLButtonElement>('[aria-label="Farm"]')!;
+    const row = (name: string) =>
+      [...host.querySelectorAll<HTMLElement>(".ui-row")].find(
+        (each) => each.querySelector(".ui-row__title")?.textContent === name,
+      )!;
+    const farm = row("Farm");
     expect(farm.textContent).toBe("FarmUncommon4,0003,000");
     // Each row and castle row says what it gives on its tooltip.
     expect(farm.getAttribute("data-tip")).toBe("Farm: Fields wheat 1,500 → 1,800/h · Granary limit 18K → 27K");
     expect(host.querySelector('[aria-label="Shrine"]')!.getAttribute("data-tip")).toBe(
       "Shrine: your armies find Shrines, +200 XP each",
     );
-    expect(host.querySelector('[aria-label="Hut"] img[src="/icons/facets/64/check.webp"]')).not.toBeNull();
-    expect(host.querySelector<HTMLButtonElement>('[aria-label="II"]')!.className).toContain("opacity-50");
-    act(() => farm.click());
+    expect(row("Hut").querySelector('img[src="/icons/facets/64/check.webp"]')).not.toBeNull();
+    // A locked castle row carries the lock on its ring.
+    expect(host.querySelector('[aria-label="II"] img[src="/icons/facets/64/lock.webp"]')).not.toBeNull();
+    act(() => farm.querySelector<HTMLButtonElement>("button")!.click());
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Shrine"]')!.click());
     expect(onRow).toHaveBeenCalledWith("farm");
     expect(onCastle).toHaveBeenCalledWith("shrine");

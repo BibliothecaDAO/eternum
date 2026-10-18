@@ -1,14 +1,21 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import {
+  HudButton,
+  HudChip,
+  HudPanel,
+  HudRarity,
+  HudRing,
+  HudRow,
+  HudSheet,
+} from "@/ui/design-system/kit/hud-elements";
+import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { ESSENCE, LABOR, RESEARCH, RESEARCHING, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
+
+import { hudPrices } from "../hud-prices";
+import { RefusedVerb } from "../refused-verb";
 
 /** A building type's row: its tier, the sides taken at each tier, and the next tier's Essence and labor. */
 export type TreeRow = {
@@ -63,105 +70,103 @@ export const TreePage = ({
   onRow: (key: string) => void;
   onCastle: (key: string) => void;
 }) => (
-  <section
-    aria-label={RESEARCH}
-    className="frontier-card pointer-events-auto flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto !rounded-xl p-2"
+  <HudPanel
+    label={RESEARCH}
+    title={RESEARCH}
+    cue={
+      <span className="flex gap-1">
+        <HudChip icons={["essence"]} label={ESSENCE}>
+          {formatAmount(essence)}
+        </HudChip>
+        <HudChip icons={["labor"]} label={LABOR}>
+          {formatAmount(labor)}
+        </HudChip>
+      </span>
+    }
+    collapsible={false}
+    className="pointer-events-auto flex min-h-0 flex-1 flex-col"
+    bodyClassName="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto"
   >
-    <header className="flex h-12 shrink-0 items-center gap-2">
-      <h2 className="frontier-title flex-1 !text-xl">{RESEARCH}</h2>
-      <Chip icons={["essence"]} label={ESSENCE} value={formatAmount(essence)} />
-      <Chip icons={["labor"]} label={LABOR} value={formatAmount(labor)} />
-    </header>
     {rows.map((row) => (
       <Row key={row.key} row={row} chosen={row.key === chosen} onOpen={() => onRow(row.key)} />
     ))}
-    <div className="flex shrink-0 items-stretch gap-1">
-      {castle.map((node, index) => (
-        <span key={node.key} className="contents">
-          {index === 2 && <i aria-hidden className="w-px self-stretch bg-kit-line2" />}
-          <Node node={node} onOpen={() => onCastle(node.key)} />
-        </span>
+    <div className="flex shrink-0 items-start justify-around gap-1 border-t border-hud-divider pt-2">
+      {castle.map((node) => (
+        <Node key={node.key} node={node} onOpen={() => onCastle(node.key)} />
       ))}
     </div>
-  </section>
+  </HudPanel>
 );
 
+/** A building type: its sides taken, its tier, and the next tier's price (or what is under way, or done). */
 const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: () => void }) => (
-  <button
-    type="button"
-    aria-label={row.name}
-    aria-pressed={chosen}
-    aria-busy={row.researching === true}
-    data-tip={row.tip}
-    onClick={onOpen}
-    className={cn(
-      "frontier-card flex h-[58px] shrink-0 items-center gap-1.5 !rounded-xl px-2 text-left",
-      chosen && "!border-2 !border-kit-hot",
-    )}
-  >
-    <SemanticIcon name={row.icon} size={26} />
-    <span className="flex w-24 shrink-0 flex-col gap-0.5">
-      <span className="text-sm font-semibold text-kit-cream">{row.name}</span>
-      <span className="flex gap-0.5">
-        {row.sides.map((side, index) => (
-          <SemanticIcon key={index} name={side} size={18} />
-        ))}
-      </span>
-    </span>
-    <span className="flex-1" />
-    <span className="flex flex-col items-end gap-[3px]">
-      <TierChip tier={row.tier} showWord />
-      {row.researching ? (
-        <InFlightWord word={UPGRADING} />
-      ) : row.next ? (
-        <span className="flex items-center gap-1 text-sm tabular-nums text-kit-cream">
-          {row.choice && <SemanticIcon name="final-seal" size={16} />}
-          <SemanticIcon name="essence" size={14} />
-          {formatAmount(row.next.essence)}
-          <SemanticIcon name="labor" size={14} />
-          {formatAmount(row.next.labor)}
+  <HudRow
+    lead={<SemanticIcon name={row.icon} size={26} />}
+    title={row.name}
+    detail={
+      row.sides.length > 0 ? (
+        <span className="flex gap-0.5">
+          {row.sides.map((side, index) => (
+            <SemanticIcon key={index} name={side} size={18} />
+          ))}
         </span>
-      ) : (
-        <SemanticIcon name="check" size={18} />
-      )}
-    </span>
-  </button>
-);
-
-const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
-  <button
-    type="button"
-    aria-label={node.label}
-    aria-busy={node.researching === true}
-    data-tip={node.tip}
+      ) : undefined
+    }
+    selected={chosen}
+    tip={row.tip}
     onClick={onOpen}
-    className={cn("flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1", node.state === "locked" && "opacity-50")}
-  >
-    <span className="relative flex size-11 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground">
-      <SemanticIcon name={node.icon} size={20} />
-      {node.state !== "open" && (
-        <SemanticIcon
-          name={node.state === "learned" ? "check" : "lock"}
-          size={16}
-          className="absolute -right-1 -top-1"
-        />
-      )}
-    </span>
-    <span className="text-sm font-semibold text-kit-cream">{node.label}</span>
-    {node.researching ? (
-      <InFlightWord word={RESEARCHING} />
-    ) : (
-      <span className="flex items-center gap-0.5 text-sm tabular-nums text-kit-cream">
-        <SemanticIcon name="essence" size={14} />
-        {formatAmount(node.essence)}
+    trail={
+      <span className="flex flex-col items-end gap-1">
+        <HudRarity tier={row.tier} word />
+        {row.researching ? (
+          <InFlightWord word={UPGRADING} />
+        ) : row.next ? (
+          <span className="flex items-center gap-1 text-hud-label tabular-nums">
+            {row.choice && <SemanticIcon name="final-seal" size={16} />}
+            <SemanticIcon name="essence" size={14} />
+            {formatAmount(row.next.essence)}
+            <SemanticIcon name="labor" size={14} />
+            {formatAmount(row.next.labor)}
+          </span>
+        ) : (
+          <SemanticIcon name="check" size={18} />
+        )}
       </span>
-    )}
-  </button>
+    }
+  />
 );
 
-/** In the price's place on a row whose research is in flight: the word of what is under way, pulsing. */
+/** A castle row as a ring: learned carries a check, locked a lock; its price, or what is under way, at its foot. */
+const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
+  <span className="flex flex-col items-center gap-1">
+    <HudRing
+      icon={node.icon}
+      label={node.label}
+      tip={node.tip}
+      corner={
+        node.state === "open" ? undefined : (
+          <SemanticIcon name={node.state === "learned" ? "check" : "lock"} size={14} />
+        )
+      }
+      foot={
+        node.researching ? (
+          <InFlightWord word={RESEARCHING} />
+        ) : (
+          <span className="flex items-center gap-0.5 tabular-nums">
+            <SemanticIcon name="essence" size={12} />
+            {formatAmount(node.essence)}
+          </span>
+        )
+      }
+      onClick={onOpen}
+    />
+    <span className="text-hud-label">{node.label}</span>
+  </span>
+);
+
+/** In the price's place on a row whose research is in flight: the word of what is under way. */
 const InFlightWord = ({ word }: { word: string }) => (
-  <span role="status" className="animate-pulse text-sm font-semibold text-kit-gold2">
+  <span role="status" className="text-hud-label text-hud-warn">
     {word}
   </span>
 );
@@ -186,11 +191,8 @@ export const CastleNodeSheet = ({
   onResearch: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={node.label} onClose={onClose}>
-    <header className="flex items-center gap-2.5">
-      <SemanticIcon name={node.icon} size={30} />
-      <h2 className="frontier-title flex-1 !text-xl">{node.label}</h2>
-    </header>
+  <HudSheet label={node.label} onClose={onClose}>
+    <SemanticIcon name={node.icon} size={30} />
     <div className="flex items-center justify-center gap-2">{gives}</div>
     {node.state === "learned" ? (
       <span className="flex justify-center">
@@ -204,14 +206,15 @@ export const CastleNodeSheet = ({
         refusal={refusal}
       />
     ) : (
-      <Button
-        role="primary"
+      <HudButton
+        kind="primary"
         icon="research"
-        word={RESEARCH}
-        prices={[{ of: "essence", amount: node.essence }]}
-        loading={sending ? RESEARCHING : undefined}
+        prices={hudPrices([{ of: "essence", amount: node.essence }])}
+        busy={sending ? RESEARCHING : undefined}
         onClick={onResearch}
-      />
+      >
+        {RESEARCH}
+      </HudButton>
     )}
-  </Sheet>
+  </HudSheet>
 );

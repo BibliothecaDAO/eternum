@@ -3,7 +3,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Chip } from "@/ui/design-system/kit/chip";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import type { Refusal } from "@/ui/design-system/kit/refused-verb";
@@ -174,12 +174,9 @@ const castleNodes = (
       label: SHRINE,
       tip: armiesFind(SHRINE, `+${formatAmount(shrineXp)} ${XP}`),
       gives: (
-        <Chip
-          icons={["shrine"]}
-          label={XP}
-          value={shrineXp === undefined ? "—" : `+${formatAmount(shrineXp)}`}
-          unit={XP}
-        />
+        <HudChip icons={["shrine"]} label={XP}>
+          {`${shrineXp === undefined ? "—" : `+${formatAmount(shrineXp)}`} ${XP}`}
+        </HudChip>
       ),
     },
     {
@@ -187,7 +184,11 @@ const castleNodes = (
       icon: "well",
       label: WELL,
       tip: armiesFind(WELL, `+${nativeRuleConstants.WELL_STAMINA} ${STAMINA}`),
-      gives: <Chip icons={["stamina"]} label={STAMINA} value={`+${nativeRuleConstants.WELL_STAMINA}`} />,
+      gives: (
+        <HudChip icons={["stamina"]} label={STAMINA}>
+          {`+${nativeRuleConstants.WELL_STAMINA}`}
+        </HudChip>
+      ),
     },
     ...([1, 2, 3] as const).map((depth) => ({
       view: depthNode(plan, depth),
@@ -196,11 +197,9 @@ const castleNodes = (
       tip: armiesEnter(reach(depth)),
       waitsFor: depth === 1 ? undefined : reach((depth - 1) as 1 | 2),
       gives: (
-        <Chip
-          icons={[reachMark(depth)]}
-          label={`${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`}
-          value={REACH_NUMERALS[depth - 1]}
-        />
+        <HudChip icons={[reachMark(depth)]} label={`${ETHEREAL} ${REACH_NUMERALS[depth - 1]}`}>
+          {REACH_NUMERALS[depth - 1]}
+        </HudChip>
       ),
     })),
   ];
