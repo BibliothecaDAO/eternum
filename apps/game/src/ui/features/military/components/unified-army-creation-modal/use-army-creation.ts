@@ -25,8 +25,6 @@ import {
   DISPLAYED_SLOT_NUMBER_MAP,
   getBuildingFromResource,
   getNeighborHexes,
-  GUARD_SLOT_NAMES,
-  GuardSlot,
   ID,
   resources,
   ResourcesIds,
@@ -47,10 +45,8 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import {
-  describeTroopLimit,
-  describeTroopRaiseCost,
   describeTroopSource,
-  describeTroopTraining,
+  troopRaisePrices,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
@@ -445,8 +441,6 @@ export const useArmyCreation = ({
     !armyType &&
     (!canInteractWithDefense || isDefenseSlotCreationBlocked || !isDefenseSlotCompatible || selectedSlotCooldown > 0);
 
-  const actionLabel = armyType ? "Create field army" : `Add defense: ${GUARD_SLOT_NAMES[guardSlot as GuardSlot]}`;
-
   const blockedReason = resolveArmyCreationBlockedReason({
     hasStructure: Boolean(structureComponent),
     needsProvision: Boolean(provision?.needsBootstrap),
@@ -529,19 +523,15 @@ export const useArmyCreation = ({
     freeDirections,
     selectedDirection,
     handleDirectionSelect,
-    actionLabel,
     isLoading,
     isActionDisabled,
     handleCreate,
     troopAvailabilityReason,
     blockedReason,
-    // With no troop on hand the blocked reason already says when a full army is ready.
-    troopTrainingLine: troopAvailabilityReason ? null : describeTroopTraining(troopSupply),
-    troopLimitLine: describeTroopLimit(selectedAvailable, troopCapacityLimit, capacityRemainingForSelector),
     // With none on hand, where they come from: the empty state's next step.
     troopSourceLine:
       selectedAvailable < 1 ? describeTroopSource(troopSupply.name, readTroopRecipe(store, selectedTroopCombo)) : null,
-    raiseCost: describeTroopRaiseCost(raiseCost),
+    raisePrices: troopRaisePrices(raiseCost),
   };
 };
 

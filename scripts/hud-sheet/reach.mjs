@@ -195,13 +195,9 @@ const WAITING = {
     "A (hud): the group colours Edit structure and the Transfer pickers paint",
   "ui/features/world/components/entities/hooks/use-structure-entity-detail.ts": "A (hud): Military's structure heading",
   "ui/features/military/components/troop-chip.tsx": "D (rings): an army holder's troops in the relic target",
-  "ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx":
-    "D (rings): the Military window's deploy form",
   "ui/features/military/components/unified-army-creation-modal/existing-armies-panel.tsx":
     "D (rings): the Military window's army list",
   "ui/shared/components/production-status-badge.tsx": "D (rings): the Build and Production badges",
-  "ui/features/military/components/army-deployment-picker.tsx":
-    "D (rings): the map's deploy picker, built in the deploy layout the owner picks",
 };
 
 /**

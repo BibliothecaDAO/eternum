@@ -4,12 +4,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { Direction } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
-import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { RealmHexDeployMap } from "./realm-hex-deploy-map";
-import { HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
-import { TroopSelectionGrid } from "./troop-selection-grid";
+import { DeployTroops, DeployVerb } from "./deploy-form";
 import { useArmyCreation } from "./use-army-creation";
 
 interface UnifiedArmyCreationProps {
@@ -111,102 +109,50 @@ export const UnifiedArmyCreationBody = ({
     direction,
     initialGuardSlot,
   });
-  const leftColumnClass = "flex flex-1 min-w-0 flex-col";
-  const rightColumnClass = "flex flex-1 min-w-0 flex-col";
-
+  // Where it goes, then the troops; the one verb sits in the window's foot.
   return (
-    <div className="flex min-h-full flex-col p-3">
-      <div className="flex flex-1 flex-col items-stretch gap-3 lg:flex-row">
-        <div className={leftColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-hud-line bg-hud-well p-2 gap-3">
-            <TroopSelectionGrid
-              options={form.troopOptions}
-              selected={form.selectedTroopCombo}
-              isDefenseTroopLocked={form.isDefenseTroopLocked}
-              selectedGuardCategory={form.selectedGuardCategory}
-              selectedGuardTier={form.selectedGuardTier}
-              onSelect={form.handleTroopSelect}
-              bare
-            />
-            <div className="border-t border-hud-divider" />
-            <HudTroopAmount
-              name="Troop count"
-              value={form.troopCount}
-              most={form.maxAffordable}
-              held={form.selectedAvailable}
-              onChange={form.handleTroopCountChange}
-              disabled={form.troopAvailabilityReason !== null}
-            />
-            <p className="px-1 text-hud-body tabular-nums text-hud-muted">{form.troopLimitLine}</p>
-            {form.troopSourceLine && <p className="px-1 text-hud-body text-hud-muted">{form.troopSourceLine}</p>}
-            {form.troopTrainingLine && (
-              <>
-                <div className="border-t border-hud-divider" />
-                <p className="px-1 py-1 text-hud-label text-hud-muted">{form.troopTrainingLine}</p>
-              </>
-            )}
-            {form.raiseCost && (
-              <>
-                <div className="border-t border-hud-divider" />
-                <p className="px-1 py-1 text-hud-label text-hud-muted">Deploying costs {form.raiseCost}.</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className={rightColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-hud-line bg-hud-well p-2 gap-2">
-            <ArmyTypeToggle
-              armyType={form.armyType}
-              canCreateAttackArmy={form.canCreateAttackArmy}
-              canCreateDefenseArmy={form.canCreateDefenseArmy}
-              canInteractWithDefense={form.canInteractWithDefense}
-              currentExplorersCount={form.currentExplorersCount}
-              maxExplorers={form.maxExplorers}
-              currentGuardsCount={form.currentGuardsCount}
-              maxGuards={form.resolvedMaxDefenseSlots}
-              onSelect={form.handleArmyTypeSelect}
-            />
-            <div className="border-t border-hud-divider" />
-            <div className="flex-1 min-h-36 flex flex-col">
-              {!form.armyType && (
-                <DefenseSlotSelection
-                  guardSlot={form.guardSlot}
-                  maxDefenseSlots={form.resolvedMaxDefenseSlots}
-                  guardsBySlot={form.guardsBySlot}
-                  availableSlots={form.availableGuardSlots}
-                  selectedTroopCombo={form.selectedTroopCombo}
-                  canCreateDefenseArmy={form.canCreateDefenseArmy}
-                  defenseSlotInfoMessage={form.defenseSlotInfoMessage}
-                  defenseSlotErrorMessage={form.defenseSlotErrorMessage}
-                  onSelect={form.handleGuardSlotSelect}
-                />
-              )}
-              {form.armyType && form.structureCoordX !== undefined && form.structureCoordY !== undefined && (
-                <RealmHexDeployMap
-                  centerCol={Number(form.structureCoordX)}
-                  centerRow={Number(form.structureCoordY)}
-                  availableDirections={form.freeDirections}
-                  selectedDirection={form.selectedDirection}
-                  isLoading={false}
-                  onSelect={form.handleDirectionSelect}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>{" "}
-      <div className="sticky bottom-0 z-10 mt-2 shrink-0 bg-[#101c23] py-2">
-        <ActionFooter
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <ArmyTypeToggle
           armyType={form.armyType}
-          label={form.actionLabel}
-          isLoading={form.isLoading}
-          isDisabled={form.isActionDisabled}
-          blockedReason={form.blockedReason}
-          onSubmit={form.handleCreate}
-          embedded
+          canCreateAttackArmy={form.canCreateAttackArmy}
+          canCreateDefenseArmy={form.canCreateDefenseArmy}
+          canInteractWithDefense={form.canInteractWithDefense}
+          currentExplorersCount={form.currentExplorersCount}
+          maxExplorers={form.maxExplorers}
+          currentGuardsCount={form.currentGuardsCount}
+          maxGuards={form.resolvedMaxDefenseSlots}
+          onSelect={form.handleArmyTypeSelect}
         />
+        {!form.armyType && (
+          <DefenseSlotSelection
+            guardSlot={form.guardSlot}
+            maxDefenseSlots={form.resolvedMaxDefenseSlots}
+            guardsBySlot={form.guardsBySlot}
+            availableSlots={form.availableGuardSlots}
+            selectedTroopCombo={form.selectedTroopCombo}
+            canCreateDefenseArmy={form.canCreateDefenseArmy}
+            defenseSlotInfoMessage={form.defenseSlotInfoMessage}
+            defenseSlotErrorMessage={form.defenseSlotErrorMessage}
+            onSelect={form.handleGuardSlotSelect}
+          />
+        )}
+        {form.armyType && form.structureCoordX !== undefined && form.structureCoordY !== undefined && (
+          <RealmHexDeployMap
+            centerCol={Number(form.structureCoordX)}
+            centerRow={Number(form.structureCoordY)}
+            availableDirections={form.freeDirections}
+            selectedDirection={form.selectedDirection}
+            isLoading={false}
+            onSelect={form.handleDirectionSelect}
+          />
+        )}
       </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <DeployTroops form={form} />
+        {form.troopSourceLine && <p className="text-hud-label text-hud-muted">{form.troopSourceLine}</p>}
+      </div>
+      <DeployVerb form={form} />
     </div>
   );
 };

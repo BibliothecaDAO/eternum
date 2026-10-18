@@ -33,12 +33,12 @@ describe("the shared deployment picker", () => {
         </GameProvider>,
       ),
     );
-    expect(host.querySelector('[aria-pressed="true"]')?.getAttribute("aria-label")).toMatch(/^Knight T1: /);
+    expect(host.querySelector('[aria-pressed="true"]')?.getAttribute("aria-label")).toMatch(/^Knight T1, /);
     act(() => root.unmount());
     host.remove();
   });
 
-  it("names each kind over its column, as the Military window does, its tiers going down", () => {
+  it("draws a column per troop under its name, every tier in place from T1 down", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = frontierDay();
     const host = document.createElement("div");
@@ -51,12 +51,34 @@ describe("the shared deployment picker", () => {
         </GameProvider>,
       ),
     );
-    const cells = [...host.querySelector('[aria-label="Available troops"]')!.children];
-    const kinds = cells.slice(0, 3).map((cell) => cell.textContent);
-    expect(kinds).toEqual(["Crossbow", "Knight", "Paladin"]);
-    // Row by row: each tile sits under its kind's name, T1 first.
-    const tiles = cells.slice(3).map((cell) => cell.getAttribute("aria-label")?.split(":")[0]);
-    expect(tiles).toEqual(["T1", "T2", "T3"].flatMap((tier) => kinds.map((kind) => `${kind} ${tier}`)));
+    const columns = [...host.querySelectorAll(".ui-deploy__troop")];
+    expect(columns.map((column) => column.querySelector(".ui-deploy__name")?.textContent)).toEqual([
+      "Crossbow",
+      "Knight",
+      "Paladin",
+    ]);
+    // Each column holds its troop's tiers, T1 first, an empty one shut and saying so.
+    expect(
+      columns.map((column) =>
+        [...column.querySelectorAll("button")].map((stack) => [stack.getAttribute("aria-label"), stack.disabled]),
+      ),
+    ).toEqual([
+      [
+        ["Crossbow T1, 0 held", true],
+        ["Crossbow T2, 0 held", true],
+        ["Crossbow T3, 0 held", true],
+      ],
+      [
+        ["Knight T1, 420 held", false],
+        ["Knight T2, 0 held", true],
+        ["Knight T3, 0 held", true],
+      ],
+      [
+        ["Paladin T1, 0 held", true],
+        ["Paladin T2, 0 held", true],
+        ["Paladin T3, 0 held", true],
+      ],
+    ]);
     act(() => root.unmount());
     host.remove();
   });
@@ -85,8 +107,9 @@ describe("the shared deployment picker", () => {
     expect(field().value).toBe("420");
     expect(button(/^\+500$/).disabled).toBe(true);
     expect(button(/^Max$/).disabled).toBe(true);
-    // Each knight takes two wheat: the cost rides on the one primary button.
-    expect(button(/^Deploy/).textContent).toBe("Deploy · 840 wheat");
+    // Each knight takes two wheat: the cost rides on the one primary button, in the window's foot.
+    expect(button(/^Deploy/).closest(".ui-window__foot")).not.toBeNull();
+    expect(button(/^Deploy/).querySelector('[aria-label="840 wheat"]')).not.toBeNull();
     // This fixture's realm has no map position, so no spawn hex: Deploy is shut and says so, once.
     expect(button(/^Deploy/).disabled).toBe(true);
     expect([...host.querySelectorAll('[role="status"]')].map((line) => line.textContent)).toEqual([
@@ -133,7 +156,7 @@ describe("the picker's typed troop count", () => {
         </GameProvider>,
       ),
     );
-    const count = () => host.querySelector<HTMLInputElement>('input[aria-label="Troop count"]')!;
+    const count = () => host.querySelector<HTMLInputElement>('input[aria-label="Knight T1"]')!;
     // The fixture realm holds 420 knights.
     for (const [text, shown] of [
       ["-500", "0"],

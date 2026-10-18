@@ -1,6 +1,8 @@
 import { formatTime, TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
 /** Whole troops that fit both the stockpile and the selected army's remaining cap. */
@@ -61,16 +63,15 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/** What deploying the chosen troops costs beyond the troops, such as "20 wheat"; null when it costs nothing yet. */
-export function describeTroopRaiseCost(costs: TroopRaiseCost[] | undefined): string | null {
-  const paid = (costs ?? []).filter(({ amount }) => amount > 0n);
-  if (!paid.length) return null;
-  return paid
-    .map(
-      ({ resource, amount }) =>
-        `${Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`,
-    )
-    .join(" and ");
+/** What deploying the chosen troops costs beyond the troops, as the Deploy verb's prices; none while it costs nothing. */
+export function troopRaisePrices(costs: TroopRaiseCost[] | undefined) {
+  return (costs ?? [])
+    .filter(({ amount }) => amount > 0n)
+    .map(({ resource, amount }) => ({
+      icon: resourceMeaning(resource),
+      word: ResourcesIds[resource].toLowerCase(),
+      amount: Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString(),
+    }));
 }
 
 /**
@@ -82,22 +83,6 @@ export function describeTroopSource(name: string, inputs: readonly { resource: R
     ? `, from ${inputs.map(({ resource, perTroop }) => `${perTroop.toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`).join(" and ")} each`
     : "";
   return `${name} are trained by a ${name} barracks on the realm board${from}.`;
-}
-
-/** What the window says about how many can go: "1,000 on hand · army cap 7,500", with the room left when it is less. */
-export function describeTroopLimit(held: number, cap: number | null, room: number | null): string {
-  const parts = [`${held.toLocaleString()} on hand`];
-  if (cap !== null) parts.push(`army cap ${cap.toLocaleString()}`);
-  if (cap !== null && room !== null && room < cap) parts.push(`room for ${Math.max(0, room).toLocaleString()}`);
-  return parts.join(" · ");
-}
-
-/** The training line while a barracks fills the next army; null when nothing trains the troop. */
-export function describeTroopTraining(supply: TroopSupply): string | null {
-  if (supply.perHour <= 0 || supply.secondsToFullArmy === null) return null;
-  const rate = `Training ${supply.perHour.toLocaleString()} ${supply.name} per hour`;
-  if (supply.secondsToFullArmy <= 0) return `${rate}; a full army is ready.`;
-  return `${rate}; a full army in ${formatTime(Math.ceil(supply.secondsToFullArmy)).trim()}.`;
 }
 
 /** None on hand: "No Knight T1 on hand.", or while a barracks trains them, when a full army is ready. */

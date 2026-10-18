@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  describeTroopLimit,
-  describeTroopRaiseCost,
   describeTroopSource,
-  describeTroopTraining,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
   resolveSpawnDirection,
   resolveTroopAvailabilityReason,
+  troopRaisePrices,
 } from "./army-creation-policy";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -77,11 +75,12 @@ describe("army deployment blocked states", () => {
 });
 
 describe("troop raise cost", () => {
-  it("names what deploying costs beyond the troops, and nothing where it costs nothing", () => {
-    expect(describeTroopRaiseCost([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toBe("20 wheat");
-    expect(describeTroopRaiseCost([{ resource: 35, amount: 0n, held: 0n }])).toBeNull();
-    expect(describeTroopRaiseCost([])).toBeNull();
-    expect(describeTroopRaiseCost(undefined)).toBeNull();
+  it("prices what deploying costs beyond the troops for the Deploy verb, and nothing where it costs nothing", () => {
+    expect(troopRaisePrices([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toEqual([
+      { icon: "wheat", word: "wheat", amount: "20" },
+    ]);
+    expect(troopRaisePrices([{ resource: 35, amount: 0n, held: 0n }])).toEqual([]);
+    expect(troopRaisePrices(undefined)).toEqual([]);
   });
 });
 
@@ -95,10 +94,6 @@ describe("troop supply", () => {
     expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: training })).toBe(
       "No Knight T1 yet: a full army in 2h 10m.",
     );
-    expect(describeTroopTraining({ ...training, secondsToFullArmy: 0 })).toBe(
-      "Training 250 Knight T1 per hour; a full army is ready.",
-    );
-    expect(describeTroopTraining(noBarracks)).toBeNull();
   });
   it("has no availability reason while a troop can be chosen", () => {
     expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 1, supply: noBarracks })).toBeNull();
@@ -148,13 +143,7 @@ describe("spawn direction", () => {
   });
 });
 
-describe("how many can go, and where troops come from", () => {
-  it("says what is on hand and which cap applies, and the room left when it is less", () => {
-    expect(describeTroopLimit(1_000, 7_500, 7_500)).toBe("1,000 on hand · army cap 7,500");
-    expect(describeTroopLimit(1_000, 1_500, 500)).toBe("1,000 on hand · army cap 1,500 · room for 500");
-    expect(describeTroopLimit(0, null, null)).toBe("0 on hand");
-  });
-
+describe("where troops come from", () => {
   it("names the barracks that trains a troop and what it is made from, per troop", () => {
     // Blitz's Knight T1 recipe, per troop: ten from 2 wheat and 0.8 copper.
     expect(

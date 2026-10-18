@@ -38,7 +38,7 @@ it("keeps the troop count the player typed in the Military window: its sign, its
       </GameProvider>,
     ),
   );
-  const count = () => host.querySelector<HTMLInputElement>('input[aria-label="Troop count"]')!;
+  const count = () => host.querySelector<HTMLInputElement>('input[aria-label="Knight T1"]')!;
   // The fixture realm holds 420 knights, under a 1,500 cap.
   for (const [text, shown] of [
     ["-500", "0"],
