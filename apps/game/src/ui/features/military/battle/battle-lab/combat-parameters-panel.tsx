@@ -1,5 +1,4 @@
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HudButton, HudField, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { CombatParameters, CombatSimulator } from "@bibliothecadao/eternum";
 
 interface CombatParametersPanelProps {
@@ -7,6 +6,9 @@ interface CombatParametersPanelProps {
   onParametersChange: (parameters: CombatParameters) => void;
   show: boolean;
 }
+
+/** A parameter's key as a label: "damageScaling" reads "Damage Scaling". */
+const parameterLabel = (key: string) => key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
 
 /**
  * Advanced combat parameters (toggled with Ctrl+Shift+S). Rendered INSIDE the
@@ -18,46 +20,35 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
 
   return (
     <div
-      className={cn(
-        "modal-no-drag absolute right-3 top-3 z-50 max-h-full w-80 overflow-y-auto rounded-xl p-4",
-        OVERLAY_SURFACE_BASE,
-      )}
+      className="modal-no-drag absolute right-3 top-3 z-50 max-h-full w-80 overflow-y-auto"
       onMouseDown={(event) => event.stopPropagation()}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-hud-gold" />
-        <span className="text-hud-label text-hud-accent">Combat Parameters</span>
-      </div>
-      <div className="space-y-2">
-        {Object.entries(parameters).map(([key, value]) => (
-          <label key={key} className="flex flex-col gap-1">
-            <span className="text-hud-label uppercase text-hud-muted">
-              {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
-            </span>
-            <input
-              type="number"
-              value={Number(value)}
-              onChange={(event) => {
-                const next = parseFloat(event.target.value);
-                if (!Number.isNaN(next)) {
-                  onParametersChange({ ...parameters, [key]: next });
-                }
-              }}
-              min={0}
-              max={1000}
-              step={0.01}
-              className="rounded border border-hud-line bg-hud-well px-2 py-1 text-hud-accent focus:border-hud-line-strong focus:outline-none"
-            />
-          </label>
-        ))}
-        <button
-          type="button"
-          className="mt-3 w-full rounded-lg border border-hud-line bg-hud-chosen px-4 py-2 text-hud-strong text-hud-accent transition hover:bg-hud-chosen"
-          onClick={() => onParametersChange(CombatSimulator.getDefaultParameters())}
-        >
-          Reset to defaults
-        </button>
-      </div>
+      <HudPanel title="Combat Parameters" collapsible={false}>
+        <div className="space-y-2">
+          {Object.entries(parameters).map(([key, value]) => (
+            <label key={key} className="flex flex-col gap-1">
+              <span className="text-hud-label text-hud-muted">{parameterLabel(key)}</span>
+              <HudField
+                type="number"
+                aria-label={parameterLabel(key)}
+                value={String(Number(value))}
+                onChange={(text) => {
+                  const next = parseFloat(text);
+                  if (!Number.isNaN(next)) onParametersChange({ ...parameters, [key]: next });
+                }}
+                min={0}
+                max={1000}
+                step={0.01}
+              />
+            </label>
+          ))}
+          <div className="grid pt-2">
+            <HudButton kind="secondary" onClick={() => onParametersChange(CombatSimulator.getDefaultParameters())}>
+              Reset to defaults
+            </HudButton>
+          </div>
+        </div>
+      </HudPanel>
     </div>
   );
 };

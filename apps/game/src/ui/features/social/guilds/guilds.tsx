@@ -1,7 +1,6 @@
 import { useFactView } from "@/hooks/use-fact-view";
 import { guildsView } from "@/sync/fact-views";
 import { LORDS_PRIZE_POOL, STRK_PRIZE_POOL } from "@/ui/constants";
-import { Button, TextInput } from "@/ui/design-system/atoms";
 import { CreateGuildButton } from "./create-guild-button";
 import { GuildListHeader, GuildRow } from "./guild-list";
 import { useSocialStore } from "../components/use-social-store";
@@ -17,7 +16,7 @@ import { usePlayerWhitelist } from "@/hooks/helpers/use-guilds";
 import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 
 import { useMemo, useState } from "react";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 
 export const Guilds = ({
   viewGuildMembers,
@@ -346,18 +345,18 @@ export const Guilds = ({
             setIsPublic={setIsPublic}
           />
         )}
-        <TextInput
+        <HudField
           placeholder="Search Tribe . . ."
+          aria-label="Search tribes"
           value={guildsGuildSearchTerm}
-          onChange={(searchTerm) => setGuildsGuildSearchTerm(searchTerm)}
-          className="w-full btn-bronze"
+          onChange={setGuildsGuildSearchTerm}
         />
       </div>
 
       <div className="flex min-h-0 flex-1">
         <div className="flex h-full min-h-0 flex-1 flex-col rounded-xl">
           <GuildListHeader activeSort={guildsActiveSort} setActiveSort={setGuildsActiveSort} />
-          <div className="mt-4 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="mt-4 flex-1 overflow-y-auto">
             {filteredGuilds.map((guild) => (
               <GuildRow key={guild.entityId} guild={guild} onClick={() => viewGuildMembers(guild.entityId)} />
             ))}

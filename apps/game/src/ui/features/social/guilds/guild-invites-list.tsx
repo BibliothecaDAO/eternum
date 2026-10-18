@@ -24,7 +24,7 @@ export const GuildInviteList = ({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto">
         {sortedInvites.map((player) => (
           <InviteRow
             key={`${player.address}-${player.name}`}

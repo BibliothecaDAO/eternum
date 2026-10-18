@@ -4,7 +4,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudConfirm } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 
 export const GuardDismissal = ({
@@ -57,22 +57,22 @@ export const GuardDismissal = ({
     <div className="space-y-2 border-t border-hud-line pt-2">
       {confirming ? (
         <>
-          <p className="text-hud-label">
-            Dismiss guard in slot {DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}? All its troops are permanently lost.
-          </p>
-          <div className="flex gap-2">
-            <Button variant="danger" disabled={disabled || pending} onClick={dismiss}>
-              Confirm dismissal
-            </Button>
-            <Button disabled={pending} onClick={close}>
-              Cancel
-            </Button>
-          </div>
+          <HudConfirm
+            question={`Dismiss guard in slot ${DISPLAYED_SLOT_NUMBER_MAP[slot as GuardSlot]}?`}
+            verb={pending ? "Dismissing…" : "Confirm dismissal"}
+            tone="bad"
+            onConfirm={() => {
+              if (!disabled && !pending) dismiss();
+            }}
+            onBack={close}
+          >
+            <span className="text-hud-body text-hud-muted">All its troops are permanently lost.</span>
+          </HudConfirm>
         </>
       ) : (
-        <Button variant="outline" disabled={disabled} onClick={ask}>
+        <HudButton kind="secondary" tone="bad" disabled={disabled} onClick={ask}>
           Dismiss guard
-        </Button>
+        </HudButton>
       )}
     </div>
   );

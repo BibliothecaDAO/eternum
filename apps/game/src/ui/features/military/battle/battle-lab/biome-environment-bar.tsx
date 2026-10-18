@@ -1,8 +1,7 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { DROPDOWN_TRIGGER, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { SelectBiome } from "@/ui/design-system/molecules/select-biome";
+import { biomeDisplayName } from "@/ui/utils/biome-name";
 import { type CombatSimulator, configManager } from "@bibliothecadao/eternum";
 import { BiomeType, resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
 
@@ -33,24 +32,24 @@ export const BiomeEnvironmentBar = ({
 }: BiomeEnvironmentBarProps) => {
   const neutral = ethereal || !configManager.hasBiomeCombatEffects();
   return (
-    <div className={cn("flex flex-col gap-3 rounded-xl px-4 py-3.5", OVERLAY_SURFACE_BASE)}>
-      <div className="flex items-center gap-2">
-        <SemanticIcon name="map" className="h-4 w-4 text-hud-accent" />
-        <span className="text-hud-label text-hud-muted">Battle Environment</span>
-      </div>
-
+    <HudPanel title="Battle Environment" icon="map" collapsible={false}>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
         {neutral ? (
           <span className="text-hud-body text-hud-muted">
             {ethereal ? "Ethereal — neutral terrain" : "Neutral terrain"}
           </span>
         ) : (
-          <SelectBiome
-            combatSimulator={combatSimulator}
-            defaultValue={biome}
-            onSelect={(next) => next && onSelect(next as BiomeType)}
-            showTriggerBonuses={false}
-            className={cn(DROPDOWN_TRIGGER, "sm:max-w-xs")}
+          <HudSelect
+            label="Biome"
+            value={biome}
+            options={Object.values(BiomeType).map((each) => ({
+              value: each,
+              label: biomeDisplayName(each),
+              hint: TROOPS.map(
+                ({ type, label }) => `${label} ${formatBonus(configManager.getBiomeCombatBonus(type, each))}`,
+              ).join(" · "),
+            }))}
+            onChange={onSelect}
           />
         )}
 
@@ -62,7 +61,7 @@ export const BiomeEnvironmentBar = ({
               <div key={type} className="flex items-center gap-2">
                 <ResourceIcon withTooltip={false} resource={resourceId} size="sm" />
                 <div className="flex flex-col leading-none">
-                  <span className={cn("text-hud-label text-hud-cue", "text-hud-cue")}>{label}</span>
+                  <span className="text-hud-label text-hud-cue">{label}</span>
                   <span className={cn("text-hud-strong tabular-nums", tone)}>{formatBonus(bonus)}</span>
                 </div>
               </div>
@@ -70,6 +69,6 @@ export const BiomeEnvironmentBar = ({
           })}
         </div>
       </div>
-    </div>
+    </HudPanel>
   );
 };

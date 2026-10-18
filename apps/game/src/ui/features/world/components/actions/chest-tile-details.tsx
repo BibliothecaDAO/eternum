@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { getRelicInfo, type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
-import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
 /**
@@ -31,9 +31,9 @@ export function ChestTileDetails({
     <div className="flex shrink-0 flex-col gap-2">
       <HudPanel className="min-w-0" divided bodyClassName="flex flex-col">
         <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
-          <div className="flex items-center gap-2 text-hud-ink">
+          <div className="flex items-center gap-2 text-hud-accent">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
-            <p className="truncate text-hud-title text-hud-ink">{opening ? "Crate opened" : "Crate"}</p>
+            <p className="truncate text-hud-title">{opening ? "Crate opened" : "Crate"}</p>
           </div>
         </HudPanel>
         <HudPanel kind="section" title="Contents" icon={"chest" as const}>
@@ -41,8 +41,7 @@ export function ChestTileDetails({
           {!opening && (
             <div className="mt-2">
               <HudButton
-                kind="secondary"
-                size="sm"
+                kind="primary"
                 onClick={onOpen}
                 disabled={!onOpen}
                 data-tip={onOpen ? undefined : openBlockedReason}
@@ -67,7 +66,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   return (
     <div className="flex flex-col gap-2">
       {relics && (
-        <p className="text-hud-body text-hud-ink">
+        <p className="text-hud-accent text-hud-body">
           {relics.length === 1 ? "1 relic" : `${relics.length} relics`} inside
         </p>
       )}
@@ -77,6 +76,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
           compact
           label="Points"
           value={configManager.getVictoryPointGrants().openRelicCrate.toLocaleString()}
+          emphasizeValue
         />
       </EntityDetailStatList>
     </div>
@@ -86,7 +86,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
     {relics.map((relicId, index) => (
-      <li key={`${relicId}-${index}`} className="flex items-center gap-2 text-hud-body text-hud-ink">
+      <li key={`${relicId}-${index}`} className="flex items-center gap-2 text-hud-body">
         <ResourceIcon resource={relicId} size="sm" withTooltip={false} />
         <span className="truncate">{getRelicInfo(relicId)?.name ?? ResourcesIds[relicId]}</span>
       </li>

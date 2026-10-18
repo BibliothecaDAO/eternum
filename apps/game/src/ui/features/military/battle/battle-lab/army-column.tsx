@@ -1,9 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { DROPDOWN_TRIGGER, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HudButton, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { SelectRelic } from "@/ui/design-system/molecules/select-relic";
-import { SelectTier } from "@/ui/design-system/molecules/select-tier";
-import { SelectTroop } from "@/ui/design-system/molecules/select-troop";
 import { StaminaManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -11,6 +9,14 @@ import type { GuardOption, WorkingArmy } from "./battle-lab.types";
 import { TierChip } from "../../utils/tier-chip";
 
 const MAX_TROOPS_PER_ARMY = 500_000;
+
+const TROOP_TYPES = [
+  { value: TroopType.Knight, label: "Knight" },
+  { value: TroopType.Crossbowman, label: "Crossbow" },
+  { value: TroopType.Paladin, label: "Paladin" },
+] as const;
+
+const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => ({ value: tier, label: tier }));
 
 interface ArmyColumnProps {
   label: string;
@@ -27,7 +33,7 @@ interface ArmyColumnProps {
 
 const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
   <label className="flex flex-col gap-1">
-    <span className={cn("flex items-center gap-1.5", "text-hud-label text-hud-muted")}>
+    <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
       {label}
       {hint && <span className="text-hud-label text-hud-cue">{hint}</span>}
     </span>
@@ -50,82 +56,79 @@ export const ArmyColumn = ({
   const maxStamina = StaminaManager.getMaxStamina(army.troopType, army.tier, army.maxStamina);
 
   return (
-    <div className={cn("flex flex-col gap-3 rounded-xl p-4", OVERLAY_SURFACE_BASE)}>
-      <div className="flex items-center gap-2">
-        <span className={cn("h-2.5 w-2.5 rounded-full", accent)} />
-        <span className="text-hud-label text-hud-accent">{label}</span>
-        <TierChip tier={String(army.tier)} />
-      </div>
+    <HudPanel
+      title={
+        <span className="flex items-center gap-2">
+          <span className={cn("h-2.5 w-2.5 rounded-full", accent)} />
+          {label}
+        </span>
+      }
+      cue={<TierChip tier={String(army.tier)} />}
+      collapsible={false}
+    >
+      <div className="flex flex-col gap-3">
+        {guards && guards.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            {guards.map((guard) => {
+              const active = guard.slot === selectedGuardSlot;
+              return (
+                <HudButton
+                  key={guard.slot}
+                  kind="secondary"
+                  size="sm"
+                  onClick={() => onSelectGuard?.(guard.slot)}
+                  aria-pressed={active}
+                >
+                  {guard.label} · {guard.army.troopCount.toLocaleString()}
+                </HudButton>
+              );
+            })}
+          </div>
+        )}
 
-      {guards && guards.length > 1 && (
-        <div className="flex flex-wrap gap-1.5">
-          {guards.map((guard) => {
-            const active = guard.slot === selectedGuardSlot;
-            return (
-              <button
-                key={guard.slot}
-                type="button"
-                onClick={() => onSelectGuard?.(guard.slot)}
-                className={cn(
-                  "rounded border px-2 py-1 text-hud-label transition-colors",
-                  active
-                    ? "border-hud-line-strong bg-hud-chosen text-hud-accent"
-                    : "border-hud-line bg-hud-well text-hud-muted hover:border-hud-line-strong",
-                )}
-                aria-pressed={active}
-              >
-                {guard.label} · {guard.army.troopCount.toLocaleString()}
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Stamina" hint={`${army.stamina}/${maxStamina}`}>
+            <NumberInput
+              value={army.stamina}
+              onChange={(stamina) => onChange({ stamina })}
+              min={0}
+              max={maxStamina}
+              step={1}
+            />
+          </Field>
+          <Field label="Troops" hint={army.troopCount.toLocaleString()}>
+            <NumberInput
+              value={army.troopCount}
+              onChange={(troopCount) => onChange({ troopCount })}
+              min={1}
+              max={MAX_TROOPS_PER_ARMY}
+              step={100}
+            />
+          </Field>
+          <Field label="Type">
+            <HudSelect
+              label="Troop type"
+              value={army.troopType}
+              options={TROOP_TYPES}
+              onChange={(troopType) => onChange({ troopType })}
+            />
+          </Field>
+          <Field label="Tier">
+            <HudSelect label="Tier" value={army.tier} options={TIERS} onChange={(tier) => onChange({ tier })} />
+          </Field>
         </div>
-      )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Stamina" hint={`${army.stamina}/${maxStamina}`}>
-          <NumberInput
-            value={army.stamina}
-            onChange={(stamina) => onChange({ stamina })}
-            min={0}
-            max={maxStamina}
-            step={1}
-          />
-        </Field>
-        <Field label="Troops" hint={army.troopCount.toLocaleString()}>
-          <NumberInput
-            value={army.troopCount}
-            onChange={(troopCount) => onChange({ troopCount })}
-            min={1}
-            max={MAX_TROOPS_PER_ARMY}
-            step={100}
-          />
-        </Field>
-        <Field label="Type">
-          <SelectTroop
-            defaultValue={army.troopType}
-            onSelect={(troopType) => troopType && onChange({ troopType: troopType as TroopType })}
-            className={DROPDOWN_TRIGGER}
-          />
-        </Field>
-        <Field label="Tier">
-          <SelectTier
-            defaultValue={army.tier}
-            onSelect={(tier) => tier && onChange({ tier: tier as TroopTier })}
-            className={DROPDOWN_TRIGGER}
-          />
-        </Field>
+        <SelectRelic
+          label="Active Relics"
+          defaultValue={army.relics}
+          onSelect={(relics) => onChange({ relics: relics as ResourcesIds[] })}
+          allowMultiple
+          filterTypes={["Damage", "Damage Reduction", "Stamina"]}
+          className="w-full"
+        />
+
+        {footer}
       </div>
-
-      <SelectRelic
-        label="Active Relics"
-        defaultValue={army.relics}
-        onSelect={(relics) => onChange({ relics: relics as ResourcesIds[] })}
-        allowMultiple
-        filterTypes={["Damage", "Damage Reduction", "Stamina"]}
-        className="w-full"
-      />
-
-      {footer}
-    </div>
+    </HudPanel>
   );
 };

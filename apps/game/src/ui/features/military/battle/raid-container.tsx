@@ -687,7 +687,7 @@ export const RaidContainer = ({
                           </div>
 
                           {stealableResources.length > 0 ? (
-                            <div className="max-h-64 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-gold/40 scrollbar-track-brown-900/30">
+                            <div className="max-h-64 overflow-y-auto pr-1">
                               <div className="space-y-3">
                                 {stealableResources.map((resource) => (
                                   <div

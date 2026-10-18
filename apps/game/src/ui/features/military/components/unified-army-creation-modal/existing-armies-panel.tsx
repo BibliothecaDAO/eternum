@@ -1,4 +1,4 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -12,6 +12,8 @@ import { type ArmyInfo, type ID, type TroopTier, type TroopType } from "@bibliot
 
 import { memo, useMemo, useState } from "react";
 import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { HudConfirm, HudIconButton, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { TierChip } from "../../utils/tier-chip";
 
 interface ExistingArmiesPanelProps {
@@ -31,7 +33,7 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
   return (
     <div className={cn("rounded-md border border-hud-line bg-hud-well px-2.5 py-2", className)}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={cn("flex items-center gap-1.5", "text-hud-label text-hud-muted", "text-hud-muted")}>
+        <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
           <SemanticIcon name="target" className="h-3 w-3 text-hud-muted" />
           Existing armies
         </span>
@@ -58,6 +60,8 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const timestamp = useCurrentDefaultTick();
   const { confirming, ask, close } = useConfirmFor(army.entityId);
   const [deleting, setDeleting] = useState(false);
+  // The owner's ruling: a confirm only in Frontier, where disbanding cannot be undone; Blitz and Eternum act at once.
+  const confirmsDisband = useGameModeConfig().id === "frontier";
 
   // troops.count is the raw precision value; currencyFormat divides internally.
   const rawCount = Number(army.troops?.count ?? 0);
@@ -106,7 +110,10 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   };
 
   return (
-    <li className="flex items-center gap-2 rounded-md border border-hud-line bg-hud-well px-2 py-1.5" title={army.name}>
+    <li
+      className="flex flex-wrap items-center gap-2 rounded-md border border-hud-line bg-hud-well px-2 py-1.5"
+      title={army.name}
+    >
       <TierChip tier={army.troops?.tier} />
       {troopResource !== null && (
         <ResourceIcon withTooltip={false} resource={troopResource} size="sm" className="shrink-0" />
@@ -118,64 +125,38 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
           title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
         >
           <span className="shrink-0 text-hud-label text-hud-muted">Stamina</span>
-          <div className="relative h-2 flex-1 min-w-0 overflow-hidden rounded-sm bg-hud-well">
-            {/* A neutral bar: low stamina is a state to read, not an alarm. */}
-            <div className="absolute inset-y-0 left-0 bg-hud-gold" style={{ width: `${staminaPercent}%` }} />
-          </div>
+          {/* A neutral bar: low stamina is a state to read, not an alarm. */}
+          <span className="min-w-0 flex-1">
+            <HudMeter share={staminaPercent / 100} label="Stamina" />
+          </span>
           <span className="shrink-0 text-hud-label tabular-nums text-hud-muted">
             {Number(stamina.amount)}/{maxStamina}
           </span>
         </div>
       )}
       <div className="flex shrink-0 items-center gap-0.5">
-        {!confirming && <IconButton icon={"map" as const} title="Navigate to army" onClick={handleJump} tone="gold" />}
-        {!confirming ? (
-          <IconButton icon={"trash" as const} title="Disband army" onClick={ask} tone="rose" />
-        ) : (
-          <>
-            <IconButton
-              icon={deleting ? ("refresh" as const) : ("check" as const)}
-              title="Confirm disband"
-              onClick={handleConfirmDelete}
-              tone="emerald"
-              spinning={deleting}
-            />
-            <IconButton icon={"close" as const} title="Cancel" onClick={close} tone="rose" disabled={deleting} />
-          </>
-        )}
+        <HudIconButton icon="map" label="Navigate to army" kind="quiet" onClick={handleJump} />
+        <HudIconButton
+          icon="trash"
+          label="Disband army"
+          kind="quiet"
+          disabled={deleting}
+          onClick={confirmsDisband ? ask : handleConfirmDelete}
+        />
       </div>
+      {confirming && (
+        <div className="basis-full">
+          <HudConfirm
+            question="Disband this army?"
+            verb={deleting ? "Disbanding…" : "Disband"}
+            tone="bad"
+            onConfirm={handleConfirmDelete}
+            onBack={close}
+          >
+            <span className="text-hud-body text-hud-muted">Its troops are lost; a deployed army never goes home.</span>
+          </HudConfirm>
+        </div>
+      )}
     </li>
   );
 };
-
-type IconButtonProps = {
-  icon: IconMeaning;
-  title: string;
-  onClick: () => void;
-  tone: "gold" | "emerald" | "rose";
-  disabled?: boolean;
-  spinning?: boolean;
-};
-
-const TONE_CLASS: Record<IconButtonProps["tone"], string> = {
-  gold: "border-hud-line text-hud-accent hover:border-hud-line-strong hover:text-hud-accent",
-  emerald: "border-hud-good text-hud-good hover:border-hud-good hover:text-hud-good",
-  rose: "border-hud-bad text-hud-bad hover:border-hud-bad hover:text-hud-bad",
-};
-
-const IconButton = ({ icon: Icon, title, onClick, tone, disabled, spinning }: IconButtonProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    title={title}
-    aria-label={title}
-    className={cn(
-      "inline-flex h-6 w-6 max-lg:h-11 max-lg:w-11 items-center justify-center rounded border bg-hud-well transition",
-      TONE_CLASS[tone],
-      disabled && "opacity-50 cursor-not-allowed",
-    )}
-  >
-    <SemanticIcon name={Icon} className={cn("h-3.5 w-3.5", spinning && "animate-spin")} />
-  </button>
-);

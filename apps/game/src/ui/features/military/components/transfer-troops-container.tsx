@@ -1,8 +1,7 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import Button from "@/ui/design-system/atoms/button";
+
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudNotice, HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
 import { formatNumber } from "@/ui/utils/utils";
 
 import {
@@ -1092,41 +1091,31 @@ export const TransferTroopsContainer = ({
                   <div className="mt-2 flex items-center justify-between gap-3">
                     <span className="text-hud-strong text-hud-accent">{directionLabel}</span>
                     {onToggleDirection ? (
-                      <Button
+                      <HudButton
+                        kind="secondary"
+                        size="sm"
+                        icon="swap"
                         onClick={onToggleDirection}
-                        variant="outline"
-                        size="xs"
                         disabled={!canToggleDirection}
-                        forceUppercase={false}
-                        className="flex items-center gap-2"
                       >
-                        <SemanticIcon name="swap" className="h-3 w-3" />
                         Swap
-                      </Button>
+                      </HudButton>
                     ) : null}
                   </div>
                 </div>
                 <TransferBalanceCards cards={transferBalanceCards} />
 
-                {blockReason && (
-                  <p
-                    role="status"
-                    className="rounded-md border border-hud-line bg-hud-well p-3 text-hud-body text-hud-muted"
-                  >
-                    {blockReason}
-                  </p>
-                )}
+                {blockReason && <HudNotice line={blockReason} />}
 
                 <div className="flex flex-col items-center">
-                  <Button
+                  <HudButton
+                    kind="primary"
                     onClick={handleTransfer}
-                    variant="primary"
-                    disabled={loading || isTroopsTransferDisabled}
-                    isLoading={loading}
-                    className="w-full sm:w-auto"
+                    busy={loading ? "Processing..." : undefined}
+                    disabled={isTroopsTransferDisabled}
                   >
-                    {loading ? "Processing..." : (!blockReason && nextStep) || "Transfer Troops"}
-                  </Button>
+                    {(!blockReason && nextStep) || "Transfer Troops"}
+                  </HudButton>
                 </div>
               </div>
             </div>

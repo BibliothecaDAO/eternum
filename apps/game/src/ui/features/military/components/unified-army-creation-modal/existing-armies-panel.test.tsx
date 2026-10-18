@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { configManager, setBlockTimestampSource, setChainProvenTimestampSource } from "@bibliothecadao/eternum";
 import { TickIds, type Troops } from "@bibliothecadao/types";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -10,13 +10,20 @@ import { ExistingArmiesPanel } from "./existing-armies-panel";
 
 const fixture = vi.hoisted(() => {
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "performance"] });
-  return { troops: null as Troops | null };
+  return { troops: null as Troops | null, mode: "blitz" };
 });
 vi.mock("@/hooks/helpers/use-armies", () => ({
   useExplorersByStructure: () => [{ entityId: 9, isMine: true, troops: fixture.troops, position: { x: 0, y: 0 } }],
 }));
-vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: (select: (state: object) => unknown) => select({}) }));
-vi.mock("@/sync/active-game-client", () => ({ requireActiveGameClient: vi.fn() }));
+vi.mock("@/hooks/store/use-ui-store", () => ({
+  useUIStore: (select: (state: object) => unknown) =>
+    select({ bumpMilitaryMapVersion: () => {}, selectOnMap: () => {}, setLeftNavigationView: () => {} }),
+}));
+const deleteExplorerArmy = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("@/sync/active-game-client", () => ({
+  requireActiveGameClient: () => ({ actions: { deleteExplorerArmy } }),
+}));
+vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({ id: fixture.mode }) }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("@/ui/utils/utils", () => ({ currencyFormat: () => "10" }));
 
@@ -92,4 +99,40 @@ it("keeps the visible army bar and movement gate fixed until the chain-proven fl
     act(() => root.unmount());
     host.remove();
   }
+});
+
+describe("disbanding an army", () => {
+  const mount = (mode: string) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    fixture.mode = mode;
+    fixture.troops = null;
+    deleteExplorerArmy.mockClear();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() => root.render(<ExistingArmiesPanel structureId={7} />));
+    return { host, root };
+  };
+
+  it("acts at once in Blitz, where no verb asks twice", async () => {
+    const { host, root } = mount("blitz");
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Disband army"]')!.click());
+    expect(deleteExplorerArmy).toHaveBeenCalledWith({ structureId: 7, explorerId: 9 });
+    expect(host.querySelector('[role="alertdialog"]')).toBeNull();
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("asks first in Frontier, where a disbanded army is lost for good", async () => {
+    const { host, root } = mount("frontier");
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Disband army"]')!.click());
+    expect(deleteExplorerArmy).not.toHaveBeenCalled();
+    const dialog = host.querySelector('[role="alertdialog"]')!;
+    expect(dialog.getAttribute("aria-label")).toBe("Disband this army?");
+    const verb = [...dialog.querySelectorAll("button")].find((button) => button.textContent === "Disband")!;
+    await act(async () => verb.click());
+    expect(deleteExplorerArmy).toHaveBeenCalledWith({ structureId: 7, explorerId: 9 });
+    act(() => root.unmount());
+    host.remove();
+  });
 });
