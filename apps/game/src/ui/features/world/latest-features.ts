@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Deploy map shows only where an army can go",
+    description:
+      "The Military window's deploy map now shows your realm and the six tiles around it, the only ones an army can step out onto, drawn large. Free tiles carry a green mark, occupied ones a red mark, and tiles not yet explored a question mark.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-18",
     title: "Chat and the right column fit",
     description:
       "Open chat now shares the right column with the selected army's details instead of covering its troops, stamina and biome. Next up's Select the army picks your newest army that can explore. Events keeps its name beside the Log count, chat's oldest messages show their date, and the build tag no longer sits under the chat strip.",

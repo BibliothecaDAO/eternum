@@ -11,7 +11,7 @@ import {
   readTroopRaiseCost,
   ResourceManager,
   structureMapPosition,
-  openSpawnDirections,
+  spawnRing,
 } from "@bibliothecadao/eternum";
 import type { GameModeConfig } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -305,17 +305,19 @@ export const useArmyCreation = ({
     [structureCoordX, structureCoordY],
   );
   const neighborTiles = useWorldSpatialTiles(neighborHexes);
+  // The six tiles an army can step out onto, each open, taken or unexplored (spawnRing), with the biome the map paints.
+  const deployRing = useMemo(() => {
+    if (!structureComponent) return [];
+    const tileAt = (hex: { col: number; row: number }) =>
+      neighborTiles.find((candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row);
+    return spawnRing(store, structureComponent, (hex) => {
+      const tile = tileAt(hex);
+      return tile ? safeInteger(tile.occupierId) : undefined;
+    }).map((tile) => ({ ...tile, biome: tileAt(tile)?.biome }));
+  }, [neighborTiles, store, structureComponent]);
   const freeDirections = useMemo(
-    () =>
-      structureComponent
-        ? openSpawnDirections(store, structureComponent, (hex) => {
-            const tile = neighborTiles.find(
-              (candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row,
-            );
-            return tile ? safeInteger(tile.occupierId) : undefined;
-          })
-        : [],
-    [neighborTiles, store, structureComponent],
+    () => deployRing.filter((tile) => tile.open).map((tile) => tile.direction),
+    [deployRing],
   );
 
   const isDefenseTroopLocked = !armyType && isSelectedSlotOccupied;
@@ -521,7 +523,7 @@ export const useArmyCreation = ({
     handleGuardSlotSelect,
     structureCoordX,
     structureCoordY,
-    freeDirections,
+    deployRing,
     selectedDirection,
     handleDirectionSelect,
     isLoading,

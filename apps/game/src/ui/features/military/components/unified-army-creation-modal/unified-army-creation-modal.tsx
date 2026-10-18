@@ -149,9 +149,8 @@ export const UnifiedArmyCreationBody = ({
           <RealmHexDeployMap
             centerCol={Number(form.structureCoordX)}
             centerRow={Number(form.structureCoordY)}
-            availableDirections={form.freeDirections}
+            ring={form.deployRing}
             selectedDirection={form.selectedDirection}
-            isLoading={false}
             onSelect={form.handleDirectionSelect}
           />
         )}

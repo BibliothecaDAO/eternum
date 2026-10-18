@@ -9,8 +9,11 @@ import {
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { RealmHexDeployMap } from "@/ui/features/military/components/unified-army-creation-modal/realm-hex-deploy-map";
-import { Direction } from "@bibliothecadao/types";
+import {
+  type DeployTile,
+  RealmHexDeployMap,
+} from "@/ui/features/military/components/unified-army-creation-modal/realm-hex-deploy-map";
+import { BiomeType, BiomeTypeToId, Direction, getNeighborHexes } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { Element } from "./sheet-element";
@@ -45,6 +48,25 @@ const stackOf = (key: string) => TROOPS.flatMap(({ stacks }) => stacks).find((st
 /** How many fit in a new army (the realm's army room), and what one troop costs to field. */
 const ROOM = 1_800;
 const WHEAT_A_TROOP = 1;
+
+const BIOME: Record<Direction, number> = {
+  [Direction.EAST]: BiomeTypeToId[BiomeType.Grassland],
+  [Direction.NORTH_EAST]: BiomeTypeToId[BiomeType.TemperateDeciduousForest],
+  [Direction.NORTH_WEST]: BiomeTypeToId[BiomeType.Shrubland],
+  [Direction.WEST]: BiomeTypeToId[BiomeType.Beach],
+  [Direction.SOUTH_WEST]: BiomeTypeToId[BiomeType.Taiga],
+  [Direction.SOUTH_EAST]: BiomeTypeToId[BiomeType.None],
+};
+
+/** The six tiles around the realm at (10, 10): four free, one taken, one not yet explored. */
+const RING: readonly DeployTile[] = getNeighborHexes(10, 10).map(({ col, row, direction }) => ({
+  col,
+  row,
+  direction,
+  open: direction !== Direction.NORTH_WEST && direction !== Direction.SOUTH_EAST,
+  explored: direction !== Direction.SOUTH_EAST,
+  biome: BIOME[direction],
+}));
 
 /** One deploy's state: the stack chosen and how many go, kept within what fits. */
 const useDeploy = () => {
@@ -129,9 +151,8 @@ const MilitaryForm = () => {
             <RealmHexDeployMap
               centerCol={10}
               centerRow={10}
-              availableDirections={[Direction.EAST, Direction.NORTH_EAST, Direction.WEST, Direction.SOUTH_WEST]}
+              ring={RING}
               selectedDirection={direction}
-              isLoading={false}
               onSelect={setDirection}
             />
           ) : (

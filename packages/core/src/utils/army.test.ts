@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
-import { openSpawnDirections } from "./army";
+import { spawnRing } from "./army";
 
 const realm = () =>
   ({
@@ -30,7 +30,13 @@ const frontier = {
 const DAY_ONE = 129_600;
 const nothingExplored = () => undefined;
 
-describe("openSpawnDirections", () => {
+/** The directions an army can be raised in: the ring's open tiles. */
+const openSpawnDirections = (...args: Parameters<typeof spawnRing>) =>
+  spawnRing(...args)
+    .filter((tile) => tile.open)
+    .map((tile) => tile.direction);
+
+describe("spawnRing", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("disables deployment until the explored Frontier ring arrives", () => {
