@@ -1,4 +1,5 @@
-import { BootDebugPanel, BootLoaderShell } from "@/ui/modules/boot-loader";
+import { BootDebugPanel } from "@/ui/debug/boot-debug-panel";
+import { BootLoaderShell } from "@/ui/modules/boot-loader";
 
 interface LoadingScreenProps {
   progress?: number;
