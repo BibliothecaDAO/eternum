@@ -1,5 +1,4 @@
 import { formatAmount, formatExact } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudNotice, HudPortrait, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
@@ -12,7 +11,6 @@ import { AmountRange } from "../amount-range";
 import { AttributeMarks } from "../attributes/attribute-marks";
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
-import { hudPrices } from "../hud-prices";
 import { DeployRing } from "./deploy-ring";
 
 type RingTile = { direction: Direction; open: boolean; explored: boolean };
@@ -120,13 +118,7 @@ export const DeployView = ({
         </>
       )}
       {canDeploy && equation && (
-        <HudButton
-          kind="primary"
-          icon="military"
-          prices={hudPrices([{ of: "wheat", amount: equation.wheatCost }])}
-          busy={sending ? DEPLOYING : undefined}
-          onClick={onDeploy}
-        >
+        <HudButton kind="primary" icon="military" busy={sending ? DEPLOYING : undefined} onClick={onDeploy}>
           {DEPLOY}
         </HudButton>
       )}

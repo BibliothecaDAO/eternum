@@ -2,9 +2,6 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { type To, useNavigate } from "react-router-dom";
 
-import { PriceChip } from "./price-chip";
-import type { PriceKind } from "./price-faces";
-
 /**
  * Primary is the one verb a screen asks for; secondary sits beside it; outline is the quiet way out (Cancel, Try again).
  * Primary and secondary stand 56 tall, outline 48, so every tap reaches 48. Every word is in the labels face (`font-ui`).
@@ -19,13 +16,10 @@ const ROLES: Record<ButtonRole, string> = {
     "h-12 rounded-plate border-2 border-kit-line2 bg-transparent text-base font-semibold text-kit-cream hover:border-kit-gold",
 };
 
-export type Price = { of: PriceKind; amount: number | undefined };
-
 type ButtonProps = {
   role: ButtonRole;
   word: string;
   icon?: IconMeaning;
-  prices?: readonly Price[];
   /** The step's word while the action is under way; the button waits until it clears. */
   loading?: string;
   disabled?: boolean;
@@ -40,8 +34,9 @@ type ButtonProps = {
 };
 
 /**
- * The kit's button: an icon, one word and the prices it pays. While its action is under way it shows that step's word
- * ("Deploying…") on itself and takes no second tap. Given `to`, the press leads to that route.
+ * The kit's button: an icon and one word, its verb only (what it pays is the line beside it, never on the button).
+ * While its action is under way it shows that step's word ("Deploying…") on itself and takes no second tap. Given
+ * `to`, the press leads to that route.
  */
 export const Button = ({ to, ...button }: ButtonProps) =>
   to === undefined ? <ButtonFace {...button} /> : <RouteButton {...button} to={to} />;
@@ -63,7 +58,6 @@ const ButtonFace = ({
   role,
   word,
   icon,
-  prices = [],
   loading,
   disabled = false,
   warns = false,
@@ -92,9 +86,6 @@ const ButtonFace = ({
       <>
         {icon && <SemanticIcon name={icon} size={22} />}
         <span>{word}</span>
-        {prices.map((price) => (
-          <PriceChip key={price.of} of={price.of} amount={price.amount} />
-        ))}
       </>
     )}
   </button>

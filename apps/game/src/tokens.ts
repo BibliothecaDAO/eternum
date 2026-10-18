@@ -159,8 +159,6 @@ const finishOf = (c: Palette) => ({
     "loss-rim": "#e0533f",
     "loss-text": "#ff8a73",
     "lit-glow": "0 0 12px rgba(246, 172, 29, 0.35)",
-    "price-ground": "rgba(27, 18, 7, 0.9)",
-    "price-rim": "#b76f00",
   },
   /** The app's one panel surface (`.plate`) from the desktop width up: leather in a lit, gilded frame. */
   plate: {

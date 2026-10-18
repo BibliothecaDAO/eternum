@@ -157,9 +157,10 @@ describe("the castle's tree", () => {
     act(() => side("Fields").click());
     expect(onLift).toHaveBeenCalledWith(0);
     expect(host.querySelector('img[src="/icons/facets/64/final-seal.webp"]')).not.toBeNull();
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("4,000 Essence · 3,000 labor");
     act(() =>
       buttons()
-        .find((button) => button.textContent === "Upgrade4,0003,000")!
+        .find((button) => button.textContent === "Upgrade")!
         .click(),
     );
     expect(onUpgrade).toHaveBeenCalled();
@@ -192,7 +193,8 @@ describe("the castle's tree", () => {
         />,
       ),
     );
-    const upgrade = buttons().find((button) => button.textContent === "Upgrade4,0003,000")!;
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("4,000 Essence · 3,000 labor");
+    const upgrade = buttons().find((button) => button.textContent === "Upgrade")!;
     expect(upgrade.disabled).toBe(true);
     expect(host.querySelector('[role="status"]')!.textContent).toBe("Choose Drill or Rations");
     // Opened from the board, the head leads to Research, where the type's row stands.
@@ -248,7 +250,8 @@ describe("the castle's tree", () => {
         />,
       ),
     );
-    expect(buttons().find((button) => button.textContent === "Research400,000")!.disabled).toBe(true);
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("400,000 Essence");
+    expect(buttons().find((button) => button.textContent === "Research")!.disabled).toBe(true);
     expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Ethereal I");
   });
 
@@ -265,9 +268,10 @@ describe("the castle's tree", () => {
         />,
       ),
     );
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("6,000 Essence");
     act(() =>
       buttons()
-        .find((button) => button.textContent === "Research6,000")!
+        .find((button) => button.textContent === "Research")!
         .click(),
     );
     expect(onResearch).toHaveBeenCalled();

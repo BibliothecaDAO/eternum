@@ -228,7 +228,8 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     act(() => sheet.card("Workshop").click());
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
-    expect(sheet.button("Build")!.textContent).toBe("Build2,000");
+    expect(sheet.button("Build")!.textContent).toBe("Build");
+    expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 labor");
     sheet.close();
   });
 

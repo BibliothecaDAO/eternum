@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -7,12 +6,11 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { hudPrices } from "../hud-prices";
+import { HudButton, HudChip, HudCost, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { costLine } from "@/ui/design-system/kit/price-faces";
 
 import { MOVE, SHRINE, STAMINA, TROOPS, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
@@ -111,17 +109,17 @@ export const MapSiteCard = ({
         </HudButton>
       ) : (
         approach && (
-          <HudButton
-            kind="primary"
-            icon="move"
-            prices={hudPrices([
-              { of: "stamina", amount: approach.stamina.cost },
-              { of: "wheat", amount: approach.wheat.cost },
-            ])}
-            onClick={() => requestOrderAt(approach.target)}
-          >
-            {MOVE}
-          </HudButton>
+          <>
+            <HudButton kind="primary" icon="move" onClick={() => requestOrderAt(approach.target)}>
+              {MOVE}
+            </HudButton>
+            <HudCost
+              line={costLine([
+                { of: "stamina", amount: approach.stamina.cost },
+                { of: "wheat", amount: approach.wheat.cost },
+              ])}
+            />
+          </>
         )
       )}
     </HudSheet>

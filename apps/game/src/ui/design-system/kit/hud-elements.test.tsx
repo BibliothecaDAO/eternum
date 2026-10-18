@@ -1,13 +1,16 @@
-import { act, createRef, useState } from "react";
+import { act, type ComponentProps, createRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
+import type { Button } from "./button";
+
 import {
   HudButton,
   HudCard,
   HudConfirm,
+  HudCost,
   HudDeploy,
   HudEventRow,
   HudField,
@@ -21,6 +24,7 @@ import {
   HudWindow,
   HudWindowFoot,
 } from "./hud-elements";
+import { costLine } from "./price-faces";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -63,6 +67,42 @@ const trigger = () => host.querySelector<HTMLButtonElement>(".ui-select")!;
 const menu = () => document.querySelector<HTMLElement>(".ui-select__layer .ui-menu");
 const key = (target: Element, name: string) =>
   act(() => target.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true })));
+
+describe("a verb and what it costs (owner, sheet 2026-10-18: a button carries its verb only)", () => {
+  // Neither button takes a price: typecheck fails here the day one does again. Its cost is the line beside it.
+  // @ts-expect-error A HUD button has no prices.
+  const hud: ComponentProps<typeof HudButton> = { kind: "primary", prices: [{ of: "stamina", amount: 20 }] };
+  // @ts-expect-error The kit's button has no prices.
+  const kit: ComponentProps<typeof Button> = { role: "primary", word: "Move", prices: [{ of: "stamina", amount: 20 }] };
+
+  it("draws the verb alone on its button, and its cost as one compact line beside it, as the order line writes it", () => {
+    expect([hud.kind, kit.word]).toEqual(["primary", "Move"]);
+    act(() =>
+      root.render(
+        <>
+          <HudButton kind="primary" icon="move">
+            Move
+          </HudButton>
+          <HudCost
+            line={costLine([
+              { of: "stamina", amount: 20 },
+              { of: "wheat", amount: 2.5 },
+              { of: "xp", amount: 100 },
+            ])}
+          />
+        </>,
+      ),
+    );
+    expect(host.querySelector(".ui-button")!.textContent).toBe("Move");
+    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 2.5 wheat · 100 XP");
+  });
+
+  it("writes an unknown amount as a dash, and draws nothing for a verb that costs nothing", () => {
+    expect(costLine([{ of: "lords", amount: undefined }])).toBe("— LORDS");
+    act(() => root.render(<HudCost line={costLine([])} />));
+    expect(host.innerHTML).toBe("");
+  });
+});
 
 describe("a button whose press sends", () => {
   /** A press that sends, held open until the test settles it. */

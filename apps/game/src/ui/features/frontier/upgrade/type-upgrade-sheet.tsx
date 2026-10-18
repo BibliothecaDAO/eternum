@@ -1,13 +1,12 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import type { Price } from "../hud-prices";
-import { HudButton, HudCard, HudChip, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudCard, HudChip, HudCost, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { chooseOne, RESEARCH, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { hudPrices } from "../hud-prices";
-import { RefusedUpgrade } from "./refused-upgrade";
+import { RefusedVerb } from "../refused-verb";
 
 /** One side of a tier's choice: its art and name, and what it gives every building of the type, before → after. */
 type Side = { icon: IconMeaning; name: string; gain: { icon: IconMeaning; label: string; value: string } };
@@ -111,21 +110,19 @@ export const TypeUpgradeSheet = ({
       )}
       {!top &&
         (waits ? (
-          <RefusedUpgrade word={UPGRADE} prices={prices} refusal={waits} />
+          <RefusedVerb word={UPGRADE} prices={prices} refusal={waits} />
         ) : (
-          <div className="flex items-center gap-2">
-            {sides && <SemanticIcon name="final-seal" size={26} />}
-            <span className="grid flex-1">
-              <HudButton
-                kind="primary"
-                prices={hudPrices(prices)}
-                busy={sending ? UPGRADING : undefined}
-                onClick={onUpgrade}
-              >
-                {UPGRADE}
-              </HudButton>
-            </span>
-          </div>
+          <>
+            <div className="flex items-center gap-2">
+              {sides && <SemanticIcon name="final-seal" size={26} />}
+              <span className="grid flex-1">
+                <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
+                  {UPGRADE}
+                </HudButton>
+              </span>
+            </div>
+            <HudCost line={costLine(prices)} />
+          </>
         ))}
     </HudSheet>
   );

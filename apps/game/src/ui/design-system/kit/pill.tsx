@@ -31,7 +31,7 @@ const ICON_SIZES: Record<PillSize, number> = { sm: 18, md: 20, lg: 20 };
 /**
  * A rounded chip of one fact: its icon and a few words ("Closed", "Starts 16:30 · in 2h 4m", "Credit ×2"), or the icon
  * alone. Live leads with the sage dot instead of an icon. A struck pill crosses its icon out in red (a prize that does
- * not come). The HUD's amount chips are `Chip` and `PriceChip`, on the HUD's own chip token.
+ * not come). The HUD's amount chip is `Chip`, on the HUD's own chip token.
  */
 export const Pill = ({
   icon,

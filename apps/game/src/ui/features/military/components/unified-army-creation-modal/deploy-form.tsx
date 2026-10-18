@@ -1,5 +1,5 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudDeploy, type HudTroopStack, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCost, HudDeploy, type HudTroopStack, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import type { useArmyCreation } from "./use-army-creation";
@@ -47,15 +47,24 @@ export const DeployTroops = ({ form }: { form: ArmyCreationForm }) => {
   );
 };
 
-/** The one verb, in the window's foot: Deploy with what it costs on it, and the one reason it cannot go beside it. */
+/**
+ * The one verb, in the window's foot: Deploy, carrying its verb only, and beside it what it costs and the one reason it
+ * cannot go.
+ */
 export const DeployVerb = ({ form }: { form: ArmyCreationForm }) => (
-  <HudWindowFoot note={<span role="status">{form.isActionDisabled ? form.blockedReason : null}</span>}>
+  <HudWindowFoot
+    note={
+      <span className="flex flex-col items-start">
+        <HudCost line={form.raiseLine} />
+        <span role="status">{form.isActionDisabled ? form.blockedReason : null}</span>
+      </span>
+    }
+  >
     <HudButton
       kind="primary"
       icon="military"
       disabled={form.isActionDisabled}
       busy={form.isLoading ? "Deploying…" : undefined}
-      prices={form.raisePrices}
       onClick={form.handleCreate}
     >
       Deploy

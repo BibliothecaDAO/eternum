@@ -4,13 +4,14 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   HudButton,
   HudChip,
+  HudCost,
   HudMeter,
   HudPanel,
   HudRarity,
   HudRow,
   HudSheet,
 } from "@/ui/design-system/kit/hud-elements";
-import { hudPrices, type Price } from "../hud-prices";
+import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   ARMY_WILL_BE_LOST,
@@ -334,7 +335,7 @@ const Verb = ({
         )}
         <span className={cn("grid", onRealm && "col-span-2")}>
           {verb.kind === "move" ? (
-            <HudButton kind="primary" icon="move" prices={hudPrices(verb.prices)} onClick={verb.onMove}>
+            <HudButton kind="primary" icon="move" onClick={verb.onMove}>
               {MOVE}
             </HudButton>
           ) : (
@@ -342,7 +343,6 @@ const Verb = ({
             <HudButton
               kind={warns ? "danger" : "primary"}
               icon="attack"
-              prices={hudPrices(attackPrices(verb))}
               busy={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
               disabled={verb.kind !== "attack"}
               onClick={verb.kind === "attack" ? verb.onAttack : undefined}
@@ -352,6 +352,7 @@ const Verb = ({
           )}
         </span>
       </div>
+      <HudCost line={costLine(verb.kind === "move" ? verb.prices : attackPrices(verb))} />
       <VerbLine {...verbLine(verb, site, warns)} />
     </div>
   );

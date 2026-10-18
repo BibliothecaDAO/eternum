@@ -1,5 +1,5 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
-import type { Price } from "./button";
+import type { Price } from "./price-faces";
 
 import type { Reason } from "./reasons";
 

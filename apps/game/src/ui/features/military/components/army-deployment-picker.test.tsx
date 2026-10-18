@@ -83,7 +83,7 @@ describe("the shared deployment picker", () => {
     host.remove();
   });
 
-  it("chooses the amount in one row, with the cost on Deploy and one reason under it when it cannot go", () => {
+  it("chooses the amount in one row, with the cost beside Deploy and one reason under it when it cannot go", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store } = frontierDay();
     const host = document.createElement("div");
@@ -107,9 +107,10 @@ describe("the shared deployment picker", () => {
     expect(field().value).toBe("420");
     expect(button(/^\+500$/).disabled).toBe(true);
     expect(button(/^Max$/).disabled).toBe(true);
-    // Each knight takes two wheat: the cost rides on the one primary button, in the window's foot.
+    // Each knight takes two wheat: the cost is the line beside the one primary button in the window's foot, never on it.
     expect(button(/^Deploy/).closest(".ui-window__foot")).not.toBeNull();
-    expect(button(/^Deploy/).querySelector('[aria-label="840 wheat"]')).not.toBeNull();
+    expect(button(/^Deploy/).textContent).toBe("Deploy");
+    expect(host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("840 wheat");
     // This fixture's realm has no map position, so no spawn hex: Deploy is shut and says so, once.
     expect(button(/^Deploy/).disabled).toBe(true);
     expect([...host.querySelectorAll('[role="status"]')].map((line) => line.textContent)).toEqual([

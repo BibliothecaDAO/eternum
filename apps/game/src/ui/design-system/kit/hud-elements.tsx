@@ -40,9 +40,6 @@ import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
 type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
 type Tone = "good" | "bad" | "warn";
 
-/** A price a button pays: its painting (or, with none, its word, as XP) and how much; named whole for assistive technology. */
-type HudPrice = { icon?: IconMeaning; word: string; amount: string };
-
 /**
  * A press's send in flight: `press` runs the action unless a send it started is still pending, and while that promise
  * is pending `now` is true. A failed send frees the press for a retry, its error left to whoever reports it.
@@ -68,7 +65,10 @@ const useSending = () => {
   return { now, press };
 };
 
-/** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
+/**
+ * A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. It carries its verb only; what
+ * the verb costs is the line beside it (`HudCost`), never on the button (owner, sheet 2026-10-18).
+ */
 export const HudButton = forwardRef<
   HTMLButtonElement,
   {
@@ -77,13 +77,11 @@ export const HudButton = forwardRef<
     icon?: IconMeaning;
     /** Its order is on its way: this word in place of its own, and no second press. */
     busy?: string;
-    /** What pressing it pays, after its word (Move: stamina and wheat). */
-    prices?: readonly HudPrice[];
     /** Its action. One that returns the send's promise holds the button until the send settles: no second press. */
     onClick?: (event: MouseEvent<HTMLButtonElement>) => unknown;
     children?: ReactNode;
   } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick">
->(({ kind, size = "md", icon, busy, prices = [], children, disabled, onClick, ...rest }, ref) => {
+>(({ kind, size = "md", icon, busy, children, disabled, onClick, ...rest }, ref) => {
   const sending = useSending();
   const waits = busy !== undefined || sending.now;
   return (
@@ -100,13 +98,6 @@ export const HudButton = forwardRef<
     >
       {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
       {busy ?? children}
-      {busy === undefined &&
-        prices.map((price) => (
-          <span key={price.word} className="ui-button__price" role="img" aria-label={`${price.amount} ${price.word}`}>
-            {price.icon ? <Icon name={price.icon} size={18} /> : <span>{price.word}</span>}
-            <span>{price.amount}</span>
-          </span>
-        ))}
     </button>
   );
 });
@@ -489,13 +480,20 @@ export const HudTransfer = ({
 );
 
 /**
+ * What a verb costs, exactly as charged, as one compact line: under the order on the map's order line and the app's
+ * tooltip, and beside a button, which carries its verb only (`costLine` writes it from the verb's prices). Nothing when
+ * it costs nothing.
+ */
+export const HudCost = ({ line }: { line: string }) => (line ? <span className="ui-cost">{line}</span> : null);
+
+/**
  * The app's one tooltip: a line; what it costs, one compact line under it; when the thing cannot be done, why and when
  * it can; how to do it as a cue. The map's order line is one ("Explore" / "30 stamina · 100 wheat").
  */
 export const HudTip = ({ line, cost, why, how }: { line: string; cost?: string; why?: string; how?: string }) => (
   <span className="ui-tip" role="tooltip">
     <span className="ui-tip__line">{line}</span>
-    {cost && <span className="ui-tip__cost">{cost}</span>}
+    {cost && <HudCost line={cost} />}
     {why && <span className="ui-tip__why">{why}</span>}
     {how && <span className="ui-tip__how">{how}</span>}
   </span>

@@ -1,7 +1,6 @@
 import { formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { hudPrices } from "../hud-prices";
 import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
 /**
@@ -33,13 +32,7 @@ export const RefillButton = ({
       </HudPanel>
     </span>
   ) : (
-    <HudButton
-      kind="secondary"
-      icon="stamina"
-      prices={hudPrices([{ of: "lords", amount: price }])}
-      busy={refilling ? REFILLING : undefined}
-      onClick={onRefill}
-    >
+    <HudButton kind="secondary" icon="stamina" busy={refilling ? REFILLING : undefined} onClick={onRefill}>
       {REFILL}
     </HudButton>
   );
@@ -79,12 +72,7 @@ export const RefillConfirm = ({
           {CANCEL}
         </HudButton>
         <span className="col-span-2 grid">
-          <HudButton
-            kind="primary"
-            prices={hudPrices([{ of: "lords", amount: price }])}
-            busy={sending ? REFILLING : undefined}
-            onClick={onRefill}
-          >
+          <HudButton kind="primary" busy={sending ? REFILLING : undefined} onClick={onRefill}>
             {REFILL}
           </HudButton>
         </span>

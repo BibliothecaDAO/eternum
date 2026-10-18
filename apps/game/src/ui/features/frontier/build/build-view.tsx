@@ -1,12 +1,20 @@
 import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudCard, HudChip, HudNotice, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudCard,
+  HudChip,
+  HudCost,
+  HudNotice,
+  HudRarity,
+  HudSheet,
+} from "@/ui/design-system/kit/hud-elements";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
-import { hudPrices, type Price } from "../hud-prices";
+import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 
 /**
@@ -91,18 +99,24 @@ export const BuildView = ({
         {refusal.fix && <FixVerb fix={refusal.fix} />}
       </>
     ) : (
-      <HudButton kind="primary" prices={hudPrices(prices)} busy={sending ? BUILDING : undefined} onClick={onBuild}>
-        {BUILD}
-      </HudButton>
+      <>
+        <HudButton kind="primary" busy={sending ? BUILDING : undefined} onClick={onBuild}>
+          {BUILD}
+        </HudButton>
+        <HudCost line={costLine(prices)} />
+      </>
     )}
   </HudSheet>
 );
 
 /** The way past a refusal (the Hut that houses it, the map that pays it), as the sheet's one verb. */
 const FixVerb = ({ fix }: { fix: Fix }) => (
-  <HudButton kind="primary" icon={fix.icon} prices={hudPrices(fix.prices ?? [])} onClick={fix.onFix}>
-    {fix.word}
-  </HudButton>
+  <>
+    <HudButton kind="primary" icon={fix.icon} onClick={fix.onFix}>
+      {fix.word}
+    </HudButton>
+    <HudCost line={costLine(fix.prices ?? [])} />
+  </>
 );
 
 const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (

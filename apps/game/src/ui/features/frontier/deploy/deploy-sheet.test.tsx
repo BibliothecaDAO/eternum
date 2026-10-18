@@ -86,10 +86,11 @@ describe("the Deploy sheet", () => {
     expect(Number(slider.value)).toBe(most);
     act(() => end("Minimum").click());
     expect(slider.value).toBe("1");
-    expect(deployButton(host)?.textContent).toBe("Deploy2");
+    expect(deployButton(host)?.textContent).toBe("Deploy");
+    expect(host.querySelector('[aria-label="wheat to deploy −2"]')).not.toBeNull();
 
     setSlider(host, 120);
-    expect(deployButton(host)?.textContent).toBe("Deploy240");
+    expect(deployButton(host)?.textContent).toBe("Deploy");
     // Every figure names itself: what the deploy costs, what it leaves, and how far that carries the army.
     expect(host.querySelector('[aria-label="wheat to deploy −240"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="wheat left at home 760"]')).not.toBeNull();
@@ -159,7 +160,8 @@ describe("the Deploy sheet", () => {
     // 100 wheat deploys 50 troops: the thumb stops at the line however far it is dragged.
     expect(host.querySelector(".ui-slider__stop")).not.toBeNull();
     setSlider(host, 300);
-    expect(deployButton(host)?.textContent).toBe("Deploy100");
+    expect(deployButton(host)?.textContent).toBe("Deploy");
+    expect(host.querySelector('[aria-label="wheat to deploy −100"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="wheat left at home 0"]')?.getAttribute("data-tone")).toBe("bad");
     // Maximum takes what the wheat allows, not what the troops would.
     expect(host.querySelector('button[aria-label^="Maximum"]')!.getAttribute("aria-label")).toBe("Maximum 50");

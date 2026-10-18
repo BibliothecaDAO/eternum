@@ -389,15 +389,6 @@ html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   border-color: var(--hot);
   box-shadow: var(--chip-lit-glow);
 }
-/* A price is a dark well with an amber rim wherever it sits, on a gold button too: the kit's gilded icons read on ink,
-   never on gold. */
-.frontier-chip[data-tone="price"] {
-  background: var(--chip-price-ground);
-  border-color: var(--chip-price-rim);
-}
-.frontier-chip[data-tone="price"] .frontier-chip-number {
-  color: var(--cream);
-}
 /* A tier's banner: a small silver plate with the numeral, gold at III; larger under a building's medallion. */
 .frontier-tier {
   border-radius: 5px;

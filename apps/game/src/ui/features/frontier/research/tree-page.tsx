@@ -3,6 +3,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import {
   HudButton,
   HudChip,
+  HudCost,
   HudPanel,
   HudRarity,
   HudRing,
@@ -11,10 +12,10 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import { costLine } from "@/ui/design-system/kit/price-faces";
 import { ESSENCE, LABOR, RESEARCH, RESEARCHING, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { hudPrices } from "../hud-prices";
 import { RefusedVerb } from "../refused-verb";
 
 /** A building type's row: its tier, the sides taken at each tier, and the next tier's Essence and labor. */
@@ -206,15 +207,12 @@ export const CastleNodeSheet = ({
         refusal={refusal}
       />
     ) : (
-      <HudButton
-        kind="primary"
-        icon="research"
-        prices={hudPrices([{ of: "essence", amount: node.essence }])}
-        busy={sending ? RESEARCHING : undefined}
-        onClick={onResearch}
-      >
-        {RESEARCH}
-      </HudButton>
+      <>
+        <HudButton kind="primary" icon="research" busy={sending ? RESEARCHING : undefined} onClick={onResearch}>
+          {RESEARCH}
+        </HudButton>
+        <HudCost line={costLine([{ of: "essence", amount: node.essence }])} />
+      </>
     )}
   </HudSheet>
 );

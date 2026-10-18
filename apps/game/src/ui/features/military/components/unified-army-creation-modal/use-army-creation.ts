@@ -25,13 +25,11 @@ import {
   getBuildingFromResource,
   getNeighborHexes,
   ID,
-  resources,
   ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
   formatWait,
-  guardSlotName,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -47,7 +45,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import {
   describeTroopSource,
-  troopRaisePrices,
+  troopRaiseLine,
   resolveArmyCreationBlockedReason,
   resolveArmyTroopAvailability,
   resolveInitialTroop,
@@ -534,7 +532,7 @@ export const useArmyCreation = ({
     // With none on hand, where they come from: the empty state's next step.
     troopSourceLine:
       selectedAvailable < 1 ? describeTroopSource(troopSupply.name, readTroopRecipe(store, selectedTroopCombo)) : null,
-    raisePrices: troopRaisePrices(raiseCost),
+    raiseLine: troopRaiseLine(raiseCost),
   };
 };
 

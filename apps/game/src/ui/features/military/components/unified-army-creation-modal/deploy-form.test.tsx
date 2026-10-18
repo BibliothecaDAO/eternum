@@ -45,7 +45,7 @@ const form = (patch: Partial<Form> = {}): Form =>
     isActionDisabled: false,
     blockedReason: null,
     isLoading: false,
-    raisePrices: [{ icon: "wheat", word: "wheat", amount: "200" }],
+    raiseLine: "200 wheat",
     handleCreate: vi.fn(),
     ...patch,
   }) as unknown as Form;
@@ -83,7 +83,7 @@ describe("the deploy form on the sheet", () => {
     expect(stack(host, "Paladin T3").disabled).toBe(false);
   });
 
-  it("puts Deploy with its price in the window's foot, and its one reason beside it when it cannot go", () => {
+  it("puts Deploy in the window's foot with its cost beside it, never on it, and its one reason there when it cannot go", () => {
     const ready = render(
       <HudWindow title="Deploy field army" onClose={() => undefined}>
         <DeployVerb form={form()} />
@@ -91,7 +91,8 @@ describe("the deploy form on the sheet", () => {
     );
     const verb = ready.querySelector<HTMLButtonElement>(".ui-window__foot .ui-button")!;
     expect(verb.disabled).toBe(false);
-    expect(verb.querySelector('[aria-label="200 wheat"]')).not.toBeNull();
+    expect(verb.textContent).toBe("Deploy");
+    expect(ready.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("200 wheat");
     expect(ready.querySelector('[role="status"]')?.textContent).toBe("");
 
     const blocked = render(

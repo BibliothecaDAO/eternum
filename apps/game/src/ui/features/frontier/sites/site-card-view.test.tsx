@@ -46,7 +46,8 @@ describe("a guarded site's card", () => {
     expect(card.textContent).toContain("+550");
     expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
-    expect(attack.textContent).toBe("Attack30");
+    expect(attack.textContent).toBe("Attack");
+    expect(card.querySelector(".ui-cost")?.textContent).toBe("30 stamina");
     act(() => attack.click());
     expect(onAttack).toHaveBeenCalled();
   });
@@ -251,6 +252,9 @@ describe("a guarded site's card for an army out of reach", () => {
       ),
     );
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(false);
+    // Move carries its verb only; what it costs is the line under it.
+    expect(buttons().find((button) => button.textContent?.startsWith("Move"))!.textContent).toBe("Move");
+    expect(document.querySelector(".ui-cost")?.textContent).toBe("20 stamina");
     act(() =>
       buttons()
         .find((button) => button.textContent?.startsWith("Move"))!

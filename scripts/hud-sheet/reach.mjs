@@ -33,7 +33,6 @@ const AREAS = {
     "ui/features/frontier/day-ends.tsx",
     "ui/features/frontier/refused-verb.tsx",
     "ui/features/frontier/full-in.tsx",
-    "ui/features/frontier/hud-prices.ts",
   ],
   "D. Military, rings, leaderboard": [
     "ui/features/military",

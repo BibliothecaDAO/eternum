@@ -19,12 +19,7 @@ import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibli
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
-import {
-  essencePrice,
-  HeldRelic,
-  RelicEssenceRequirement,
-  RelicIncompatibilityNotice,
-} from "./relic-activation-shared";
+import { HeldRelic, RelicEssenceRequirement, RelicIncompatibilityNotice } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -116,7 +111,6 @@ const RelicActivationHolderCard = ({
         <span className="flex justify-end">
           <HudButton
             kind="secondary"
-            prices={essencePrice(essenceCost)}
             busy={isActivating ? "Activating…" : undefined}
             disabled={!compatible || !hasEnoughEssence}
             onClick={() => onActivate({ holder, hasEnoughEssence, shortfall })}

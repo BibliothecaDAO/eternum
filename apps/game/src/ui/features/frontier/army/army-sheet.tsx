@@ -3,6 +3,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import {
   HudButton,
   HudChip,
+  HudCost,
   HudMeter,
   HudNotice,
   HudRarity,
@@ -11,9 +12,9 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { FullIn } from "../full-in";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import { hudPrices } from "../hud-prices";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
+import { costLine } from "@/ui/design-system/kit/price-faces";
 import { ATTRIBUTES, FIND_KINDS, FULL, STAMINA, TROOPS, UPGRADE, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -245,14 +246,12 @@ const ChosenTier = ({
         <RefillFits refills={refills} of={refillOnBuy} />
       </div>
       {xp >= price ? (
-        <HudButton
-          kind="primary"
-          prices={hudPrices([{ of: "xp", amount: price }])}
-          busy={sending ? UPGRADING : undefined}
-          onClick={onUpgrade}
-        >
-          {UPGRADE}
-        </HudButton>
+        <>
+          <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
+            {UPGRADE}
+          </HudButton>
+          <HudCost line={costLine([{ of: "xp", amount: price }])} />
+        </>
       ) : (
         <HudNotice line={shortfallLine({ kind: "short", of: "xp", held: xp, need: price })} />
       )}

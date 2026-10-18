@@ -68,9 +68,10 @@ describe("the build sheet", () => {
     expect(tile("Scouts' lodge").querySelector('[aria-label="Rare"]')).not.toBeNull();
     act(() => tile("Workshop").click());
     expect(onChoose).toHaveBeenCalledWith(1);
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("6,800 labor");
     act(() =>
       buttons()
-        .find((button) => button.textContent === "Build6,800")!
+        .find((button) => button.textContent === "Build")!
         .click(),
     );
     expect(onBuild).toHaveBeenCalled();
@@ -168,9 +169,10 @@ describe("the castle", () => {
     expect(sheet.textContent).toContain("City");
     expect(sheet.textContent).toContain("Kingdom");
     expect(sheet.querySelector('[aria-label="plots 36"]')).not.toBeNull();
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("15,000 labor");
     act(() =>
       buttons()
-        .find((button) => button.textContent === "Upgrade15,000")!
+        .find((button) => button.textContent === "Upgrade")!
         .click(),
     );
     expect(onUpgrade).toHaveBeenCalled();
@@ -196,7 +198,8 @@ describe("the castle", () => {
         />,
       ),
     );
-    const upgrade = buttons().find((button) => button.textContent === "Upgrade4,000")!;
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("4,000 labor");
+    const upgrade = buttons().find((button) => button.textContent === "Upgrade")!;
     expect(upgrade.disabled).toBe(true);
     act(() => upgrade.click());
     expect(onUpgrade).not.toHaveBeenCalled();

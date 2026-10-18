@@ -17,7 +17,6 @@ import { PaintedCard } from "./painted-card";
 import { Panel, PanelTitle } from "./panel";
 import { Pill } from "./pill";
 import { Portrait } from "./portrait";
-import { PriceChip } from "./price-chip";
 import { ReasonPlate } from "./reason-plate";
 import { shortfallLine } from "./reasons";
 import { SeasonRow } from "./season-row";
@@ -78,24 +77,14 @@ describe("stores and prices", () => {
     expect(renderToStaticMarkup(<StoreBar amount={undefined} limit={18_000} tone="calm" />)).toContain("width:0%");
     expect(renderToStaticMarkup(<StoreBar amount={5} tone="calm" />)).not.toContain("meter");
   });
-
-  it("prices in a resource by its icon and in XP by its word; an unknown price is a dash", () => {
-    expect(renderToStaticMarkup(<PriceChip of="wheat" amount={10_000} />)).toContain('aria-label="10,000 wheat"');
-    // A price is what the chain charges, to the unit: 30 troops' step at 0.02 wheat each is 0.6, never 1.
-    expect(renderToStaticMarkup(<PriceChip of="wheat" amount={0.6} />)).toContain('aria-label="0.6 wheat"');
-    expect(text(renderToStaticMarkup(<PriceChip of="xp" amount={400} />))).toBe("400XP");
-    expect(text(renderToStaticMarkup(<PriceChip of="lords" amount={undefined} />))).toBe("—");
-  });
 });
 
 describe("Button", () => {
   it("runs its verb, and while the action is under way shows the step's word and takes no second tap", () => {
     const onClick = vi.fn();
-    act(() =>
-      root.render(<Button role="primary" word="Deploy" prices={[{ of: "wheat", amount: 10_000 }]} onClick={onClick} />),
-    );
+    act(() => root.render(<Button role="primary" word="Deploy" onClick={onClick} />));
     const button = host.querySelector("button")!;
-    expect(button.textContent).toBe("Deploy10,000");
+    expect(button.textContent).toBe("Deploy");
     act(() => button.click());
     expect(onClick).toHaveBeenCalledTimes(1);
 

@@ -2,7 +2,6 @@ import { knownAmount } from "@/ui/utils/utils";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import {
   HudButton,
   HudChip,
@@ -310,13 +309,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
         </HudButton>
         <HudButton
           kind="primary"
-          prices={[
-            {
-              icon: resourceMeaning(ResourcesIds.Research),
-              word: "Research",
-              amount: formatCharge(knownAmount(configuredResearchCost)),
-            },
-          ]}
           busy={isCrafting ? "Forging relic…" : undefined}
           disabled={!canCraft}
           onClick={handleCraftRelic}

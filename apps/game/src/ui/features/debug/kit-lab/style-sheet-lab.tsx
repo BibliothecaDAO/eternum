@@ -10,9 +10,9 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button as KitButton } from "@/ui/design-system/kit/button";
 import { Chip as KitChip } from "@/ui/design-system/kit/chip";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
-import { PriceChip } from "@/ui/design-system/kit/price-chip";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
+import { costLine } from "@/ui/design-system/kit/price-faces";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
@@ -25,6 +25,7 @@ import {
   HudDial,
   HudChip,
   HudConfirm,
+  HudCost,
   HudEmpty,
   HudEventRow,
   HudField,
@@ -301,7 +302,7 @@ const forced = (state: State) => (state === "rest" || state === "disabled" ? und
 const ButtonsSection = () => (
   <Element
     name="Button"
-    rule="Primary is a screen's one verb, secondary sits beside it, quiet is a way out; an icon button is a square secondary. A press that sends holds its button until the send settles, so it cannot send twice."
+    rule="Primary is a screen's one verb, secondary sits beside it, quiet is a way out; an icon button is a square secondary. A button carries its verb only: what it costs is one compact line beside it, as the order line writes it, never a price on the button. A press that sends holds its button until the send settles, so it cannot send twice."
     sheet={
       <>
         <StateHeads />
@@ -388,20 +389,19 @@ const ButtonsSection = () => (
           )}
         />
         <StateRow
-          label="with prices"
+          label="with its cost"
           render={(state) => (
-            <HudButton
-              kind="primary"
-              icon="move"
-              prices={[
-                { icon: "stamina", word: "stamina", amount: "20" },
-                { icon: "wheat", word: "wheat", amount: "2" },
-              ]}
-              data-state={forced(state)}
-              disabled={state === "disabled"}
-            >
-              Move
-            </HudButton>
+            <span className="flex flex-col items-center gap-1">
+              <HudButton kind="primary" icon="move" data-state={forced(state)} disabled={state === "disabled"}>
+                Move
+              </HudButton>
+              <HudCost
+                line={costLine([
+                  { of: "stamina", amount: 20 },
+                  { of: "wheat", amount: 2 },
+                ])}
+              />
+            </span>
           )}
         />
         <StateRow
@@ -1137,7 +1137,6 @@ const ChipsSection = () => (
         <KitChip icons={["wheat"]} value="1,200" label="Wheat" />
         <KitTierChip tier={1} showWord />
         <KitTierChip tier={3} showWord={false} />
-        <PriceChip of="essence" amount={300} />
       </>
     }
   />

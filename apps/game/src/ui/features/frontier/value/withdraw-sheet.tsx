@@ -13,7 +13,6 @@ import {
 } from "@/ui/design-system/kit/words";
 
 import { AmountRange } from "../amount-range";
-import { hudPrices } from "../hud-prices";
 
 /**
  * Where a withdrawal stands: choosing the amount, sent (the LORDS have left the game's count), paid on Starknet with its
@@ -105,12 +104,7 @@ const Pick = ({
     <Hero icon="lords" value={formatExact(amount)} />
     <AmountRange label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
     <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
-    <HudButton
-      kind="primary"
-      prices={hudPrices([{ of: "lords", amount }])}
-      disabled={!held || amount < 1 || amount > held}
-      onClick={onWithdraw}
-    >
+    <HudButton kind="primary" disabled={!held || amount < 1 || amount > held} onClick={onWithdraw}>
       {WITHDRAW}
     </HudButton>
   </>

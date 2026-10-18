@@ -151,20 +151,6 @@ button.ui-panel__name {
 .ui-button[data-kind="quiet"][data-icon-only][aria-pressed="false"]:is(:hover, [data-state="hover"]) > img {
   opacity: 0.7;
 }
-/* A price the button pays, on a small well after its word: a painting (or its word) and the amount. */
-.ui-button__price {
-  display: inline-flex;
-  align-items: center;
-  gap: theme(spacing.1);
-  border-radius: var(--hud-radius-chip);
-  background: var(--hud-well);
-  padding: 0 theme(spacing[1.5]);
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-line-strong);
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
-}
 /* What destroys something (delete, disband, dismiss): one look, a red well with a red line and the ink on it, in every
    age, never the accent's. Hover deepens the red, a press darkens it. */
 .ui-button[data-kind="danger"] {
@@ -270,13 +256,15 @@ button.ui-panel__name {
   line-height: var(--hud-line-body);
   font-weight: var(--hud-weight-body);
 }
-/* What it costs, exactly as charged, one compact line under its name. */
-.ui-tip__cost {
+/* What a verb costs, exactly as charged, one compact line: under its order in a tip, centred under its button, at the
+   left of a window's foot. */
+.ui-cost {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 /* Why a thing cannot be done, and when it can: a refusal reads in the warning colour. */
 .ui-tip__why {

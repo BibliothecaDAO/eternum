@@ -5,7 +5,6 @@ import React, { useState } from "react";
 
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../../relics/hooks/use-relic-activation";
 import {
-  essencePrice,
   HeldRelic,
   RelicEssenceRequirement,
   RelicIncompatibilityNotice,
@@ -92,7 +91,6 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         </HudButton>
         <HudButton
           kind="primary"
-          prices={essencePrice(essenceCost)}
           busy={isLoading ? "Activating…" : undefined}
           disabled={!!error || !compatible || !hasEnoughEssence}
           onClick={handleConfirm}

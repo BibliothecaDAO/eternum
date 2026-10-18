@@ -4,12 +4,9 @@ import {
   ResourcesIds,
   formatWait,
   formatExact,
-  formatRate,
   formatCharge,
   resourceName,
 } from "@bibliothecadao/types";
-
-import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
@@ -71,15 +68,18 @@ export function resolveArmyCreationBlockedReason(status: ArmyCreationStatus): st
   return null;
 }
 
-/** What deploying the chosen troops costs beyond the troops, as the Deploy verb's prices; none while it costs nothing. */
-export function troopRaisePrices(costs: TroopRaiseCost[] | undefined) {
+/**
+ * What deploying the chosen troops costs beyond the troops, as one compact line beside the Deploy verb ("20 wheat"),
+ * the way the map's order line writes a cost; empty while it costs nothing.
+ */
+export function troopRaiseLine(costs: TroopRaiseCost[] | undefined) {
   return (costs ?? [])
     .filter(({ amount }) => amount > 0n)
-    .map(({ resource, amount }) => ({
-      icon: resourceMeaning(resource),
-      word: ResourcesIds[resource].toLowerCase(),
-      amount: formatExact(Math.ceil(Number(amount) / RESOURCE_PRECISION)),
-    }));
+    .map(
+      ({ resource, amount }) =>
+        `${formatExact(Math.ceil(Number(amount) / RESOURCE_PRECISION))} ${ResourcesIds[resource].toLowerCase()}`,
+    )
+    .join(" · ");
 }
 
 /**

@@ -1,13 +1,12 @@
 import { formatAmount, REALM_LEVELS } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon } from "@/ui/design-system/icon";
-import type { Price } from "../hud-prices";
-import { HudButton, HudCard, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
+import { HudButton, HudCard, HudChip, HudCost, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { CASTLE, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
-import { hudPrices } from "../hud-prices";
-import { RefusedUpgrade } from "./refused-upgrade";
+import { RefusedVerb } from "../refused-verb";
 import { type Figure, Figures } from "./type-upgrade-sheet";
 
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
@@ -23,7 +22,7 @@ export type CastleSide = {
 
 /**
  * The castle's sheet (wireframe 02): what the castle makes and holds now, the castle now and at its next level side by side, what the next level brings lit,
- * and Upgrade carrying its labor price. When the realm cannot pay, Upgrade stays, dimmed, with its price; the line
+ * and Upgrade with its labor cost under it. When the realm cannot pay, Upgrade stays, dimmed, with its cost; the line
  * under it says what it needs against what is held and the exact wait; the map is offered where a reveal pays labor.
  * At the last level there is no next side and no verb.
  */
@@ -62,11 +61,14 @@ export const CastleView = ({
     </div>
     {next &&
       (refusal ? (
-        <RefusedUpgrade word={UPGRADE} prices={prices} refusal={refusal} />
+        <RefusedVerb word={UPGRADE} prices={prices} refusal={refusal} />
       ) : (
-        <HudButton kind="primary" prices={hudPrices(prices)} busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
-          {UPGRADE}
-        </HudButton>
+        <>
+          <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
+            {UPGRADE}
+          </HudButton>
+          <HudCost line={costLine(prices)} />
+        </>
       ))}
   </HudSheet>
 );

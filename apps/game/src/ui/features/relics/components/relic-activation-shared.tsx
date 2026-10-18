@@ -73,8 +73,3 @@ export const RelicIncompatibilityNotice = ({
       why={`${relicInfo.recipientType} relics can only be activated by ${recipientWords(relicInfo.recipientType)}`}
     />
   ) : null;
-
-/** The Essence an activation pays, as its button names it. */
-export const essencePrice = (essenceCost: number) => [
-  { icon: resourceMeaning(ResourcesIds.Essence), word: "Essence", amount: formatCharge(essenceCost) },
-];

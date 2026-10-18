@@ -15,7 +15,6 @@ import { Panel, PanelTitle } from "@/ui/design-system/kit/panel";
 import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { PriceChip } from "@/ui/design-system/kit/price-chip";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { SectionLabel } from "@/ui/design-system/kit/section-label";
@@ -324,35 +323,27 @@ const ClockSection = () => (
 );
 
 const StoresSection = () => (
-  <Section title="StoreBar · PriceChip">
+  <Section title="StoreBar">
     <div className="grid grid-cols-4 gap-2">
       <StoreBar amount={18_250} tone="calm" />
       <StoreBar amount={9_640} limit={18_000} tone="calm" />
       <StoreBar amount={17_580} limit={18_000} tone="amber" />
       <StoreBar amount={18_000} limit={18_000} tone="ember" />
     </div>
-    <div className="flex flex-wrap gap-2">
-      <PriceChip of="wheat" amount={10_000} />
-      <PriceChip of="labor" amount={24_000} />
-      <PriceChip of="essence" amount={1_800} />
-      <PriceChip of="lords" amount={60} />
-      <PriceChip of="xp" amount={400} />
-      <PriceChip of="stamina" amount={undefined} />
-    </div>
   </Section>
 );
 
 const ButtonsSection = () => (
   <Section title="Button">
-    <Button role="primary" word="Deploy" prices={[{ of: "wheat", amount: 10_000 }]} />
+    <Button role="primary" word="Deploy" />
     <Button role="primary" word="Deploy" loading="Deploying…" />
     <div className="flex gap-2">
       <Button role="outline" word="Cancel" className="w-[104px]" />
-      <Button role="primary" word="Explore" prices={[{ of: "stamina", amount: 30 }]} className="flex-1" />
+      <Button role="primary" word="Explore" className="flex-1" />
     </div>
     <div className="flex gap-2">
-      <Button role="secondary" word="Refill" prices={[{ of: "lords", amount: 60 }]} className="flex-1" />
-      <Button role="primary" word="Upgrade" prices={[{ of: "xp", amount: 100 }]} className="flex-1" />
+      <Button role="secondary" word="Refill" className="flex-1" />
+      <Button role="primary" word="Upgrade" className="flex-1" />
     </div>
     {/* `to`: a verb that leads to a route (Play on an unknown page, a card's Enter). */}
     <Button role="secondary" word="Tokens" icon="play" to="/lab/kit/tokens" />
@@ -444,7 +435,7 @@ const PillsSection = () => (
         No LORDS
       </Pill>
     </div>
-    {/* The HUD's amounts stay on its chip token: Chip, PriceChip. */}
+    {/* The HUD's amounts stay on its chip token: Chip. */}
     <div className="flex flex-wrap gap-2">
       <Chip icons={["person"]} value="17/24" label="Seats" />
     </div>

@@ -6,7 +6,7 @@ import {
   resolveInitialTroop,
   resolveSpawnDirection,
   resolveTroopAvailabilityReason,
-  troopRaisePrices,
+  troopRaiseLine,
 } from "./army-creation-policy";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -75,12 +75,10 @@ describe("army deployment blocked states", () => {
 });
 
 describe("troop raise cost", () => {
-  it("prices what deploying costs beyond the troops for the Deploy verb, and nothing where it costs nothing", () => {
-    expect(troopRaisePrices([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toEqual([
-      { icon: "wheat", word: "wheat", amount: "20" },
-    ]);
-    expect(troopRaisePrices([{ resource: 35, amount: 0n, held: 0n }])).toEqual([]);
-    expect(troopRaisePrices(undefined)).toEqual([]);
+  it("writes what deploying costs beyond the troops as one line beside the Deploy verb, and nothing where it costs nothing", () => {
+    expect(troopRaiseLine([{ resource: 35, amount: 20_000_000_000n, held: 0n }])).toBe("20 wheat");
+    expect(troopRaiseLine([{ resource: 35, amount: 0n, held: 0n }])).toBe("");
+    expect(troopRaiseLine(undefined)).toBe("");
   });
 });
 

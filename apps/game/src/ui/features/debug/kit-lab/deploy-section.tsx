@@ -1,6 +1,8 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
+import { costLine } from "@/ui/design-system/kit/price-faces";
 import {
   HudButton,
+  HudCost,
   HudChip,
   HudDeploy,
   HudTabs,
@@ -91,16 +93,13 @@ const useDeploy = () => {
   };
 };
 
-/** The one verb, with what it costs on it. */
-const DeployButton = ({ amount }: { amount: number }) => (
-  <HudButton
-    kind="primary"
-    icon="military"
-    disabled={amount === 0}
-    prices={[{ icon: "wheat", word: "wheat", amount: (amount * WHEAT_A_TROOP).toLocaleString("en-US") }]}
-  >
-    Deploy
-  </HudButton>
+/** The window's foot: what the deploy costs on the left, then the one verb, carrying its verb only. */
+const DeployFoot = ({ amount }: { amount: number }) => (
+  <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: amount * WHEAT_A_TROOP }])} />}>
+    <HudButton kind="primary" icon="military" disabled={amount === 0}>
+      Deploy
+    </HudButton>
+  </HudWindowFoot>
 );
 
 /** The realm's guard slots, in the order an attacker meets them: two held, two open. */
@@ -117,9 +116,7 @@ const MapPicker = () => {
   return (
     <div className="w-[26rem]">
       <HudWindow title="Deploy field army" icon="military" onClose={() => undefined}>
-        <HudWindowFoot>
-          <DeployButton amount={deploy.amount} />
-        </HudWindowFoot>
+        <DeployFoot amount={deploy.amount} />
         {deploy.body}
       </HudWindow>
     </div>
@@ -135,9 +132,7 @@ const MilitaryForm = () => {
   return (
     <div className="w-[30rem]">
       <HudWindow title="Military" icon="military" onClose={() => undefined}>
-        <HudWindowFoot>
-          <DeployButton amount={deploy.amount} />
-        </HudWindowFoot>
+        <DeployFoot amount={deploy.amount} />
         <div className="flex flex-col gap-4">
           <HudTabs
             tabs={[
@@ -182,7 +177,7 @@ export const DeploySection = () => (
   <Element
     name="Deploy army"
     wide
-    rule="A column per troop, its tiers always in the same place, then the amount with +500 and Max beside it; one Deploy with its cost. The Military window keeps its map selector for where the army steps out."
+    rule="A column per troop, its tiers always in the same place, then the amount with +500 and Max beside it; one Deploy, its cost the line beside it in the foot. The Military window keeps its map selector for where the army steps out."
     sheet={
       <div data-deploy className="flex flex-wrap items-start gap-6">
         <MapPicker />

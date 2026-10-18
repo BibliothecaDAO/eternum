@@ -1,5 +1,6 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { TipCost, TipLine } from "@/ui/design-system/kit/named-tips";
+import { HudCost } from "@/ui/design-system/kit/hud-elements";
+import { TipLine } from "@/ui/design-system/kit/named-tips";
 import type { OrderTip } from "@/ui/features/frontier/hud/order-tip";
 import type { HexPosition } from "@bibliothecadao/types";
 
@@ -72,7 +73,7 @@ function showOrderTip(tip: PlacedOrderTip | null): void {
     content: (
       <>
         <TipLine line={tip.line} />
-        {tip.cost && <TipCost cost={tip.cost} />}
+        {tip.cost && <HudCost line={tip.cost} />}
       </>
     ),
     fixed: {
