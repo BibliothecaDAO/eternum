@@ -224,7 +224,8 @@ export const HudTabs = <K extends string>({
   onChange,
   states = {},
 }: {
-  tabs: readonly { key: K; label: string; count?: number; disabled?: boolean }[];
+  /** Each tab; `title` is its hover text, what the tab holds in full. */
+  tabs: readonly { key: K; label: string; count?: number; disabled?: boolean; title?: string }[];
   value: K;
   onChange: (key: K) => void;
   /** The lab's forced state per tab. */
@@ -239,6 +240,7 @@ export const HudTabs = <K extends string>({
         className="ui-tab"
         aria-selected={tab.key === value}
         disabled={tab.disabled}
+        title={tab.title}
         data-state={states[tab.key]}
         onClick={() => onChange(tab.key)}
       >
@@ -265,50 +267,79 @@ export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
 
 /**
  * A painting in a round well with its numbers on the rim, all in one badge: buildings top left, the time left top
- * right, the amount on the foot; how far production has come as an arc.
+ * right, the amount on the foot; how far production has come as an arc, its rim in its state's tone (producing good,
+ * idle warn). Two sizes, its painting fitted to each: sm in lists, md in cards and panels. `tip` is its hover (the
+ * resource's name), `label` all it says for assistive technology. With `onClick` it is a button.
  */
 export const HudRing = ({
   icon,
   label,
+  tip,
+  size = "md",
+  state,
   corner,
   timer,
   foot,
   progress,
+  onClick,
 }: {
   icon: IconMeaning;
   label: string;
+  tip?: string;
+  size?: "sm" | "md";
+  state?: "producing" | "idle";
   corner?: ReactNode;
   timer?: ReactNode;
   foot?: ReactNode;
   progress?: number;
-}) => (
-  <span className="ui-ring" role="img" aria-label={label}>
-    {progress !== undefined && (
-      <span
-        className="ui-ring__arc"
-        style={{ "--ring-arc": `${Math.round(Math.min(1, Math.max(0, progress)) * 360)}deg` } as React.CSSProperties}
-      />
-    )}
-    <span className="ui-ring__face">
-      <Icon name={icon} size={30} />
+  onClick?: () => void;
+}) => {
+  const body = (
+    <>
+      {progress !== undefined && (
+        <span
+          className="ui-ring__arc"
+          style={{ "--ring-arc": `${Math.round(Math.min(1, Math.max(0, progress)) * 360)}deg` } as React.CSSProperties}
+        />
+      )}
+      <span className="ui-ring__face">
+        <Icon name={icon} size={size === "sm" ? 24 : 32} />
+      </span>
+      {corner !== undefined && (
+        <span className="ui-ring__badge" data-at="corner">
+          {corner}
+        </span>
+      )}
+      {timer !== undefined && (
+        <span className="ui-ring__badge" data-at="timer">
+          {timer}
+        </span>
+      )}
+      {foot !== undefined && (
+        <span className="ui-ring__badge" data-at="foot">
+          {foot}
+        </span>
+      )}
+    </>
+  );
+  return onClick ? (
+    <button
+      type="button"
+      className="ui-ring"
+      data-size={size}
+      data-production={state}
+      data-tip={tip}
+      aria-label={label}
+      onClick={onClick}
+    >
+      {body}
+    </button>
+  ) : (
+    <span className="ui-ring" data-size={size} data-production={state} data-tip={tip} role="img" aria-label={label}>
+      {body}
     </span>
-    {corner !== undefined && (
-      <span className="ui-ring__badge" data-at="corner">
-        {corner}
-      </span>
-    )}
-    {timer !== undefined && (
-      <span className="ui-ring__badge" data-at="timer">
-        {timer}
-      </span>
-    )}
-    {foot !== undefined && (
-      <span className="ui-ring__badge" data-at="foot">
-        {foot}
-      </span>
-    )}
-  </span>
-);
+  );
+};
 
 /** One thing of a list: what it is and what it says; hover lights it, the chosen one carries a bar in the accent. */
 export const HudRow = ({
@@ -330,6 +361,55 @@ export const HudRow = ({
       <span className="ui-row__title">{title}</span>
       {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
     </span>
+  </div>
+);
+
+/**
+ * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up), with
+ * the list row's hover and the chosen one's bar. It is a button, so Enter and Space choose it.
+ */
+export const HudTableRow = ({
+  cols,
+  colsWide,
+  label,
+  selected = false,
+  state,
+  onClick,
+  children,
+}: {
+  cols: string;
+  colsWide?: string;
+  label: string;
+  selected?: boolean;
+  state?: string;
+  onClick: () => void;
+  children: ReactNode;
+}) => (
+  <button
+    type="button"
+    className="ui-table-row"
+    aria-label={label}
+    aria-current={selected || undefined}
+    data-state={state}
+    style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
+    onClick={onClick}
+  >
+    {children}
+  </button>
+);
+
+/** A table's header: its column names on the same grid as its rows. */
+export const HudTableHead = ({
+  cols,
+  colsWide,
+  children,
+}: {
+  cols: string;
+  colsWide?: string;
+  children: ReactNode;
+}) => (
+  <div className="ui-table-head" style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}>
+    {children}
   </div>
 );
 

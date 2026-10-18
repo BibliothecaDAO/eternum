@@ -41,6 +41,8 @@ import {
   HudSetting,
   HudSkeleton,
   HudSwitch,
+  HudTableHead,
+  HudTableRow,
   HudTabs,
   HudTierChip,
   HudTip,
@@ -73,6 +75,7 @@ import { MapContextSection } from "./map-context-section";
 import { DeviceContext, Element, type Device } from "./sheet-element";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { createContext, type ReactNode, useContext, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -803,7 +806,7 @@ const TabsSection = () => {
         <div className="flex flex-col gap-4">
           <HudTabs
             tabs={[
-              { key: "realms", label: "Realms", count: 3 },
+              { key: "realms", label: "Realms", count: 3, title: "Your realms: 3 of 3 settled" },
               { key: "camps", label: "Camps", count: 1 },
               { key: "rifts", label: "Rifts", count: 0, disabled: true },
             ]}
@@ -889,9 +892,27 @@ const RingSection = () => (
     rule="A painting in a round well; buildings top left and the time left top right in one badge, the amount on the foot; an arc for production."
     sheet={
       <div className="flex items-center gap-6 pb-2">
-        <HudRing icon="wheat" label="Wheat" corner={3} timer="17m" foot="1.2K" progress={0.6} />
-        <HudRing icon="essence" label="Essence" foot="6.4K" />
-        <HudRing icon="labor" label="Labor" corner={1} timer="3m" foot="240" progress={0.2} />
+        <HudRing
+          icon={resourceMeaning(ResourcesIds.Wheat)}
+          label="Wheat"
+          tip="Wheat"
+          state="producing"
+          corner={3}
+          timer="17m"
+          foot="1.2K"
+          progress={0.6}
+        />
+        <HudRing icon={resourceMeaning(ResourcesIds.Essence)} label="Essence" state="idle" foot="6.4K" />
+        <HudRing icon={resourceMeaning(ResourcesIds.Labor)} label="Labor" foot="240" />
+        <HudRing
+          icon={resourceMeaning(ResourcesIds.Wood)}
+          label="Wood, in a list"
+          size="sm"
+          state="producing"
+          corner={2}
+          progress={0.3}
+          onClick={() => undefined}
+        />
       </div>
     }
     today={
@@ -919,6 +940,8 @@ const RingSection = () => (
 
 const LabHoldings = () => <HoldingsList holdings={useHoldings()} />;
 
+const TABLE_COLS = "40px 1fr 48px 56px";
+
 const RowsSection = () => (
   <Element
     name="List row"
@@ -928,6 +951,27 @@ const RowsSection = () => (
         <HudRow title="Egonal" detail="Settlement · 1,000 guarding" selected />
         <HudRow title="Noykkuynoyk" detail="City · Undefended" state="hover" />
         <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" />
+        <span data-lab-chrome className="mt-3 text-xs text-white/50">
+          A table row (the leaderboard), its columns on the caller&apos;s grid:
+        </span>
+        <HudTableHead cols={TABLE_COLS}>
+          <span>Rank</span>
+          <span>Name</span>
+          <span>Tiles</span>
+          <span className="text-right">Points</span>
+        </HudTableHead>
+        <HudTableRow cols={TABLE_COLS} label="djizus: their points" selected onClick={() => undefined}>
+          <span>#1</span>
+          <span className="text-hud-strong">djizus</span>
+          <span>8</span>
+          <span className="text-right text-hud-strong">40</span>
+        </HudTableRow>
+        <HudTableRow cols={TABLE_COLS} label="clientlane: their points" state="hover" onClick={() => undefined}>
+          <span>#2</span>
+          <span className="text-hud-strong">clientlane</span>
+          <span>3</span>
+          <span className="text-right text-hud-strong">15</span>
+        </HudTableRow>
       </div>
     }
     today={

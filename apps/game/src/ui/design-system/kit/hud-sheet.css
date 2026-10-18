@@ -268,27 +268,58 @@
 /* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,
    the time left top right, the amount on the foot; a production arc around it. ── */
 .ui-ring {
+  --ring-size: 48px;
+  --ring-face: 40px;
+  --ring-tone: rgb(var(--hud-accent) / 0.2);
   position: relative;
   display: inline-grid;
-  width: 52px;
-  height: 52px;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  flex: none;
   place-items: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+}
+.ui-ring[data-size="sm"] {
+  --ring-size: 36px;
+  --ring-face: 30px;
+}
+.ui-ring[data-production="producing"] {
+  --ring-tone: var(--hud-good);
+}
+.ui-ring[data-production="idle"] {
+  --ring-tone: var(--hud-warn);
+}
+button.ui-ring {
+  cursor: pointer;
+}
+button.ui-ring:focus-visible {
+  outline: none;
+}
+button.ui-ring:focus-visible .ui-ring__face {
+  box-shadow: var(--hud-focus);
 }
 .ui-ring__arc {
   position: absolute;
   inset: 0;
   border-radius: var(--hud-radius-round);
-  background: conic-gradient(var(--hud-good) var(--ring-arc, 0deg), rgb(var(--hud-accent) / 0.2) 0);
-  mask: radial-gradient(circle, transparent 22px, black 23px);
+  background: conic-gradient(var(--ring-tone) var(--ring-arc, 0deg), rgb(var(--hud-accent) / 0.2) 0);
+  mask: radial-gradient(circle closest-side, transparent calc(100% - 4px), black calc(100% - 3px));
 }
 .ui-ring__face {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: var(--ring-face);
+  height: var(--ring-face);
   place-items: center;
+  overflow: hidden;
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-round);
   background: radial-gradient(circle at 50% 35%, var(--hud-surface-from), var(--hud-surface-to));
+}
+.ui-ring[data-production] .ui-ring__face {
+  border-color: var(--ring-tone);
 }
 .ui-ring__badge {
   position: absolute;
@@ -301,6 +332,7 @@
   line-height: var(--hud-line-badge);
   font-weight: var(--hud-weight-badge);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .ui-ring__badge[data-at="corner"] {
   top: -2px;
@@ -354,6 +386,60 @@
   line-height: var(--hud-line-strong);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Table row: one row of a table (the leaderboard), its columns on the caller's grid (--cols, --cols-wide from a
+   tablet up); the list row's hover and chosen bar, and a button, so Enter and Space choose it. Its header names the
+   columns on the same grid. ── */
+.ui-table-row,
+.ui-table-head {
+  display: grid;
+  width: 100%;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  column-gap: theme(spacing.3);
+  padding: theme(spacing.1) theme(spacing.3);
+}
+@media (min-width: 768px) {
+  .ui-table-row,
+  .ui-table-head {
+    grid-template-columns: var(--cols-wide);
+    column-gap: theme(spacing.4);
+    padding: theme(spacing.1) theme(spacing.4);
+  }
+}
+.ui-table-row {
+  min-height: var(--hud-control);
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: var(--hud-radius-chip);
+  background: transparent;
+  color: rgb(var(--hud-ink));
+  font-family: inherit;
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-line-body);
+  font-weight: var(--hud-weight-body);
+  text-align: inherit;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-table-row:is(:hover, [data-state="hover"]) {
+  background: var(--hud-hover);
+}
+.ui-table-row[aria-current="true"] {
+  border-left-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+}
+.ui-table-row:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-table-head {
+  border-bottom: 1px solid var(--hud-divider);
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
 }
 
 /* ── Event row: what happened, said once: its time as a cue, a tone mark, the words. A notice is one too. ── */
