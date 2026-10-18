@@ -25,6 +25,7 @@ import {
   HudButton,
   HudCheck,
   HudCard,
+  HudDial,
   HudChip,
   HudConfirm,
   HudEmpty,
@@ -646,7 +647,7 @@ const SettingsSection = () => {
 const MeterSection = () => (
   <Element
     name="Meter"
-    rule="How full a thing is: stamina, production, a load; the fill in a tone."
+    rule="How full a thing is: stamina, production, a load; the fill in a tone. A dial is a number in a ring that drains (the day, as today runs out), toned near its end."
     sheet={
       <div className="flex max-w-xs flex-col gap-3">
         <HudMeter share={0.62} tone="good" label="Stamina" />
@@ -654,6 +655,11 @@ const MeterSection = () => (
         <HudMeter share={0.35} label="Production" />
         <HudMeter share={0.9} tone="warn" label="Storage" />
         <HudMeter share={0.1} tone="bad" label="Food" />
+        <div className="flex gap-3">
+          <HudDial value={4} share={0.7} label="Day 4" />
+          <HudDial value={4} share={0.08} tone="warn" label="Day 4" />
+          <HudDial value={4} share={0.02} tone="bad" label="Day 4" />
+        </div>
       </div>
     }
     today={

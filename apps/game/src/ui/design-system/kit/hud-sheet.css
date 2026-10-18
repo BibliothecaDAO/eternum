@@ -348,6 +348,50 @@ button.ui-panel__name {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+/* ── Dial: a number in a ring that drains, in a tone near its end. ── */
+.ui-dial {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-line-strong);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+.ui-dial > svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.ui-dial circle {
+  fill: none;
+  stroke-width: 4;
+}
+.ui-dial__track {
+  stroke: var(--hud-divider);
+}
+.ui-dial__left {
+  stroke: rgb(var(--hud-accent));
+  stroke-linecap: round;
+}
+.ui-dial[data-tone="warn"] {
+  color: var(--hud-warn);
+}
+.ui-dial[data-tone="warn"] .ui-dial__left {
+  stroke: var(--hud-warn);
+}
+.ui-dial[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.ui-dial[data-tone="bad"] .ui-dial__left {
+  stroke: var(--hud-bad);
+}
+
 .ui-chip[data-tier] {
   border-color: rgb(var(--tier) / 0.45);
   background: linear-gradient(180deg, rgb(var(--tier) / 0.3), rgb(var(--tier) / 0.1));

@@ -605,6 +605,38 @@ export const HudRarity = ({ tier, word = false }: { tier: 1 | 2 | 3 | 4 | 5; wor
 );
 
 /**
+ * A number in a ring that drains (the day, as today runs out): the ring is the share left, from 1 to 0, and takes a
+ * tone near its end. `label` is all it says for assistive technology.
+ */
+export const HudDial = ({
+  value,
+  share,
+  tone,
+  label,
+}: {
+  value: ReactNode;
+  share: number;
+  tone?: Tone;
+  label: string;
+}) => (
+  <span className="ui-dial" data-tone={tone} role="img" aria-label={label}>
+    <svg viewBox="0 0 40 40" aria-hidden="true">
+      <circle className="ui-dial__track" cx="20" cy="20" r="15" />
+      <circle
+        className="ui-dial__left"
+        cx="20"
+        cy="20"
+        r="15"
+        pathLength={1}
+        strokeDasharray={1}
+        strokeDashoffset={1 - Math.min(1, Math.max(0, share))}
+      />
+    </svg>
+    <span aria-hidden="true">{value}</span>
+  </span>
+);
+
+/**
  * A painting in a round well with its numbers on the rim, all in one badge: buildings top left, the time left top
  * right, the amount on the foot; how far production has come as an arc, its rim in its state's tone (producing good,
  * idle warn). Two sizes, its painting fitted to each: sm in lists, md in cards and panels. `tip` is its hover (the
