@@ -118,3 +118,50 @@ test("an area that renders a kit control through another area's child fails, the
     rmSync(app, { recursive: true, force: true });
   }
 });
+
+/** A barrel over a retired kit control, a type and a sheet element, for every way a caller can import it. */
+const BARREL_FILES = {
+  "barrel.ts": `export { Pill } from "./ui/design-system/kit/pill";\nexport { HudButton } from "./sheet";\nexport type { PillProps } from "./ui/design-system/kit/pill-props";`,
+  "default-barrel.ts": `export { Pill as default } from "./ui/design-system/kit/pill";`,
+  "star-barrel.ts": `export * as Kit from "./barrel";`,
+  "types-barrel.ts": `export type { Pill } from "./ui/design-system/kit/pill";\nexport type * from "./ui/design-system/kit/tab-list";\nexport { type Tier } from "./ui/design-system/kit/tier-chip";`,
+  "sheet.tsx": `export const HudButton = () => <button className="ui-button" />;`,
+  "ui/design-system/kit/pill.tsx": `export const Pill = () => <span className="ui-pill" />;`,
+  "ui/design-system/kit/pill-props.tsx": `export type PillProps = {};`,
+  "ui/design-system/kit/tab-list.tsx": `export type TabListProps = {};\nexport const TabList = () => <div />;`,
+  "ui/design-system/kit/tier-chip.tsx": `export type Tier = 1 | 2 | 3;\nexport const TierChip = () => <span />;`,
+};
+
+const reachedFrom = (window) => {
+  const app = mkdtempSync(join(tmpdir(), "hud-reach-barrel-"));
+  try {
+    for (const [path, text] of Object.entries({ ...BARREL_FILES, "window.tsx": window })) {
+      mkdirSync(dirname(join(app, path)), { recursive: true });
+      writeFileSync(join(app, path), text);
+    }
+    return legacyReached([join(app, "window.tsx")], importGraph(app), (file) =>
+      isRetired(file.slice(app.length + 1)),
+    ).map(({ file }) => file.slice(app.length + 1));
+  } finally {
+    rmSync(app, { recursive: true, force: true });
+  }
+};
+
+for (const [form, window] of Object.entries({
+  named: `import { Pill } from "./barrel";\nexport const Window = () => <Pill />;`,
+  namespace: `import * as Kit from "./barrel";\nexport const Window = () => <Kit.Pill />;`,
+  dynamic: `const Pill = lazy(() => import("./barrel").then((m) => ({ default: m.Pill })));\nexport const Window = () => <Pill />;`,
+  default: `import Pill from "./default-barrel";\nexport const Window = () => <Pill />;`,
+  "re-exported namespace": `import { Kit } from "./star-barrel";\nexport const Window = () => <Kit.Pill />;`,
+  "side-effect": `import "./barrel";\nexport const Window = () => null;`,
+}))
+  test(`a ${form} import of a barrel cannot hide the retired control it re-exports`, () =>
+    assert.deepEqual(reachedFrom(window), ["ui/design-system/kit/pill.tsx"]));
+
+test("a named import from a barrel reaches only the value it names, and a type-only re-export reaches nothing", () => {
+  assert.deepEqual(
+    reachedFrom(`import { HudButton } from "./barrel";\nexport const Window = () => <HudButton />;`),
+    [],
+  );
+  assert.deepEqual(reachedFrom(`import * as Types from "./types-barrel";\nexport const Window = () => null;`), []);
+});

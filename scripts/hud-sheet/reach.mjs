@@ -120,30 +120,66 @@ export const importGraph = (app) => {
     return sources.get(file);
   };
 
-  /** The file defining `name` as a value, through `export … from` re-exports; null when it is only a type. */
-  const definer = (file, name, seen = new Set()) => {
-    if (seen.has(file)) return null;
+  /**
+   * The files defining `name` as a value, through `export … from` re-exports: one file, or a whole module for a
+   * namespace re-export (`export * as name from`); none when it is only a type.
+   */
+  const definers = (file, name, seen = new Set()) => {
+    if (seen.has(file)) return [];
     seen.add(file);
     const text = source(file);
-    if (new RegExp(`export\\s+(?:declare\\s+)?(?:type|interface)\\s+${name}\\b`).test(text)) return null;
+    if (new RegExp(`export\\s+(?:declare\\s+)?(?:type|interface)\\s+${name}\\b`).test(text)) return [];
     const declares = `export\\s+(?:default\\s+)?(?:async\\s+)?(?:const|let|var|function\\*?|class|enum)\\s+${name}\\b`;
-    if (new RegExp(declares).test(text)) return file;
+    if (new RegExp(declares).test(text)) return [file];
     for (const [, names, specifier] of text.matchAll(/export\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g)) {
       for (const part of names.split(",").map((each) => each.trim())) {
         if (part.startsWith("type ")) continue;
         const [original, alias] = part.split(/\s+as\s+/);
         if ((alias ?? original) !== name) continue;
         const target = resolveSpecifier(app, file, specifier);
-        return target ? (definer(target, original, seen) ?? target) : null;
+        return target ? orModule(definers(target, original, seen), target) : [];
       }
     }
-    if (new RegExp(`export\\s*\\{[^}]*\\b${name}\\b[^}]*\\}`).test(text)) return file;
+    for (const [, alias, specifier] of text.matchAll(/export\s*\*\s*as\s+(\w+)\s+from\s*["']([^"']+)["']/g)) {
+      const target = alias === name && resolveSpecifier(app, file, specifier);
+      if (target) return whole(target);
+    }
+    if (new RegExp(`export\\s*\\{[^}]*\\b${name}\\b[^}]*\\}`).test(text)) return [file];
     for (const [, specifier] of text.matchAll(/export\s*\*\s*from\s*["']([^"']+)["']/g)) {
       const target = resolveSpecifier(app, file, specifier);
-      const found = target && definer(target, name, seen);
-      if (found) return found;
+      const found = target ? definers(target, name, seen) : [];
+      if (found.length) return found;
     }
-    return null;
+    return [];
+  };
+  const orModule = (found, module) => (found.length ? found : [module]);
+
+  /**
+   * A module imported whole (default, namespace, dynamic, side-effect): the file and every value it re-exports, each at
+   * the file defining it, so a barrel hides nothing however the caller spells its import.
+   */
+  const whole = (file, seen = new Set()) => {
+    if (seen.has(file)) return [];
+    seen.add(file);
+    const files = [file];
+    const text = source(file);
+    for (const [, typeOnly, names, specifier] of text.matchAll(
+      /export\s+(type\s+)?\{([^}]*)\}\s*from\s*["']([^"']+)["']/g,
+    )) {
+      const target = !typeOnly && resolveSpecifier(app, file, specifier);
+      if (!target) continue;
+      for (const part of names.split(",").map((each) => each.trim())) {
+        if (!part || part.startsWith("type ")) continue;
+        files.push(...orModule(definers(target, part.split(/\s+as\s+/)[0]), target));
+      }
+    }
+    for (const [, typeOnly, specifier] of text.matchAll(
+      /export\s+(type\s+)?\*\s*(?:as\s+\w+\s*)?from\s*["']([^"']+)["']/g,
+    )) {
+      const target = !typeOnly && resolveSpecifier(app, file, specifier);
+      if (target) files.push(...whole(target, seen));
+    }
+    return files;
   };
 
   /** The files a module draws on: a default, namespace, dynamic or side-effect import whole, a named one where defined. */
@@ -161,18 +197,17 @@ export const importGraph = (app) => {
           .replace(/,/g, "")
           .trim()
       )
-        edges.add(target);
+        for (const each of whole(target)) edges.add(each);
       for (const part of named ? named[1].split(",").map((each) => each.trim()) : []) {
         if (!part || part.startsWith("type ")) continue;
-        const found = definer(target, part.split(/\s+as\s+/)[0]);
-        if (found) edges.add(found);
+        for (const each of definers(target, part.split(/\s+as\s+/)[0])) edges.add(each);
       }
     }
     for (const [, dynamic, bare] of source(file).matchAll(
       /import\(\s*["']([^"']+)["']\s*\)|^import\s+["']([^"']+)["']/gm,
     )) {
       const target = resolveSpecifier(app, file, dynamic ?? bare);
-      if (target) edges.add(target);
+      if (target) for (const each of whole(target)) edges.add(each);
     }
     return [...edges].filter((target) => !isTest(target));
   };
