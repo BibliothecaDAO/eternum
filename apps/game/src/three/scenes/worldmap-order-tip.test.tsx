@@ -21,24 +21,19 @@ const tile = {
 };
 
 const pointer = new PointerOrderTip(() => {
-  const tip = orderTip({
-    path: tile.path,
-    target: null,
-    exploreStamina: 21,
-    food: { wheat: 0, fish: 0 },
-    explored: true,
-    refusal: tile.refusal,
-    staminaWait: undefined,
-    points: { exploreTile: 5, openRelicCrate: 250 },
-    clickPreviews: false,
-  });
-  return tip && { ...tip, at: tile.at };
+  const line = orderTip({ path: tile.path, explored: true, refusal: tile.refusal, staminaWait: undefined });
+  return line === null ? null : { line, at: tile.at };
 });
 
 const shownLine = (): string | null => {
   const tooltip = useTooltipStore.getState().tooltip;
   return tooltip ? renderToStaticMarkup(<>{tooltip.content}</>).replace(/<[^>]+>/g, "") : null;
 };
+
+const crate = (): ActionPath[] => [
+  { hex: { col: 0, row: 0 }, actionType: ActionType.Move },
+  { hex: { col: 1, row: 0 }, actionType: ActionType.Chest },
+];
 
 const move = (staminaCost: number): ActionPath[] => [
   { hex: { col: 0, row: 0 }, actionType: ActionType.Move },
@@ -67,7 +62,7 @@ describe("the line under a still pointer", () => {
 
     Object.assign(tile, { refusal: undefined, path: move(2) });
     pointer.refresh();
-    expect(shownLine()).toBe("Right-click · Move · 2 stamina");
+    expect(shownLine()).toBe("Move");
 
     tile.path = undefined;
     pointer.refresh();
@@ -91,12 +86,12 @@ describe("the line under a still pointer", () => {
     pointer.take();
     expect(shownLine()).toBeNull();
 
-    tile.path = move(3);
+    tile.path = crate();
     pointer.refresh();
     expect(shownLine()).toBeNull();
 
     pointer.point({ col: 1, row: 0 });
-    expect(shownLine()).toBe("Right-click · Move · 3 stamina");
+    expect(shownLine()).toBe("Open crate");
   });
 
   it("says nothing after the pointer leaves the map, whatever changes", () => {
@@ -169,13 +164,13 @@ describe("the line when the pointer leaves the map for the HUD", () => {
 
   it("gives the tooltip to the HUD control and keeps it there through a refresh", () => {
     restOnTile();
-    expect(shownLine()).toBe("Right-click · Move · 2 stamina");
+    expect(shownLine()).toBe("Move");
 
     leaveCanvas();
     overHudButton();
     expect(shownLine()).toBe("Wheat");
 
-    tile.path = move(3);
+    tile.path = crate();
     pointer.refresh();
     expect(shownLine()).toBe("Wheat");
   });
@@ -196,8 +191,8 @@ describe("the line when the pointer leaves the map for the HUD", () => {
     leaveCanvas();
     overHudButton();
 
-    tile.path = move(3);
+    tile.path = crate();
     restOnTile();
-    expect(shownLine()).toBe("Right-click · Move · 3 stamina");
+    expect(shownLine()).toBe("Open crate");
   });
 });

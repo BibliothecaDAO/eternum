@@ -53,19 +53,8 @@ const CAMP: StructurePlate = {
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
 /** The order line as the game writes it (orderTip), for an order or a refusal. */
 const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
-  const tip = orderTip({
-    path: undefined,
-    target: null,
-    exploreStamina: 30,
-    food: { wheat: 0, fish: 0 },
-    explored: true,
-    refusal: undefined,
-    staminaWait: undefined,
-    points: { exploreTile: 0, openRelicCrate: 250 },
-    clickPreviews: false,
-    ...order,
-  });
-  return tip ? <HudTip line={tip.line} how={tip.gestures ?? undefined} /> : null;
+  const tip = orderTip({ path: undefined, explored: true, refusal: undefined, staminaWait: undefined, ...order });
+  return tip ? <HudTip line={tip} /> : null;
 };
 
 /** A plate as the plate layer places it, standing in the page. */
@@ -288,10 +277,10 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
           </OnMap>
           <OnMap
             name="Order line"
-            when="Under the hovered tile while an army is selected: the right-click's order, its cost and payoff."
+            when="Under the hovered tile while an army is selected: the right-click's order alone."
           >
-            {line({ path: [step(ActionType.Move), step(ActionType.Explore)], food: { wheat: 50, fish: 0 } })}
-            {line({ path: [step(ActionType.Move), step(ActionType.Attack, 50)], target: CAMP.place })}
+            {line({ path: [step(ActionType.Move), step(ActionType.Explore)] })}
+            {line({ path: [step(ActionType.Move), step(ActionType.Attack, 50)] })}
             {line({ path: [step(ActionType.Move), step(ActionType.Help)] })}
           </OnMap>
           <OnMap name="Refusals" when="The same line where no order leads: why, and when it will, to the second.">

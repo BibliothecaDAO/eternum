@@ -5,61 +5,19 @@ import { orderFood, orderTip } from "./order-tip";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
 type Path = ReturnType<typeof step>[];
-const tile = (
+const line = (
   path: Path | undefined,
-  more: Partial<{
-    target: string | null;
-    explored: boolean;
-    refusal: OrderRefusal;
-    staminaWait: number;
-    clickPreviews: boolean;
-    food: { wheat: number; fish: number };
-  }> = {},
-) =>
-  orderTip({
-    path,
-    target: null,
-    exploreStamina: 21,
-    food: { wheat: 0, fish: 0 },
-    explored: true,
-    refusal: undefined,
-    staminaWait: undefined,
-    points: { exploreTile: 5, openRelicCrate: 250 },
-    clickPreviews: false,
-    ...more,
-  });
-const line = (...args: Parameters<typeof tile>) => tile(...args)?.line;
+  more: Partial<{ explored: boolean; refusal: OrderRefusal; staminaWait: number }> = {},
+) => orderTip({ path, explored: true, refusal: undefined, staminaWait: undefined, ...more });
 
 describe("what a right-click on a tile does, said before the click", () => {
-  it("names the order, what it costs and what it pays", () => {
-    expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe(
-      "Right-click · Explore · 21 stamina · +5 points",
-    );
-    expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe(
-      "Right-click · Move · 2 stamina",
-    );
-    expect(line([step(ActionType.Move), step(ActionType.Explore)], { food: { wheat: 50, fish: 0 } })).toBe(
-      "Right-click · Explore · 21 stamina · 50 wheat · +5 points",
-    );
-    expect(line([step(ActionType.Move), step(ActionType.Chest)])).toBe("Right-click · Open crate · +250 points");
-    expect(line([step(ActionType.Move), step(ActionType.Attack, 30)], { target: "Rift" })).toBe(
-      "Rift · Right-click · Attack · forecast",
-    );
-    expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Right-click · Attack · forecast");
-    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Right-click · Transfer troops");
-  });
-
-  it("lists every food an order charges, to the unit the chain charges it, and none it does not", () => {
-    const explore = [step(ActionType.Move), step(ActionType.Explore)];
-    expect(line(explore, { food: { wheat: 0.05, fish: 0 } })).toBe(
-      "Right-click · Explore · 21 stamina · 0.05 wheat · +5 points",
-    );
-    expect(line(explore, { food: { wheat: 30, fish: 30 } })).toBe(
-      "Right-click · Explore · 21 stamina · 30 wheat · 30 fish · +5 points",
-    );
-    expect(line([step(ActionType.Move), step(ActionType.Move, 1)], { food: { wheat: 0, fish: 0.03 } })).toBe(
-      "Right-click · Move · 1 stamina · 0.03 fish",
-    );
+  it("names the order alone: no gesture, no cost, no payoff", () => {
+    expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
+    expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
+    expect(line([step(ActionType.Move), step(ActionType.Chest)])).toBe("Open crate");
+    expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
+    expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
+    expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
   });
 
   it("says why the planner gave no order, in its own reason", () => {
@@ -82,16 +40,8 @@ describe("what a right-click on a tile does, said before the click", () => {
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {
     expect(line(undefined, { explored: false })).toBe("Unexplored");
-    expect(tile(undefined)).toBeNull();
-    expect(tile([step(ActionType.Move)])).toBeNull();
-  });
-
-  it("adds that a click previews where the HUD carries the order's verb, on an explore or a move only", () => {
-    expect(tile([step(ActionType.Move), step(ActionType.Explore)], { clickPreviews: true })?.gestures).toBe(
-      "Click previews",
-    );
-    expect(tile([step(ActionType.Move), step(ActionType.Explore)])?.gestures).toBeNull();
-    expect(tile([step(ActionType.Move), step(ActionType.Attack, 30)], { clickPreviews: true })?.gestures).toBeNull();
+    expect(line(undefined)).toBeNull();
+    expect(line([step(ActionType.Move)])).toBeNull();
   });
 });
 

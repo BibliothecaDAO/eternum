@@ -78,7 +78,6 @@ import {
   isViewerOwner,
   isExpeditionRealm,
   structureMapPosition,
-  siteKindOf,
 } from "@bibliothecadao/eternum";
 import {
   requireActiveGameSyncRuntime,
@@ -272,8 +271,7 @@ import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-or
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
-import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
+import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
@@ -2390,8 +2388,8 @@ export default class WorldmapScene extends WarpTravel {
   /** The tile's line where it sits on screen now; with an army selected in every mode, and always where the HUD names tiles. */
   private placeOrderTip(hexCoords: HexPosition): PlacedOrderTip | null {
     if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return null;
-    const tip = this.nameOrderAt(hexCoords);
-    return tip && { ...tip, at: projectHexToScreen(hexCoords, this.camera) };
+    const line = this.nameOrderAt(hexCoords);
+    return line === null ? null : { line, at: projectHexToScreen(hexCoords, this.camera) };
   }
 
   /** The army whose orders the map shows, or null when the selection is no army. */
@@ -2401,22 +2399,14 @@ export default class WorldmapScene extends WarpTravel {
     return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
-  private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
-    const { structure } = this.getHexagonEntity(hexCoords);
+  private nameOrderAt(hexCoords: HexPosition): string | null {
     const key = ActionPaths.posKey(hexCoords, true);
     const refusal = this.orderRefusals.get(key);
-    const path = getLiveWorldmapEntityActions().actionPaths.get(key);
-    const armyTroops = this.selectedArmyRow()?.troops;
     return orderTip({
-      path,
-      target: structure ? this.siteWord(structure.id) : null,
-      exploreStamina: configManager.getExploreStaminaCost(),
-      food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
+      path: getLiveWorldmapEntityActions().actionPaths.get(key),
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
       staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,
-      points: configManager.getVictoryPointGrants(),
-      clickPreviews: this.hudCarriesOrderVerb(),
     });
   }
 
@@ -2438,16 +2428,6 @@ export default class WorldmapScene extends WarpTravel {
     const { currentDefaultTick } = getBlockTimestamp();
     const ready = StaminaManager.getAffordableAt(troops, need, currentDefaultTick);
     return ready === null ? undefined : Math.max(0, ready - currentDefaultTick);
-  }
-
-  /** A standing site as its card names it; null for anything else. */
-  private siteWord(entityId: ID): string | null {
-    if (!this.isStandingExpeditionSite(entityId)) return null;
-    const structure = this.game.store.require("Structure", {
-      game_id: configManager.getActiveGameId(),
-      entity_id: safeInteger(entityId),
-    });
-    return TARGET_MARKS[siteKindOf(structure.base.category)].word;
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {

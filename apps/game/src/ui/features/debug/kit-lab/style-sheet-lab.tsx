@@ -836,22 +836,12 @@ const orderStep = (actionType: ActionType, staminaCost?: number) => ({
   staminaCost,
 });
 const ORDER_LINES = [
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 50, fish: 0 } },
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Attack, 50)], target: "Camp" },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)] },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Attack, 50)] },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24 },
 ].flatMap((order) => {
-  const tip = orderTip({
-    target: null,
-    exploreStamina: 30,
-    food: { wheat: 0, fish: 0 },
-    explored: true,
-    refusal: undefined,
-    staminaWait: undefined,
-    points: { exploreTile: 0, openRelicCrate: 0 },
-    clickPreviews: false,
-    ...order,
-  });
+  const tip = orderTip({ explored: true, refusal: undefined, staminaWait: undefined, ...order });
   return tip ? [tip] : [];
 });
 
@@ -864,7 +854,7 @@ const TooltipSection = () => (
         <HudTip line="Wheat, 1,200 held" />
         <HudTip line="Deploy an army here" how="Right-click" />
         {ORDER_LINES.map((order) => (
-          <HudTip key={order.line} line={order.line} how={order.gestures ?? undefined} />
+          <HudTip key={order} line={order} />
         ))}
       </div>
     }
