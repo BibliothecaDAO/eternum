@@ -1,4 +1,4 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { useAudio } from "@/audio/hooks/useAudio";
 import { resolveCompactLane, useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import {
@@ -7,9 +7,8 @@ import {
   type SurfacePlacement,
   usePopoverStore,
 } from "@/hooks/store/use-popover-store";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
 
 import {
   type CSSProperties,
@@ -29,17 +28,15 @@ const HEADER_CLEARANCE_PX = 56;
 const COMPACT_SHEET_BOTTOM_INSET = "max(1rem, env(safe-area-inset-bottom))";
 /** Portrait sheets use at most 85% of the screen; the keyboard can reduce the content height further. */
 const COMPACT_SHEET_CONTENT_HEIGHT = "85dvh";
-/** The landscape drawer's width cap; keep in step with the `max-lg:landscape:w-[...]` in `SURFACE_WORKSPACE_CLASS`. */
+/** The landscape drawer's width cap; keep in step with the workspace drawer width in hud-sheet.css. */
 const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
 
 /**
- * Size of a full workspace surface (Build, Military, Market...): a wide desk on desktop, a full bottom sheet below
- * `lg`, and a drawer down the right edge when the phone is sideways. The landscape height is the drawer's header
- * clearance (`HEADER_CLEARANCE_PX`, 3.5rem) plus its bottom inset (`COMPACT_SHEET_BOTTOM_INSET`), so the child
- * fits the drawer exactly; Tailwind needs the class as a literal, so keep the three in step.
+ * Size of a full workspace surface (Build, Military, Market...) framed by SurfaceFrame: the HUD sheet's workspace
+ * window (hud-sheet.css .ui-workspace, the same size as HudWindow size="workspace"): a wide desk on desktop, a full
+ * bottom sheet below `lg`, and a drawer down the right edge when the phone is sideways.
  */
-export const SURFACE_WORKSPACE_CLASS =
-  "w-[1180px] h-[calc(100dvh-9rem)] max-lg:w-screen max-lg:h-[min(85dvh,calc(var(--surface-viewport-height,100dvh)-4rem))] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:h-[calc(var(--surface-viewport-height,100dvh)-3.5rem-max(1rem,env(safe-area-inset-bottom))-2px)]";
+export const SURFACE_WORKSPACE_CLASS = "ui-workspace";
 
 type PopoverAlign = "start" | "end";
 
@@ -180,12 +177,11 @@ const OpenPanel = ({
       aria-label={ariaLabel}
       data-popover-panel={id}
       className={cn(
-        "pointer-events-auto fixed z-[130] touch-pan-y overflow-y-auto outline-none overscroll-contain",
+        "pointer-events-auto fixed z-hud-popover touch-pan-y overflow-y-auto outline-none overscroll-contain",
         !holdsWindow && [
-          "w-80 rounded-xl p-4 text-gold",
+          "ui ui-popover w-80 rounded-xl p-4",
           "max-lg:w-screen max-lg:rounded-b-none",
           "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
-          OVERLAY_SURFACE_BASE,
           className,
         ],
       )}
@@ -287,26 +283,28 @@ interface PopoverHeaderProps {
   onClose: () => void;
 }
 
-/** The header strip for a large surface: title, optional icon, close. Dragging it moves the surface. */
-const PopoverHeader = ({ title, icon: Icon, onClose }: PopoverHeaderProps) => (
-  <div
-    data-popover-drag-handle
-    className="flex shrink-0 cursor-move max-lg:cursor-default select-none touch-none items-center justify-between gap-2 border-b border-gold/15 px-4 py-2.5 max-lg:py-1"
-  >
-    <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
-      {Icon && <SemanticIcon name={Icon} className="h-4 w-4 text-gold" />}
-      {title}
-    </span>
-    <button
-      type="button"
-      onClick={onClose}
-      className="inline-flex h-7 w-7 max-lg:h-11 max-lg:w-11 cursor-pointer items-center justify-center rounded-full border border-gold/30 bg-black/30 text-gold/80 transition hover:border-gold hover:bg-gold/15 hover:text-gold"
-      aria-label="Close"
-      title="Close"
-    >
-      <SemanticIcon name="close" className="h-4 w-4" />
-    </button>
-  </div>
+/**
+ * A large surface's frame, in the HUD sheet's window: its bar (title, painting, close; dragging it moves the surface)
+ * over a scrolling body, with an optional foot. It is a full modal, and the panel draws no box of its own around it.
+ */
+export const SurfaceFrame = ({
+  title,
+  icon,
+  onClose,
+  footer,
+  className,
+  bodyClassName,
+  children,
+}: SurfaceFrameProps) => (
+  <section data-surface-frame className={cn("ui ui-window max-w-full min-h-0", className)}>
+    <header className="ui-window__bar" data-popover-drag-handle>
+      {icon && <Icon name={icon} size={22} />}
+      <span>{title}</span>
+      <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
+    </header>
+    <div className={cn("ui-window__body", bodyClassName)}>{children}</div>
+    {footer && <footer className="ui-window__foot">{footer}</footer>}
+  </section>
 );
 
 interface SurfaceFrameProps {
@@ -319,23 +317,6 @@ interface SurfaceFrameProps {
   bodyClassName?: string;
   children: ReactNode;
 }
-
-/** A large surface's frame: the header strip over a scrolling body, with an optional footer. It is a full modal. */
-export const SurfaceFrame = ({
-  title,
-  icon,
-  onClose,
-  footer,
-  className,
-  bodyClassName,
-  children,
-}: SurfaceFrameProps) => (
-  <div data-surface-frame className={cn("flex max-w-full min-h-0 flex-col", className)}>
-    <PopoverHeader title={title} icon={icon} onClose={onClose} />
-    <div className={cn("min-h-0 flex-1 overflow-y-auto", bodyClassName)}>{children}</div>
-    {footer && <div className="shrink-0 border-t border-gold/15 p-4 max-lg:p-2">{footer}</div>}
-  </div>
-);
 
 /** The rect a surface should hang from when a button opens it. */
 export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {

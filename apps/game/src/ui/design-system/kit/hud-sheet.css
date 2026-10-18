@@ -678,9 +678,16 @@ span.ui-row__choose {
   overflow-y: auto;
   padding: theme(spacing.4);
 }
+/* The panel's own look around a small popover: the window's surface, line and shadow; its width, padding and corners
+   stay the panel's utilities so a caller can size it. */
+.ui-popover {
+  border: 1px solid var(--hud-line);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+}
 /* Sizes, by what a window holds: one task, a page to read, a workspace that fills the desk, or fit: as large as its
    content (a table). Every size stays inside the screen, and its body scrolls within it. */
-.ui-window[data-size] {
+.ui-window:is([data-size], .ui-workspace) {
   max-width: calc(100vw - 2rem);
   max-height: calc(100dvh - 7rem);
 }
@@ -690,7 +697,7 @@ span.ui-row__choose {
 .ui-window[data-size="page"] {
   width: 68.75rem;
 }
-.ui-window[data-size="workspace"] {
+.ui-window:is([data-size="workspace"], .ui-workspace) {
   width: 73.75rem;
   height: calc(100dvh - 9rem);
 }
@@ -698,12 +705,13 @@ span.ui-row__choose {
   width: fit-content;
 }
 /* Below the desktop HUD a workspace is the full bottom sheet, or the drawer down the right edge on a phone held
-   sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx, SURFACE_WORKSPACE_CLASS). */
+   sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx). A SurfaceFrame takes the
+   workspace size by its .ui-workspace class (SURFACE_WORKSPACE_CLASS). */
 @media (max-width: 1023px) {
   .ui-window__bar[data-popover-drag-handle] {
     cursor: default;
   }
-  .ui-window[data-size="workspace"] {
+  .ui-window:is([data-size="workspace"], .ui-workspace) {
     width: 100vw;
     max-width: 100vw;
     height: min(85dvh, calc(var(--surface-viewport-height, 100dvh) - 4rem));
@@ -715,7 +723,7 @@ span.ui-row__choose {
   }
 }
 @media (max-width: 1023px) and (orientation: landscape) {
-  .ui-window[data-size="workspace"] {
+  .ui-window:is([data-size="workspace"], .ui-workspace) {
     width: min(60vw, 640px);
     height: calc(var(--surface-viewport-height, 100dvh) - 3.5rem - max(1rem, env(safe-area-inset-bottom)) - 2px);
   }

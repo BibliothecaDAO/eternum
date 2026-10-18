@@ -206,6 +206,29 @@ describe("a desk the player dragged, opened again", () => {
     expect(placementOf("transfer")).toEqual(DRAGGED);
   });
 
+  it("frames a SurfaceFrame as the sheet's window, with no panel box around it, and still drags it by its bar", async () => {
+    await mountHost();
+    await act(async () => usePopoverStore.getState().openSurface({ id: "transfer", content: fullModal }));
+    const panel = panelOf("transfer")!;
+    expect(panel.classList.contains("ui-popover")).toBe(false);
+    const frame = panel.firstElementChild!;
+    expect(frame.classList.contains("ui-window")).toBe(true);
+    expect(frame.querySelector(".ui-window__bar")?.hasAttribute("data-popover-drag-handle")).toBe(true);
+    expect(frame.querySelector('button[aria-label="Close"]')).not.toBeNull();
+    expect(placementOf("transfer")).toEqual(CENTRED);
+    await dragHeader("transfer", { x: 300, y: 200 });
+    expect(placementOf("transfer")).toEqual(DRAGGED);
+  });
+
+  it("draws a small popover in the sheet's panel look, sized and padded by the panel", async () => {
+    const opened = await openPanel(TILE, smallPopover);
+    const panel = document.querySelector<HTMLElement>('[data-popover-panel="surface"]')!;
+    expect(["ui", "ui-popover", "w-80", "p-4", "rounded-xl"].every((look) => panel.classList.contains(look))).toBe(
+      true,
+    );
+    await opened.close();
+  });
+
   it("opens centred for a player whose browser still holds a position saved by an older client", async () => {
     window.localStorage.setItem("eternum.free-surface-offset", JSON.stringify({ x: 300, y: 200 }));
     await mountHost();

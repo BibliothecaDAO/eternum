@@ -15,7 +15,6 @@
   "apps/game/src/ui/design-system/molecules/dropdown-list.tsx": 5,
   "apps/game/src/ui/design-system/molecules/form-field.tsx": 8,
   "apps/game/src/ui/design-system/molecules/hud-tab-strip.tsx": 4,
-  "apps/game/src/ui/design-system/molecules/popover.tsx": 17,
   "apps/game/src/ui/design-system/molecules/relic-colors.tsx": 14,
   "apps/game/src/ui/design-system/molecules/requirement-chips.tsx": 4,
   "apps/game/src/ui/design-system/molecules/select-biome.tsx": 17,
