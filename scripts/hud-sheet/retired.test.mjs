@@ -36,6 +36,7 @@ test("finds it behind a shared wrapper, and names the way", () => {
 test("passes a named exception, the kit, and another area's features without walking into them", () => {
   const found = retiredReach({
     roots: ["ui/features/military/x"],
+    exceptions: { "ui/design-system/molecules/popover": "retired by area F" },
     modules: modules({
       "ui/features/military/x": [
         "ui/design-system/molecules/popover",

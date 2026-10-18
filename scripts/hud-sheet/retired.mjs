@@ -38,11 +38,8 @@ const RETIRED = [
 /** Shared wrappers the walk goes through: a finished area must not reach a retired control behind one. */
 const THROUGH = ["ui/design-system/", "ui/shared/"];
 
-/** Wrappers a finished area may still pass through, and who retires what they keep. */
-const EXCEPTIONS = {
-  "ui/design-system/molecules/popover":
-    "PopoverPanel keeps OVERLAY_SURFACE_BASE and the old type constants for a child that is not a HudWindow; area F retires them. Area D uses only surfaceAnchorFrom and hosts HudWindows, whose chrome the panel hands over.",
-};
+/** Wrappers a finished area may still pass through, each with who retires what it keeps: none today. */
+const EXCEPTIONS = {};
 
 const EXTENSIONS = ["", ".ts", ".tsx", "/index.ts", "/index.tsx"];
 
