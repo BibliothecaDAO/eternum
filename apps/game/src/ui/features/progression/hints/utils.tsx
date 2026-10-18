@@ -3,8 +3,8 @@ export const tableOfContents = (chapterTitles: string[]) => (
     <ul className="grid grid-cols-2 gap-4">
       {chapterTitles.map((title) => (
         <li key={title} className="transition-colors">
-          <a className="text-light-pink hover:text-pink-400 flex items-center space-x-2 group" href={`#${title}`}>
-            <span className="text-xs opacity-50 group-hover:opacity-100">→</span>
+          <a className="flex items-center space-x-2 text-hud-accent" href={`#${title}`}>
+            <span className="text-hud-label text-hud-cue">→</span>
             <span>{title}</span>
           </a>
         </li>

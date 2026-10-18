@@ -27,7 +27,7 @@ export const TheWorld = () => {
         <div key={chapter.title} className="space-y-3">
           {chapter?.icon && <div className="mb-2">{chapter.icon}</div>}
           <h4>{chapter.title}</h4>
-          <p className="text-gray-700 leading-relaxed">{chapter.content}</p>
+          <p className="leading-relaxed">{chapter.content}</p>
         </div>
       ))}
     </div>

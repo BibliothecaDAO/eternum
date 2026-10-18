@@ -7,7 +7,7 @@ export const Guilds = () => {
 
       <section className="space-y-4">
         <h4>Tribes</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Tribes are groups of players that work together to achieve common goals. Tribes can be created by any player
             and can have any number of members. Being part of a tribe is essential to success in Realms.

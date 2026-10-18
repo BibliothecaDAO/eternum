@@ -2,6 +2,8 @@ import { Headline } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
 import { TroopTier } from "@bibliothecadao/types";
 
+import { ReferenceTable } from "./article";
+
 const STRUCTURE_LEVELS = [
   { level: 1, name: "Settlement" },
   { level: 2, name: "City" },
@@ -20,7 +22,7 @@ export const Combat = () => {
 
       <section className="space-y-4">
         <h4>Combat System Overview</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Combat in Realms involves managing armies, engaging in battles, raiding structures, and understanding the
             nuances of troop tiers, stamina, and biome effects.
@@ -30,37 +32,37 @@ export const Combat = () => {
 
       <section className="space-y-4">
         <h4>Armies</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Armies consist of a single troop type and tier. Each hex can host only one army. Realms and Villages have
             limits on guard and field armies. Army limits increase with your structure level, not from building more
             military buildings. Higher Settlement, City, Kingdom, and Empire levels unlock more field armies and guard
             slots. The maximum size of an army depends on the structure level and troop tier:
           </p>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                <th className="text-left p-2 border border-gray-600">Level</th>
-                {TIERS.map((tier) => (
-                  <th key={tier} className="text-right p-2 border border-gray-600">
-                    {tier}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {STRUCTURE_LEVELS.map(({ level, name }) => (
-                <tr key={level}>
-                  <td className="p-2 border border-gray-600">{name}</td>
-                  {TIERS.map((tier) => (
-                    <td key={tier} className="text-right p-2 border border-gray-600">
-                      {configManager.getMaxArmySize(level - 1, tier).toLocaleString()}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ReferenceTable
+            label="Most troops in an army, by structure level and tier"
+            cols="2fr 1fr 1fr 1fr"
+            head={[
+              "Level",
+              ...TIERS.map((tier) => (
+                <span key={tier} className="block text-right">
+                  {tier}
+                </span>
+              )),
+            ]}
+            rows={STRUCTURE_LEVELS.map(({ level, name }) => ({
+              key: level,
+              label: name,
+              cells: [
+                name,
+                ...TIERS.map((tier) => (
+                  <span key={tier} className="block text-right">
+                    {configManager.getMaxArmySize(level - 1, tier).toLocaleString()}
+                  </span>
+                )),
+              ],
+            }))}
+          />
           <h5>Field Armies</h5>
           <p className="leading-relaxed">
             Field armies are used for exploration, patrolling, defending, and attacking on the world map. They are
@@ -80,7 +82,7 @@ export const Combat = () => {
 
       <section className="space-y-4">
         <h4>Raiding</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Raiding allows field armies to steal resources from adjacent structures without battling guard armies first.
           </p>
@@ -113,7 +115,7 @@ export const Combat = () => {
 
       <section className="space-y-4">
         <h4>Damage Calculation</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Damage is the number of casualties dealt. It's calculated based on the number of troops, troop tier,
             stamina, and biome bonuses. Range-1 combat damage is inflicted simultaneously by both sides. Battles can
@@ -124,7 +126,7 @@ export const Combat = () => {
 
       <section className="space-y-4">
         <h4>Stamina & Biome Effects</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <h5>Stamina - Attacking Army</h5>
           <p className="leading-relaxed">
             Requires a minimum of {troopConfig.troop_stamina_config.stamina_attack_req} stamina to attack. Each
@@ -172,7 +174,7 @@ export const Combat = () => {
 
       <section className="space-y-4">
         <h4>Troop Tiers</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Troops come in three tiers: T1 (basic), T2, and T3 (advanced). Higher tiers offer significantly increased
             combat strength and stamina.
@@ -187,31 +189,6 @@ export const Combat = () => {
           </p>
         </div>
       </section>
-    </div>
-  );
-};
-
-const Strength = ({
-  strength,
-  strongAgainst,
-  weakAgainst,
-  advantagePercent,
-  disadvantagePercent,
-}: {
-  strength: number;
-  strongAgainst: string;
-  weakAgainst: string;
-  advantagePercent: number;
-  disadvantagePercent: number;
-}) => {
-  return (
-    <div className="flex flex-col">
-      <div>
-        + {advantagePercent}% vs {strongAgainst}
-      </div>
-      <div>
-        - {disadvantagePercent}% vs {weakAgainst}
-      </div>
     </div>
   );
 };

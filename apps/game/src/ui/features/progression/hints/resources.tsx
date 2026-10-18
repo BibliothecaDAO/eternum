@@ -6,6 +6,8 @@ import { configManager, multiplyByPrecision } from "@bibliothecadao/eternum";
 import { CapacityConfig, findResourceById, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
+import { ReferenceTable } from "./article";
+
 export const Resources = () => {
   return (
     <div className="space-y-8">
@@ -13,7 +15,7 @@ export const Resources = () => {
 
       <section className="space-y-4">
         <h4>Resource Production</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Every resource, with the exception of Food, requires specific inputs for production. Maintaining a
             sufficient balance of these input resources is crucial; if depleted, production will cease. To ensure a
@@ -30,14 +32,11 @@ export const Resources = () => {
 
       <section className="space-y-4">
         <h4>Storage</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
-            <span className="font-bold">Storehouses</span> determine your resource storage capacity. Each storehouse
-            adds
-            <span className="font-bold">
-              {` ${configManager.getCapacityConfigKg(CapacityConfig.Storehouse)}Kg capacity`}
-            </span>
-            . Build more of them to increase storage.
+            <strong>Storehouses</strong> determine your resource storage capacity. Each storehouse adds
+            <strong>{` ${configManager.getCapacityConfigKg(CapacityConfig.Storehouse)}Kg capacity`}</strong>. Build more
+            of them to increase storage.
           </p>
         </div>
       </section>
@@ -67,43 +66,36 @@ const ResourceTable = () => {
   }, []);
 
   return (
-    <div className="rounded-lg border border-gold/20 overflow-hidden mt-4">
-      <table className="not-prose w-full">
-        <thead className="bg-gold/5">
-          <tr className="border-b border-gold/20">
-            <th className="text-left p-4 text-light-pink">Resource</th>
-            <th className="text-center p-4 text-light-pink">Production p/s</th>
-            <th className="text-left p-4 text-light-pink">Cost p/s</th>
-          </tr>
-        </thead>
-        <tbody>
-          {resourceTable.map((resource) => {
-            return (
-              <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors" key={resource.resource_type}>
-                <td className="p-4">
-                  <ResourceIcon size="xl" resource={resource.resource_type} />
-                </td>
-                <td className="text-xl text-center p-4">{currencyFormat(resource.amount, 2)}</td>
-                <td className="p-4">
-                  <div className="gap-3 flex flex-col">
-                    {resource.cost.map((cost, index) => {
-                      return (
-                        <div key={index}>
-                          <ResourceCost
-                            resourceId={cost.resource}
-                            amount={Number(currencyFormat(Number(cost.amount), 2))}
-                            size="lg"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <ReferenceTable
+      label="What each resource makes and costs per second"
+      cols="1fr 1fr 2fr"
+      head={[
+        "Resource",
+        <span key="production" className="block text-center">
+          Production p/s
+        </span>,
+        "Cost p/s",
+      ]}
+      rows={resourceTable.map((resource) => ({
+        key: resource.resource_type,
+        label: resource.resource?.trait ?? String(resource.resource_type),
+        cells: [
+          <ResourceIcon key="icon" size="xl" resource={resource.resource_type} />,
+          <span key="amount" className="block text-center text-hud-display">
+            {currencyFormat(resource.amount, 2)}
+          </span>,
+          <span key="cost" className="flex flex-col gap-3">
+            {resource.cost.map((cost, index) => (
+              <ResourceCost
+                key={index}
+                resourceId={cost.resource}
+                amount={Number(currencyFormat(Number(cost.amount), 2))}
+                size="lg"
+              />
+            ))}
+          </span>,
+        ],
+      }))}
+    />
   );
 };

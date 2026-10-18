@@ -5,6 +5,8 @@ import { RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useMemo } from "react";
 
+import { ReferenceTable } from "./article";
+
 const CASTLE_IMAGES: Partial<Record<RealmLevelNames, IconMeaning>> = {
   [RealmLevelNames.City]: "realm-1",
   [RealmLevelNames.Kingdom]: "realm-2",
@@ -18,7 +20,7 @@ export const Realm = () => {
 
       <section className="space-y-4">
         <h4>Your Realm</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             Your realm is a unique territory composed of hexagonal tiles, each representing a potential construction
             site. These hexes are the foundation of your empire, where you'll build various structures to establish your
@@ -33,7 +35,7 @@ export const Realm = () => {
 
       <section className="space-y-4">
         <h4>Realm Progression</h4>
-        <div className="space-y-4 text-gray-200">
+        <div className="space-y-4">
           <p className="leading-relaxed">
             As your influence grows, so too must your realm. Each level of progression - from City to Kingdom to Empire
             - unlocks new territories and opportunities. With each upgrade, you'll gain access to additional hexes,
@@ -63,56 +65,42 @@ const LevelTable = () => {
   }, []);
 
   return (
-    <div className="rounded-lg border border-gold/20 overflow-hidden">
-      <table className="not-prose w-full">
-        <thead className="bg-gold/5">
-          <tr className="border-b border-gold/20">
-            <th className="text-left p-4 text-light-pink">Level Information</th>
-            <th className="text-left p-4 text-light-pink">Cost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {levelTable.map((resource) => (
-            <tr className="border-b border-gold/10 hover:bg-gold/5 transition-colors" key={resource.level}>
-              <td className="p-6">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-64 h-64 rounded-lg bg-gold/5 border border-gold/20 flex items-center justify-center overflow-hidden">
-                    {CASTLE_IMAGES[resource.level as unknown as keyof typeof CASTLE_IMAGES] ? (
-                      <SemanticIcon
-                        size={144}
-                        name={CASTLE_IMAGES[resource.level as unknown as keyof typeof CASTLE_IMAGES]!}
-                        alt={`Level ${resource.level} Castle`}
-                        className="object-contain"
-                      />
-                    ) : (
-                      <span className="text-gold/40">No preview available</span>
-                    )}
-                  </div>
-                  <div className="space-y-2 text-center">
-                    <span className="text-2xl font-medium text-light-pink block">{resource.level}</span>
-                    <span className=" block leading-relaxed">
-                      {describeCastleLevel(RealmLevels[resource.level as unknown as keyof typeof RealmLevels])}
-                    </span>
-                  </div>
-                </div>
-              </td>
-              <td className="p-6">
-                <div className="gap-3 flex flex-col">
-                  {resource.cost.length > 0 ? (
-                    resource.cost.map((cost, index) => (
-                      <div key={index}>
-                        <ResourceCost resourceId={cost.resource} amount={cost.amount} size="lg" />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="">Starting Level</div>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ReferenceTable
+      label="What each realm level costs"
+      cols="1fr 1fr"
+      head={["Level Information", "Cost"]}
+      rows={levelTable.map((resource) => {
+        const castle = CASTLE_IMAGES[resource.level as unknown as keyof typeof CASTLE_IMAGES];
+        return {
+          key: resource.level,
+          label: String(resource.level),
+          cells: [
+            <span key="level" className="flex flex-col items-center gap-4 py-4">
+              {castle ? (
+                <SemanticIcon
+                  size={144}
+                  name={castle}
+                  alt={`Level ${resource.level} Castle`}
+                  className="object-contain"
+                />
+              ) : (
+                <span className="text-hud-muted">No preview available</span>
+              )}
+              <span className="text-hud-display text-hud-accent">{resource.level}</span>
+              <span className="text-center leading-relaxed">
+                {describeCastleLevel(RealmLevels[resource.level as unknown as keyof typeof RealmLevels])}
+              </span>
+            </span>,
+            <span key="cost" className="flex flex-col gap-3">
+              {resource.cost.length > 0
+                ? resource.cost.map((cost, index) => (
+                    <ResourceCost key={index} resourceId={cost.resource} amount={cost.amount} size="lg" />
+                  ))
+                : "Starting Level"}
+            </span>,
+          ],
+        };
+      })}
+    />
   );
 };

@@ -1,5 +1,5 @@
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudRow, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { useState } from "react";
 import { Buildings } from "./buildings";
 import { Combat } from "./combat";
@@ -92,27 +92,20 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   return (
-    <SurfaceFrame title="The Lordpedia" onClose={closeSurface} className="w-[1100px]" bodyClassName="overflow-hidden">
-      <div className="flex h-[calc(100vh-9rem)] min-h-0">
-        <div className="w-1/4 overflow-auto border-r border-gold/10 p-4">
-          <div className="space-y-1">
-            {sections.map((section) => (
-              <div
-                className={`cursor-pointer rounded-md p-2 px-4 duration-300 ${
-                  activeSection.name === section.name
-                    ? "button-gold text-brown"
-                    : "border border-gold/20 bg-black/30 hover:border-gold/40"
-                }`}
-                key={section.name}
-                onClick={() => setActiveSection(section)}
-              >
-                <h5>{section.name}</h5>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="w-3/4 overflow-auto p-8">{activeSection.content}</div>
+    <HudWindow title="The Lordpedia" size="page" onClose={closeSurface}>
+      <div className="grid grid-cols-4 gap-6">
+        <nav className="sticky top-0 flex flex-col gap-1 self-start" role="listbox" aria-label="Lordpedia sections">
+          {sections.map((section) => (
+            <HudRow
+              key={section.name}
+              title={section.name}
+              selected={activeSection.name === section.name}
+              onClick={() => setActiveSection(section)}
+            />
+          ))}
+        </nav>
+        <article className="col-span-3">{activeSection.content}</article>
       </div>
-    </SurfaceFrame>
+    </HudWindow>
   );
 };
