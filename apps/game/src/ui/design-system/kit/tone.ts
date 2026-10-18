@@ -28,10 +28,3 @@ export const HUD_TONE: Record<Tone, "warn" | "bad" | undefined> = {
   amber: "warn",
   ember: "bad",
 };
-
-/** A tone as the HUD sheet's text: calm in ink, amber in warn, ember in bad. */
-export const HUD_TONE_TEXT: Record<Tone, string> = {
-  calm: "text-hud-ink",
-  amber: "text-hud-warn",
-  ember: "text-hud-bad",
-};
