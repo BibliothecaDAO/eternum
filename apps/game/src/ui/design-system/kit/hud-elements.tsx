@@ -26,7 +26,8 @@ import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
  * words and values, never a look of its own. /lab/kit shows each in every state, age and device.
  */
 
-type ButtonKind = "primary" | "secondary" | "quiet";
+/** The gold verb, a second choice, a quiet one, and what destroys something (delete, disband, dismiss). */
+type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
 type Tone = "good" | "bad" | "warn";
 
 /** A price a button pays: its painting (or, with none, its word, as XP) and how much; named whole for assistive technology. */
@@ -41,14 +42,11 @@ export const HudButton = forwardRef<
     icon?: IconMeaning;
     /** Its order is on its way: this word in place of its own, and no second press. */
     busy?: string;
-    /** A secondary or quiet button that loses something (Delete army): its words and line in the bad tone. A primary
-     *  stays gold in every age. */
-    tone?: "bad";
     /** What pressing it pays, after its word (Move: stamina and wheat). */
     prices?: readonly HudPrice[];
     children?: ReactNode;
   } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ kind, size = "md", icon, busy, tone, prices = [], children, disabled, ...rest }, ref) => (
+>(({ kind, size = "md", icon, busy, prices = [], children, disabled, ...rest }, ref) => (
   <button
     ref={ref}
     type="button"
@@ -58,7 +56,6 @@ export const HudButton = forwardRef<
     className="ui-button"
     data-kind={kind}
     data-size={size}
-    data-tone={kind === "primary" ? undefined : tone}
   >
     {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
     {busy ?? children}
@@ -81,10 +78,8 @@ export const HudIconButton = forwardRef<
     label: string;
     kind?: ButtonKind;
     size?: "md" | "sm";
-    /** As HudButton's: the bad tone on a secondary or quiet button. */
-    tone?: "bad";
   } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ icon, label, kind = "secondary", size = "md", tone, ...rest }, ref) => (
+>(({ icon, label, kind = "secondary", size = "md", ...rest }, ref) => (
   <button
     ref={ref}
     type="button"
@@ -93,7 +88,6 @@ export const HudIconButton = forwardRef<
     className="ui-button"
     data-kind={kind}
     data-size={size}
-    data-tone={kind === "primary" ? undefined : tone}
     data-icon-only
   >
     <Icon name={icon} size={size === "sm" ? 16 : 20} />
@@ -291,6 +285,71 @@ export const HudTroopAmount = ({
         of {formatAmount(most)}
         {held > most && " that fit"}
       </span>
+    </div>
+  );
+};
+
+/** A stack of troops a realm holds: its painting, its tier and how many. */
+export type HudTroopStack = { key: string; icon: IconMeaning; tier: 1 | 2 | 3; held: number };
+
+/**
+ * Deploying an army: a column per troop, its tiers under its name, every one always in the same place (an empty one
+ * dimmed), so the hand learns where to click; under them, the chosen stack's amount with +500 and Max beside it. Where
+ * the army goes and the Deploy verb with its cost are the caller's: the map's picker hangs on a tile, the Military
+ * window adds its map selector.
+ */
+export const HudDeploy = ({
+  troops,
+  chosen,
+  onChoose,
+  value,
+  most,
+  onChange,
+}: {
+  troops: readonly { name: string; stacks: readonly HudTroopStack[] }[];
+  /** The chosen stack's key. */
+  chosen: string;
+  onChoose: (key: string) => void;
+  /** How many go, and the most that can (the chosen stack within the army's room). */
+  value: number;
+  most: number;
+  onChange: (amount: number) => void;
+}) => {
+  const troop = troops.find(({ stacks }) => stacks.some(({ key }) => key === chosen));
+  const stack = troop?.stacks.find(({ key }) => key === chosen);
+  return (
+    <div className="ui-deploy">
+      <div className="ui-deploy__troops" role="group" aria-label="Troops">
+        {troops.map(({ name, stacks }) => (
+          <div key={name} className="ui-deploy__troop">
+            <span className="ui-deploy__name">{name}</span>
+            {stacks.map(({ key, icon, tier, held }) => (
+              <HudButton
+                key={key}
+                kind="secondary"
+                size="sm"
+                disabled={held === 0}
+                aria-pressed={key === chosen}
+                aria-label={`${name} T${tier}, ${formatAmount(held)} held`}
+                onClick={() => onChoose(key)}
+              >
+                <Icon name={icon} size={20} />
+                <HudTierChip tier={tier} />
+                {held > 0 ? formatAmount(held) : "none"}
+              </HudButton>
+            ))}
+          </div>
+        ))}
+      </div>
+      {troop && stack && (
+        <HudTroopAmount
+          name={`${troop.name} T${stack.tier}`}
+          value={value}
+          most={most}
+          held={stack.held}
+          onChange={onChange}
+        />
+      )}
     </div>
   );
 };
@@ -638,14 +697,13 @@ export const HudDial = ({
 /**
  * A painting in a round well with its numbers on the rim, all in one badge: buildings top left, the time left top
  * right, the amount on the foot; how far production has come as an arc, its rim in its state's tone (producing good,
- * idle warn). Two sizes, its painting fitted to each: sm in lists, md in cards and panels. `tip` is its hover (the
- * resource's name), `label` all it says for assistive technology. With `onClick` it is a button.
+ * idle warn). One size wherever it stands, in a list or a panel, so every ring in a row reads alike. `tip` is its hover
+ * (the resource's name), `label` all it says for assistive technology. With `onClick` it is a button.
  */
 export const HudRing = ({
   icon,
   label,
   tip,
-  size = "md",
   state,
   corner,
   timer,
@@ -656,7 +714,6 @@ export const HudRing = ({
   icon: IconMeaning;
   label: string;
   tip?: string;
-  size?: "sm" | "md";
   state?: "producing" | "idle";
   corner?: ReactNode;
   timer?: ReactNode;
@@ -673,7 +730,7 @@ export const HudRing = ({
         />
       )}
       <span className="ui-ring__face">
-        <Icon name={icon} size={size === "sm" ? 24 : 32} />
+        <Icon name={icon} size={32} />
       </span>
       {corner !== undefined && (
         <span className="ui-ring__badge" data-at="corner">
@@ -696,7 +753,6 @@ export const HudRing = ({
     <button
       type="button"
       className="ui-ring"
-      data-size={size}
       data-production={state}
       data-tip={tip}
       aria-label={label}
@@ -705,7 +761,7 @@ export const HudRing = ({
       {body}
     </button>
   ) : (
-    <span className="ui-ring" data-size={size} data-production={state} data-tip={tip} role="img" aria-label={label}>
+    <span className="ui-ring" data-production={state} data-tip={tip} role="img" aria-label={label}>
       {body}
     </span>
   );
@@ -1164,7 +1220,7 @@ export const HudConfirm = ({
       <HudButton kind="quiet" onClick={onBack}>
         {back}
       </HudButton>
-      <HudButton kind="primary" onClick={onConfirm}>
+      <HudButton kind={tone === "bad" ? "danger" : "primary"} onClick={onConfirm}>
         {verb}
       </HudButton>
     </footer>

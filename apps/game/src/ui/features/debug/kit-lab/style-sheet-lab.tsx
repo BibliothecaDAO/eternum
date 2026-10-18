@@ -81,7 +81,8 @@ import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import "@/three/map-plates/map-plates.css";
 import { AppSurfacesSection } from "./app-surfaces-section";
-import { DeployOptionsSection } from "./deploy-options";
+import { DeploySection } from "./deploy-section";
+import { GlyphsSection } from "./glyphs-section";
 import { MapContextSection } from "./map-context-section";
 import { DeviceContext, Element, type Device } from "./sheet-element";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -175,6 +176,7 @@ export const StyleSheetLab = () => {
             >
               <AgesSection />
               <TypeSection />
+              <GlyphsSection />
               <ButtonsSection />
               <BubbleSection />
               <AmountSection />
@@ -194,7 +196,7 @@ export const StyleSheetLab = () => {
               <EventsSection store={store} />
               <WindowSection />
               <SheetSection />
-              <DeployOptionsSection />
+              <DeploySection />
               <ConfirmSection />
               <LoadingSection />
               <TopBarSection />
@@ -397,18 +399,17 @@ const ButtonsSection = () => (
           )}
         />
         <StateRow
-          label="bad tone"
+          label="danger"
           render={(state) => (
             <span className="flex gap-2">
-              <HudButton kind="secondary" tone="bad" data-state={forced(state)} disabled={state === "disabled"}>
-                Delete army
+              <HudButton kind="danger" data-state={forced(state)} disabled={state === "disabled"}>
+                Disband
               </HudButton>
               <HudIconButton
                 icon="trash"
                 label="Delete army"
-                kind="quiet"
+                kind="danger"
                 size="sm"
-                tone="bad"
                 data-state={forced(state)}
                 disabled={state === "disabled"}
               />
@@ -1150,8 +1151,7 @@ const RingSection = () => (
         <HudRing icon={resourceMeaning(ResourcesIds.Labor)} label="Labor" foot="240" />
         <HudRing
           icon={resourceMeaning(ResourcesIds.Wood)}
-          label="Wood, in a list"
-          size="sm"
+          label="Wood"
           state="producing"
           corner={2}
           progress={0.3}
@@ -1221,7 +1221,7 @@ const LabCard = ({ selected, refusal }: { selected?: boolean; refusal?: string }
         <>
           <HudIconButton icon="build" label="Build" kind="primary" size="sm" disabled={refusal !== undefined} />
           <HudIconButton icon="pause" label="Pause all" size="sm" />
-          <HudIconButton icon="trash" label="Destroy building" size="sm" tone="bad" />
+          <HudIconButton icon="trash" label="Destroy building" kind="danger" size="sm" />
         </>
       }
       selected={selected}

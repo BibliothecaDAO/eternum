@@ -150,12 +150,19 @@ button.ui-panel__name {
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
 }
-/* What loses something, on a secondary or quiet button: its words and line in the bad tone. */
-.ui-button:is([data-kind="secondary"], [data-kind="quiet"])[data-tone="bad"] {
-  color: var(--hud-bad);
+/* What destroys something (delete, disband, dismiss): one look, a red well with a red line and the ink on it, in every
+   age, never the accent's. Hover deepens the red, a press darkens it. */
+.ui-button[data-kind="danger"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 70%, transparent);
+  background: color-mix(in srgb, var(--hud-bad) 22%, var(--hud-surface-to));
+  color: rgb(var(--hud-ink));
 }
-.ui-button[data-kind="secondary"][data-tone="bad"] {
+.ui-button[data-kind="danger"]:is(:hover, [data-state="hover"]) {
   border-color: var(--hud-bad);
+  background: color-mix(in srgb, var(--hud-bad) 36%, var(--hud-surface-to));
+}
+.ui-button[data-kind="danger"]:is(:active, [data-state="pressed"]):not(:disabled) {
+  background: color-mix(in srgb, var(--hud-bad) 14%, var(--hud-surface-to));
 }
 .ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
@@ -477,10 +484,6 @@ button.ui-panel__name {
   background: none;
   padding: 0;
   font-family: inherit;
-}
-.ui-ring[data-size="sm"] {
-  --ring-size: 36px;
-  --ring-face: 30px;
 }
 .ui-ring[data-production="producing"] {
   --ring-tone: var(--hud-good);
@@ -1053,6 +1056,32 @@ button.ui-relic:focus-visible {
 }
 .ui-amount .ui-field input {
   width: 6rem;
+}
+/* Deploying an army: a column per troop, its tiers under its name, then the amount. */
+.ui-deploy {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+.ui-deploy__troops {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: theme(spacing.2);
+}
+.ui-deploy__troop {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.ui-deploy__troop > .ui-button {
+  justify-content: flex-start;
+}
+.ui-deploy__name {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
 }
 /* A number set in steps: the field between a step down and a step up. */
 .ui-number {

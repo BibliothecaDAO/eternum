@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   HudButton,
   HudCard,
+  HudConfirm,
+  HudDeploy,
   HudEventRow,
   HudField,
   HudIconButton,
@@ -370,5 +372,74 @@ describe("a window", () => {
       ),
     );
     expect(host.querySelector("footer.ui-window__foot")!.childNodes).toHaveLength(0);
+  });
+});
+
+describe("deploying an army", () => {
+  const TROOPS = [
+    {
+      name: "Knights",
+      stacks: [
+        { key: "knight-t1", icon: "knight-t1", tier: 1, held: 2_400 },
+        { key: "knight-t2", icon: "knight-t2", tier: 2, held: 0 },
+      ],
+    },
+    { name: "Paladins", stacks: [{ key: "paladin-t3", icon: "paladin-t3", tier: 3, held: 120 }] },
+  ] as const;
+  const stacks = () => [...host.querySelectorAll<HTMLButtonElement>(".ui-deploy__troop .ui-button")];
+
+  it("draws a column per troop with every tier in place, an empty one disabled, the chosen one pressed", () => {
+    const choose = vi.fn();
+    act(() =>
+      root.render(
+        <HudDeploy troops={TROOPS} chosen="knight-t1" onChoose={choose} value={500} most={1_800} onChange={vi.fn()} />,
+      ),
+    );
+    expect([...host.querySelectorAll(".ui-deploy__name")].map((name) => name.textContent)).toEqual([
+      "Knights",
+      "Paladins",
+    ]);
+    expect(stacks().map((stack) => stack.getAttribute("aria-label"))).toEqual([
+      "Knights T1, 2,400 held",
+      "Knights T2, 0 held",
+      "Paladins T3, 120 held",
+    ]);
+    expect(stacks().map((stack) => [stack.disabled, stack.getAttribute("aria-pressed")])).toEqual([
+      [false, "true"],
+      [true, "false"],
+      [false, "false"],
+    ]);
+    act(() => stacks()[2].click());
+    expect(choose).toHaveBeenCalledWith("paladin-t3");
+  });
+
+  it("puts the chosen stack's amount under the columns, with +500, Max and what fits", () => {
+    const change = vi.fn();
+    act(() =>
+      root.render(
+        <HudDeploy troops={TROOPS} chosen="knight-t1" onChoose={vi.fn()} value={500} most={1_800} onChange={change} />,
+      ),
+    );
+    expect(host.querySelector("input")?.getAttribute("aria-label")).toBe("Knights T1");
+    expect(host.querySelector(".ui-amount__of")?.textContent).toBe("of 1,800 that fit");
+    const max = [...host.querySelectorAll<HTMLButtonElement>(".ui-amount .ui-button")].find(
+      (button) => button.textContent === "Max",
+    )!;
+    act(() => max.click());
+    expect(change).toHaveBeenCalledWith(1_800);
+  });
+});
+
+describe("a question that stops the task", () => {
+  it("draws its verb as the danger button when it cannot be undone, and as the primary otherwise", () => {
+    const verb = () => [...host.querySelectorAll<HTMLButtonElement>(".ui-button")].at(-1)!;
+    act(() =>
+      root.render(
+        <HudConfirm question="Disband this army?" verb="Disband" tone="bad" onConfirm={vi.fn()} onBack={vi.fn()} />,
+      ),
+    );
+    expect([verb().textContent, verb().dataset.kind]).toEqual(["Disband", "danger"]);
+    act(() => root.render(<HudConfirm question="Send 300 wheat?" verb="Send" onConfirm={vi.fn()} onBack={vi.fn()} />));
+    expect([verb().textContent, verb().dataset.kind]).toEqual(["Send", "primary"]);
   });
 });
