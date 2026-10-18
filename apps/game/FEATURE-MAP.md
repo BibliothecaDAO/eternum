@@ -402,6 +402,12 @@ the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture
 
 ### Resource icon review
 
+`/lab/kit/resource-icons` opens **Old vs new**, with all 58 resources shown beside the exact set used before Facets, the
+shipped artwork and A/B where proposed. **Inventory → Old** shows the complete previous set. Materials, Troops and
+Relics also include the old icon. Donkey preserves the old trade thumbnail; SAT preserves its orange text glyph. The
+pinned source commit and per-file hashes are in `asset-sources/rss-icons/history.json`; `pnpm icons:study --check` also
+verifies the archive against git. Historical files are lab-only, about 9.6 MiB, and every file is displayed.
+
 `/lab/kit/resource-icons` inventories all 58 resources at 40 px in the ring and 20/16 px in chips. Use Inventory artwork
 to compare Shipped / Option A / Option B across the whole set; the 41 meanings without proposals keep their shipped art.
 Materials, Troops and Relics show each proposed change beside its shipped icon and confusable neighbours. Kept pairs

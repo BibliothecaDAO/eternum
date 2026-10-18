@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import { normalizeMaster } from "./normalize.mjs";
+import { buildResourceHistory } from "./resource-history.mjs";
 
 const repo = fileURLToPath(new URL("../../", import.meta.url));
 const source = `${repo}/apps/game/asset-sources/rss-icons`;
@@ -12,6 +13,7 @@ const { proposals } = await read(`${source}/catalog.json`);
 const verdicts = await read(`${source}/verdicts.json`);
 const meanings = await read(`${repo}/apps/game/asset-sources/facets/semantic-map.json`);
 const checking = process.argv.includes("--check");
+await buildResourceHistory(checking);
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const ids = proposals.flatMap((proposal) => proposal.options.map((option) => option.id));
 if (new Set(ids).size !== ids.length) throw new Error("Each review option needs a unique id.");

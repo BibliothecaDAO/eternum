@@ -17,7 +17,26 @@ and the source hashes, checks the reviews, and rejects sources or deliveries wit
 runner. Start the client first with `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`. The lab also
 has name, greyscale and silhouette controls. No live game or login is needed.
 
-The ring and chip surfaces follow the current showcase style sheet, scoped to this lab so this branch remains on its
-release-polish base. The ring holds the requested 40 px painting in a 44 px well, with a 52 px outer rim; the showcase
-currently puts a 30 px painting in that well. Chips hold 20 px and 16 px paintings. Inventory screenshots extend the
-viewport vertically to fit all 58 resources without scaling the icons; phone comparisons use 390×844.
+The default **Old vs new** page compares every resource with the pre-Facets set, shipped art and any A/B proposals.
+Inventory also offers **Old**, and the Materials, Troops and Relics comparisons include the old painting. All versions
+use the same 40/20/16 px slots. Non-square originals are contained without distortion; their pixels and margins remain
+unchanged.
+
+`history.json` records the exact source path, git blob, SHA-256 and dimensions of each historical image. The source is
+`b636c768616959a27e2ef45665e2c317fda9b40c`, immediately before the full replacement in
+`301ca1d55a2a95ac6899a445cc4ea33db7d15b88` on 15 October 2026. The archived `ResourceIcon` renderer, rather than the old
+remote `img` metadata, determines the resource-to-image mapping. It used numeric PNGs for 56 resources, the trade
+thumbnail for Donkey, and an orange text glyph for SAT. The September menu-art change added resource pipeline notes but
+did not replace these numeric paintings. The later official LORDS correction remains in the shipped column.
+
+`scripts/icons/resource-history.mjs`, called by `pnpm icons:study`, restores the 57 original files byte for byte under
+`public/lab/rss-icons/history`. Check mode compares them against the pinned git revision, verifies the catalog and
+rejects unwired files. Rebuilding/checking the archive requires that commit in local git history. The archive costs
+about 9.6 MiB in lab assets; it replaces no production asset and adds no production renderer. Every file is displayed in
+the review. The browser proof checks the 58 historical rows, exact artwork URLs, decoded images, sizes and controls at
+desktop and phone widths.
+
+The ring and chip surfaces follow the showcase style sheet and remain scoped to this lab. The ring holds the requested
+40 px painting in a 44 px well, with a 52 px outer rim; the showcase currently puts a 30 px painting in that well. Chips
+hold 20 px and 16 px paintings. Inventory screenshots extend the viewport vertically to fit all 58 resources without
+scaling the icons; phone comparisons use 390×844.

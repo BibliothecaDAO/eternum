@@ -321,8 +321,59 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
     };
     await b.run("set", "viewport", String(width), String(height));
     await b.run("open", `${baseUrl}/lab/kit/resource-icons`, "--ignore-https-errors");
+    await b.run("wait", "[data-resource-history='58']");
+    await decode();
+    await fit();
+    await check(
+      "All 58 rows compare exact historical art, shipped art and available A/B proposals",
+      `(async () => {
+        const { resources, meanings } = await (await fetch('/icons/facets/manifest.json')).json();
+        const variants = await (await fetch('/lab/rss-icons/manifest.json')).json();
+        const rows = [...document.querySelectorAll('[data-resource-history]')];
+        return rows.length === 58 && rows.every((row, index) => {
+          if (Number(row.dataset.resourceHistory) !== index + 1) return false;
+          const meaning = resources[row.dataset.resourceHistory].meaning;
+          const old = row.querySelector('[data-version=old]');
+          const historical = [...old.querySelectorAll('img')];
+          if (meaning === 's-a-t') {
+            if (historical.length || old.querySelectorAll('[data-history-glyph=s-a-t]').length !== 3 ||
+              [...old.querySelectorAll('[data-history-glyph]')].some(node => node.textContent !== '₿')) return false;
+          } else if (historical.length !== 3 || historical.some(image => image.getAttribute('src') !==
+            '/lab/rss-icons/history/' + meaning + '.png')) return false;
+          return ['shipped','a','b'].every(version => {
+            const images = [...row.querySelectorAll('[data-version='+version+'] img')];
+            if (version !== 'shipped' && !variants[meaning+'-'+version]) return images.length === 0;
+            return images.length === 3 && images.every(image => {
+              const pixels = image.width > 32 ? 128 : 64;
+              const expected = version !== 'shipped' ? '/lab/rss-icons/'+pixels+'/'+meaning+'-'+version+'.webp'
+                : meanings[meaning].token ? '/tokens/lords.svg' : '/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
+              return image.getAttribute('src') === expected;
+            });
+          });
+        });
+      })()`,
+    );
+    await b.run("screenshot", join(out, `${layout}-old-vs-new.png`));
+    for (const id of [9, 25, 28, 37, 40, 58]) {
+      await b.run("scrollintoview", `[data-resource-history="${id}"]`);
+      await b.run("screenshot", join(out, `${layout}-history-${id}.png`));
+    }
+    await b.run("click", 'nav[aria-label="Resource review sections"] button:has-text("Inventory")');
     await b.run("wait", ".rss-inventory [data-resource-id='58']");
     record.ready = true;
+    await b.run("select", '[aria-label="Inventory artwork"]', "old");
+    await decode();
+    await fit();
+    await check(
+      "Old inventory contains 57 archived paintings and the SAT glyph",
+      `(() => {
+      const rows = [...document.querySelectorAll('[data-resource-id]')];
+      return rows.length === 58 && rows.every(row => row.dataset.resourceId === '58'
+        ? row.querySelectorAll('[data-history-glyph]').length === 3 && row.querySelectorAll('img').length === 0
+        : row.querySelectorAll('[data-history-art]').length === 3) && document.querySelectorAll('[data-proposal-art]').length === 0;
+    })()`,
+    );
+    await sheet("inventory-old");
     for (const art of ["shipped", "a", "b"]) {
       await b.run("select", '[aria-label="Inventory artwork"]', art);
       await decode();
@@ -378,10 +429,10 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
       await decode();
       await fit();
       await check(
-        `${family} shows shipped and two options for every reviewed resource`,
+        `${family} shows old, shipped and two options for every reviewed resource`,
         `(() => {
         const rows = [...document.querySelectorAll('[data-resource-study]')];
-        return rows.length === ${count} && rows.every(row => ['shipped','a','b'].every(version =>
+        return rows.length === ${count} && rows.every(row => ['old','shipped','a','b'].every(version =>
           row.querySelectorAll('[data-version='+version+'] img').length === 3));
       })()`,
       );
