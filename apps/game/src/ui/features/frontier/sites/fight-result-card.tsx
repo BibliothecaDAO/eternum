@@ -28,9 +28,9 @@ export const VERDICT_WORDS: Record<FightVerdict, string> = {
 };
 
 const VERDICT_TONES: Record<FightVerdict, string> = {
-  victory: "text-kit-gold2",
-  "army-lost": "text-kit-red",
-  "guard-holds": "text-kit-cream",
+  victory: "text-hud-gold",
+  "army-lost": "text-hud-bad",
+  "guard-holds": "text-hud-ink",
 };
 
 /**
@@ -50,7 +50,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
       className="flex w-full flex-col gap-2 text-left"
     >
       <span className="flex items-center gap-3">
-        <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
+        <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
           <SemanticIcon name={icon} size={36} />
           {result.verdict === "victory" && (
             <SemanticIcon name="flag" size={22} className="absolute bottom-0.5 right-0.5" />
@@ -58,7 +58,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
         </span>
         <span className="flex min-w-0 flex-col">
           <span className={cn("frontier-title", VERDICT_TONES[result.verdict])}>{verdict}</span>
-          <span className="text-sm text-kit-muted">{word}</span>
+          <span className="text-hud-body text-hud-muted">{word}</span>
         </span>
       </span>
       <span className="flex gap-2">
@@ -70,11 +70,11 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
         {result.guard && <Side label={TROOPS} mark={<SemanticIcon name="troops" size={24} />} troops={result.guard} />}
       </span>
       {result.gained && (
-        <span className="frontier-card flex h-14 items-center justify-center gap-3 !rounded-xl !border-2 !border-kit-gold">
+        <span className="frontier-card flex h-14 items-center justify-center gap-3 !rounded-xl !border-2 !border-hud-line-strong">
           {result.gained.pay && (
             <span className="flex items-center gap-1.5">
               <SemanticIcon name={result.gained.pay.icon} size={26} />
-              <span className="text-[24px] leading-none tabular-nums text-kit-gold2">
+              <span className="text-hud-display leading-none tabular-nums text-hud-gold">
                 +{formatExact(result.gained.pay.amount)}
               </span>
               {result.gained.pay.storeFull && (
@@ -98,9 +98,9 @@ const Side = ({ label, mark, troops }: { label: string; mark: ReactNode; troops:
   >
     {mark}
     <span aria-hidden className="flex items-baseline gap-1.5 tabular-nums">
-      <span className="text-base text-kit-muted">{formatExact(troops.before)}</span>
-      <span className="text-sm text-kit-muted">→</span>
-      <span className={cn("text-xl leading-none", troops.after === 0 ? "text-kit-red" : "text-kit-cream")}>
+      <span className="text-hud-body text-hud-muted">{formatExact(troops.before)}</span>
+      <span className="text-hud-body text-hud-muted">→</span>
+      <span className={cn("text-hud-display leading-none", troops.after === 0 ? "text-hud-bad" : "text-hud-ink")}>
         {formatExact(troops.after)}
       </span>
     </span>

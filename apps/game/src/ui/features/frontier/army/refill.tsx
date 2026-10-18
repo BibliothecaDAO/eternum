@@ -30,8 +30,8 @@ export const RefillButton = ({
       className="frontier-card flex h-12 shrink-0 items-center gap-1.5 !rounded-xl px-2"
     >
       <SemanticIcon name="lords" size={18} />
-      <span className="flex min-w-14 flex-col gap-[3px]">
-        <span className="whitespace-nowrap text-sm tabular-nums text-kit-cream">
+      <span className="flex min-w-14 flex-col gap-1">
+        <span className="whitespace-nowrap text-hud-body tabular-nums text-hud-ink">
           {formatExact(held)} / {formatExact(price)}
         </span>
         <StoreBar amount={held} limit={price} tone="calm" />
@@ -70,7 +70,7 @@ export const RefillConfirm = ({
     <Sheet label={REFILL} onClose={onCancel}>
       <header className="flex items-center gap-2.5">
         <SemanticIcon name="stamina" size={30} />
-        <h2 className="frontier-title flex-1 !text-xl">{REFILL}</h2>
+        <h2 className="frontier-title flex-1 !text-hud-display">{REFILL}</h2>
       </header>
       <div className="flex items-center justify-center gap-2">
         <Chip
@@ -85,7 +85,7 @@ export const RefillConfirm = ({
         />
       </div>
       <div className="flex gap-2">
-        <Button role="outline" word={CANCEL} onClick={onCancel} className="w-[120px]" />
+        <Button role="outline" word={CANCEL} onClick={onCancel} className="w-32" />
         <Button
           role="primary"
           word={REFILL}

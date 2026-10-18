@@ -115,7 +115,7 @@ const StorePlate = ({ store }: { store: StoreReading }) => {
           <span data-fly-target={store.flyTarget} className="inline-flex">
             <SemanticIcon name={icon} size={18} />
           </span>
-          <span className={cn("text-base leading-none tabular-nums", TONE_TEXT[store.tone])}>
+          <span className={cn("text-hud-body leading-none tabular-nums", TONE_TEXT[store.tone])}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
           </span>
         </span>
@@ -139,7 +139,7 @@ const LandingDelta = ({ target }: { target: string }) => {
         <motion.span
           key={landing.at}
           aria-live="polite"
-          className="pointer-events-none absolute -top-5 right-0 whitespace-nowrap text-sm font-semibold text-gold tabular-nums"
+          className="pointer-events-none absolute -top-5 right-0 whitespace-nowrap text-hud-strong text-hud-ink tabular-nums"
           initial={{ opacity: 0, y: 0, scale: reduced ? 1 : 0.8 }}
           animate={{ opacity: [0, 1, 1, 0], y: reduced ? 0 : -14, scale: 1 }}
           transition={{ duration: DELTA_MS / 1000, times: [0, 0.1, 0.7, 1], ease: EASE.outQuart }}

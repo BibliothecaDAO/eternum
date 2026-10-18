@@ -68,7 +68,7 @@ describe("the army", () => {
   it("prices each attribute's next tier in XP, lit when affordable, ember when not, a tick at legendary", () => {
     render("logistics");
     expect(row("Logistics").textContent).toBe("Logistics100XP");
-    expect(row("Battle").querySelector(".text-light-red")?.textContent).toBe("400XP");
+    expect(row("Battle").querySelector(".text-hud-bad")?.textContent).toBe("400XP");
     expect(row("Homecoming").querySelector('img[src="/icons/facets/64/check.webp"]')).not.toBeNull();
   });
 

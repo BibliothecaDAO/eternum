@@ -91,7 +91,7 @@ export const MapSiteCard = ({
   return (
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
           <SemanticIcon name={plan.kind === "Shrine" ? "shrine" : "well"} size={40} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>
@@ -100,8 +100,8 @@ export const MapSiteCard = ({
         {user && (
           <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
             <span className="contents">
-              <SemanticIcon name={armyArt(user.army.troops)} alt="" className="size-[22px] rounded-full object-cover" />
-              <span className="frontier-chip-number tabular-nums !text-base">
+              <SemanticIcon name={armyArt(user.army.troops)} alt="" className="size-6 rounded-full object-cover" />
+              <span className="frontier-chip-number tabular-nums !text-hud-body">
                 {formatExact(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
               </span>
             </span>

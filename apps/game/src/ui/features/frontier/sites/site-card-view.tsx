@@ -105,7 +105,7 @@ export const SiteCardView = ({
   return (
     <Sheet label={word} onClose={onClose}>
       <header className="flex items-center gap-3">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-kit-line2 bg-kit-ground">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
           <SemanticIcon name={icon} size={36} />
         </span>
         <h2 className="frontier-title flex-1">{word}</h2>
@@ -116,7 +116,7 @@ export const SiteCardView = ({
         {!picking && <FightPlate fight={fight} />}
         <div
           className={cn(
-            "frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-kit-gold",
+            "frontier-card flex h-hud-frontier-card flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-hud-line-strong",
             lost && "opacity-50",
           )}
         >
@@ -150,13 +150,13 @@ const Matchup = ({
     {army && (
       <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
         <span className="contents">
-          <SemanticIcon name={army.art} alt="" className="size-[22px] rounded-full object-cover" />
-          <span className="frontier-chip-number tabular-nums !text-base">{formatExact(army.troops)}</span>
+          <SemanticIcon name={army.art} alt="" className="size-6 rounded-full object-cover" />
+          <span className="frontier-chip-number tabular-nums !text-hud-body">{formatExact(army.troops)}</span>
         </span>
       </span>
     )}
     <SemanticIcon name="attack" size={22} />
-    {beast && <span className="text-sm font-semibold text-kit-cream">{beast}</span>}
+    {beast && <span className="text-hud-strong text-hud-ink">{beast}</span>}
     {guard !== null && <Chip icons={["troops"]} label={TROOPS} value={formatExact(guard)} />}
   </div>
 );
@@ -173,7 +173,7 @@ const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
         className="frontier-card flex h-14 w-full items-center gap-2 !rounded-xl px-2.5"
       >
         <SemanticIcon name={choice.art} alt="" className="size-8 rounded-full object-cover" />
-        <span className="text-base tabular-nums text-kit-cream">{formatExact(choice.troops)}</span>
+        <span className="text-hud-body tabular-nums text-hud-ink">{formatExact(choice.troops)}</span>
         <span className="flex flex-1 items-center justify-end gap-3">
           <Forecast fight={choice.fight} size="row" />
         </span>
@@ -187,7 +187,7 @@ const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
 const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => (
   <div
     {...guideTarget("forecast")}
-    className="frontier-card flex h-[92px] flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
+    className="frontier-card flex h-hud-frontier-card flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
   >
     <Forecast fight={fight} size="plate" />
   </div>
@@ -220,13 +220,13 @@ const Forecast = ({ fight, size }: { fight: SiteFight | undefined; size: "plate"
       <span className="flex items-center gap-1.5" aria-label={known ? `${known.exchanges}` : "—"}>
         <SemanticIcon name="flag" size={22} />
         {known ? (
-          <span aria-hidden className="flex gap-[3px]">
+          <span aria-hidden className="flex gap-1">
             {Array.from({ length: known.exchanges }, (_, index) => (
-              <i key={index} className="size-[9px] rounded-full border border-kit-gold" />
+              <i key={index} className="size-2 rounded-full border border-hud-line-strong" />
             ))}
           </span>
         ) : (
-          <span className="text-lg tabular-nums text-kit-cream">—</span>
+          <span className="text-hud-title tabular-nums text-hud-ink">—</span>
         )}
       </span>
       <Line icon="skull" value={known ? `−${formatExact(known.troopsLost)}` : "—"} />
@@ -249,7 +249,9 @@ const Line = ({
 }) => (
   <span className="flex items-center gap-1.5" data-tip={name}>
     <SemanticIcon name={icon} size={22} />
-    <span className={cn("text-xl leading-none tabular-nums", hot ? "text-kit-hot" : "text-kit-cream")}>{value}</span>
+    <span className={cn("text-hud-display leading-none tabular-nums", hot ? "text-hud-bad" : "text-hud-ink")}>
+      {value}
+    </span>
   </span>
 );
 
@@ -260,13 +262,13 @@ const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number 
     <>
       <span className="flex items-center gap-1.5">
         <SemanticIcon name={pay.icon} size={28} />
-        <span className="text-[26px] leading-none tabular-nums text-kit-gold2">
+        <span className="text-hud-display leading-none tabular-nums text-hud-gold">
           +{formatExact(short ? pay.fits : pay.amount)}
         </span>
       </span>
       {short && (
         <span className="flex w-4/5 items-center gap-1.5">
-          <span className="text-sm tabular-nums text-kit-muted">{formatExact(pay.amount)}</span>
+          <span className="text-hud-body tabular-nums text-hud-muted">{formatExact(pay.amount)}</span>
           <StoreBar amount={1} limit={1} tone="ember" />
         </span>
       )}
@@ -280,7 +282,7 @@ const ChestPay = ({ chest }: { chest: { tier: Tier; lords: number } }) => (
     <span className="flex items-center gap-1.5" aria-label={`${formatExact(chest.lords)} ${LORDS}`}>
       <SemanticIcon name="chest" size={26} />
       <SemanticIcon name="lords" size={22} />
-      <span className="text-[24px] leading-none tabular-nums text-kit-gold2">+{formatExact(chest.lords)}</span>
+      <span className="text-hud-display leading-none tabular-nums text-hud-gold">+{formatExact(chest.lords)}</span>
     </span>
     <TierChip tier={chest.tier} showWord />
   </>
@@ -305,7 +307,7 @@ const Verb = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
-        {onRealm && <Button role="secondary" icon="realm" word={REALM} className="w-[120px]" onClick={onRealm} />}
+        {onRealm && <Button role="secondary" icon="realm" word={REALM} className="w-32" onClick={onRealm} />}
         {verb.kind === "move" ? (
           <Button
             role="primary"
@@ -366,7 +368,7 @@ const verbReason = (verb: SiteVerb, site: string): string | undefined => {
 
 const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>
   line === undefined ? null : (
-    <p role="status" className={cn("text-center text-sm", warns ? "text-kit-red" : "text-kit-cream")}>
+    <p role="status" className={cn("text-center text-hud-body", warns ? "text-hud-bad" : "text-hud-ink")}>
       {line}
     </p>
   );

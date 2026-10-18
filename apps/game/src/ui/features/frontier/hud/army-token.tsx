@@ -8,7 +8,7 @@ import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
 
 import { guideTarget } from "../guide/guide-thread";
 
-const TOKEN = "relative flex h-[72px] w-14 shrink-0 flex-col items-center justify-center gap-[3px] rounded-xl";
+const TOKEN = "relative flex h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
 
 /** What XP buys next: the attribute tier's XP price and the tier it reaches, 2 (uncommon) to 5 (legendary). */
@@ -69,7 +69,7 @@ export const ArmyToken = ({
   const body = (
     <>
       <span data-fly-target={flyTarget} className="relative size-10 shrink-0">
-        <span className="block size-full overflow-hidden rounded-full border border-kit-line2 bg-kit-ground">
+        <span className="block size-full overflow-hidden rounded-full border border-hud-line bg-hud-surface">
           {art && <SemanticIcon name={art} alt="" className="size-full object-cover" />}
         </span>
         {!wide && (
@@ -78,18 +78,18 @@ export const ArmyToken = ({
             aria-label={`${XP} ${formatAmount(xp)}`}
             data-tip={xpLine(xp, xpGoal)}
             {...(guided ? guideTarget("army-xp") : {})}
-            className="absolute -bottom-1 -right-2.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-line2 bg-kit-ink px-1 text-sm leading-none text-kit-gold2 tabular-nums"
+            className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
           >
             {formatAmount(xp)}
           </span>
         )}
         {number !== undefined && (
-          <span className="absolute -left-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border border-kit-gold2 bg-kit-ink px-1 text-sm font-semibold leading-none text-kit-cream tabular-nums">
+          <span className="absolute -left-2.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line-strong bg-hud-dark px-1 text-hud-strong leading-none text-hud-ink tabular-nums">
             {number}
           </span>
         )}
         {canBuyTier && (
-          <span className="absolute -right-2 -top-1.5 size-[18px]">
+          <span className="absolute -right-2 -top-1.5 size-5">
             <SemanticIcon name="picks" className="size-full" />
           </span>
         )}
@@ -98,7 +98,7 @@ export const ArmyToken = ({
       <span
         role="img"
         aria-label={`${TROOPS} ${formatAmount(troops)}`}
-        className="text-sm leading-none text-kit-cream tabular-nums"
+        className="text-hud-body leading-none text-hud-ink tabular-nums"
       >
         {formatAmount(troops)}
       </span>
@@ -108,8 +108,8 @@ export const ArmyToken = ({
   );
   const look = cn(
     wide ? CARD : TOKEN,
-    "border bg-kit-ground",
-    selected ? "border-[3px] border-kit-hot" : "border-kit-line",
+    "border bg-hud-surface",
+    selected ? "border-2 border-hud-line-strong" : "border-hud-line",
   );
   return onPick ? (
     <button type="button" aria-label={label} aria-pressed={selected} onClick={onPick} className={look}>
@@ -150,17 +150,17 @@ export const OpenSlot = ({
     disabled={filling !== undefined}
     {...(guided ? guideTarget("open-slot") : {})}
     onClick={onDeploy}
-    className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-kit-line bg-kit-ground")}
+    className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface")}
   >
     <span
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-kit-line2 text-lg text-kit-gold",
-        (pulse || filling !== undefined) && "animate-pulse border-kit-hot",
+        "flex size-10 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title text-hud-ink",
+        (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
       )}
     >
       {filling === undefined ? "+" : "…"}
     </span>
-    {wide && <span className="text-sm font-semibold text-kit-cream">{filling ?? label}</span>}
+    {wide && <span className="text-hud-strong text-hud-ink">{filling ?? label}</span>}
   </button>
 );
 
@@ -182,9 +182,9 @@ const StaminaSegments = ({
       className="flex w-full gap-0.5 px-1.5"
     >
       {Array.from({ length: STAMINA_SEGMENTS }, (_, index) => (
-        <i key={index} className="h-[5px] flex-1 overflow-hidden rounded-sm bg-kit-line">
+        <i key={index} className="h-1 flex-1 overflow-hidden rounded-sm bg-hud-divider">
           <b
-            className="block h-full bg-kit-sage"
+            className="block h-full bg-hud-good"
             style={{ width: `${Math.min(1, Math.max(0, filled - index)) * 100}%` }}
           />
         </i>
@@ -216,13 +216,13 @@ const XpRow = ({
       {...(guided ? guideTarget("army-xp") : {})}
       className="flex min-w-0 flex-1 items-center gap-1.5"
     >
-      <span className="whitespace-nowrap text-sm leading-none tabular-nums text-kit-gold2">
-        {formatAmount(xp)} <span className="text-sm font-semibold text-kit-cream">{XP}</span>
+      <span className="whitespace-nowrap text-hud-body leading-none tabular-nums text-hud-gold">
+        {formatAmount(xp)} <span className="text-hud-strong text-hud-ink">{XP}</span>
       </span>
       {goal && (
-        <i aria-hidden className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-sm bg-kit-line">
+        <i aria-hidden className="h-0.5 min-w-0 flex-1 overflow-hidden rounded-sm bg-hud-divider">
           <b
-            className="block h-full bg-kit-gold2"
+            className="block h-full bg-hud-gold"
             style={{ width: `${Math.min(1, Math.max(0, (xp ?? 0) / goal.price)) * 100}%` }}
           />
         </i>
@@ -238,7 +238,7 @@ const XpRow = ({
         >
           <SemanticIcon name={ATTRIBUTE_MARKS[index]} size={14} />
           {Array.from({ length: tier - 1 }, (_, pip) => (
-            <i key={pip} className="size-[5px] rounded-full bg-kit-gold" />
+            <i key={pip} className="size-1 rounded-full bg-hud-gold" />
           ))}
         </span>
       ) : null,

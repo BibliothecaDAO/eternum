@@ -50,29 +50,32 @@ export const HudBands = ({
     className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans lg:block [&:has([data-kit-sheet])_[data-guide]]:hidden lg:[&:has([data-kit-sheet])_[data-page]]:invisible"
     style={SAFE_AREA}
   >
-    <div className="relative lg:absolute lg:left-2 lg:top-2 lg:w-[560px]">{strip}</div>
+    <div className="relative lg:absolute lg:left-2 lg:top-2 lg:w-hud-frontier-strip">{strip}</div>
     {page ? (
       <div
         data-page
-        className="flex min-h-0 flex-1 flex-col lg:absolute lg:right-2 lg:top-[76px] lg:max-h-[calc(100%-84px)] lg:w-[440px]"
+        className="flex min-h-0 flex-1 flex-col lg:absolute lg:right-2 lg:top-hud-frontier-page-top lg:max-h-hud-frontier-page-room lg:w-hud-frontier-page"
       >
         <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>
       </div>
     ) : (
-      <div className="relative min-h-0 flex-1 lg:absolute lg:inset-x-[240px] lg:bottom-[140px] lg:top-[150px]">
+      <div className="relative min-h-0 flex-1 lg:absolute lg:inset-x-60 lg:bottom-hud-frontier-stage-bottom lg:top-hud-frontier-stage-top">
         {stage}
       </div>
     )}
-    <div data-guide className="lg:absolute lg:bottom-[300px] lg:left-[236px] lg:w-[380px]">
+    <div
+      data-guide
+      className="lg:absolute lg:bottom-hud-frontier-guide-bottom lg:left-hud-frontier-guide-left lg:w-hud-frontier-guide"
+    >
       {guide}
     </div>
-    <div className="flex flex-col gap-1.5 lg:absolute lg:bottom-2 lg:left-1/2 lg:w-[520px] lg:-translate-x-1/2">
+    <div className="flex flex-col gap-1.5 lg:absolute lg:bottom-2 lg:left-1/2 lg:w-hud-frontier-foot lg:-translate-x-1/2">
       {notices}
       {action}
     </div>
-    <div className="lg:absolute lg:left-2 lg:top-[150px] lg:w-[220px]">{dock}</div>
-    <div className="lg:absolute lg:right-2 lg:top-2 lg:w-[460px]">{nav}</div>
-    {chat && <div className="hidden lg:absolute lg:bottom-2 lg:left-2 lg:block lg:w-[380px]">{chat}</div>}
+    <div className="lg:absolute lg:left-2 lg:top-hud-frontier-stage-top lg:w-hud-frontier-dock">{dock}</div>
+    <div className="lg:absolute lg:right-2 lg:top-2 lg:w-hud-frontier-nav">{nav}</div>
+    {chat && <div className="hidden lg:absolute lg:bottom-2 lg:left-2 lg:block lg:w-hud-frontier-chat">{chat}</div>}
     {children}
   </div>
 );

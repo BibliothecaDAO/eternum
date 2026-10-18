@@ -13,9 +13,9 @@ export type Place = "map" | "realm" | "research" | "chat" | "menu";
 type Dot = "lit" | "amber" | "ember";
 
 const DOTS: Record<Dot, string> = {
-  lit: "bg-kit-gold2",
-  amber: "bg-kit-hot",
-  ember: "bg-light-red",
+  lit: "bg-hud-gold",
+  amber: "bg-hud-warn",
+  ember: "bg-hud-bad",
 };
 
 /**
@@ -45,17 +45,16 @@ export const PlaceNav = ({
       aria-label="Places"
       className="frontier-card pointer-events-auto flex h-14 items-stretch justify-between gap-0.5 !rounded-2xl"
     >
-      <span className="flex flex-[2] border-r border-kit-line">
-        {slot("map", "map", MAP)}
-        {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
-      </span>
+      {slot("map", "map", MAP)}
+      {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
+      <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />
       {researchDot !== undefined &&
         slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
       {slot(
         "chat",
         "chat",
         CHAT,
-        unread > 0 && <span className="text-sm leading-none tabular-nums">{formatAmount(unread)}</span>,
+        unread > 0 && <span className="text-hud-body leading-none tabular-nums">{formatAmount(unread)}</span>,
       )}
       {slot("menu", "menu", MENU)}
     </nav>
@@ -83,11 +82,12 @@ const Slot = ({
     {...(to === "realm" ? guideTarget("realm-tab") : {})}
     onClick={onClick}
     className={cn(
-      "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-sm font-semibold",
-      lit ? "bg-kit-line text-kit-gold2 shadow-[inset_0_-3px_0_theme(colors.kit.gold)]" : "text-kit-muted",
+      "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-hud-strong ",
+      "border-b-2",
+      lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
     )}
   >
-    <span className="flex items-center gap-0.5 text-kit-gold2">
+    <span className="flex items-center gap-0.5 text-hud-gold">
       <SemanticIcon name={icon} size={22} />
       {badge}
     </span>

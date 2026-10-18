@@ -75,7 +75,7 @@ export const OrderBar = ({
           role="outline"
           word={CANCEL}
           onClick={onCancel}
-          className={covered || staminaShort ? "!h-14 w-[104px]" : "!h-14 flex-1"}
+          className={covered || staminaShort ? "!h-14 w-hud-frontier-side" : "!h-14 flex-1"}
         />
         {covered && <Button role="primary" icon={verb.icon} word={verb.word} onClick={onGo} className="flex-1" />}
         {staminaShort && refill}
@@ -93,7 +93,7 @@ export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
     <div className="frontier-card flex min-h-11 flex-1 items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
       <Chip icons={["hourglass"]} label={NEXT_ORDER} value={QUEUED} />
     </div>
-    <Button role="outline" word={CANCEL} onClick={onCancel} className="!h-14 w-[104px]" />
+    <Button role="outline" word={CANCEL} onClick={onCancel} className="!h-14 w-hud-frontier-side" />
   </div>
 );
 

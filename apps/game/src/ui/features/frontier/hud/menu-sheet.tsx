@@ -34,13 +34,13 @@ export const MenuSheet = ({
   onClose: () => void;
 }) => (
   <Sheet label={MENU} onClose={onClose}>
-    <h2 className="frontier-title !text-xl">{MENU}</h2>
+    <h2 className="frontier-title !text-hud-display">{MENU}</h2>
     <nav className="flex flex-col">
       <MenuRow icon="clock" word={TODAY} onClick={onToday} />
       <MenuRow
         icon="victory"
         word={SEASON}
-        badge={<span className="text-base tabular-nums">{rank}</span>}
+        badge={<span className="text-hud-body tabular-nums">{rank}</span>}
         onClick={onSeason}
       />
       {onProduction && <MenuRow icon="wheat" word={PRODUCTION} onClick={onProduction} />}
@@ -48,7 +48,7 @@ export const MenuSheet = ({
         <MenuRow
           icon="realm"
           word={REALMS}
-          badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-kit-gold2" />}
+          badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-hud-gold" />}
           onClick={realms.onOpen}
         />
       )}
@@ -63,7 +63,7 @@ export const MenuSheet = ({
       <MenuRow icon="menu" word={SETTINGS} onClick={onSettings} />
     </nav>
     <div className="flex gap-2">
-      <Button role="secondary" icon="exit" word={EXIT} onClick={onExit} className="w-[130px]" />
+      <Button role="secondary" icon="exit" word={EXIT} onClick={onExit} className="w-32" />
       <Button role="primary" word={RESUME} onClick={onClose} className="flex-1" />
     </div>
   </Sheet>
@@ -83,10 +83,10 @@ const MenuRow = ({
   <button
     type="button"
     onClick={onClick}
-    className="flex h-12 items-center gap-2 border-b border-kit-line px-1 text-left text-base text-kit-cream"
+    className="flex h-12 items-center gap-2 border-b border-hud-line px-1 text-left text-hud-body text-hud-ink"
   >
     <SemanticIcon name={icon} size={22} />
-    <span className="flex-1 font-semibold">{word}</span>
+    <span className="flex-1 text-hud-strong">{word}</span>
     {badge}
     <SemanticIcon name="chevron-right" size={20} />
   </button>
