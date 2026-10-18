@@ -8,7 +8,7 @@ export const InstallSetting = () => {
   if (installed) return null;
   return (
     <HudSetting name={APP_STATE_WORDS.install}>
-      <HudButton kind="secondary" size="sm" icon="download" onClick={() => void install()}>
+      <HudButton kind="secondary" size="sm" icon="download" onClick={() => install()}>
         {APP_STATE_WORDS.install}
       </HudButton>
     </HudSetting>

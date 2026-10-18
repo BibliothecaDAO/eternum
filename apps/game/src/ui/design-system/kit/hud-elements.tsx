@@ -1082,7 +1082,7 @@ export const HudNotice = ({
   tone?: Tone;
   line: string;
   why?: string;
-  retry?: () => void;
+  retry?: () => unknown;
 }) => (
   <div className="ui-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
     <span className="flex flex-col">
