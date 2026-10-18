@@ -143,8 +143,11 @@ export const parseDecimalAmount = (text: string, min: number, max: number): numb
   return Math.min(Math.max(Number.isNaN(parsed) ? min : parsed, min), max);
 };
 
-/** A decimal as the field shows it: thousands commas from 1,000, its fraction as it is. */
-const formatDecimal = (amount: number) => (amount >= 1000 ? amount.toLocaleString("en-US") : String(amount));
+/**
+ * The number an amount field holds, as the game's fields have always shown it: thousands commas from 1,000, and a
+ * fraction the form computed (a share of a balance, Lords at a price) as it is, never rounded to a number it is not.
+ */
+const formatHeld = (amount: number) => (amount >= 1000 ? amount.toLocaleString("en-US") : String(amount));
 
 /**
  * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
@@ -176,14 +179,14 @@ const AmountInput = ({
       <input
         aria-label={label}
         inputMode={decimals ? "decimal" : "numeric"}
-        value={draft ?? (decimals ? formatDecimal(value) : formatAmount(value))}
+        value={draft ?? formatHeld(value)}
         disabled={disabled}
         autoFocus={autoFocus}
         onChange={(event) => {
           const text = event.target.value;
           const amount = decimals ? parseDecimalAmount(text, min, max) : parseWholeAmount(text, min, max);
           if (amount === null) setDraft("");
-          else setDraft(decimals ? (text.match(DECIMAL)?.[0] ?? formatDecimal(amount)) : null);
+          else setDraft(decimals ? (text.match(DECIMAL)?.[0] ?? formatHeld(amount)) : null);
           if (amount !== null) onChange(amount);
         }}
         onBlur={() => setDraft(null)}

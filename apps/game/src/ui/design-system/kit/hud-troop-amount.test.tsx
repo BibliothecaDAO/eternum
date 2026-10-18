@@ -182,3 +182,21 @@ describe("a decimal field", () => {
     expect(field.input().value).toBe("0.05");
   });
 });
+
+describe("an amount field's number", () => {
+  it("shows a fraction the form computed as it is, and types whole units over it", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    host = document.createElement("div");
+    document.body.append(host);
+    const reported: number[] = [];
+    act(() =>
+      createRoot(host).render(
+        <HudNumberField label="Wheat" value={12.5} max={100} onChange={(next) => reported.push(next)} />,
+      ),
+    );
+    const input = host.querySelector<HTMLInputElement>("input")!;
+    expect(input.value).toBe("12.5");
+    typeInto(input, "13.5");
+    expect(reported).toEqual([13]);
+  });
+});
