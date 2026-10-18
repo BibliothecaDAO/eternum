@@ -15,11 +15,10 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { TIER_WORDS } from "./words";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { SheetHandle, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE } from "./words";
+import { BACK, CLOSE, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -981,13 +980,33 @@ export const HudEventRow = ({
   );
 };
 
-/** A line the game says about the screen it sits in: a refusal, a warning, a success, and why. */
-export const HudNotice = ({ tone, line, why }: { tone?: Tone; line: string; why?: string }) => (
+/**
+ * A line the game says about the screen it sits in: a refusal, a warning, a success, and why. A failure the player can
+ * recover from carries Try again (`retry`), so the recovery sits on the line that names what failed.
+ */
+export const HudNotice = ({
+  tone,
+  line,
+  why,
+  retry,
+}: {
+  tone?: Tone;
+  line: string;
+  why?: string;
+  retry?: () => void;
+}) => (
   <div className="ui-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
     <span className="flex flex-col">
       <span>{line}</span>
       {why && <span className="ui-notice__why">{why}</span>}
     </span>
+    {retry && (
+      <span className="ui-notice__retry">
+        <HudButton kind="secondary" size="sm" onClick={retry}>
+          {TRY_AGAIN}
+        </HudButton>
+      </span>
+    )}
   </div>
 );
 

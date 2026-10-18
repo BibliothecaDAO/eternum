@@ -1390,6 +1390,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
           <HudNotice tone="good" line="Transfer sent" why="Arrives at Egonal in 4m." />
           <HudNotice tone="warn" line="Storage full" why="Wheat stops at 6,000 until some is spent." />
           <HudNotice tone="bad" line="Not sent" why="The army needs 30 stamina; ready in 24s." />
+          <HudNotice tone="bad" line="Notifications did not answer." retry={() => undefined} />
         </div>
         <div className="mt-4 flex flex-col gap-2">
           <HudBanner

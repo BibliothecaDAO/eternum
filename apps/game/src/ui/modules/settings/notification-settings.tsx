@@ -40,9 +40,10 @@ export const NotificationSettings = () => {
         <DeviceEnd state={device.state} onToggle={device.toggle} />
       </HudSetting>
       {device.state === "blocked" && <HudNotice tone="warn" line={PROFILE_WORDS.blockedLine} />}
-      {(preferences.status === "error" || device.failed) && (
-        <HudNotice tone="bad" line={failureLine("notifications")} />
+      {preferences.status === "error" && (
+        <HudNotice tone="bad" line={failureLine("notifications")} retry={() => void preferences.reload()} />
       )}
+      {device.failed && <HudNotice tone="bad" line={failureLine("notifications")} />}
     </>
   );
 };
