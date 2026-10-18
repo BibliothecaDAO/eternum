@@ -11,23 +11,38 @@ const AGO = "ago";
 /**
  * A duration as "3d 4h", "7h 14m", "12h" or "42m", counted up to the next whole minute so time still left never reads
  * 0m. Frontier passes `{ days: false }`: its days run 8 to 24 hours, so a count of 24-hour days would misread there, and
- * its durations stay in hours ("30h"). `{ largest: true }` keeps its first unit only ("3d", "7h", "42m"), where a
- * glance is all that fits: a resource ring's rim.
+ * its durations stay in hours ("30h").
  */
-export const formatDuration = (seconds: number | undefined, { days = true, largest = false } = {}): string => {
+export const formatDuration = (seconds: number | undefined, { days = true } = {}): string => {
   if (seconds === undefined) return DASH;
   const minutes = Math.max(0, Math.ceil(seconds / 60));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  const units = (written: string[]) => (largest ? written.slice(0, 1) : written).join(" ");
   if (days && hours >= 24) {
     // Past a day the minutes go, rounded into the hour, as they are rounded into the minute below.
     const wholeHours = Math.ceil(minutes / 60);
     const left = wholeHours % 24;
-    return units(left === 0 ? [`${wholeHours / 24}d`] : [`${Math.floor(wholeHours / 24)}d`, `${left}h`]);
+    return left === 0 ? `${wholeHours / 24}d` : `${Math.floor(wholeHours / 24)}d ${left}h`;
   }
   if (hours === 0) return `${rest}m`;
-  return units(rest === 0 ? [`${hours}h`] : [`${hours}h`, `${rest}m`]);
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+};
+
+/**
+ * A duration in three characters at most, where a glance is all that fits (a resource ring's rim): `formatDuration`'s
+ * first unit, "42m", "7h", "12d", then weeks past 99 days ("14w") and years past 99 weeks ("2y"). Past 99 years it
+ * reads "99y+": more than that, never a smaller number. The full duration is written where there is room.
+ */
+export const formatShortDuration = (seconds: number): string => {
+  const minutes = Math.max(0, Math.ceil(seconds / 60));
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 24 * 60) return `${Math.floor(minutes / 60)}h`;
+  // Past a day the minutes go, rounded into the hour, as formatDuration rounds them.
+  const days = Math.floor(Math.ceil(minutes / 60) / 24);
+  if (days < 100) return `${days}d`;
+  if (days < 700) return `${Math.floor(days / 7)}w`;
+  const years = Math.floor(days / 365);
+  return years < 100 ? `${years}y` : "99y+";
 };
 
 /**

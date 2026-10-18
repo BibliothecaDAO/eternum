@@ -17,7 +17,7 @@ import {
 } from "./amount";
 import { formatCount } from "./count";
 import { ageLine, guardSlotName, rankName, resourceName, structureName } from "./nouns";
-import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment } from "./time";
+import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
 import { VOICE_RULES } from "./voice";
 
 describe("numbers", () => {
@@ -116,12 +116,24 @@ describe("times", () => {
     expect(formatDuration(7 * 3600 + 14 * 60)).toBe("7h 14m");
   });
 
-  it("writes a duration's largest unit alone where only a glance fits", () => {
-    expect(formatDuration(3 * 86_400 + 4 * 3600 + 120, { largest: true })).toBe("3d");
-    expect(formatDuration(23 * 3600 + 59 * 60, { largest: true })).toBe("23h");
-    expect(formatDuration(7 * 3600 + 14 * 60, { largest: true })).toBe("7h");
-    expect(formatDuration(17 * 60 + 5, { largest: true })).toBe("18m");
-    expect(formatDuration(30 * 3600, { days: false, largest: true })).toBe("30h");
+  it("writes a duration in three characters at most where only a glance fits, never a smaller number", () => {
+    const day = 86_400;
+    expect(formatShortDuration(17 * 60 + 5)).toBe("18m");
+    expect(formatShortDuration(23 * 3600 + 59 * 60)).toBe("23h");
+    expect(formatShortDuration(2 * day - 60)).toBe("2d");
+    expect(formatShortDuration(99 * day)).toBe("99d");
+    expect(formatShortDuration(100 * day)).toBe("14w");
+    expect(formatShortDuration(699 * day)).toBe("99w");
+    expect(formatShortDuration(1000 * day)).toBe("2y");
+    expect(formatShortDuration(99 * 365 * day)).toBe("99y");
+    expect(formatShortDuration(100 * 365 * day)).toBe("99y+");
+    // Its first unit is the full duration's first unit, below a hundred days.
+    for (const seconds of [61, 3599, 3600, 7 * 3600 + 14 * 60, 30 * 3600, 3 * day + 4 * 3600 + 120, 47.99 * 3600]) {
+      expect(formatShortDuration(seconds)).toBe(formatDuration(seconds).split(" ")[0]);
+    }
+    for (const seconds of [0, 59, 61, 3600, day, 99 * day, 100 * day, 1000 * day, 1e12]) {
+      expect(formatShortDuration(seconds).length).toBeLessThanOrEqual(seconds >= 100 * 365 * day ? 4 : 3);
+    }
   });
 
   it("says how long ago a moment was, and its date from a day back", () => {

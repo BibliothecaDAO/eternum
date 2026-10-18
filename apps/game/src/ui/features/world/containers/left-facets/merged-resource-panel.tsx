@@ -55,7 +55,8 @@ interface MergedResourcePanelProps {
 /**
  * One panel that merges the old Production + Balance bubbles. Every relevant
  * resource is a single ProductionStatusBadge, the one resource ring: its production buildings on the top-left badge,
- * the balance on the bottom rim, time left in its tooltip, and a build "+" at its bottom-left.
+ * the balance on the bottom rim, the time left top right (in full in its accessible name), and a build "+" at its
+ * bottom-left.
  * The "+" reuses the exact build path from the build menu (buildRealmBuilding +
  * resolveConstructionBuildability), so it auto-builds
  * and is enabled only when the realm can afford the building. Tokens are split

@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-18",
     title: "Ring badges no longer overlap",
     description:
-      "A resource ring's building count and its time left share the top of the ring and never cover each other. The time shows its largest unit (7h, 2d), and production that never runs out, like a farm's wheat, shows no countdown.",
+      "A resource ring's building count and its time left share the top of the ring and never cover each other or the next ring. The time shows its largest unit (7h, 2d, then weeks or years for long ones), and production that never runs out, like a farm's wheat, shows no countdown. Screen readers hear the full time left, or that production never runs out.",
     type: "fix",
   },
   {

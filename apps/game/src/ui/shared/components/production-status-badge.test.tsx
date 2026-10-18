@@ -31,10 +31,23 @@ describe("the resource ring", () => {
     expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 3600 }), "timer")).toBe("3h");
   });
 
-  it("writes the time left by its largest unit, the most that fits on the rim beside a count", () => {
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 7 * 3600 + 14 * 60 }), "timer")).toBe("7h");
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 23 * 3600 + 59 * 60 }), "timer")).toBe("23h");
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 86_400 + 4 * 3600 }), "timer")).toBe("3d");
+  it("writes the time left in three characters at most, the most that fits on the rim beside a count", () => {
+    const timer = (seconds: number) => chip(ring({ isProducing: true, timeRemainingSeconds: seconds }), "timer");
+    expect(timer(7 * 3600 + 14 * 60)).toBe("7h");
+    expect(timer(23 * 3600 + 59 * 60)).toBe("23h");
+    expect(timer(3 * 86_400 + 4 * 3600)).toBe("3d");
+    expect(timer(100 * 86_400)).toBe("14w");
+    expect(timer(1000 * 86_400)).toBe("2y");
+  });
+
+  it("says the full production in its name, while the hover names the resource only", () => {
+    const named = (timeRemainingSeconds: number | null, isProducing = true) =>
+      ring({ isProducing, timeRemainingSeconds }).querySelector("[role=img]")?.getAttribute("aria-label");
+    expect(named(7 * 3600 + 14 * 60)).toBe("Wood · 7h 14m of production left");
+    expect(named(1000 * 86_400)).toBe("Wood · 1000d of production left");
+    expect(named(Number.POSITIVE_INFINITY)).toBe("Wood · production never runs out");
+    expect(named(null)).toBe("Wood · producing");
+    expect(named(null, false)).toBe("Wood · not producing");
   });
 
   it("shows no time while idle, without a known time, under a minute, or when production never runs out", () => {

@@ -1,8 +1,8 @@
 import {
   formatCharge,
-  formatDuration,
   formatExact,
   formatPercent,
+  formatShortDuration,
   readTypedNumber,
   typedNumberText,
   formatAmount,
@@ -746,9 +746,9 @@ export const HudDial = ({
  * right, the amount on the foot; how far production has come as an arc, its rim in its state's tone (producing good,
  * idle warn). One size wherever it stands, in a list or a panel, so every ring in a row reads alike. The two top badges
  * share one line, so they push apart and never cover each other, and the ring writes the time left (`timeLeft`, in
- * seconds) by its largest unit, the most that fits beside a count; a time that never runs out has nothing to count and
- * shows no badge. `tip` is its hover (the resource's name), `label` all it says for assistive technology. With
- * `onClick` it is a button.
+ * seconds) in three characters at most ("7h", "14w"), the most that fits beside a count, so a ring's top line stays
+ * inside its place in a row; a time that never runs out has nothing to count and shows no badge. `tip` is its hover
+ * (the resource's name), `label` all it says for assistive technology. With `onClick` it is a button.
  */
 export const HudRing = ({
   icon,
@@ -771,8 +771,7 @@ export const HudRing = ({
   progress?: number;
   onClick?: () => void;
 }) => {
-  const time =
-    timeLeft !== undefined && Number.isFinite(timeLeft) ? formatDuration(timeLeft, { largest: true }) : undefined;
+  const time = timeLeft !== undefined && Number.isFinite(timeLeft) ? formatShortDuration(timeLeft) : undefined;
   const body = (
     <>
       {progress !== undefined && (

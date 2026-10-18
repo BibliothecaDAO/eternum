@@ -4,7 +4,6 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { productionTimeLeft } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import {
@@ -213,13 +212,10 @@ const ResourceRings = ({
   );
 };
 
-/** "Wheat · 12,400 held · 3 buildings · 4h of production left": the ring's tooltip. */
-const describeResource = ({ resourceId, held, buildings, producing, secondsLeft }: ResourceReading): string => {
+/** "Wheat · 12,400 held · 3 buildings": what the holding has of it; the ring inside reads its production. */
+const describeResource = ({ resourceId, held, buildings }: ResourceReading): string => {
   const parts = [`${resourceName(resourceId)} · ${formatExact(Math.floor(held))} held`];
   if (buildings > 0) parts.push(formatCount(buildings, "building"));
-  if (producing && secondsLeft === Number.POSITIVE_INFINITY) parts.push("production never runs out");
-  else if (producing && secondsLeft !== null && secondsLeft >= 60)
-    parts.push(`${productionTimeLeft(Math.ceil(secondsLeft / 60) * 60)} of production left`);
   return parts.join(" · ");
 };
 
