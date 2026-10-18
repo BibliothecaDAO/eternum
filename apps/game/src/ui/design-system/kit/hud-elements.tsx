@@ -319,7 +319,7 @@ const PanelHead = ({
 };
 
 /** A strip of choices; the chosen one in the age's accent. */
-export const HudTabs = <K extends string>({
+export const HudTabs = <K extends string | number>({
   tabs,
   value,
   onChange,

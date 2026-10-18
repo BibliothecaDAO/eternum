@@ -333,6 +333,29 @@ const ButtonsSection = () => (
           )}
         />
         <StateRow
+          label="toggle"
+          render={(state) => (
+            <span className="flex gap-2">
+              <HudIconButton
+                icon="star"
+                label="Pin to the top"
+                kind="quiet"
+                size="sm"
+                aria-pressed={false}
+                data-state={forced(state)}
+              />
+              <HudIconButton
+                icon="star"
+                label="Unpin from the top"
+                kind="quiet"
+                size="sm"
+                aria-pressed
+                data-state={forced(state)}
+              />
+            </span>
+          )}
+        />
+        <StateRow
           label="busy"
           render={() => (
             <HudButton kind="primary" busy="Sending…">
