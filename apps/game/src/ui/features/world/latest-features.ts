@@ -35,6 +35,12 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Facets relic paintings",
+    description: "All 18 relics now use the Facets paintings while keeping their familiar symbols and tier designs.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Reward chests keep their tiers",
     description:
       "Blitz rewards show their own rank-band chest artwork in panel titles, entry details and Open buttons. The approved paintings fill their frames. Map crates keep their in-game model.",
@@ -66,13 +72,6 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Clearer resource and landmark icons",
     description:
       "Icons fill their frames. Production resources return to their familiar designs, Research has teal liquid, and landmarks show the built Hyperstructure and chest without its tile.",
-    type: "improvement",
-  },
-  {
-    date: "2026-10-18",
-    title: "Relic artwork comparison",
-    description:
-      "The resource icon lab compares the original relic designs with painted Facets versions at four sizes. The game keeps the original relics during review.",
     type: "improvement",
   },
   {

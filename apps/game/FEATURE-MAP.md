@@ -414,10 +414,10 @@ the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture
 
 ### Resource icon comparison
 
-`/lab/kit/resource-icons` opens **Relics**: all 18 old designs beside their Facets-style proposals at 16/24/32/40 px.
-The proposals preserve each original symbol, composition and tier distinction. Old uses the production renderer;
-production retains the old relics until the owner chooses. Prefer 40 px for larger relic chips, with 32 px the practical
-minimum. No relic size or production mapping changes in this review.
+`/lab/kit/resource-icons` opens **Relics**: the previous production artwork beside all 18 selected Facets paintings at
+16/24/32/40 px and in HUD chips with 28 px art. The current column uses the production semantic renderer and `HudRelic`;
+phone comparisons remain side by side. The paintings preserve the original symbols and tier designs. HUD sizes are
+unchanged.
 
 **Resources** compares 22 live production resource designs, shipped Essence and teal Research with their previous
 paintings. **Models** shows before/current icons beside actual renders for Farm, Workers Hut, camp, rift, the completed
@@ -425,10 +425,10 @@ Hyperstructure, spire and the chest body without its tile. Workshop waits for it
 Labor, nine troop tiers and UI glyph designs with tighter crops. **Inventory** compares all 58 historical and current
 resources. Construction cards retain model thumbnails.
 
-`asset-sources/rss-icons/relics/` holds the 18 review masters, exact prompts, source/style reference hashes and proposal
-verdicts. `pnpm icons:study [--check]` delivers them using the same Facets normalizer and 64/128/256 WebP settings,
-validates source and delivery hashes and rejects missing or unwired assets. `pnpm icons:check` validates production and
-requires at least 85% visible subject fill for every delivery; the common normalizer targets 90%. Realm badge frames
+The approved relic masters, prompts, source hashes and verdicts now live in `asset-sources/facets/`; the separate
+proposal deliveries are removed. `pnpm icons:build` delivers the selected paintings through the existing semantic path.
+`pnpm icons:study [--check]` maintains the wired historical/model comparisons. `pnpm icons:check` validates production
+and requires at least 85% visible subject fill for every delivery; the common normalizer targets 90%. Realm badge frames
 accommodate those tighter crops; `icons:prove --catalog` checks painted extent, rim clearance and ownership pips. All
 restore/check commands use pinned committed archives and work without historical Git objects. Start
 `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run

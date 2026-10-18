@@ -353,21 +353,38 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
         const rows=[...document.querySelectorAll('[data-resource-comparison]')];
         return rows.length===expected.length && expected.every(meaning=>{
           const row=rows.find(r=>r.dataset.resourceComparison===meaning);
-          const versions=section==='Kept'?['current']:section==='Inventory'?['old','current']:section==='Relics'?['current','facets']:['before','current'];
+          const versions=section==='Kept'?['current']:section==='Inventory'?['old','current']:['before','current'];
           return row && versions.every(version=>{
             const group=row.querySelector('[data-version='+version+']');
             if(!group)return false;
             if(version==='old'&&meaning==='s-a-t')return group.querySelectorAll('.rss-history-glyph').length===4;
-            const images=[...group.querySelectorAll('img')];
+            const images=[...group.querySelectorAll('.rss-sizes img')];
             return images.length===4 && images.every((i,n)=>{
               const size=[16,24,32,40][n],pixels=size>32?128:64;
-              const url=version==='facets'?'/lab/rss-icons/relics/'+pixels+'/'+meaning+'.webp':version==='old'?'/lab/rss-icons/history/'+meaning+'.png':version==='before'?'/lab/rss-icons/before/'+pixels+'/'+meaning+'.webp':meanings[meaning].token?'/tokens/lords.svg':'/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
+              const url=version==='old'?'/lab/rss-icons/history/'+meaning+'.png':version==='before'?'/lab/rss-icons/before/'+pixels+'/'+meaning+'.webp':meanings[meaning].token?'/tokens/lords.svg':'/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
               return i.width===size && i.getAttribute('src')===url;
             });
           });
         }) && (section!=='Models'||document.querySelectorAll('.rss-model img').length===7);
       })()`,
       );
+      if (section === "Relics")
+        await check(
+          "Relics: 18 previous/current HUD chip pairs use 28 px art and the selected source",
+          `(async()=>{
+            const {meanings}=await(await fetch('/icons/facets/manifest.json')).json();
+            const rows=[...document.querySelectorAll('[data-resource-comparison]')];
+            return rows.length===18 && rows.every(row=>['before','current'].every(version=>{
+              const chip=row.querySelector('[data-version='+version+'] .rss-chip .ui-relic');
+              const image=chip?.querySelector('img');
+              if(!image)return false;
+              const rect=image.getBoundingClientRect(),meaning=row.dataset.resourceComparison;
+              const url=version==='before'?'/lab/rss-icons/before/64/'+meaning+'.webp':'/icons/facets/64/'+meanings[meaning].art+'.webp';
+              return rect.width===28 && rect.height===28 && image.getAttribute('src')===url &&
+                (version==='before'||image.dataset.icon===meaning) && chip.querySelector('.ui-relic__trail')?.textContent==='×2';
+            }));
+          })()`,
+        );
       const fullHeight = await b.evaluate("Math.ceil(document.querySelector('.rss-lab').scrollHeight + 80)");
       await b.run("set", "viewport", String(width), String(Math.min(fullHeight, 12000)));
       await b.run("scrollintoview", ".rss-lab > header");

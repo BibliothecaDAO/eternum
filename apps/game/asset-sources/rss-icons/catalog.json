@@ -134,92 +134,92 @@
     {
       "meaning": "stamina-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "stamina-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "damage-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "damage-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "damage-reduction-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "damage-reduction-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "exploration-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "exploration-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "exploration-reward-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "exploration-reward-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "structure-damage-reduction-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "structure-damage-reduction-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "production-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "production-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "labor-production-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "labor-production-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "troop-production-relic-1",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "troop-production-relic-2",
       "group": "Relics",
-      "note": "Restored original pre-Facets artwork, including its original tier design."
+      "note": "Approved Facets repaint of the original relic design."
     },
     {
       "meaning": "research",
@@ -370,76 +370,76 @@
       "128": "e828148428026bbaa6bb17abad6e121adc63c176a9912301470d9d04fb06580a"
     },
     "stamina-relic-1": {
-      "64": "99c5229bfff20297029c933e08e91b8a71a8501e30d3ebf258445c1892d31913",
-      "128": "7d1737cbbc5f5be3f8786385ac4ff72bcada2e31340f4d3a4cebe49d4e2d5617"
+      "64": "9b91cb636fe8c961067039004cc0cd9d1a70acc7de97aa7a4b7e681bde60521a",
+      "128": "c4e7168d27cb0a3d2878700c30706cfb7b09e635a48152671ecb8ca75a744044"
     },
     "stamina-relic-2": {
-      "64": "e364a69f90d518ccd222da02ba54f4a922962654fe48c1566ae6c20ccd187676",
-      "128": "928e628b85bb110554f91a1f224b8da4de94e1b20e2a8789fe553d0a3695dec8"
+      "64": "91e7bc665131dbb1b82a2a7999eb49bebde6ea8384e85fe739826ae518f615b4",
+      "128": "1e06840f857c1724feb4f2a24e98520f98d9b840236a03208c318c9de0f23282"
     },
     "damage-relic-1": {
-      "64": "d5b0d59ea199689c1420ce1d2ae49fe6b7604ef9a80ebd83313cc1a81d63b4d6",
-      "128": "1be5a1973893ad2140674aa1bdaf7e44af3d3a23beb07696d0e3130b912a69b9"
+      "64": "918f83d0eb493f9e5c4bc6401139b91118d42046d045c16641eaee7b6a412a46",
+      "128": "d090b12baa7580765e6632d8ac53db67db183284c35e7be3d84cd9eeb01ccf86"
     },
     "damage-relic-2": {
-      "64": "f7fa0560f137302190ebc50976cf494a0e5a79afd9293c0db3f063803c3319ae",
-      "128": "705ae428f71a315af364d3df3f8684138325b6573a578c12e39e82cde6cce2ab"
+      "64": "05efa865cb73447e906a8add53381573f65e3b375009e96a9e6845712b335ab5",
+      "128": "3675892ad9428136037f3d0d89aead5e8a5efd33a87bd5d412fa6dca7247208c"
     },
     "damage-reduction-relic-1": {
-      "64": "63e20055c199df9590e4be7b0f9ff8320e85a1e0cd7c1973831775682ba8f93d",
-      "128": "9a61eb33ce7240202b7d171c1fa5e32f9b6beb10f4a613feca9189d59414bc51"
+      "64": "27138a45d680cfc4016d873295e24957513367f5763ad23029688d4b3d0b3dbe",
+      "128": "3b174f50681b95c60a926546432963a304d0a5881dc885125cbb7cae33cae9e8"
     },
     "damage-reduction-relic-2": {
-      "64": "cf6b57ecca9b82e52859f44f9c5f0c22642fc8ab10a22b6fa618f6250ac3d461",
-      "128": "d7d070492d6cc0b1dcef949954bdec245fa1feb719869c9438b0aeb21326e49c"
+      "64": "c65bd522dfa01209ef19d08c7fe534c3b17633cef184e926572bfd0637a04a60",
+      "128": "539800e22d72b464ab88f0073fee1dd998b1610fd1569afd36eb493c5175ebf6"
     },
     "exploration-relic-1": {
-      "64": "4a64e4fb0f0bd1a79a5fdd6689b8588bac5e430f34d1c894ff83021b40979ea6",
-      "128": "b1a32d962644c131a0d4fb4201f8594914e57930ec0ab0fafc0c90e4d9df673c"
+      "64": "e400be78a8907484dbe951e4c13a1dcbaa3edd0b53094538ec0b96c6d995c294",
+      "128": "1cf84b7c7b19ae6fd622a08210049b09f44580100c1a6f5037d224d826520d88"
     },
     "exploration-relic-2": {
-      "64": "81f0413c667b7a46b674c97970c31825006626f0cb62958a79d35d7535b673d9",
-      "128": "93ec8560d4a56c96d5bfae3c437365b9899ced21316b7f1e7a6787db45413119"
+      "64": "e3770120380f95c11779ae73ee52a72ed010db556b0ba82a6305d26675cddb64",
+      "128": "9d499fe483bad08ac5424de2a5b42a951e76c2ad74728ad67ff62ee513669ea7"
     },
     "exploration-reward-relic-1": {
-      "64": "d1318e4c269d4c427a80c124f41287bdd6d7ae441dd23c2b1137e07008ec887f",
-      "128": "96a704f9766b10d6108d29c71cd8a8c0f7dbe6f081032811ecac92f6a4481f1c"
+      "64": "5ae6d4dacb661e19fc483567fb890b1ebad3752afa1b6071cfab6c3c42d8d2cb",
+      "128": "b6500a7a967bc822fb42dedec7979c2bf742c162059bdd15200b197bedfd03ef"
     },
     "exploration-reward-relic-2": {
-      "64": "89d7c8b86ab47fe025c29309081575680965634feb078d6a81256f9781e43fb8",
-      "128": "11e845aef1b9bf52833fd293e824eaa990049dcb68784a90d663283719bb0b3f"
+      "64": "84962138c3624d013067f39db51227c4eeb87348b611952caed38bdb63dd2d93",
+      "128": "9721f31b044d4a37c74d43c31f1489c5a09f685d03cb3f3f9d08d324ff5f3a1e"
     },
     "structure-damage-reduction-relic-1": {
-      "64": "32572977582916f1c50aca389e4664852790c5a3a1af7283e5eb04cd910d8910",
-      "128": "66a1c88d01f387514fcbd07eceb7bf4264eb395911c14872dde3a24d99a09edd"
+      "64": "37d3d13cfdb689f652d71ba5d7701f713c0aff3fc982b40795d35f118a6085e9",
+      "128": "f2f0f5f2e73da496c1ceaa5d920e5ac6c9fdb0171bc377eccd53483d1a39d269"
     },
     "structure-damage-reduction-relic-2": {
-      "64": "e793e30d47a452f211226b6a826b1ef96835b6818f55741337580b6e53f01520",
-      "128": "ed0ec5f4e2c815a005d343513c5a66bd6db1b8083ca25657dc1d325216a813f7"
+      "64": "e79855f137d9ce8da5806efbe5f699d7c99f9612da2c4edbbb4b5c60d5a0eceb",
+      "128": "0efd9117c4da2673742f0c2df5034ff3c21a05b111d0c90d24b24703c28a13ad"
     },
     "production-relic-1": {
-      "64": "0f06002fa10247ee0e890a7e1f50796679de757c2e7f113e677d3f209bab99ba",
-      "128": "47288b0e866a185b0cbebcc3d9a04f5da7621cf1d7808df813fc3c4f6825e2b5"
+      "64": "26a2d5282f52f64994c961d117503ddb213541e178fa71043253b7f001348435",
+      "128": "b200bd194ad0a1db53b62f223e88f35d7ebcdc515b8d25f8b2cdb105e621899a"
     },
     "production-relic-2": {
-      "64": "cf770bb21d2036f5bc8f85218c2f5a0862203df1998fcf976075809ac7275f91",
-      "128": "574c1a75f381d1f23c0027937b1e0e4ab8d60e0722c74bbc9a3ba72166375a10"
+      "64": "e9fe41646c7c3b767ec99114dcab2259c099f1d80e764a17ec388e63f959b602",
+      "128": "67a9feccbf47b5192f1771f75e2a111f7f394c1bfaf0310a813187e10b56aa84"
     },
     "labor-production-relic-1": {
-      "64": "246cdc4f61eaa05222960348f715035b6a093c10a928236fca1b555c5fa57a69",
-      "128": "f4261ca1cd174600742cc56fcb58f461c4683774c69f33e334788d05c9cedc2c"
+      "64": "0627bae08a3dafb9a31a70557442cbf361462435d1a0941a85461a375b5ca5a1",
+      "128": "86c7455488d3e040f576cb6f7f2d284b5d1a5347cff8e8cc60eb2fc65f663fb6"
     },
     "labor-production-relic-2": {
-      "64": "bb50b87b6fdc9f06bbd7ac2bf807761f499d1e06a2e3ee58af7ba8632b0ad433",
-      "128": "b0a132560cba2b9edc2a02fd7e1108282c5ec08700f350c6ad86df910e25588b"
+      "64": "177e0b294b99311a263f518e3ea67f6a6535fbd2efd5fbc2f338b8013461bde4",
+      "128": "656ff645b8665dacada3e2ff2f6ff98eea442a61bb3167eeef56fa2dac0005c5"
     },
     "troop-production-relic-1": {
-      "64": "99d94d79591599117709939d2cbb27b8138457d78ab97f31eb049532d1a5229c",
-      "128": "75814296bbd067f52796b3fdb82cb4bb8c1a7c6ba8aeeffcdb6e685578b51e88"
+      "64": "11c57990801d23b6fd029178bdbb900da5c5d30d751cf3bc7048bf8599ec7626",
+      "128": "7b48c46e71d690956ab93b87128e6dcc1056bf9d8d272d8e0fb8a335774b0afe"
     },
     "troop-production-relic-2": {
-      "64": "d33dc292b5612cb7730956c67c2ea97a98510d0538c6bf922b6248e3ebe5e190",
-      "128": "2814e613c119a1744c826e0555d6448c9d85e52d0007aac6db7f360ca2f85281"
+      "64": "a3517f8b49f25a45895cde55a3837c16515ca619749dd12e6fd2c7b43ecade18",
+      "128": "b9e3ef5a5a5b356cb4e20c605ec509f6b00e8f48d32db7dd3540dd7efaf5c802"
     },
     "research": {
       "64": "4ae07f53163e5130fb11c0224c6a743223682a64afb37289ffe46ee195e50a78",
@@ -461,5 +461,6 @@
       "64": "946997056fbb03e5aa4acfc63c8486b2e08cb174f43fc3d7dcaed143dce7b2c8",
       "128": "d560ced7ccd9d0b08376b0a04eff9578f99a4bfe5718ad45c8596bfe800e8a2a"
     }
-  }
+  },
+  "relicsBefore": "0220d0a1bd60c33eb6c35064d055ffb7fe8429ac"
 }

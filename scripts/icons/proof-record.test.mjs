@@ -6,7 +6,7 @@ import test from "node:test";
 import { proveResourceIcons } from "./prove.mjs";
 import { problemsOf } from "../../apps/game/scripts/prove-run.mjs";
 
-for (const failure of [null, "decode", "mapping", "navigation"]) {
+for (const failure of [null, "decode", "mapping", "navigation", "chip size"]) {
   test(`resource proof collector ${failure ? `rejects ${failure} failure` : "accepts successful tab navigation"}`, async () => {
     const out = await mkdtemp(join(tmpdir(), "icon-proof-"));
     try {
@@ -19,6 +19,7 @@ for (const failure of [null, "decode", "mapping", "navigation"]) {
             if (failure === "decode" && expression.includes("i.decode()")) return false;
             if (failure === "mapping" && expression.includes("const expected=")) return false;
             if (failure === "navigation" && expression.includes("aria-pressed")) return false;
+            if (failure === "chip size" && expression.includes("rect.width===28")) return false;
             return true;
           },
         },
@@ -29,9 +30,9 @@ for (const failure of [null, "decode", "mapping", "navigation"]) {
       assert.equal(records.length, 2);
       assert.equal(records.flatMap((r) => r.presses).length, 10);
       const problems = problemsOf(records, (r) => ({ name: r.name }));
-      assert.equal(problems.length, failure ? 10 : 0);
+      assert.equal(problems.length, failure === "chip size" ? 2 : failure ? 10 : 0);
       if (!failure) {
-        assert.equal(records.flatMap((r) => r.checks).filter((c) => c.ok).length, 30);
+        assert.equal(records.flatMap((r) => r.checks).filter((c) => c.ok).length, 32);
         assert.ok(records.flatMap((r) => r.presses).every((p) => p.status === "led"));
       }
     } finally {

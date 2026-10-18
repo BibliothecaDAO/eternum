@@ -85,6 +85,10 @@
   color: #969b9e;
   font-size: 11px;
 }
+.rss-chip {
+  max-width: 260px;
+  margin-top: 12px;
+}
 .rss-history-glyph {
   color: #f4ac43;
 }

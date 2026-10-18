@@ -1,26 +1,18 @@
 import { useState } from "react";
 import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, type IconMeaning } from "@/ui/design-system/icon-meaning";
+import { HudRelic } from "@/ui/design-system/kit/hud-elements";
+import { relicShortName } from "@/ui/design-system/kit/words";
+import { RELIC_KIND } from "@/ui/features/world/components/entities/relic-kind";
+import { getRelicInfo, type ResourcesIds } from "@bibliothecadao/types";
 import resources from "../../../../../asset-sources/facets/resources.json";
 import study from "../../../../../asset-sources/rss-icons/catalog.json";
 import history from "../../../../../asset-sources/rss-icons/history.json";
 import "./resource-icons-lab.css";
 
-type Version = "old" | "before" | "current" | "facets";
+type Version = "old" | "before" | "current";
 function Artwork({ meaning, version, size }: { meaning: string; version: Version; size: number }) {
   if (version === "current") return <Icon name={meaning as IconMeaning} size={size} />;
-  if (version === "facets")
-    return (
-      <img
-        data-relic-proposal={meaning}
-        src={`/lab/rss-icons/relics/${size > 32 ? 128 : 64}/${meaning}.webp`}
-        width={size}
-        height={size}
-        style={{ width: size, height: size }}
-        alt=""
-        draggable={false}
-      />
-    );
   const previous = history.entries[meaning as keyof typeof history.entries];
   const url = version === "before" ? `/lab/rss-icons/before/${size > 32 ? 128 : 64}/${meaning}.webp` : previous.url;
   return url ? (
@@ -36,6 +28,26 @@ function Artwork({ meaning, version, size }: { meaning: string; version: Version
     <span className="rss-history-glyph" style={{ fontSize: size }}>
       {previous.glyph}
     </span>
+  );
+}
+function RelicChipSample({ meaning, version }: { meaning: string; version: Version }) {
+  const id = history.entries[meaning as keyof typeof history.entries].id as ResourcesIds;
+  const relic = getRelicInfo(id);
+  if (!relic) throw new Error(`Missing relic for comparison: ${meaning}`);
+  const kind = RELIC_KIND[relic.type];
+  const gives = relicShortName(id);
+  return (
+    <div className="rss-chip">
+      {version === "current" ? (
+        <HudRelic icon={meaning as IconMeaning} kind={kind} gives={gives} trail="×2" />
+      ) : (
+        <span className="ui-relic" data-kind={kind}>
+          <Artwork meaning={meaning} version={version} size={28} />
+          <span className="ui-relic__gives">{gives}</span>
+          <span className="ui-relic__trail">×2</span>
+        </span>
+      )}
+    </div>
   );
 }
 function Sizes({ meaning, version }: { meaning: string; version: Version }) {
@@ -60,17 +72,10 @@ function Comparison({ meaning, versions }: { meaning: string; versions: Version[
         {versions.map((version) => (
           <figure data-version={version} key={version}>
             <figcaption>
-              {version === "old"
-                ? "Pre-Facets"
-                : version === "before"
-                  ? "Before"
-                  : version === "facets"
-                    ? "Facets style · proposal"
-                    : meaning.includes("-relic-")
-                      ? "Old · production"
-                      : "Current · production"}
+              {version === "old" ? "Pre-Facets" : version === "before" ? "Before" : "Current · production"}
             </figcaption>
             <Sizes meaning={meaning} version={version} />
+            {meaning.includes("-relic-") && <RelicChipSample meaning={meaning} version={version} />}
           </figure>
         ))}
       </div>
@@ -84,8 +89,7 @@ export function ResourceIconsLab() {
       <header>
         <h1>Resource icons</h1>
         <p>
-          Old relic designs repainted in Facets, compared at 16, 24, 32 and 40 px. The old relics stay in production
-          until selected.
+          The selected Facets relics beside the previous artwork at 16, 24, 32 and 40 px, plus the HUD chip's 28 px art.
         </p>
       </header>
       <nav aria-label="Resource review sections">
@@ -102,8 +106,8 @@ export function ResourceIconsLab() {
       </nav>
       {section === "Relics" && (
         <p>
-          All 18 proposals preserve the old symbols, compositions and tier distinctions. Prefer 40 px for the larger
-          sheet; compare 32 px for family and tier recognition, and 16/24 px for compact use.
+          All 18 shipped relics preserve the original symbols, compositions and tier distinctions. Current chips use the
+          game's HudRelic component; historical chips use the same styling with the previous painting.
         </p>
       )}
       {section === "Models" && (
@@ -116,10 +120,7 @@ export function ResourceIconsLab() {
         .filter((entry) => entry.group === section)
         .map((entry) => (
           <article key={entry.meaning} data-change={entry.meaning}>
-            <Comparison
-              meaning={entry.meaning}
-              versions={section === "Relics" ? ["current", "facets"] : ["before", "current"]}
-            />
+            <Comparison meaning={entry.meaning} versions={["before", "current"]} />
             {section === "Models" && (
               <figure className="rss-model">
                 <img

@@ -11,19 +11,26 @@ import { normalizeMaster, deliverIcon } from "./normalize.mjs";
 import { readHistoricalArtwork } from "./resource-history.mjs";
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
-test("all 18 restored relic masters are the original mapped resource bytes", async () => {
+test("all 18 production relics use the approved Facets masters through their semantic meanings", async () => {
   const repo = fileURLToPath(new URL("../../", import.meta.url));
   const source = `${repo}/apps/game/asset-sources`;
   const { icons } = JSON.parse(await readFile(`${source}/facets/catalog.json`, "utf8"));
+  const meanings = JSON.parse(await readFile(`${source}/facets/semantic-map.json`, "utf8"));
   const history = JSON.parse(await readFile(`${source}/rss-icons/history.json`, "utf8"));
   const relics = icons.filter(({ id }) => id.includes("-relic-"));
   assert.equal(relics.length, 18);
   for (const icon of relics) {
-    const entry = history.entries[icon.id];
-    assert.equal(icon.source.revision, history.revision);
-    assert.equal(icon.source.path, entry.source);
-    const bytes = await readHistoricalArtwork(entry);
-    assert.deepEqual(await readFile(`${source}/facets/masters/${icon.id}.png`), bytes);
+    assert.equal(meanings[icon.id].art, icon.id);
+    assert.equal(icon.source.revision, "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89");
+    assert.equal(icon.source.path, `apps/game/asset-sources/rss-icons/relics/masters/${icon.id}.png`);
+    assert.equal(icon.source.committedPath, undefined, "Do not restore the retired relic selection");
+    const master = await readFile(`${source}/facets/masters/${icon.id}.png`);
+    assert.equal(hash(master), icon.source.sha256);
+    assert.notEqual(hash(master), history.entries[icon.id].sha256);
+    for (const size of [64, 128, 256])
+      await assert.rejects(readFile(`${repo}/apps/game/public/lab/rss-icons/relics/${size}/${icon.id}.webp`), {
+        code: "ENOENT",
+      });
   }
 });
 
