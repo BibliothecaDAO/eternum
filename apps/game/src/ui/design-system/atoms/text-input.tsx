@@ -23,17 +23,13 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         e.stopPropagation();
         (e.target as HTMLFormElement).reset();
       }}
-      className={clsx(
-        "w-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent btn-bronze rounded-lg",
-        className,
-      )}
+      className={clsx("ui-field w-full flex-grow", className)}
+      data-fill
     >
       <input
         ref={ref}
         autoFocus={true}
-        className={clsx(
-          "w-full p-2 h-full  transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder:text-gold flex-grow bg-transparent",
-        )}
+        className="min-w-0 flex-1"
         disabled={disabled || false}
         type="text"
         value={value}

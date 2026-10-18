@@ -28,8 +28,8 @@ export const MaxButton = React.forwardRef<HTMLButtonElement | HTMLDivElement, Ma
           ref={ref as React.Ref<HTMLDivElement>}
           onClick={handleClick}
           className={cn(
-            "cursor-pointer text-sm hover:text-primary transition-colors",
-            isDisabled && "cursor-not-allowed opacity-50 hover:text-current",
+            "cursor-pointer text-hud-label text-hud-muted hover:text-hud-accent",
+            isDisabled && "cursor-not-allowed opacity-50",
             className,
           )}
         >
@@ -48,7 +48,7 @@ export const MaxButton = React.forwardRef<HTMLButtonElement | HTMLDivElement, Ma
           disabled={isDisabled}
           className={cn("h-8 w-8 p-0", className)}
         >
-          <span className="text-xs font-medium">M</span>
+          <span className="text-hud-label">M</span>
         </Button>
       );
     }

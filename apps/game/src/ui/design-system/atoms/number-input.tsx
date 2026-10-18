@@ -50,16 +50,16 @@ export const NumberInput = ({
   };
 
   return (
-    <div className={cn("flex items-center h-10 max-lg:min-h-11 text-lg bg-gold/20 w-full rounded-xl", className)}>
+    <div className={cn("ui-field w-full gap-1", className)} data-fill>
       {arrows && (
         <button
           type="button"
           aria-label="Decrease amount"
           disabled={disabled}
-          className={cn(
-            "flex items-center justify-center h-full px-1 max-lg:min-h-11 max-lg:min-w-11 border-r border-gold/10",
-            disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
-          )}
+          className="ui-button"
+          data-kind="quiet"
+          data-size="sm"
+          data-icon-only
           onClick={() => {
             if (!disabled) {
               onChange(Math.max(value - step, min));
@@ -67,13 +67,13 @@ export const NumberInput = ({
             }
           }}
         >
-          <SemanticIcon name="arrow-left" className="h-3 w-3" />
+          <SemanticIcon name="arrow-left" size={16} />
         </button>
       )}
       <input
         inputMode={allowDecimals ? "decimal" : "numeric"}
         min={min}
-        className="btn-bronze w-full min-w-0 max-lg:text-base appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
+        className="min-w-0 flex-1 text-center"
         value={displayValue}
         onFocus={onFocus}
         disabled={disabled}
@@ -119,10 +119,10 @@ export const NumberInput = ({
           type="button"
           aria-label="Increase amount"
           disabled={disabled}
-          className={cn(
-            "flex items-center justify-center h-full px-1 max-lg:min-h-11 max-lg:min-w-11 border-l border-gold/10",
-            disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gold/30",
-          )}
+          className="ui-button"
+          data-kind="quiet"
+          data-size="sm"
+          data-icon-only
           onClick={() => {
             if (!disabled) {
               onChange(Math.min(value + step, max));
@@ -130,7 +130,7 @@ export const NumberInput = ({
             }
           }}
         >
-          <SemanticIcon name="arrow-right" className="h-3 w-3" />
+          <SemanticIcon name="arrow-right" size={16} />
         </button>
       )}
     </div>
