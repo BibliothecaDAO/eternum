@@ -54,6 +54,7 @@
     "verify:terrain:contact-sheet": "node ./scripts/terrain-verification/create-terrain-contact-sheet.mjs",
     "prove:play": "node ./scripts/prove-play.mjs",
     "prove:shell": "node ./scripts/prove-shell.mjs",
+    "capture:hud-lab": "node ./scripts/capture-hud-lab.mjs",
     "prove:construction": "node ./scripts/prove-building-thumbnails.mjs",
     "prove:windows": "node ./scripts/prove-lab-windows.mjs",
     "render:building-thumbnails": "node ./scripts/render-building-thumbnails.mjs",
