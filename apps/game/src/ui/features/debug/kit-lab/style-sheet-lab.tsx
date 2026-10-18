@@ -295,7 +295,7 @@ const forced = (state: State) => (state === "rest" || state === "disabled" ? und
 const ButtonsSection = () => (
   <Element
     name="Button"
-    rule="Primary is a screen's one verb, secondary sits beside it, quiet is a way out; an icon button is a square secondary."
+    rule="Primary is a screen's one verb, secondary sits beside it, quiet is a way out; an icon button is a square secondary. A press that sends holds its button until the send settles, so it cannot send twice."
     sheet={
       <>
         <StateHeads />
@@ -310,6 +310,14 @@ const ButtonsSection = () => (
             )}
           />
         ))}
+        <span className="flex items-center gap-3">
+          <span data-lab-chrome className="text-xs text-white/50">
+            sends (held 2s):
+          </span>
+          <HudButton kind="primary" onClick={() => new Promise((resolve) => setTimeout(resolve, 2_000))}>
+            Swap
+          </HudButton>
+        </span>
         <StateRow
           label="with icon"
           render={(state) => (

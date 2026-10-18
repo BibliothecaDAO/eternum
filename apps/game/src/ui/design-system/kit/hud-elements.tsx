@@ -7,6 +7,7 @@ import {
   type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
   useContext,
   useEffect,
@@ -33,6 +34,31 @@ type Tone = "good" | "bad" | "warn";
 /** A price a button pays: its painting (or, with none, its word, as XP) and how much; named whole for assistive technology. */
 type HudPrice = { icon?: IconMeaning; word: string; amount: string };
 
+/**
+ * A press's send in flight: `press` runs the action unless a send it started is still pending, and while that promise
+ * is pending `now` is true. A failed send frees the press for a retry, its error left to whoever reports it.
+ */
+const useSending = () => {
+  const [now, setNow] = useState(false);
+  const inFlight = useRef(false);
+  const press = (action: () => unknown) => {
+    if (inFlight.current) return;
+    const sent = action();
+    if (!(sent instanceof Promise)) return;
+    inFlight.current = true;
+    setNow(true);
+    const settle = () => {
+      inFlight.current = false;
+      setNow(false);
+    };
+    sent.then(settle, (error: unknown) => {
+      settle();
+      throw error;
+    });
+  };
+  return { now, press };
+};
+
 /** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
 export const HudButton = forwardRef<
   HTMLButtonElement,
@@ -44,30 +70,37 @@ export const HudButton = forwardRef<
     busy?: string;
     /** What pressing it pays, after its word (Move: stamina and wheat). */
     prices?: readonly HudPrice[];
+    /** Its action. One that returns the send's promise holds the button until the send settles: no second press. */
+    onClick?: (event: MouseEvent<HTMLButtonElement>) => unknown;
     children?: ReactNode;
-  } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ kind, size = "md", icon, busy, prices = [], children, disabled, ...rest }, ref) => (
-  <button
-    ref={ref}
-    type="button"
-    {...rest}
-    disabled={disabled || busy !== undefined}
-    aria-busy={busy !== undefined || undefined}
-    className="ui-button"
-    data-kind={kind}
-    data-size={size}
-  >
-    {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
-    {busy ?? children}
-    {busy === undefined &&
-      prices.map((price) => (
-        <span key={price.word} className="ui-button__price" role="img" aria-label={`${price.amount} ${price.word}`}>
-          {price.icon ? <Icon name={price.icon} size={18} /> : <span>{price.word}</span>}
-          <span>{price.amount}</span>
-        </span>
-      ))}
-  </button>
-));
+  } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick">
+>(({ kind, size = "md", icon, busy, prices = [], children, disabled, onClick, ...rest }, ref) => {
+  const sending = useSending();
+  const waits = busy !== undefined || sending.now;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      {...rest}
+      disabled={disabled || waits}
+      aria-busy={waits || undefined}
+      className="ui-button"
+      data-kind={kind}
+      data-size={size}
+      onClick={(event) => sending.press(() => onClick?.(event))}
+    >
+      {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
+      {busy ?? children}
+      {busy === undefined &&
+        prices.map((price) => (
+          <span key={price.word} className="ui-button__price" role="img" aria-label={`${price.amount} ${price.word}`}>
+            {price.icon ? <Icon name={price.icon} size={18} /> : <span>{price.word}</span>}
+            <span>{price.amount}</span>
+          </span>
+        ))}
+    </button>
+  );
+});
 HudButton.displayName = "HudButton";
 
 /** A button that is only its painting, named for assistive technology and the app's tooltip. */
@@ -1207,7 +1240,8 @@ export const HudConfirm = ({
   verb: string;
   back?: string;
   tone?: "bad";
-  onConfirm: () => void;
+  /** The send; one that returns its promise holds the verb until it settles, as every HudButton does. */
+  onConfirm: () => unknown;
   onBack: () => void;
 }) => (
   <section className="ui ui-confirm" role="alertdialog" aria-label={question} data-tone={tone}>

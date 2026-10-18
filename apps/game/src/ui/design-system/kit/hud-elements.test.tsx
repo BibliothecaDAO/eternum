@@ -62,6 +62,86 @@ const menu = () => document.querySelector<HTMLElement>(".ui-select__layer .ui-me
 const key = (target: Element, name: string) =>
   act(() => target.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true })));
 
+describe("a button whose press sends", () => {
+  /** A press that sends, held open until the test settles it. */
+  const sender = () => {
+    let settle!: (failed: boolean) => void;
+    const send = vi.fn(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          settle = (failed) => (failed ? reject(new Error("refused")) : resolve());
+        }),
+    );
+    return { send, settle: (failed = false) => settle(failed) };
+  };
+  const press = () => act(() => host.querySelector<HTMLButtonElement>("button")!.click());
+
+  it.each([
+    ["sent", false],
+    ["refused", true],
+  ] as const)("sends once while its send is in flight, and again once it is %s", async (_, failed) => {
+    const { send, settle } = sender();
+    const errors: unknown[] = [];
+    const onUnhandled = (event: PromiseRejectionEvent | Error) => errors.push(event);
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      act(() =>
+        root.render(
+          <HudButton kind="primary" onClick={send}>
+            Swap
+          </HudButton>,
+        ),
+      );
+      press();
+      press();
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(host.querySelector("button")!.disabled).toBe(true);
+      expect(host.querySelector("button")!.getAttribute("aria-busy")).toBe("true");
+      await act(async () => {
+        settle(failed);
+        await Promise.resolve();
+      });
+      expect(host.querySelector("button")!.disabled).toBe(false);
+      press();
+      expect(send).toHaveBeenCalledTimes(2);
+      await act(async () => settle());
+    } finally {
+      await new Promise((resolve) => setTimeout(resolve));
+      process.off("unhandledRejection", onUnhandled);
+    }
+    // A refused send stays the caller's to report: the button frees itself and lets the error through.
+    expect(errors).toHaveLength(failed ? 1 : 0);
+  });
+
+  it("holds a confirm's verb the same way, and its way back stays open", async () => {
+    const { send, settle } = sender();
+    const back = vi.fn();
+    act(() => root.render(<HudConfirm question="Swap?" verb="Swap" onConfirm={send} onBack={back} />));
+    const button = (word: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === word)!;
+    act(() => button("Swap").click());
+    act(() => button("Swap").click());
+    expect(send).toHaveBeenCalledTimes(1);
+    act(() => button("Cancel").click());
+    expect(back).toHaveBeenCalledTimes(1);
+    await act(async () => settle());
+    expect(button("Swap").disabled).toBe(false);
+  });
+
+  it("acts on every press when it sends nothing", () => {
+    const toggle = vi.fn();
+    act(() =>
+      root.render(
+        <HudButton kind="secondary" onClick={toggle}>
+          Only mine
+        </HudButton>,
+      ),
+    );
+    press();
+    press();
+    expect(toggle).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("a select", () => {
   it("shows what is chosen, opens its list on a press with the chosen one focused, and chooses on a press", () => {
     const chose = vi.fn();
