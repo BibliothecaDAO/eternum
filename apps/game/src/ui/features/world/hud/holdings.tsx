@@ -5,8 +5,6 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { type LeftListFilter, useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon } from "@/ui/design-system/icon";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   StructureRealmActions,
@@ -18,7 +16,7 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "./holdings-model";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudField, HudIconButton, HudPanel, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { Medallion } from "./medallion";
 
 const hasLevels = (structure: StructureWithMetadata) => structure.realmLevelLabel !== null;
@@ -86,13 +84,12 @@ type Holdings = ReturnType<typeof useHoldings>;
 
 const HoldingSearch = ({ holdings }: { holdings: Holdings }) =>
   holdings.searchable ? (
-    <input
+    <HudField
       type="search"
       aria-label="Find a holding"
       placeholder="Find a holding…"
-      className="hud-search shrink-0"
       value={holdings.query}
-      onChange={(event) => holdings.setQuery(event.target.value)}
+      onChange={holdings.setQuery}
       onKeyDown={(event) => event.stopPropagation()}
     />
   ) : null;
@@ -109,26 +106,20 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
   return (
     <HudPanel
       title={kind ? `${kind.plural} · ${kind.count}` : "Holdings"}
-      className="flex max-h-[40vh] flex-col"
+      className="flex max-h-hud-list flex-col"
       bodyClassName="flex min-h-0 flex-col gap-1.5"
     >
       {holdings.kinds.length > 1 && (
-        <div role="tablist" aria-label="Holdings by kind" className="hud-tabs">
-          {holdings.kinds.map((entry) => (
-            <button
-              key={entry.kind}
-              type="button"
-              role="tab"
-              aria-selected={entry.kind === holdings.filter}
-              aria-label={`${entry.plural}, ${entry.count}`}
-              className="hud-tab"
-              onClick={() => holdings.setFilter(entry.kind)}
-            >
-              <Icon name={entry.icon} size={22} />
-              <span>{entry.count}</span>
-            </button>
-          ))}
-        </div>
+        <HudTabs
+          tabs={holdings.kinds.map((entry) => ({
+            key: entry.kind,
+            icon: entry.icon,
+            count: entry.count,
+            ariaLabel: `${entry.plural}, ${entry.count}`,
+          }))}
+          value={holdings.filter}
+          onChange={holdings.setFilter}
+        />
       )}
       <HoldingSearch holdings={holdings} />
       <div role="tabpanel" className="-mx-1 min-h-0 overflow-y-auto overscroll-contain px-1 scrollbar-thin">
@@ -167,44 +158,38 @@ const HoldingRow = memo(
     useEffect(() => {
       if (selected) row.current?.scrollIntoView({ block: "nearest" });
     }, [selected]);
-    const starWord = structure.isFavorite ? "Unpin from the top" : "Pin to the top";
     return (
-      <div
-        ref={row}
-        className={cn(
-          "flex h-10 w-full items-center gap-1.5 rounded-lg border px-1.5 transition-colors",
-          selected ? "border-gold/60 bg-gold/10" : "border-transparent hover:border-gold/30",
-        )}
-      >
-        <button
-          type="button"
-          aria-pressed={structure.isFavorite}
-          aria-label={starWord}
-          onClick={() => onStar(safeInteger(structure.entityId))}
-          className={cn(
-            "flex h-8 w-7 shrink-0 items-center justify-center transition-opacity",
-            structure.isFavorite ? "opacity-100" : "opacity-35 hover:opacity-70",
-          )}
-        >
-          <Icon name="star" size={18} />
-        </button>
-        <button
-          type="button"
-          aria-pressed={selected}
+      <div ref={row}>
+        <HudRow
+          selected={selected}
           onClick={() => onSelect(structure.entityId)}
-          className="flex h-full min-w-0 flex-1 items-center gap-2.5 text-left"
-        >
-          <Medallion
-            icon={holdingIcon(structure)}
-            size="sm"
-            tone={selected ? "lit" : "plain"}
-            corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
-          />
-          <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{structure.displayName}</span>
-        </button>
-        {structure.category === StructureType.Realm && (
-          <StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />
-        )}
+          lead={
+            <HudIconButton
+              icon="star"
+              kind="quiet"
+              size="sm"
+              label={structure.isFavorite ? "Unpin from the top" : "Pin to the top"}
+              aria-pressed={structure.isFavorite}
+              onClick={() => onStar(safeInteger(structure.entityId))}
+            />
+          }
+          title={
+            <span className="flex min-w-0 items-center gap-2.5">
+              <Medallion
+                icon={holdingIcon(structure)}
+                size="sm"
+                tone={selected ? "lit" : "plain"}
+                corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
+              />
+              <span className="min-w-0 truncate text-hud-strong">{structure.displayName}</span>
+            </span>
+          }
+          trail={
+            structure.category === StructureType.Realm ? (
+              <StructureRealmActions structureEntityId={structure.entityId} />
+            ) : null
+          }
+        />
       </div>
     );
   },
