@@ -34,6 +34,7 @@ const OUTSIDE = [
   "ui/shared/components/blitz-highlight-card.tsx",
   "ui/shared/components/blitz-leaderboard-card.tsx",
   "ui/shared/components/blitz-map-fingerprint-card.tsx",
+  "ui/features/game-review/score-card-content.tsx",
   "ui/shared/lib/blitz-card-shared.ts",
   "ui/shared/lib/share-image.ts",
 ].map((path) => `${APP}/${path}`);

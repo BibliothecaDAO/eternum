@@ -37,7 +37,6 @@
   "apps/game/src/ui/features/frontier/value/season-withdraw.tsx": 4,
   "apps/game/src/ui/features/frontier/value/withdraw-sheet.tsx": 13,
   "apps/game/src/ui/features/game-review/game-review-modal.tsx": 104,
-  "apps/game/src/ui/features/game-review/score-card-content.tsx": 8,
   "apps/game/src/ui/features/military/battle/battle-cooldown-timer.tsx": 2,
   "apps/game/src/ui/features/military/battle/battle-lab/action-footer.tsx": 19,
   "apps/game/src/ui/features/military/battle/battle-lab/army-column.tsx": 13,
