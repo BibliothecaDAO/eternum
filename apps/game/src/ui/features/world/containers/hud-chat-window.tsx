@@ -16,7 +16,7 @@ import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useRef } from "react";
 import { getActiveGame } from "@/runtime/world";
-import { isTypingTarget } from "@/utils/shortcuts/typing-target";
+import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
 /**
@@ -85,7 +85,7 @@ export function HudChatWindow({
         return;
       }
       if (event.key !== CHAT_SHORTCUT.key || open || event.repeat || event.defaultPrevented) return;
-      if (isTypingTarget(event.target)) return;
+      if (isKeyForSurface(event)) return;
       event.preventDefault();
       onOpenChange(true);
     };

@@ -34,6 +34,8 @@ const Keys = ({ idle = [], onWorldMap = true }: { idle?: number[]; onWorldMap?: 
   return (
     <>
       <IdleArmiesButton idle={idleArmies} />
+      <button type="button">A HUD button</button>
+      <div role="tab" tabIndex={0} aria-label="A tab" />
       <input aria-label="A field" />
       <select aria-label="A choice">
         <option>Smart</option>
@@ -106,6 +108,23 @@ describe("the desktop HUD's keys", () => {
     useNextUpShows.setState({ act: step });
     press(" ");
     expect(step).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves Space to a focused HUD button or tab, to press it, and keeps the letters working there", () => {
+    const step = vi.fn();
+    useNextUpShows.setState({ act: step });
+    act(() => root.render(<Keys />));
+    const spaces = [host.querySelector("button")!, host.querySelector('[role="tab"]')!].map((control) => {
+      const space = new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true });
+      act(() => {
+        control.dispatchEvent(space);
+      });
+      return space.defaultPrevented;
+    });
+    press("b", host.querySelector("button")!);
+    expect(spaces).toEqual([false, false]);
+    expect(step).not.toHaveBeenCalled();
+    expect(actions.build).toHaveBeenCalledTimes(1);
   });
 
   it("selects the next idle army with I or the Idle button on the world map", () => {

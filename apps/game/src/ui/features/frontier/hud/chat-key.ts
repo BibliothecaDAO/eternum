@@ -1,5 +1,5 @@
 import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
-import { isTypingTarget } from "@/utils/shortcuts/typing-target";
+import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
@@ -16,7 +16,7 @@ export const useChatKey = (openChat: () => void): RefObject<HTMLElement> => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== CHAT_SHORTCUT.key || event.repeat || event.defaultPrevented) return;
-      if (isTypingTarget(event.target)) return;
+      if (isKeyForSurface(event)) return;
       event.preventDefault();
       open.current();
       setPresses((count) => count + 1);
