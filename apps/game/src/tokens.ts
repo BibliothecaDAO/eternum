@@ -586,8 +586,11 @@ export const HUD_LAYOUT = {
   "frontier-side": "104px",
 } as const;
 
-/** The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both. */
-export const HUD_LAYERS = { column: "20", foot: "26", rail: "30" } as const;
+/**
+ * The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both; then what opens
+ * over the whole HUD: a popover or window, a menu over it, the app's one tooltip over everything.
+ */
+export const HUD_LAYERS = { column: "20", foot: "26", rail: "30", popover: "130", menu: "140", tip: "250" } as const;
 
 /** The HUD sheet's CSS variables: `--hud-<name>`, and each type role as `--hud-text-<role>`, `--hud-line-<role>`, `--hud-weight-<role>`. */
 export const hudVariables = (): Record<string, string> => ({

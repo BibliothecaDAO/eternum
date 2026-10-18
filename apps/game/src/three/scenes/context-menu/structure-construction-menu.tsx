@@ -4,6 +4,7 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction } from "@/types/context-menu";
 import type { ReactNode } from "react";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import { getRealmInfo, configManager, getEntityName, getIsBlitz, resolveUseSimpleCost } from "@bibliothecadao/eternum";
@@ -64,17 +65,10 @@ const militaryTierConfig: Array<{
 
 const toSlug = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-const createResourceIconComponent = (meaning: IconMeaning, isDisabled: boolean = false): ReactNode => (
-  <Icon
-    name={meaning}
-    size={24}
-    className={`pointer-events-none h-4 w-4 md:h-6 md:w-6 ${isDisabled ? "opacity-40 grayscale" : ""}`}
-  />
-);
+/** A building's painting as its menu item's lead; a disabled item dims it with the rest of the item. */
+const createResourceIconComponent = (meaning: IconMeaning): ReactNode => <Icon name={meaning} size={16} />;
 
-const createTierIconComponent = (tierLabel: string): ReactNode => (
-  <span className="pointer-events-none text-xs font-semibold uppercase text-gold">{tierLabel}</span>
-);
+const createTierIconComponent = (tierLabel: string): ReactNode => <HudChip>{tierLabel}</HudChip>;
 
 export const createConstructionMenu = ({
   structure,
@@ -158,7 +152,7 @@ export const createConstructionMenu = ({
       building,
       view: LeftView.ConstructionView,
       resource,
-      iconComponent: createResourceIconComponent(iconResource, !canBuild),
+      iconComponent: createResourceIconComponent(iconResource),
       disabled: !canBuild,
       hint: buildability.reason,
     });

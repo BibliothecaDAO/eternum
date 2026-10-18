@@ -1,32 +1,28 @@
-/* The map plates (map-plates.tsx, the owner's pick, map-labels rounds 2 to 5), in the HUD panel's family (InfoBubble:
-   the overlay surface, its gold hairline and shadow, Exo 2): the surface follows the mode's panels (--overlay-surface-*,
-   index.css). The side reads as the plate's left bar and its player's name: yours gold, an ally teal, an enemy red, an
-   unowned thing stone. Every word is 13 px or more; a row reads at 15. */
+/* The map plates (map-plates.tsx; map-labels rounds 2 to 6, the owner's pick) on the HUD sheet's tokens (tokens.ts
+   HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. The side reads as the
+   plate's left bar and its player's name: yours, an ally's, an enemy's, nobody's. Every reading is at the body size
+   and every row the same height (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"); a
+   place's name is told by its weight and the accent, a count by its weight, a label or a time by its colour. */
 .mp {
-  --mp-gold: 223, 170, 84;
-  --mp-own: #f3d08a;
-  --mp-ally: #7fd6cf;
-  --mp-enemy: #ff7b6b;
-  --mp-neutral: #b9b1a1;
   position: absolute;
   z-index: 2;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  font-family: "Exo 2", system-ui, sans-serif;
-  color: #f4ebdc;
+  font-family: var(--hud-font);
+  color: rgb(var(--hud-ink));
 }
 .mp [data-relation="own"] {
-  --mp-side: var(--mp-own);
+  --mp-side: var(--hud-own);
 }
 .mp [data-relation="ally"] {
-  --mp-side: var(--mp-ally);
+  --mp-side: var(--hud-ally);
 }
 .mp [data-relation="enemy"] {
-  --mp-side: var(--mp-enemy);
+  --mp-side: var(--hud-enemy);
 }
 .mp [data-relation="neutral"] {
-  --mp-side: var(--mp-neutral);
+  --mp-side: var(--hud-neutral);
 }
 
 .mp-at {
@@ -36,23 +32,21 @@
   will-change: transform;
 }
 
-/* The plate: the HUD panel's surface (OVERLAY_SURFACE_BASE) at a plate's size; its rows, most important first. */
+/* The plate: the HUD panel's surface at a plate's size; its rows, most important first. */
 .mp-plate {
   position: relative;
   display: flex;
   flex-direction: column;
   white-space: nowrap;
-  border: 1px solid rgba(var(--mp-gold), 0.25);
+  border: 1px solid var(--hud-line);
   border-left: 3px solid var(--mp-side);
-  border-radius: 8px;
-  background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to));
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(var(--mp-gold), 0.18);
+  border-radius: var(--hud-radius-control);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
   padding: 3px 8px 3px 6px;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-body);
+  line-height: var(--hud-line-body);
 }
 .mp-plate__row {
   display: flex;
@@ -69,36 +63,35 @@
 .mp-plate__meter {
   width: 36px;
   height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.14);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
 }
 .mp-plate__meter > i {
   display: block;
   height: 100%;
-  border-radius: 2px;
-  background: #66ddab;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-good);
 }
 
-/* The readings, in the panel's voice: a player in the side's colour; a place's own name as the panel's title (a step
-   larger, bold, gold); a kind in plain words; a label (rank, reward, state) in the panel's label gold; an id as its
-   small cue; a count in white. */
+/* The readings: a player in the side's colour, a place's own name in the accent, a kind in words, a label or a time
+   in the muted colour, a count by its weight. */
 .mp-owner {
   color: var(--mp-side);
+  font-weight: var(--hud-weight-title);
+}
+.mp-word {
+  font-weight: var(--hud-weight-title);
 }
 .mp-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: rgb(var(--mp-gold));
+  font-weight: var(--hud-weight-title);
+  color: rgb(var(--hud-accent));
 }
-.mp-label {
-  color: rgba(var(--mp-gold), 0.75);
-}
+.mp-label,
 .mp-cue {
-  font-size: 13px;
-  color: rgba(var(--mp-gold), 0.6);
+  color: var(--hud-muted);
 }
 .mp-count {
-  font-weight: 700;
+  font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
 }
 
@@ -113,13 +106,13 @@
   align-self: stretch;
   width: 1px;
   margin: 5px 0;
-  background: rgba(var(--mp-gold), 0.3);
+  background: var(--hud-line-strong);
 }
 /* The order an attacker meets guard slots in, read left to right. */
 .mp-next {
   margin: 0 2px;
-  color: rgba(var(--mp-gold), 0.8);
-  font-weight: 700;
+  color: var(--hud-muted);
+  font-weight: var(--hud-weight-strong);
 }
 
 /* A plate that found no room: the kind's painting in a disk ringed in the side's colour. */
@@ -130,17 +123,17 @@
   align-items: center;
   justify-content: center;
   border: 2px solid var(--mp-side);
-  border-radius: 9999px;
-  background: linear-gradient(180deg, var(--overlay-surface-from), var(--overlay-surface-to));
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  border-radius: var(--hud-radius-round);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-control);
 }
 
-/* Selected: a gold ring. A plate that would sit under an opened one steps aside. */
+/* Selected: a ring in the player's own colour. A plate that would sit under an opened one steps aside. */
 .mp [data-selected="true"] :is(.mp-plate, .mp-pin) {
-  border-color: var(--mp-own);
+  border-color: var(--hud-own);
   box-shadow:
-    0 0 0 2px rgba(243, 208, 138, 0.55),
-    0 0 14px rgba(243, 208, 138, 0.4);
+    0 0 0 2px var(--hud-own),
+    var(--hud-shadow-panel);
 }
 .mp [data-yields="true"] {
   opacity: 0;

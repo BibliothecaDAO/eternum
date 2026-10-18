@@ -16,8 +16,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-import "./hud-sheet.css";
-
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
  * (src/tokens.ts: HUD_TYPE, HUD_SHEET, HUD_MODES) by its classes (hud-sheet.css). A screen takes these and gives them
@@ -812,20 +810,39 @@ type MenuItem =
       kind?: "item";
       label: string;
       icon?: IconMeaning;
+      /** A painting the item brings itself (a building's art), in the icon's place. */
+      lead?: ReactNode;
       hint?: string;
+      /** A choice of a select; an action leaves it out. */
       checked?: boolean;
+      /** It opens a list of its own: a chevron at its end. */
+      opens?: boolean;
       disabled?: boolean;
       tone?: "bad";
       state?: string;
       onSelect?: () => void;
     };
 
-/** The list a select opens: each choice, the chosen one checked, a rule between groups. The map has no menu: a right-click acts. */
+/**
+ * A list of choices: the one a select opens (the chosen one checked), or the actions a right-click on your own
+ * structure lists (its name and place at its head, a way back from a list it opened). A rule between groups. The map
+ * has no menu of orders: a right-click on a tile acts.
+ */
 export const HudMenu = forwardRef<
   HTMLDivElement,
-  { items: readonly MenuItem[] } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "role" | "style">
->(({ items, ...rest }, ref) => (
-  <div ref={ref} {...rest} className="ui ui-menu" role="menu">
+  {
+    items: readonly MenuItem[];
+    head?: { title: string; place?: string; onBack?: () => void };
+  } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "role" | "style">
+>(({ items, head, ...rest }, ref) => (
+  <div ref={ref} {...rest} className="ui ui-menu" role="menu" aria-label={rest["aria-label"] ?? head?.title}>
+    {head && (
+      <div className="ui-menu__head">
+        {head.onBack && <HudIconButton icon="chevron-left" label="Back" kind="quiet" size="sm" onClick={head.onBack} />}
+        <span className="ui-menu__title">{head.title}</span>
+        {head.place && <span className="ui-menu__hint">{head.place}</span>}
+      </div>
+    )}
     {items.map((item, index) =>
       item.kind === "rule" ? (
         <span key={index} className="ui-menu__rule" role="separator" />
@@ -833,17 +850,19 @@ export const HudMenu = forwardRef<
         <button
           key={index}
           type="button"
-          role="menuitemradio"
+          role={item.checked === undefined ? "menuitem" : "menuitemradio"}
           className="ui-menu__item"
-          aria-checked={item.checked ?? false}
+          aria-checked={item.checked}
           disabled={item.disabled}
+          title={item.disabled ? item.hint : undefined}
           data-tone={item.tone}
           data-state={item.state}
           onClick={item.onSelect}
         >
-          {item.icon && <Icon name={item.icon} size={16} />}
-          {item.label}
-          {item.hint && <span className="ui-menu__hint">{item.hint}</span>}
+          {item.lead ?? (item.icon && <Icon name={item.icon} size={16} />)}
+          <span className="ui-menu__label">{item.label}</span>
+          {item.hint && !item.disabled && <span className="ui-menu__hint">{item.hint}</span>}
+          {item.opens && <Icon name="chevron-right" size={14} />}
         </button>
       ),
     )}

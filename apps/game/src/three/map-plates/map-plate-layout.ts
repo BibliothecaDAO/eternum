@@ -1,3 +1,5 @@
+import { CLASSIC_HUD_FONTS, HUD_TYPE } from "@/tokens";
+
 import { formatCount, type MapPlate } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
 
@@ -43,11 +45,14 @@ const PLATE_PADDING_Y = 6;
 const PLATE_PADDING_X = 6 + 8 + 3 + 1;
 const READING_GAP = 6;
 
+/** The plate's faces, as map-plates.css draws them from the HUD sheet: every reading at the body size, told by weight. */
+const face = (role: keyof typeof HUD_TYPE, weight: keyof typeof HUD_TYPE = role) =>
+  `${HUD_TYPE[weight].weight} ${HUD_TYPE[role].size} ${CLASSIC_HUD_FONTS.ui}`;
 const FONTS = {
-  body: '600 15px "Exo 2"',
-  title: '700 16px "Exo 2"',
-  cue: '600 13px "Exo 2"',
-  chip: '700 12px "Exo 2"',
+  body: face("body"),
+  title: face("body", "title"),
+  count: face("body", "strong"),
+  chip: face("label"),
 } as const;
 
 /** A text's drawn width in one of the plate's faces. */
@@ -56,7 +61,7 @@ const measure = (() => {
   return (text: string, font: keyof typeof FONTS) => {
     if (context === undefined)
       context = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
-    if (!context) return text.length * (font === "cue" ? 7 : 8.5);
+    if (!context) return text.length * 8;
     context.font = FONTS[font];
     return context.measureText(text).width;
   };
@@ -70,27 +75,27 @@ const CHIP_PADDING = 10;
 
 const segmentWidth = (segment: PlateSegment): number => {
   switch (segment.kind) {
+    case "label":
+    case "cue":
+      return measure(segment.text, "body");
     case "owner":
     case "word":
-    case "label":
-    case "count":
-      return measure(segment.text, "body");
     case "title":
       return measure(segment.text, "title");
-    case "cue":
-      return measure(segment.text, "cue");
+    case "count":
+      return measure(segment.text, "count");
     case "troops":
       return (
         TROOP_PAINTING +
         measure(`T${segment.troops.tier}`, "chip") +
         CHIP_PADDING +
-        measure(formatCount(segment.troops.count), "body") +
+        measure(formatCount(segment.troops.count), "count") +
         2 * 4
       );
     case "stamina":
       return STAMINA_BAR + READING_GAP + measure(`${formatCount(segment.current)}/${formatCount(segment.max)}`, "body");
     case "next":
-      return measure("›", "body") + 4;
+      return measure("›", "count") + 4;
     case "divider":
       return 1;
   }

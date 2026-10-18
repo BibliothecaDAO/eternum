@@ -831,52 +831,6 @@ button.ui-relic:focus-visible {
   color: var(--hud-bad);
 }
 
-/* ── Map plates (three/map-plates): the plates take their face from these tokens. ── */
-.ui .mp {
-  --mp-gold: var(--hud-accent);
-  --mp-own: var(--hud-own);
-  --mp-ally: var(--hud-ally);
-  --mp-enemy: var(--hud-enemy);
-  --mp-neutral: var(--hud-neutral);
-  --overlay-surface-from: var(--hud-surface-from);
-  --overlay-surface-to: var(--hud-surface-to);
-}
-/* The plates' type: every reading at the body size and every row the same height, so no row reads smaller than the
-   one above it (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"). A place's name is
-   told by its weight and the age's accent, a count by its weight, a rank, an id, a reward or a time by its colour. */
-.ui .mp-plate {
-  font-family: var(--hud-font);
-  font-size: var(--hud-text-body);
-  font-weight: var(--hud-weight-body);
-  line-height: var(--hud-line-body);
-}
-.ui .mp-plate__row {
-  height: var(--hud-line-body);
-  min-height: 24px;
-}
-.ui .mp-plate :is(.mp-title, .mp-word, .mp-owner, .mp-label, .mp-cue, .mp-count) {
-  font-size: var(--hud-text-body);
-}
-.ui .mp-title {
-  font-weight: var(--hud-weight-title);
-  color: rgb(var(--hud-accent));
-}
-.ui .mp-owner,
-.ui .mp-word {
-  font-weight: var(--hud-weight-title);
-}
-.ui .mp-label,
-.ui .mp-cue {
-  font-weight: var(--hud-weight-body);
-  color: var(--hud-muted);
-}
-.ui .mp-count {
-  font-weight: var(--hud-weight-strong);
-}
-.ui .mp-divider {
-  background: var(--hud-line-strong);
-}
-
 /* ── Window footer: what the task costs or says on the left, its way out and its one verb on the right, the verb last. */
 .ui-window__foot:empty {
   display: none;
@@ -1078,6 +1032,33 @@ button.ui-relic:focus-visible {
   margin-left: auto;
   color: var(--hud-cue);
   font-size: var(--hud-text-label);
+}
+.ui-menu__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border-bottom: 1px solid var(--hud-divider);
+  margin-bottom: theme(spacing.1);
+  padding: theme(spacing.1) theme(spacing.2);
+}
+.ui-menu__title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-menu__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ui-menu__rule {
   height: 1px;

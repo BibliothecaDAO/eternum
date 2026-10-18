@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import "./index.css";
+// The HUD sheet's classes, read by its elements and by the few app-wide surfaces drawn in its look (the tooltip).
+import "./ui/design-system/kit/hud-sheet.css";
 import { PwaUpdateRuntime } from "./pwa/pwa-update-prompt";
 import { SceneRoute } from "./scene-route";
 import { PwaInstallRuntime } from "./pwa/pwa-install-control";

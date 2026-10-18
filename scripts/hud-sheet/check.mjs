@@ -70,7 +70,8 @@ const TAILWIND_COLORS = [
 const COLOR_UTILITY =
   "(?:bg|text|border(?:-[xytrblse])?|from|via|to|ring(?:-offset)?|outline|fill|stroke|decoration|divide|caret|accent|placeholder|shadow)";
 
-const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\(/g;
+/** A literal colour; a sheet colour read through its channels (`rgb(var(--hud-accent))`) is the sheet's own. */
+const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\((?!var\(--hud-)/g;
 
 /**
  * Each rule, by the value it refuses. `colors` are the Tailwind config's colour names (`gold`, `danger`, the shell's

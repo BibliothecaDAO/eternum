@@ -1,7 +1,4 @@
 {
-  "apps/game/src/three/map-plates/map-plates.css": 21,
-  "apps/game/src/three/scenes/context-menu/structure-construction-menu.tsx": 3,
-  "apps/game/src/three/scenes/worldmap-order-tip.tsx": 2,
   "apps/game/src/ui/design-system/atoms/button.tsx": 69,
   "apps/game/src/ui/design-system/atoms/checkbox.tsx": 6,
   "apps/game/src/ui/design-system/atoms/hud-typography.ts": 20,
@@ -30,7 +27,6 @@
   "apps/game/src/ui/design-system/molecules/stamina-resource-cost.tsx": 6,
   "apps/game/src/ui/design-system/molecules/structure-select.tsx": 8,
   "apps/game/src/ui/design-system/molecules/structure-workspace.tsx": 3,
-  "apps/game/src/ui/design-system/molecules/tooltip.tsx": 6,
   "apps/game/src/ui/features/economy/banking/add-liquidity.tsx": 6,
   "apps/game/src/ui/features/economy/banking/bank-list.tsx": 2,
   "apps/game/src/ui/features/economy/banking/confirmation-popup.tsx": 4,
@@ -202,7 +198,6 @@
   "apps/game/src/ui/features/world/components/biome-info-panel.tsx": 44,
   "apps/game/src/ui/features/world/components/bottom-right-panel/bottom-right-panel.tsx": 73,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 9,
-  "apps/game/src/ui/features/world/components/context-menu/context-menu.tsx": 9,
   "apps/game/src/ui/features/world/components/entities/active-relic-effects.tsx": 55,
   "apps/game/src/ui/features/world/components/entities/banner/army-banner-entity-detail.tsx": 35,
   "apps/game/src/ui/features/world/components/entities/banner/entity-banner-tab-cue.tsx": 30,

@@ -18,12 +18,8 @@ const TOP_EDGE_PX = 96;
 
 type Named = { anchor: HTMLElement; line: string };
 
-/** A name on the tooltip: one line where it fits, wrapped inside a phone's width where it does not. */
-export const TipLine = ({ line }: { line: string }) => (
-  <span className="block max-w-[min(24rem,calc(100vw-3.5rem))] text-center font-sans text-sm font-semibold leading-snug text-kit-cream">
-    {line}
-  </span>
-);
+/** A name on the tooltip, in the HUD sheet's tip line (the tooltip wraps it inside a phone's width). */
+export const TipLine = ({ line }: { line: string }) => <span className="ui-tip__line">{line}</span>;
 
 const squeezed = (words: string) => words.replace(/\s+/g, "").toLowerCase();
 

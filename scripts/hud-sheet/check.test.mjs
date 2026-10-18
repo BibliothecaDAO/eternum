@@ -10,7 +10,8 @@ const matches = (source) => findViolations(source, "x.tsx", COLORS, STEPS).map((
 test("a HUD file drawn only with the sheet passes", () =>
   assert.deepEqual(
     matches(`<HudPanel title="Military"><span className="text-hud-body text-hud-muted border-hud-line flex gap-2 bg-transparent">
-      <div className="border-b" /></span></HudPanel>`),
+      <div className="border-b" /></span></HudPanel>
+.mp-title { color: rgb(var(--hud-accent)); }`),
     [],
   ));
 

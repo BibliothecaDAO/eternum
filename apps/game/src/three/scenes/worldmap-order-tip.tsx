@@ -72,9 +72,7 @@ function showOrderTip(tip: PlacedOrderTip | null): void {
     content: (
       <>
         <TipLine line={tip.line} />
-        {tip.gestures && (
-          <span className="block text-center font-sans text-[11px] leading-snug text-kit-muted">{tip.gestures}</span>
-        )}
+        {tip.gestures && <span className="ui-tip__how">{tip.gestures}</span>}
       </>
     ),
     fixed: {
