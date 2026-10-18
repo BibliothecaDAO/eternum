@@ -35,6 +35,7 @@ import {
   HudPanel,
   HudPill,
   HudPortrait,
+  HudRelic,
   HudRing,
   HudRow,
   HudSelect,
@@ -175,6 +176,7 @@ export const StyleSheetLab = () => {
               <PanelSection />
               <TabsSection />
               <ChipsSection />
+              <RelicSection />
               <RingSection />
               <MeterSection />
               <RowsSection />
@@ -961,6 +963,50 @@ const TabsSection = () => {
     />
   );
 };
+
+const RelicSection = () => (
+  <Element
+    name="Relic"
+    rule="A relic: its painting, what it gives in its kind's colour, then its time (in a tone when it runs short) or how many are held."
+    sheet={
+      <div className="flex flex-col items-start gap-2">
+        <HudRelic
+          icon={resourceMeaning(ResourcesIds.StaminaRelic1)}
+          kind="stamina"
+          gives="Stamina I · +20% regen"
+          trail="3h 12m"
+          trailTone="good"
+        />
+        <HudRelic
+          icon={resourceMeaning(ResourcesIds.DamageRelic1)}
+          kind="damage"
+          gives="Damage I · +20%"
+          trail="4m"
+          trailTone="bad"
+        />
+        <HudRelic
+          icon={resourceMeaning(ResourcesIds.DamageRelic1)}
+          kind="damage-reduction"
+          gives="Guard I · −20%"
+          trail="×2"
+        />
+        <HudRelic
+          icon={resourceMeaning(ResourcesIds.StaminaRelic1)}
+          kind="exploration"
+          gives="Scout I"
+          trail="45m"
+          trailTone="warn"
+        />
+        <HudRelic icon={resourceMeaning(ResourcesIds.StaminaRelic1)} kind="production" gives="Harvest I · +20%" />
+      </div>
+    }
+    today={
+      <span className="ui-row__detail">
+        The game draws its own relic chips (active-relic-effects, compact inventory).
+      </span>
+    }
+  />
+);
 
 const ChipsSection = () => (
   <Element

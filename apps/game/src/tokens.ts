@@ -453,6 +453,12 @@ export const HUD_SHEET = {
   "group-4": "#60a5fa",
   "group-5": "#818cf8",
   "group-6": "#a78bfa",
+  /** Each kind of relic, what it works on: its chip's words, line and ground take this colour. */
+  "relic-stamina": "#4ade80",
+  "relic-damage": "#f87171",
+  "relic-damage-reduction": "#60a5fa",
+  "relic-exploration": "#c084fc",
+  "relic-production": "#facc15",
   /** Troop tiers, as channels: T1 blue, T2 green, T3 purple. */
   t1: "96 165 250",
   t2: "52 211 153",

@@ -720,6 +720,61 @@ span.ui-row__choose {
   background: var(--hud-well);
 }
 
+/* ── Relic: a relic's painting, what it gives in its kind's colour, and its time or count. ── */
+.ui-relic {
+  --relic: var(--hud-relic-stamina);
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid color-mix(in srgb, var(--relic) 35%, transparent);
+  border-radius: var(--hud-radius-control);
+  background: color-mix(in srgb, var(--relic) 14%, transparent);
+  padding: theme(spacing.1) theme(spacing.2);
+}
+.ui-relic[data-kind="damage"] {
+  --relic: var(--hud-relic-damage);
+}
+.ui-relic[data-kind="damage-reduction"] {
+  --relic: var(--hud-relic-damage-reduction);
+}
+.ui-relic[data-kind="exploration"] {
+  --relic: var(--hud-relic-exploration);
+}
+.ui-relic[data-kind="production"] {
+  --relic: var(--hud-relic-production);
+}
+.ui-relic > img {
+  flex: none;
+}
+.ui-relic__gives {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--relic);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-line-strong);
+  font-weight: var(--hud-weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-relic__trail {
+  flex: none;
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+  font-variant-numeric: tabular-nums;
+}
+.ui-relic__trail[data-tone="good"] {
+  color: var(--hud-good);
+}
+.ui-relic__trail[data-tone="warn"] {
+  color: var(--hud-warn);
+}
+.ui-relic__trail[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+
 /* ── Map plates (three/map-plates): the plates take their face from these tokens. ── */
 .ui .mp {
   --mp-gold: var(--hud-accent);

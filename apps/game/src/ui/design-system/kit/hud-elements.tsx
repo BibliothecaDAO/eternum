@@ -1014,6 +1014,40 @@ export const HudMeter = ({
   </span>
 );
 
+/** What a relic works on: its chip takes that kind's colour. */
+export type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";
+
+/**
+ * A relic: its painting, what it gives (its name, its bonus) in its kind's colour, then how long it still works or how
+ * many are held, in a tone when time runs short; named in full on hover. Sized to read on screen (the owner, 18 October
+ * 2026: "bigger so we can actually read it").
+ */
+export const HudRelic = ({
+  icon,
+  kind,
+  gives,
+  trail,
+  trailTone,
+  title,
+}: {
+  icon: IconMeaning;
+  kind: RelicKind;
+  gives: ReactNode;
+  trail?: ReactNode;
+  trailTone?: Tone;
+  title?: string;
+}) => (
+  <span className="ui-relic" data-kind={kind} title={title}>
+    <Icon name={icon} size={28} />
+    <span className="ui-relic__gives">{gives}</span>
+    {trail !== undefined && (
+      <span className="ui-relic__trail" data-tone={trailTone}>
+        {trail}
+      </span>
+    )}
+  </span>
+);
+
 /** An answer on its way: a spinner and what is awaited. */
 export const HudLoading = ({ line }: { line: string }) => (
   <span className="ui-loading" role="status">
