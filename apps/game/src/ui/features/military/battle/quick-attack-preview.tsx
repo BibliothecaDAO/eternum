@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
@@ -6,8 +5,7 @@ import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import Button from "@/ui/design-system/atoms/button";
-import { Checkbox } from "@/ui/design-system/atoms/checkbox";
+import { HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -425,18 +423,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return Math.round(value).toLocaleString();
   };
 
-  const renderDetailsButton = (extraClassName?: string) => (
-    <Button
-      variant="outline"
-      size="md"
-      onClick={handleShowDetails}
-      forceUppercase={false}
-      className={cn("px-3 py-1 text-hud-label tracking-wide", extraClassName)}
-    >
-      Details
-    </Button>
-  );
-
   const casualtyLine = (label: string, side: SideRange) => {
     const survival = survivalOf(side);
     return (
@@ -445,7 +431,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           <span className="text-hud-label text-hud-muted">{label}</span>
           <span
             className={cn(
-              "text-hud-label text-hud-cue",
+              "text-hud-label",
               survival === "Eliminated" ? "text-hud-bad" : survival === "Survives" ? "text-hud-good" : "text-hud-warn",
             )}
           >
@@ -473,17 +459,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
-    <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-hud-accent">
+    <div className="w-72 max-w-full px-3 py-2.5">
       <div className="mb-1.5 flex items-start justify-between gap-2">
-        <span className={cn("min-w-0 break-words", "text-hud-label text-hud-muted")}>{title}</span>
-        <button
-          type="button"
-          aria-label="Close attack preview"
-          className="shrink-0 rounded-full border border-hud-line bg-transparent p-1 text-hud-accent transition hover:bg-hud-hover"
-          onClick={closeSurface}
-        >
-          <SemanticIcon name="close" className="h-3 w-3" />
-        </button>
+        <span className="min-w-0 break-words text-hud-label text-hud-muted">{title}</span>
+        <HudIconButton icon="close" label="Close attack preview" kind="quiet" onClick={closeSurface} />
       </div>
 
       {isLoading ? (
@@ -507,11 +486,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               </>
             )
           ) : (
-            <div className="rounded-md border border-hud-good bg-emerald-900/20 px-3 py-2 text-hud-body text-hud-good">
-              {rangedClaimBlocked
-                ? "No defending troops. Move adjacent to claim this structure."
-                : "No defending troops. You can claim without resistance."}
-            </div>
+            <HudNotice
+              tone="good"
+              line={
+                rangedClaimBlocked
+                  ? "No defending troops. Move adjacent to claim this structure."
+                  : "No defending troops. You can claim without resistance."
+              }
+            />
           )}
 
           {isStructureTarget && totalGuardCount >= 1 && (
@@ -526,15 +508,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
                     <TierChip tier={slot.tier} />
                     <ResourceIcon withTooltip={false} resource={slot.resourceId} size="sm" className="shrink-0" />
                     <span
-                      className={cn(
-                        "tabular-nums",
-                        "text-hud-strong",
-                        slot.eliminated && "text-hud-bad line-through decoration-red-300/60",
-                      )}
+                      className={cn("tabular-nums", "text-hud-strong", slot.eliminated && "text-hud-bad line-through")}
                     >
                       {formatTroopValue(slot.remaining)}
                     </span>
-                    {slot.isActive && <span className={cn("ml-auto", "text-hud-label text-hud-cue")}>Active</span>}
+                    {slot.isActive && <span className="ml-auto text-hud-label text-hud-cue">Active</span>}
                   </li>
                 ))}
               </ul>
@@ -542,60 +520,58 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           )}
 
           {attackDisabled && (
-            <div className="rounded-md border border-hud-bad bg-red-900/20 px-3 py-2 text-hud-label text-hud-bad">
-              <span>{attackButtonLabel}</span>
-              {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-hud-label text-hud-muted">
-                  {formatTime(attackerCooldownRemaining)} remaining
-                </div>
-              )}
-              {isLowStamina && (
-                <div className="mt-1 text-hud-label text-hud-muted">
-                  <div>
-                    Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
-                  </div>
-                  {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
-                </div>
-              )}
-            </div>
+            <HudNotice
+              tone="bad"
+              line={attackButtonLabel}
+              why={
+                [
+                  cooldownBlocksAttack && attackerCooldownRemaining > 0
+                    ? `${formatTime(attackerCooldownRemaining)} remaining`
+                    : null,
+                  isLowStamina ? `Current: ${attackerStaminaValue ?? "—"} / Required: ${requiredAttackStamina}` : null,
+                  isLowStamina && staminaWaitSeconds !== null ? `Ready in: ${formatTime(staminaWaitSeconds)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              }
+            />
           )}
         </div>
       )}
 
       {canGarrison && (
         <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-hud-line bg-hud-well px-3 py-2">
-          <Checkbox
-            enabled={garrisonEnabled}
-            onClick={() => setGarrisonEnabled((enabled) => !enabled)}
-            text="Garrison survivors"
-          />
-          <span className={cn("tabular-nums", "text-hud-strong")}>{formatTroopValue(garrisonTroopCount)}</span>
+          <label className="flex items-center gap-2 text-hud-body">
+            <HudCheck checked={garrisonEnabled} label="Garrison survivors" onChange={setGarrisonEnabled} />
+            Garrison survivors
+          </label>
+          <span className="tabular-nums text-hud-strong">{formatTroopValue(garrisonTroopCount)}</span>
         </div>
       )}
 
       {certainLoss && (
-        <p
-          role="status"
-          className="modal-no-drag mt-2 rounded-md border border-hud-bad bg-red-500/10 px-3 py-1.5 text-hud-body text-hud-bad"
-        >
-          Certain loss: your army is wiped out at any roll
-          {survivalAdvice ? ` · ${survivalAdvice}` : ""}.
-        </p>
+        <div className="modal-no-drag mt-2">
+          <HudNotice
+            tone="bad"
+            line="Certain loss: your army is wiped out at any roll."
+            why={survivalAdvice ? `${survivalAdvice[0].toUpperCase()}${survivalAdvice.slice(1)}.` : undefined}
+          />
+        </div>
       )}
 
       <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
-        <Button
-          variant={certainLoss ? "outline" : "gold"}
-          size="md"
-          disabled={attackDisabled || !targetData || isLoading}
-          isLoading={isSubmitting}
+        <HudButton kind="secondary" onClick={handleShowDetails}>
+          Details
+        </HudButton>
+        {/* A certain loss steps Attack back to secondary: the forecast, not the button, is the point. */}
+        <HudButton
+          kind={certainLoss ? "secondary" : "primary"}
+          disabled={attackDisabled || !targetData || isLoading || isSubmitting}
+          aria-busy={isSubmitting}
           onClick={handlePrimaryAction}
-          forceUppercase={false}
-          className="px-3 py-1 text-hud-label tracking-wide"
         >
           {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
-        </Button>
-        {renderDetailsButton()}
+        </HudButton>
       </div>
     </div>
   );

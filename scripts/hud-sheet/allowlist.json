@@ -35,7 +35,6 @@
   "apps/game/src/ui/features/military/battle/battle-lab/combat-parameters-panel.tsx": 2,
   "apps/game/src/ui/features/military/battle/battle-lab/outcome-banner.tsx": 3,
   "apps/game/src/ui/features/military/battle/battle-lab/outcome-strip.tsx": 3,
-  "apps/game/src/ui/features/military/battle/quick-attack-preview.tsx": 6,
   "apps/game/src/ui/features/military/components/compact-defense-display.tsx": 2,
   "apps/game/src/ui/features/military/components/deployment-strength-summary.tsx": 4,
   "apps/game/src/ui/features/military/components/guard-cooldown-badge.tsx": 1,
