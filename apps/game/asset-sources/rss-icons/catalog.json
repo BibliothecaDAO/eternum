@@ -1,29 +1,598 @@
 {
-  "base": "3f73b3d02af62085018e97bf6735a78e051d9e44",
+  "base": "de5f14a894effcfa0323f932b0aa234a0ccdcda3",
   "loreSource": "packages/types/src/constants/resources.ts; packages/types/src/constants/relics.ts",
-  "method": "Visual audit at 40, 20 and 16 CSS px; risk judgements, not measured player confusion rates.",
-  "proposals": [
+  "method": "Template review at 16, 24, 32 and 40 CSS px. Visual judgements, not measured player error rates.",
+  "categories": [
+    {
+      "id": "provisions",
+      "name": "Provisions",
+      "template": {
+        "silhouette": "One upright tied bundle, broad oval head and narrow tied waist; wheat and fish keep the same bundle envelope.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "wheat",
+          "color": "#d9a94b",
+          "feature": "three broad grain heads"
+        },
+        {
+          "meaning": "fish",
+          "color": "#4fa6a9",
+          "feature": "one silver belly band"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-wheat",
+          "meanings": [
+            "wheat"
+          ]
+        },
+        {
+          "art": "template-fish",
+          "meanings": [
+            "fish"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "timber",
+      "name": "Timber",
+      "template": {
+        "silhouette": "One short horizontal cut log tilted 20 degrees upward to the right; large circular cut face on the lower left.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "wood",
+          "color": "#b97a3d",
+          "feature": "two broad growth rings"
+        },
+        {
+          "meaning": "ironwood",
+          "color": "#614646",
+          "feature": "one metallic grain seam"
+        },
+        {
+          "meaning": "hartwood",
+          "color": "#aa404b",
+          "feature": "a large red sap heart"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-wood",
+          "meanings": [
+            "wood"
+          ]
+        },
+        {
+          "art": "template-hartwood",
+          "meanings": [
+            "hartwood"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ore",
+      "name": "Rock and ore",
+      "template": {
+        "silhouette": "One squat angular chunk with a low roof, one broad fractured face and no separate chips; roughly square envelope.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses; stone mid-light, coal very dark with one broad readable highlight.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "stone",
+          "color": "#b4aca0",
+          "feature": "a pale cleft face"
+        },
+        {
+          "meaning": "coal",
+          "color": "#323a43",
+          "feature": "one broken silver-grey glint"
+        },
+        {
+          "meaning": "obsidian",
+          "color": "#33223d",
+          "feature": "a sharp glassy fracture"
+        },
+        {
+          "meaning": "ignium",
+          "color": "#d76632",
+          "feature": "one broad orange heat seam"
+        },
+        {
+          "meaning": "cold-iron",
+          "color": "#7b9fae",
+          "feature": "a frosted blue fissure"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-stone",
+          "meanings": [
+            "stone"
+          ]
+        },
+        {
+          "art": "template-coal",
+          "meanings": [
+            "coal"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "metals",
+      "name": "Metals",
+      "template": {
+        "silhouette": "One wide trapezoid ingot, upper face visible, long axis horizontal and near edge down-left; no stack.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "copper",
+          "color": "#c47748",
+          "feature": "one green oxide notch"
+        },
+        {
+          "meaning": "gold",
+          "color": "#d8ac46",
+          "feature": "a broad warm reflection"
+        },
+        {
+          "meaning": "silver",
+          "color": "#c4d3df",
+          "feature": "one clean pale bevel"
+        },
+        {
+          "meaning": "mithral",
+          "color": "#81bddd",
+          "feature": "a suspended core in the centre"
+        },
+        {
+          "meaning": "adamantine",
+          "color": "#345b62",
+          "feature": "one dark containment seam"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-copper",
+          "meanings": [
+            "copper"
+          ]
+        },
+        {
+          "art": "template-silver",
+          "meanings": [
+            "silver"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crystals",
+      "name": "Crystals",
+      "template": {
+        "silhouette": "One upright hexagonal prism, blunt pointed top, three broad vertical planes and a flat lower end; no cluster.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "ruby",
+          "color": "#b92d43",
+          "feature": "a deep red core"
+        },
+        {
+          "meaning": "diamonds",
+          "color": "#d1dcf5",
+          "feature": "one white clear window"
+        },
+        {
+          "meaning": "sapphire",
+          "color": "#3260b5",
+          "feature": "a deep blue core"
+        },
+        {
+          "meaning": "deep-crystal",
+          "color": "#8755ad",
+          "feature": "one dark hollow centre"
+        },
+        {
+          "meaning": "twilight-quartz",
+          "color": "#632c83",
+          "feature": "a broad purple growth seam"
+        },
+        {
+          "meaning": "true-ice",
+          "color": "#91d4dd",
+          "feature": "one opaque frost band"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-ruby",
+          "meanings": [
+            "ruby"
+          ]
+        },
+        {
+          "art": "template-true-ice",
+          "meanings": [
+            "true-ice"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fragments",
+      "name": "Rare fragments",
+      "template": {
+        "silhouette": "One broad curved teardrop shard, pointed upper-right and rounded lower-left; convex face with one central ridge.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "ethereal-silica",
+          "color": "#54af97",
+          "feature": "one open light-bending slit"
+        },
+        {
+          "meaning": "dragonhide",
+          "color": "#b74956",
+          "feature": "one raised scale ridge"
+        },
+        {
+          "meaning": "fragment",
+          "color": "#d09340",
+          "feature": "one chipped dark corner"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-ethereal-silica",
+          "meanings": [
+            "ethereal-silica"
+          ]
+        },
+        {
+          "art": "template-dragonhide",
+          "meanings": [
+            "dragonhide"
+          ]
+        },
+        {
+          "art": "template-fragment",
+          "meanings": [
+            "fragment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reagents",
+      "name": "Reagents",
+      "template": {
+        "silhouette": "One squat round glass vial with short narrow neck and a plain stopper; liquid fills the lower two thirds.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "alchemical-silver",
+          "color": "#b9cbd0",
+          "feature": "a bright pooled metal swirl"
+        },
+        {
+          "meaning": "essence",
+          "color": "#a353b3",
+          "feature": "one large magenta drop"
+        },
+        {
+          "meaning": "research",
+          "color": "#4bafba",
+          "feature": "one suspended pale crystal"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-essence",
+          "meanings": [
+            "essence"
+          ]
+        },
+        {
+          "art": "template-research",
+          "meanings": [
+            "research"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "people",
+      "name": "People and troops",
+      "template": {
+        "silhouette": "One near-frontal shoulder bust cropped at mid-chest; head centred above broad shoulders, one role tool at the right.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: head, shoulder mass, one role tool. Facial features and trim are expendable.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "labor",
+          "color": "#b78d54",
+          "feature": "worker cap and wooden mallet"
+        },
+        {
+          "meaning": "knight-t1",
+          "color": "#955343",
+          "feature": "leather and plain iron helmet"
+        },
+        {
+          "meaning": "knight-t2",
+          "color": "#884a50",
+          "feature": "steel plate and closed visor"
+        },
+        {
+          "meaning": "knight-t3",
+          "color": "#c76b5e",
+          "feature": "rich plate and broad crest"
+        },
+        {
+          "meaning": "crossbowman-t1",
+          "color": "#747a42",
+          "feature": "leather cap and crossbow"
+        },
+        {
+          "meaning": "crossbowman-t2",
+          "color": "#467e65",
+          "feature": "steel kettle helmet and crossbow"
+        },
+        {
+          "meaning": "crossbowman-t3",
+          "color": "#6aaf8c",
+          "feature": "rich steel and reinforced crossbow"
+        },
+        {
+          "meaning": "paladin-t1",
+          "color": "#b3a784",
+          "feature": "chainmail and plain holy crest"
+        },
+        {
+          "meaning": "paladin-t2",
+          "color": "#d4ccb0",
+          "feature": "ivory plate and broad holy crest"
+        },
+        {
+          "meaning": "paladin-t3",
+          "color": "#eee5cb",
+          "feature": "rich ivory plate and tall holy crest"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-labor",
+          "meanings": [
+            "labor"
+          ]
+        },
+        {
+          "art": "template-knight-t2",
+          "meanings": [
+            "knight-t2"
+          ]
+        },
+        {
+          "art": "template-crossbowman-t2",
+          "meanings": [
+            "crossbowman-t2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "relics",
+      "name": "Relics",
+      "template": {
+        "silhouette": "One freestanding chunky effect symbol. No tablet, medallion or aura. All tiers use the same symbol with an external I / II mark.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16/24 px stress-test only. At 32 px: one unmistakable symbol, at most three internal shapes. Tier mark remains outside.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "stamina-relic-1",
+          "color": "#e9aa32",
+          "feature": "lightning bolt; tier I"
+        },
+        {
+          "meaning": "stamina-relic-2",
+          "color": "#e9aa32",
+          "feature": "lightning bolt; tier II"
+        },
+        {
+          "meaning": "damage-relic-1",
+          "color": "#c34e43",
+          "feature": "sword; tier I"
+        },
+        {
+          "meaning": "damage-relic-2",
+          "color": "#c34e43",
+          "feature": "sword; tier II"
+        },
+        {
+          "meaning": "damage-reduction-relic-1",
+          "color": "#397dcc",
+          "feature": "shield; tier I"
+        },
+        {
+          "meaning": "damage-reduction-relic-2",
+          "color": "#397dcc",
+          "feature": "shield; tier II"
+        },
+        {
+          "meaning": "exploration-relic-1",
+          "color": "#6caf5a",
+          "feature": "eye; tier I"
+        },
+        {
+          "meaning": "exploration-relic-2",
+          "color": "#6caf5a",
+          "feature": "eye; tier II"
+        },
+        {
+          "meaning": "exploration-reward-relic-1",
+          "color": "#a467a5",
+          "feature": "treasure chest; tier I"
+        },
+        {
+          "meaning": "exploration-reward-relic-2",
+          "color": "#a467a5",
+          "feature": "treasure chest; tier II"
+        },
+        {
+          "meaning": "structure-damage-reduction-relic-1",
+          "color": "#abc4dd",
+          "feature": "tower; tier I"
+        },
+        {
+          "meaning": "structure-damage-reduction-relic-2",
+          "color": "#abc4dd",
+          "feature": "tower; tier II"
+        },
+        {
+          "meaning": "production-relic-1",
+          "color": "#c88436",
+          "feature": "anvil; tier I"
+        },
+        {
+          "meaning": "production-relic-2",
+          "color": "#c88436",
+          "feature": "anvil; tier II"
+        },
+        {
+          "meaning": "labor-production-relic-1",
+          "color": "#b88a4a",
+          "feature": "mallet; tier I"
+        },
+        {
+          "meaning": "labor-production-relic-2",
+          "color": "#b88a4a",
+          "feature": "mallet; tier II"
+        },
+        {
+          "meaning": "troop-production-relic-1",
+          "color": "#ce6155",
+          "feature": "helmet; tier I"
+        },
+        {
+          "meaning": "troop-production-relic-2",
+          "color": "#ce6155",
+          "feature": "helmet; tier II"
+        }
+      ],
+      "samples": [
+        {
+          "art": "simple-stamina",
+          "meanings": [
+            "stamina-relic-1",
+            "stamina-relic-2"
+          ]
+        },
+        {
+          "art": "simple-damage",
+          "meanings": [
+            "damage-relic-1",
+            "damage-relic-2"
+          ]
+        },
+        {
+          "art": "simple-defense",
+          "meanings": [
+            "damage-reduction-relic-1",
+            "damage-reduction-relic-2"
+          ]
+        }
+      ]
+    }
+  ],
+  "retained": [
+    {
+      "meaning": "donkey",
+      "reason": "Single pack animal: retain the approved pack donkey; no other carrier resource needs a reskin."
+    },
+    {
+      "meaning": "lords",
+      "reason": "Official token mark. Keep the vendored official SVG unchanged."
+    },
+    {
+      "meaning": "s-a-t",
+      "reason": "Keep the shipped currency mark; it is not a material-category painting."
+    }
+  ],
+  "confusions": [
     {
       "meaning": "mithral",
       "against": [
         "silver",
         "cold-iron"
       ],
-      "family": "Materials",
-      "risk": "High",
       "shape": "The same two-bar stack as silver; pale blue only separates it by colour.",
-      "colourValue": "Blue-silver and white, both bright at chip size.",
-      "lore": "Lighter-than-air fragments held around a gravitational core.",
-      "options": [
-        {
-          "id": "mithral-a",
-          "label": "Floating triangle"
-        },
-        {
-          "id": "mithral-b",
-          "label": "Floating crescents"
-        }
-      ]
+      "colourValue": "Blue-silver and white, both bright at chip size."
     },
     {
       "meaning": "cold-iron",
@@ -31,21 +600,8 @@
         "silver",
         "mithral"
       ],
-      "family": "Materials",
-      "risk": "High",
       "shape": "Single pale bar still reads as the same ingot family at 16 px.",
-      "colourValue": "Dark side loses area; the bright top dominates.",
-      "lore": "Chilled metallic ore with a thirst for warmth.",
-      "options": [
-        {
-          "id": "cold-iron-a",
-          "label": "Frosted wedge"
-        },
-        {
-          "id": "cold-iron-b",
-          "label": "Split ore"
-        }
-      ]
+      "colourValue": "Dark side loses area; the bright top dominates."
     },
     {
       "meaning": "ethereal-silica",
@@ -53,42 +609,16 @@
         "true-ice",
         "stone"
       ],
-      "family": "Materials",
-      "risk": "High",
       "shape": "Both silica and ice are compact many-sided pale chunks.",
-      "colourValue": "White/cyan high-value mass; fine refraction disappears.",
-      "lore": "Glass that bends light unnaturally.",
-      "options": [
-        {
-          "id": "ethereal-silica-a",
-          "label": "Twisted glass"
-        },
-        {
-          "id": "ethereal-silica-b",
-          "label": "Glass fan"
-        }
-      ]
+      "colourValue": "White/cyan high-value mass; fine refraction disappears."
     },
     {
       "meaning": "deep-crystal",
       "against": [
         "twilight-quartz"
       ],
-      "family": "Materials",
-      "risk": "Medium",
       "shape": "Both are upright purple crystal clusters; the amber tips carry most of the difference.",
-      "colourValue": "Purple midtone body with tiny bright tips.",
-      "lore": "Crystal imprisoned inside a timeless geode.",
-      "options": [
-        {
-          "id": "deep-crystal-a",
-          "label": "Open geode"
-        },
-        {
-          "id": "deep-crystal-b",
-          "label": "Geode wedge"
-        }
-      ]
+      "colourValue": "Purple midtone body with tiny bright tips."
     },
     {
       "meaning": "dragonhide",
@@ -96,21 +626,8 @@
         "wood",
         "ironwood"
       ],
-      "family": "Materials",
-      "risk": "High",
       "shape": "The rolled hide becomes another diagonal cylinder with a bright round end.",
-      "colourValue": "Warm brown/red overlap; scales disappear at 16 px.",
-      "lore": "The resource lore describes a fallen dragon scale.",
-      "options": [
-        {
-          "id": "dragonhide-a",
-          "label": "Single scale"
-        },
-        {
-          "id": "dragonhide-b",
-          "label": "Spread scales"
-        }
-      ]
+      "colourValue": "Warm brown/red overlap; scales disappear at 16 px."
     },
     {
       "meaning": "knight-t3",
@@ -118,21 +635,8 @@
         "knight-t1",
         "knight-t2"
       ],
-      "family": "Troops",
-      "risk": "Medium",
       "shape": "T2 and T3 share a steel helmet and shoulder triangle; the plume is the main tier cue.",
-      "colourValue": "Red mantle exists in all tiers; steel highlights merge.",
-      "lore": "Keep a richer armoured knight, with a larger tier silhouette.",
-      "options": [
-        {
-          "id": "knight-t3-a",
-          "label": "Fan crest"
-        },
-        {
-          "id": "knight-t3-b",
-          "label": "Tall plume"
-        }
-      ]
+      "colourValue": "Red mantle exists in all tiers; steel highlights merge."
     },
     {
       "meaning": "crossbowman-t2",
@@ -140,21 +644,8 @@
         "crossbowman-t1",
         "crossbowman-t3"
       ],
-      "family": "Troops",
-      "risk": "Medium",
       "shape": "All three have the same crossbow-and-shoulders silhouette.",
-      "colourValue": "Brown and green midtones dominate; trim disappears at chip size.",
-      "lore": "Keep the crossbowman holding his crossbow; middle tier uses steel over padded cloth.",
-      "options": [
-        {
-          "id": "crossbowman-t2-a",
-          "label": "Broad kettle helm"
-        },
-        {
-          "id": "crossbowman-t2-b",
-          "label": "Raised crossbow"
-        }
-      ]
+      "colourValue": "Brown and green midtones dominate; trim disappears at chip size."
     },
     {
       "meaning": "paladin-t2",
@@ -162,265 +653,148 @@
         "paladin-t1",
         "paladin-t3"
       ],
-      "family": "Troops",
-      "risk": "Medium",
       "shape": "Sword, pale tabard and shoulders recur in all tiers; wing detail shrinks away.",
-      "colourValue": "White/blue mass with steel highlights in every tier.",
-      "lore": "Keep an armoured holy warrior, blue mantle and sun tabard.",
-      "options": [
-        {
-          "id": "paladin-t2-a",
-          "label": "Winged helm"
-        },
-        {
-          "id": "paladin-t2-b",
-          "label": "Blue crest and hammer"
-        }
-      ]
+      "colourValue": "White/blue mass with steel highlights in every tier."
     },
     {
       "meaning": "stamina-relic-2",
       "against": [
         "stamina-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "stamina-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "stamina-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "damage-relic-2",
       "against": [
         "damage-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "damage-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "damage-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "damage-reduction-relic-2",
       "against": [
         "damage-reduction-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "damage-reduction-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "damage-reduction-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "exploration-relic-2",
       "against": [
         "exploration-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "exploration-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "exploration-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "exploration-reward-relic-2",
       "against": [
         "exploration-reward-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "exploration-reward-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "exploration-reward-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "structure-damage-reduction-relic-2",
       "against": [
         "structure-damage-reduction-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "structure-damage-reduction-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "structure-damage-reduction-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "production-relic-2",
       "against": [
         "production-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "production-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "production-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "labor-production-relic-2",
       "against": [
         "labor-production-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "labor-production-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "labor-production-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     },
     {
       "meaning": "troop-production-relic-2",
       "against": [
         "troop-production-relic-1"
       ],
-      "family": "Relics",
-      "risk": "High",
       "shape": "Both tiers use the same narrow stone tablet; tier-two silver corners vanish at 16 px.",
-      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass.",
-      "lore": "Retain the effect motif; stronger relics gain a visibly wider stone body.",
-      "options": [
-        {
-          "id": "troop-production-relic-2-a",
-          "label": "Round stone"
-        },
-        {
-          "id": "troop-production-relic-2-b",
-          "label": "Twin tablets"
-        }
-      ]
+      "colourValue": "The family motif and its colour stay the same, with nearly identical light/dark mass."
     }
   ],
-  "controls": [
+  "shippedFamilies": [
     {
-      "meanings": [
-        "wood",
-        "coal"
-      ],
-      "risk": "Low",
-      "reason": "Warm long logs versus dark compact lumps; keep both."
+      "id": "structures",
+      "name": "Structures and buildings",
+      "template": {
+        "silhouette": "One miniature building, three-quarter view, clear roofline and one main entrance. Realm levels follow their actual model silhouette.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "Ochre timber, pale stone, muted roof colour; one role accent per building.",
+        "detail": "At 16 px preserve roof, wall and entrance. No individual bricks or window grids.",
+        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
+      },
+      "members": [
+        "realm-0",
+        "realm-1",
+        "realm-2",
+        "realm-3",
+        "farm",
+        "workers-hut",
+        "workshop"
+      ]
     },
     {
-      "meanings": [
-        "coal",
-        "obsidian",
-        "ignium"
-      ],
-      "risk": "Low",
-      "reason": "Coal is a low lumpy heap, obsidian is a tall sharp star, ignium carries a large orange interior; keep."
+      "id": "markers",
+      "name": "Map markers",
+      "template": {
+        "silhouette": "One isolated landmark: tent, split stone, tower or crate. Hex minimap versions keep a full interior emblem, ownership rim and level pip.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "Camp amber; rift violet; Hyperstructure ivory; spire cyan; crate warm wood. Ownership stays on the rim.",
+        "detail": "One recognizable landmark contour and one central feature. No scattered scenery or decorative effects.",
+        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
+      },
+      "members": [
+        "camp",
+        "rift",
+        "hyperstructure",
+        "spire",
+        "chest"
+      ]
     },
     {
-      "meanings": [
-        "copper",
-        "gold",
-        "silver",
-        "adamantine"
-      ],
-      "risk": "Medium without colour",
-      "reason": "Shared ingot grammar, but copper orange, gold yellow, silver white and adamantine dark green separate by value and hue. Keep these anchors; remove mithral and cold iron from the grammar."
-    },
-    {
-      "meanings": [
-        "ruby",
-        "sapphire",
-        "diamonds"
-      ],
-      "risk": "Medium without colour",
-      "reason": "Similar cut-gem forms; saturated red, deep blue and high-value white preserve the gem family. Keep for this pass."
-    },
-    {
-      "meanings": [
-        "wood",
-        "ironwood",
-        "hartwood"
-      ],
-      "risk": "Low at 40; medium at 16",
-      "reason": "Paired golden logs, single dark red-ended log, and upright sap-bleeding heart cut remain distinguishable. Keep; moving dragonhide out removes the fourth cylinder."
-    },
-    {
-      "meanings": [
-        "alchemical-silver",
-        "essence"
-      ],
-      "risk": "Medium at 16",
-      "reason": "Both include purple liquid, but alchemical silver has a strong horizontal bright bar while essence is a vertical bottle. Keep and retain labels in dense lists."
+      "id": "glyphs",
+      "name": "UI glyphs \u00b7 keep shipped",
+      "template": {
+        "silhouette": "One familiar object or sign. Retain the shipped Facets paintings and their semantic meaning.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15\u201325%, body 40\u201365%, highlight 80\u201395%. These are painting targets.",
+        "palette": "Keep the existing material palette; no new tint system. Transfer stays donkey, Move stays boots, Production stays forge.",
+        "detail": "One clear gesture or object at 16 px. Settings alone uses the wheel.",
+        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
+      },
+      "members": [
+        "transfer",
+        "move",
+        "production",
+        "settings",
+        "attack",
+        "explore"
+      ]
     }
   ]
 }

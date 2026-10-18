@@ -1,0 +1,4 @@
+Use case: precise-object-edit. Asset type: transparent painted game resource icon, category template reskin.
+Input image: edit target and category composition master.
+Reskin this same human shoulder bust as a tier-two crossbowman: steel kettle helmet, face visible, green leather jerkin and a crossbow held by this soldier across the lower right chest in place of the mallet. Same head position, shoulder span, midchest crop and pose. The soldier is the subject, with the crossbow as one role cue. Broad shapes, no gold trim.
+Preserve the reference's framing, scale, camera angle, warm upper-left light and cool lower-right shadow. Painted Facets planes, three large value bands, dark continuous outer edge. This is the SAME category template with a new material, hue and one distinguishing feature. Avoid extra ornaments, backgrounds, framing, fine texture, text or tiny marks. Keep transparent background. Designed to read at 16 px with one main feature; no gilded kit.

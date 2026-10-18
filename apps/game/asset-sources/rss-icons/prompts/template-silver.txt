@@ -1,0 +1,4 @@
+Use case: precise-object-edit. Asset type: transparent painted game resource icon, category template reskin.
+Input image: edit target and category composition master.
+Change only the material to cool white silver metal. Replace the green oxide patch with a clean pale silver bevel. Keep the exact single ingot geometry and viewpoint.
+Preserve the reference's framing, scale, camera angle, warm upper-left light and cool lower-right shadow. Painted Facets planes, three large value bands, dark continuous outer edge. This is the SAME category template with a new material, hue and one distinguishing feature. Avoid extra ornaments, backgrounds, framing, fine texture, text or tiny marks. Keep transparent background. Designed to read at 16 px with one main feature; no gilded kit.

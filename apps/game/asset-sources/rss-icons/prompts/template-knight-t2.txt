@@ -1,0 +1,4 @@
+Use case: precise-object-edit. Asset type: transparent painted game resource icon, category template reskin.
+Input image: edit target and category composition master.
+Reskin this same human shoulder bust as a tier-two knight: steel closed visor helmet, steel shoulder armour, maroon cloth and one plain broad sword held in the right hand in place of the mallet. Same centered head, shoulder span, midchest crop and pose. The soldier is the subject; do not turn this into a weapon icon. Simple broad shapes, no gold trim.
+Preserve the reference's framing, scale, camera angle, warm upper-left light and cool lower-right shadow. Painted Facets planes, three large value bands, dark continuous outer edge. This is the SAME category template with a new material, hue and one distinguishing feature. Avoid extra ornaments, backgrounds, framing, fine texture, text or tiny marks. Keep transparent background. Designed to read at 16 px with one main feature; no gilded kit.

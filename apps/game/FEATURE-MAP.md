@@ -400,31 +400,24 @@ components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords`
 fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path. It includes
 the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1`.
 
-### Resource icon review
+### Icon style sheet review
 
-`/lab/kit/resource-icons` opens **Old vs new**, with all 58 resources shown beside the exact set used before Facets, the
-shipped artwork and A/B where proposed. **Inventory → Old** shows the complete previous set. Materials, Troops and
-Relics also include the old icon. Donkey preserves the old trade thumbnail; SAT preserves its orange text glyph. The
-pinned source commit and per-file hashes are in `asset-sources/rss-icons/history.json`; `pnpm icons:study --check` also
-verifies the archive against git. Historical files are lab-only, about 9.6 MiB, and every file is displayed.
+`/lab/kit/resource-icons` opens **Templates**. Choose a category to compare its rules and two or three sample reskins
+beside Old and Shipped at 16/24/32/40 px. Nine templates assign 55 resource meanings; retained Donkey, LORDS and SAT
+complete the 58. Relics share one family symbol with an external I/II mark: 40 px is recommended, 32 px the minimum.
+**Other families** shows template rules and shipped structures/buildings, map landmarks and UI glyphs. Troop portraits
+are in **Templates → People and troops**. Model thumbnails stay on construction cards.
 
-`/lab/kit/resource-icons` inventories all 58 resources at 40 px in the ring and 20/16 px in chips. Use Inventory artwork
-to compare Shipped / Option A / Option B across the whole set; the 41 meanings without proposals keep their shipped art.
-Materials, Troops and Relics show each proposed change beside its shipped icon and confusable neighbours. Kept pairs
-records the other comparisons. Hide names, Greyscale and Silhouette let a reviewer judge the art without reading the
-labels or relying on hue.
+**Inventory → Old / Shipped** shows the full sets. **Findings** preserves 17 confusion comparisons. Hide names,
+Greyscale and Silhouette expose reliance on labels or hue. The historical set is pinned in
+`asset-sources/rss-icons/history.json`, including the old Donkey trade thumbnail and SAT text glyph.
 
-This is a lab-only review on `art/rss-icons`. Production meanings and paintings are unchanged. Ring and chip surfaces
-are scoped snapshots of the HUD style sheet (`hud-sheet.css` in the showcase), with 40 px art requested for this study;
-the current style sheet uses 30 px art inside the same 44 px well. No new production renderer or setting is introduced.
-The cost is one lab route, 34 review masters and their deliveries, metadata and proof steps; there is no production
-replacement to delete until the owner selects options.
-
-Source, prompts and qualitative confusion audit: `asset-sources/rss-icons/`. Build/check using the same Facets
-normalizer and WebP settings: `node scripts/icons/build-resource-study.mjs [--check]` from the repository root. Browser
-proof: `pnpm icons:prove <evidence-root> https://127.0.0.1:4193 --resources` after starting the client with
-`pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`. It checks the 58-item inventory, all 34 options,
-image decoding, exact rendered sizes, switches and phone layout, and saves the inventory and every comparison.
+Lab only: 21 template samples replace the 34 per-icon A/B candidates. Production semantics, paintings and sizes stay
+unchanged. The owner selects templates before the remaining reskins. Sources, exact prompts, palette slots and reviews
+live in `asset-sources/rss-icons/`. `pnpm icons:study [--check]` uses the existing Facets delivery pipeline and verifies
+all sources and historical bytes. Start with `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`;
+`pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` drives every lab section at desktop/phone,
+checks exact images, decoding, sizes, marks and switches, and saves the comparisons.
 
 ## End of game: Fractured veil
 

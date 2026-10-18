@@ -1,0 +1,4 @@
+Use case: precise-object-edit. Asset type: transparent painted game resource icon, category template reskin.
+Input image: edit target and category composition master.
+Reskin the exact curved teardrop shard as ONE amber-gold ancient artifact fragment, solid opaque material with one dark chipped corner. Fill any glass opening. Keep the same outer silhouette, tilt and planes. No runes, rings or particles.
+Preserve the reference's framing, scale, camera angle, warm upper-left light and cool lower-right shadow. Painted Facets planes, three large value bands, dark continuous outer edge. This is the SAME category template with a new material, hue and one distinguishing feature. Avoid extra ornaments, backgrounds, framing, fine texture, text or tiny marks. Keep transparent background. Designed to read at 16 px with one main feature; no gilded kit.

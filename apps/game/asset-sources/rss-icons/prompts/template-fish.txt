@@ -1,0 +1,4 @@
+Use case: precise-object-edit. Asset type: transparent painted game resource icon, category template reskin.
+Input image: edit target and category composition master.
+Replace the three upright wheat ears with three bundled silver-teal fish, heads at the top, tapered tails below the same waist tie. Keep the same overall upright bundle silhouette and layout. One broad pale belly stripe each; no scales or tiny fins.
+Preserve the reference's framing, scale, camera angle, warm upper-left light and cool lower-right shadow. Painted Facets planes, three large value bands, dark continuous outer edge. This is the SAME category template with a new material, hue and one distinguishing feature. Avoid extra ornaments, backgrounds, framing, fine texture, text or tiny marks. Keep transparent background. Designed to read at 16 px with one main feature; no gilded kit.

@@ -1,172 +1,107 @@
 {
-  "mithral-a": {
+  "simple-stamina": {
     "status": "proposal",
     "comparison": "clearer",
-    "reason": "The three separated pieces break the ingot silhouette; the central core is a small bright spot at 16 px."
+    "reason": "The amber bolt itself forms the whole silhouette; the tablet and swirls are removed."
   },
-  "mithral-b": {
+  "simple-damage": {
     "status": "proposal",
     "comparison": "clearer",
-    "reason": "The two broad crescents retain a cleaner horizontal gap at 16 px. Recommended over A."
+    "reason": "A broad bright blade and red crossguard replace the small sword inset in a tablet."
   },
-  "cold-iron-a": {
+  "simple-defense": {
     "status": "proposal",
     "comparison": "clearer",
-    "reason": "The tall ore wedge breaks the ingot family, but its narrow shape is small in a chip."
+    "reason": "The blue shield is the object; its pointed perimeter and pale edge replace the stone backing."
   },
-  "cold-iron-b": {
+  "template-wheat": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The deep split reads as a U at 20 px and gives more width at 16 px. Recommended over A."
+    "comparison": "template-review",
+    "reason": "Three grain heads form a tied provisions bundle. The 16 px identity rests on the gold bundle contour; fine grain texture is not required."
   },
-  "ethereal-silica-a": {
+  "template-fish": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The curved glass has an open S outline at all tested sizes; separates from ice without relying on green. Recommended."
+    "comparison": "template-review",
+    "reason": "Uses the wheat bundle composition with three silver-teal fish and one pale belly band. At 16 px it reads as a pale bundle more readily than a fish; at 32/40 the heads and tails read. This is a category-coherence tradeoff against the shipped single fish."
   },
-  "ethereal-silica-b": {
+  "template-wood": {
     "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The green fan separates from ice, but joins the pointed crystal family. Less distinct across the full set than A."
+    "comparison": "template-review",
+    "reason": "One cut log replaces the stack; the broad circular end separates timber from ore. Growth rings are secondary at 16 px."
   },
-  "deep-crystal-a": {
+  "template-hartwood": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The dark cavity and pale geode rim survive 16 px, unlike the shipped cluster tips. Recommended."
+    "comparison": "template-review",
+    "reason": "Keeps the log outline and lighting with dark red bark and sap heart. Distinct from ordinary Wood, but darker than the shipped cut face at 16 px; its material contrast needs owner review."
   },
-  "deep-crystal-b": {
+  "template-stone": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The horizontal geode separates from quartz but has less open cavity at 16 px than A."
+    "comparison": "template-review",
+    "reason": "One low rock mass with three major faces gives the ore category a broad horizontal contour."
   },
-  "dragonhide-a": {
+  "template-coal": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The pointed single scale removes the log-shaped cylinder and matches the lore. Recommended."
+    "comparison": "template-review",
+    "reason": "Same rock contour as Stone, with charcoal material and cool grey planes. Separation is value-led rather than silhouette-led."
   },
-  "dragonhide-b": {
+  "template-copper": {
     "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The spread removes the round log end, but becomes a broad red-brown patch at 16 px."
+    "comparison": "template-review",
+    "reason": "One warm trapezoid ingot replaces a pile. The broad oxide corner is the secondary material cue."
   },
-  "knight-t3-a": {
+  "template-silver": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The broad red fan persists above the steel head at 16 px and distinguishes the plain T2 helmet. Recommended."
+    "comparison": "template-review",
+    "reason": "Exact ingot family in cool bright metal. Its brighter body separates it from Copper without a new composition."
   },
-  "knight-t3-b": {
+  "template-ruby": {
     "status": "proposal",
-    "comparison": "similar",
-    "reason": "The enlarged tall plume remains close to the shipped silhouette; the fan gives a larger shape change."
+    "comparison": "template-review",
+    "reason": "One upright prism distinguishes crystals from squat ore and horizontal ingots. Red is the resource hue slot."
   },
-  "crossbowman-t2-a": {
+  "template-true-ice": {
     "status": "proposal",
-    "comparison": "similar",
-    "reason": "A broader kettle brim changes too little of the shipped portrait at 16 px. Keep for comparison, not recommended."
+    "comparison": "template-review",
+    "reason": "Same prism in pale cyan with a broad frost stripe. The stripe matters at 32/40 px; hue and value dominate at 16 px."
   },
-  "crossbowman-t2-b": {
+  "template-ethereal-silica": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The raised crossbow creates a taller asymmetric outline while retaining a soldier holding it. Recommended."
+    "comparison": "template-review",
+    "reason": "One green curved shard with a large opening forms the rare-fragment anchor, rather than a group of narrow needles."
   },
-  "paladin-t2-a": {
+  "template-dragonhide": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The wide silver wings produce a broader helmet silhouette than the bare T1 and hooded T3. Recommended."
+    "comparison": "template-review",
+    "reason": "One red fallen scale follows the curved shard envelope. Its bright ridge is readable; the faceted material remains quite mineral-like."
   },
-  "paladin-t2-b": {
+  "template-fragment": {
     "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The crest and hammer distinguish the tier, but a hammer changes the weapon association. Prefer A."
+    "comparison": "template-review",
+    "reason": "Amber curved artifact shard keeps the category envelope with a dark chipped edge. Less context than the shipped artifact; owner selection required."
   },
-  "stamina-relic-2-a": {
+  "template-essence": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+    "comparison": "template-review",
+    "reason": "One round vial contains a single pink drop; the short neck and round body separate reagents from open crystals."
   },
-  "stamina-relic-2-b": {
+  "template-research": {
     "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+    "comparison": "template-review",
+    "reason": "Same vial with teal liquid and a pale crystal. At 16 px the content relies mainly on hue; at 32/40 the crystal reads."
   },
-  "damage-relic-2-a": {
+  "template-labor": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
+    "comparison": "template-review",
+    "reason": "Centered human bust with one mallet. The larger face and broad shoulders establish the people template."
   },
-  "damage-relic-2-b": {
+  "template-knight-t2": {
     "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+    "comparison": "template-review",
+    "reason": "Same bust framing as Labor, closed steel visor, maroon cloth and a sword. The human figure remains primary."
   },
-  "damage-reduction-relic-2-a": {
+  "template-crossbowman-t2": {
     "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "damage-reduction-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
-  },
-  "exploration-relic-2-a": {
-    "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "exploration-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
-  },
-  "exploration-reward-relic-2-a": {
-    "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "exploration-reward-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
-  },
-  "structure-damage-reduction-relic-2-a": {
-    "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "structure-damage-reduction-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
-  },
-  "production-relic-2-a": {
-    "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "production-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
-  },
-  "labor-production-relic-2-a": {
-    "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "labor-production-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
-  },
-  "troop-production-relic-2-a": {
-    "status": "proposal",
-    "comparison": "clearer",
-    "reason": "The round face and side lugs separate tier II from the narrow tier I tablet at chip size. The large motif remains legible. Recommended."
-  },
-  "troop-production-relic-2-b": {
-    "status": "proposal",
-    "comparison": "tradeoff",
-    "reason": "The twin tablet is wider than tier I, but the V notch and seam weaken at 16 px; it remains closer to the shipped rectangle. Prefer A."
+    "comparison": "template-review",
+    "reason": "Same bust framing with visible face, steel kettle helmet, green clothing and a held crossbow. Weapon detail needs 32 px."
   }
 }

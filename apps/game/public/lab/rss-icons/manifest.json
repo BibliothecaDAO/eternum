@@ -1,274 +1,822 @@
 {
-  "mithral-a": {
-    "master": "972faf46286baa3b00b9c397e228082fbadfad73b6c6de1390ba6e9b8ce22278",
-    "deliveries": {
-      "64": "5a6a481fd88c2f676daa1aa7cd4ce935b1dd5410c917a44632d9f5a15ac6c828",
-      "128": "fae33df9a1180e56912c44e8fbf9ee8c2f80a636f5e41c98712c3f5f659a0fe3",
-      "256": "ed5311adf15669f525a5983117f6a63249e51c2e2e6cd433a37c652effb16fd4"
+  "categories": [
+    {
+      "id": "provisions",
+      "name": "Provisions",
+      "template": {
+        "silhouette": "One upright tied bundle, broad oval head and narrow tied waist; wheat and fish keep the same bundle envelope.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "wheat",
+          "color": "#d9a94b",
+          "feature": "three broad grain heads"
+        },
+        {
+          "meaning": "fish",
+          "color": "#4fa6a9",
+          "feature": "one silver belly band"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-wheat",
+          "meanings": [
+            "wheat"
+          ]
+        },
+        {
+          "art": "template-fish",
+          "meanings": [
+            "fish"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "timber",
+      "name": "Timber",
+      "template": {
+        "silhouette": "One short horizontal cut log tilted 20 degrees upward to the right; large circular cut face on the lower left.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "wood",
+          "color": "#b97a3d",
+          "feature": "two broad growth rings"
+        },
+        {
+          "meaning": "ironwood",
+          "color": "#614646",
+          "feature": "one metallic grain seam"
+        },
+        {
+          "meaning": "hartwood",
+          "color": "#aa404b",
+          "feature": "a large red sap heart"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-wood",
+          "meanings": [
+            "wood"
+          ]
+        },
+        {
+          "art": "template-hartwood",
+          "meanings": [
+            "hartwood"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ore",
+      "name": "Rock and ore",
+      "template": {
+        "silhouette": "One squat angular chunk with a low roof, one broad fractured face and no separate chips; roughly square envelope.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses; stone mid-light, coal very dark with one broad readable highlight.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "stone",
+          "color": "#b4aca0",
+          "feature": "a pale cleft face"
+        },
+        {
+          "meaning": "coal",
+          "color": "#323a43",
+          "feature": "one broken silver-grey glint"
+        },
+        {
+          "meaning": "obsidian",
+          "color": "#33223d",
+          "feature": "a sharp glassy fracture"
+        },
+        {
+          "meaning": "ignium",
+          "color": "#d76632",
+          "feature": "one broad orange heat seam"
+        },
+        {
+          "meaning": "cold-iron",
+          "color": "#7b9fae",
+          "feature": "a frosted blue fissure"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-stone",
+          "meanings": [
+            "stone"
+          ]
+        },
+        {
+          "art": "template-coal",
+          "meanings": [
+            "coal"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "metals",
+      "name": "Metals",
+      "template": {
+        "silhouette": "One wide trapezoid ingot, upper face visible, long axis horizontal and near edge down-left; no stack.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "copper",
+          "color": "#c47748",
+          "feature": "one green oxide notch"
+        },
+        {
+          "meaning": "gold",
+          "color": "#d8ac46",
+          "feature": "a broad warm reflection"
+        },
+        {
+          "meaning": "silver",
+          "color": "#c4d3df",
+          "feature": "one clean pale bevel"
+        },
+        {
+          "meaning": "mithral",
+          "color": "#81bddd",
+          "feature": "a suspended core in the centre"
+        },
+        {
+          "meaning": "adamantine",
+          "color": "#345b62",
+          "feature": "one dark containment seam"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-copper",
+          "meanings": [
+            "copper"
+          ]
+        },
+        {
+          "art": "template-silver",
+          "meanings": [
+            "silver"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "crystals",
+      "name": "Crystals",
+      "template": {
+        "silhouette": "One upright hexagonal prism, blunt pointed top, three broad vertical planes and a flat lower end; no cluster.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "ruby",
+          "color": "#b92d43",
+          "feature": "a deep red core"
+        },
+        {
+          "meaning": "diamonds",
+          "color": "#d1dcf5",
+          "feature": "one white clear window"
+        },
+        {
+          "meaning": "sapphire",
+          "color": "#3260b5",
+          "feature": "a deep blue core"
+        },
+        {
+          "meaning": "deep-crystal",
+          "color": "#8755ad",
+          "feature": "one dark hollow centre"
+        },
+        {
+          "meaning": "twilight-quartz",
+          "color": "#632c83",
+          "feature": "a broad purple growth seam"
+        },
+        {
+          "meaning": "true-ice",
+          "color": "#91d4dd",
+          "feature": "one opaque frost band"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-ruby",
+          "meanings": [
+            "ruby"
+          ]
+        },
+        {
+          "art": "template-true-ice",
+          "meanings": [
+            "true-ice"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fragments",
+      "name": "Rare fragments",
+      "template": {
+        "silhouette": "One broad curved teardrop shard, pointed upper-right and rounded lower-left; convex face with one central ridge.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "ethereal-silica",
+          "color": "#54af97",
+          "feature": "one open light-bending slit"
+        },
+        {
+          "meaning": "dragonhide",
+          "color": "#b74956",
+          "feature": "one raised scale ridge"
+        },
+        {
+          "meaning": "fragment",
+          "color": "#d09340",
+          "feature": "one chipped dark corner"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-ethereal-silica",
+          "meanings": [
+            "ethereal-silica"
+          ]
+        },
+        {
+          "art": "template-dragonhide",
+          "meanings": [
+            "dragonhide"
+          ]
+        },
+        {
+          "art": "template-fragment",
+          "meanings": [
+            "fragment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reagents",
+      "name": "Reagents",
+      "template": {
+        "silhouette": "One squat round glass vial with short narrow neck and a plain stopper; liquid fills the lower two thirds.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "alchemical-silver",
+          "color": "#b9cbd0",
+          "feature": "a bright pooled metal swirl"
+        },
+        {
+          "meaning": "essence",
+          "color": "#a353b3",
+          "feature": "one large magenta drop"
+        },
+        {
+          "meaning": "research",
+          "color": "#4bafba",
+          "feature": "one suspended pale crystal"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-essence",
+          "meanings": [
+            "essence"
+          ]
+        },
+        {
+          "art": "template-research",
+          "meanings": [
+            "research"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "people",
+      "name": "People and troops",
+      "template": {
+        "silhouette": "One near-frontal shoulder bust cropped at mid-chest; head centred above broad shoulders, one role tool at the right.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16 px: head, shoulder mass, one role tool. Facial features and trim are expendable.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "labor",
+          "color": "#b78d54",
+          "feature": "worker cap and wooden mallet"
+        },
+        {
+          "meaning": "knight-t1",
+          "color": "#955343",
+          "feature": "leather and plain iron helmet"
+        },
+        {
+          "meaning": "knight-t2",
+          "color": "#884a50",
+          "feature": "steel plate and closed visor"
+        },
+        {
+          "meaning": "knight-t3",
+          "color": "#c76b5e",
+          "feature": "rich plate and broad crest"
+        },
+        {
+          "meaning": "crossbowman-t1",
+          "color": "#747a42",
+          "feature": "leather cap and crossbow"
+        },
+        {
+          "meaning": "crossbowman-t2",
+          "color": "#467e65",
+          "feature": "steel kettle helmet and crossbow"
+        },
+        {
+          "meaning": "crossbowman-t3",
+          "color": "#6aaf8c",
+          "feature": "rich steel and reinforced crossbow"
+        },
+        {
+          "meaning": "paladin-t1",
+          "color": "#b3a784",
+          "feature": "chainmail and plain holy crest"
+        },
+        {
+          "meaning": "paladin-t2",
+          "color": "#d4ccb0",
+          "feature": "ivory plate and broad holy crest"
+        },
+        {
+          "meaning": "paladin-t3",
+          "color": "#eee5cb",
+          "feature": "rich ivory plate and tall holy crest"
+        }
+      ],
+      "samples": [
+        {
+          "art": "template-labor",
+          "meanings": [
+            "labor"
+          ]
+        },
+        {
+          "art": "template-knight-t2",
+          "meanings": [
+            "knight-t2"
+          ]
+        },
+        {
+          "art": "template-crossbowman-t2",
+          "meanings": [
+            "crossbowman-t2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "relics",
+      "name": "Relics",
+      "template": {
+        "silhouette": "One freestanding chunky effect symbol. No tablet, medallion or aura. All tiers use the same symbol with an external I / II mark.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
+        "detail": "At 16/24 px stress-test only. At 32 px: one unmistakable symbol, at most three internal shapes. Tier mark remains outside.",
+        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
+      },
+      "members": [
+        {
+          "meaning": "stamina-relic-1",
+          "color": "#e9aa32",
+          "feature": "lightning bolt; tier I"
+        },
+        {
+          "meaning": "stamina-relic-2",
+          "color": "#e9aa32",
+          "feature": "lightning bolt; tier II"
+        },
+        {
+          "meaning": "damage-relic-1",
+          "color": "#c34e43",
+          "feature": "sword; tier I"
+        },
+        {
+          "meaning": "damage-relic-2",
+          "color": "#c34e43",
+          "feature": "sword; tier II"
+        },
+        {
+          "meaning": "damage-reduction-relic-1",
+          "color": "#397dcc",
+          "feature": "shield; tier I"
+        },
+        {
+          "meaning": "damage-reduction-relic-2",
+          "color": "#397dcc",
+          "feature": "shield; tier II"
+        },
+        {
+          "meaning": "exploration-relic-1",
+          "color": "#6caf5a",
+          "feature": "eye; tier I"
+        },
+        {
+          "meaning": "exploration-relic-2",
+          "color": "#6caf5a",
+          "feature": "eye; tier II"
+        },
+        {
+          "meaning": "exploration-reward-relic-1",
+          "color": "#a467a5",
+          "feature": "treasure chest; tier I"
+        },
+        {
+          "meaning": "exploration-reward-relic-2",
+          "color": "#a467a5",
+          "feature": "treasure chest; tier II"
+        },
+        {
+          "meaning": "structure-damage-reduction-relic-1",
+          "color": "#abc4dd",
+          "feature": "tower; tier I"
+        },
+        {
+          "meaning": "structure-damage-reduction-relic-2",
+          "color": "#abc4dd",
+          "feature": "tower; tier II"
+        },
+        {
+          "meaning": "production-relic-1",
+          "color": "#c88436",
+          "feature": "anvil; tier I"
+        },
+        {
+          "meaning": "production-relic-2",
+          "color": "#c88436",
+          "feature": "anvil; tier II"
+        },
+        {
+          "meaning": "labor-production-relic-1",
+          "color": "#b88a4a",
+          "feature": "mallet; tier I"
+        },
+        {
+          "meaning": "labor-production-relic-2",
+          "color": "#b88a4a",
+          "feature": "mallet; tier II"
+        },
+        {
+          "meaning": "troop-production-relic-1",
+          "color": "#ce6155",
+          "feature": "helmet; tier I"
+        },
+        {
+          "meaning": "troop-production-relic-2",
+          "color": "#ce6155",
+          "feature": "helmet; tier II"
+        }
+      ],
+      "samples": [
+        {
+          "art": "simple-stamina",
+          "meanings": [
+            "stamina-relic-1",
+            "stamina-relic-2"
+          ]
+        },
+        {
+          "art": "simple-damage",
+          "meanings": [
+            "damage-relic-1",
+            "damage-relic-2"
+          ]
+        },
+        {
+          "art": "simple-defense",
+          "meanings": [
+            "damage-reduction-relic-1",
+            "damage-reduction-relic-2"
+          ]
+        }
+      ]
     }
-  },
-  "mithral-b": {
-    "master": "8a378a2f9cefafa1d3247822f4b084a643610b76f4f4c6737590a9813a283658",
-    "deliveries": {
-      "64": "975aad263e267e85c2fbba45c46b84d52f5da67fa70526bab1387c6b7c49fe3a",
-      "128": "59faad60bd95ff282f1ea0d7b5f0ae1fdc7d431374b9b1caa7ca032d80f14cf5",
-      "256": "987b431e043062e406b0572971212488b975bd5f68cee00b5bafb6a791fa7b9e"
+  ],
+  "retained": [
+    {
+      "meaning": "donkey",
+      "reason": "Single pack animal: retain the approved pack donkey; no other carrier resource needs a reskin."
+    },
+    {
+      "meaning": "lords",
+      "reason": "Official token mark. Keep the vendored official SVG unchanged."
+    },
+    {
+      "meaning": "s-a-t",
+      "reason": "Keep the shipped currency mark; it is not a material-category painting."
     }
-  },
-  "cold-iron-a": {
-    "master": "1e75a136ece24200266491797ad0c673413f49e10ff1fb7456ae6115e110b5b4",
-    "deliveries": {
-      "64": "7f33517340b4fe5c097672e5c64f236e34da1bc28494dd73a86f2f4bdf5c06e8",
-      "128": "38f5868483a44e14f0ba4d2d68efbe3dcd0461e0f5170b356d6e239015b8677b",
-      "256": "af19f6f66b26e66e09fa26462773024d5d9291f9edd5563de046e9cbb50af255"
+  ],
+  "shippedFamilies": [
+    {
+      "id": "structures",
+      "name": "Structures and buildings",
+      "template": {
+        "silhouette": "One miniature building, three-quarter view, clear roofline and one main entrance. Realm levels follow their actual model silhouette.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "Ochre timber, pale stone, muted roof colour; one role accent per building.",
+        "detail": "At 16 px preserve roof, wall and entrance. No individual bricks or window grids.",
+        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
+      },
+      "members": [
+        "realm-0",
+        "realm-1",
+        "realm-2",
+        "realm-3",
+        "farm",
+        "workers-hut",
+        "workshop"
+      ]
+    },
+    {
+      "id": "markers",
+      "name": "Map markers",
+      "template": {
+        "silhouette": "One isolated landmark: tent, split stone, tower or crate. Hex minimap versions keep a full interior emblem, ownership rim and level pip.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "Camp amber; rift violet; Hyperstructure ivory; spire cyan; crate warm wood. Ownership stays on the rim.",
+        "detail": "One recognizable landmark contour and one central feature. No scattered scenery or decorative effects.",
+        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
+      },
+      "members": [
+        "camp",
+        "rift",
+        "hyperstructure",
+        "spire",
+        "chest"
+      ]
+    },
+    {
+      "id": "glyphs",
+      "name": "UI glyphs · keep shipped",
+      "template": {
+        "silhouette": "One familiar object or sign. Retain the shipped Facets paintings and their semantic meaning.",
+        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
+        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
+        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
+        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
+        "palette": "Keep the existing material palette; no new tint system. Transfer stays donkey, Move stays boots, Production stays forge.",
+        "detail": "One clear gesture or object at 16 px. Settings alone uses the wheel.",
+        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
+      },
+      "members": [
+        "transfer",
+        "move",
+        "production",
+        "settings",
+        "attack",
+        "explore"
+      ]
     }
-  },
-  "cold-iron-b": {
-    "master": "ad6f73aebddc3a48b20067ed19083ec73a80c85dbbd65b786b677bdd9c44ecf4",
-    "deliveries": {
-      "64": "b2acf8e8434567833e34dd1518397d06b7a1895d1a76fc316ed07e54f2280a67",
-      "128": "8507cc8cdc45702debbc911d566b9d012cecf47995e9bc2c24b879bcc536cfdd",
-      "256": "7f964d71e6cd03561ad5bfb683dc0ea5b5cd9c5b43303a8b7bb92faee7383a32"
-    }
-  },
-  "ethereal-silica-a": {
-    "master": "1405d541365582f44ffce3bb6bb654173956131351f6218288477c4bdd99a0c3",
-    "deliveries": {
-      "64": "c4dcedf650130a1d628158c2483f12cbba9f23e367026a0925ac1be611d04fbc",
-      "128": "897940b2eeee7adeea29ed448182b8018b05718567389d07f7f8dcdb06f4b2d3",
-      "256": "54dfdb9c0287146a430b51c1f81474224dfa49e54f9fad3364a80ca14dc30c4b"
-    }
-  },
-  "ethereal-silica-b": {
-    "master": "4a222b55e9b71fae423f16a42d65ad1e5fbcb7a2bf5f804894525acf50da55ba",
-    "deliveries": {
-      "64": "8fcd42551b4c9e2b3bd40ef055f3de6a02c4d8c06944102b3346d095222914de",
-      "128": "d6e93ffac229181f3f12ec3996672f7863a5998cbbbb4b203ba72ef41d2a765f",
-      "256": "9669d3d7e8112fd2fda02aec4af00500bb41c2bd39b8f0332af7c51c44530e19"
-    }
-  },
-  "deep-crystal-a": {
-    "master": "19ee17580c19486bc4f83922ea5069713b9881efd0c2263b594d194a3caacece",
-    "deliveries": {
-      "64": "2cf6fc83b0619755e32486f2daaa218f88d4e445f932d71d97f3c230140aa04a",
-      "128": "78573b73c39e40ee0214130a8363db4b50c6e26b90396bc40b3437c074d6b444",
-      "256": "28bf4cacfca9bd06c2c1e9cf5f321ef9d789fa878a087bc049e8214b5d3032d5"
-    }
-  },
-  "deep-crystal-b": {
-    "master": "5bd59ef03b4b0edb409b8fa11022ceec3b0e1af49a8dcd92164d1589d1519fa8",
-    "deliveries": {
-      "64": "30f6ab49a72f99232aa90c2a7846b4baf9aca78c81ab63dea10aab39420930f5",
-      "128": "b9c1e8dbdacef31a1e8e1303259907541fc31686e18e1b522a3846e0877bc206",
-      "256": "f5897904f2c87afb955f9acf2cf7901cf3512608958b696948e3395d10cc3c2f"
-    }
-  },
-  "dragonhide-a": {
-    "master": "7908870a66eeaeafad90e68062ab3b236fcb91618fc948f703b000797d898bd8",
-    "deliveries": {
-      "64": "3542f15c0315863a0a7bd7dd4c1aa23d15dbf8a83421843d8a48a1480de99fb3",
-      "128": "1928f5266698659642c214d3078989e9486e11d622266d74d755c3a0a3d2720d",
-      "256": "eab7e85432b131c146044dc753f798505cfb18fad71ee7c29baae390fdcdbf23"
-    }
-  },
-  "dragonhide-b": {
-    "master": "f27c9024c369e6dc5762849777a19a7b229e56894a6c18d2427418002ae94b5b",
-    "deliveries": {
-      "64": "6c91e2f9b121597fc24836282095002e69100ece29b21bae65c6669c5e8a848a",
-      "128": "2517bec86228ce0ffb1be8b300707dd39ce3604455e980e74f5e87a924bf1cc0",
-      "256": "2591a73d73ba186a2611d59287416c65c5199605fb79b9056d5c22c6db1579bb"
-    }
-  },
-  "knight-t3-a": {
-    "master": "9ccf065e74eadf6c2389e4f6cf202a04c954e73634903b123e0cd43c03ed3e11",
-    "deliveries": {
-      "64": "c7505b5ac7cd3090d5fdddb49fb64c1745468bf27843d12eae6c6e220e2b3c19",
-      "128": "79d234d25defabb15777a9a58a8ea381308d99917b63be77361f83e0bdd57f8c",
-      "256": "02bafa9e90593419fa6f7e5d68231b062d9e6a321495d621719854ef9db4e98c"
-    }
-  },
-  "knight-t3-b": {
-    "master": "3f4526db79d72f39475cc18b23aa96ee6f599b99dc4f4478cadb45c1378d9900",
-    "deliveries": {
-      "64": "facb570740d9fa8808572a92489841135590015b4738ef54a3996c14376d3ec0",
-      "128": "21510a5e7b51ad7b589b7913503ec965069beee470c2f1e25fc74f61fc3a79da",
-      "256": "b1b0b13d5b4b804108e967875f199a204497f3b03b8cbc86e64446b7b2897a51"
-    }
-  },
-  "crossbowman-t2-a": {
-    "master": "b955b12fb2f0495c9731fdab4ff32c06039c66ede99f25a6b4572c689d2459af",
-    "deliveries": {
-      "64": "f79aa94613e6d51987542227edc033417fb16adb633f38fef2aa1679e5547c8e",
-      "128": "047edbbc7758de00e680ab7858ee942219cae1b3636b4d8fdb0558dee630b526",
-      "256": "e4ccf02c986346d973b8f46d6b7d7d24b05bfc78701914b1aa00e7c2aab3e5ca"
-    }
-  },
-  "crossbowman-t2-b": {
-    "master": "f7b92d97960c2b1556d68ca24035a3f14e714fe9ad4e71455c7b43085d84c44b",
-    "deliveries": {
-      "64": "bb8b54659d41ae377f366f541dc7e3bfa21e21da2f79673621049ed131c5c45b",
-      "128": "a672e23a2256925fb402f26187c399f8b1f20802d24f69b3f4c2fe47ca695cc5",
-      "256": "34fa0997e806e935ca0d995213dbdf1735de2462caf7d31a08b2e87338d49d09"
-    }
-  },
-  "paladin-t2-a": {
-    "master": "68c512a0947702478a04820b502327c61faf4ed963d965cd6c585928751cfe33",
-    "deliveries": {
-      "64": "35b29e78e9f514815693c1d5980806b69b8ad2f876aff4d0462b86af2111c9ec",
-      "128": "ff58f35ea17716a1994cd534e2f1faabde31bed552ae891008cb82bea4c8d515",
-      "256": "aca3bf225073e3cb69c8418ba0d7e047b1f3938b368c40c59855e3bab7730e44"
-    }
-  },
-  "paladin-t2-b": {
-    "master": "28d47e6e85f9cc0e45ec59bee0f79ec9c132a721b062f95ecd4d6eff4cda1050",
-    "deliveries": {
-      "64": "d884ecbb53d36858cde6f73032eb07e70b8b790cd078097577890da39a596981",
-      "128": "9038ce9e7b01654524dfa589d7204328078e6d8276a03c1d7cfbc64e5d71ac46",
-      "256": "2b9312635b0e8444dc8a530de0c6982afe8ef6b378d4e1e79acd8c6cb7f2387d"
-    }
-  },
-  "stamina-relic-2-a": {
-    "master": "7bed757f359e5a4780d55fc1d903fec86609138b0095eb7845d14499e2b79a9b",
-    "deliveries": {
-      "64": "b991dbec94b8d4a800d7c43d615a7fc54f1019856b866e067ddb7ae47fd046bf",
-      "128": "eba38be7a58499cd050ddaacd8b60c462be14c485f35f3e81589f03f783f7022",
-      "256": "74346f32f36999b1a69ecda041c1008a54a307112f4768f7a6d7735aa33f202d"
-    }
-  },
-  "stamina-relic-2-b": {
-    "master": "a577af936b11d79b5dd2df86c728e82b75605d3128f86626b4be29f0fad47255",
-    "deliveries": {
-      "64": "bba1de0542670b31f2f9d92f3bcf9e06b776be55a1540aeaa8ee760d311fd226",
-      "128": "d5b35e6828ec338cf9ffb9881e01834d8d1132e21442576e6df676be7adf3761",
-      "256": "c57c901819004421d3133ed34cd49b0ac222c7fceb6a19080f7aed3cfe2680a3"
-    }
-  },
-  "damage-relic-2-a": {
-    "master": "7d7762304828e915a2c02c50ce3133937b7e23e4ab7cda8fac670141c64b7034",
-    "deliveries": {
-      "64": "9e829afb3e1cd8ff1a26406c9607f82167935f6e19ea7f44183921465a7c9197",
-      "128": "5f37dbcf8270c9554e5b2d723abfe15718bf11e567fd21d098e5272e5852f61e",
-      "256": "5603007faeb521c46e53ea8fa6e0fd42b638abb58e90500466dd12889a3f2958"
-    }
-  },
-  "damage-relic-2-b": {
-    "master": "92214b18c104780cd71fb3a6a1ff683fb4717fb9f5ce69fb25ad050087144cf2",
-    "deliveries": {
-      "64": "ba9a6a2a9afe7f7d4cc8d5e3c68e00eb1105d6b7944692bb1bd0b22c348cccdf",
-      "128": "2620481600988b3c7f3acddcd5212b3cf3190c2bdb0ca7264699e7c258aad030",
-      "256": "a2dc00fc8a51c665e9fb4958b69dc3adcf4422e80bdfaa06b9623a2e05c463ac"
-    }
-  },
-  "damage-reduction-relic-2-a": {
-    "master": "4ab7cdb552d61bcc0b4e42ed9ac58cb047ad615030e8bcbd48db6af1753a9fd1",
-    "deliveries": {
-      "64": "5d9d980cee0012cd38fd03675174c79ec433fdd68302c4670a5f8b5c731c2ef7",
-      "128": "247190cdc36fea33718e35ce0d8959cc1efa911d206821bfd7efd7ed9c6af5ca",
-      "256": "67ce422b0e771ac8040e6b7ae7c07d40463020bc6ac9537d820f923472a4ba57"
-    }
-  },
-  "damage-reduction-relic-2-b": {
-    "master": "f9276ac5589fca26bad4d65e6393aaecb80d41f4b9ee06d0076e8144ecce1538",
-    "deliveries": {
-      "64": "75aa95a122c023709b60f7ea40626377606c4704f45627dab5cf5f440dbe5923",
-      "128": "231d38b9a0f405ecf97c03de0d756e115636a70bef255c46a091d97289e70c0b",
-      "256": "859275a4e389a18c16dec8cf07d3f87add57d2ae499ad718c343f3f622268dc6"
-    }
-  },
-  "exploration-relic-2-a": {
-    "master": "2f5fe1d99461a0fc3e200fe788a4d5e50a477858a73b4b595fbe143974baf5c0",
-    "deliveries": {
-      "64": "fdc443da794ab0d1dcc6a79bbba5a8c4e483396cbab8876cf8d94189edeb96c0",
-      "128": "1dac3448d0527ea1f42857413acad1fea96ba307f110279afdc5dd3b519208ff",
-      "256": "71518ead8aabb3d0d70d9af87da0460a5efdf01de1629b1ef1170c2e4ac8d137"
-    }
-  },
-  "exploration-relic-2-b": {
-    "master": "66b23608227775a544b222e71c1d98766e590bfb056a99d67304ea20988ff348",
-    "deliveries": {
-      "64": "41a96025ae5ccc83bd204944e35bd5cc0cac32ac31c0d92eacb10744d9bebf27",
-      "128": "f97a21ec6cf2b6de8ddf0371dc903580123ac62c2f2a68ce28a6b396f819cae1",
-      "256": "83ded4af40d61af0e75da7cb5a010695523ecdd681d99f2f1c4a1c84da4d76e1"
-    }
-  },
-  "exploration-reward-relic-2-a": {
-    "master": "84ac82d00ffff5636c6d0acc6535eda427981fa51d077bcf91a7882afe39dd6a",
-    "deliveries": {
-      "64": "0cdd3ff45ad9d9f93c15152d491383a81a8c5d1b1841c747631d974d6ec86bc0",
-      "128": "6608d74b737a0da19c3832ab7cc4fd25ebb059bfac5e8934c68d36939146bebe",
-      "256": "f58808438aefadfc93332e3956c5488446acee4ae2b04fdbf9810d93ae19c60e"
-    }
-  },
-  "exploration-reward-relic-2-b": {
-    "master": "c133800224c4c3152916e791e693dbe185bdbd4ec3ec5b52338eb04c966b0b33",
-    "deliveries": {
-      "64": "0a838f5ca1a10c01fa1877c0070afd08a90e98c66e677b32d27a398cc2f29966",
-      "128": "7aa8c81f04d2047a56b90369fb4094b88611a49c21a12f58bea00fd93c65de0f",
-      "256": "0908dc24894dcde9bb1c73c628ca5361f572e47d1173be8cb2ae4444c7c2b0b4"
-    }
-  },
-  "structure-damage-reduction-relic-2-a": {
-    "master": "932078c09fadfa59459fcb1ff58fe79e1db72a8ebe43f85af58e0578a0563f71",
-    "deliveries": {
-      "64": "793f8af822409b2c8558aff23b7981648dc02947e4513a787cc4c6888f0f6a45",
-      "128": "b6c1b91b41ef34d96afd29e915fdc4e8e66bfb78834974a634a2370076539f72",
-      "256": "18b077d5f1713a1ae18e88d351055197011329283122bc0e8871ae43eda053ca"
-    }
-  },
-  "structure-damage-reduction-relic-2-b": {
-    "master": "f264e9a6b714d60be8c4abed4c97cb5c49581049b2039c92ba943e61a4950aaa",
-    "deliveries": {
-      "64": "1488c4b95a6cdba64bbeef8b82fd6bcd4fe62594e1cd8574e8c7bc030dd7e2b0",
-      "128": "ae0a64edfbbd47fcdb3b74a31cb0f2b22bc64a22aa1ef9fad229ac31bbc6f6de",
-      "256": "8e8d999166425a8e25804bb56f8ea0f5cc1e7d471a680aa0892885de56590467"
-    }
-  },
-  "production-relic-2-a": {
-    "master": "46f2c87020f1f58fffb8f67bd0838046b80b6e7a1fa36d4b36604eafab39b779",
-    "deliveries": {
-      "64": "029bddc89b90f0519049e2bb691384f8afb9ff9e9c47ba0c07c6b8442771f8e5",
-      "128": "f56be91a873e989bce61043508105f6429c4bd0986e410ebebc6ed8b6894ec47",
-      "256": "023d3f73496a8b8829dae7a4a05020922a020f29a2039a0cecad55771a48354e"
-    }
-  },
-  "production-relic-2-b": {
-    "master": "278cfbe73a4a0ab5b09c0b27cc3a42d76ba0b3f5b10702ce7a0355e4c333fd17",
-    "deliveries": {
-      "64": "58da35137c6df398bfaef9fcac7dad0a30aadc38c2086bb3cdc10cb509c35d26",
-      "128": "fc94b09711e393d485b9cddb990602085ec2a969a1767e9dc8c6604a12fb023b",
-      "256": "e5e58aed7b3ec27edb64647886a6b6b6375e935e3fc7f21c52cab9ce7b240b19"
-    }
-  },
-  "labor-production-relic-2-a": {
-    "master": "4bb86c43165cad9758235fc5f5f79c0feaa3058343a26db8b9481fdbd5fb7971",
-    "deliveries": {
-      "64": "8a38d137839235c72e63d9b46c5f5e22ca290f9010ef4fbcf65133de23366459",
-      "128": "118fddcffb260062376a60cc15129085e85e361bfb87b03e04e78ad600b72592",
-      "256": "3638d834d320d4ee96329177037316a8890cc777c775b7ec8634a4ba7b486dfd"
-    }
-  },
-  "labor-production-relic-2-b": {
-    "master": "db87f7053050fa850732c0b699d4aa881ccd6f4f09d3f378a18d1ad15ac18d9c",
-    "deliveries": {
-      "64": "2896e0faa1a05b37794fc27070becab52027f9637f226d6487599e2216a09395",
-      "128": "6767d16461dae1fd4b66ce61bebc94c8777fd3db3ec392b45b0f1dc95d6012e5",
-      "256": "79b71f8429b3ede20349081c74d80a05fa9ab8b93ad658227d3e669e173fd173"
-    }
-  },
-  "troop-production-relic-2-a": {
-    "master": "6c663d6d5b92c2cde2c5f2af5407c859f3e060f979a4c5b4ed67c56c812aa04e",
-    "deliveries": {
-      "64": "e63d91905bb876735d6c488d70a32af479ed3fa3922fcc2abe76b758e7d0746f",
-      "128": "4964b14699a56a47faa4d3543e1392bf281b3db047ef38a3cd703b7d051252e2",
-      "256": "88908f0969df884e8afdc6b37d1e21178a1f2f9d3b452184ec0e5b5e615742c2"
-    }
-  },
-  "troop-production-relic-2-b": {
-    "master": "53bee596f2f0b2385a2d260f683a5f54b84457abecfab72af54d0799b1b779e6",
-    "deliveries": {
-      "64": "910d8aaf21070fe71be251f0f747eefea9ea9a4481e482399f2bfa35107eb335",
-      "128": "d73473410c6cc7448b35132a928ebe365b0039afa6bd273538b78c9962a38130",
-      "256": "9559d05d74329510d96d31a2718aab475d14c476fd73230b19fc7eb8b796c239"
+  ],
+  "artworks": {
+    "template-wheat": {
+      "master": "801155be6d1f7f242ba1d8a8862b011018aa74baada1bc1d2c6361e07fff5e80",
+      "deliveries": {
+        "64": "a9cdbf3bdcd0bcb88c1f98571e84a6d75d2d45aaac41b465536f19525590228c",
+        "128": "8ecebe256efc7118dd69e974e1fc39b5ea245db7b3c59f03027d056c5841cd5d",
+        "256": "c42889473d388e5a720257c0b316025a8076cb22d4f76d1ed7797c5de0df0fc1"
+      }
+    },
+    "template-fish": {
+      "master": "9f2fc425fd51f6b18e83a369daf86c61c084ee9c9516d0079f3193ab1bdf4dd3",
+      "deliveries": {
+        "64": "3460d798821f25a43220e9718f2258642001f18e182c0c680e4d10d60c1a304a",
+        "128": "5accabcd74780fabe0e93b57b981fea4315306cdc2287c10009cbc9fda663908",
+        "256": "52e43494414405ba7457ae07b298d6acd6d2c9bb4caa7891d5b9d13e5301ac29"
+      }
+    },
+    "template-wood": {
+      "master": "b9254e43a1b4c388e869c08d822f2f06f31c94726ef96c0d0ded96438b6f81fd",
+      "deliveries": {
+        "64": "d1a2a4f8d5e66d1eb19dde161c5a4d3be0603311e5526f257447b1a918de177e",
+        "128": "2d0481c4977e1820a1f26017cb370cf83825d92c6d6b46609f0f3328073f34ac",
+        "256": "ef01c0bc46e9e86197f900f4d6cac2c30b228366e7aeb942761dbf91ff113455"
+      }
+    },
+    "template-hartwood": {
+      "master": "8bfcae67b5ce37acd02333714b23408c580d3b5f235badac943b6e4fd459428e",
+      "deliveries": {
+        "64": "6e20fc484e0b121ac54c294a9c98cad7b2bd8b4e93c833c66f3682cbff270c68",
+        "128": "a7407262e88308ee277dcbbdae07178eafcc1487e301138df649733a3799589f",
+        "256": "a66844c5e2ff3a4c49e6b814de4195829709d11fe39cbe803f220437a0646be7"
+      }
+    },
+    "template-stone": {
+      "master": "f81d40c52849ac09eea44e0fae99167c71e86cdd1b1c7297b5d722116bdebc94",
+      "deliveries": {
+        "64": "efe3d00030db2c0ee27d6ea8bafa8055456479c659b29f0f6b5fc1518234a26b",
+        "128": "645e1c615f07254fea10a3961634750526a1b2c6ac1a4accc1cf192cd046ddda",
+        "256": "4b924ff3a16c79cf9072b023a7c783777ea2464c04176d5f747983589173a0af"
+      }
+    },
+    "template-coal": {
+      "master": "b9de1f51d450284929e2e9325e87ffff4e47a8f7c6f7e065a0be3ef885b44cc6",
+      "deliveries": {
+        "64": "a7c837f493cb9ba2b01749bfa9f6ea7928146dfd1e3c1a3110c7f996887048bc",
+        "128": "49c36f2ad9bb04ed173f782130812a33c1bdfea6cf18ad3f882f599bcfe577c0",
+        "256": "650fe5fea560061a3287d3b23e8d0ed15200eca8af0dba2663d0111083539201"
+      }
+    },
+    "template-copper": {
+      "master": "bccd474f71ac99f67bc87eccce2519bd6a5939a334b5e840365c17d7e4107553",
+      "deliveries": {
+        "64": "03ea645c59625c15fb924a9a1c01efd508a7b3d3ec4d2e78c22ee7e2df0ae6e6",
+        "128": "5b3a21232b4a03c8170b90631233b2f784a235dee92506fe4dca40638c2b4a81",
+        "256": "385cf52ba6610c085c2c84fab7843b042ba389e1800aa250ff77dc3ce4744a70"
+      }
+    },
+    "template-silver": {
+      "master": "40e022e34dab29783732b57ff4b5e8c49f3d5d2b887da457674959ed859c4302",
+      "deliveries": {
+        "64": "ce8ced75970367decad47f7d20b678cdab83caae8dd4dad560d2126156583b07",
+        "128": "a514d16bf3d6a0f916301bb2c676d2cd6c16d9acd7adf660de063c2559713794",
+        "256": "a74ae8223cc2a52ceabdef14af232ab851cf152b288daee973711a1a20da56be"
+      }
+    },
+    "template-ruby": {
+      "master": "179167ce3cb3fac543c3feb0aa8a44840ab2977e83489ba177cd40e4b68f4a9f",
+      "deliveries": {
+        "64": "5f04121288a1e1b3d897e0246d68e6aea5756dd46a650ee133b3225304f09594",
+        "128": "d6e113dc6d4c945c196e9a15e0016738a029745ed9f5ba79f92aaa35cb6d603a",
+        "256": "da1fb37f47e651903c727350399e4ceaf0fbf553ade0556a252bf089d0dc9b6a"
+      }
+    },
+    "template-true-ice": {
+      "master": "8b9bd6688ec7dbcda37fd3edf70e5a76e8e2c3639bdf995ee174b8b1c5462b00",
+      "deliveries": {
+        "64": "e1505b8d7c41ff309c367b7c93d9cde382c53aa53481a6e8d2d96c17c8622bbf",
+        "128": "8ceaf24d27109d569e2cdf5f9114f3adf8cb0a14c55a8fc21a422b2e88f198ca",
+        "256": "aaf528c6bb2d9d1b0acf256618387b8b0b12bc9cd4c532b568a3d76d798e7d16"
+      }
+    },
+    "template-ethereal-silica": {
+      "master": "fbba8fee348f25a2a0cafda967803dc9e63af1ae0d9c6638573cbf6d21e7f927",
+      "deliveries": {
+        "64": "d93d748600159ea23186021ba6d1ee83d5cee1f65e9e130838d5939c95cbae7e",
+        "128": "a11a10f1bfeca3d85db448e35a7ddd74d42b0ac4cb901c2c761a5252b43fdcbc",
+        "256": "e090d21be2c89dc92048f156d3dad2424aa052421e2b3dd5f8ea612b49d817b1"
+      }
+    },
+    "template-dragonhide": {
+      "master": "2e49cd42983f7eff39bc4d7f38f26cbcdf4cd0c4db9b7bb29236f3fa36759964",
+      "deliveries": {
+        "64": "334cec06393839021f120f08ecc1c7b9ac620edffb1ae187ea432dd222ef60c0",
+        "128": "bb175cfb91c800dd353c7386a2db4fe579d440c1b32a588904303ac0728f6830",
+        "256": "2c6381e3494419ab1292e29992a7830331f5d3221b6e8c546023bd7667b01116"
+      }
+    },
+    "template-fragment": {
+      "master": "9603439041cc25ab1b2a15e43552a7340065002c7dc842f639a0e06f6b614d64",
+      "deliveries": {
+        "64": "e627726ead5213eefda5c3c2c6bed842fae0bd507042ebe1219bc9a59b18cbf1",
+        "128": "840bcd6447412246e558bfdc97544374ae296342ce522534ef9e6d29656ad883",
+        "256": "95778bc4ed1792eab810caee19e714cb2f980066b3d282b23fef221a4abe79bf"
+      }
+    },
+    "template-essence": {
+      "master": "ee24d02da9f9f99a7bbae58be86741630c4990896e543655c6d858373bde754a",
+      "deliveries": {
+        "64": "4f03d120f632455a4598038683cf174efe45182de8a6c2d3c56bac1db505b45a",
+        "128": "3cb2734eebc3d2bfd06d73fcada1a296ee2702c9b717425b44778b1bfb6c782b",
+        "256": "a4d42ba9f53685b512e77bbb6b51f750e8ba561795e3d442057bfebcf53122c9"
+      }
+    },
+    "template-research": {
+      "master": "9c6c68cce7bcab6a07ab88080ef68819019aa81341dcc034fbdc653c395a1965",
+      "deliveries": {
+        "64": "4ae07f53163e5130fb11c0224c6a743223682a64afb37289ffe46ee195e50a78",
+        "128": "a97369cce5045bf08eb39291d52632b81b7eab3424fdc61579fcef8f05949f68",
+        "256": "66011bf5e9898ad14d2605f4bd3308c8a39b33834ac4749855cea65169d78ecb"
+      }
+    },
+    "template-labor": {
+      "master": "7a394e7386ae97f4cf46d639c3d614c07e180cf84d4b86b70977cddd72e6abc0",
+      "deliveries": {
+        "64": "63a30235c6ef457e57b24aaba12e8a5fc5b7a50a2a34e6dfae942af3a35762fb",
+        "128": "bb508b83704d4aa6cbe6de844f0045877f1d02f8ff21aa72efdf0154ff86910e",
+        "256": "0b96b899d8b9cd36c83eea5ea94d546b2ddf20bccfa6db668fdc6ec57df5a724"
+      }
+    },
+    "template-knight-t2": {
+      "master": "9cc9bc085baa03a5e78aac62336faf520074e4bf907df7a4dc34390dfb8cd7a3",
+      "deliveries": {
+        "64": "40ab59e1cf8cac5af82c1ff0fc60181bdeeb29c435a30eb9f7a56a9c9e08d811",
+        "128": "a29274bf54ae4a754cd546d05ebbd73730d3317e57018a26f851dd0e61664431",
+        "256": "8426da2507de659f3e1bfd04ae89eec3e2913b4782a733ef0428c164b4cdfb73"
+      }
+    },
+    "template-crossbowman-t2": {
+      "master": "ff91ba5243c07c61c7ab6b4225c36bd524deedd6aca08fc7549025864f1271d7",
+      "deliveries": {
+        "64": "f7bcb89b9c2b46aa77be2ce3a0b401d77db7806730f015789bbc30046b01dcda",
+        "128": "da6ef347a687e937095407b30a82cb9b1157ea060590d1d05aaba88e1f7267f4",
+        "256": "c61c470658252b7d32a700cfe679927dc16578ef4f3bb1c9b06676a37c59b634"
+      }
+    },
+    "simple-stamina": {
+      "master": "b9960036e2d846124919f5aa1480d8251fae03fa20744c6ed95056f446862f1c",
+      "deliveries": {
+        "64": "25396731255bbb1176a748a15d2283ebc9f0d41792731cb78639390b18239be4",
+        "128": "9ee473b7cc9cca59680d8f076f6a5b7c15ef8c4223b871af5ce6808aa104548c",
+        "256": "24b27883a10bff137e50e5c319b1626690e424b1200b5ecb610df14084d1497d"
+      }
+    },
+    "simple-damage": {
+      "master": "3f9cd0b5a6845f2ee74ed5505b3f3a27d21f54049217b001bd1290df14cc7ddd",
+      "deliveries": {
+        "64": "9f770f935274060c457bed7c709634e4e3e3e2f33df173a85e088bdd2cc529f7",
+        "128": "2e059ee8a0df2170e9af4c6df1ef4aff8c207e9ba120393360fa00e69b6812e2",
+        "256": "50811ef8714b43d51bf163bfe383813b7f59b365e514b9d84987184eef7155d8"
+      }
+    },
+    "simple-defense": {
+      "master": "1c9b5b024f4545f87d9ab6aa5a50d043b02679425ebd5900af036fad8e5fd0bf",
+      "deliveries": {
+        "64": "280568ea298ba1db063ac7a78d622a28abb6e5e9ab7777e66792fb84ad4c2022",
+        "128": "49726043e0ae48b5b805be361bfde3c0b8a0dd5dacb7248d84461bfadb7269a2",
+        "256": "9194c9b997fb1385808d3e1a33b357bd7e0ea22a196d5dbc10b87c51833d8a84"
+      }
     }
   }
 }
