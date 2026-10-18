@@ -209,9 +209,9 @@ const type = async (label: string, value: string) => {
 const sendButton = () =>
   [...host.querySelectorAll("button")].find((button) => /^(Send|Choose|Not enough)/.test(button.textContent!))!;
 const send = async () => act(async () => sendButton().click());
-/** Anything the window writes in red. */
+/** Anything the window says in the sheet's bad tone: a refusal notice, a red word. */
 const redText = () =>
-  [...host.querySelectorAll('[class*="red-"], [class*="danger"]')].map((element) => element.textContent);
+  [...host.querySelectorAll('[data-tone="bad"], [class*="text-hud-bad"]')].map((element) => element.textContent);
 const toggle = async (id: number) =>
   act(async () => host.querySelector<HTMLButtonElement>(`[data-pick="Send to:${id}"]`)!.click());
 const setHeld = async (wheat: number) =>
@@ -350,7 +350,7 @@ describe("the transfer window's send", () => {
     world.answers.set(BigInt(B), "rejected");
     await open();
     await type("Wheat: total to send", "10");
-    await act(async () => host.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+    await act(async () => host.querySelector<HTMLButtonElement>('[role="checkbox"][aria-label="Repeat"]')!.click());
     await send();
     expect(world.scheduled).toHaveBeenCalledTimes(1);
     expect(world.scheduled).toHaveBeenCalledWith(
@@ -494,9 +494,9 @@ describe("the goods' order", () => {
   it("is the holding card's: by tier, food before transport here, troops last", async () => {
     world.sides.knights = 10;
     await open([A]);
-    const goods = [...host.querySelectorAll('[role="table"][aria-label="Goods"] [role="row"]')]
-      .slice(1)
-      .map((row) => row.querySelector("input")?.getAttribute("aria-label")?.replace(": total to send", ""));
+    const goods = [...host.querySelectorAll<HTMLInputElement>('input[aria-label$=": total to send"]')].map((input) =>
+      input.getAttribute("aria-label")?.replace(": total to send", ""),
+    );
     expect(goods).toEqual([
       "Wheat",
       iconDefinition(resourceMeaning(ResourcesIds.Donkey)).label,

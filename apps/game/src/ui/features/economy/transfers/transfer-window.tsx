@@ -5,16 +5,23 @@ import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automatio
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LeftView } from "@/types";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Tabs } from "@/ui/design-system/atoms/tab";
+import {
+  HudButton,
+  HudCheck,
+  HudField,
+  HudIconButton,
+  HudPanel,
+  HudTableHead,
+  HudTableRow,
+  HudTabs,
+  HudTransfer,
+  HudWindow,
+} from "@/ui/design-system/kit/hud-elements";
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
@@ -113,76 +120,58 @@ const swapEnds = (ends: TransferEnds): TransferEnds =>
     ? { sourceId: ends.destinationIds[0], destinationIds: [ends.sourceId] }
     : ends;
 
-/** A view tab in the HUD's title type; the lit one (gold hairline on a gold wash) is the view shown. */
-const VIEW_TAB = cn(
-  HUD_LABEL,
-  "!mx-0 min-h-11 flex items-center justify-center rounded-md border border-gold/20 bg-black/25 px-3 transition hover:border-gold/45 data-[selected]:border-gold/70 data-[selected]:bg-gold/15",
-);
+type TransferView = "transfer" | "arrivals" | "automation" | "balances";
 
 /**
  * The one transfer window: sending, and what is on its way, the repeating transfers and every holding's balances,
- * each a tab of it (Transfer · Arrivals · Automation · Balances). It opens on Transfer.
+ * each a tab of it (Transfer · Arrivals · Automation · Balances). It opens on Transfer; a tab left keeps its draft, as
+ * every panel stays drawn while hidden.
  */
 const TransferSurface = ({ initial }: { initial: TransferEnds }) => {
   const closeSurface = usePopoverStore((state) => state.closeSurface);
   const showAutomation = useGameModeConfig().ui.showAutomation;
-  return (
-    <SurfaceFrame
-      title="Transfer"
-      icon={"transfer" as const}
-      onClose={closeSurface}
-      className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="lg:overflow-hidden"
-    >
-      <Tabs className="flex flex-col gap-2 p-3 lg:h-full lg:min-h-0">
-        <Tabs.List
-          aria-label="Transfer views"
-          className={cn("grid gap-1", showAutomation ? "grid-cols-4" : "grid-cols-3")}
-        >
-          <Tabs.Tab className={VIEW_TAB}>Transfer</Tabs.Tab>
-          <Tabs.Tab className={VIEW_TAB}>
-            Arrivals
-            <ArrivalsBadge />
-          </Tabs.Tab>
-          {showAutomation && <Tabs.Tab className={VIEW_TAB}>Automation</Tabs.Tab>}
-          <Tabs.Tab className={VIEW_TAB}>Balances</Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panels className="lg:min-h-0 lg:flex-1">
-          <Tabs.Panel className="lg:h-full">
-            <TransferWindow initial={initial} />
-          </Tabs.Panel>
-          <Tabs.Panel className="lg:h-full lg:overflow-y-auto">
-            <ArrivalsView />
-          </Tabs.Panel>
-          {showAutomation && (
-            <Tabs.Panel className="lg:h-full lg:overflow-y-auto">
-              <TransferAutomationAdvancedModal />
-            </Tabs.Panel>
-          )}
-          <Tabs.Panel className="lg:h-full lg:overflow-hidden">
-            <BalancesView />
-          </Tabs.Panel>
-        </Tabs.Panels>
-      </Tabs>
-    </SurfaceFrame>
-  );
-};
-
-/** What is on its way to the player's holdings: green once some is ready to claim, gold while all is on the road. */
-const ArrivalsBadge = () => {
   const arrived = useUIStore((state) => state.arrivedArrivalsNumber);
   const pending = useUIStore((state) => state.pendingArrivalsNumber);
-  if (arrived + pending === 0) return null;
+  const [view, setView] = useState<TransferView>("transfer");
+  const panel = (key: TransferView) => ({ role: "tabpanel", "aria-label": key, hidden: view !== key });
   return (
-    <span
-      className={cn(
-        "inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
-        arrived > 0 ? "bg-progress-bar-good/90 text-dark" : "bg-gold/90 text-dark",
-      )}
-      title={`${arrived} ready · ${pending} pending`}
-    >
-      {arrived + pending}
-    </span>
+    <HudWindow title="Transfer" icon="transfer" size="workspace" onClose={closeSurface}>
+      <div className="flex flex-col gap-2 lg:h-full lg:min-h-0">
+        <div aria-label="Transfer views">
+          <HudTabs
+            tabs={[
+              { key: "transfer" as const, label: "Transfer" },
+              {
+                key: "arrivals" as const,
+                label: "Arrivals",
+                // Green once some is ready to claim, gold while all is on the road.
+                count: arrived + pending > 0 ? arrived + pending : undefined,
+                countTone: arrived > 0 ? ("good" as const) : undefined,
+                title: `${arrived} ready · ${pending} pending`,
+              },
+              ...(showAutomation ? [{ key: "automation" as const, label: "Automation" }] : []),
+              { key: "balances" as const, label: "Balances" },
+            ]}
+            value={view}
+            onChange={setView}
+          />
+        </div>
+        <div {...panel("transfer")} className="lg:min-h-0 lg:flex-1">
+          <TransferWindow initial={initial} />
+        </div>
+        <div {...panel("arrivals")} className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+          <ArrivalsView />
+        </div>
+        {showAutomation && (
+          <div {...panel("automation")} className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+            <TransferAutomationAdvancedModal />
+          </div>
+        )}
+        <div {...panel("balances")} className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+          <BalancesView />
+        </div>
+      </div>
+    </HudWindow>
   );
 };
 
@@ -205,9 +194,13 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
   // A new source, or swapped ends, start their own amounts.
   const change = (next: Partial<Omit<Draft, "revision">>) => setDraft((current) => revised(current, next));
   return (
-    <div className="flex flex-col gap-3 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[260px_auto_260px_1fr]">
-      {/* Each column uses the shared HUD panel. */}
-      <HudPanel className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
+    <div className="flex flex-col gap-3 lg:h-full lg:min-h-0 lg:flex-row">
+      {/* Each column is a HUD panel: the two ends at a fixed width, the goods taking the rest. */}
+      <HudPanel
+        collapsible={false}
+        className="flex min-h-0 flex-col lg:w-64 lg:shrink-0"
+        bodyClassName="flex min-h-0 flex-1 flex-col"
+      >
         <HoldingPicker
           title="Send from"
           chosen={ends.sourceId === null ? [] : [ends.sourceId]}
@@ -217,17 +210,20 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
         />
       </HudPanel>
       {/* Closed until one holding is chosen to send to, and it looks closed and says so. */}
-      <button
-        type="button"
-        aria-label="Swap from and to"
-        title={ends.destinationIds.length === 1 ? "Swap from and to" : "Choose one holding to send to, then swap"}
-        disabled={ends.destinationIds.length !== 1}
-        onClick={() => change({ ends: swapEnds(ends), edited: null })}
-        className="self-center rounded border border-gold/40 px-2 py-1 text-gold disabled:cursor-not-allowed disabled:border-gold/10 disabled:text-gold/25 max-lg:rotate-90"
+      <span className="self-center max-lg:rotate-90">
+        <HudIconButton
+          icon="swap"
+          label="Swap from and to"
+          title={ends.destinationIds.length === 1 ? "Swap from and to" : "Choose one holding to send to, then swap"}
+          disabled={ends.destinationIds.length !== 1}
+          onClick={() => change({ ends: swapEnds(ends), edited: null })}
+        />
+      </span>
+      <HudPanel
+        collapsible={false}
+        className="flex min-h-0 flex-col lg:w-64 lg:shrink-0"
+        bodyClassName="flex min-h-0 flex-1 flex-col"
       >
-        ⇄
-      </button>
-      <HudPanel className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
         <HoldingPicker
           title="Send to"
           chosen={ends.destinationIds}
@@ -239,7 +235,11 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           }}
         />
       </HudPanel>
-      <HudPanel className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col gap-3 py-2">
+      <HudPanel
+        collapsible={false}
+        className="flex min-h-0 min-w-0 flex-col lg:flex-1"
+        bodyClassName="flex min-h-0 flex-1 flex-col gap-3"
+      >
         {ends.sourceId !== null && sides && plans && (
           <Goods
             key={ends.sourceId}
@@ -343,7 +343,7 @@ const Goods = ({
 
   return (
     <>
-      <p className="text-sm text-kit-muted">
+      <p className="text-hud-muted">
         {destinationIds.length === 0
           ? `${amountText(sides.donkeysHave)} donkeys at ${sides.sourceName} · pick where to send`
           : `${landsText(landsIn)} · ${amountText(donkeys)} of ${amountText(sides.donkeysHave)} donkeys`}
@@ -356,11 +356,10 @@ const Goods = ({
         focus={focus}
         onPlan={(resource, plan) => onPlans(new Map(plans).set(resource, plan))}
       />
-      <button
-        type="button"
+      <HudButton
+        kind="primary"
         disabled={chosen === 0 || destinationIds.length === 0 || short || send.busy}
         onClick={() => void sendNow()}
-        className="rounded-md bg-gold px-4 py-3 text-base font-semibold text-kit-ink disabled:opacity-50"
       >
         {sendWords({
           goods: chosen,
@@ -369,25 +368,24 @@ const Goods = ({
           donkeys: { needed: donkeys, held: sides.donkeysHave },
           every: repeat ? interval : null,
         })}
-      </button>
-      <label className="flex items-center gap-2 text-sm text-kit-muted">
-        <input type="checkbox" checked={repeat} onChange={(event) => setRepeat(event.target.checked)} /> Repeat
+      </HudButton>
+      <span className="flex items-center gap-2 text-hud-muted">
+        <HudCheck checked={repeat} label="Repeat" onChange={setRepeat} /> Repeat
         {repeat && (
           <>
             every
-            <input
-              aria-label="Minutes between runs"
-              type="number"
-              min={1}
-              max={30}
-              value={interval}
-              onChange={(event) => setInterval(Math.min(30, Math.max(1, Number(event.target.value))))}
-              className="w-14 rounded border border-gold/30 bg-black/40 px-1 text-right"
-            />
+            <span className="w-16">
+              <HudField
+                aria-label="Minutes between runs"
+                inputMode="numeric"
+                value={String(interval)}
+                onChange={(typed) => setInterval(Math.min(30, Math.max(1, Number(typed.replace(/\D/g, "")) || 1)))}
+              />
+            </span>
             min (Automation lists it)
           </>
         )}
-      </label>
+      </span>
     </>
   );
 };
@@ -528,11 +526,10 @@ const scheduleRepeats = (
   );
 };
 
-const NUMBER_INPUT = "w-full rounded border bg-black/40 px-2 py-1 text-right disabled:opacity-40";
-
 /**
- * Every good the source holds, by resource id: what it has, the total to send (Max sends it all), and with several
- * destinations each one's share, split evenly; a share typed by hand stays (gold), and ↺ returns it to the split.
+ * Every good the source holds, by the holding card's order: what it has, a slider, quick shares and the total to send
+ * (HudTransfer); with several destinations each one's share under it, split evenly, a share typed by hand stays and ↺
+ * returns it to the split.
  */
 const GoodsGrid = ({
   goods,
@@ -549,124 +546,106 @@ const GoodsGrid = ({
   focus: number | undefined;
   onPlan: (resource: number, plan: GoodPlan) => void;
 }) => {
-  const several = destinationIds.length > 1;
-  const template = `minmax(7rem,1fr) 4rem 5rem 2.5rem${several ? ` repeat(${destinationIds.length}, 4.25rem)` : ""}`;
   // The goods sit as the holding's card shows them; one the card never shows comes last, by id.
   const tiers = useGameModeConfig().resources.getTiers() as Record<string, ResourcesIds[]>;
   const rank = new Map(resourcesInTierOrder(tiers).map((resource, index) => [Number(resource), index]));
   const cardOrder = (good: Good) => rank.get(good.resource) ?? Number.MAX_SAFE_INTEGER;
+  const sorted = goods.toSorted((a, b) => cardOrder(a) - cardOrder(b) || a.resource - b.resource);
   return (
-    <div role="table" aria-label="Goods" className="flex min-h-0 flex-col gap-1 overflow-auto">
-      <div
-        role="row"
-        className="grid items-end gap-2 px-2 text-sm text-kit-muted"
-        style={{ gridTemplateColumns: template }}
-      >
-        <span role="columnheader">Good</span>
-        <span role="columnheader" className="text-right">
-          Has
-        </span>
-        <span role="columnheader" className="text-right">
-          Total
-        </span>
-        <span />
-        {several &&
-          destinationNames.map((name, index) => (
-            <span key={destinationIds[index]} role="columnheader" className="truncate text-right" title={name}>
-              {name}
-            </span>
-          ))}
-      </div>
-      {goods
-        .toSorted((a, b) => cardOrder(a) - cardOrder(b) || a.resource - b.resource)
-        .map((good) => (
-          <GoodRow
-            key={good.resource}
-            good={good}
-            plan={plans.get(good.resource)}
-            destinationIds={destinationIds}
-            destinationNames={destinationNames}
-            template={template}
-            focused={good.resource === focus}
-            onPlan={(plan) => onPlan(good.resource, plan)}
-          />
-        ))}
+    <div className="flex min-h-0 flex-col gap-3 overflow-auto">
+      <HudTransfer
+        rows={sorted.map((good) => ({
+          icon: resourceMeaning(good.resource),
+          name: resourceName(good.resource),
+          held: good.have,
+          value: sentTotal(plans.get(good.resource), good.have),
+          focus: good.resource === focus,
+        }))}
+        onChange={(index, amount) => {
+          const good = sorted[index];
+          onPlan(good.resource, withTotal(plans.get(good.resource), amount, good.have));
+        }}
+      />
+      {destinationIds.length > 1 && (
+        <Shares
+          goods={sorted}
+          plans={plans}
+          destinationIds={destinationIds}
+          destinationNames={destinationNames}
+          onPlan={onPlan}
+        />
+      )}
     </div>
   );
 };
 
-const GoodRow = ({
-  good,
-  plan,
+/** With several destinations, what each one gets of every good sent: split evenly until a share is typed by hand. */
+const Shares = ({
+  goods,
+  plans,
   destinationIds,
   destinationNames,
-  template,
-  focused,
   onPlan,
 }: {
-  good: Good;
-  plan: GoodPlan | undefined;
+  goods: Good[];
+  plans: Plans;
   destinationIds: number[];
   destinationNames: string[];
-  template: string;
-  focused: boolean;
-  onPlan: (plan: GoodPlan) => void;
+  onPlan: (resource: number, plan: GoodPlan) => void;
 }) => {
-  const shares = sharesOf(plan, destinationIds, good.have);
-  const honoured = honouredShares(plan, destinationIds, good.have);
-  const name = resourceName(good.resource);
+  const cols = `minmax(7rem,1fr) repeat(${destinationIds.length}, 6rem)`;
+  const sent = goods.filter((good) => sentTotal(plans.get(good.resource), good.have) > 0);
+  if (sent.length === 0) return null;
   return (
-    <div
-      role="row"
-      className="grid items-center gap-2 rounded-md bg-black/30 px-2 py-1"
-      style={{ gridTemplateColumns: template }}
-    >
-      <span className="flex items-center gap-2 truncate">
-        <ResourceIcon resource={good.resource} size="sm" withTooltip={false} />
-        {name}
-      </span>
-      <span className="text-right text-sm text-kit-muted">{amountText(good.have)}</span>
-      <input
-        aria-label={`${name}: total to send`}
-        type="number"
-        min={0}
-        step={1}
-        autoFocus={focused}
-        value={sentTotal(plan, good.have)}
-        onChange={(event) => onPlan(withTotal(plan, Number(event.target.value), good.have))}
-        className={cn(NUMBER_INPUT, "border-gold/30")}
-      />
-      <button type="button" onClick={() => onPlan(withTotal(plan, good.have, good.have))} className="text-sm text-gold">
-        Max
-      </button>
-      {destinationIds.length > 1 &&
-        destinationIds.map((id, index) => {
-          const pinned = honoured.has(id);
-          return (
-            <span key={id} className="relative">
-              <input
-                aria-label={`${name} to ${destinationNames[index]}`}
-                type="number"
-                min={0}
-                step={1}
-                value={shares[index]}
-                onChange={(event) => onPlan(withShare(plan, id, Number(event.target.value), good.have, destinationIds))}
-                className={cn(NUMBER_INPUT, pinned ? "border-gold text-gold" : "border-gold/20")}
-              />
-              {pinned && plan && (
-                <button
-                  type="button"
-                  aria-label={`Split ${name} evenly again`}
-                  title="Back to the even split"
-                  onClick={() => onPlan(withoutShare(plan, id))}
-                  className="absolute -right-1 -top-2 rounded bg-black px-1 text-sm text-gold"
-                >
-                  ↺
-                </button>
-              )}
+    <div role="table" aria-label="Shares">
+      <HudTableHead cols={cols}>
+        <span role="columnheader">Share</span>
+        {destinationNames.map((name, index) => (
+          <span key={destinationIds[index]} role="columnheader" className="truncate text-right" title={name}>
+            {name}
+          </span>
+        ))}
+      </HudTableHead>
+      {sent.map((good) => {
+        const plan = plans.get(good.resource);
+        const shares = sharesOf(plan, destinationIds, good.have);
+        const honoured = honouredShares(plan, destinationIds, good.have);
+        const name = resourceName(good.resource);
+        return (
+          <HudTableRow key={good.resource} cols={cols} label={`${name} shares`}>
+            <span role="cell" className="flex items-center gap-2 truncate">
+              <ResourceIcon resource={good.resource} size="sm" withTooltip={false} />
+              {name}
             </span>
-          );
-        })}
+            {destinationIds.map((id, index) => (
+              <span key={id} role="cell" className="flex items-center gap-1">
+                <HudField
+                  aria-label={`${name} to ${destinationNames[index]}`}
+                  inputMode="numeric"
+                  value={String(shares[index])}
+                  onChange={(typed) =>
+                    onPlan(
+                      good.resource,
+                      // A share typed with a fraction is kept as typed; the send takes whole units of it.
+                      withShare(plan, id, Number(typed.replace(/[^\d.]/g, "")) || 0, good.have, destinationIds),
+                    )
+                  }
+                />
+                {honoured.has(id) && plan && (
+                  <HudIconButton
+                    icon="refresh"
+                    label={`Split ${name} evenly again`}
+                    title="Back to the even split"
+                    kind="quiet"
+                    size="sm"
+                    onClick={() => onPlan(good.resource, withoutShare(plan, id))}
+                  />
+                )}
+              </span>
+            ))}
+          </HudTableRow>
+        );
+      })}
     </div>
   );
 };

@@ -39,7 +39,7 @@ const TROOPS_HELD = `(() => {
 
 const TRANSFER_PANEL = panel("transfer");
 const HOLDING_ROWS = 'aside[aria-label="Holdings"] [role=tabpanel]';
-const SEND_TO_UNPICKED = `${TRANSFER_PANEL} section[aria-label="Send to"] [role=tabpanel] button[aria-pressed="false"]`;
+const SEND_TO_UNPICKED = `${TRANSFER_PANEL} section[aria-label="Send to"] [role=tabpanel] button[aria-selected="false"]`;
 const WHEAT_TOTAL = `${TRANSFER_PANEL} input[aria-label="Wheat: total to send"]`;
 const sendWheat = (total) => [
   { name: `${total} wheat`, fill: WHEAT_TOTAL, value: String(total) },
@@ -61,7 +61,7 @@ const TRANSFER_SENT = {
     const total = surface?.querySelector('input[aria-label="Wheat: total to send"]');
     const stock = window.__eternumHoldingGoods?.(${WHEAT});
     if (!total || !stock) return null;
-    const rows = surface.querySelectorAll('section[aria-label="Send to"] button[aria-pressed="true"]');
+    const rows = surface.querySelectorAll('section[aria-label="Send to"] button[aria-selected="true"]');
     return { total: Number(total.value), chosen: [...rows].map((row) => Number(row.value)), stock };
   })()`,
   changes: "every chosen holding's wheat up by its share",
