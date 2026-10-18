@@ -7,7 +7,8 @@
  * How to restyle the shell
  *
  * - Change a value here, never in a component or in index.css. `pnpm shell:check` refuses one-off colours, sizes,
- *   radii, shadows and gradients in the shell's code and literal values in the stylesheet classes it renders.
+ *   radii, shadows and gradients in the shell's code and literal values in the stylesheet classes it renders;
+ *   `pnpm hud:check` refuses any look of the HUD's own beside its sheet, and counts down what the migration has left.
  * - The shell and the HUD are two surfaces. The HUD reads `HUD_COLORS` and `HUD_FINISH` (on :root); the shell reads
  *   `SHELL_COLORS` and `SHELL_FINISH` (under `data-surface="shell"`, which PageFrame, the doorway and the install sheet
  *   set). The `kit-*` classes and index.css's shared classes (the primary button, sheet, chip, card, plate, painted

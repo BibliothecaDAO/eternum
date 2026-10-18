@@ -108,6 +108,7 @@
     "icons:build": "node scripts/icons/build.mjs",
     "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
     "shell:check": "node --test scripts/shell-tokens/*.test.mjs && node scripts/shell-tokens/check.mjs",
+    "hud:check": "node --test scripts/hud-sheet/*.test.mjs && node scripts/hud-sheet/check.mjs",
     "icons:review": "node scripts/icons/review.mjs",
     "icons:prove": "node scripts/icons/prove.mjs",
     "icons:measure": "node scripts/icons/measure.mjs"

@@ -41,6 +41,9 @@ jobs:
       - name: Check the shell names its sizes, colours and radii through the tokens
         run: pnpm shell:check
 
+      - name: Check the HUD adds no look of its own beside the sheet
+        run: pnpm hud:check
+
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 
