@@ -7,14 +7,9 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudChip, HudIconButton, HudMeter, HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
-import {
-  isStaminaRecharging,
-  STAMINA_RECHARGING_FILL_CLASS,
-  STAMINA_RECHARGING_TEXT_CLASS,
-  STAMINA_RECHARGING_TRACK_CLASS,
-} from "@/ui/shared/lib/stamina-visuals";
+import { isStaminaRecharging } from "@/ui/shared/lib/stamina-visuals";
 import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import { formatNumber } from "@/ui/utils/utils";
 import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
@@ -97,12 +92,6 @@ const ArmyBannerEntityDetailContent = memo(
     const ownerDisplay = derivedData.addressName;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
-    const headerTitleClass = compact ? "text-sm" : "text-base";
-    const headerMetaClass = compact ? "text-xxs" : "text-xs";
-    const statusLabel = derivedData.isMine ? "You" : "Other";
-    const statusClass = derivedData.isMine
-      ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
-      : "border-red-400/40 bg-red-400/15 text-red-200";
     const currentStamina = derivedData.staminaDisplay?.committedCurrent ?? Number(derivedData.stamina.amount);
     const maxStamina = derivedData.maxStamina;
     const travelBlocked = movementReadiness ? !movementReadiness.canTravel : false;
@@ -125,52 +114,34 @@ const ArmyBannerEntityDetailContent = memo(
       <HudPanel
         title={coordsLabel}
         cue={headerAction}
-        className={cn("flex h-full min-h-0 flex-col overflow-hidden", hasWarnings && "ring-1 ring-gold/30", className)}
+        className={cn("flex h-full min-h-0 flex-col overflow-hidden", className)}
         bodyClassName="flex min-h-0 flex-col gap-2"
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
-              {ownerAvatarUrl ? (
-                <img className="h-full w-full object-cover" src={ownerAvatarUrl} alt={`${ownerDisplay} avatar`} />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
-                  {ownerInitial}
-                </div>
-              )}
-            </div>
+            {ownerAvatarUrl ? (
+              <HudPortrait src={ownerAvatarUrl} label={`${ownerDisplay} avatar`} />
+            ) : (
+              <HudPortrait initial={ownerInitial} label={ownerDisplay ?? "Unknown"} />
+            )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className={cn("truncate font-semibold text-gold", headerTitleClass)}>{ownerDisplay}</p>
-                <span
-                  className={cn(
-                    "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em]",
-                    statusClass,
-                  )}
-                >
-                  {statusLabel}
-                </span>
+                <p className="truncate text-hud-strong text-hud-ink">{ownerDisplay}</p>
+                <HudChip tone={derivedData.isMine ? "good" : "bad"}>{derivedData.isMine ? "You" : "Other"}</HudChip>
               </div>
-              <div className="flex items-baseline">
-                <span className={cn("truncate text-gold/80", headerMetaClass)}>{stationedDisplay}</span>
-              </div>
+              <span className="block truncate text-hud-label text-hud-muted">{stationedDisplay}</span>
             </div>
           </div>
           {derivedData.isMine ? (
-            <button
-              type="button"
+            <HudIconButton
+              icon={isLoadingDelete ? "refresh" : "trash"}
+              label={isLoadingDelete ? "Deleting" : "Delete Army"}
+              kind="quiet"
+              size="sm"
+              tone="bad"
               onClick={handleDeleteExplorer}
               disabled={isLoadingDelete}
-              className="inline-flex items-center rounded border border-red-500/40 p-1 text-red-200 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-              title={isLoadingDelete ? "Deleting" : "Delete Army"}
-            >
-              {isLoadingDelete ? (
-                <SemanticIcon name="refresh" className="h-3 w-3 animate-spin" />
-              ) : (
-                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
-              )}
-              <span className="sr-only">Delete Army</span>
-            </button>
+            />
           ) : null}
         </div>
 
@@ -187,12 +158,12 @@ const ArmyBannerEntityDetailContent = memo(
             />
           ) : null}
           {movementReadiness?.foodBlock ? (
-            <p className="text-[11px] leading-snug text-amber-300" role="status">
+            <p className="text-hud-label leading-snug text-hud-warn" role="status">
               {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatNumber(amount, 0))}
             </p>
           ) : null}
           {derivedData.staminaDisplay?.isRecharging && derivedData.staminaDisplay ? (
-            <p className="text-[10px] text-gold/60">
+            <p className="text-hud-label text-hud-muted">
               Rested in {formatRestTime(derivedData.staminaDisplay.secondsUntilFull)}
             </p>
           ) : null}
@@ -291,39 +262,20 @@ const InlineStaminaBar = ({
   });
   const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);
 
-  // Red exclusively means "this army cannot take its cheapest move right now"
-  // (stamina- or food-blocked); low-but-movable stamina renders amber so the
-  // blocked signal stays unambiguous. The readiness icons say why.
-  const fillClass = travelBlocked
-    ? "bg-progress-bar-danger"
-    : committedPercentage > 66
-      ? "bg-progress-bar-good"
-      : "bg-progress-bar-medium";
+  // Bad exclusively means "this army cannot take its cheapest move right now" (stamina- or food-blocked); low but
+  // movable stamina is the warning tone, so the blocked signal stays unambiguous. The readiness icons say why.
+  const tone = travelBlocked ? "bad" : committedPercentage > 66 ? "good" : "warn";
 
   return (
     <div
-      className="flex items-center gap-2 text-xxs text-gold/80"
+      className="flex items-center gap-2 text-hud-label text-hud-ink"
       title={travelBlocked ? (travelBlockedTitle ?? undefined) : undefined}
     >
-      <SemanticIcon name="stamina" className={cn("h-3 w-3 ", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
-      <div
-        className={cn(
-          "flex-1 h-2 rounded-full border border-gray-600 overflow-hidden",
-          recharging && STAMINA_RECHARGING_TRACK_CLASS,
-        )}
-      >
-        <div
-          className={cn(
-            fillClass,
-            "h-full rounded-full transition-all duration-300",
-            recharging && STAMINA_RECHARGING_FILL_CLASS,
-          )}
-          style={{ width: `${committedPercentage}%` }}
-        />
-      </div>
-      <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>
-        {`${displayedCurrent}/${maxStamina}`}
+      <SemanticIcon name="stamina" className="h-3 w-3" />
+      <span className="min-w-0 flex-1">
+        <HudMeter share={committedPercentage / 100} tone={tone} label="Stamina" filling={recharging} />
       </span>
+      <span className="whitespace-nowrap tabular-nums">{`${displayedCurrent}/${maxStamina}`}</span>
       {rightAccessory ? <div className="flex shrink-0 items-center">{rightAccessory}</div> : null}
     </div>
   );

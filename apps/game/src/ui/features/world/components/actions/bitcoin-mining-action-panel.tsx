@@ -93,7 +93,7 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
   };
 
   return (
-    <section className="space-y-2 rounded border border-gold/20 p-3 text-xs text-gold">
+    <section className="space-y-2 rounded border border-hud-divider p-3 text-hud-label text-hud-ink">
       <h4>Bitcoin mining · phase {phase.toString()}</h4>
       {owned && (
         <>
@@ -108,7 +108,7 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
               inputMode="numeric"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="w-24 bg-black/40 p-1"
+              className="w-24 bg-hud-well p-1"
             />
           </label>
           <Button onClick={contribute} disabled={!validAmount || pending}>

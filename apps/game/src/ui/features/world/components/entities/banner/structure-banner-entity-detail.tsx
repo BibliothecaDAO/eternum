@@ -4,11 +4,9 @@ import { IncomingCaravans } from "./incoming-caravans";
 import { StructureOwnershipTransfer } from "./structure-ownership-transfer";
 import { memo, useCallback } from "react";
 
-import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudPanel, HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -63,9 +61,9 @@ interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEn
 }
 
 const VillageTimerChip = ({ label, value, title }: { label: string; value: string; title?: string }) => (
-  <div className="rounded border border-gold/15 bg-black/25 px-1.5 py-1" title={title}>
-    <div className="text-[9px] uppercase tracking-[0.06em] leading-tight text-gold/65">{label}</div>
-    <div className="mt-0.5 text-xs font-semibold leading-none text-gold">{value}</div>
+  <div className="rounded border border-hud-divider bg-hud-well px-1.5 py-1" title={title}>
+    <div className="text-hud-label text-hud-muted">{label}</div>
+    <div className="mt-0.5 text-hud-label leading-none text-hud-ink">{value}</div>
   </div>
 );
 
@@ -159,9 +157,6 @@ const StructureBannerEntityDetailContent = memo(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
-    // The owner-bubble header transfer shortcut stays hidden to avoid
-    // duplicating the Resources bubble cue (which is the primary affordance).
-    const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const showHyperstructureVP = isHyperstructure && hyperstructureRate !== undefined;
     const occupiedGuardSlots = guards?.filter((guard) => guard.troops.count > 0n).length;
@@ -187,41 +182,21 @@ const StructureBannerEntityDetailContent = memo(
             bodyClassName="pt-0"
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 items-center gap-2 text-gold">
-                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
-                  {ownerAvatarUrl ? (
-                    <img
-                      className="h-full w-full object-cover"
-                      src={ownerAvatarUrl}
-                      alt={`${ownerDisplayName} avatar`}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-kit-muted">
-                      {ownerInitial}
-                    </div>
-                  )}
-                </div>
+              <div className="flex min-w-0 items-center gap-2 text-hud-ink">
+                {ownerAvatarUrl ? (
+                  <HudPortrait src={ownerAvatarUrl} label={`${ownerDisplayName} avatar`} />
+                ) : (
+                  <HudPortrait initial={ownerInitial} label={ownerDisplayName ?? "Unknown"} />
+                )}
                 <div className="min-w-0">
-                  <p className={cn("truncate", HUD_HEADLINE)}>{ownerDisplayName}</p>
-                  <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
+                  <p className="truncate text-hud-title text-hud-ink">{ownerDisplayName}</p>
+                  <span className="block truncate text-hud-body text-hud-ink">{structureName}</span>
                 </div>
               </div>
-              {showTransferButton && canOpenTransferPanel && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  forceUppercase={false}
-                  className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
-                  onClick={handleOpenTransferPanel}
-                  aria-label="Open transfer panel"
-                >
-                  <SemanticIcon name="swap" className="h-4 w-4" />
-                </Button>
-              )}
             </div>
             <StructureOwnershipTransfer key={structureEntityId} structureId={structureEntityId} />
             {showHyperstructureVP && (
-              <div className="mt-2 border-t border-gold/15 pt-2">
+              <div className="mt-2 border-t border-hud-divider pt-2">
                 <HyperstructureVPDisplay rate={hyperstructureRate} className="w-full" />
               </div>
             )}
@@ -259,7 +234,7 @@ const StructureBannerEntityDetailContent = memo(
         {/* Guards — always shown for structures that can hold defenders. */}
         <HudPanel kind="section" title="Guards" icon={"defend" as const} cue={guardCue}>
           {guards === undefined ? (
-            <p className={HUD_BODY_MUTED}>Loading guards…</p>
+            <p className="text-hud-body text-hud-muted">Loading guards…</p>
           ) : guards.length > 0 ? (
             <CompactDefenseDisplay
               troops={guards}
@@ -271,7 +246,7 @@ const StructureBannerEntityDetailContent = memo(
               hideSlotSummary
             />
           ) : (
-            <p className={HUD_BODY_MUTED}>No defenders stationed.</p>
+            <p className="text-hud-body text-hud-muted">No defenders stationed.</p>
           )}
         </HudPanel>
 
@@ -284,15 +259,13 @@ const StructureBannerEntityDetailContent = memo(
           icon={"production" as const}
           cue={
             canOpenTransferPanel ? (
-              <button
-                type="button"
-                onClick={handleOpenTransferPanel}
-                className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
+              <HudIconButton
+                icon="swap"
+                label="Transfer resources from this structure"
                 title="Transfer resources from this structure"
-                aria-label="Transfer resources from this structure"
-              >
-                <SemanticIcon name="swap" className="h-3.5 w-3.5" />
-              </button>
+                size="sm"
+                onClick={handleOpenTransferPanel}
+              />
             ) : undefined
           }
         >
@@ -306,7 +279,7 @@ const StructureBannerEntityDetailContent = memo(
               activeRelicIds={activeRelicIds}
             />
           ) : (
-            <p className={HUD_BODY_MUTED}>No resources stored.</p>
+            <p className="text-hud-body text-hud-muted">No resources stored.</p>
           )}
         </HudPanel>
 

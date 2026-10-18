@@ -130,7 +130,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     if (!derivedData) return undefined;
 
     if (derivedData.isMine) {
-      return { label: "Your Army", className: "bg-gold/20 border border-gold/40 text-gold" };
+      return { label: "Your Army", className: "bg-hud-chosen border border-hud-line-strong text-hud-ink" };
     }
 
     if (derivedData.playerGuild) {

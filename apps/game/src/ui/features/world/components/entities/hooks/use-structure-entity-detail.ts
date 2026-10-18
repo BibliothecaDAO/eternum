@@ -122,7 +122,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     if (isMine) {
       return {
         label: "Your Structure",
-        className: "bg-gold/20 border border-gold/40 text-gold",
+        className: "bg-hud-chosen border border-hud-line-strong text-hud-ink",
       };
     }
 
@@ -142,7 +142,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
 
     return {
       label: "Enemy Controlled",
-      className: "bg-danger/20 border border-danger/40 text-danger",
+      className: "bg-danger/20 border border-danger/40 text-hud-bad",
     };
   }, [structure, isMine, isAlly]);
 

@@ -127,10 +127,8 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
     )}
     style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
   >
-    <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
-      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
-        {title}
-      </p>
+    <header className="flex items-center justify-between gap-2 border-b border-hud-divider px-2 py-1 lg:px-3 lg:py-1.5">
+      <p className="min-w-0 flex-1 truncate text-hud-label uppercase tracking-[0.35em] text-hud-muted">{title}</p>
       {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
@@ -398,17 +396,17 @@ const LocalTilePanel = () => {
   // build cost). The variant just colors the value text — the wrapper is
   // always the same etched-bronze chip so the rows read as one design.
   const chipBase =
-    "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
+    "flex items-center gap-1 rounded border border-hud-divider bg-hud-well px-1.5 py-1 text-hud-label tabular-nums";
   const valueClassFor = (variant: "neutral" | "good" | "bad" | "warn") => {
     switch (variant) {
       case "good":
-        return "text-emerald-300";
+        return "text-hud-good";
       case "bad":
-        return "text-red-300";
+        return "text-hud-bad";
       case "warn":
-        return "text-amber-200";
+        return "text-hud-warn";
       default:
-        return "text-gold";
+        return "text-hud-ink";
     }
   };
 
@@ -468,10 +466,10 @@ const LocalTilePanel = () => {
               className={cn(
                 "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
                 isPreviewing
-                  ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
+                  ? "border-emerald-400 bg-emerald-500/30 text-hud-good shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
                   : canBuildAnother
                     ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                    : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+                    : "border-hud-divider bg-hud-well text-hud-muted cursor-not-allowed",
               )}
               title={
                 isPreviewing
@@ -494,7 +492,7 @@ const LocalTilePanel = () => {
             onClick={handleToggleProduction}
             disabled={isActionLoading}
             className={cn(
-              "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
+              "inline-flex h-7 w-7 items-center justify-center rounded-md border text-hud-ink shadow transition disabled:cursor-not-allowed disabled:opacity-60",
               isPaused
                 ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
                 : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
@@ -514,7 +512,7 @@ const LocalTilePanel = () => {
         onClick={handleDestroy}
         disabled={isActionLoading}
         className={cn(
-          "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
+          "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-hud-label uppercase tracking-[0.16em] text-hud-ink shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
           !showDestroyConfirm && "w-7 justify-center px-0",
         )}
         title={showDestroyConfirm ? "Confirm delete" : "Delete"}
@@ -531,19 +529,17 @@ const LocalTilePanel = () => {
       {/* One bubble: the building's name and coordinates with its actions, then one line each for what it makes and
           uses, its population, what another costs and its production. */}
       <HudPanel title={panelTitle} icon={"production" as const} cue={buildingActions}>
-        <div className="flex flex-col gap-1.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-1.5">
+        <div className="flex flex-col gap-1.5 divide-y divide-hud-divider [&>*:not(:first-child)]:pt-1.5">
           {isPaused && (
             <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
-                ⚠️ Production paused
-              </span>
+              <span className="text-hud-label uppercase tracking-[0.2em] text-hud-bad">⚠️ Production paused</span>
               {canManageBuilding && (
                 <Button
                   size="xs"
                   variant="outline"
                   disabled={isActionLoading}
                   onClick={handleToggleProduction}
-                  className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
+                  className="h-7 border-green/50 bg-green/20 px-2 text-hud-label hover:bg-green/40"
                 >
                   ▶ Resume
                 </Button>
@@ -564,7 +560,7 @@ const LocalTilePanel = () => {
                     position: "right",
                     content: (
                       <div className="space-y-2">
-                        <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed by</p>
+                        <p className="text-hud-label uppercase tracking-[0.25em] text-hud-muted">Consumed by</p>
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {
@@ -572,16 +568,16 @@ const LocalTilePanel = () => {
                               return (
                                 <div
                                   key={resourceId}
-                                  className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                                  className="flex items-center gap-1 rounded border border-hud-divider bg-hud-well px-2 py-1"
                                 >
                                   <ResourceIcon withTooltip={false} resource={Number(resourceId)} size="xs" />
-                                  <span className="text-xxs text-gold/80">{name}</span>
+                                  <span className="text-hud-label text-hud-ink">{name}</span>
                                 </div>
                               );
                             })}
                           </div>
                         ) : (
-                          <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
+                          <p className="text-hud-label text-hud-muted">Not consumed by other buildings.</p>
                         )}
                       </div>
                     ),
@@ -589,7 +585,7 @@ const LocalTilePanel = () => {
                 }
                 onMouseLeave={() => setTooltip(null)}
                 aria-label="Show consumers"
-                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gold/20 bg-black/40 text-gold/70 hover:text-gold"
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-hud-divider bg-hud-well text-hud-muted hover:text-hud-ink"
               >
                 <SemanticIcon name="info" className="h-3.5 w-3.5" />
               </button>
@@ -598,7 +594,7 @@ const LocalTilePanel = () => {
 
           {ongoingCost === undefined && (
             <SectionRow label="Consumes / sec">
-              <span className="text-gold/70">—</span>
+              <span className="text-hud-muted">—</span>
             </SectionRow>
           )}
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
@@ -641,7 +637,7 @@ const LocalTilePanel = () => {
                         <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
                           {balance === undefined ? "—" : formatResourceAmount(balance)}
                         </span>
-                        <span className={hasEnough ? "text-gold/55" : "text-red-300/80"}>/ {entry.amount}</span>
+                        <span className={hasEnough ? "text-hud-muted" : "text-hud-bad"}>/ {entry.amount}</span>
                       </span>
                     );
                   })}
@@ -730,7 +726,7 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
   return (
     <PanelFrame title="Minimap" height={compact ? "clamp(180px, 35dvh, 320px)" : MINIMAP_SIZE}>
       <div className="relative flex h-full min-h-0 flex-col">
-        <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
+        <div className="relative flex-1 min-h-0 overflow-hidden rounded-b-xl rounded-t-none border border-hud-divider bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
             tiles={tiles}
             selectedHex={selectedHex}
@@ -738,8 +734,8 @@ export const MinimapPanel = ({ compact = false }: { compact?: boolean }) => {
             cameraTargetHex={cameraTargetHex}
           />
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/40 border-t-gold" />
+            <div className="absolute inset-0 flex items-center justify-center bg-hud-well">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-hud-line-strong border-t-gold" />
             </div>
           )}
         </div>

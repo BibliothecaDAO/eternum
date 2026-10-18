@@ -26,11 +26,11 @@ interface EntityBannerTabCueProps {
 }
 
 const cueToneClass: Record<TabCueTone, string> = {
-  default: "border-gold/35 bg-black/70 text-gold",
-  success: "border-emerald-400/45 bg-emerald-400/15 text-emerald-200",
-  warning: "border-amber-300/55 bg-amber-400/15 text-amber-100",
-  danger: "border-red-400/55 bg-red-500/15 text-red-100",
-  muted: "border-gold/20 bg-black/50 text-gold/55",
+  default: "border-hud-line bg-hud-well text-hud-ink",
+  success: "border-emerald-400/45 bg-emerald-400/15 text-hud-good",
+  warning: "border-amber-300/55 bg-amber-400/15 text-hud-warn",
+  danger: "border-red-400/55 bg-red-500/15 text-hud-bad",
+  muted: "border-hud-divider bg-hud-well text-hud-muted",
 };
 
 export const resolveEntityBannerRelicCue = (usableRelics: number, totalRelics: number): EntityBannerRelicCue => {
@@ -57,23 +57,23 @@ export const resolveEntityBannerRelicCue = (usableRelics: number, totalRelics: n
 const EntityBannerTabCue = ({ icon: Icon, label, cue, splitCue, tone = "default" }: EntityBannerTabCueProps) => {
   return (
     <span className="relative flex h-8 min-w-0 items-center justify-center">
-      <SemanticIcon name={Icon} className="h-4 w-4 text-gold" />
+      <SemanticIcon name={Icon} className="h-4 w-4 text-hud-ink" />
       <span className="sr-only">{label}</span>
       {splitCue ? (
         <span
           className={cn(
-            "absolute -right-4 -top-2 inline-flex min-w-7 items-baseline justify-center rounded-full border bg-black/75 px-1.5 text-center text-[9px] leading-4 shadow-[0_0_10px_rgba(0,0,0,0.45)]",
-            "border-gold/35 text-gold/75",
+            "absolute -right-4 -top-2 inline-flex min-w-7 items-baseline justify-center rounded-full border bg-hud-well px-1.5 text-center text-hud-label leading-4 shadow-[0_0_10px_rgba(0,0,0,0.45)]",
+            "border-hud-line text-hud-muted",
           )}
         >
-          <span className="font-bold text-gold/80">{splitCue.primary}</span>
-          <span className="font-semibold text-gold/50">/{splitCue.secondary}</span>
+          <span className="font-bold text-hud-ink">{splitCue.primary}</span>
+          <span className="font-semibold text-hud-muted">/{splitCue.secondary}</span>
         </span>
       ) : null}
       {!splitCue && cue !== undefined && cue !== null && (
         <span
           className={cn(
-            "absolute -right-3 -top-2 min-w-5 whitespace-nowrap rounded-full border px-1 text-center text-[9px] font-semibold leading-4 shadow-[0_0_10px_rgba(0,0,0,0.45)]",
+            "absolute -right-3 -top-2 min-w-5 whitespace-nowrap rounded-full border px-1 text-center text-hud-label leading-4 shadow-[0_0_10px_rgba(0,0,0,0.45)]",
             cueToneClass[tone],
           )}
         >

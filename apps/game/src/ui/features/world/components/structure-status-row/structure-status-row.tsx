@@ -53,14 +53,14 @@ const resolveStatusTone = (
 };
 
 const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
-  green: "text-emerald-300 drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
-  amber: "text-amber-300 drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
-  red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
+  green: "text-hud-good drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
+  amber: "text-hud-warn drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
+  red: "text-hud-bad drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
 };
 
 const InlineStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title?: string }) => (
-  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75" title={title}>
-    <SemanticIcon name={Icon} className="h-3 w-3 text-gold/55" />
+  <span className="inline-flex items-center gap-0.5 text-hud-label tabular-nums text-hud-muted" title={title}>
+    <SemanticIcon name={Icon} className="h-3 w-3 text-hud-muted" />
     <span>{label}</span>
   </span>
 );
@@ -155,7 +155,7 @@ export const StructureStatusRow = memo(
       [handleCardClick],
     );
 
-    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-gold/60";
+    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-hud-muted";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
     return (
@@ -168,8 +168,8 @@ export const StructureStatusRow = memo(
           "pointer-events-auto cursor-pointer rounded-xl transition",
           isFull && "h-[60px]",
           isActive
-            ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
-            : cn(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),
+            ? "border border-hud-line-strong ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
+            : cn(OVERLAY_SURFACE_BASE, "hover:border-hud-line-strong"),
         )}
         aria-pressed={isActive}
         title={structure.displayName}
@@ -204,7 +204,7 @@ export const StructureStatusRow = memo(
                 event.stopPropagation();
                 onRequestRename(structure.entityId);
               }}
-              className="flex-shrink-0 rounded border border-gold/30 p-0.5 text-kit-muted hover:text-gold"
+              className="flex-shrink-0 rounded border border-hud-line p-0.5 text-hud-muted hover:text-hud-ink"
               title="Rename structure"
               aria-label="Rename structure"
             >
@@ -213,13 +213,13 @@ export const StructureStatusRow = memo(
           )}
           <CategoryIcon
             category={structure.category}
-            className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
+            className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-hud-ink")}
           />
           {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
           <span
             className={cn(
-              "min-w-0 flex-1 truncate text-sm font-semibold",
-              groupConfig ? groupConfig.textClass : "text-gold",
+              "min-w-0 flex-1 truncate text-hud-strong ",
+              groupConfig ? groupConfig.textClass : "text-hud-ink",
             )}
           >
             {structure.displayName}
@@ -243,7 +243,7 @@ export const StructureStatusRow = memo(
           <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
             {levelBadge && (
               <span
-                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-[10px] font-semibold tabular-nums text-gold/80"
+                className="flex-shrink-0 rounded-sm border border-hud-line bg-hud-well px-1.5 text-hud-label tabular-nums text-hud-ink"
                 title="Realm level"
               >
                 {levelBadge}

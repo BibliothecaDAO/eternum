@@ -65,13 +65,13 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
   };
 
   return (
-    <div className="mt-2 space-y-2 border-t border-gold/20 pt-2">
+    <div className="mt-2 space-y-2 border-t border-hud-divider pt-2">
       {confirming ? (
         <>
-          <label className="block text-xs">
+          <label className="block text-hud-label">
             Recipient gameplay account
             <input
-              className="mt-1 w-full rounded border border-gold/30 bg-black/25 p-2"
+              className="mt-1 w-full rounded border border-hud-line bg-hud-well p-2"
               value={recipient}
               onChange={(event) => setRecipient(event.target.value)}
               placeholder="0x…"
@@ -79,11 +79,11 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
               disabled={pending}
             />
           </label>
-          <p className="text-xs">
+          <p className="text-hud-label">
             Transfer this structure and its inventory to this gameplay account. This cannot be undone.
           </p>
           {recipient && !validRecipient && (
-            <p role="alert" className="text-xs text-red-300">
+            <p role="alert" className="text-hud-label text-hud-bad">
               Enter a valid, nonzero gameplay account other than your own.
             </p>
           )}

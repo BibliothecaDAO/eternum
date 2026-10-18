@@ -185,12 +185,12 @@ const sumDisplayItemAmounts = (items: DisplayItem[]) =>
 
 const getResourceItemClass = (variant: InventoryItemVariant) =>
   variant === "hero"
-    ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
-    : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
+    ? "border-hud-line-strong bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
+    : "border-hud-line bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
 
 /** A relic reads at a glance wherever its chip shows: its painting large, its count at 14 px, its name beneath. */
 const RELIC_ICON_SIZE = "lg";
-const RELIC_COUNT_CLASS = "text-sm";
+const RELIC_COUNT_CLASS = "text-hud-body";
 
 const getRelicItemClass = (item: DisplayItem) => {
   if (item.isActive) {
@@ -198,10 +198,10 @@ const getRelicItemClass = (item: DisplayItem) => {
   }
 
   if (item.canActivate) {
-    return "border-gold/80 bg-[linear-gradient(180deg,rgba(166,117,34,0.22),rgba(22,12,30,0.94))] shadow-[inset_0_1px_0_rgba(255,214,102,0.22),0_0_14px_rgba(223,170,84,0.16)]";
+    return "border-hud-line-strong bg-[linear-gradient(180deg,rgba(166,117,34,0.22),rgba(22,12,30,0.94))] shadow-[inset_0_1px_0_rgba(255,214,102,0.22),0_0_14px_rgba(223,170,84,0.16)]";
   }
 
-  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-gold/65";
+  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-hud-muted";
 };
 
 const getInventoryItemClass = (item: DisplayItem, variant: InventoryItemVariant) =>
@@ -272,7 +272,7 @@ export const CompactEntityInventory = memo(
     );
 
     if (displayItems.length === 0) {
-      return <p className="text-xxs text-gold/60 italic">{emptyMessage}</p>;
+      return <p className="text-hud-label text-hud-muted italic">{emptyMessage}</p>;
     }
 
     // Tight tiles are a fixed width in a wrapping row so they stay the same size
@@ -285,7 +285,7 @@ export const CompactEntityInventory = memo(
 
     const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
-    const amountClass = variant === "tight" ? "text-xs" : "text-xxs";
+    const amountClass = variant === "tight" ? "text-hud-label" : "text-hud-label";
 
     const effectiveHeroCount = Math.max(0, Math.min(heroCount, visibleItems.length));
     const heroItems = effectiveHeroCount > 0 ? visibleItems.slice(0, effectiveHeroCount) : [];
@@ -316,7 +316,7 @@ export const CompactEntityInventory = memo(
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
         isClickableRelic &&
-          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-hud-line-strong hover:bg-hud-hover hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
         isClickableRelic && (isAffordable ? "animate-relic-ready" : "opacity-60"),
       );
 
@@ -330,18 +330,18 @@ export const CompactEntityInventory = memo(
           <span
             className={cn(
               options.hero ? heroAmountClass : item.isRelic ? RELIC_COUNT_CLASS : amountClass,
-              "font-semibold leading-none text-gold/95",
+              "font-semibold leading-none text-hud-ink",
             )}
           >
             {formatInventoryAmount(item.amount, { compact: !options.hero })}
           </span>
           {relicInfo && !options.hero && (
-            <span className="mt-1 max-w-full truncate text-xs leading-none text-gold/80">
+            <span className="mt-1 max-w-full truncate text-hud-label leading-none text-hud-ink">
               {relicShortName(item.resourceId)}
             </span>
           )}
           {showLabels && resourceDef && (
-            <span className="mt-0.5 text-[10px] text-gold/65 truncate" title={resourceDef.trait}>
+            <span className="mt-0.5 text-hud-label text-hud-muted truncate" title={resourceDef.trait}>
               {resourceDef.ticker ?? resourceDef.trait}
             </span>
           )}
@@ -390,7 +390,7 @@ export const CompactEntityInventory = memo(
           <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
         )}
         {showHiddenCount && hiddenCount > 0 && (
-          <span className="text-[10px] text-gold/60">
+          <span className="text-hud-label text-hud-muted">
             Showing {visibleItems.length} of {displayItems.length}
           </span>
         )}

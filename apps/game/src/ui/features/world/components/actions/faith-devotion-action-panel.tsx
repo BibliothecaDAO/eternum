@@ -388,13 +388,13 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
       bodyClassName="overflow-auto"
     >
       <div className="flex flex-col gap-3 p-4">
-        <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xxs text-gold/75">
+        <div className="rounded-md border border-hud-divider bg-hud-well p-3 text-hud-label text-hud-muted">
           <p>
-            Structure: <span className="font-semibold text-gold">{structureLabel}</span>
+            Structure: <span className="font-semibold text-hud-ink">{structureLabel}</span>
           </p>
           <p className="mt-1">
             Current devotion:{" "}
-            <span className="font-semibold text-gold">
+            <span className="font-semibold text-hud-ink">
               {devotionStatus
                 ? (wonderEntries.find((entry) => entry.wonderId === devotionStatus.wonderId)?.wonderName ?? "Wonder")
                 : "None"}
@@ -403,21 +403,21 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         </div>
 
         {isLoadingWonders ? (
-          <div className="flex items-center justify-center py-8 text-xs text-gold/70">
+          <div className="flex items-center justify-center py-8 text-hud-label text-hud-muted">
             <SemanticIcon name="refresh" className="mr-2 h-4 w-4 animate-spin" />
             Loading wonders...
           </div>
         ) : wondersError ? (
-          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-xs text-red-200/90">
+          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-hud-label text-hud-bad">
             {getErrorMessage(wondersError, "Failed to load wonders.")}
           </div>
         ) : wonderEntries.length === 0 ? (
-          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xs text-gold/75">
+          <div className="rounded-md border border-hud-divider bg-hud-well p-3 text-hud-label text-hud-muted">
             No wonders available in this world yet.
           </div>
         ) : (
-          <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto rounded-md border border-gold/20 bg-black/25">
-            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-xxs uppercase tracking-[0.2em] text-gold/70">
+          <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto rounded-md border border-hud-divider bg-hud-well">
+            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-hud-divider bg-[#1d160e] px-3 py-2 text-hud-label uppercase tracking-[0.2em] text-hud-muted">
               <span>Wonder</span>
               <span className="text-right">FP/sec</span>
               <span className="text-right">Followers</span>
@@ -431,19 +431,21 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
                     key={entry.wonderId.toString()}
                     type="button"
                     className={cn(
-                      "grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/10 px-3 py-2 text-left transition",
-                      isSelected ? "bg-gold/12" : "bg-transparent hover:bg-gold/6",
+                      "grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-hud-divider px-3 py-2 text-left transition",
+                      isSelected ? "bg-hud-hover" : "bg-transparent hover:bg-hud-hover",
                     )}
                     onClick={() => setSelectedWonderId(entry.wonderId)}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-xs font-semibold text-gold">{entry.wonderName}</span>
-                      <span className="block truncate text-xxs text-gold/65">{buildWonderOwnerLabel(entry)}</span>
+                      <span className="block truncate text-hud-label text-hud-ink">{entry.wonderName}</span>
+                      <span className="block truncate text-hud-label text-hud-muted">
+                        {buildWonderOwnerLabel(entry)}
+                      </span>
                     </span>
-                    <span className="text-right font-mono text-xs text-gold/85">
+                    <span className="text-right font-mono text-hud-label text-hud-ink">
                       {entry.faithPointsPerSecond.toLocaleString()}
                     </span>
-                    <span className="text-right font-mono text-xs text-gold/85">
+                    <span className="text-right font-mono text-hud-label text-hud-ink">
                       {entry.followerCount.toLocaleString()}
                     </span>
                   </button>
@@ -454,10 +456,10 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         )}
 
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 text-xxs text-gold/65">
+          <div className="min-w-0 text-hud-label text-hud-muted">
             {selectedWonder ? (
               <span className="truncate">
-                Selected: <span className="font-semibold text-gold">{selectedWonder.wonderName}</span>
+                Selected: <span className="font-semibold text-hud-ink">{selectedWonder.wonderName}</span>
               </span>
             ) : (
               "Select a wonder to continue."

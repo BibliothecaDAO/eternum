@@ -34,7 +34,7 @@ export function ChestTileDetails({
     <div className="flex shrink-0 flex-col gap-2">
       <HudPanel className="min-w-0" divided bodyClassName="flex flex-col">
         <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
-          <div className="flex items-center gap-2 text-gold">
+          <div className="flex items-center gap-2 text-hud-ink">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
             <p className={cn("truncate", HUD_HEADLINE)}>{opening ? "Crate opened" : "Crate"}</p>
           </div>
@@ -68,7 +68,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   return (
     <div className="flex flex-col gap-2">
       {relics && (
-        <p className={cn("text-gold", HUD_BODY)}>
+        <p className={cn("text-hud-ink", HUD_BODY)}>
           {relics.length === 1 ? "1 relic" : `${relics.length} relics`} inside
         </p>
       )}
