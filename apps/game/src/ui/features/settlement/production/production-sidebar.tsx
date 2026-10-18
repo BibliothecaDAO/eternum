@@ -289,7 +289,7 @@ export const ProductionSidebar = memo(
                 <HudButton
                   key={preset.id}
                   kind="secondary"
-                    title={preset.description}
+                  title={preset.description}
                   onClick={() => applyPreset(preset.id)}
                 >
                   {preset.label}

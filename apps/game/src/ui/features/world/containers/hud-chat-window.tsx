@@ -1,10 +1,8 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   RealtimeChatShell,
   type InitializeRealtimeClientParams,
@@ -71,7 +69,7 @@ export function HudChatWindow({
 }) {
   const { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread } =
     useGameChat(open);
-  const pane = useRef<HTMLElement>(null);
+  const pane = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) pane.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input,textarea")?.focus();
@@ -111,46 +109,38 @@ export function HudChatWindow({
   return (
     <div className="mt-auto flex shrink-0 flex-col gap-2">
       {open && (
-        <section
-          ref={pane}
-          aria-label="Chat"
-          className={cn(
-            "pointer-events-auto flex h-[min(60vh,520px)] shrink-0 flex-col overflow-hidden rounded-xl",
-            OVERLAY_SURFACE_BASE,
-          )}
-        >
-          <RealtimeChatShell
-            defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-            gameZoneId={gameZoneId}
-            displayMode="embedded"
-            autoInitializeClient={false}
-            showInlineToggle={false}
+        <div ref={pane} className="pointer-events-auto flex h-hud-chat-pane shrink-0 flex-col">
+          <HudPanel
+            label="Chat"
+            collapsible={false}
             className="min-h-0 flex-1"
-          />
-        </section>
+            bodyClassName="flex min-h-0 flex-1 flex-col"
+          >
+            <RealtimeChatShell
+              defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
+              gameZoneId={gameZoneId}
+              displayMode="embedded"
+              autoInitializeClient={false}
+              showInlineToggle={false}
+              className="min-h-0 flex-1"
+            />
+          </HudPanel>
+        </div>
       )}
-      <button
-        type="button"
-        aria-label="Chat strip"
-        aria-expanded={open}
-        disabled={status === "loading"}
-        // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
-        onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
-        className={cn(
-          "pointer-events-auto flex h-8 w-full shrink-0 items-center gap-2 rounded-xl px-3 text-left font-sans normal-case tracking-normal",
-          OVERLAY_SURFACE_BASE,
-          "hover:border-gold/50",
-          foldToIcon && "portrait:w-auto portrait:self-start",
-        )}
-      >
-        <SemanticIcon name="chat" className="h-3.5 w-3.5 shrink-0 text-gold/70" />
-        <span className={cn("min-w-0 flex-1 truncate", HUD_BODY, foldToIcon && "portrait:sr-only")}>{stripText}</span>
-        {initializer && !open && unread > 0 && (
-          <span aria-label="Unread chat messages" className="rounded-full bg-gold px-1.5 text-[10px] text-dark-brown">
-            {unread}
-          </span>
-        )}
-      </button>
+      <div className={cn("pointer-events-auto", foldToIcon && "portrait:w-auto portrait:self-start")}>
+        <HudButton
+          kind="quiet"
+          icon="chat"
+          aria-label="Chat strip"
+          aria-expanded={open}
+          disabled={status === "loading"}
+          // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
+          onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
+        >
+          <span className={cn("min-w-0 flex-1 truncate", foldToIcon && "portrait:sr-only")}>{stripText}</span>
+          {initializer && !open && unread > 0 && <HudChip label="Unread chat messages">{unread}</HudChip>}
+        </HudButton>
+      </div>
     </div>
   );
 }

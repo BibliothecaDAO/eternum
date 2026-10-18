@@ -2,7 +2,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudCard, HudChip, HudNotice, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import type { Fix, Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 

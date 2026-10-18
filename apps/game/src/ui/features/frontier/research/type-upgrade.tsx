@@ -7,7 +7,7 @@ import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { Reason } from "@/ui/design-system/kit/reasons";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import type { Fix } from "@/ui/design-system/kit/refused-verb";
+import type { Fix } from "@/ui/design-system/kit/refusal";
 import {
   BUILDING_FIGURES,
   CASTLE,

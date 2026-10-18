@@ -12,7 +12,7 @@ import { requireActiveGameClient } from "@/sync/active-game-client";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
-import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BARRACKS,

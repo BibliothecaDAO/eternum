@@ -81,7 +81,7 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
             busy={pending === depth ? "Entering…" : undefined}
             disabled={!besideSpire || stamina === undefined || stamina < cost || pending !== null}
             title={stamina === undefined ? "Stamina —" : stamina < cost ? `Needs ${cost} stamina` : `${cost} stamina`}
-            onClick={() => void enter(depth)}
+            onClick={() => enter(depth)}
           >
             {`${DEPTH_NAMES[depth]} · ${cost} stamina`}
           </HudButton>

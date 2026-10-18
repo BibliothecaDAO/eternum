@@ -6,7 +6,7 @@ import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
   armiesEnter,
   armiesFind,

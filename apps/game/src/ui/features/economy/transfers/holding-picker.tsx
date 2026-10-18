@@ -93,7 +93,6 @@ export const HoldingPicker = ({
                   <HudRing
                     icon={holdingIcon(holding)}
                     label={holding.displayName}
-                    size="sm"
                     corner={holding.realmLevelLabel !== null ? realmLevelNumber(holding.realmLevel) : undefined}
                   />
                 }

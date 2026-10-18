@@ -13,9 +13,6 @@ export interface ResourceRequirement {
   incoming?: { amount: number; etaSeconds: number } | null;
 }
 
-export const REQUIREMENT_CHIP =
-  "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
-
 /** Every cost the HUD shows reads the same way: held / needed per resource, in bad while short. */
 export const RequirementChips = ({
   requirements,

@@ -31,13 +31,6 @@ const COMPACT_SHEET_CONTENT_HEIGHT = "85dvh";
 /** The landscape drawer's width cap; keep in step with the workspace drawer width in hud-sheet.css. */
 const COMPACT_DRAWER_MAX_WIDTH = "min(100vw, 640px)";
 
-/**
- * Size of a full workspace surface (Build, Military, Market...) framed by SurfaceFrame: the HUD sheet's workspace
- * window (hud-sheet.css .ui-workspace, the same size as HudWindow size="workspace"): a wide desk on desktop, a full
- * bottom sheet below `lg`, and a drawer down the right edge when the phone is sideways.
- */
-export const SURFACE_WORKSPACE_CLASS = "ui-workspace";
-
 type PopoverAlign = "start" | "end";
 
 /** An edge of the viewport a surface can hang from instead of a rect. */
@@ -312,7 +305,7 @@ interface SurfaceFrameProps {
   icon?: IconMeaning;
   onClose: () => void;
   footer?: ReactNode;
-  /** Width and height of the surface, usually `SURFACE_WORKSPACE_CLASS`; the panel caps both to the viewport. */
+  /** Width and height of the surface, usually the sheet's workspace class; the panel caps both to the viewport. */
   className?: string;
   bodyClassName?: string;
   children: ReactNode;
@@ -327,7 +320,7 @@ export const surfaceAnchorFrom = (element: Element): SurfaceAnchor => {
 /**
  * Where the panel sits. Below `lg` every anchor collapses: a phone has no room beside a trigger, so upright it is a
  * bottom sheet whose height budget is its content plus the safe-area strip, and sideways it is a drawer down the
- * right edge under the header, so a `SURFACE_WORKSPACE_CLASS` child fits exactly either way. On desktop a full modal
+ * right edge under the header, so a workspace-sized child fits exactly either way. On desktop a full modal
  * stands in the middle of the screen, wherever it was opened from (a tile, a button), unless it is set against a side
  * of the screen; a small popover hangs from its anchor.
  */

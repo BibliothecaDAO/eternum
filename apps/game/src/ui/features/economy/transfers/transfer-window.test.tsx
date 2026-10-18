@@ -77,7 +77,6 @@ vi.mock("@/hooks/store/use-transfer-automation-store", () => ({
   useTransferAutomationStore: (select: (state: object) => unknown) => select({ add: world.scheduled }),
 }));
 vi.mock("@/ui/design-system/molecules/popover", () => ({
-  SURFACE_WORKSPACE_CLASS: "",
   SurfaceFrame: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));

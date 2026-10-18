@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import type { Price } from "../hud-prices";
 import { HudButton, HudCard, HudChip, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { chooseOne, RESEARCH, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";

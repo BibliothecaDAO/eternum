@@ -1,7 +1,7 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 
 import { hudPrices, type Price } from "./hud-prices";
 

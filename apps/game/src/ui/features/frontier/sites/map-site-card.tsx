@@ -107,7 +107,7 @@ export const MapSiteCard = ({
         )}
       </div>
       {plan.usable ? (
-        <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={() => void use()}>
+        <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={use}>
           {USE}
         </HudButton>
       ) : (

@@ -904,7 +904,7 @@ span.ui-row__choose {
 }
 /* Below the desktop HUD a workspace is the full bottom sheet, or the drawer down the right edge on a phone held
    sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx). A SurfaceFrame takes the
-   workspace size by its .ui-workspace class (SURFACE_WORKSPACE_CLASS). */
+   workspace size by its .ui-workspace class. */
 @media (max-width: 1023px) {
   .ui-window__bar[data-popover-drag-handle] {
     cursor: default;

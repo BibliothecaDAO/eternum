@@ -226,7 +226,7 @@ export const TransferAutomationAdvancedModal = () => {
                   <HudButton kind="quiet" size="sm" onClick={() => toggleActive(e.id, !e.active)}>
                     {e.active ? "Pause" : "Resume"}
                   </HudButton>
-                  <HudButton kind="quiet" size="sm" tone="bad" onClick={() => remove(e.id)}>
+                  <HudButton kind="danger" size="sm" onClick={() => remove(e.id)}>
                     Delete
                   </HudButton>
                 </>

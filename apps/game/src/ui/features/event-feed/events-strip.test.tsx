@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, type ReactNode } from "react";
+import { act, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -84,6 +84,8 @@ import { useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
 import { useEventFeedStore } from "./event-feed-store";
 import { EventLogPanel } from "./event-log-panel";
 import { QuickFeedRows, useEventsFeed } from "./quick-feed";
+import { EventsCard } from "../world/hud/events-card";
+import { HISTORY, LOG_BUTTON } from "../../../../scripts/prove-play-game.mjs";
 
 const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   id,
@@ -298,4 +300,20 @@ it("drops a notice once its time is over", async () => {
   } finally {
     vi.useRealTimers();
   }
+});
+
+it("opens history through the game runner's selectors on the rendered sheet controls", () => {
+  const Rail = () => {
+    const [open, setOpen] = useState(false);
+    return <EventsCard logOpen={open} onLogToggle={() => setOpen((value) => !value)} />;
+  };
+  act(() => root.render(<Rail />));
+  const button = host.querySelector<HTMLButtonElement>(LOG_BUTTON)!;
+  expect(button).not.toBeNull();
+  expect(host.querySelector(HISTORY)).toBeNull();
+  act(() => button.click());
+  expect(button.getAttribute("aria-expanded")).toBe("true");
+  expect(host.querySelector(HISTORY)).not.toBeNull();
+  act(() => button.click());
+  expect(host.querySelector(HISTORY)).toBeNull();
 });

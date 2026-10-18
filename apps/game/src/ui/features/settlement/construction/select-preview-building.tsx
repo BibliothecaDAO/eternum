@@ -1246,10 +1246,10 @@ export const BuildingCard = ({
           )}
           {onDestroy && (
             <HudIconButton
+              kind="danger"
               icon="trash"
               label="Destroy building"
               size="sm"
-              tone="bad"
               aria-busy={destroyLoading || undefined}
               disabled={Boolean(destroyDisabled)}
               onClick={onDestroy}

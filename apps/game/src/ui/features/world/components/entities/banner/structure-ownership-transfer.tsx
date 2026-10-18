@@ -88,7 +88,7 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
             </p>
           )}
           <div className="flex gap-2">
-            <HudButton kind="secondary" tone="bad" disabled={!validRecipient || pending} onClick={transfer}>
+            <HudButton kind="danger" disabled={!validRecipient || pending} onClick={transfer}>
               Confirm transfer
             </HudButton>
             <HudButton kind="quiet" disabled={pending} onClick={close}>

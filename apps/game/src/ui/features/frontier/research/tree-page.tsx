@@ -9,7 +9,7 @@ import {
   HudRow,
   HudSheet,
 } from "@/ui/design-system/kit/hud-elements";
-import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { ESSENCE, LABOR, RESEARCH, RESEARCHING, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";

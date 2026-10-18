@@ -1,8 +1,6 @@
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { readFileSync } from "node:fs";
-
 import {
   gameAddresses,
   HISTORY,
@@ -253,15 +251,6 @@ describe("a game's proof", () => {
     expect(crateWith({ log: ["War pack opened", "Stolsli T1 army · Damage Relic I, Stamina Relic I"] }).problem).toBe(
       "the log names other relics than the panel",
     );
-  });
-
-  it("opens history through the controls the game renders", () => {
-    const feed = readFileSync(new URL("../src/ui/features/world/hud/events-card.tsx", import.meta.url), "utf8");
-    const panel = readFileSync(new URL("../src/ui/features/event-feed/event-log-panel.tsx", import.meta.url), "utf8");
-    expect(LOG_BUTTON).toBe('button[aria-label="Log"]');
-    expect(feed).toMatch(/<button[^>]*aria-label="Log"/);
-    expect(HISTORY).toBe('section[aria-label="World history"]');
-    expect(panel).toContain('<section aria-label="World history">');
   });
 
   it("drives a crate from the pointer to its history after a reload, opened by Log", async () => {

@@ -177,7 +177,6 @@ const HoldingRow = memo(
               <HudRing
                 icon={holdingIcon(structure)}
                 label={structure.displayName}
-                size="sm"
                 corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
               />
               <span className="min-w-0 truncate text-hud-strong">{structure.displayName}</span>

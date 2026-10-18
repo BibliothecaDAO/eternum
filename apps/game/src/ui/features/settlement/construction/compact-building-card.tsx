@@ -95,12 +95,7 @@ export const CompactBuildingCard = ({
               </HudButton>
             )}
             {destroy.onClick && count > 0 && (
-              <HudButton
-                kind="secondary"
-                tone="bad"
-                disabled={destroy.disabled || destroy.pending}
-                onClick={destroy.onClick}
-              >
+              <HudButton kind="danger" disabled={destroy.disabled || destroy.pending} onClick={destroy.onClick}>
                 {destroy.pending ? "Destroying…" : "Destroy one"}
               </HudButton>
             )}

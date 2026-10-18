@@ -76,7 +76,6 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
           compact
           label="Points"
           value={configManager.getVictoryPointGrants().openRelicCrate.toLocaleString()}
-          emphasizeValue
         />
       </EntityDetailStatList>
     </div>

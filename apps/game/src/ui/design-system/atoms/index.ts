@@ -4,7 +4,6 @@
 // Form Controls
 export { default as Button } from "./button";
 export { MaxButton } from "./max-button";
-export { Select } from "./select";
 
 // Display Components
 export { NumberInput } from "./number-input";

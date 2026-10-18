@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import type { Fix } from "@/ui/design-system/kit/refused-verb";
+import type { Fix } from "@/ui/design-system/kit/refusal";
 import { ESSENCE, exploreFor, LABOR } from "@/ui/design-system/kit/words";
 import { configManager, readRevealPercent, revealYield } from "@bibliothecadao/eternum";
 import { ResourcesIds, type TroopTier } from "@bibliothecadao/types";

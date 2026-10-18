@@ -570,6 +570,7 @@ export const HUD_LAYOUT = {
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   "chat-width": "800px",
   "chat-height": "600px",
+  "chat-pane": "min(60vh, 520px)",
   "chat-cap": "45vw",
   /**
    * The Frontier HUD's frame on a desktop (hud-bands): the status strip, the page beside the map and its top and

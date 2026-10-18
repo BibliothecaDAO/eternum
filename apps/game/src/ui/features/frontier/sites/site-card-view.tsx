@@ -340,10 +340,9 @@ const Verb = ({
               {MOVE}
             </HudButton>
           ) : (
-            // An attack that loses the army is no gold verb: it says so in the bad tone and waits for a deliberate tap.
+            // A losing attack uses the shared danger action.
             <HudButton
-              kind={warns ? "secondary" : "primary"}
-              tone={warns ? "bad" : undefined}
+              kind={warns ? "danger" : "primary"}
               icon="attack"
               prices={hudPrices(attackPrices(verb))}
               busy={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}

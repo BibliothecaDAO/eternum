@@ -3,7 +3,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import type { Price } from "../hud-prices";
 import { HudButton, HudCard, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import type { Refusal } from "@/ui/design-system/kit/refused-verb";
+import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { CASTLE, REALM_LEVELS, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
 import { hudPrices } from "../hud-prices";

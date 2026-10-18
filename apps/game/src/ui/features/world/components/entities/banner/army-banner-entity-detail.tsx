@@ -136,9 +136,8 @@ const ArmyBannerEntityDetailContent = memo(
             <HudIconButton
               icon={isLoadingDelete ? "refresh" : "trash"}
               label={isLoadingDelete ? "Deleting" : "Delete Army"}
-              kind="quiet"
+              kind="danger"
               size="sm"
-              tone="bad"
               onClick={handleDeleteExplorer}
               disabled={isLoadingDelete}
             />

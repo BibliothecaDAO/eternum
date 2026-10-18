@@ -81,13 +81,7 @@ const ResourceBurn = ({
           {amount.toLocaleString()} {label}
         </span>
       </div>
-      <HudButton
-        kind="secondary"
-        tone="bad"
-        busy={busy ? "Burning…" : undefined}
-        disabled={amount === 0}
-        onClick={burn}
-      >
+      <HudButton kind="danger" busy={busy ? "Burning…" : undefined} disabled={amount === 0} onClick={burn}>
         Burn {label}
       </HudButton>
     </div>

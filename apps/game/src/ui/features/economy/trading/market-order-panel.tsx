@@ -431,9 +431,8 @@ export const OrderRow = memo(
           {currencyFormat(getTotalLords, 0)}
         </span>
         <HudButton
-          kind="secondary"
+          kind={isSelf ? "danger" : "secondary"}
           size="sm"
-          tone={isSelf ? "bad" : undefined}
           busy={loading ? "…" : undefined}
           onClick={pressAction}
         >

@@ -286,7 +286,7 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
           size="sm"
           disabled={!canCreate}
           busy={isCreating ? "Creating…" : undefined}
-          onClick={() => void handleCreateHyperstructure()}
+          onClick={handleCreateHyperstructure}
         >
           Create here
         </HudButton>

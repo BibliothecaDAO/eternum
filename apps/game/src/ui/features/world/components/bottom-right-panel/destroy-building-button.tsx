@@ -20,9 +20,8 @@ export const DestroyBuildingButton = ({ busy, onDestroy }: { busy: boolean; onDe
   };
   return asking ? (
     <HudButton
-      kind="secondary"
+      kind="danger"
       size="sm"
-      tone="bad"
       icon="trash"
       onClick={press}
       disabled={busy}
@@ -32,6 +31,6 @@ export const DestroyBuildingButton = ({ busy, onDestroy }: { busy: boolean; onDe
       OK
     </HudButton>
   ) : (
-    <HudIconButton icon="trash" label="Delete" title="Delete" size="sm" tone="bad" onClick={press} disabled={busy} />
+    <HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={press} disabled={busy} />
   );
 };
