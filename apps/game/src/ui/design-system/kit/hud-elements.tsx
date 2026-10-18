@@ -460,7 +460,7 @@ export const HudNotice = ({ tone, line, why }: { tone?: Tone; line: string; why?
  * How big a window is, by what it holds: one task (a name, a relic, a confirmation), a page to read (the Lordpedia), or a
  * workspace (Build, Production, Transfer, the market) that fills the desk on desktop and the sheet on a phone.
  */
-type WindowSize = "task" | "page" | "workspace";
+type WindowSize = "task" | "page" | "workspace" | "fit";
 
 /**
  * A panel the size of a task: its title bar with a way out (dragging the bar moves the window), its body, which scrolls

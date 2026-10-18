@@ -1057,7 +1057,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
 const WindowSection = () => (
   <Element
     name="Window"
-    rule="A panel the size of a task: its title bar with a way out (dragging it moves the window), its body, which scrolls within the window, and a foot with what it costs on the left, the way out and the one verb on the right. Three sizes, by what it holds: task, page, workspace."
+    rule="A panel the size of a task: its title bar with a way out (dragging it moves the window), its body, which scrolls within the window, and a foot with what it costs on the left, the way out and the one verb on the right. Four sizes, by what it holds: task, page, workspace, and fit, as large as its content (a table)."
     sheet={
       <div className="flex flex-col items-start gap-4">
         <HudWindow
@@ -1084,6 +1084,20 @@ const WindowSection = () => (
           }
         >
           <HudTroopAmount name="Paladins" value={1_000} most={1_800} held={2_000} onChange={() => undefined} />
+        </HudWindow>
+        <HudWindow title="Leaderboard" icon="victory" size="fit" onClose={() => undefined}>
+          <HudTableHead cols={TABLE_COLS}>
+            <span>Rank</span>
+            <span>Name</span>
+            <span>Tiles</span>
+            <span className="text-right">Points</span>
+          </HudTableHead>
+          <HudTableRow cols={TABLE_COLS} label="djizus: their points" onClick={() => undefined}>
+            <span>#1</span>
+            <span className="text-hud-strong">djizus</span>
+            <span>8</span>
+            <span className="text-right text-hud-strong">40</span>
+          </HudTableRow>
         </HudWindow>
       </div>
     }
