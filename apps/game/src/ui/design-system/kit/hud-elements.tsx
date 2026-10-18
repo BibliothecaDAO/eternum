@@ -994,6 +994,7 @@ export const HudCard = ({
   detail,
   corner,
   actions,
+  size = "md",
   selected = false,
   disabled = false,
   refusal,
@@ -1004,6 +1005,8 @@ export const HudCard = ({
   detail?: ReactNode;
   corner?: ReactNode;
   actions?: ReactNode;
+  /** md in a window's grid; sm three to a sheet's row, its painting above its name. */
+  size?: "md" | "sm";
   selected?: boolean;
   disabled?: boolean;
   refusal?: string;
@@ -1028,7 +1031,12 @@ export const HudCard = ({
     </>
   );
   return (
-    <div className="ui-card" data-selected={selected || undefined} data-disabled={disabled || undefined}>
+    <div
+      className="ui-card"
+      data-size={size}
+      data-selected={selected || undefined}
+      data-disabled={disabled || undefined}
+    >
       {onClick ? (
         <button
           type="button"

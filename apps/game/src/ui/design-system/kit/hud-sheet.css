@@ -1795,6 +1795,33 @@ button.ui-card__choose:disabled {
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
 }
+/* A small card, three to a sheet's row (a Frontier building): its painting above its name, its words centred under it. */
+.ui-card[data-size="sm"] {
+  height: theme(spacing.hud-frontier-card);
+}
+.ui-card[data-size="sm"] .ui-card__picture {
+  inset: theme(spacing.2) 0 auto;
+  height: theme(spacing.7);
+}
+.ui-card[data-size="sm"] .ui-card__picture > * {
+  width: auto;
+}
+.ui-card[data-size="sm"] .ui-card__foot {
+  align-items: center;
+  padding: 0 theme(spacing[1.5]) theme(spacing[1.5]);
+  background: none;
+}
+.ui-card[data-size="sm"] .ui-card__title {
+  max-width: 100%;
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-line-strong);
+  font-weight: var(--hud-weight-strong);
+}
+.ui-card[data-size="sm"] .ui-card__detail {
+  flex-direction: row;
+  align-items: center;
+  gap: theme(spacing.1);
+}
 .ui-card__refusal {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);

@@ -1260,6 +1260,30 @@ const CardSection = () => (
         <LabCard />
         <LabCard selected />
         <LabCard refusal="Needs a free building tile" />
+        <div className="grid w-96 grid-cols-3 gap-1.5">
+          <HudCard
+            size="sm"
+            title="Farm"
+            picture={<Icon name="farm" size={26} />}
+            detail={<span>10 Labor</span>}
+            selected
+            onClick={() => undefined}
+          />
+          <HudCard
+            size="sm"
+            title="Barracks"
+            picture={<Icon name="barracks" size={26} />}
+            detail={<Icon name="check" size={18} />}
+            onClick={() => undefined}
+          />
+          <HudCard
+            size="sm"
+            title="Workshop"
+            picture={<Icon name="labor" size={26} />}
+            detail={<Icon name="lock" size={16} />}
+            onClick={() => undefined}
+          />
+        </div>
       </div>
     }
     today={
