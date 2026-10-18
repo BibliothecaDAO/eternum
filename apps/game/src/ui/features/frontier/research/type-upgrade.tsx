@@ -5,7 +5,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Chip } from "@/ui/design-system/kit/chip";
 
-import type { Reason } from "@/ui/design-system/kit/reason-plate";
+import type { Reason } from "@/ui/design-system/kit/reasons";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import type { Fix } from "@/ui/design-system/kit/refused-verb";
 import {

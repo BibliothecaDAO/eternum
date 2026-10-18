@@ -1,7 +1,8 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { Button, type Price } from "./button";
 
-import { type Reason, ReasonPlate } from "./reason-plate";
+import { ReasonPlate } from "./reason-plate";
+import type { Reason } from "./reasons";
 
 /** The step that fixes a refusal: its word, its price where it has one, and its way. */
 export type Fix = { word: string; icon?: IconMeaning; prices?: readonly Price[]; onFix: () => void };
