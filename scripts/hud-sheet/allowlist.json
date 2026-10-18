@@ -36,7 +36,6 @@
   "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 5,
   "apps/game/src/ui/features/world/containers/left-facets/suggestions-panel.tsx": 9,
   "apps/game/src/ui/features/world/containers/top-header/hud-header-layout.tsx": 1,
-  "apps/game/src/ui/features/world/hud/action-bubbles.tsx": 4,
   "apps/game/src/ui/features/world/hud/hud.css": 30,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }

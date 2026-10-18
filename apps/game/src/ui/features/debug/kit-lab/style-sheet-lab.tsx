@@ -15,7 +15,6 @@ import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
 import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
-import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
@@ -445,7 +444,6 @@ const ButtonsSection = () => (
         <button type="button" className={HUD_PILL_BUTTON}>
           HUD pill
         </button>
-        <CircleButton size="md" image="transfer" label="Transfer" onClick={() => undefined} variant="hud" />
       </>
     }
   />
@@ -548,7 +546,7 @@ const BubbleSection = () => (
         />
       </>
     }
-    today={<CircleButton size="lg" image="military" label="Military" onClick={() => undefined} variant="hud" />}
+    today={<HudBubble icon="military" word="Military" />}
   />
 );
 

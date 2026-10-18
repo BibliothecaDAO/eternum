@@ -328,7 +328,7 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
     }
     today={
       <span className="text-sm text-white/70">
-        Today: bubbles (world/hud/action-bubbles.tsx, CircleButton), plates (three/map-plates), the order line
+        Today: bubbles (world/hud/action-bubbles.tsx, HudBubble), plates (three/map-plates), the order line
         (three/scenes/worldmap-order-tip.tsx), the structure menu (three/scenes/context-menu, its own look), the deploy
         picker (military/components/army-deployment-picker.tsx), arrivals only inside panels (incoming-caravans.tsx).
         The minimap (world/components/bottom-right-panel/hex-minimap.tsx) draws biome colours, cyan and orange dots,
