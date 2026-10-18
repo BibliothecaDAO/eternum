@@ -157,7 +157,6 @@
   "apps/game/src/ui/features/social/realtime-chat/ui/world-chat/world-chat-panel.tsx": 23,
   "apps/game/src/ui/features/world/components/actions/spire-travel-modal.tsx": 24,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 9,
-  "apps/game/src/ui/features/world/components/structure-edit-popup.tsx": 33,
   "apps/game/src/ui/features/world/containers/compact-hud.tsx": 35,
   "apps/game/src/ui/features/world/containers/hud-chat-window.tsx": 6,
   "apps/game/src/ui/features/world/containers/left-facets/structure-actions-panel.tsx": 13,

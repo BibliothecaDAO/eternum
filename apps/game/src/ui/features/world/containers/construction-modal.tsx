@@ -1,7 +1,7 @@
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudLoading, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { BUILDABLE_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID } from "@bibliothecadao/types";
@@ -46,13 +46,7 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
   }, [structureEntityId]);
 
   return (
-    <SurfaceFrame
-      title="Build"
-      icon={"build" as const}
-      onClose={close}
-      className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="overflow-hidden"
-    >
+    <HudWindow title="Build" icon="build" size="workspace" onClose={close}>
       <StructureWorkspace
         sidebar={
           <StructureSidebar
@@ -64,12 +58,12 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
         }
       >
         <div className="min-h-0 overflow-y-auto overscroll-contain">
-          <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
+          <Suspense fallback={<HudLoading line="Loading…" />}>
             <SelectPreviewBuildingMenu entityId={focusedRealmId} />
           </Suspense>
         </div>
       </StructureWorkspace>
-    </SurfaceFrame>
+    </HudWindow>
   );
 });
 
