@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPACT_HUD_MEDIA_QUERY } from "@/hooks/helpers/use-compact-hud";
 import { type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 
+import { HudWindow } from "@/ui/design-system/kit/hud-elements";
+
 import { PopoverPanel, SurfaceFrame, SurfaceHost } from "./popover";
 import { dragHeader, panelOf, placementOf } from "./surface-panel-testing";
 
@@ -181,6 +183,27 @@ describe("a desk the player dragged, opened again", () => {
     await dragHeader("help", { x: 300, y: 200 });
     await openDesk("help", "another army");
     expect([panelOf("help")?.textContent?.includes("another army"), placementOf("help")]).toEqual([true, DRAGGED]);
+  });
+
+  it("leaves a HUD window its own surface, centres it and drags it by its bar", async () => {
+    await mountHost();
+    await act(async () =>
+      usePopoverStore.getState().openSurface({
+        id: "transfer",
+        content: (
+          <HudWindow title="Transfer" size="workspace" onClose={() => {}}>
+            <p>Send from</p>
+          </HudWindow>
+        ),
+      }),
+    );
+    const panel = panelOf("transfer")!;
+    // The window is the surface: the panel draws no box, padding or width of its own around it.
+    expect(["rounded-xl", "p-4", "w-80", "w-auto"].filter((look) => panel.classList.contains(look))).toEqual([]);
+    expect(panel.firstElementChild?.classList.contains("ui-window")).toBe(true);
+    expect(placementOf("transfer")).toEqual(CENTRED);
+    await dragHeader("transfer", { x: 300, y: 200 });
+    expect(placementOf("transfer")).toEqual(DRAGGED);
   });
 
   it("opens centred for a player whose browser still holds a position saved by an older client", async () => {

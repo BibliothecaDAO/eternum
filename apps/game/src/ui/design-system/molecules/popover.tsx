@@ -93,6 +93,8 @@ const OpenPanel = ({
 }: PopoverPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const [panelStyle, setPanelStyle] = useState<CSSProperties | null>(null);
+  // A HUD window draws its own surface, bar and size; the panel then only places it, drags it and closes it.
+  const [holdsWindow, setHoldsWindow] = useState(false);
   const lane = useCompactLane();
   const drag = useSurfaceDrag(lane === null);
   const resolveAnchor = typeof anchor === "function" ? anchor : () => anchor;
@@ -106,8 +108,10 @@ const OpenPanel = ({
   isInsideAnchorRef.current = isInsideAnchor;
 
   useLayoutEffect(() => {
-    const place = () =>
+    const place = () => {
+      setHoldsWindow(isHudWindow(panelRef.current));
       setPanelStyle(resolvePanelStyle(resolveAnchorRef.current(), align, placement, panelRef.current));
+    };
     place();
     // Content that grows or shrinks after opening (data arriving) moves a centred modal and a popover's fit.
     const content = panelRef.current?.firstElementChild;
@@ -176,11 +180,14 @@ const OpenPanel = ({
       aria-label={ariaLabel}
       data-popover-panel={id}
       className={cn(
-        "pointer-events-auto fixed z-[130] w-80 touch-pan-y overflow-y-auto outline-none overscroll-contain rounded-xl p-4 text-gold",
-        "max-lg:w-screen max-lg:rounded-b-none",
-        "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
-        OVERLAY_SURFACE_BASE,
-        className,
+        "pointer-events-auto fixed z-[130] touch-pan-y overflow-y-auto outline-none overscroll-contain",
+        !holdsWindow && [
+          "w-80 rounded-xl p-4 text-gold",
+          "max-lg:w-screen max-lg:rounded-b-none",
+          "max-lg:landscape:w-auto max-lg:landscape:rounded-b-xl max-lg:landscape:rounded-r-none",
+          OVERLAY_SURFACE_BASE,
+          className,
+        ],
       )}
       style={drag.apply(panelStyle)}
       onPointerDown={drag.onPointerDown}
@@ -359,9 +366,12 @@ const resolvePanelStyle = (
   return resolveAnchoredPanelStyle(anchor, align, panel);
 };
 
-/** A full modal is a `SurfaceFrame`; anything else in a panel is a small popover. */
+/** A HUD window (HudWindow) in the panel: it brings its own surface, bar and size. */
+const isHudWindow = (panel: HTMLElement | null): boolean => panel?.querySelector(":scope > .ui-window") != null;
+
+/** A full modal is a HUD window or a `SurfaceFrame`; anything else in a panel is a small popover. */
 const isFullModal = (panel: HTMLElement | null): boolean =>
-  panel?.querySelector(":scope > [data-surface-frame]") != null;
+  isHudWindow(panel) || panel?.querySelector(":scope > [data-surface-frame]") != null;
 
 const isSideEdge = (anchor: PanelAnchor): boolean => anchor === "right-edge" || anchor === "bottom-right";
 
