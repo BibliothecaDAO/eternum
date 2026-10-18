@@ -513,6 +513,8 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
     "chosen",
     ...[1, 2, 3, 4, 5, 6].map((order) => `group-${order}`),
   ].map((name) => [name, `var(--hud-${name})`]),
+  // The age's panel ground, opaque: a card or a well that must hide the map under it.
+  ["surface", "var(--hud-surface-to)"],
 ]);
 
 /**
@@ -559,6 +561,29 @@ export const HUD_LAYOUT = {
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-cap": "45vw",
+  /**
+   * The Frontier HUD's frame on a desktop (hud-bands): the status strip, the page beside the map and its top and
+   * room, the stage between the columns, the guide's place, the action foot, the dock, the places and the chat.
+   */
+  "frontier-strip": "560px",
+  "frontier-page": "440px",
+  "frontier-page-top": "76px",
+  "frontier-page-room": "calc(100% - 84px)",
+  "frontier-stage-top": "150px",
+  "frontier-stage-bottom": "140px",
+  "frontier-guide": "380px",
+  "frontier-guide-left": "236px",
+  "frontier-guide-bottom": "300px",
+  "frontier-foot": "520px",
+  "frontier-dock": "220px",
+  "frontier-nav": "460px",
+  "frontier-chat": "380px",
+  /** The Frontier HUD's cards: an army token, an army sheet's row, its kind card, a site card, an order bar's side button. */
+  "frontier-token": "72px",
+  "frontier-row": "52px",
+  "frontier-kind": "76px",
+  "frontier-card": "92px",
+  "frontier-side": "104px",
 } as const;
 
 /** The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both. */
