@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { getRelicInfo, type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { HudButton, HudPanel, HudRelic, type RelicKind } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel, HudRelic } from "@/ui/design-system/kit/hud-elements";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
@@ -83,6 +83,9 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   );
 };
 
+/** A relic's kind as the sheet's relic chip colours it: its type, lower-cased ("Damage Reduction" is "damage-reduction"). */
+const relicKind = (type: string) => type.toLowerCase().replace(" ", "-") as Parameters<typeof HudRelic>[0]["kind"];
+
 /** The relics a crate holds or yielded, each as the sheet's relic chip in its kind's colour, its effect on hover. */
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
@@ -92,7 +95,7 @@ const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
         <li key={`${relicId}-${index}`}>
           <HudRelic
             icon={resourceMeaning(relicId)}
-            kind={info ? (info.type.toLowerCase().replace(" ", "-") as RelicKind) : "production"}
+            kind={info ? relicKind(info.type) : "production"}
             gives={info?.name ?? ResourcesIds[relicId]}
             tip={info?.effect}
           />
