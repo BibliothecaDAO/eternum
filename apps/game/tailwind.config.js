@@ -6,6 +6,10 @@ import {
   FONTS,
   GUTTERS,
   HUD_COLOR_CLASSES,
+  APP_COLOR_CLASSES,
+  APP_TYPE,
+  appAgeVariables,
+  appVariables,
   HUD_COLORS,
   HUD_FINISH,
   HUD_LAYERS,
@@ -118,6 +122,8 @@ export default {
         ),
         // The HUD sheet's colour roles (src/tokens.ts HUD_COLOR_CLASSES): `text-hud-muted`, `border-hud-line`.
         hud: HUD_COLOR_CLASSES,
+        // The app sheet's colour roles (src/tokens.ts APP_COLOR_CLASSES): `text-app-muted`, `bg-app-surface`.
+        app: APP_COLOR_CLASSES,
         gold: HUD_COLORS.gold,
         crimson: "#582C4D",
         relic: "#a78bfa", // purple-300
@@ -410,6 +416,7 @@ export default {
         ),
         '[data-surface="shell"]': {
           ...surfaceVariables(SHELL_COLORS, SHELL_FINISH),
+          ...appVariables(),
           // What the shell inherits from html and body, restated so it resolves to the shell's own values.
           color: "var(--gold)",
           textShadow: "var(--text-shadow-ambient)",
@@ -424,8 +431,26 @@ export default {
           Object.keys(HUD_MODES).map((mode) => [`[data-hud-mode="${mode}"]`, hudModeVariables(mode)]),
         ),
         '[data-hud-device="phone"]': phone,
+        // The age a game shows in the app, on its card or page.
+        ...Object.fromEntries(Object.keys(HUD_MODES).map((age) => [`[data-age="${age}"]`, appAgeVariables(age)])),
         "@media (pointer: coarse)": { ":root": phone },
       });
+    }),
+    // The app's type roles (src/tokens.ts APP_TYPE): `text-app-title` sets its face, size, leading and weight together.
+    plugin(function ({ addUtilities }) {
+      addUtilities(
+        Object.fromEntries(
+          Object.keys(APP_TYPE).map((role) => [
+            `.text-app-${role}`,
+            {
+              fontFamily: `var(--app-face-${role})`,
+              fontSize: `var(--app-text-${role})`,
+              lineHeight: `var(--app-line-${role})`,
+              fontWeight: `var(--app-weight-${role})`,
+            },
+          ]),
+        ),
+      );
     }),
     plugin(function ({ addUtilities, theme }) {
       // One `.text-shadow-<name>` per textShadow key: the HUD's glows and the shell's title shadows.

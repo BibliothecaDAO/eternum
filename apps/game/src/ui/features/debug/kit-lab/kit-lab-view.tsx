@@ -47,6 +47,7 @@ import { ChatLab } from "./chat-lab";
 import { WindowsLab } from "./windows-lab";
 import { WordsLab } from "./words-lab";
 import { AppArtLab } from "./app-art-lab";
+import { AppDirectionPage, AppSheetLab } from "./app-lab/app-sheet-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
@@ -75,6 +76,8 @@ export const KitLabView = () => {
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="shell" element={<Components />} />
       <Route path="chat" element={<ChatLab />} />
+      <Route path="app" element={<AppSheetLab />} />
+      <Route path="app/:direction/:page" element={<AppDirectionPage />} />
       <Route path="*" element={<StyleSheetLab />} />
     </Routes>
   );

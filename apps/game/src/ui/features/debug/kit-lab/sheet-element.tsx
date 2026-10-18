@@ -11,6 +11,7 @@ export const Element = ({
   sheet,
   today,
   wide = false,
+  todayLabel = "Today in the game",
 }: {
   name: string;
   rule: string;
@@ -18,6 +19,8 @@ export const Element = ({
   today: ReactNode;
   /** A study too wide for two columns: the sheet takes the width, today follows under it. */
   wide?: boolean;
+  /** What the right-hand column shows: the game's elements today, or the app's. */
+  todayLabel?: string;
 }) => {
   const phone = useContext(DeviceContext) === "phone";
   return (
@@ -33,7 +36,7 @@ export const Element = ({
           {sheet}
           <div className="flex flex-wrap items-start gap-3 border-t border-white/10 pt-3">
             <p data-lab-chrome className="w-full text-xs uppercase tracking-wide text-red-300/80">
-              Today in the game
+              {todayLabel}
             </p>
             {today}
           </div>
@@ -48,7 +51,7 @@ export const Element = ({
           </div>
           <div className="border-l border-white/10 pl-6">
             <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-red-300/80">
-              Today in the game
+              {todayLabel}
             </p>
             <div className="flex flex-wrap items-start gap-3">{today}</div>
           </div>

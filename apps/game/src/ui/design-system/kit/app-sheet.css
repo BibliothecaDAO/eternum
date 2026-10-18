@@ -1,0 +1,763 @@
+/*
+ * The app sheet: every element of the pages outside a game (app-elements.tsx), built only from the app scope of
+ * src/tokens.ts (APP_TYPE, APP_SHEET), which tailwind.config.js writes as --app-* under [data-surface="shell"].
+ * A state the lab forces is data-state on the element (hover, pressed, focus); disabled is the attribute.
+ */
+
+/* ── Button: primary (the page's one verb), secondary (beside it), quiet (a way out). ── */
+.app-button {
+  display: inline-flex;
+  height: var(--app-control);
+  align-items: center;
+  justify-content: center;
+  gap: theme(spacing.2);
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-control);
+  padding: 0 theme(spacing.5);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  line-height: var(--app-line-strong);
+  font-weight: var(--app-weight-strong);
+  white-space: nowrap;
+  transition:
+    background-color var(--app-fast) var(--app-ease),
+    border-color var(--app-fast) var(--app-ease),
+    transform var(--app-fast) var(--app-ease);
+}
+.app-button[data-size="lg"] {
+  height: var(--app-control-lg);
+  padding: 0 theme(spacing.8);
+  font-size: var(--app-text-heading);
+}
+.app-button[data-kind="primary"] {
+  background: rgb(var(--app-gold));
+  color: var(--app-dark);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.35);
+}
+.app-button[data-kind="primary"]:is(:hover, [data-state="hover"]):not(:disabled) {
+  background: color-mix(in srgb, rgb(var(--app-gold)) 88%, white);
+}
+.app-button[data-kind="secondary"] {
+  border-color: var(--app-line-strong);
+  background: var(--app-surface-2);
+  color: var(--app-ink);
+}
+.app-button[data-kind="secondary"]:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: rgb(var(--app-accent));
+}
+.app-button[data-kind="quiet"] {
+  background: transparent;
+  color: var(--app-muted);
+}
+.app-button[data-kind="quiet"]:is(:hover, [data-state="hover"]):not(:disabled) {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+.app-button[data-tone="bad"] {
+  color: var(--app-bad);
+}
+.app-button[data-kind="secondary"][data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--app-bad) 55%, transparent);
+}
+.app-button:is(:active, [data-state="pressed"]):not(:disabled) {
+  transform: translateY(1px);
+}
+.app-button:is(:focus-visible, [data-state="focus"]),
+.app-icon-button:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+.app-button:disabled,
+.app-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.app-button[aria-busy="true"] {
+  opacity: 0.8;
+  cursor: progress;
+}
+.app-button .app-key {
+  margin-left: theme(spacing.1);
+}
+.app-button[data-kind="primary"] .app-key {
+  border-color: rgb(0 0 0 / 0.3);
+  color: var(--app-dark);
+}
+
+.app-icon-button {
+  display: inline-grid;
+  width: var(--app-control);
+  height: var(--app-control);
+  place-items: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface-2);
+  color: var(--app-ink);
+}
+.app-icon-button[data-kind="quiet"] {
+  border-color: transparent;
+  background: transparent;
+}
+.app-icon-button:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: rgb(var(--app-accent));
+}
+
+/* ── Key: a key that presses something on a desktop. ── */
+.app-key {
+  border: 1px solid var(--app-line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--app-radius-chip);
+  padding: 0 theme(spacing[1.5]);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  line-height: var(--app-line-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+
+/* ── Field: label, value, a helping or failing line. ── */
+.app-field {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing[1.5]);
+}
+.app-field__label,
+.app-field__line {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  line-height: var(--app-line-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-field__box {
+  display: flex;
+  height: var(--app-control);
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: 0 theme(spacing.4);
+  color: var(--app-muted);
+}
+.app-field__box:is(:hover, [data-state="hover"]) {
+  border-color: var(--app-line-strong);
+}
+.app-field__box:focus-within,
+.app-field[data-state="focus"] .app-field__box {
+  border-color: rgb(var(--app-accent));
+  box-shadow: var(--app-focus);
+}
+.app-field input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  color: var(--app-ink);
+}
+.app-field input::placeholder {
+  color: var(--app-muted);
+}
+.app-field input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.app-field[data-invalid] .app-field__box {
+  border-color: var(--app-bad);
+}
+.app-field[data-invalid] .app-field__line {
+  color: var(--app-bad);
+}
+
+/* ── Navigation: the app's places, a bar or a rail; the current one in the accent. ── */
+.app-nav {
+  display: flex;
+  gap: theme(spacing.1);
+}
+.app-nav[data-orientation="rail"] {
+  flex-direction: column;
+}
+.app-nav__place {
+  display: flex;
+  height: var(--app-control);
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  border-radius: var(--app-radius-control);
+  padding: 0 theme(spacing.4);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-muted);
+}
+.app-nav[data-orientation="rail"] .app-nav__place {
+  height: 52px;
+}
+.app-nav__place:is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+.app-nav__place[aria-current="page"] {
+  background: var(--app-chosen);
+  color: rgb(var(--app-accent));
+}
+.app-nav__place .app-key {
+  margin-left: auto;
+}
+.app-nav[data-orientation="bar"] .app-nav__place .app-key {
+  margin-left: theme(spacing.1);
+}
+
+/* ── Tabs: views of one thing; the chosen one raised. ── */
+.app-tabs {
+  display: inline-flex;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  padding: theme(spacing.1);
+}
+.app-tabs__tab {
+  position: relative;
+  height: calc(var(--app-control) - 10px);
+  border-radius: calc(var(--app-radius-control) - 4px);
+  padding: 0 theme(spacing.5);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-strong);
+  color: var(--app-muted);
+}
+.app-tabs__tab:is(:hover, [data-state="hover"]) {
+  color: var(--app-ink);
+}
+.app-tabs__tab[aria-selected="true"] {
+  background: var(--app-surface-2);
+  color: var(--app-ink);
+  box-shadow: inset 0 0 0 1px var(--app-line-strong);
+}
+.app-tabs__dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--app-radius-round);
+  background: rgb(var(--app-accent));
+}
+
+/* ── Panel: the app's one surface; its name over a rule, then its body. ── */
+.app-panel {
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-surface);
+  box-shadow: var(--app-shadow-panel);
+}
+.app-panel__head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing[2.5]);
+  border-bottom: 1px solid var(--app-line);
+  padding: theme(spacing.4) theme(spacing.5);
+  color: var(--app-ink);
+}
+.app-panel__head h2 {
+  font-family: var(--app-face-heading);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-line-heading);
+  font-weight: var(--app-weight-heading);
+}
+.app-panel__cue {
+  margin-left: auto;
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-panel__body {
+  padding: theme(spacing.5);
+}
+.app-panel[data-flush] .app-panel__body {
+  padding: theme(spacing.1) 0;
+}
+
+/* ── Game card: a game on its age's painting, in its age's accent. ── */
+.app-game-card {
+  position: relative;
+  display: flex;
+  min-height: 220px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, rgb(var(--app-age)) 35%, transparent);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-age-to);
+  box-shadow: var(--app-shadow-panel);
+}
+.app-game-card[data-size="lead"] {
+  min-height: 360px;
+}
+.app-game-card__painting {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.85;
+}
+.app-game-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    var(--app-age-to) 8%,
+    color-mix(in srgb, var(--app-age-to) 40%, transparent) 55%,
+    transparent
+  );
+}
+.app-game-card__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: theme(spacing.2);
+  padding: theme(spacing.6);
+}
+.app-game-card__eyebrow {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: rgb(var(--app-age));
+}
+.app-game-card__title {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-line-title);
+  color: var(--app-ink);
+  text-shadow: 0 2px 0 rgb(0 0 0 / 0.6);
+}
+.app-game-card[data-size="lead"] .app-game-card__title {
+  font-size: var(--app-text-display);
+  line-height: var(--app-line-display);
+}
+.app-game-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: theme(spacing.2);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-ink);
+}
+.app-game-card__verb {
+  display: flex;
+  gap: theme(spacing.2);
+  margin-top: theme(spacing.2);
+}
+
+/* ── Row: one thing of a list; the player's own lit. ── */
+.app-row {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: theme(spacing.3);
+  border-left: 3px solid transparent;
+  padding: theme(spacing.2) theme(spacing.4);
+  color: var(--app-ink);
+}
+.app-row + .app-row {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-line) 70%, transparent);
+}
+.app-row:has(> button.app-row__words):is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+}
+.app-row[data-own] {
+  border-left-color: rgb(var(--app-accent));
+  background: var(--app-chosen);
+}
+.app-row__lead {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.app-row__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.app-row__title {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  line-height: var(--app-line-body);
+  font-weight: var(--app-weight-strong);
+}
+.app-row__detail {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  line-height: var(--app-line-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-row__trail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.3);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+}
+.app-setting__value {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-rank {
+  display: inline-grid;
+  min-width: 2.25rem;
+  place-items: center;
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+  font-variant-numeric: tabular-nums;
+  color: var(--app-muted);
+}
+.app-rank[data-top] {
+  color: rgb(var(--app-gold));
+}
+
+/* ── Chip: a state in its tone, a count, an amount. ── */
+.app-chip {
+  display: inline-flex;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-chip);
+  background: rgb(0 0 0 / 0.3);
+  padding: 0 theme(spacing[2.5]);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--app-ink);
+}
+.app-chip[data-tone="good"] {
+  border-color: color-mix(in srgb, var(--app-good) 50%, transparent);
+  color: var(--app-good);
+}
+.app-chip[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--app-bad) 50%, transparent);
+  color: var(--app-bad);
+}
+.app-chip[data-tone="warn"] {
+  border-color: color-mix(in srgb, var(--app-warn) 50%, transparent);
+  color: var(--app-warn);
+}
+.app-chip[data-tone="gold"] {
+  border-color: rgb(var(--app-gold) / 0.5);
+  color: rgb(var(--app-gold));
+}
+.app-chip__live {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--app-radius-round);
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 25%, transparent);
+}
+
+/* ── Figure: the point of its panel, with what it counts under it. ── */
+.app-figure {
+  display: inline-flex;
+  flex-direction: column;
+  gap: theme(spacing.1);
+}
+.app-figure__value {
+  font-family: var(--app-face-figure);
+  font-size: var(--app-text-figure);
+  line-height: var(--app-line-figure);
+  font-weight: var(--app-weight-figure);
+  font-variant-numeric: tabular-nums;
+  color: var(--app-ink);
+}
+.app-figure[data-tone="gold"] .app-figure__value {
+  color: rgb(var(--app-gold));
+}
+.app-figure[data-tone="good"] .app-figure__value {
+  color: var(--app-good);
+}
+.app-figure[data-tone="bad"] .app-figure__value {
+  color: var(--app-bad);
+}
+.app-figure[data-tone="warn"] .app-figure__value {
+  color: var(--app-warn);
+}
+.app-figure__label {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+
+/* ── Notice: what the page must say, Try again where it helps. ── */
+.app-notice {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.4);
+  border: 1px solid var(--app-line);
+  border-left: 3px solid rgb(var(--app-accent));
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface);
+  padding: theme(spacing.3) theme(spacing.4);
+  color: var(--app-ink);
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+}
+.app-notice[data-tone="good"] {
+  border-left-color: var(--app-good);
+}
+.app-notice[data-tone="bad"] {
+  border-left-color: var(--app-bad);
+}
+.app-notice[data-tone="warn"] {
+  border-left-color: var(--app-warn);
+}
+.app-notice__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+.app-notice__why {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  color: var(--app-muted);
+}
+
+/* ── Switch: on or off. ── */
+.app-switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-round);
+  background: var(--app-well);
+  transition: background-color var(--app-fast) var(--app-ease);
+}
+.app-switch > i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--app-radius-round);
+  background: var(--app-muted);
+  transition: transform var(--app-fast) var(--app-ease);
+}
+.app-switch[aria-checked="true"] {
+  border-color: rgb(var(--app-gold));
+  background: rgb(var(--app-gold) / 0.3);
+}
+.app-switch[aria-checked="true"] > i {
+  transform: translateX(20px);
+  background: rgb(var(--app-gold));
+}
+.app-switch:is(:focus-visible, [data-state="focus"]) {
+  outline: none;
+  box-shadow: var(--app-focus);
+}
+.app-switch:disabled {
+  opacity: 0.45;
+}
+
+/* ── Choice: a tile among a few; the chosen one in the gold, ticked. ── */
+.app-choice {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-control);
+  background: var(--app-surface-2);
+  padding: theme(spacing.4) theme(spacing.3);
+  color: var(--app-ink);
+}
+.app-choice:is(:hover, [data-state="hover"]):not(:disabled) {
+  border-color: var(--app-line-strong);
+}
+.app-choice[aria-pressed="true"] {
+  border-color: rgb(var(--app-gold));
+  box-shadow: inset 0 0 0 1px rgb(var(--app-gold));
+}
+.app-choice:disabled {
+  opacity: 0.45;
+}
+.app-choice__tick {
+  position: absolute;
+  top: theme(spacing.2);
+  right: theme(spacing.2);
+}
+.app-choice__title {
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-strong);
+  font-weight: var(--app-weight-strong);
+}
+.app-choice__detail,
+.app-choice__price {
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  color: var(--app-muted);
+}
+.app-choice__price {
+  color: rgb(var(--app-gold));
+}
+
+/* ── Portrait: a player in a ring; the player's own in the accent. ── */
+.app-portrait {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid var(--app-line-strong);
+  border-radius: var(--app-radius-round);
+  background: var(--app-surface-2);
+  color: var(--app-muted);
+  font-family: var(--app-face-strong);
+  font-weight: var(--app-weight-strong);
+}
+.app-portrait[data-size="sm"] {
+  width: 32px;
+  height: 32px;
+}
+.app-portrait[data-size="md"] {
+  width: 44px;
+  height: 44px;
+}
+.app-portrait[data-size="lg"] {
+  width: 96px;
+  height: 96px;
+  font-size: var(--app-text-title);
+}
+.app-portrait[data-own] {
+  border-color: rgb(var(--app-accent));
+}
+.app-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Page head: Back, the title, what it does at its end. ── */
+.app-page-head {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.4);
+}
+.app-page-head h1 {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-line-title);
+  color: var(--app-ink);
+}
+.app-page-head__back {
+  display: inline-flex;
+  height: var(--app-control);
+  align-items: center;
+  gap: theme(spacing.2);
+  border-radius: var(--app-radius-control);
+  padding: 0 theme(spacing.2);
+  color: var(--app-muted);
+}
+.app-page-head__back:is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+  color: var(--app-ink);
+}
+.app-page-head__aside {
+  margin-left: auto;
+}
+
+/* ── Empty, loading. ── */
+.app-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.3);
+  padding: theme(spacing.8);
+  text-align: center;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  color: var(--app-muted);
+}
+.app-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: theme(spacing.3);
+}
+.app-skeleton > i {
+  display: block;
+  height: 14px;
+  border-radius: var(--app-radius-chip);
+  background: linear-gradient(90deg, var(--app-surface-2), var(--app-line), var(--app-surface-2));
+  background-size: 200% 100%;
+  animation: app-shimmer 1.4s linear infinite;
+}
+@keyframes app-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Dialog: a question before what cannot be undone. ── */
+.app-dialog {
+  display: flex;
+  width: 30rem;
+  max-width: 100%;
+  flex-direction: column;
+  gap: theme(spacing.4);
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-panel);
+  background: var(--app-surface);
+  padding: theme(spacing.6);
+  box-shadow: var(--app-shadow-dialog);
+  color: var(--app-ink);
+}
+.app-dialog h2 {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-title);
+  line-height: var(--app-line-title);
+}
+.app-dialog__body {
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  color: var(--app-muted);
+}
+.app-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: theme(spacing.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-skeleton > i {
+    animation: none;
+  }
+}

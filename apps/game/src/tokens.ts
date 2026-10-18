@@ -667,3 +667,123 @@ export function mapAgeAccent(age: HudMode): string {
       .join("")
   );
 }
+
+/**
+ * The app's style sheet: the shell's scope of this file, every page outside a game reads (/lab/kit/app shows each
+ * element), written as `--app-*` CSS variables under `data-surface="shell"` (tailwind.config.js). The same idea as the
+ * HUD's sheet: a handful of type roles, colour roles, and elements built only from them; its own colour scope, so an
+ * app value never moves a HUD pixel. Where the app shows a game, that game's age (HUD_MODES) colours it: one source.
+ *
+ * The type scale: titles in the display face (Bokor), everything read in the body face, nothing under 14px (the app's
+ * floor). An app text takes a role (`text-app-body`), never a size.
+ */
+export const APP_TYPE = {
+  /** The one hero line of a page on the desktop: Play's call, a season's ending. */
+  display: { size: "56px", line: "60px", weight: "400", face: "display" },
+  /** A page's or a card's title: Season 3, Frontier, Blitz 16:00. */
+  title: { size: "32px", line: "38px", weight: "400", face: "display" },
+  /** A panel's or a section's name: Frontier standings, Entry, Recent games. */
+  heading: { size: "20px", line: "28px", weight: "700", face: "body" },
+  /** Everything read: text, rows, a field's value, a player's name. */
+  body: { size: "16px", line: "24px", weight: "500", face: "body" },
+  /** What must stand out in its line: a count, a total, a button's verb, the player's own row. */
+  strong: { size: "16px", line: "24px", weight: "700", face: "body" },
+  /** Labels, chips, times and meta lines: what names or qualifies the text beside it. */
+  label: { size: "14px", line: "20px", weight: "600", face: "body" },
+  /** A figure that is the point of its panel: the countdown, a rank, the seats taken, the points. */
+  figure: { size: "48px", line: "52px", weight: "700", face: "body" },
+} as const;
+
+/** The app's colours, sizes and motion, by role; its gold, ground and ink are the shell palette's. */
+export const APP_SHEET = {
+  /** Every page's ground, under its painting. */
+  ground: SHELL_COLORS.ground,
+  /** A panel's or a card's face, opaque; a raised one (a chosen row, a secondary button) is surface-2. */
+  surface: SHELL_COLORS.plate,
+  "surface-2": SHELL_COLORS.plate2,
+  /** What is read, and what is secondary. */
+  ink: SHELL_COLORS.cream,
+  muted: SHELL_COLORS.muted,
+  /** The brand accent: the current place in the navigation, focus rings, the player's own row. As channels. */
+  accent: channels(SHELL_COLORS.peach),
+  /** The primary button's face and what is earned (a place, LORDS), as channels; text on it is dark. */
+  gold: channels(SHELL_COLORS.gold),
+  dark: SHELL_COLORS.ink,
+  /** Edges: a panel's, a control's, a chosen one's. Never text. */
+  line: SHELL_COLORS.line,
+  "line-strong": SHELL_COLORS.line2,
+  /** A field's or a list's recess. */
+  well: "rgb(0 0 0 / 0.35)",
+  /** How a thing stands: good (live, gained), bad (refused, lost), warn (closing soon, waiting). */
+  good: SHELL_COLORS.sage,
+  bad: SHELL_COLORS.red,
+  warn: SHELL_COLORS.amber,
+  /** A control's height, and a large one's (a page's one verb). */
+  control: "44px",
+  "control-lg": "56px",
+  /** Corners: a chip's, a control's, a panel's, a round thing's. */
+  "radius-chip": "6px",
+  "radius-control": "12px",
+  "radius-panel": "16px",
+  "radius-round": "9999px",
+  /** Elevation: a panel over a painting, a dialog over the page. */
+  "shadow-panel": "0 12px 32px rgb(0 0 0 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.04)",
+  "shadow-dialog": "0 24px 64px rgb(0 0 0 / 0.6)",
+  /** One speed for every hover and press. */
+  fast: "120ms",
+  ease: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+} as const;
+
+/** The app's values built from others: hover and chosen tints and the focus ring follow the accent. */
+const APP_DERIVED = {
+  hover: "rgb(var(--app-accent) / 0.08)",
+  chosen: "rgb(var(--app-accent) / 0.14)",
+  focus: "0 0 0 2px rgb(var(--app-accent) / 0.7)",
+} as const;
+
+/** The sheet's colours as Tailwind colour names (`text-app-muted`, `bg-app-surface`); each a role, none with opacity. */
+export const APP_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
+  ...["accent", "gold"].map((name) => [name, `rgb(var(--app-${name}))`]),
+  ...[
+    "ground",
+    "surface",
+    "surface-2",
+    "ink",
+    "muted",
+    "dark",
+    "line",
+    "line-strong",
+    "well",
+    "good",
+    "bad",
+    "warn",
+  ].map((name) => [name, `var(--app-${name})`]),
+  ...["hover", "chosen"].map((name) => [name, `var(--app-${name})`]),
+  // The age of the game a card or a page shows (data-age), as its accent.
+  ["age", "rgb(var(--app-age))"],
+]);
+
+/**
+ * The app sheet's CSS variables, under `data-surface="shell"`: `--app-<name>`, each type role as `--app-text-<role>`,
+ * `--app-line-<role>`, `--app-weight-<role>`, `--app-face-<role>`; and the age a game shows, Blitz's by default.
+ */
+export const appVariables = (): Record<string, string> => ({
+  ...Object.fromEntries(Object.entries(APP_SHEET).map(([name, value]) => [`--app-${name}`, value])),
+  ...Object.fromEntries(Object.entries(APP_DERIVED).map(([name, value]) => [`--app-${name}`, value])),
+  ...Object.fromEntries(
+    Object.entries(APP_TYPE).flatMap(([role, { size, line, weight, face }]) => [
+      [`--app-text-${role}`, size],
+      [`--app-line-${role}`, line],
+      [`--app-weight-${role}`, weight],
+      [`--app-face-${role}`, FONTS[face]],
+    ]),
+  ),
+  ...appAgeVariables("blitz"),
+});
+
+/** A game's age, wherever the app shows one (`data-age` on its card or page): the HUD's own age colours, one source. */
+export const appAgeVariables = (age: HudMode): Record<string, string> => ({
+  "--app-age": HUD_MODES[age].accent,
+  "--app-age-from": HUD_MODES[age]["surface-from"],
+  "--app-age-to": HUD_MODES[age]["surface-to"],
+});
