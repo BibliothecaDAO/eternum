@@ -25,7 +25,11 @@ interface FaultRow {
 }
 export interface MonitorProgress {
   fault?: FaultRow | null;
-  skippedConservation?: string;
+  /**
+   * Every row an operator reset, by its exact key. A clearance is a fact about the row, not a cursor position, so it
+   * survives a ledger rewind that rereads the stream from row 0.
+   */
+  cleared?: string[];
   halted: string | null;
   cursors?: Partial<Record<"paidClaims" | "postedResults", AuditCursor>>;
 }
@@ -60,7 +64,7 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     let unavailable: RelayFailure | null = null;
     for (const balance of balances) {
       const row = `conservation:${balance.chainId}:${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
-      if (BigInt(balance.receipts) > BigInt(balance.netIssued) && progress.skippedConservation !== row) {
+      if (BigInt(balance.receipts) > BigInt(balance.netIssued) && !isCleared(progress, row)) {
         yield* recordFault(store, { row });
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;
       }
@@ -71,7 +75,7 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
         continue;
       }
       const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
-      if (BigInt(balance.pool) * 10n ** 18n !== BigInt(deposit.success) && progress.skippedConservation !== poolRow) {
+      if (BigInt(balance.pool) * 10n ** 18n !== BigInt(deposit.success) && !isCleared(progress, poolRow)) {
         yield* recordFault(store, { row: poolRow });
         return `frontier_pool_mismatch:${balance.chainId}:${balance.gameId}`;
       }
@@ -145,6 +149,7 @@ const checkLedgerPage = <A>(
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
     for (let index = page.rewind ? 0 : (cursor.offset ?? 0); index < page.rows.length; index++) {
       const row = page.rows[index]!;
+      if (isCleared(progress, key(row))) continue;
       const observation = yield* Effect.result(check(row));
       if (Result.isFailure(observation)) return yield* Effect.fail(observation.failure);
       if (observation.success) {
@@ -195,15 +200,16 @@ const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment
   result.gameId === posted.gameId &&
   BigInt(result.commitment) === BigInt(posted.commitment);
 
+const isCleared = (progress: MonitorProgress, row: string) => progress.cleared?.includes(row) ?? false;
+
 const recordFault = (store: MonitorStore, fault: FaultRow) =>
   relayOperation("record faulting audit row", async () => store.save({ ...(await store.load()), fault }));
 
 export const resetMonitorRow = (previous: MonitorProgress, row: string): MonitorProgress => {
   if (!previous.halted || previous.fault?.row !== row) throw new Error("fault_row_mismatch");
   const fault = previous.fault;
-  const next: MonitorProgress = { ...previous, halted: null, fault: null };
+  const next: MonitorProgress = { ...previous, halted: null, fault: null, cleared: [...(previous.cleared ?? []), row] };
   if (fault.stream && fault.cursor && fault.offset !== undefined)
     next.cursors = { ...previous.cursors, [fault.stream]: { ...fault.cursor, offset: fault.offset + 1 } };
-  else if (row.startsWith("conservation:")) next.skippedConservation = row;
   return next;
 };

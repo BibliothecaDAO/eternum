@@ -53,7 +53,7 @@ it("keeps checked-through block and page continuation across ticks without rerea
   expect(paidClaims.mock.calls[2]).toEqual([null, 11, { number: 10, hash: "0xa" }]);
 });
 
-it("an exact row reset skips only that claim and still faults on the next unchecked claim", async () => {
+it("an exact row reset skips only that claim, still faults on the next unchecked claim, and survives a rewind", async () => {
   const { resetMonitorRow } = await import("./monitor");
   let progress: MonitorProgress = { halted: null };
   const rows = ["0xabc", "0xdef"].map((transactionHash) => ({
@@ -100,7 +100,52 @@ it("an exact row reset skips only that claim and still faults on the next unchec
   progress = resetMonitorRow(progress, "paidClaims:0x1:0xdef");
   ports.ledger.paidClaims = () =>
     Effect.succeed({ rows, head: 10, next: null, anchor: { number: 10, hash: "0xb" }, rewind: true });
+  const pause = vi.fn(() => Effect.void);
+  ports.ledger.pause = pause;
   await Effect.runPromise(runMonitor(ports, store));
-  expect(progress.fault?.row).toBe("paidClaims:0x1:0xabc");
-  expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef", "0xabc"]);
+  // The rewind rereads the stream from row 0; both rows were cleared by the operator, so neither faults again.
+  expect(progress).toMatchObject({ halted: null, fault: null });
+  expect(pause).not.toHaveBeenCalled();
+  expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef"]);
+});
+
+it("keeps every cleared conservation row cleared, not only the last one", async () => {
+  const { resetMonitorRow } = await import("./monitor");
+  let progress: MonitorProgress = { halted: null };
+  const games = [
+    { chainId: "0x1", gameId: 1, confirmedBlock: 5, receipts: "2", netIssued: "1", pool: "0" },
+    { chainId: "0x1", gameId: 2, confirmedBlock: 5, receipts: "3", netIssued: "1", pool: "0" },
+  ];
+  const pause = vi.fn(() => Effect.void);
+  const page = { rows: [], head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, next: null };
+  const ports: MonitorPorts = {
+    identity: { matchesPayDecision: () => Effect.succeed(true) },
+    shard: {
+      conservation: () => Effect.succeed(games),
+      withdrawal: () => Effect.succeed(null),
+      result: () => Effect.succeed(null),
+    },
+    ledger: {
+      frontierPool: () => Effect.succeed("0"),
+      paidClaims: () => Effect.succeed(page),
+      postedResults: () => Effect.succeed(page),
+      pause,
+    },
+  };
+  const store = {
+    load: async () => progress,
+    save: async (p: MonitorProgress) => {
+      progress = p;
+    },
+  };
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(progress.fault?.row).toBe("conservation:0x1:1:5:2:1");
+  progress = resetMonitorRow(progress, "conservation:0x1:1:5:2:1");
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(progress.fault?.row).toBe("conservation:0x1:2:5:3:1");
+  progress = resetMonitorRow(progress, "conservation:0x1:2:5:3:1");
+  pause.mockClear();
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(progress).toMatchObject({ halted: null, fault: null });
+  expect(pause).not.toHaveBeenCalled();
 });
