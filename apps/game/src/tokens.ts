@@ -560,6 +560,8 @@ export const HUD_LAYOUT = {
   "ring-rows": "164px",
   /** The top bar's Settings panel, opened under its button. */
   settings: "420px",
+  /** The phone's minimap tab. */
+  "phone-minimap": "clamp(180px, 35dvh, 320px)",
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-cap": "45vw",
