@@ -106,7 +106,7 @@ const StepBody = ({
   usePublishAct(ready ? run : null);
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm text-kit-cream">{line}</p>
+      <p className="text-hud-body text-hud-ink">{line}</p>
       {verb !== null && run !== null && (
         <Button
           role="primary"
@@ -117,7 +117,7 @@ const StepBody = ({
           className="!h-10 w-full"
         />
       )}
-      {verb !== null && refusal !== null && <p className="text-xs text-kit-cream/70">{refusal}</p>}
+      {verb !== null && refusal !== null && <p className="text-hud-label text-hud-muted">{refusal}</p>}
     </div>
   );
 };

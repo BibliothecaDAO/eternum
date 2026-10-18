@@ -220,11 +220,11 @@
   "apps/game/src/ui/features/world/containers/top-header/top-header.tsx": 5,
   "apps/game/src/ui/features/world/hud/action-bubbles.tsx": 4,
   "apps/game/src/ui/features/world/hud/events-card.tsx": 4,
-  "apps/game/src/ui/features/world/hud/holdings.tsx": 9,
+  "apps/game/src/ui/features/world/hud/holdings.tsx": 4,
   "apps/game/src/ui/features/world/hud/hud.css": 30,
   "apps/game/src/ui/features/world/hud/idle-armies.tsx": 6,
-  "apps/game/src/ui/features/world/hud/next-up.tsx": 7,
-  "apps/game/src/ui/features/world/hud/realm-card.tsx": 7,
+  "apps/game/src/ui/features/world/hud/next-up.tsx": 3,
+  "apps/game/src/ui/features/world/hud/realm-card.tsx": 2,
   "apps/game/src/ui/shared/components/production-status-badge.tsx": 40,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }

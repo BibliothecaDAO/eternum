@@ -88,7 +88,7 @@ const HoldingLine = ({
   holding: StructureWithMetadata | null;
   automation: "realm" | "village" | null;
 }) => (
-  <div className="flex min-h-9 items-center gap-4 text-sm font-semibold tabular-nums text-kit-cream">
+  <div className="flex min-h-9 items-center gap-4 text-hud-strong tabular-nums text-hud-ink">
     {holding && <HoldingStats holding={holding} />}
     <span className="flex-1" />
     {automation && <AutomationSelect entityId={entityId} entityType={automation} />}
@@ -201,7 +201,7 @@ const ResourceRings = ({
   summary: StructureProductionSummary;
 }) => {
   const readings = useResourceReadings(resources, summary);
-  if (readings.length === 0) return <p className="text-sm text-kit-muted">No resources yet.</p>;
+  if (readings.length === 0) return <p className="text-hud-body text-hud-muted">No resources yet.</p>;
   return (
     <ul aria-label="Resources" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {readings.map((reading) => (

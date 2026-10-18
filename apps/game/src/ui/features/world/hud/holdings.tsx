@@ -97,7 +97,7 @@ const HoldingSearch = ({ holdings }: { holdings: Holdings }) =>
     />
   ) : null;
 
-const NoHoldingsMatch = () => <p className="px-2 py-3 text-base text-kit-muted">No holding matches.</p>;
+const NoHoldingsMatch = () => <p className="px-2 py-3 text-hud-body text-hud-muted">No holding matches.</p>;
 
 /**
  * The holdings panel: the kinds held as tabs (from the second kind), each its painting and count, the lit kind's
@@ -200,7 +200,7 @@ const HoldingRow = memo(
             tone={selected ? "lit" : "plain"}
             corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
           />
-          <span className="min-w-0 flex-1 truncate text-sm font-semibold text-kit-cream">{structure.displayName}</span>
+          <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{structure.displayName}</span>
         </button>
         {structure.category === StructureType.Realm && (
           <StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />
