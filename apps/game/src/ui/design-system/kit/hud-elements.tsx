@@ -77,8 +77,8 @@ const formatAmount = (amount: number) => Math.round(amount).toLocaleString("en-U
 const QUICK_ADD = 500;
 
 /**
- * How many troops go, for a quick deploy (the owner's round 3): the count typed, out of how many can (and "that fit"
- * when the army's room runs out first), +500 per press up to that, and Max.
+ * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press and Max
+ * right beside it, then out of how many can ("that fit" when the army's room runs out first).
  */
 export const HudTroopAmount = ({
   name,
@@ -109,16 +109,16 @@ export const HudTroopAmount = ({
           onChange={(event) => onChange(Math.min(most, Number(event.target.value.replace(/\D/g, "")) || 0))}
         />
       </label>
-      <span className="ui-amount__of">
-        of {formatAmount(most)}
-        {held > most && " that fit"}
-      </span>
       <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
         +{QUICK_ADD}
       </HudButton>
       <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
         Max
       </HudButton>
+      <span className="ui-amount__of">
+        of {formatAmount(most)}
+        {held > most && " that fit"}
+      </span>
     </div>
   );
 };

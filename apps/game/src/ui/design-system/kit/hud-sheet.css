@@ -499,7 +499,7 @@
   font-weight: var(--hud-weight-label);
 }
 
-/* ── Troop amount: the count typed, out of how many can, +500 and Max, for a quick deploy. ── */
+/* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */
 .ui-amount {
   display: flex;
   align-items: center;
@@ -509,7 +509,6 @@
   width: 6rem;
 }
 .ui-amount__of {
-  margin-right: auto;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);

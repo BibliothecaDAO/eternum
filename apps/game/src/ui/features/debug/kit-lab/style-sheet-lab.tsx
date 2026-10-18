@@ -68,6 +68,9 @@ import { siteName } from "@/three/map-plates/site-name";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import "@/three/map-plates/map-plates.css";
+import { DeployOptionsSection } from "./deploy-options";
+import { MapContextSection } from "./map-context-section";
+import { DeviceContext, Element, type Device } from "./sheet-element";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { createContext, type ReactNode, useContext, useRef, useState } from "react";
@@ -89,9 +92,6 @@ const AGE_PAINTINGS: Record<HudMode, string> = {
   eternum: "/images/landscapes/eternum-restoration-800.webp",
 };
 
-type Device = "desktop" | "phone";
-/** Which device the lab draws the sheet for: on a phone, the sheet's column alone, at a phone's width and sizes. */
-const DeviceContext = createContext<Device>("desktop");
 type State = (typeof STATES)[number];
 
 /**
@@ -177,10 +177,12 @@ export const StyleSheetLab = () => {
               <RowsSection />
               <EventsSection store={store} />
               <WindowSection />
+              <DeployOptionsSection />
               <ConfirmSection />
               <LoadingSection />
               <TopBarSection />
               <PlatesSection />
+              <MapContextSection />
               <MinimapSection />
             </main>
           </DeviceContext.Provider>
@@ -192,36 +194,6 @@ export const StyleSheetLab = () => {
 };
 
 /** One element: what it is for, the sheet's version in its states, and what the game draws today. */
-const Element = ({ name, rule, sheet, today }: { name: string; rule: string; sheet: ReactNode; today: ReactNode }) => {
-  const phone = useContext(DeviceContext) === "phone";
-  return (
-    <section data-sheet-element={name} className="rounded-lg border border-white/10 bg-black/20 p-4">
-      <header data-lab-chrome className="mb-3 flex flex-wrap items-baseline gap-3">
-        <h2 className="text-lg font-bold text-white">{name}</h2>
-        <p className="text-sm text-white/60">{rule}</p>
-      </header>
-      {phone ? (
-        <div className="overflow-x-auto">{sheet}</div>
-      ) : (
-        <div className="grid grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-6">
-          <div>
-            <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-emerald-300/80">
-              Sheet
-            </p>
-            {sheet}
-          </div>
-          <div className="border-l border-white/10 pl-6">
-            <p data-lab-chrome className="mb-2 text-xs uppercase tracking-wide text-red-300/80">
-              Today in the game
-            </p>
-            <div className="flex flex-wrap items-start gap-3">{today}</div>
-          </div>
-        </div>
-      )}
-    </section>
-  );
-};
-
 /** A row of one element drawn in each state the lab can force. */
 const StateRow = ({ label, render }: { label: string; render: (state: State) => ReactNode }) => (
   <div className="mb-3 grid grid-cols-[6rem_repeat(5,minmax(0,1fr))] items-center gap-3">
