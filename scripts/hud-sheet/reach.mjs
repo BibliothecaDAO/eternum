@@ -20,6 +20,40 @@ const ALLOWLIST = new URL("./allowlist.json", import.meta.url);
  * branch (B, C and D add theirs as they land).
  */
 const AREAS = {
+  "A. Panels": [
+    "ui/features/world/hud/desktop-hud.tsx",
+    "ui/features/world/hud/guided-rail.tsx",
+    "ui/features/world/hud/next-up.tsx",
+    "ui/features/world/hud/events-card.tsx",
+    "ui/features/world/hud/idle-armies.tsx",
+    "ui/features/world/hud/holdings.tsx",
+    "ui/features/world/hud/realm-card.tsx",
+    "ui/features/world/hud/minimap.tsx",
+    "ui/features/world/containers/top-header",
+    "ui/features/world/containers/left-facets",
+    "ui/features/world/containers/left-view-surfaces.tsx",
+    "ui/features/world/containers/compact-hud.tsx",
+    "ui/features/world/containers/structure-sidebar.tsx",
+    "ui/features/world/components/bottom-right-panel",
+    "ui/features/world/components/entities",
+    "ui/features/world/components/structure-status-row",
+    "ui/features/world/components/biome-info-panel.tsx",
+    "ui/features/world/components/armies",
+    "ui/features/world/components/hyperstructures",
+    "ui/features/world/components/actions/selected-worldmap-entity.tsx",
+    "ui/features/world/components/actions/chest-tile-details.tsx",
+    "ui/features/world/components/actions/bitcoin-mining-action-panel.tsx",
+    "ui/features/world/components/actions/faith-devotion-action-panel.tsx",
+    "ui/features/world/components/actions/unoccupied-tile-quadrants.tsx",
+    "ui/features/frontier/frontier-hud.tsx",
+    "ui/features/frontier/frontier-selection-sheet.tsx",
+    "ui/features/frontier/frontier-spire-sheet.tsx",
+    "ui/features/frontier/full-in.tsx",
+    "ui/features/frontier/hud",
+    "ui/features/frontier/army",
+    "ui/features/frontier/sites",
+    "ui/features/frontier/build",
+  ],
   "E. Map plates, order line, structure menu": [
     "three/map-plates",
     "three/scenes/context-menu",
@@ -52,6 +86,81 @@ const AREAS = {
 
 /** Modules an area renders that another area has still to migrate, each with the area that owns it. */
 const WAITING = {
+  "ui/features/economy/trading/market-modal.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/economy/transfers/transfer-window.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/event-feed/event-log-panel.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/event-feed/story-feed-row.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/frontier/guide/guide-card.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/frontier/guide/guide-lines-sheet.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/frontier/guide/guide-thread.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/frontier/upgrade/castle-view.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/frontier/upgrade/training-gives.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/frontier/upgrade/type-upgrade-sheet.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/relics/components/relic-activation-selector.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/settlement/construction/select-preview-building.tsx":
+    "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/settlement/production/automation-preset-switch.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/settlement/production/production-modal-content.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/settlement/production/resource-production-controls.tsx":
+    "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/world/components/structure-edit-popup.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/features/world/containers/military-modal.tsx": "B (blitz-ux): on ux/migrate-windows, lands with B",
+  "ui/design-system/kit/player-name.tsx": "D (rings): the board's realm visit, on ux/hud-area-d's board",
+  "ui/features/frontier/board/season-detail.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/frontier/board/season-list.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/frontier/board/season-over-card.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/frontier/board/visit-foot.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/frontier/chest/ruin-chest-moment.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/military/battle/battle-lab/battle-lab.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/military/battle/combat-utils.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/military/components/compact-defense-display.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/military/components/troop-chip.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/social/components/social-board.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/social/faith/wonder-faith-detail-panel.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/social/realtime-chat/ui/realtime-chat-shell.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/world/containers/hud-chat-window.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/world/containers/spectator-standings.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/features/world/hud/action-bubbles.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/shared/components/production-status-badge.tsx": "D (rings): on ux/hud-area-d, lands with D",
+  "ui/design-system/kit/chip.tsx":
+    "pending orchestrator (proposed B): Research's page, frontier/research/frontier-research",
+  "ui/features/frontier/deploy/deploy-view.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/log/today-sheet.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/production/production-sheet.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/research/tree-page.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/rollover/day-done-card.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/rollover/last-hour.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/value/lords-purse.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/value/realms-sheet.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/value/season-withdraw.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/frontier/value/withdraw-sheet.tsx":
+    "pending orchestrator (proposed B; deploy-view D): a Frontier page the HUD opens, on no area's list",
+  "ui/features/world/containers/compact-hud.tsx": "A, mobile pass: a phone-only facet, left to the owner's mobile pass",
+  "ui/features/world/containers/top-header/hud-header-layout.tsx":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass",
+  "ui/features/world/containers/left-facets/structure-actions-panel.tsx":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass",
+  "ui/features/world/containers/left-facets/structure-list-column.tsx":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass",
+  "ui/features/world/containers/left-facets/suggestion-chip.tsx":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass",
+  "ui/features/world/containers/left-facets/suggestions-panel.tsx":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass",
+  "ui/design-system/atoms/hud-typography.ts":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass (structure-actions-panel's type constants)",
+  "ui/design-system/atoms/overlay-surface.ts":
+    "A, mobile pass: a phone-only facet, left to the owner's mobile pass (structure-list-column's surface)",
+  "ui/features/world/components/bottom-right-panel/hex-minimap.tsx":
+    "A, the world map's sheet: the minimap canvas's colours, painted in WebGL, not CSS",
   "ui/design-system/molecules/requirement-chips.tsx":
     "B (blitz-ux): REQUIREMENT_CHIP's last uses (market, order, faith); the export goes when they land",
   "ui/features/military/components/army-deployment-picker.tsx":
