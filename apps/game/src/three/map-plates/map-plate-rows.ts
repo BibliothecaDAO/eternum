@@ -36,7 +36,8 @@ type PlateRow = readonly PlateSegment[];
  * rows, opened (its tile hovered, or selected) at most three, from the most important fact down. No id anywhere.
  *
  * - An army: its player, then its troops, a tight stamina bar under them (`restingStamina`). Opened: the realm it
- *   comes from joins the player as on that realm's plate ("clientlane | Stolsli"), its stamina ("84/150") its troops.
+ *   comes from joins the player as on that realm's plate ("clientlane | Stolsli"), and its stamina keeps its own row
+ *   under the troops, the bar with its exact "84/150" (owner, map labels 2026-10-18).
  * - A realm or a hyperstructure: its player and its name, then its guard. Opened: the guard slots in attack order, and
  *   a row of troops on their way, each time before its troops.
  * - A camp or a rift: its lore name, then its guard. Opened: its owner, its name and kind, and what it holds beside its
@@ -56,10 +57,8 @@ const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
   open
     ? [
         whose(plate.owner, plate.homeName),
-        [
-          { kind: "troops", troops: plate.troops },
-          ...(plate.stamina ? [{ kind: "stamina", ...plate.stamina } as const] : []),
-        ],
+        [{ kind: "troops", troops: plate.troops }],
+        ...(plate.stamina ? [[{ kind: "stamina", ...plate.stamina } as const]] : []),
       ]
     : [[{ kind: "owner", text: plate.owner }], [{ kind: "troops", troops: plate.troops }]];
 

@@ -72,7 +72,7 @@ const measure = (() => {
 
 /** A troop stack's painting, and the sheet chip's padding and border around its letters (hud-sheet.css .ui-chip). */
 const TROOP_PAINTING = 20;
-/** An army's stamina bar, before its "x/y". */
+/** An opened army's stamina bar at its shortest, before its "x/y" (it stretches to the plate's width). */
 const STAMINA_BAR = 36;
 const CHIP_PADDING = 2 * 6 + 2;
 

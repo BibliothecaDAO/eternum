@@ -70,9 +70,9 @@ const camp: StructurePlate = {
 };
 
 describe("what a map plate says (two short rows at rest, three at most opened, never an id)", () => {
-  it("rests an army on its player over its troops, and opens it with its home and exact stamina", () => {
+  it("rests an army on its player over its troops, and opens it with its home, then its exact stamina on its own row", () => {
     expect(read(army, false)).toEqual(["djizus", "T3 300"]);
-    expect(read(army, true)).toEqual(["djizus | Sangsang", "T3 300 84/150"]);
+    expect(read(army, true)).toEqual(["djizus | Sangsang", "T3 300", "84/150"]);
     expect(read({ ...army, stamina: undefined }, true)).toEqual(["djizus | Sangsang", "T3 300"]);
   });
 
@@ -90,10 +90,11 @@ describe("what a map plate says (two short rows at rest, three at most opened, n
     expect(restingStamina(army, true)).toBeNull();
     expect(restingStamina({ ...army, stamina: undefined }, false)).toBeNull();
     expect(restingStamina(realm, false)).toBeNull();
-    // Laid out with its bar: two rows, the frame, and the bar's 6px; opened, three readings on two rows.
+    // Laid out with its bar: two rows, the frame, and the bar's 6px; opened, its stamina is the third row.
     expect(plateSize(army, false).height).toBe(2 * 24 + 6 + 6);
     expect(plateSize({ ...army, stamina: undefined }, false).height).toBe(2 * 24 + 6);
-    expect(plateSize(army, true).height).toBe(2 * 24 + 6);
+    expect(plateSize(army, true).height).toBe(3 * 24 + 6);
+    expect(plateSize({ ...army, stamina: undefined }, true).height).toBe(2 * 24 + 6);
   });
 
   it("rests a realm on its player and name over its guard total, and says no strength", () => {

@@ -114,7 +114,11 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(isOpen("Niziz")).toBe(true);
     expect(isOpen("clientlane")).toBe(true);
     expect(plateOf("clientlane")!.textContent).toContain("Stolsli");
-    expect(plateOf("clientlane")!.textContent).toContain("60/120");
+    // Its stamina on its own row under its troops, as at rest: three rows, the last its exact reading.
+    const rows = [...plateOf("clientlane")!.querySelectorAll(".mp-plate__row")];
+    expect(rows).toHaveLength(3);
+    expect(rows[2].textContent).toBe("60/120");
+    expect(rows[2].querySelector(".mp-plate__meter")).not.toBeNull();
 
     structures.clearHover();
     await frame();
