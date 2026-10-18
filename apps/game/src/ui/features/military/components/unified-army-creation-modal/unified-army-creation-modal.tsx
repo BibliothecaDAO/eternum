@@ -21,6 +21,11 @@ interface UnifiedArmyCreationProps {
 
 type UnifiedArmyCreationBodyProps = UnifiedArmyCreationProps & {
   /**
+   * Whether the form is on screen. A form that is not (the phone's other tab) keeps its draft but draws nothing, its
+   * Deploy included, so no hidden choice can be sent.
+   */
+  shown?: boolean;
+  /**
    * Kept for call-site compatibility. The legacy popup chrome has been removed;
    * the parent Military modal provides the window shell.
    */
@@ -35,6 +40,7 @@ export const UnifiedArmyCreationBody = ({
   initialGuardSlot,
   followSelectedStructure,
   embedded = true,
+  shown = true,
 }: UnifiedArmyCreationBodyProps) => {
   const mode = useGameModeConfig();
   const playerStructures = useOwnedMilitaryStructureInfos();
@@ -109,6 +115,8 @@ export const UnifiedArmyCreationBody = ({
     direction,
     initialGuardSlot,
   });
+  if (!shown) return null;
+
   // Where it goes, then the troops; the one verb sits in the window's foot.
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start">

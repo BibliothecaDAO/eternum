@@ -1,5 +1,6 @@
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { StructureWorkspace } from "@/ui/design-system/molecules/structure-workspace";
+import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -94,6 +95,11 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     return occupied !== undefined && max > 0 && occupied < max;
   }, []);
 
+  // The desktop shows the form and the armies together; the phone shows the one its tab picks.
+  const compact = useCompactLane() !== null;
+  const showsDeploy = !compact || mobileTab === "deploy";
+  const showsArmies = !compact || mobileTab === "armies";
+
   return (
     <HudWindow title="Military" icon="military" size="workspace" onClose={close}>
       <StructureWorkspace
@@ -108,32 +114,30 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
           />
         }
       >
-        <div className="hidden lg:block">
+        {compact ? (
+          <div className="shrink-0" aria-label="Military view">
+            <HudTabs tabs={MILITARY_TABS} value={mobileTab} onChange={setMobileTab} />
+          </div>
+        ) : (
           <MilitaryDeployHeader focusedRealmId={focusedRealmId} />
-        </div>
-        <div className="shrink-0 lg:hidden" aria-label="Military view">
-          <HudTabs tabs={MILITARY_TABS} value={mobileTab} onChange={setMobileTab} />
-        </div>
-        <div
-          className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain", mobileTab !== "deploy" && "max-lg:hidden")}
-        >
+        )}
+        {/* The form stays mounted to keep its draft, and draws itself and its Deploy only where it is shown. */}
+        <div className={cn(showsDeploy && "min-h-0 flex-1 overflow-y-auto overscroll-contain")}>
           <UnifiedArmyCreationBody
             key={bodyKey}
             embedded
+            shown={showsDeploy}
             structureId={safeInteger(focusedRealmId)}
             isExplorer={initialIsExplorer}
             direction={initialDirection}
             initialGuardSlot={initialGuardSlot}
           />
         </div>
-        <div
-          className={cn(
-            "min-h-0 overflow-y-auto pt-2 lg:max-h-hud-section lg:shrink-0",
-            mobileTab === "armies" ? "max-lg:flex-1" : "max-lg:hidden",
-          )}
-        >
-          <ExistingArmiesPanel structureId={focusedRealmId} />
-        </div>
+        {showsArmies && (
+          <div className={cn("min-h-0 overflow-y-auto pt-2", compact ? "flex-1" : "max-h-hud-section shrink-0")}>
+            <ExistingArmiesPanel structureId={focusedRealmId} />
+          </div>
+        )}
       </StructureWorkspace>
     </HudWindow>
   );
