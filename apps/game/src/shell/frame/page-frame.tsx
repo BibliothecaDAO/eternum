@@ -1,8 +1,10 @@
+import "@/ui/design-system/kit/app-sheet.css";
+
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link, type To } from "react-router-dom";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { AppPageHead } from "@/ui/design-system/kit/app-elements";
 import { BACK } from "@/ui/design-system/kit/words";
 
 import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
@@ -10,17 +12,18 @@ import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
-import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Title } from "@/ui/design-system/kit/title";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
-import { PLACES, TabBar, TopBar } from "./tabs";
+import { DesktopBar, TabBar } from "./tabs";
 
 type PageFrameProps = {
   /** A page opened from another names where Back leads; a tab page has none. */
   back?: To;
   /** The page's title: beside Back on the phone, in the title row on desktop. A tab page shows the lockup instead. */
   title?: string;
+  /** What the desktop's title row holds at its end: the page's state (Entry open, a clock), its secondary buttons. */
+  aside?: ReactNode;
   /** One notice, directly above the foot row (phone) or in the top bar (desktop): it covers nothing and pushes nothing. */
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
@@ -29,9 +32,12 @@ type PageFrameProps = {
   tabs?: boolean;
   /** Play, the one page that offers to install the app. */
   offersInstall?: boolean;
-  /** A painting across the desktop window behind the page, faded into the ground in its lower third. */
+  /**
+   * The painting behind the desktop page: the age or mode the page is about; a page about the app stands on its
+   * landscape.
+   */
   painting?: Painting;
-  /** The painting fills the desktop's first screen: a stage, as the first visit is drawn. */
+  /** The painting lit brighter: a stage, as the first visit is drawn. */
   stage?: boolean;
   /** A page that scrolls ends on the footer: What's new, a post, the legal pages. */
   footer?: boolean;
@@ -42,7 +48,8 @@ type PageFrameProps = {
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
  * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
  * notices directly above it on a phone and in the desktop's top bar (covering nothing, pushing nothing down), the tabs
- * at the phone's foot or in the desktop's top bar, with the desktop's keys (1–3 the places, Esc Back). Every page's
+ * at the phone's foot or in the desktop's top bar, with the desktop's keys (Esc Back, Enter the step). On the desktop
+ * the frame is the app sheet's (app-sheet.css): the page stands on its painting, graded, under the bar. Every page's
  * content starts at the top of its body: a painting is the ground behind it, never a space above it. Its root is the
  * shell's surface: everything under it, fixed layers and sheets included, draws the shell's palette and finish
  * (src/tokens.ts), never the HUD's.
@@ -90,81 +97,41 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, footer = false, ch
   </div>
 );
 
+/** The app's own landscape: the ground of a desktop page that is about no one game. */
+const APP_LANDSCAPE: Painting = "brooding-plains";
+
 const DesktopFrame = ({
   back,
   title,
+  aside,
   notice,
   foot,
   tabs = true,
-  painting,
+  painting = APP_LANDSCAPE,
   stage = false,
   footer = false,
   children,
 }: PageFrameProps) => {
-  useDesktopKeys({ places: tabs ? PLACES : [], back });
+  useDesktopKeys({ back });
   return (
-    <div className="relative isolate flex min-h-screen flex-col">
-      <TopBar places={tabs} notice={notice} />
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        {painting && <Backdrop painting={painting} stage={stage} />}
+    <div className="app-frame" data-stage={stage || undefined}>
+      <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
+      <DesktopBar places={tabs} notice={notice} />
+      <div className="app-frame__page">
         {back !== undefined || title ? (
-          <div data-band="title" className="flex items-center gap-3 px-gutter-desk pt-7 wide:px-gutter-wide">
-            <DesktopTitle back={back} title={title} />
+          <div data-band="title">
+            <AppPageHead back={back} title={title} aside={aside} />
           </div>
         ) : null}
-        <main data-band="body" className="w-full flex-1 px-gutter-desk py-6 wide:px-gutter-wide">
+        <main data-band="body" className="min-w-0">
           {children}
         </main>
-        {foot ? (
-          <div data-band="foot" className="w-full px-gutter-desk pb-8 wide:px-gutter-wide">
-            {foot}
-          </div>
-        ) : null}
-        {footer && (
-          <div className="w-full px-gutter-desk wide:px-gutter-wide">
-            <AppFooter />
-          </div>
-        )}
+        {foot ? <div data-band="foot">{foot}</div> : null}
+        {footer && <AppFooter />}
       </div>
     </div>
   );
 };
-
-/** The desktop's title row: Back with its key, then the page's title in the display face. */
-const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string }) => (
-  <>
-    {back !== undefined && (
-      <Link
-        to={back}
-        data-role="back"
-        aria-label={BACK}
-        className="-ml-2 flex h-12 shrink-0 items-center gap-1.5 rounded-control px-2 hover:bg-kit-gold/[.06]"
-      >
-        <SemanticIcon name="arrow-left" size={26} />
-        <Kbd keyName="Esc" />
-      </Link>
-    )}
-    {title ? (
-      <Title level="page" shadow="title">
-        {title}
-      </Title>
-    ) : null}
-  </>
-);
-
-/**
- * The painting under a dark grade: a vignette that keeps its heart lit, faded into the ground at its foot. The grade
- * is what lets a 1536 px lore painting stand across a 1920 px window.
- */
-const Backdrop = ({ painting, stage }: { painting: Painting; stage: boolean }) => (
-  <div
-    aria-hidden
-    className={cn("pointer-events-none absolute inset-x-0 top-0 -z-10", stage ? "h-screen" : "h-[42rem]")}
-  >
-    <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
-    <span className="absolute inset-0 bg-grade" />
-  </div>
-);
 
 /** The phone's top row: Back, wordless at the top left, and the page's title beside it. */
 const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (

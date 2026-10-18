@@ -1,6 +1,9 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type ButtonHTMLAttributes, type ReactNode, useId } from "react";
+import { Link, NavLink, type To, useNavigate } from "react-router-dom";
+
+import { BACK } from "./words";
 
 import { paintingSources, type Painting } from "./paintings";
 
@@ -18,43 +21,74 @@ import { paintingSources, type Painting } from "./paintings";
 type Tone = "good" | "bad" | "warn";
 type Age = "blitz" | "frontier" | "eternum";
 
-/** A button: primary is a page's one verb, secondary sits beside it, quiet is a way out. */
-export const AppButton = ({
-  kind,
-  size = "md",
-  icon,
-  keyHint,
-  busy,
-  tone,
-  children,
-  disabled,
-  ...rest
-}: {
+type AppButtonProps = {
   kind: "primary" | "secondary" | "quiet";
   /** lg: the page's one verb at the size it leads with (Play's Resume, the lobby's Pay and join). */
   size?: "md" | "lg";
   icon?: IconMeaning;
-  /** The key that presses it on a desktop (Enter on a page's one verb). */
-  keyHint?: string;
+  /** The screen's one step: Enter presses it on a desktop, and its key shows beside its word. */
+  step?: boolean;
   /** Its step is on its way: this word in place of its own, and no second press. */
   busy?: string;
-  /** A secondary or quiet button that loses something (Sign out, Remove a device). */
+  /** A secondary or quiet button that loses something (Sign out, Remove a device), or a primary that still costs. */
   tone?: "bad";
+  /** A verb that leads somewhere: the route it opens, after `onClick` has run. */
+  to?: To;
   children?: ReactNode;
-} & ButtonHTMLAttributes<HTMLButtonElement>) => (
+} & ButtonHTMLAttributes<HTMLButtonElement>;
+
+/** A button: primary is a page's one verb, secondary sits beside it, quiet is a way out. */
+export const AppButton = ({ to, step = false, ...button }: AppButtonProps) => {
+  const face =
+    to === undefined ? <AppButtonFace {...button} step={step} /> : <RouteButton {...button} step={step} to={to} />;
+  // The desktop's Enter presses the button under the screen's step mark (shell/frame/desktop-keys.ts).
+  return step ? (
+    <span data-role="step" className="contents">
+      {face}
+    </span>
+  ) : (
+    face
+  );
+};
+
+const RouteButton = ({ to, onClick, ...button }: Omit<AppButtonProps, "to"> & { to: To }) => {
+  const navigate = useNavigate();
+  return (
+    <AppButtonFace
+      {...button}
+      onClick={(event) => {
+        onClick?.(event);
+        navigate(to);
+      }}
+    />
+  );
+};
+
+const AppButtonFace = ({
+  kind,
+  size = "md",
+  icon,
+  step,
+  busy,
+  tone,
+  children,
+  disabled,
+  className,
+  ...rest
+}: Omit<AppButtonProps, "to">) => (
   <button
     type="button"
     {...rest}
     disabled={disabled || busy !== undefined}
     aria-busy={busy !== undefined || undefined}
-    className="app-button"
+    className={cn("app-button", className)}
     data-kind={kind}
     data-size={size}
-    data-tone={kind === "primary" ? undefined : tone}
+    data-tone={tone}
   >
     {icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />}
     <span>{busy ?? children}</span>
-    {keyHint && busy === undefined && <AppKey>{keyHint}</AppKey>}
+    {step && busy === undefined && <AppKey>Enter</AppKey>}
   </button>
 );
 
@@ -91,88 +125,58 @@ export const AppField = ({
   );
 };
 
-/** The app's places: Play and Season in the bar, You behind the player at its end. */
-export type AppPlace = "play" | "season" | "you";
-
-const BAR_PLACES = [
-  { key: "play", label: "Play", icon: "play" },
-  { key: "season", label: "Season", icon: "leaderboard" },
-] as const;
-
-/** The player the bar shows: their name, portrait, and the LORDS they hold. */
-type AppPlayer = { name: string; portrait?: string; lords?: string };
+/** One place of the app's bar: where it leads, its word, its icon (or the player's portrait), and whether it is here. */
+type AppBarPlace = { to: string; label: string; icon?: IconMeaning; portrait?: string; current: boolean };
 
 /**
- * The bar across the top of every page: the app's mark, its places with their icons and the current one in the accent,
- * then at its right end the LORDS the player holds and the player, who opens You.
+ * The desktop's bar across the top of every page, over the page's painting: the app's mark, its places with their icons
+ * and the current one in the accent, then at its right end the page's notice (offline, an update, install) and the
+ * player, who opens You. A full-screen step keeps the mark and the notice alone.
  */
 export const AppTopBar = ({
-  current,
+  mark,
+  places,
   player,
-  onGo,
+  notice,
 }: {
-  current: AppPlace;
-  player: AppPlayer;
-  onGo?: (place: AppPlace) => void;
+  mark: ReactNode;
+  places: readonly AppBarPlace[];
+  player: AppBarPlace | null;
+  notice?: ReactNode;
 }) => (
-  <header className="app-bar">
-    <img src="/images/logos/realms-lockup.svg" alt="Realms" className="app-bar__mark" />
-    <nav className="app-bar__places" aria-label="Places">
-      {BAR_PLACES.map((place) => (
-        <button
-          key={place.key}
-          type="button"
-          className="app-bar__place"
-          aria-current={place.key === current ? "page" : undefined}
-          onClick={() => onGo?.(place.key)}
-        >
-          <Icon name={place.icon} size={24} />
-          {place.label}
-        </button>
+  <header data-band="bar" className="app-bar">
+    <span data-role="lockup">{mark}</span>
+    <nav aria-label="Tabs" className="app-bar__places">
+      {places.map((place) => (
+        <AppBarLink key={place.to} place={place} />
       ))}
     </nav>
     <span className="app-bar__end">
-      {player.lords !== undefined && (
-        <AppChip tone="gold" icon="lords">
-          {player.lords}
-        </AppChip>
-      )}
-      <button
-        type="button"
-        className="app-bar__place app-bar__player"
-        aria-label={`You: ${player.name}`}
-        aria-current={current === "you" ? "page" : undefined}
-        onClick={() => onGo?.("you")}
-      >
-        {player.name}
-        <AppPortrait src={player.portrait} name={player.name} size="sm" own />
-      </button>
+      {notice ? <div data-band="notice">{notice}</div> : null}
+      {player && <AppBarLink place={player} />}
     </span>
   </header>
 );
 
-/**
- * A page: its painting behind everything (the age or mode it shows, else the app's landscape), graded dark where the
- * panels sit, the bar across the top, then its content, no wider than a page runs on a desktop.
- */
-export const AppFrame = ({
-  current,
-  player,
-  painting,
-  onGo,
-  children,
-}: {
-  current: AppPlace;
-  player: AppPlayer;
-  painting: Painting;
-  onGo?: (place: AppPlace) => void;
-  children: ReactNode;
-}) => (
-  <div className="app-frame">
-    <img className="app-frame__painting" alt="" {...paintingSources(painting)} sizes="100vw" />
-    <AppTopBar current={current} player={player} onGo={onGo} />
-    <main className="app-frame__page">{children}</main>
-  </div>
+const AppBarLink = ({ place }: { place: AppBarPlace }) => (
+  <NavLink
+    to={place.to}
+    data-role="tab"
+    aria-current={place.current ? "page" : undefined}
+    className={cn("app-bar__place", place.portrait !== undefined && "app-bar__player")}
+  >
+    {place.portrait !== undefined ? (
+      <>
+        {place.label}
+        <AppPortrait src={place.portrait} name={place.label} size="sm" own />
+      </>
+    ) : (
+      <>
+        {place.icon && <Icon name={place.icon} size={24} />}
+        {place.label}
+      </>
+    )}
+  </NavLink>
 );
 
 /** A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised. */
@@ -487,14 +491,14 @@ export const AppPortrait = ({
 );
 
 /** A page's head: Back to where it came from (with Esc on a desktop), its title, and what it does at its end. */
-export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: () => void; aside?: ReactNode }) => (
+export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: To; aside?: ReactNode }) => (
   <header className="app-page-head">
-    {back && (
-      <button type="button" className="app-page-head__back" onClick={back}>
-        <Icon name="arrow-right" size={20} className="rotate-180" />
-        Back
+    {back !== undefined && (
+      <Link to={back} data-role="back" aria-label={BACK} className="app-page-head__back">
+        <Icon name="arrow-left" size={22} />
+        {BACK}
         <AppKey>Esc</AppKey>
-      </button>
+      </Link>
     )}
     <h1>{title}</h1>
     {aside !== undefined && <span className="app-page-head__aside">{aside}</span>}

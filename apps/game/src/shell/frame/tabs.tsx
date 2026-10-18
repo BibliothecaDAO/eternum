@@ -1,7 +1,7 @@
 import { WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
-import { Fragment, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -10,7 +10,7 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { Kbd } from "@/ui/design-system/kit/kbd";
+import { AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";
 
@@ -20,7 +20,7 @@ import { Lockup } from "./lockup";
  */
 const TABS: readonly { to: string; word: string; icon: IconMeaning; matches: readonly string[] }[] = [
   { to: "/", word: WORDS.play, icon: "play" as const, matches: ["/", "/blitz"] },
-  { to: "/season", word: WORDS.season, icon: "victory" as const, matches: ["/season", "/p/"] },
+  { to: "/season", word: WORDS.season, icon: "leaderboard" as const, matches: ["/season", "/p/"] },
   {
     to: "/profile",
     word: WORDS.you,
@@ -31,9 +31,6 @@ const TABS: readonly { to: string; word: string; icon: IconMeaning; matches: rea
 
 const YOU_TAB = TABS[2];
 
-/** The places' addresses in order: the desktop's keys 1–3 open them. */
-export const PLACES = TABS.map((tab) => tab.to);
-
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
 
@@ -42,18 +39,24 @@ const useActiveTab = (): string | undefined => {
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
 };
 
-/** You's icon is the player's portrait once signed in: their chosen one, else their account's. */
-const useSignedInPortrait = (): { account: string | undefined; portrait: string | null | undefined } | undefined => {
+/**
+ * The signed-in player as the places show them: their name, and their portrait (their chosen one, else their
+ * account's) where one can be drawn.
+ */
+const useSignedInPlayer = ():
+  | { account: string | undefined; portrait: string | null | undefined; url: string; name: string }
+  | undefined => {
   const { session } = useIdentitySession();
   const account = useAccountStore((state) => state.account?.address);
-  return session && playerPortraitUrl(account, session.user.image) !== undefined
-    ? { account, portrait: session.user.image }
+  const url = session ? playerPortraitUrl(account, session.user.image) : undefined;
+  return session && url !== undefined
+    ? { account, portrait: session.user.image, url, name: session.user.name || WORDS.you }
     : undefined;
 };
 
 /** A place's mark: its icon, or on You the signed-in player's portrait. */
 const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: boolean; size: number }) => {
-  const portrait = useSignedInPortrait();
+  const portrait = useSignedInPlayer();
   if (tab === YOU_TAB && portrait)
     return (
       <Portrait
@@ -99,66 +102,26 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's bar across the top of the window: the lockup as the app's mark, then Play and Season, the page's notice
- * if it has one (offline, an update, Install on Play), and You at the bar's far end, each place with its key. It stays
- * quiet (no gold fill) so the page's one gold step keeps the weight, and the notice in it pushes no content down; a
- * full-screen step keeps the lockup and the notice alone.
+ * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play and Season with their icons, the
+ * page's notice if it has one, and the player at the bar's far end (their name and portrait once signed in, else You).
+ * It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step keeps the lockup and
+ * the notice alone.
  */
-export const TopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
+export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
-  const noticeSlot = notice ? (
-    <div data-band="notice" className="max-w-tabs">
-      {notice}
-    </div>
-  ) : null;
+  const player = useSignedInPlayer();
+  const placeOf = (tab: (typeof TABS)[number]) => ({
+    to: tab.to,
+    label: tab.word,
+    icon: tab.icon,
+    current: active === tab.to,
+  });
   return (
-    <header
-      data-band="bar"
-      className="sticky top-0 z-30 flex h-[68px] shrink-0 items-center gap-7 border-b border-kit-line bg-kit-ground/95 px-gutter-desk backdrop-blur wide:px-gutter-wide"
-    >
-      <div data-role="lockup">
-        <Lockup />
-      </div>
-      {places ? (
-        <nav aria-label="Tabs" className="flex flex-1 items-center gap-1.5">
-          {TABS.map((tab, index) => {
-            const current = active === tab.to;
-            const link = (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                data-role="tab"
-                aria-current={current ? "page" : undefined}
-                className={cn(
-                  "flex h-12 items-center gap-2.5 rounded-control pl-3.5 pr-3 font-ui text-base transition-colors",
-                  current
-                    ? "bg-kit-gold/[.14] text-kit-cream"
-                    : "text-kit-muted hover:bg-kit-gold/[.06] hover:text-kit-cream",
-                )}
-              >
-                <TabIcon tab={tab} current={current} size={24} />
-                {tab.word}
-                <Kbd keyName={String(index + 1)} className="ml-2" />
-              </NavLink>
-            );
-            // You closes the bar, after the space and the notice.
-            return tab === YOU_TAB ? (
-              <Fragment key={tab.to}>
-                <span className="flex-1" />
-                {noticeSlot}
-                {link}
-              </Fragment>
-            ) : (
-              link
-            );
-          })}
-        </nav>
-      ) : (
-        <>
-          <span className="flex-1" />
-          {noticeSlot}
-        </>
-      )}
-    </header>
+    <AppTopBar
+      mark={<Lockup />}
+      places={places ? TABS.filter((tab) => tab !== YOU_TAB).map(placeOf) : []}
+      player={places ? { ...placeOf(YOU_TAB), ...(player && { label: player.name, portrait: player.url }) } : null}
+      notice={notice}
+    />
   );
 };

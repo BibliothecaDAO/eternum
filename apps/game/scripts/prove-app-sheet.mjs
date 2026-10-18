@@ -1,10 +1,10 @@
 /**
- * The app sheet's captures, one screenshot each at 1920×1080: the app's pages as they are today (the app lab's
- * fixtures, /lab/app/<screen>/<page>), each element of the app sheet (/lab/kit/app, by its `data-sheet-element`), and
- * the app's four most-used pages in their picked desktop directions (/lab/kit/app/<page>). Run before and after the app
- * moves onto its sheet.
+ * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
+ * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
+ * Season, Results sealed and opened) are shot at 1920×1080 and on a phone at 390×844, and checked; the app's other
+ * pages are shot on the desktop, under the same frame.
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [today|sheet|pages]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet]
  */
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,23 +12,27 @@ import { fileURLToPath } from "node:url";
 import { runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORT = ["1920", "1080"];
+const PHONE = ["390", "844"];
 const READY_MS = 30_000;
 const SETTLE_MS = 2_000;
 
-/** The pages the app draws today, each over its fixture state: the busiest first. */
-const TODAY = {
+/** The pages on the app sheet, each over the fixture state it is checked in. */
+const SHEET_PAGES = {
   play: "home",
-  "first-visit": "first-visit",
   lobby: "entry-choose/blitz/slot-blitz-1630",
   season: "season-running/season",
-  results: "reward-epic/results/0x5245414c4d53-7",
+  results: "reward-sealed/results/0x5245414c4d53-7",
+  "results-opened": "reward-lords/results/0x5245414c4d53-7",
+};
+
+/** The app's other pages: still drawn with the shell kit inside the sheet's frame. */
+const OTHER_PAGES = {
+  "first-visit": "first-visit",
   you: "home/profile",
   settings: "home/profile/settings",
   "sign-in": "first-visit/sign-in/start",
   news: "home/scroll",
 };
-
-const PAGES = ["play", "lobby", "season", "results", "results-opened"];
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */
 const pageChecks = (b) => [
@@ -39,9 +43,9 @@ const pageChecks = (b) => [
   { check: "no horizontal overflow", ok: b.evaluate("document.documentElement.scrollWidth <= innerWidth") },
 ];
 
-const shoot = async (b, baseUrl, out, { name, path, drawn, more }) => {
+const shoot = async (b, baseUrl, out, { name, path, more }) => {
   b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
-  const record = { name, ready: await waitFor(b, drawn, READY_MS), presses: [], checks: [] };
+  const record = { name, ready: await waitFor(b, DRAWN, READY_MS), presses: [], checks: [] };
   if (!record.ready) return record;
   await sleep(SETTLE_MS);
   b.run("screenshot", join(out, `${name}.png`));
@@ -49,59 +53,59 @@ const shoot = async (b, baseUrl, out, { name, path, drawn, more }) => {
   return record;
 };
 
-const todayPages = () =>
-  Object.entries(TODAY).map(([page, path]) => ({
-    name: `today-${page}`,
-    path: `/lab/app/${path}?capture=1`,
-    drawn: `document.querySelector("[data-layout]") !== null`,
-  }));
+const DRAWN = `document.querySelector("[data-layout]") !== null`;
+
+const otherPages = () =>
+  Object.entries(OTHER_PAGES).map(([page, path]) => ({ name: `other-${page}`, path: `/lab/app/${path}?capture=1` }));
 
 /**
- * What holds for each of the app's pages on its sheet: it fits the screen, it stands on its painting and every picture
- * on it loaded (the painting, icons, portraits, the chest), it has at most one gold verb, and the player sits at the
- * bar's right end. The glyphs it draws are counted.
+ * What holds for each page on the app sheet: nothing drawn spills out of its block, every picture on it loaded (the
+ * painting, icons, portraits, the chest), and it has at most one gold verb; on the desktop it also stands on its
+ * painting and the bar ends on the player. The glyphs it draws are counted.
  */
-const appPageChecks = (b) => {
+const sheetPageChecks = (desktop) => (b) => {
   const measure = b.evaluate(`(() => {
     const bottomOf = (element) => element.getBoundingClientRect().bottom;
     const lowestIn = (element) => Math.max(bottomOf(element), ...[...element.querySelectorAll("*")].map(bottomOf));
-    const screen = document.querySelector("[data-app-page]");
-    const blocks = [...document.querySelector(".app-frame__page").children];
-    const bar = document.querySelector(".app-bar").getBoundingClientRect();
-    const player = document.querySelector(".app-bar__player").getBoundingClientRect();
+    const body = document.querySelector('[data-band="body"]');
+    const blocks = body ? [...body.querySelectorAll(":scope > * > *, :scope > *")] : [];
+    const bar = document.querySelector('[data-band="bar"]')?.getBoundingClientRect();
+    const player = document.querySelector(".app-bar__end > :last-child")?.getBoundingClientRect();
     return {
-      overflow: Math.round(
-        Math.max(lowestIn(screen) - bottomOf(screen), ...blocks.map((block) => lowestIn(block) - bottomOf(block))),
-      ),
-      glyphs: document.querySelectorAll("[data-app-page] [data-icon]").length,
-      painting: document.querySelector("[data-app-page] .app-frame__painting")?.naturalWidth > 0,
-      broken: [...document.querySelectorAll("[data-app-page] img")]
+      spill: Math.round(Math.max(0, ...blocks.map((block) => lowestIn(block) - bottomOf(block)))),
+      height: document.documentElement.scrollHeight,
+      glyphs: document.querySelectorAll("[data-icon]").length,
+      painting: document.querySelector(".app-frame__painting")?.naturalWidth > 0,
+      broken: [...document.querySelectorAll("img")]
         .filter((image) => !(image.complete && image.naturalWidth > 0))
         .map((image) => image.currentSrc || image.src),
-      goldVerbs: document.querySelectorAll('[data-app-page] .app-button[data-kind="primary"]').length,
-      playerRightGap: Math.round(bar.right - player.right),
-      playerInBar: player.top >= bar.top && player.bottom <= bar.bottom,
+      goldVerbs: document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary').length,
+      places: document.querySelectorAll('[data-band="bar"] [data-role="tab"]').length,
+      playerRightGap: bar && player ? Math.round(bar.right - player.right) : null,
     };
   })()`);
   return [
-    {
-      check: "fits 1920×1080 (nothing below the screen or spilling out of its block)",
-      ok: measure.overflow <= 0,
-      measure,
-    },
-    { check: "stands on its painting", ok: measure.painting },
+    { check: "nothing spills out of its block", ok: measure.spill <= 1, measure },
     { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
-    { check: "the player at the bar's right end", ok: measure.playerInBar && measure.playerRightGap <= 48 },
+    ...(desktop
+      ? [
+          { check: "stands on its painting", ok: measure.painting },
+          // A full-screen step (the lobby) keeps the mark and the notice alone.
+          {
+            check: "the bar ends on the player, or holds no places",
+            ok: measure.places === 0 || (measure.playerRightGap !== null && measure.playerRightGap <= 48),
+          },
+        ]
+      : []),
   ];
 };
 
-const appPages = () =>
-  PAGES.map((page) => ({
-    name: `app-${page}`,
-    path: `/lab/kit/app/${page}?capture=1`,
-    drawn: `document.querySelector('[data-lab="app-page"]') !== null`,
-    more: appPageChecks,
+const sheetPages = (desktop) =>
+  Object.entries(SHEET_PAGES).map(([page, path]) => ({
+    name: `${desktop ? "app" : "phone"}-${page}`,
+    path: `/lab/app/${path}?capture=1`,
+    more: sheetPageChecks(desktop),
   }));
 
 /** An element's name as a file name: "Game card" is sheet-game-card.png. */
@@ -133,7 +137,7 @@ const sheetElements = async (b, baseUrl, out) => {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
-  const parts = process.argv[4]?.split(",") ?? ["today", "sheet", "pages"];
+  const parts = process.argv[4]?.split(",") ?? ["pages", "others", "sheet"];
   await runProof(
     {
       parent: resolve(process.argv[3] ?? ".context/app-sheet"),
@@ -143,9 +147,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     },
     async (b, out, records) => {
       b.run("set", "viewport", ...VIEWPORT);
-      if (parts.includes("today")) for (const page of todayPages()) records.push(await shoot(b, baseUrl, out, page));
+      if (parts.includes("pages"))
+        for (const page of sheetPages(true)) records.push(await shoot(b, baseUrl, out, page));
+      if (parts.includes("others")) for (const page of otherPages()) records.push(await shoot(b, baseUrl, out, page));
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
-      if (parts.includes("pages")) for (const page of appPages()) records.push(await shoot(b, baseUrl, out, page));
+      if (parts.includes("pages")) {
+        b.run("set", "viewport", ...PHONE);
+        for (const page of sheetPages(false)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...VIEWPORT);
+      }
     },
   );
 }

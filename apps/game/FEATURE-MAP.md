@@ -14,18 +14,18 @@ minimap frame) in every state, beside the versions the game draws today; Mode sw
 `/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/app` the app's style sheet
 (the pages outside a game): the research behind it (shipped game launchers and menus, desktop then mobile), its spec,
 the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the reward chest at
-each tier, sealed and opened, among them), and the four most-used pages at 1920×1080 in the owner's picked directions
-under the top bar (Play in Ages, the Blitz lobby and Results in Ledger, Season in Launcher), each on its painting with
-icons on places, panels, verbs and figures, each alone at `/lab/kit/app/<page>` (`play`, `lobby`, `season`, `results`,
-`results-opened`); `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures and checks them. `/lab/kit/panels` the
-HUD's holdings and selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/guidance` the points-first
-guidance (the goal in the top bar, Next up's route, Events rows with outcomes). `/lab/kit/area-d` the rings,
-leaderboard, tribes, Military picker and window body, Combat and crate panel as the game draws them, on the deploy
-fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
-`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
-`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
-on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
-on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
+each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's fixtures;
+`pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks them
+(nothing spills out of its block, every picture loads, one gold verb at most, the painting and the bar on a desktop),
+then the app's other pages and every element of the sheet. `/lab/kit/panels` the HUD's holdings and selected-realm
+panels as a player sees them, on a fixture realm. `/lab/kit/guidance` the points-first guidance (the goal in the top
+bar, Next up's route, Events rows with outcomes). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and
+window body, Combat and crate panel as the game draws them, on the deploy fixture's realm; capture them with
+`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
+number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
+text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
+number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
+`node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
@@ -63,13 +63,15 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 
 ## Shell (outside a game)
 
-On a desktop, a bar across the top holds the lockup, Play and Season, and You at its right end; keys `1`–`3` open the
-three places and `Esc` goes back (`shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`; each key's mark is the kit's
-`Kbd`, `ui/design-system/kit/kbd.tsx`). A full-screen step (sign-in, a lobby) keeps the bar with the lockup alone. Every
-page's content starts at the top, under the bar; a painting is its ground, never space above it. `Enter` presses the
-page's step button (the one marked as its step) when it is enabled, nothing has focus that answers Enter itself, and no
-dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an update ready, or Install,
-which only Play offers) sits in the desktop's top bar before You, and on a phone just above the foot.
+On a desktop, every page stands on its painting (the age or mode it shows, else the app's landscape) under the app
+sheet's bar: the lockup, Play and Season with their icons, the page's notice, and the player (name and portrait, or You)
+at its right end. `Esc` goes back, its key shown beside Back (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`,
+`shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A
+full-screen step (sign-in, a lobby) keeps the bar with the lockup alone. Every page's content starts at the top, under
+the bar; a painting is its ground, never space above it. `Enter` presses the page's step button (the one marked as its
+step) when it is enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are
+a tab bar at the foot. The app's notice (offline, an update ready, or Install, which only Play offers) sits in the
+desktop's top bar before You, and on a phone just above the foot.
 
 | Feature                                                                                                                                                                                                 | Route                                      | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

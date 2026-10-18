@@ -38,15 +38,15 @@ import { Title } from "@/ui/design-system/kit/title";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { REWARD_WORDS } from "@/ui/design-system/kit/words";
 
 import { Element } from "../sheet-element";
-import { chestArt } from "./app-blocks";
-import { AGE_OF, PLAYER } from "./app-lab-data";
+import { Icon } from "@/ui/design-system/icon";
+import { rewardChestMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { ageOf } from "@/shell/play/ages";
 import { ResearchBoard } from "./app-research-board";
-import { APP_PAGES, type AppPage, PAGE_LAYOUTS } from "./app-pages";
 import { APP_SPEC } from "./app-spec";
 
 /**
@@ -95,12 +95,8 @@ export const AppSheetLab = () => (
   </div>
 );
 
-/** One of the app's pages alone, at the desktop's 1920×1080. */
-export const AppPageAlone = () => {
-  const { page } = useParams();
-  if (!APP_PAGES.includes(page as AppPage)) return <p>Unknown page.</p>;
-  return <div data-lab="app-page">{PAGE_LAYOUTS[page as AppPage].render()}</div>;
-};
+/** The player the sheet's samples show. */
+const PLAYER = { name: "Maelis", portrait: "/images/avatars/07.png" };
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
 type State = (typeof STATES)[number];
@@ -268,8 +264,8 @@ const ColourSection = () => (
               data-age={age}
               className="flex flex-col gap-1 rounded-[var(--app-radius-panel)] border border-[rgb(var(--app-age)/0.4)] bg-[linear-gradient(180deg,var(--app-age-from),var(--app-age-to))] p-4"
             >
-              <span className="text-app-label text-[rgb(var(--app-age))]">Age {AGE_OF[age].numeral}</span>
-              <span className="text-app-title text-app-ink">{AGE_OF[age].name}</span>
+              <span className="text-app-label text-[rgb(var(--app-age))]">Age {ageOf(age).numeral}</span>
+              <span className="text-app-title text-app-ink">{ageOf(age).name}</span>
             </div>
           ))}
         </div>
@@ -321,7 +317,7 @@ const ButtonSection = () => (
           )}
         />
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
+          <AppButton kind="primary" size="lg" icon="play" step>
             Pay and join
           </AppButton>
           <AppButton kind="primary" busy="Joining…">
@@ -374,7 +370,15 @@ const TopBarSection = () => (
     sheet={
       <div className="flex flex-col gap-3">
         {(["play", "season", "you"] as const).map((current) => (
-          <AppTopBar key={current} current={current} player={PLAYER} />
+          <AppTopBar
+            key={current}
+            mark={<img src="/images/logos/realms-lockup.svg" alt="Realms" className="h-7" />}
+            places={[
+              { to: "#", label: "Play", icon: "play", current: current === "play" },
+              { to: "#", label: "Season", icon: "leaderboard", current: current === "season" },
+            ]}
+            player={{ to: "#", label: PLAYER.name, portrait: PLAYER.portrait, current: current === "you" }}
+          />
         ))}
       </div>
     }
@@ -481,7 +485,7 @@ const GameCardSection = () => (
             </>
           }
           verb={
-            <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
+            <AppButton kind="primary" size="lg" icon="play" step>
               Resume
             </AppButton>
           }
@@ -752,7 +756,7 @@ const PageHeadSection = () => (
     name="Page head"
     todayLabel={TODAY}
     rule="Back to where the page came from (Esc on a desktop), its title, and what it does at its end."
-    sheet={<AppPageHead title="Settings" back={() => undefined} aside={<AppChip>Signed in with Discord</AppChip>} />}
+    sheet={<AppPageHead title="Settings" back="#" aside={<AppChip>Signed in with Discord</AppChip>} />}
     today={
       <Title level="page" as="p" shadow="title">
         Settings
@@ -823,8 +827,8 @@ const ChestSection = () => (
         {REWARD_WORDS.band.map((band, index) => (
           <div key={band} className="flex flex-col items-center gap-2">
             <div className="flex">
-              <img src={chestArt(index, false)} alt="" className="size-32 object-contain" />
-              <img src={chestArt(index, true)} alt="" className="size-32 object-contain" />
+              <Icon name={rewardChestMeaning(index)} size={128} />
+              <Icon name={rewardChestMeaning(index, true)} size={128} />
             </div>
             <AppChip icon="victory">{band}</AppChip>
           </div>
@@ -833,34 +837,49 @@ const ChestSection = () => (
     }
     today={
       <p className="text-sm text-white/70">
-        The reward panel (shell/season-tab/reward-panel.tsx) draws the same files at its band; the icon lane is
-        restoring them as reward-chest icons on art/reward-chests.
+        The reward panel (shell/season-tab/reward-panel.tsx) draws the same reward-chest icons at its band.
       </p>
     }
   />
 );
 
-/** The four most-used pages (Results twice: sealed, opened), each in its picked direction, scaled to fit; each opens alone at 1920×1080. */
+/**
+ * The app's real pages on the sheet, over the app lab's fixtures (shell/lab), each in the direction the owner picked:
+ * what `pnpm prove:app` captures and checks.
+ */
+const APP_PAGES = [
+  { name: "Play", direction: "B · Ages", path: "/lab/app/home" },
+  { name: "Blitz lobby", direction: "C · Ledger", path: "/lab/app/entry-choose/blitz/slot-blitz-1630" },
+  { name: "Season", direction: "A · Launcher", path: "/lab/app/season-running/season" },
+  {
+    name: "Results, the chest sealed",
+    direction: "C · Ledger",
+    path: "/lab/app/reward-sealed/results/0x5245414c4d53-7",
+  },
+  {
+    name: "Results, the chest opened",
+    direction: "C · Ledger",
+    path: "/lab/app/reward-lords/results/0x5245414c4d53-7",
+  },
+] as const;
+
 const PagesSection = () => (
-  <section id="pages" className="flex flex-col gap-6 rounded-lg border border-white/10 bg-black/20 p-4">
+  <section id="pages" className="flex flex-col gap-3 rounded-lg border border-white/10 bg-black/20 p-4">
     <header data-lab-chrome className="flex flex-col gap-1">
       <h2 className="text-lg font-bold text-white">The app on a desktop</h2>
       <p className="text-sm text-white/60">
-        The four most-used pages at 1920×1080, each in the direction the owner picked, under one bar across the top with
-        the player at its right end. Open a page to see it at full size.
+        The real pages, drawn from this sheet over the app lab's fixtures, each in the direction the owner picked.
       </p>
     </header>
-    <div className="grid grid-cols-2 gap-6">
+    <ul className="flex flex-col gap-1 text-sm text-white/80">
       {APP_PAGES.map((page) => (
-        <Link key={page} to={`/lab/kit/app/${page}`} className="flex flex-col gap-2">
-          <div className="h-[432px] w-[768px] overflow-hidden rounded border border-white/15">
-            <div className="origin-top-left scale-[0.4]">{PAGE_LAYOUTS[page].render()}</div>
-          </div>
-          <span data-lab-chrome className="text-sm text-white/80">
-            <b className="text-white">{PAGE_LAYOUTS[page].name}</b> · {PAGE_LAYOUTS[page].direction}
-          </span>
-        </Link>
+        <li key={page.path}>
+          <Link to={page.path} className="underline">
+            {page.name}
+          </Link>{" "}
+          · {page.direction}
+        </li>
       ))}
-    </div>
+    </ul>
   </section>
 );

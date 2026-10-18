@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "The app's new look on desktop",
+    description:
+      "On a desktop every page outside a game stands on its painting under one bar: Play and Season with their icons, your name and portrait at its right end. Back shows its Esc key and a page's one gold step its Enter key.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "New app landscapes",
     description: "Season has its own citadel painting, and Blitz Results shows the battlefield after the fighting.",
     type: "improvement",
@@ -44,6 +51,7 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Clearer Ivory relief icons",
     description:
       "Game and app controls share clearer cream silhouettes, consistent light and stronger outlines. Resources keep their own paintings.",
+
     type: "improvement",
   },
   {
