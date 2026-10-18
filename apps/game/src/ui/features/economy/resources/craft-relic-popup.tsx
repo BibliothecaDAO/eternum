@@ -1,8 +1,17 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import {
+  HudButton,
+  HudChip,
+  HudMeter,
+  HudNotice,
+  HudPanel,
+  HudRow,
+  HudWindow,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
 import { currencyFormat } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager, getEntityName, getIsBlitz } from "@bibliothecadao/eternum";
@@ -10,11 +19,10 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { findResourceById, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { useEffect, useMemo, useState } from "react";
-
-import Button from "@/ui/design-system/atoms/button";
+import { HeldRelic } from "@/ui/features/relics/components/relic-activation-shared";
 import { accountAddress, useAccountAddress } from "@/hooks/store/use-account-store";
 
 const BURN_RESEARCH_FOR_RELIC_EVENT_SELECTOR = hash.getSelectorFromName("BurnResearchForRelicEvent").toLowerCase();
@@ -225,9 +233,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const missingResearch =
     researchBalance === undefined ? undefined : Math.max(configuredResearchCost - researchBalance, 0);
   const shouldShowResearchProgress = configuredResearchCost > 0;
-  const researchProgressPercent = shouldShowResearchProgress
-    ? Math.min(((researchBalance ?? 0) / configuredResearchCost) * 100, 100)
-    : 0;
+  const researchProgress = shouldShowResearchProgress ? (researchBalance ?? 0) / configuredResearchCost : 0;
 
   const craftingRequirements = useMemo(() => {
     return resolveCraftingRequirements({
@@ -293,143 +299,102 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     }
   };
 
-  const craftedRelicName = craftedRelicId
-    ? (findResourceById(craftedRelicId)?.trait ?? ResourcesIds[craftedRelicId])
-    : null;
-
-  const footer = (
-    <>
-      <div className="flex justify-center space-x-4">
-        <Button variant="default" onClick={onClose} disabled={isCrafting}>
-          Close
-        </Button>
-        <Button
-          variant="gold"
-          onClick={handleCraftRelic}
-          isLoading={isCrafting}
-          disabled={isCrafting || !canCraft}
-          forceUppercase={false}
-        >
-          {craftButtonLabel}
-        </Button>
-      </div>
-      <div className="mt-3 px-3 text-center text-[11px] text-gold/70">
-        {isCrafting ? "Submitting crafting transaction..." : actionHint}
-      </div>
-      {error && (
-        <div role="alert" className="px-3 mt-3 text-danger font-bold text-center">
-          {error}
-        </div>
-      )}
-    </>
-  );
+  const researchAfterCraft =
+    researchBalance === undefined ? undefined : Math.max(researchBalance - configuredResearchCost, 0);
 
   return (
-    <SurfaceFrame title="Craft Relic" onClose={onClose} footer={footer} className="w-[560px]" bodyClassName="p-4">
-      <div className="space-y-4 text-left">
-        <div className="rounded border border-relic/40 bg-gradient-to-b from-relic/20 to-dark-brown/30 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.18em] text-relic2/90">Relic Forge</p>
-              <p className="mt-2 text-sm text-gold/90">Burn research to craft one random relic.</p>
-            </div>
-            <ResourceIcon resource={ResourcesIds.Research} size="md" withTooltip={false} />
-          </div>
-
-          {shouldShowResearchProgress && (
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-[11px] text-gold/70">
-                <span>Research ready</span>
-                <span>
-                  {currencyFormat(researchBalance, 0)} / {currencyFormat(configuredResearchCost, 0)}
-                </span>
-              </div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-brown/60">
-                <div
-                  className={hasEnoughResearch ? "h-full bg-green transition-all" : "h-full bg-gold transition-all"}
-                  style={{ width: `${researchProgressPercent}%` }}
-                />
-              </div>
-              {!hasEnoughResearch && (
-                <p className="mt-1 text-[11px] text-danger">
-                  {missingResearch === undefined
-                    ? "Research balance unknown."
-                    : `Need ${currencyFormat(missingResearch, 0)} more research.`}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="rounded border border-gold/20 bg-dark-brown/30 p-4">
-          <p className="text-sm font-semibold text-gold">{structureName}</p>
-
-          <div className="mt-3 space-y-2 text-xs text-gold/80">
-            <div className="flex items-center justify-between">
-              <span>Research Balance</span>
-              <span className="font-semibold text-gold">{currencyFormat(researchBalance, 0)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Research Cost per Relic</span>
-              <span className="font-semibold text-gold">{currencyFormat(configuredResearchCost, 0)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Balance After Craft</span>
-              <span className="font-semibold text-gold">
-                {currencyFormat(
-                  researchBalance === undefined ? undefined : Math.max(researchBalance - configuredResearchCost, 0),
-                  0,
-                )}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded border border-gold/20 bg-dark-brown/30 p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-gold/70">Crafting Requirements</p>
-          <ul className="mt-2 space-y-1.5 text-xs">
-            {craftingRequirements.map((requirement) => (
-              <li key={requirement.id} className="flex items-center justify-between gap-3">
-                <span className={requirement.satisfied ? "text-gold/85" : "text-danger"}>{requirement.label}</span>
-                <span
-                  className={
-                    requirement.satisfied
-                      ? "rounded bg-green/20 px-1.5 py-0.5 text-[10px] font-semibold text-green"
-                      : "rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-semibold text-danger"
+    <HudWindow title="Craft Relic" icon="forge" size="task" onClose={onClose}>
+      <HudWindowFoot note={isCrafting ? "Submitting crafting transaction..." : actionHint}>
+        <HudButton kind="quiet" onClick={onClose} disabled={isCrafting}>
+          Close
+        </HudButton>
+        <HudButton
+          kind="primary"
+          prices={[
+            {
+              icon: resourceMeaning(ResourcesIds.Research),
+              word: "Research",
+              amount: currencyFormat(configuredResearchCost, 0),
+            },
+          ]}
+          busy={isCrafting ? "Forging relic…" : undefined}
+          disabled={!canCraft}
+          onClick={handleCraftRelic}
+        >
+          {craftButtonLabel}
+        </HudButton>
+      </HudWindowFoot>
+      <div className="flex flex-col gap-3">
+        <HudPanel kind="section" title="Relic Forge" icon="research" collapsible={false}>
+          <div className="flex flex-col gap-2">
+            <p>Burn research to craft one random relic.</p>
+            {shouldShowResearchProgress && (
+              <>
+                <HudRow
+                  title="Research ready"
+                  trail={
+                    <span className="tabular-nums">
+                      {currencyFormat(researchBalance, 0)} / {currencyFormat(configuredResearchCost, 0)}
+                    </span>
                   }
-                >
-                  {requirement.satisfied ? "READY" : "BLOCKED"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {isCrafting && (
-          <div className="rounded border border-gold/20 bg-gold/10 p-3 text-center text-xs text-gold/80">
-            Forging relic on-chain...
+                />
+                <HudMeter share={researchProgress} tone={hasEnoughResearch ? "good" : "warn"} label="Research ready" />
+                {!hasEnoughResearch && (
+                  <HudNotice
+                    tone="bad"
+                    line={
+                      missingResearch === undefined
+                        ? "Research balance unknown."
+                        : `Need ${currencyFormat(missingResearch, 0)} more research.`
+                    }
+                  />
+                )}
+              </>
+            )}
           </div>
-        )}
+        </HudPanel>
+
+        <HudPanel kind="section" title={structureName} collapsible={false}>
+          <HudRow title="Research Balance" trail={currencyFormat(researchBalance, 0)} />
+          <HudRow title="Research Cost per Relic" trail={currencyFormat(configuredResearchCost, 0)} />
+          <HudRow title="Balance After Craft" trail={currencyFormat(researchAfterCraft, 0)} />
+        </HudPanel>
+
+        <HudPanel kind="section" title="Crafting Requirements" collapsible={false}>
+          {craftingRequirements.map((requirement) => (
+            <HudRow
+              key={requirement.id}
+              title={requirement.label}
+              trail={
+                <HudChip tone={requirement.satisfied ? "good" : "bad"}>
+                  {requirement.satisfied ? "READY" : "BLOCKED"}
+                </HudChip>
+              }
+            />
+          ))}
+        </HudPanel>
 
         {craftedRelicId && (
-          <div className="rounded border border-relic/50 bg-relic/15 p-4 text-center">
-            <p className="text-xs uppercase tracking-[0.2em] text-relic2">Relic Crafted</p>
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <ResourceIcon resource={craftedRelicId} size="lg" />
-              <p className="text-sm font-semibold text-relic2">{craftedRelicName ?? "Unknown Relic"}</p>
+          <HudPanel kind="section" title="Relic Crafted" collapsible={false}>
+            <div className="flex flex-col items-start gap-2">
+              <HeldRelic relicId={craftedRelicId} held="1" />
+              <p className="text-hud-label text-hud-muted">
+                Added to your relic inventory. Open the relic action to activate it.
+              </p>
             </div>
-            <p className="mt-2 text-[11px] text-relic2/90">
-              Added to your relic inventory. Open the relic action to activate it.
-            </p>
-          </div>
+          </HudPanel>
         )}
 
         {craftedWithoutReveal && !craftedRelicId && (
-          <div className="rounded border border-relic/50 bg-relic/15 p-4 text-center text-sm text-relic2">
-            Relic crafted successfully. Reveal data is syncing and will appear in inventory shortly.
-          </div>
+          <HudNotice
+            tone="good"
+            line="Relic crafted successfully."
+            why="Reveal data is syncing and will appear in inventory shortly."
+          />
         )}
+
+        {error && <HudNotice tone="bad" line={error} />}
       </div>
-    </SurfaceFrame>
+    </HudWindow>
   );
 };

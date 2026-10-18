@@ -1,124 +1,71 @@
-import { ReactNode } from "react";
-
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { HudNotice, HudRelic, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
+import { relicKind, relicLine, relicShortName } from "../relic-words";
 import { RelicInfoResult } from "../hooks/use-relic-activation";
 
-interface RelicSummaryProps {
-  resourceId: ResourcesIds;
-  title: string;
-  subtitle?: string;
-  description?: string;
-  layout?: "horizontal" | "vertical";
-  iconSize?: "md" | "lg" | "xl";
-  className?: string;
-  children?: ReactNode;
-}
+/** A held relic: its chip, how many are held, and what it does on hover. */
+export const HeldRelic = ({ relicId, held }: { relicId: ResourcesIds; held: string }) => (
+  <HudRelic
+    icon={resourceMeaning(relicId)}
+    kind={relicKind(relicId)}
+    gives={relicShortName(relicId)}
+    trail={`×${held}`}
+    state="held"
+    tip={relicLine(relicId)}
+  />
+);
 
-export const RelicSummary = ({
-  resourceId,
-  title,
-  subtitle,
-  description,
-  layout = "horizontal",
-  iconSize = "lg",
-  className,
-  children,
-}: RelicSummaryProps) => {
-  const vertical = layout === "vertical";
-
-  return (
-    <div
-      className={cn(vertical ? "flex flex-col items-center gap-3 text-center" : "flex items-center gap-3", className)}
-    >
-      <ResourceIcon resource={resourceId} size={iconSize} withTooltip={false} className="shrink-0" />
-      <div className={cn("space-y-1", vertical ? "max-w-[280px]" : "")}>
-        <p className="text-base font-semibold text-gold">{title}</p>
-        {subtitle && <p className="text-xs text-gold/70">{subtitle}</p>}
-        {description && <p className="text-xs text-gold/60">{description}</p>}
-        {children}
-      </div>
-    </div>
-  );
-};
-
-interface RelicEssenceRequirementProps {
-  essenceCost: number;
-  /** Undefined while the balance is unknown. */
-  essenceBalance: number | undefined;
-  shortfall: string;
-  hasEnoughEssence: boolean;
-  className?: string;
-  costLabel?: string;
-  balanceLabel?: string;
-  showWarning?: boolean;
-}
-
+/** What activating costs in Essence against what its payer holds, and what is missing. */
 export const RelicEssenceRequirement = ({
   essenceCost,
   essenceBalance,
   shortfall,
   hasEnoughEssence,
-  className,
-  costLabel = "Activation Cost",
-  balanceLabel = "Essence Balance",
-  showWarning = !hasEnoughEssence,
-}: RelicEssenceRequirementProps) => {
-  return (
-    <div className={cn("rounded border border-gold/20 bg-dark-brown/30 p-4", className)}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-gold/80">{costLabel}:</span>
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds.Essence} size="sm" withTooltip={false} />
-          <span className="text-sm font-bold">{essenceCost.toLocaleString()}</span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-gold/80">{balanceLabel}:</span>
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds.Essence} size="sm" withTooltip={false} />
-          <span className={`text-sm font-bold ${hasEnoughEssence ? "text-emerald-300" : "text-red-400"}`}>
-            {essenceBalance?.toLocaleString() ?? "—"}
-          </span>
-        </div>
-      </div>
-      {showWarning && !hasEnoughEssence && (
-        <div className="mt-2 rounded border border-red-600/40 bg-red-900/30 p-2 text-center text-xs font-semibold text-red-300">
-          {shortfall}
-        </div>
-      )}
-    </div>
-  );
-};
+}: {
+  essenceCost: number;
+  /** Undefined while the balance is unknown. */
+  essenceBalance: number | undefined;
+  shortfall: string;
+  hasEnoughEssence: boolean;
+}) => (
+  <div className="flex flex-col gap-1">
+    <HudRow
+      title="Activation cost"
+      trail={<span className="tabular-nums">{essenceCost.toLocaleString()} Essence</span>}
+    />
+    <HudRow
+      title="Essence balance"
+      trail={
+        <span className={hasEnoughEssence ? "tabular-nums text-hud-good" : "tabular-nums text-hud-bad"}>
+          {essenceBalance?.toLocaleString() ?? "—"}
+        </span>
+      }
+    />
+    {!hasEnoughEssence && <HudNotice tone="bad" line={shortfall} />}
+  </div>
+);
 
-interface RelicIncompatibilityNoticeProps {
-  relicInfo: RelicInfoResult;
-  recipientType: RelicRecipientType;
-  className?: string;
-}
+const recipientWords = (recipientType: RelicRecipientType) =>
+  recipientType === RelicRecipientType.Explorer ? "explorers" : "structures";
 
+/** Why this holder cannot activate the relic: it works on the other kind of holder. */
 export const RelicIncompatibilityNotice = ({
   relicInfo,
   recipientType,
-  className,
-}: RelicIncompatibilityNoticeProps) => {
-  if (!relicInfo) {
-    return null;
-  }
+}: {
+  relicInfo: RelicInfoResult;
+  recipientType: RelicRecipientType;
+}) =>
+  relicInfo ? (
+    <HudNotice
+      tone="bad"
+      line={`This relic cannot be activated by ${recipientWords(recipientType)}`}
+      why={`${relicInfo.recipientType} relics can only be activated by ${recipientWords(relicInfo.recipientType)}`}
+    />
+  ) : null;
 
-  return (
-    <div
-      className={cn("rounded border border-red-600/30 bg-red-900/20 p-3 text-center text-xs text-red-300", className)}
-    >
-      <p className="font-semibold text-red-400">
-        ⚠️ This relic cannot be activated by{" "}
-        {recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
-      </p>
-      <p className="mt-1">
-        {relicInfo.recipientType} relics can only be activated by{" "}
-        {relicInfo.recipientType === RelicRecipientType.Explorer ? "explorers" : "structures"}
-      </p>
-    </div>
-  );
-};
+/** The Essence an activation pays, as its button names it. */
+export const essencePrice = (essenceCost: number) => [
+  { icon: resourceMeaning(ResourcesIds.Essence), word: "Essence", amount: essenceCost.toLocaleString() },
+];

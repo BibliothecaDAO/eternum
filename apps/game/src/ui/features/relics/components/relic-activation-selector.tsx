@@ -2,9 +2,16 @@ import { useMemo, useState } from "react";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import Button from "@/ui/design-system/atoms/button";
+import {
+  HudButton,
+  HudChip,
+  HudEmpty,
+  HudNotice,
+  HudPanel,
+  HudRow,
+  HudWindow,
+} from "@/ui/design-system/kit/hud-elements";
 import { currencyFormat } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -12,7 +19,12 @@ import { EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/type
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
-import { RelicEssenceRequirement, RelicIncompatibilityNotice, RelicSummary } from "./relic-activation-shared";
+import {
+  essencePrice,
+  HeldRelic,
+  RelicEssenceRequirement,
+  RelicIncompatibilityNotice,
+} from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -73,75 +85,42 @@ const RelicActivationHolderCard = ({
   })();
 
   return (
-    <div className="rounded border border-gold/20 bg-dark-brown/30 p-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-gold">{holder.entityName}</p>
-          <p className="text-xs text-gold/60">ID: {holder.entityId}</p>
-        </div>
-        <div className="text-xs font-semibold text-gold/70">Amount: {currencyFormat(holder.amount, 0)}</div>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-semibold">
-        <span
-          className={`rounded px-2 py-1 ${
-            compatible ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
-          }`}
-        >
-          {compatible ? "Compatible" : "Incompatible"}
-        </span>
-        <span
-          className={`rounded px-2 py-1 ${
-            hasEnoughEssence ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-300"
-          }`}
-        >
-          {hasEnoughEssence ? "Enough essence" : "Need essence"}
-        </span>
-      </div>
-
-      {isArmyHolder && parentRealmLabel && (
-        <div className="mt-2 w-full text-xxs text-gold/60">Parent Realm · {parentRealmLabel}</div>
-      )}
-
-      {isArmyHolder && holder.troops && (
-        <div className="mt-2">
-          <TroopChip troops={holder.troops} size="sm" />
-        </div>
-      )}
-
-      <RelicEssenceRequirement
-        className="mt-3"
-        essenceCost={essenceCost}
-        essenceBalance={essenceBalance}
-        shortfall={shortfall}
-        hasEnoughEssence={hasEnoughEssence}
-        balanceLabel="Essence Balance"
-      />
-
-      {!compatible && (
-        <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} className="mt-2" />
-      )}
-
-      {activationError && <p className="mt-2 text-xs font-semibold text-red-300">{activationError}</p>}
-
-      <div className="mt-3 flex justify-end">
-        <Button
-          variant="gold"
-          size="md"
-          disabled={!compatible || !hasEnoughEssence || isActivating}
-          isLoading={isActivating}
-          onClick={() =>
-            onActivate({
-              holder,
-              hasEnoughEssence,
-              shortfall,
-            })
+    <HudPanel kind="section" title={holder.entityName} cue={`×${currencyFormat(holder.amount, 0)}`} collapsible={false}>
+      <div className="flex flex-col gap-2">
+        <HudRow
+          title={`ID: ${holder.entityId}`}
+          detail={isArmyHolder && parentRealmLabel ? `Parent Realm · ${parentRealmLabel}` : undefined}
+          trail={
+            <span className="flex gap-1">
+              <HudChip tone={compatible ? "good" : "bad"}>{compatible ? "Compatible" : "Incompatible"}</HudChip>
+              <HudChip tone={hasEnoughEssence ? "good" : "bad"}>
+                {hasEnoughEssence ? "Enough essence" : "Need essence"}
+              </HudChip>
+            </span>
           }
-        >
-          Activate
-        </Button>
+        />
+        {isArmyHolder && holder.troops && <TroopChip troops={holder.troops} size="sm" />}
+        <RelicEssenceRequirement
+          essenceCost={essenceCost}
+          essenceBalance={essenceBalance}
+          shortfall={shortfall}
+          hasEnoughEssence={hasEnoughEssence}
+        />
+        {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} />}
+        {activationError && <HudNotice tone="bad" line={activationError} />}
+        <span className="flex justify-end">
+          <HudButton
+            kind="secondary"
+            prices={essencePrice(essenceCost)}
+            busy={isActivating ? "Activating…" : undefined}
+            disabled={!compatible || !hasEnoughEssence}
+            onClick={() => onActivate({ holder, hasEnoughEssence, shortfall })}
+          >
+            Activate
+          </HudButton>
+        </span>
       </div>
-    </div>
+    </HudPanel>
   );
 };
 
@@ -207,7 +186,7 @@ export const RelicActivationSelector = ({
     return map;
   }, [mode, playerStructures]);
 
-  const { relicInfo, resourceName, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
+  const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
 
   const relicDescription = relicInfo?.effectLine;
 
@@ -307,41 +286,29 @@ export const RelicActivationSelector = ({
   };
 
   return (
-    <SurfaceFrame title="Select Activation Target" onClose={onClose} className="w-[560px]" bodyClassName="p-4">
-      <div className="space-y-5">
-        <RelicSummary
-          resourceId={relicResourceId}
-          title={resourceName}
-          subtitle={`Total available: ${visibleDisplayAmount}`}
-          description={relicDescription}
-        />
-
+    <HudWindow title="Select Activation Target" icon="relics" size="task" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <HeldRelic relicId={relicResourceId} held={visibleDisplayAmount} />
+        {relicDescription && <p className="text-hud-label text-hud-muted">{relicDescription}</p>}
         {visibleHolders.length === 0 ? (
-          <div className="rounded border border-gold/20 bg-dark-brown/20 p-6 text-center text-sm text-gold/70">
-            No entities currently hold this relic.
-          </div>
+          <HudEmpty icon="relics" line="No entities currently hold this relic." />
         ) : (
-          <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-            {visibleHolders.map((holder) => {
-              const holderKey = String(holder.entityId);
-              const isActivating = activatingHolderId === holderKey;
-              const holderError = activationError.holderId === holderKey ? activationError.message : null;
-
-              return (
-                <RelicActivationHolderCard
-                  key={holder.entityId}
-                  holder={holder}
-                  relicInfo={relicInfo}
-                  essenceCost={essenceCost}
-                  onActivate={handleActivate}
-                  isActivating={isActivating}
-                  activationError={holderError}
-                />
-              );
-            })}
-          </div>
+          visibleHolders.map((holder) => {
+            const holderKey = String(holder.entityId);
+            return (
+              <RelicActivationHolderCard
+                key={holder.entityId}
+                holder={holder}
+                relicInfo={relicInfo}
+                essenceCost={essenceCost}
+                onActivate={handleActivate}
+                isActivating={activatingHolderId === holderKey}
+                activationError={activationError.holderId === holderKey ? activationError.message : null}
+              />
+            );
+          })
         )}
       </div>
-    </SurfaceFrame>
+    </HudWindow>
   );
 };

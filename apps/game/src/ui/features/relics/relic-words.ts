@@ -1,12 +1,29 @@
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
+import type { HudRelic } from "@/ui/design-system/kit/hud-elements";
 import { configManager } from "@bibliothecadao/eternum";
-import { getRelicInfo, relicEffect, type ResourcesIds } from "@bibliothecadao/types";
+import { getRelicInfo, relicEffect, type RelicInfo, type ResourcesIds } from "@bibliothecadao/types";
+import type { ComponentProps } from "react";
+
+const RELIC_KINDS: Record<RelicInfo["type"], ComponentProps<typeof HudRelic>["kind"]> = {
+  Stamina: "stamina",
+  Damage: "damage",
+  "Damage Reduction": "damage-reduction",
+  Exploration: "exploration",
+  Production: "production",
+};
 
 /** "Damage Relic I" reads "Damage I": the word "Relic" is the chip's shape already. */
 export const relicShortName = (relicId: ResourcesIds): string => {
   const relic = getRelicInfo(relicId);
   if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
   return relic.name.replace(" Relic", "");
+};
+
+/** What a relic works on, the colour its chip takes. */
+export const relicKind = (relicId: ResourcesIds): ComponentProps<typeof HudRelic>["kind"] => {
+  const relic = getRelicInfo(relicId);
+  if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
+  return RELIC_KINDS[relic.type];
 };
 
 /** What a relic does and for how long, from the game's relic rules: "Increases damage by 20% for 30m". */
