@@ -12,7 +12,7 @@ export const TabList = ({ className, children, ...props }: TabListProps) => {
 
   return (
     // @ts-ignore
-    <Tab.List className={clsx(VARIANTS[variant].tabList, className)} {...props}>
+    <Tab.List className={clsx("ui ui-tabs", VARIANTS[variant].tabList, className)} {...props}>
       {children}
     </Tab.List>
   );

@@ -239,7 +239,6 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
           tabs[0].component
         ) : (
           <Tabs
-            size="small"
             selectedIndex={activeTabIndex}
             onChange={(index: number) => {
               setSelectedTab(index);

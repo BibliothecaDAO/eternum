@@ -8,56 +8,17 @@ import { Tab as HeadlessTab } from "@headlessui/react";
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
+/**
+ * The older tab strips, drawn as the HUD sheet's tabs (hud-sheet.css .ui-tabs, .ui-tab): one look, the chosen tab in
+ * the age's accent over its rule. A variant now only lays its strip out: centred, stretched, or along the foot.
+ */
 export const VARIANTS = {
-  default: {
-    tab: {
-      base: "px-3 py-1 !outline-none transition-colors duration-200 space-x-1 hover:bg-gold/20 border-3 border-transparent",
-      active: "panel-gold text-gold",
-      inactive: "text-gold",
-    },
-    tabList: "flex w-full justify-center",
-  },
-  primary: {
-    tab: {
-      base: "relative mx-1 rounded-t-xl text-gold transition-all duration-200 !outline-none text-sm py-2 px-4",
-      active: "bg-yellow-900/20 text-yellow-100",
-      inactive: "hover:bg-yellow-900/10",
-    },
-    tabList: "flex w-full justify-center p-2 border border-gold/30 bg-black/30 rounded-lg",
-  },
-  small: {
-    tab: {
-      base: "relative flex w-full items-center justify-center px-2 py-2 tracking-widest transition-all duration-200 focus-visible:ring-yellow-700 text-yellow-100",
-      active: "bg-yellow-900/20 text-yellow-100",
-      inactive: "hover:bg-yellow-900/10 text-gray-200",
-    },
-    tabList: "flex p-1 space-x-2 border border-gold/30 bg-black/30 rounded-lg",
-  },
-  inventory: {
-    tab: {
-      base: "group relative flex cursor-pointer items-center gap-2 border-b-[3px] border-transparent px-0 py-1 text-gold/70 !outline-none transition-colors duration-75",
-      active: "border-gold text-gold",
-      inactive: "hover:text-gold/90",
-    },
-    tabList: "flex w-full justify-start gap-4",
-  },
-  entityBanner: {
-    tab: {
-      base: "!mx-0 flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/45 bg-black/50 px-3 text-center text-gold/80 shadow-[inset_0_1px_0_rgba(223,170,84,0.18),0_4px_12px_rgba(0,0,0,0.22)] !outline-none transition-[background-color,border-color,box-shadow,color] duration-100 focus-visible:border-gold focus-visible:text-gold focus-visible:ring-2 focus-visible:ring-gold/45",
-      active:
-        "border-gold/80 bg-gold/20 text-gold shadow-[inset_0_1px_0_rgba(255,220,140,0.24),0_0_18px_rgba(223,170,84,0.18)]",
-      inactive: "hover:border-gold/70 hover:bg-gold/10 hover:text-gold",
-    },
-    tabList: "mt-auto flex w-full items-center justify-between gap-2",
-  },
-  selection: {
-    tab: {
-      base: "flex flex-1 cursor-pointer items-center justify-center rounded-lg border border-gold/30 bg-black/30 px-2 py-2 text-gold/60 transition duration-150 !outline-none",
-      active: "border-gold/50 bg-gold/20 text-gold font-semibold shadow-[inset_0_1px_0_rgba(223,170,84,0.15)]",
-      inactive: "hover:border-gold/50 hover:text-gold/90",
-    },
-    tabList: "flex w-full gap-2",
-  },
+  default: { tab: "", tabList: "w-full justify-center" },
+  primary: { tab: "", tabList: "w-full justify-center" },
+  small: { tab: "flex-1 justify-center", tabList: "" },
+  inventory: { tab: "", tabList: "w-full justify-start" },
+  entityBanner: { tab: "flex-1 justify-center", tabList: "mt-auto w-full" },
+  selection: { tab: "flex-1 justify-center", tabList: "w-full" },
 };
 
 interface TabsProps {
@@ -66,17 +27,9 @@ interface TabsProps {
   className?: string;
   selectedIndex?: number;
   onChange?: (index: number) => void;
-  size?: "small" | "medium" | "large";
 }
 
-export const Tabs = ({
-  children,
-  className,
-  size = "small",
-  variant = "default",
-  selectedIndex = 0,
-  onChange,
-}: TabsProps) => {
+export const Tabs = ({ children, className, variant = "default", selectedIndex = 0, onChange }: TabsProps) => {
   const playClick = useUISound("ui.click");
 
   return (
@@ -84,11 +37,7 @@ export const Tabs = ({
       {onChange ? (
         <HeadlessTab.Group
           as="div"
-          className={clsx("flex flex-col", className, {
-            "text-xs": size === "small",
-            "text-base": size === "medium",
-            "text-xl": size === "large",
-          })}
+          className={clsx("flex flex-col", className)}
           selectedIndex={selectedIndex}
           onChange={(e) => {
             onChange(e);
@@ -98,7 +47,7 @@ export const Tabs = ({
           {children}
         </HeadlessTab.Group>
       ) : (
-        <HeadlessTab.Group as="div" className={clsx("flex flex-col ", className)}>
+        <HeadlessTab.Group as="div" className={clsx("flex flex-col", className)}>
           {children}
         </HeadlessTab.Group>
       )}
