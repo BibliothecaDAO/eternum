@@ -103,7 +103,6 @@
   "apps/game/src/ui/features/world/containers/left-facets/structure-list-column.tsx": 1,
   "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 5,
   "apps/game/src/ui/features/world/containers/left-facets/suggestions-panel.tsx": 9,
-  "apps/game/src/ui/features/world/containers/military-modal.tsx": 10,
   "apps/game/src/ui/features/world/containers/spectator-standings.tsx": 12,
   "apps/game/src/ui/features/world/containers/top-header/hud-header-layout.tsx": 1,
   "apps/game/src/ui/features/world/hud/action-bubbles.tsx": 4,
