@@ -128,6 +128,13 @@ button.ui-panel__name {
   background: transparent;
   color: var(--hud-muted);
 }
+/* What loses something, on a secondary or quiet button: its words and line in the bad tone. */
+.ui-button:is([data-kind="secondary"], [data-kind="quiet"])[data-tone="bad"] {
+  color: var(--hud-bad);
+}
+.ui-button[data-kind="secondary"][data-tone="bad"] {
+  border-color: var(--hud-bad);
+}
 .ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
   color: rgb(var(--hud-accent));
@@ -452,6 +459,32 @@ button.ui-row {
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
+}
+/* A row with its own controls: the button that chooses it takes the room, the controls keep theirs. */
+.ui-row__choose {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-self: stretch;
+  justify-content: center;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ui-row__choose:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
+.ui-row__controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.1);
 }
 .ui-row__trail {
   margin-left: auto;
@@ -1256,4 +1289,15 @@ button.ui-row {
 .ui-portrait > * {
   display: block;
   margin: auto;
+}
+.ui-portrait__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ui-portrait__initial {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-strong);
+  line-height: var(--hud-line-strong);
+  font-weight: var(--hud-weight-strong);
 }

@@ -319,6 +319,46 @@ const ButtonsSection = () => (
             </HudButton>
           )}
         />
+        <StateRow
+          label="small icon"
+          render={(state) => (
+            <HudIconButton
+              icon="edit"
+              label="Rename"
+              kind="quiet"
+              size="sm"
+              data-state={forced(state)}
+              disabled={state === "disabled"}
+            />
+          )}
+        />
+        <StateRow
+          label="busy"
+          render={() => (
+            <HudButton kind="primary" busy="Sending…">
+              Raise an army
+            </HudButton>
+          )}
+        />
+        <StateRow
+          label="bad tone"
+          render={(state) => (
+            <span className="flex gap-2">
+              <HudButton kind="secondary" tone="bad" data-state={forced(state)} disabled={state === "disabled"}>
+                Delete army
+              </HudButton>
+              <HudIconButton
+                icon="trash"
+                label="Delete army"
+                kind="quiet"
+                size="sm"
+                tone="bad"
+                data-state={forced(state)}
+                disabled={state === "disabled"}
+              />
+            </span>
+          )}
+        />
       </>
     }
     today={
@@ -842,6 +882,15 @@ const TabsSection = () => {
             onChange={() => undefined}
             states={{ camps: "hover", rifts: "focus" }}
           />
+          <HudTabs
+            tabs={[
+              { key: "realms", icon: "realm", count: 3, ariaLabel: "Realms, 3" },
+              { key: "camps", icon: "camp", count: 1, ariaLabel: "Camps, 1" },
+              { key: "rifts", icon: "rift", count: 2, ariaLabel: "Rifts, 2" },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
         </div>
       }
       today={
@@ -988,6 +1037,29 @@ const RowsSection = () => (
         <HudRow title="Egonal" detail="Settlement · 1,000 guarding" selected />
         <HudRow title="Noykkuynoyk" detail="City · Undefended" state="hover" />
         <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" />
+        <span data-lab-chrome className="mt-3 text-xs text-white/50">
+          A row with its own controls: its star, the button that chooses it, its Level up:
+        </span>
+        <HudRow
+          lead={<HudIconButton icon="star" label="Pin to the top" kind="quiet" size="sm" />}
+          title="Stolsli"
+          detail="Settlement"
+          selected
+          onClick={() => undefined}
+          trail={
+            <HudButton kind="secondary" size="sm">
+              Level up
+            </HudButton>
+          }
+        />
+        <span data-lab-chrome className="mt-3 text-xs text-white/50">
+          A portrait: a painting, a player&apos;s image, their initial:
+        </span>
+        <span className="flex gap-2">
+          <HudPortrait icon="knight-t1" label="An army of knights" />
+          <HudPortrait src="/images/landscapes/blitz-spires-800.webp" label="djizus" />
+          <HudPortrait initial="D" label="djizus" />
+        </span>
         <LabPickRows />
         <span data-lab-chrome className="mt-3 text-xs text-white/50">
           A table row (the leaderboard), its columns on the caller&apos;s grid:

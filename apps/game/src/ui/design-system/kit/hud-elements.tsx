@@ -31,12 +31,27 @@ export const HudButton = forwardRef<
     kind: ButtonKind;
     size?: "md" | "sm";
     icon?: IconMeaning;
+    /** Its order is on its way: this word in place of its own, and no second press. */
+    busy?: string;
+    /** A secondary or quiet button that loses something (Delete army): its words and line in the bad tone. A primary
+     *  stays gold in every age. */
+    tone?: "bad";
     children?: ReactNode;
   } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ kind, size = "md", icon, children, ...rest }, ref) => (
-  <button ref={ref} type="button" {...rest} className="ui-button" data-kind={kind} data-size={size}>
+>(({ kind, size = "md", icon, busy, tone, children, disabled, ...rest }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    {...rest}
+    disabled={disabled || busy !== undefined}
+    aria-busy={busy !== undefined || undefined}
+    className="ui-button"
+    data-kind={kind}
+    data-size={size}
+    data-tone={kind === "primary" ? undefined : tone}
+  >
     {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
-    {children}
+    {busy ?? children}
   </button>
 ));
 HudButton.displayName = "HudButton";
@@ -44,10 +59,27 @@ HudButton.displayName = "HudButton";
 /** A button that is only its painting, named for assistive technology and the app's tooltip. */
 export const HudIconButton = forwardRef<
   HTMLButtonElement,
-  { icon: IconMeaning; label: string; kind?: ButtonKind } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ icon, label, kind = "secondary", ...rest }, ref) => (
-  <button ref={ref} type="button" aria-label={label} {...rest} className="ui-button" data-kind={kind} data-icon-only>
-    <Icon name={icon} size={20} />
+  {
+    icon: IconMeaning;
+    label: string;
+    kind?: ButtonKind;
+    size?: "md" | "sm";
+    /** As HudButton's: the bad tone on a secondary or quiet button. */
+    tone?: "bad";
+  } & ButtonHTMLAttributes<HTMLButtonElement>
+>(({ icon, label, kind = "secondary", size = "md", tone, ...rest }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    aria-label={label}
+    {...rest}
+    className="ui-button"
+    data-kind={kind}
+    data-size={size}
+    data-tone={kind === "primary" ? undefined : tone}
+    data-icon-only
+  >
+    <Icon name={icon} size={size === "sm" ? 16 : 20} />
   </button>
 ));
 HudIconButton.displayName = "HudIconButton";
@@ -293,8 +325,19 @@ export const HudTabs = <K extends string>({
   onChange,
   states = {},
 }: {
-  /** Each tab; `title` is its hover text, what the tab holds in full. */
-  tabs: readonly { key: K; label: string; count?: number; disabled?: boolean; title?: string }[];
+  /**
+   * Each tab; `title` is its hover text, what the tab holds in full. A tab may be its painting (`icon`) and count with
+   * no word, named then by `ariaLabel`.
+   */
+  tabs: readonly {
+    key: K;
+    label?: string;
+    icon?: IconMeaning;
+    ariaLabel?: string;
+    count?: number;
+    disabled?: boolean;
+    title?: string;
+  }[];
   value: K;
   onChange: (key: K) => void;
   /** The lab's forced state per tab. */
@@ -310,9 +353,11 @@ export const HudTabs = <K extends string>({
         aria-selected={tab.key === value}
         disabled={tab.disabled}
         title={tab.title}
+        aria-label={tab.ariaLabel}
         data-state={states[tab.key]}
         onClick={() => onChange(tab.key)}
       >
+        {tab.icon && <Icon name={tab.icon} size={22} />}
         {tab.label}
         {tab.count !== undefined && <HudChip>{tab.count}</HudChip>}
       </button>
@@ -418,6 +463,7 @@ export const HudRow = ({
   lead,
   title,
   detail,
+  trail,
   selected = false,
   state,
   disabled,
@@ -426,11 +472,28 @@ export const HudRow = ({
   lead?: ReactNode;
   title: ReactNode;
   detail?: ReactNode;
+  /**
+   * The row's own controls after its words (Provision, Level up). With them the row is a container: its lead, the
+   * button that chooses it, and its controls side by side, never one inside another.
+   */
+  trail?: ReactNode;
   selected?: boolean;
   state?: string;
   disabled?: boolean;
   onClick?: () => void;
 }) => {
+  if (trail !== undefined) {
+    return (
+      <div className="ui-row" aria-selected={selected} aria-disabled={disabled} data-state={state}>
+        {lead}
+        <button type="button" className="ui-row__choose" aria-pressed={selected} disabled={disabled} onClick={onClick}>
+          <span className="ui-row__title">{title}</span>
+          {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
+        </button>
+        <span className="ui-row__controls">{trail}</span>
+      </div>
+    );
+  }
   const words = (
     <>
       {lead}
@@ -948,10 +1011,27 @@ export const HudPill = ({ children }: { children: readonly ReactNode[] }) => (
   </div>
 );
 
-/** A player's or an army's painting, centred in its disc. */
-export const HudPortrait = ({ icon, label }: { icon: IconMeaning; label: string }) => (
+/** A player's or an army's painting, centred in its disc: a painting, a player's own image, or their initial. */
+export const HudPortrait = ({
+  icon,
+  src,
+  initial,
+  label,
+}: {
+  label: string;
+} & (
+  | { icon: IconMeaning; src?: never; initial?: never }
+  | { src: string; icon?: never; initial?: never }
+  | {
+      initial: string;
+      icon?: never;
+      src?: never;
+    }
+)) => (
   <span className="ui-portrait" role="img" aria-label={label}>
-    <Icon name={icon} size={30} />
+    {icon && <Icon name={icon} size={30} />}
+    {src && <img className="ui-portrait__image" src={src} alt="" />}
+    {initial && <span className="ui-portrait__initial">{initial}</span>}
   </span>
 );
 
