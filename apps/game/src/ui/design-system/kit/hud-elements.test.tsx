@@ -512,6 +512,16 @@ describe("deploying an army", () => {
     expect(choose).not.toHaveBeenCalled();
   });
 
+  it("shuts the amount when none of the chosen stack can go", () => {
+    act(() =>
+      root.render(
+        <HudDeploy troops={TROOPS} chosen="knight-t2" onChoose={vi.fn()} value={0} most={0} onChange={vi.fn()} />,
+      ),
+    );
+    expect(host.querySelector("input")?.disabled).toBe(true);
+    expect(host.querySelector(".ui-amount__of")?.textContent).toBe("of 0");
+  });
+
   it("puts the chosen stack's amount under the columns, with +500, Max and what fits", () => {
     const change = vi.fn();
     act(() =>

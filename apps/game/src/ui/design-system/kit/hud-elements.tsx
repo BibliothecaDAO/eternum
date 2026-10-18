@@ -383,6 +383,7 @@ export const HudDeploy = ({
           value={value}
           most={most}
           held={stack.held}
+          disabled={most === 0}
           onChange={onChange}
         />
       )}
