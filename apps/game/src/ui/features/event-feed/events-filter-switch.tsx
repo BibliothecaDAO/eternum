@@ -1,5 +1,5 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import type { EventsFilter } from "./event-stories";
 
 /** Each filter's word, and what it shows, on its hover. */
@@ -14,24 +14,21 @@ const FILTERS: { id: EventsFilter; word: string; tip: string }[] = [
 ];
 
 /** The player's one filter for Events and the Log: the same choice in both, remembered for them on this device. */
-export const EventsFilterSwitch = ({ className }: { className?: string }) => {
+export const EventsFilterSwitch = () => {
   const [filter, choose] = useEventsFilter();
   return (
-    <span role="group" aria-label="Event filter" className={cn("inline-flex items-center gap-2", className)}>
+    <span role="group" aria-label="Event filter" className="inline-flex items-center gap-1">
       {FILTERS.map(({ id, word, tip }) => (
-        <button
-          type="button"
+        <HudButton
           key={id}
+          kind="quiet"
+          size="sm"
           aria-pressed={filter === id}
           data-tip={tip}
           onClick={() => choose(id)}
-          className={cn(
-            "font-sans text-hud-label",
-            filter === id ? "text-hud-ink" : "text-hud-muted hover:text-hud-ink",
-          )}
         >
           {word}
-        </button>
+        </HudButton>
       ))}
     </span>
   );

@@ -1,4 +1,4 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { HudButton, HudChip, HudEventRow } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -6,7 +6,6 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { type ProcessedStoryEvent, useStoryReads } from "@/hooks/store/use-story-events-store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -17,8 +16,7 @@ import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headl
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useEventFeedStore } from "./event-feed-store";
 import { eventsReads, selectEventStories } from "./event-stories";
-import { FEED_ROW_CLASS, FeedRowLine, HeadlineIcon, ToastRow } from "./feed-row-line";
-import { HudChip } from "@/ui/design-system/kit/hud-elements";
+import { FeedRowLine, headlineIcon, ToastRow } from "./feed-row-line";
 
 /** How many rows the Events strip shows: the owner's three. */
 const STRIP_ROWS = 3;
@@ -105,7 +103,7 @@ export const FeedToasts = () => {
       {milestones.map((headline) => (
         <ToastRow
           key={headline.id}
-          icon={<HeadlineIcon type={headline.type} />}
+          icon={headlineIcon(headline.type)}
           text={headline.description}
           place={headline.location ?? null}
         />
@@ -113,7 +111,8 @@ export const FeedToasts = () => {
       {notices.map((notice) => (
         <ToastRow
           key={notice.id}
-          icon={<NoticeIcon kind={notice.kind} />}
+          icon={noticeIcon(notice.kind)}
+          tone={NOTICE_TONES[notice.kind]}
           text={notice.title}
           place={notice.location ?? null}
         />
@@ -139,13 +138,24 @@ const useLiveNotices = () => {
   return live;
 };
 
-const NoticeIcon = ({ kind }: { kind: "info" | "success" | "error" | "warning" }) => (
-  <SemanticIcon
-    name={kind === "error" || kind === "warning" ? "warning" : kind === "success" ? "check" : "info"}
-    className={cn("h-4 w-4 shrink-0", kind === "error" && "text-hud-bad")}
-  />
-);
+type NoticeKind = "info" | "success" | "error" | "warning";
 
+const noticeIcon = (kind: NoticeKind) =>
+  kind === "error" || kind === "warning"
+    ? ("warning" as const)
+    : kind === "success"
+      ? ("check" as const)
+      : ("info" as const);
+
+/** A notice's tone: a refusal bad, a warning warn, a success good, news none. */
+const NOTICE_TONES: Record<NoticeKind, "good" | "bad" | "warn" | undefined> = {
+  info: undefined,
+  success: "good",
+  error: "bad",
+  warning: "warn",
+};
+
+/** The red offline row, with the way to reconnect now. */
 function OfflineRow() {
   const status = useConnectionStore((state) => state.status);
   const reconnecting = useConnectionStore(
@@ -153,18 +163,22 @@ function OfflineRow() {
   );
   if (status !== "disconnected") return null;
   return (
-    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border border-hud-bad text-hud-bad")}>
-      <SemanticIcon name="network-off" className="h-4 w-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">Offline</span>
-      <button
-        type="button"
-        disabled={reconnecting}
-        onClick={() => void triggerConnectionForceReconnect()}
-        className="inline-flex items-center gap-1 font-sans text-hud-label normal-case tracking-normal text-hud-bad hover:underline disabled:cursor-wait"
-      >
-        <SemanticIcon name="refresh" className={cn("h-3 w-3", reconnecting && "animate-spin")} />
-        Retry
-      </button>
-    </div>
+    <HudEventRow
+      tone="bad"
+      icon="network-off"
+      trail={
+        <HudButton
+          kind="quiet"
+          size="sm"
+          icon="refresh"
+          busy={reconnecting ? "Retrying…" : undefined}
+          onClick={() => void triggerConnectionForceReconnect()}
+        >
+          Retry
+        </HudButton>
+      }
+    >
+      Offline
+    </HudEventRow>
   );
 }

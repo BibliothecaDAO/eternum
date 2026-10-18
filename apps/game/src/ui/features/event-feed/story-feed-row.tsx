@@ -14,6 +14,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { formatClockTime } from "@bibliothecadao/eternum";
+import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
 import { storyPayloadId } from "@/utils/native-id";
 
 function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFactStore): Position | null {
@@ -77,29 +78,24 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
   return position ? () => navigate(position) : null;
 }
 
+/** A world story in the Log: what happened and its line (a fight's sides, forces and rolls), and its time. */
 export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   const open = useStoryOpener(event);
-  const battle = event.story === "BattleEvent";
   return (
-    <button
-      type="button"
-      disabled={!open}
-      onClick={() => open?.()}
-      title={open ? event.presentation.description : "This event’s location is no longer available"}
-      className="block w-full px-3 py-2 text-left !font-sans !text-[11px] normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:cursor-default"
+    <HudEventRow
+      time={formatClockTime(event.timestampMs)}
+      tip={open ? event.presentation.description : "This event’s location is no longer available"}
+      onOpen={open ?? undefined}
     >
-      {battle ? (
+      {event.story === "BattleEvent" ? (
         <BattleDetails description={event.presentation.description} />
       ) : (
-        <>
-          <span className="flex justify-between gap-2 font-normal">
-            <span className="truncate">{event.presentation.title}</span>
-            <span className="shrink-0 tabular-nums text-gold/50">{formatClockTime(event.timestampMs)}</span>
-          </span>
-          <span className="line-clamp-2 text-gold/65">{event.presentation.description}</span>
-        </>
+        <span className="flex flex-col">
+          <span className="truncate">{event.presentation.title}</span>
+          <span className="line-clamp-2 text-hud-label text-hud-muted">{event.presentation.description}</span>
+        </span>
       )}
-    </button>
+    </HudEventRow>
   );
 };
 
@@ -112,22 +108,22 @@ function BattleDetails({ description }: { description?: string }) {
   const outcome = findSegmentValue(segments, (label) => label === "Outcome");
   const rolls = battleRollsOf(description);
   return (
-    <>
-      <span className="flex gap-1 font-normal">
+    <span className="flex flex-col">
+      <span className="flex gap-1">
         <span aria-hidden>⚔</span>
         <span className="truncate">
-          {attacker} <span className="text-gold/50">vs</span> {defender}
+          {attacker} <span className="text-hud-muted">vs</span> {defender}
         </span>
       </span>
-      <span className="mt-1 block text-gold/70">
+      <span className="text-hud-label text-hud-muted">
         {forces("Attacker")} vs {forces("Defender")}
       </span>
       {rolls && (
-        <span className="block text-gold/60">
-          d20 {rolls.attacker} <span className="text-gold/40">vs</span> {rolls.defender}
+        <span className="text-hud-label text-hud-muted">
+          d20 {rolls.attacker} vs {rolls.defender}
         </span>
       )}
-      {outcome && <span className="block text-emerald-300">{outcome}</span>}
-    </>
+      {outcome && <span className="text-hud-label text-hud-good">{outcome}</span>}
+    </span>
   );
 }

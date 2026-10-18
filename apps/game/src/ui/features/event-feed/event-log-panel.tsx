@@ -1,6 +1,6 @@
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { PopoverPanel, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudButton, HudEmpty, HudEventRow, HudPanel, HudWindow } from "@/ui/design-system/kit/hud-elements";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { FeedRowLine } from "./feed-row-line";
 import { EventsFilterSwitch } from "./events-filter-switch";
 import { oneStoryPerAction } from "./event-stories";
@@ -31,35 +31,37 @@ export const EventLogPanel = ({
       id="event-log"
       ariaLabel="Event log"
       anchor="right-edge"
-      className="w-[360px] p-0"
       onDismiss={onDismiss}
       isInsideAnchor={isInsideAnchor}
     >
-      <SurfaceFrame title="Log" icon={"chronicles" as const} onClose={onDismiss} className="h-[calc(100vh-7rem)]">
-        <EventsFilterSwitch className="border-b border-gold/15 px-3 py-2" />
-        {failed && (
-          <p className="px-3 py-2 text-xs text-danger">
-            Event history could not load.{" "}
-            <button type="button" className="font-sans text-xs underline" onClick={retry}>
-              Retry
-            </button>
-          </p>
-        )}
-        {!failed && events.stories.length === 0 && <p className="px-3 py-4 text-xs text-gold/50">Nothing here yet.</p>}
-        <div className="flex flex-col gap-1 px-2 py-2">
-          {events.stories.map((event) => (
-            <FeedRowLine key={event.id} event={event} />
-          ))}
-        </div>
-        <section aria-label="World history">
-          <div className="px-3 py-2">
-            <span className={HUD_LABEL}>World history</span>
+      <HudWindow title="Log" icon="chronicles" size="fit" onClose={onDismiss}>
+        <div className="flex w-hud-column flex-col gap-2">
+          <EventsFilterSwitch />
+          {failed && (
+            <HudEventRow
+              tone="bad"
+              trail={
+                <HudButton kind="quiet" size="sm" onClick={retry}>
+                  Retry
+                </HudButton>
+              }
+            >
+              Event history could not load.
+            </HudEventRow>
+          )}
+          {!failed && events.stories.length === 0 && <HudEmpty icon="chronicles" line="Nothing here yet." />}
+          <div className="flex flex-col">
+            {events.stories.map((event) => (
+              <FeedRowLine key={event.id} event={event} />
+            ))}
           </div>
-          {oneStoryPerAction(world.data).map((event) => (
-            <StoryFeedRow key={event.id} event={event} />
-          ))}
-        </section>
-      </SurfaceFrame>
+          <HudPanel kind="section" title="World history" label="World history" collapsible={false}>
+            {oneStoryPerAction(world.data).map((event) => (
+              <StoryFeedRow key={event.id} event={event} />
+            ))}
+          </HudPanel>
+        </div>
+      </HudWindow>
     </PopoverPanel>
   );
 };

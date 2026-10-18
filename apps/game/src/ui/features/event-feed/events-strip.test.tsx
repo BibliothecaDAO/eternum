@@ -71,15 +71,13 @@ vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getTick: () => 60, getActiveGameId: () => 1 } }));
 vi.mock("@/ui/design-system/molecules/popover", () => ({
   PopoverPanel: ({ children }: { children: ReactNode }) => <>{children}</>,
-  SurfaceFrame: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 vi.mock("./events-filter-switch", () => ({ EventsFilterSwitch: () => null }));
 vi.mock("./story-feed-row", () => ({ StoryFeedRow: () => null }));
 vi.mock("./feed-row-line", () => ({
-  FEED_ROW_CLASS: "",
   FeedRowLine: ({ event }: { event: { id: string } }) => <i>{event.id}</i>,
   ToastRow: ({ text }: { text: string }) => <b>{text}</b>,
-  HeadlineIcon: () => null,
+  headlineIcon: () => "play",
 }));
 
 import { useHeadlineFeedStore } from "../news-headlines/headline-feed-store";

@@ -12,8 +12,6 @@
   "apps/game/src/ui/design-system/molecules/select-biome.tsx": 17,
   "apps/game/src/ui/design-system/molecules/select-relic.tsx": 15,
   "apps/game/src/ui/design-system/molecules/sort-panel.tsx": 1,
-  "apps/game/src/ui/features/event-feed/event-log-panel.tsx": 8,
-  "apps/game/src/ui/features/event-feed/story-feed-row.tsx": 12,
   "apps/game/src/ui/features/frontier/attributes/attribute-marks.tsx": 4,
   "apps/game/src/ui/features/frontier/board/season-detail.tsx": 4,
   "apps/game/src/ui/features/frontier/board/season-list.tsx": 18,
