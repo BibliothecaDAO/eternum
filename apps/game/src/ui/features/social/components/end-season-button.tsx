@@ -4,7 +4,7 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { HudButton, HudWindow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -111,20 +111,16 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
           className="w-auto p-0"
           onDismiss={() => setShowCongratsPopup(false)}
         >
-          <HudWindow
-            title="🔥 Congratulations! 🔥"
-            size="task"
-            onClose={() => setShowCongratsPopup(false)}
-            actions={
-              <HudButton kind="primary" onClick={() => setShowCongratsPopup(false)}>
-                Close
-              </HudButton>
-            }
-          >
+          <HudWindow title="🔥 Congratulations! 🔥" size="task" onClose={() => setShowCongratsPopup(false)}>
             <div className="flex flex-col items-center justify-center text-center space-y-4">
               <div className="text-hud-display">🏆</div>
               <h2 className="text-hud-display text-hud-accent">You have conquered Eternum Season 1!</h2>
             </div>
+            <HudWindowFoot>
+              <HudButton kind="primary" onClick={() => setShowCongratsPopup(false)}>
+                Close
+              </HudButton>
+            </HudWindowFoot>
           </HudWindow>
         </PopoverPanel>
       )}

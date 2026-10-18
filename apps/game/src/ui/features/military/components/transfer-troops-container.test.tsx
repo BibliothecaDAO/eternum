@@ -18,6 +18,7 @@ import { StructureType } from "@bibliothecadao/types";
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { TransferTroopsContainer } from "./transfer-troops-container";
 import { TransferDirection } from "./transfer-troops/transfer-direction";
+import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 
 const PRECISION = 1_000_000_000n;
 const HYPERSTRUCTURE = 900;
@@ -73,14 +74,19 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
         value={{ store, systemCalls: { explorer_guard_swap: vi.fn() } } as unknown as GameClientSetup}
         account={{ address: "0x111" } as never}
       >
-        <TransferTroopsContainer
-          selectedEntityId={EXPLORER}
-          targetEntityId={armyBeside ? ARMY : HYPERSTRUCTURE}
-          selectedHex={{ x: 41, y: 12 }}
-          targetHex={{ x: 42, y: 12 }}
-          transferDirection={armyBeside ? TransferDirection.ExplorerToExplorer : TransferDirection.ExplorerToStructure}
-          onTransferComplete={() => {}}
-        />
+        {/* In its window, as the game opens it: the window's foot holds the verb. */}
+        <HudWindow title="Transfer Troops & Relics" size="page" onClose={() => {}}>
+          <TransferTroopsContainer
+            selectedEntityId={EXPLORER}
+            targetEntityId={armyBeside ? ARMY : HYPERSTRUCTURE}
+            selectedHex={{ x: 41, y: 12 }}
+            targetHex={{ x: 42, y: 12 }}
+            transferDirection={
+              armyBeside ? TransferDirection.ExplorerToExplorer : TransferDirection.ExplorerToStructure
+            }
+            onTransferComplete={() => {}}
+          />
+        </HudWindow>
       </GameProvider>,
     ),
   );
@@ -88,9 +94,9 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
     [...host.querySelectorAll("button")].find((element) => element.textContent?.includes(label));
   return {
     text: () => host.textContent ?? "",
-    /** The form's messages on a red wash (a slot's own "Hit first" tag is part of its button, not a message). */
+    /** The form's refusals, said as alerts (a slot's own "Hit first" tag is part of its button, not a message). */
     errors: () =>
-      [...host.querySelectorAll('[class*="bg-danger/10"]')]
+      [...host.querySelectorAll('[role="alert"]')]
         .filter((element) => !element.closest("button"))
         .map((element) => element.textContent),
     send: () => [...host.querySelectorAll("button")].at(-1)!,

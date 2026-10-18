@@ -1,7 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { HudButton, HudTransfer } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudTransfer, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
 import { configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg } from "@bibliothecadao/eternum";
@@ -592,8 +592,7 @@ export const TransferResourcesContainer = ({
         </div>
       )}
 
-      {/* Fixed position transfer button at the bottom */}
-      <div className="mt-10 mx-auto">
+      <HudWindowFoot>
         <HudButton
           kind="primary"
           onClick={handleTransfer}
@@ -604,7 +603,7 @@ export const TransferResourcesContainer = ({
         >
           Transfer Relics
         </HudButton>
-      </div>
+      </HudWindowFoot>
     </div>
   );
 };

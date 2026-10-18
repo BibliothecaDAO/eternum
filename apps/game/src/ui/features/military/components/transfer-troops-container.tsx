@@ -1,7 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { HudButton, HudNotice, HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudTroopAmount, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { formatNumber } from "@/ui/utils/utils";
 
 import {
@@ -1105,9 +1105,7 @@ export const TransferTroopsContainer = ({
                 </div>
                 <TransferBalanceCards cards={transferBalanceCards} />
 
-                {blockReason && <HudNotice line={blockReason} />}
-
-                <div className="flex flex-col items-center">
+                <HudWindowFoot note={blockReason}>
                   <HudButton
                     kind="primary"
                     onClick={handleTransfer}
@@ -1116,7 +1114,7 @@ export const TransferTroopsContainer = ({
                   >
                     {(!blockReason && nextStep) || "Transfer Troops"}
                   </HudButton>
-                </div>
+                </HudWindowFoot>
               </div>
             </div>
           </div>

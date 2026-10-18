@@ -3,6 +3,5 @@ export * from "./headline";
 export * from "./loading-animation";
 export * from "./resource-cost";
 export * from "./resource-icon";
-export * from "./sort-panel";
 export * from "./tooltip";
 export * from "./twitter-share-button";
