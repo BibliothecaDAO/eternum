@@ -10,6 +10,7 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -610,6 +611,75 @@ export const HudTableHead = ({
     {children}
   </div>
 );
+
+/**
+ * A card to pick (a building to build): its painting on the well, drawn whole, its name and what it says on the foot,
+ * its own small actions stacked at the top left and a badge at the top right. With `onClick` one button covers the
+ * painting and the foot and chooses the card (pressed when `selected`); the actions and the badge sit beside it, never
+ * inside it. A card that cannot be chosen says why on its foot, in the muted label colour: it explains, it does not warn.
+ */
+export const HudCard = ({
+  title,
+  picture,
+  detail,
+  corner,
+  actions,
+  selected = false,
+  disabled = false,
+  refusal,
+  onClick,
+}: {
+  title: ReactNode;
+  picture: ReactNode;
+  detail?: ReactNode;
+  corner?: ReactNode;
+  actions?: ReactNode;
+  selected?: boolean;
+  disabled?: boolean;
+  refusal?: string;
+  onClick?: () => void;
+}) => {
+  const refusalId = useId();
+  const described = refusal === undefined ? undefined : refusalId;
+  const face = (
+    <>
+      <span className="ui-card__picture" aria-hidden="true">
+        {picture}
+      </span>
+      <span className="ui-card__foot">
+        {refusal !== undefined && (
+          <span className="ui-card__refusal" id={refusalId}>
+            {refusal}
+          </span>
+        )}
+        <span className="ui-card__title">{title}</span>
+        {detail !== undefined && <span className="ui-card__detail">{detail}</span>}
+      </span>
+    </>
+  );
+  return (
+    <div className="ui-card" data-selected={selected || undefined} data-disabled={disabled || undefined}>
+      {onClick ? (
+        <button
+          type="button"
+          className="ui-card__choose"
+          aria-pressed={selected}
+          aria-describedby={described}
+          disabled={disabled}
+          onClick={onClick}
+        >
+          {face}
+        </button>
+      ) : (
+        <div className="ui-card__choose" aria-describedby={described}>
+          {face}
+        </div>
+      )}
+      {actions !== undefined && <div className="ui-card__actions">{actions}</div>}
+      {corner !== undefined && <div className="ui-card__corner">{corner}</div>}
+    </div>
+  );
+};
 
 /** What happened, said once: its time, a mark in its tone, the words (a name or a gain in the accent). */
 export const HudEventRow = ({ time, tone, children }: { time: string; tone?: Tone; children: ReactNode }) => (

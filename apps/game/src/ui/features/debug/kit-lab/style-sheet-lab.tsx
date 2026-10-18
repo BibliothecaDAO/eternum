@@ -1,6 +1,7 @@
 import { GameProvider } from "@/hooks/context/game-context";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
+import { Icon } from "@/ui/design-system/icon";
 import AtomButton from "@/ui/design-system/atoms/button";
 import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -21,6 +22,7 @@ import {
   HudBubble,
   HudButton,
   HudCheck,
+  HudCard,
   HudChip,
   HudConfirm,
   HudEmpty,
@@ -180,6 +182,7 @@ export const StyleSheetLab = () => {
               <RingSection />
               <MeterSection />
               <RowsSection />
+              <CardSection />
               <EventsSection store={store} />
               <WindowSection />
               <DeployOptionsSection />
@@ -1139,6 +1142,54 @@ const LabPickRows = () => {
     </div>
   );
 };
+
+/** A building card in one of its states, as the Build window draws it. */
+const LabCard = ({ selected, refusal }: { selected?: boolean; refusal?: string }) => (
+  <div className="w-60">
+    <HudCard
+      title="Farm"
+      picture={<Icon name="farm" size={128} />}
+      detail={
+        <>
+          <span>+360 Wheat / min</span>
+          <span>10 Labor (you have 5,434)</span>
+        </>
+      }
+      corner={<HudChip>2</HudChip>}
+      actions={
+        <>
+          <HudIconButton icon="build" label="Build" kind="primary" size="sm" disabled={refusal !== undefined} />
+          <HudIconButton icon="pause" label="Pause all" size="sm" />
+          <HudIconButton icon="trash" label="Destroy building" size="sm" tone="bad" />
+        </>
+      }
+      selected={selected}
+      disabled={refusal !== undefined}
+      refusal={refusal}
+      onClick={() => undefined}
+    />
+  </div>
+);
+
+const CardSection = () => (
+  <Element
+    name="Card"
+    rule="A painting to pick (a building to build), drawn whole on the well: its name and what it says on the foot, its own actions top left and a badge top right, beside the button that chooses it. One that cannot be chosen says why on its foot."
+    sheet={
+      <div className="flex flex-wrap gap-3">
+        <LabCard />
+        <LabCard selected />
+        <LabCard refusal="Needs a free building tile" />
+      </div>
+    }
+    today={
+      <span className="text-sm text-white/70">
+        Today: the Build window&apos;s BuildingCard (settlement/construction/select-preview-building), its own amber,
+        green and red buttons over the picture.
+      </span>
+    }
+  />
+);
 
 const RowsSection = () => (
   <Element

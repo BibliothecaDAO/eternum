@@ -2,7 +2,17 @@ import { act, createRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HudButton, HudField, HudRow, HudSelect, HudTableRow, HudWindow, HudWindowFoot } from "./hud-elements";
+import {
+  HudButton,
+  HudCard,
+  HudField,
+  HudIconButton,
+  HudRow,
+  HudSelect,
+  HudTableRow,
+  HudWindow,
+  HudWindowFoot,
+} from "./hud-elements";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -120,6 +130,52 @@ describe("a row pressed to choose it", () => {
     act(() => chosen.click());
     act(() => sender.click());
     expect(pick.mock.calls).toEqual([["Hetokamohuti"]]);
+  });
+});
+
+describe("a card", () => {
+  it("is chosen by its one button, and an action pressed on it never chooses it", () => {
+    const choose = vi.fn();
+    const build = vi.fn();
+    act(() =>
+      root.render(
+        <HudCard
+          title="Farm"
+          picture={<img alt="" />}
+          detail="+360 Wheat / min"
+          actions={<HudIconButton icon="build" label="Build" onClick={build} />}
+          selected
+          onClick={choose}
+        />,
+      ),
+    );
+    const chooser = host.querySelector<HTMLButtonElement>(".ui-card__choose")!;
+    expect(chooser.getAttribute("aria-pressed")).toBe("true");
+    expect(chooser.querySelector("button")).toBeNull();
+    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Build"]')!.click());
+    expect([build.mock.calls.length, choose.mock.calls.length]).toEqual([1, 0]);
+    act(() => chooser.click());
+    expect(choose).toHaveBeenCalledTimes(1);
+  });
+
+  it("says on its foot why it cannot be chosen, and its button reads that reason", () => {
+    const choose = vi.fn();
+    act(() =>
+      root.render(
+        <HudCard
+          title="Farm"
+          picture={<img alt="" />}
+          disabled
+          refusal="Needs a free building tile"
+          onClick={choose}
+        />,
+      ),
+    );
+    const chooser = host.querySelector<HTMLButtonElement>(".ui-card__choose")!;
+    const reason = document.getElementById(chooser.getAttribute("aria-describedby")!);
+    expect(reason?.textContent).toBe("Needs a free building tile");
+    act(() => chooser.click());
+    expect(choose).not.toHaveBeenCalled();
   });
 });
 
