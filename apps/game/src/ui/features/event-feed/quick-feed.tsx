@@ -142,7 +142,7 @@ const useLiveNotices = () => {
 const NoticeIcon = ({ kind }: { kind: "info" | "success" | "error" | "warning" }) => (
   <SemanticIcon
     name={kind === "error" || kind === "warning" ? "warning" : kind === "success" ? "check" : "info"}
-    className={cn("h-4 w-4 shrink-0", kind === "error" && "text-danger")}
+    className={cn("h-4 w-4 shrink-0", kind === "error" && "text-hud-bad")}
   />
 );
 
@@ -153,14 +153,14 @@ function OfflineRow() {
   );
   if (status !== "disconnected") return null;
   return (
-    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border border-danger/60 text-danger")}>
+    <div aria-label="Offline" className={cn(FEED_ROW_CLASS, "border border-hud-bad text-hud-bad")}>
       <SemanticIcon name="network-off" className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1 truncate">Offline</span>
       <button
         type="button"
         disabled={reconnecting}
         onClick={() => void triggerConnectionForceReconnect()}
-        className="inline-flex items-center gap-1 font-sans text-xs normal-case tracking-normal text-danger hover:underline disabled:cursor-wait"
+        className="inline-flex items-center gap-1 font-sans text-hud-label normal-case tracking-normal text-hud-bad hover:underline disabled:cursor-wait"
       >
         <SemanticIcon name="refresh" className={cn("h-3 w-3", reconnecting && "animate-spin")} />
         Retry

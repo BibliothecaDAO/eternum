@@ -1,5 +1,4 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import type { EventsFilter } from "./event-stories";
 
@@ -26,7 +25,10 @@ export const EventsFilterSwitch = ({ className }: { className?: string }) => {
           aria-pressed={filter === id}
           data-tip={tip}
           onClick={() => choose(id)}
-          className={cn("font-sans", HUD_LABEL, filter === id ? "text-gold" : "text-gold/45 hover:text-gold/80")}
+          className={cn(
+            "font-sans text-hud-label",
+            filter === id ? "text-hud-ink" : "text-hud-muted hover:text-hud-ink",
+          )}
         >
           {word}
         </button>

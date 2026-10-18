@@ -7,10 +7,10 @@ import type { ReactNode } from "react";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useStoryOpener } from "./story-feed-row";
 
-/** One feed row in the Log button's translucent black, not the panels' surface: a fixed icon column, up to two lines
- *  of text (a row grows to fit them and never spills over the next), the time flush right. */
+/** One feed row on the sheet's well, not the panels' surface: a fixed icon column, up to two lines of text (a row grows
+ *  to fit them and never spills over the next), the time flush right. */
 export const FEED_ROW_CLASS =
-  "pointer-events-auto flex min-h-8 w-full items-center gap-2 overflow-hidden rounded-md bg-black/50 px-2.5 py-1 text-xs text-gold backdrop-blur-[2px]";
+  "pointer-events-auto flex min-h-8 w-full items-center gap-2 overflow-hidden rounded-md bg-hud-well px-2.5 py-1 text-hud-body text-hud-ink backdrop-blur-sm";
 const FEED_ROW_ICON_COLUMN_CLASS = "flex w-4 shrink-0 items-center justify-center";
 
 const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
@@ -43,7 +43,7 @@ export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
       <span className="line-clamp-2 min-w-0 flex-1 break-words text-left" data-tip={text}>
         {text}
       </span>
-      <span className="ml-auto shrink-0 text-right tabular-nums text-gold/50">
+      <span className="ml-auto shrink-0 text-right tabular-nums text-hud-muted">
         {formatClockTime(event.timestampMs)}
       </span>
     </>
@@ -52,7 +52,7 @@ export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
     <button
       type="button"
       onClick={open}
-      className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-black/70")}
+      className={cn(FEED_ROW_CLASS, "font-sans normal-case tracking-normal hover:bg-hud-chosen")}
     >
       {content}
     </button>
@@ -86,12 +86,15 @@ export const ToastRow = ({
       type="button"
       aria-label="Notice"
       onClick={() => navigate(Position.fromContract(place))}
-      className={cn(FEED_ROW_CLASS, "border border-gold/60 font-sans normal-case tracking-normal hover:bg-black/70")}
+      className={cn(
+        FEED_ROW_CLASS,
+        "border border-hud-line-strong font-sans normal-case tracking-normal hover:bg-hud-chosen",
+      )}
     >
       {content}
     </button>
   ) : (
-    <div aria-label="Notice" className={cn(FEED_ROW_CLASS, "border border-gold/60")}>
+    <div aria-label="Notice" className={cn(FEED_ROW_CLASS, "border border-hud-line-strong")}>
       {content}
     </div>
   );
