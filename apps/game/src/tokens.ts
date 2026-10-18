@@ -587,13 +587,14 @@ export const HUD_LAYOUT = {
 } as const;
 
 /**
- * The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both; then what opens
- * over the whole HUD: a loading line, a popover or window, a menu over it, the app's one tooltip over everything.
+ * The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both, what flies over
+ * them; then what opens over the whole HUD: a loading line, a popover or window, a menu over it, the app's one tooltip.
  */
 export const HUD_LAYERS = {
   column: "20",
   foot: "26",
   rail: "30",
+  motion: "60",
   loading: "110",
   popover: "130",
   menu: "140",

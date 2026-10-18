@@ -67,11 +67,11 @@ const measure = (() => {
   };
 })();
 
-/** A troop stack's painting, and the tier chip's padding around its letters. */
+/** A troop stack's painting, and the sheet chip's padding and border around its letters (hud-sheet.css .ui-chip). */
 const TROOP_PAINTING = 20;
 /** An army's stamina bar, before its "x/y". */
 const STAMINA_BAR = 36;
-const CHIP_PADDING = 10;
+const CHIP_PADDING = 2 * 6 + 2;
 
 const segmentWidth = (segment: PlateSegment): number => {
   switch (segment.kind) {

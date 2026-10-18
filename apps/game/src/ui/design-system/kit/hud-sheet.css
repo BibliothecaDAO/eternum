@@ -1551,3 +1551,22 @@ button.ui-card__choose:disabled {
   align-items: center;
   gap: theme(spacing.1);
 }
+
+/* ── Motion over the HUD: what flies from the world to a holding, and the light that crosses a gain. ── */
+/* A coin's painting is dark: a rim of the sheet's gold keeps it a coin on the dark HUD. */
+.ui-coin {
+  filter: drop-shadow(0 0 3px rgb(var(--hud-gold)));
+}
+/* The words that fly with it: the gain, readable over any ground. */
+.ui-float {
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-line-body);
+  font-weight: var(--hud-weight-strong);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.9);
+}
+/* The light that crosses a number as it lands. */
+.ui-sweep {
+  background: linear-gradient(90deg, transparent, rgb(var(--hud-ink) / 0.35), transparent);
+}

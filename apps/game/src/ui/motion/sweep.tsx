@@ -26,7 +26,7 @@ export const Sweep = ({
         <motion.span
           key={play}
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/35 to-transparent"
+          className="ui-sweep pointer-events-none absolute inset-y-0 -left-1/2 w-1/2"
           initial={{ x: "0%" }}
           animate={{ x: "400%" }}
           transition={{ duration: durationMs / 1000, ease: EASE.inOutCubic }}

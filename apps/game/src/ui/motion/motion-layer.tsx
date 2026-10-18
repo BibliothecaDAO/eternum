@@ -142,20 +142,15 @@ export const MotionLayer = () => {
     };
   }, []);
   return (
-    <div ref={layer} aria-hidden className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">
+    <div ref={layer} aria-hidden className="pointer-events-none fixed inset-0 z-hud-motion overflow-hidden">
       {Array.from({ length: POOL_SIZE }, (_, index) => (
         <div
           key={index}
           data-sprite
           className="absolute left-0 top-0 flex items-center gap-1 opacity-0 will-change-transform"
         >
-          <img
-            alt=""
-            // The LORDS token art is a dark coin: a gold rim keeps it reading as a coin on the dark HUD.
-            className="drop-shadow-[0_0_3px_rgba(223,170,84,0.95)]"
-            style={{ width: SPRITE_PX, height: SPRITE_PX }}
-          />
-          <span className="whitespace-nowrap font-sans text-sm font-semibold text-gold tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]" />
+          <img alt="" className="ui-coin" style={{ width: SPRITE_PX, height: SPRITE_PX }} />
+          <span className="ui-float whitespace-nowrap" />
         </div>
       ))}
     </div>

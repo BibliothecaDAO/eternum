@@ -24,7 +24,7 @@ export const LandingCounter = forwardRef<
 
   return (
     <span className={`inline-flex items-center gap-1.5 ${className ?? ""}`}>
-      <img ref={target} src={icon} alt="" className="h-5 w-5 drop-shadow-[0_0_3px_rgba(223,170,84,0.95)]" />
+      <img ref={target} src={icon} alt="" className="ui-coin h-5 w-5" />
       <TickNumber value={value} speed={speed} nudge={nudge} />
     </span>
   );

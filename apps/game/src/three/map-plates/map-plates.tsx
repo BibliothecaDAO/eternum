@@ -1,5 +1,5 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
+import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 
 import { formatCount, type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
@@ -46,7 +46,7 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
 const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
     <Icon name={`${troops.type}-t${troops.tier}` as IconMeaning} size={20} />
-    <TroopTierChip tier={`T${troops.tier}`} size="label" />
+    <HudTierChip tier={troops.tier} />
     <span className="mp-count">{formatCount(troops.count)}</span>
   </span>
 );
