@@ -19,6 +19,8 @@ interface AuditCursor {
 }
 interface FaultRow {
   row: string;
+  /** Exactly what the failed check compared; the operator's reset clears this fact, never the row's identity. */
+  fact: string;
   stream?: "paidClaims" | "postedResults";
   cursor?: AuditCursor;
   offset?: number;
@@ -26,8 +28,8 @@ interface FaultRow {
 export interface MonitorProgress {
   fault?: FaultRow | null;
   /**
-   * Every row an operator reset, by its exact key. A clearance is a fact about the row, not a cursor position, so it
-   * survives a ledger rewind that rereads the stream from row 0.
+   * Every fact an operator reset. A clearance holds while a row still says exactly what the operator saw: it survives a
+   * ledger rewind that replays the same evidence, and a rewrite that changes it is checked again.
    */
   cleared?: string[];
   halted: string | null;
@@ -65,7 +67,7 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     for (const balance of balances) {
       const row = `conservation:${balance.chainId}:${balance.gameId}:${balance.confirmedBlock}:${balance.receipts}:${balance.netIssued}`;
       if (BigInt(balance.receipts) > BigInt(balance.netIssued) && !isCleared(progress, row)) {
-        yield* recordFault(store, { row });
+        yield* recordFault(store, { row, fact: row });
         return `lords_conservation:${balance.gameId}:${balance.confirmedBlock}`;
       }
       if (BigInt(balance.pool) === 0n) continue;
@@ -76,7 +78,7 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
       }
       const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
       if (BigInt(balance.pool) * 10n ** 18n !== BigInt(deposit.success) && !isCleared(progress, poolRow)) {
-        yield* recordFault(store, { row: poolRow });
+        yield* recordFault(store, { row: poolRow, fact: poolRow });
         return `frontier_pool_mismatch:${balance.chainId}:${balance.gameId}`;
       }
     }
@@ -89,6 +91,7 @@ const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
     "paidClaims",
     ports.ledger.paidClaims,
     (row) => `paidClaims:${row.chainId}:${row.transactionHash}`,
+    paidClaimFact,
     (paid) =>
       Effect.gen(function* () {
         const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
@@ -115,6 +118,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
     "postedResults",
     ports.ledger.postedResults,
     (row) => `postedResults:${row.chainId}:${row.gameId}`,
+    postedResultFact,
     (posted) =>
       ports.shard
         .result(posted.chainId, posted.gameId)
@@ -131,6 +135,7 @@ const checkLedgerPage = <A>(
   stream: "paidClaims" | "postedResults",
   read: (cursor: string | null, fromBlock?: number, anchor?: LedgerAnchor) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
+  fact: (row: A) => string,
   check: (row: A) => RelayEffect<string | null>,
   store: MonitorStore,
 ) =>
@@ -149,12 +154,13 @@ const checkLedgerPage = <A>(
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
     for (let index = page.rewind ? 0 : (cursor.offset ?? 0); index < page.rows.length; index++) {
       const row = page.rows[index]!;
-      if (isCleared(progress, key(row))) continue;
+      if (isCleared(progress, fact(row))) continue;
       const observation = yield* Effect.result(check(row));
       if (Result.isFailure(observation)) return yield* Effect.fail(observation.failure);
       if (observation.success) {
         yield* recordFault(store, {
           row: key(row),
+          fact: fact(row),
           stream,
           cursor: {
             fromBlock,
@@ -200,7 +206,16 @@ const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment
   result.gameId === posted.gameId &&
   BigInt(result.commitment) === BigInt(posted.commitment);
 
-const isCleared = (progress: MonitorProgress, row: string) => progress.cleared?.includes(row) ?? false;
+const hex = (value: string) => `0x${BigInt(value).toString(16)}`;
+
+/** Every field the paid-claim check compares, and nothing block-dependent, so a replay at a new anchor is the same fact. */
+export const paidClaimFact = (paid: PaidClaim) =>
+  `paidClaims:${hex(paid.chainId)}:${hex(paid.transactionHash)}:${paid.seasonId}:${BigInt(paid.amount)}:${hex(paid.wallet)}:${hex(paid.paymentTransactionHash)}`;
+/** Every field the posted-result check compares. */
+export const postedResultFact = (posted: BlitzCommitment) =>
+  `postedResults:${hex(posted.chainId)}:${posted.gameId}:${hex(posted.commitment)}`;
+
+const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?.includes(fact) ?? false;
 
 const recordFault = (store: MonitorStore, fault: FaultRow) =>
   relayOperation("record faulting audit row", async () => store.save({ ...(await store.load()), fault }));
@@ -208,7 +223,12 @@ const recordFault = (store: MonitorStore, fault: FaultRow) =>
 export const resetMonitorRow = (previous: MonitorProgress, row: string): MonitorProgress => {
   if (!previous.halted || previous.fault?.row !== row) throw new Error("fault_row_mismatch");
   const fault = previous.fault;
-  const next: MonitorProgress = { ...previous, halted: null, fault: null, cleared: [...(previous.cleared ?? []), row] };
+  const next: MonitorProgress = {
+    ...previous,
+    halted: null,
+    fault: null,
+    cleared: [...(previous.cleared ?? []), fault.fact],
+  };
   if (fault.stream && fault.cursor && fault.offset !== undefined)
     next.cursors = { ...previous.cursors, [fault.stream]: { ...fault.cursor, offset: fault.offset + 1 } };
   return next;

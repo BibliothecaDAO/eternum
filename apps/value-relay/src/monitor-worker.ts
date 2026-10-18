@@ -16,7 +16,7 @@ import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
-import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
+import { paidClaimFact, postedResultFact, runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv extends MonitorSettings {
   LAUNCH: import("@realms-world/value-ledger").LaunchCohorts;
@@ -229,6 +229,7 @@ const legacyFault = async (
     throw new Error("fault_row_mismatch");
   return {
     row,
+    fact: "transactionHash" in value ? paidClaimFact(value) : postedResultFact(value),
     stream,
     cursor: { fromBlock: cursor.fromBlock, page: cursor.page ?? JSON.stringify({ head: page.head, token: "" }) },
     offset: index,
