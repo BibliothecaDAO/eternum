@@ -36,6 +36,20 @@ test("a one-off size, colour, type size or weight fails, each where it is writte
     ],
   ));
 
+test("a raw select is refused outright, and the sheet's select is not", () =>
+  assert.deepEqual(
+    findViolations(
+      `<select aria-label="Automation" value={mode}>
+<HudSelect label="Automation" value={mode} options={PRESETS} onChange={choose} />
+<span className="ui-select" />
+<p>{selection}</p>`,
+      "x.tsx",
+      COLORS,
+      STEPS,
+    ),
+    [{ path: "x.tsx", line: 1, rule: "raw <select>: use HudSelect", match: "<select", refused: true }],
+  ));
+
 test("the ratchet fails a file past its count, a file below it, and a new file holding any", () => {
   const counts = new Map([
     ["a.tsx", 3],

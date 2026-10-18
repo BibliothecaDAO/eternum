@@ -8,9 +8,9 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { RESOURCE_PRECISION, resourceName, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudField, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -150,48 +150,43 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
       ) : (
         <>
           {owned ? (
-            <label className="flex justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               Contributors
-              <select
-                aria-label="Construction access"
+              <HudSelect
+                label="Construction access"
                 value={accessOptions.indexOf(hyperstructure.access)}
                 disabled={pending}
-                onChange={(event) => void setAccess(Number(event.target.value))}
-              >
-                {accessOptions.map((access, index) => (
-                  <option key={access} value={index} disabled={access === "GuildOnly" && !ownerGuild}>
-                    {access === "GuildOnly" ? "Guild only" : access}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={accessOptions.map((access, index) => ({
+                  value: index,
+                  label: access === "GuildOnly" ? "Guild only" : access,
+                  disabled: access === "GuildOnly" && !ownerGuild,
+                }))}
+                onChange={(access) => void setAccess(access)}
+              />
+            </div>
           ) : (
             <p>Construction access: {hyperstructure.access === "GuildOnly" ? "Guild only" : hyperstructure.access}</p>
           )}
           {canContribute && sources.length > 0 && (
-            <label className="flex justify-between gap-2">
+            <div className="flex items-center justify-between gap-2">
               Supply from
-              <select
-                aria-label="Construction source"
+              <HudSelect
+                label="Construction source"
                 value={source?.entity_id.toString() ?? ""}
                 disabled={pending}
-                onChange={(event) => {
-                  setSourceId(BigInt(event.target.value));
+                options={[
+                  ...(source ? [] : [{ value: "", label: "Select an owned structure", disabled: true }]),
+                  ...sources.map((row) => ({
+                    value: row.entity_id.toString(),
+                    label: getStructureName(row, getIsBlitz()).name,
+                  })),
+                ]}
+                onChange={(id) => {
+                  setSourceId(BigInt(id));
                   setAmounts({});
                 }}
-              >
-                {!source && (
-                  <option value="" disabled>
-                    Select an owned structure
-                  </option>
-                )}
-                {sources.map((row) => (
-                  <option key={row.entity_id} value={row.entity_id.toString()}>
-                    {getStructureName(row, getIsBlitz()).name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              />
+            </div>
           )}
           {requirements.map((row) => (
             <label key={row.resource} className="flex justify-between gap-2">

@@ -83,7 +83,7 @@ import { DeviceContext, Element, type Device } from "./sheet-element";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, siteName } from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { lazy, Suspense, createContext, type ReactNode, useContext, useRef, useState } from "react";
+import { lazy, Suspense, type ReactNode, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
@@ -600,7 +600,7 @@ const LabSelect = () => {
 const MenuSection = () => (
   <Element
     name="Select"
-    rule="A choice opened from its trigger: the items, the chosen one checked, a rule between groups. The map has no menu of orders: a right-click acts at once."
+    rule="A choice opened from its trigger: the items, the chosen one checked, a rule between groups. Never the browser's own select, which draws in its own colours. The map has no menu of orders: a right-click acts at once."
     sheet={
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex flex-col gap-3">
@@ -622,8 +622,8 @@ const MenuSection = () => (
     }
     today={
       <span className="text-sm text-white/70">
-        Today: the atoms Select and the dropdown list (design-system/atoms/select, molecules/dropdown-list), the realm
-        card's automation select and the map's structure context menu, each styled on its own.
+        Today: every select on the HUD is this one (a holding's automation, a hyperstructure's access and source, the
+        bank's resource, the structure picker), and pnpm hud:check refuses a raw select.
       </span>
     }
   />

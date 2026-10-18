@@ -2,6 +2,8 @@ import { act, createRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+
 import {
   HudButton,
   HudCard,
@@ -197,6 +199,41 @@ describe("a select", () => {
     expect(menu()).toBeNull();
     expect(chose).not.toHaveBeenCalled();
     expect(trigger().textContent).toBe("Smart");
+  });
+
+  it("says its line on the app's hover, and why it can't be changed while it is shut", () => {
+    const hover = (target: Element) =>
+      act(() => {
+        const event = new MouseEvent("pointerover", { bubbles: true, clientX: 10, clientY: 10 });
+        Object.defineProperty(event, "pointerType", { value: "mouse" });
+        target.dispatchEvent(event);
+      });
+    const said = () => document.querySelector('[role="tooltip"]')?.textContent ?? null;
+    const draw = (shut: boolean) =>
+      root.render(
+        <>
+          <Tooltip />
+          <HudSelect
+            label="Automation"
+            value="smart"
+            options={OPTIONS}
+            onChange={() => undefined}
+            disabled={shut}
+            tip={shut ? "Orders open when the game starts" : "Smart: keeps every building running"}
+          />
+        </>,
+      );
+    act(() => draw(false));
+    hover(trigger());
+    expect(said()).toBe("Smart: keeps every building running");
+
+    hover(host);
+    act(() => draw(true));
+    hover(trigger());
+    expect(trigger().disabled).toBe(true);
+    expect(said()).toBe("Orders open when the game starts");
+    hover(host);
+    expect(said()).toBeNull();
   });
 });
 
@@ -429,7 +466,6 @@ describe("an event row", () => {
 describe("a window", () => {
   it("is dragged by its bar and closed by its way out", () => {
     const close = vi.fn();
-    const ref = createRef<HTMLButtonElement>();
     act(() =>
       root.render(
         <HudWindow title="Edit structure" size="task" onClose={close}>

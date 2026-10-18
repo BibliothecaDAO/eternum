@@ -1387,6 +1387,7 @@ export const HudSelect = <K extends string | number>({
   options,
   onChange,
   disabled,
+  tip,
   state,
 }: {
   /** What is chosen, for assistive technology. */
@@ -1395,6 +1396,8 @@ export const HudSelect = <K extends string | number>({
   options: readonly { value: K; label: string; disabled?: boolean; hint?: string }[];
   onChange: (value: K) => void;
   disabled?: boolean;
+  /** Its line on hover: what the choice does, or why it can't be changed. */
+  tip?: string;
   /** The lab's forced state. */
   state?: string;
 }) => {
@@ -1464,6 +1467,7 @@ export const HudSelect = <K extends string | number>({
         className="ui-select"
         data-state={state}
         aria-label={label}
+        data-tip={tip}
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}

@@ -127,29 +127,6 @@
   color: var(--muted);
 }
 
-.hud-select {
-  appearance: none;
-  height: 30px;
-  border: 1px solid var(--line2);
-  border-radius: 9999px;
-  padding: 0 24px 0 10px;
-  color: var(--gold2);
-  font-size: 14px;
-  font-weight: 700;
-  background-color: rgba(10, 8, 6, 0.7);
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--gold2) 50%),
-    linear-gradient(135deg, var(--gold2) 50%, transparent 50%);
-  background-position:
-    calc(100% - 13px) 50%,
-    calc(100% - 8px) 50%;
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
-}
-.hud-select:disabled {
-  opacity: 0.55;
-}
-
 /* Tabs: a tab per kind held, its painting and its count; the lit one is the list shown. */
 .hud-tabs {
   display: flex;

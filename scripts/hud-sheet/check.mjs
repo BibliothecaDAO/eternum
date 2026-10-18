@@ -5,6 +5,7 @@
  * size or weight. allowlist.json holds, per file, how many such values the migration has still to delete. It is a
  * ratchet: a file past its count fails, a file below its count fails until its line is lowered (`pnpm hud:check
  * --lower` writes the lower counts), and a file not listed may hold none. The migration is done when the list is empty.
+ * A raw `<select>` fails wherever it is: no count lets one through.
  */
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -109,18 +110,20 @@ export const rules = (colors, steps) => [
     pattern: /(?<![\w-])font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black)(?![\w-])/g,
   },
   { rule: "literal font size: use --hud-text-<role>", pattern: /font-size:\s*[\d.]+(?:px|rem)/g },
+  // The browser draws a native select in its own colours, whatever the HUD's CSS says: the sheet's HudSelect replaces
+  // it. No count allows one.
+  { rule: "raw <select>: use HudSelect", pattern: /<select(?![\w-])/g, refused: true },
 ];
 
-/** Every refused value in one file's source, with its line. */
+/** Every refused value in one file's source, with its line; `refused` when no allowlist count can let it through. */
 export const findViolations = (source, path, colors, steps) =>
-  source.split("\n").flatMap((text, index) =>
-    rules(colors, steps).flatMap(({ rule, pattern, allows }) =>
-      [...text.matchAll(pattern)]
-        .map(([match]) => match)
-        .filter((match) => !allows?.(match))
-        .map((match) => ({ path, line: index + 1, rule, match })),
-    ),
-  );
+  source
+    .split("\n")
+    .flatMap((text, index) =>
+      rules(colors, steps).flatMap(({ rule, pattern, refused = false }) =>
+        [...text.matchAll(pattern)].map(([match]) => ({ path, line: index + 1, rule, match, refused })),
+      ),
+    );
 
 /** Each file's count against its line: over it fails, under it fails until the line is lowered. */
 export const ratchet = (counts, allowlist) => {
@@ -161,9 +164,11 @@ const main = () => {
   ];
   const steps = stepsOf(readFileSync(join(ROOT, APP, "tokens.ts"), "utf8"));
   const allowlist = JSON.parse(readFileSync(ALLOWLIST, "utf8"));
-  const violations = SCOPE.flatMap(filesUnder).flatMap((path) =>
+  const found = SCOPE.flatMap(filesUnder).flatMap((path) =>
     findViolations(readFileSync(join(ROOT, path), "utf8"), path, colors, steps),
   );
+  const refused = found.filter((violation) => violation.refused);
+  const violations = found.filter((violation) => !violation.refused);
   const counts = new Map();
   for (const { path } of violations) counts.set(path, (counts.get(path) ?? 0) + 1);
 
@@ -179,7 +184,8 @@ const main = () => {
   }
   for (const [file, listed] of under)
     console.error(`${file}: ${counts.get(file) ?? 0} left, listed ${listed}: run pnpm hud:check --lower`);
-  if (over.length || under.length) process.exit(1);
+  for (const { path, line, rule, match } of refused) console.error(`${path}:${line} ${match}: ${rule}`);
+  if (over.length || under.length || refused.length) process.exit(1);
   console.log(`HUD sheet: ${violations.length} one-off looks left in ${counts.size} files, none new.`);
 };
 

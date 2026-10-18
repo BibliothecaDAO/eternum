@@ -12,7 +12,7 @@ import {
   useStructureProductionSummary,
 } from "@/ui/features/world/components/entities/structure-production-summary";
 import { Icon } from "@/ui/design-system/icon";
-import { HudIconButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import {
   formatPopulationStatusLabel,
   formatUsedBuildingTilesLabel,
@@ -139,21 +139,14 @@ const AutomationSelect = ({ entityId, entityType }: { entityId: ID; entityType: 
     store.setRealmPreset(realmId, presetId);
   };
   return (
-    <select
-      aria-label="Production automation"
-      className="hud-select shrink-0"
+    <HudSelect
+      label="Production automation"
       value={current}
-      data-tip={refusal ?? presetLine(REALM_PRESETS.find((preset) => preset.id === current)!)}
+      options={REALM_PRESETS.map((preset) => ({ value: preset.id, label: preset.label }))}
+      onChange={choose}
       disabled={refusal !== null}
-      onKeyDown={(event) => event.stopPropagation()}
-      onChange={(event) => choose(event.target.value as RealmPresetId)}
-    >
-      {REALM_PRESETS.map((preset) => (
-        <option key={preset.id} value={preset.id}>
-          {preset.label}
-        </option>
-      ))}
-    </select>
+      tip={refusal ?? presetLine(REALM_PRESETS.find((preset) => preset.id === current)!)}
+    />
   );
 };
 
