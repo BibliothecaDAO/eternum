@@ -19,7 +19,7 @@ describe("semantic icons", () => {
       );
       expect(badge).toContain(`/icons/facets/64/map-realm-${level}.webp`);
       expect(badge).toContain(`>${level}</text>`);
-      expect(badge).toContain("#66ddab");
+      expect(badge).toContain("var(--hud-own)");
     }
     for (const invalid of [-1, 4, 1.5, NaN]) expect(() => realmMeaning(invalid)).toThrow("Unknown realm level");
   });
@@ -68,11 +68,11 @@ describe("semantic icons", () => {
           <HexMarker name="map-realm" owner={owner} value="3" />
         </svg>,
       );
-    expect(markup("you")).toContain("#66ddab");
+    expect(markup("you")).toContain("var(--hud-own)");
     expect(markup("you")).toContain("<circle");
-    expect(markup("ally")).toContain("#70bdff");
+    expect(markup("ally")).toContain("var(--hud-ally)");
     expect(markup("ally")).toContain('width="4.4"');
-    expect(markup("enemy")).toContain("#ff8176");
+    expect(markup("enemy")).toContain("var(--hud-enemy)");
     expect(markup("enemy")).toContain("M0 -3 L3 2 L-3 2 Z");
     expect(markup("you")).toContain(">3</text>");
   });

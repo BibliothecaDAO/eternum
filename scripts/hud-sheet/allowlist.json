@@ -11,7 +11,6 @@
   "apps/game/src/ui/design-system/atoms/sort-button.tsx": 3,
   "apps/game/src/ui/design-system/atoms/tab/tabs.tsx": 56,
   "apps/game/src/ui/design-system/atoms/text-input.tsx": 2,
-  "apps/game/src/ui/design-system/hex-marker.tsx": 8,
   "apps/game/src/ui/design-system/molecules/circle-button.tsx": 71,
   "apps/game/src/ui/design-system/molecules/dropdown-list.tsx": 5,
   "apps/game/src/ui/design-system/molecules/form-field.tsx": 8,
