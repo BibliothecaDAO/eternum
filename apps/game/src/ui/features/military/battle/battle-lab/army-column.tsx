@@ -1,14 +1,18 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { HudButton, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
-import { SelectRelic } from "@/ui/design-system/molecules/select-relic";
+import { HudButton, HudNumberField, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { StaminaManager } from "@bibliothecadao/eternum";
-import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { RELICS, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
+import { RelicChip } from "../../utils/relic-chip";
 import { TierChip } from "../../utils/tier-chip";
 
 const MAX_TROOPS_PER_ARMY = 500_000;
+
+/** The relics that change a fight (damage, damage taken, stamina), by type then level, as the relic picker listed them. */
+const COMBAT_RELICS = RELICS.filter((relic) => ["Damage", "Damage Reduction", "Stamina"].includes(relic.type))
+  .toSorted((a, b) => (a.type === b.type ? a.level - b.level : a.type.localeCompare(b.type)))
+  .map((relic) => relic.id);
 
 const TROOP_TYPES = [
   { value: TroopType.Knight, label: "Knight" },
@@ -31,14 +35,15 @@ interface ArmyColumnProps {
   footer?: React.ReactNode;
 }
 
+/** A setting's name and its hint over its control; each control names itself, so this is a group, not a label. */
 const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
-  <label className="flex flex-col gap-1">
+  <div className="flex flex-col gap-1">
     <span className="flex items-center gap-1.5 text-hud-label text-hud-muted">
       {label}
       {hint && <span className="text-hud-label text-hud-cue">{hint}</span>}
     </span>
     {children}
-  </label>
+  </div>
 );
 
 export const ArmyColumn = ({
@@ -88,7 +93,8 @@ export const ArmyColumn = ({
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Stamina" hint={`${army.stamina}/${maxStamina}`}>
-            <NumberInput
+            <HudNumberField
+              label="Stamina"
               value={army.stamina}
               onChange={(stamina) => onChange({ stamina })}
               min={0}
@@ -97,7 +103,8 @@ export const ArmyColumn = ({
             />
           </Field>
           <Field label="Troops" hint={army.troopCount.toLocaleString()}>
-            <NumberInput
+            <HudNumberField
+              label="Troops"
               value={army.troopCount}
               onChange={(troopCount) => onChange({ troopCount })}
               min={1}
@@ -118,14 +125,25 @@ export const ArmyColumn = ({
           </Field>
         </div>
 
-        <SelectRelic
-          label="Active Relics"
-          defaultValue={army.relics}
-          onSelect={(relics) => onChange({ relics: relics as ResourcesIds[] })}
-          allowMultiple
-          filterTypes={["Damage", "Damage Reduction", "Stamina"]}
-          className="w-full"
-        />
+        <Field label="Active Relics" hint={army.relics.length > 0 ? `${army.relics.length} on` : undefined}>
+          <div role="group" aria-label="Active Relics" className="flex flex-wrap gap-1.5">
+            {COMBAT_RELICS.map((relic) => {
+              const chosen = army.relics.includes(relic);
+              return (
+                <RelicChip
+                  key={relic}
+                  relic={relic}
+                  chosen={chosen}
+                  onPress={() =>
+                    onChange({
+                      relics: chosen ? army.relics.filter((each) => each !== relic) : [...army.relics, relic],
+                    })
+                  }
+                />
+              );
+            })}
+          </div>
+        </Field>
 
         {footer}
       </div>

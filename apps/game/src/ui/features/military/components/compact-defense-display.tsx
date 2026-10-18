@@ -4,13 +4,12 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ARMY_DEPLOYMENT_SURFACE_ID, openArmyDeployment } from "../utils/open-army-deployment";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { OVERLAY_SURFACE_ACTIVE } from "@/ui/design-system/atoms/overlay-surface";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
+import { TierChip } from "../utils/tier-chip";
 import { currencyFormat } from "@/ui/utils/utils";
 import {
   getGuardSlotCooldownRemaining,
@@ -194,7 +193,8 @@ export const CompactDefenseDisplay = ({
             : "border border-hud-line bg-hud-well whitespace-nowrap",
           interactiveClasses,
           "w-full",
-          highlightedSlot === guardSlotKey && OVERLAY_SURFACE_ACTIVE,
+          // The slot whose picker is open, chosen as the sheet marks a chosen thing.
+          highlightedSlot === guardSlotKey && "border-hud-line-strong bg-hud-chosen",
         )}
         data-picker-open={highlightedSlot === guardSlotKey ? "true" : undefined}
         title={
@@ -227,7 +227,7 @@ export const CompactDefenseDisplay = ({
         ) : (
           <div className="flex min-w-0 w-full flex-col gap-0.5">
             <div className="flex items-center gap-1 min-w-0">
-              <TroopTierChip tier={defense.troops.tier} size="xs" />
+              <TierChip tier={defense.troops.tier} />
               <ResourceIcon
                 withTooltip={false}
                 resource={getTroopResourceId(defense.troops.category as TroopType, defense.troops.tier as TroopTier)}

@@ -5,7 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
+import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   type Army,
@@ -345,10 +345,10 @@ export const BattleLab = ({
               </p>
             )}
             <label className="flex items-center gap-2 text-hud-body text-hud-muted">
-              <input
-                type="checkbox"
+              <HudCheck
                 checked={state.defenderAlt}
-                onChange={(event) => dispatch({ type: "SET_DEFENDER_LAYER", alt: event.target.checked })}
+                label="Defender in ethereal layer"
+                onChange={(alt) => dispatch({ type: "SET_DEFENDER_LAYER", alt })}
               />
               Defender in ethereal layer
             </label>

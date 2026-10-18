@@ -1,10 +1,10 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { getRelicInfo, type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
+import { type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { HudButton, HudPanel, HudRelic } from "@/ui/design-system/kit/hud-elements";
-import { resourceMeaning } from "@/ui/design-system/icon-meaning";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { RelicChip } from "@/ui/features/military/utils/relic-chip";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
@@ -83,24 +83,13 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   );
 };
 
-/** A relic's kind as the sheet's relic chip colours it: its type, lower-cased ("Damage Reduction" is "damage-reduction"). */
-const relicKind = (type: string) => type.toLowerCase().replace(" ", "-") as Parameters<typeof HudRelic>[0]["kind"];
-
 /** The relics a crate holds or yielded, each as the sheet's relic chip in its kind's colour, its effect on hover. */
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
-    {relics.map((relicId, index) => {
-      const info = getRelicInfo(relicId);
-      return (
-        <li key={`${relicId}-${index}`}>
-          <HudRelic
-            icon={resourceMeaning(relicId)}
-            kind={info ? relicKind(info.type) : "production"}
-            gives={info?.name ?? ResourcesIds[relicId]}
-            tip={info?.effect}
-          />
-        </li>
-      );
-    })}
+    {relics.map((relicId, index) => (
+      <li key={`${relicId}-${index}`}>
+        <RelicChip relic={relicId} />
+      </li>
+    ))}
   </ul>
 );

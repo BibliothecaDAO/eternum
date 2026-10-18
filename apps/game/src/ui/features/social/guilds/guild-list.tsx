@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
+import type { SortInterface } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { HudChip, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -66,24 +66,40 @@ export const GuildListHeader = ({
   return (
     <HudTableHead cols={GUILD_COLS}>
       {sortingParams.map(({ label, sortKey, align }) => (
-        <SortButton
-          key={sortKey}
-          label={label}
-          sortKey={sortKey}
-          activeSort={activeSort}
-          className={clsx("w-full gap-2 transition-colors hover:text-hud-accent", align)}
-          classNameCaret="w-2.5 h-2.5"
-          activeClassName="text-hud-accent"
-          inactiveClassName="text-hud-muted"
-          onChange={(_sortKey, _sort) => {
-            setActiveSort({
-              sortKey: _sortKey,
-              sort: _sort,
-            });
-          }}
-        />
+        <span key={sortKey} className={clsx("flex", align)}>
+          <SortHeader label={label} sortKey={sortKey} activeSort={activeSort} onChange={setActiveSort} />
+        </span>
       ))}
     </HudTableHead>
+  );
+};
+
+/** The way a column sorts after a press: up, then down, then the list's own order. */
+const NEXT_SORT = { none: "asc", asc: "desc", desc: "none" } as const;
+
+/** A column's name as a quiet button that sorts the table on it; a chevron says which way it sorts now. */
+const SortHeader = ({
+  label,
+  sortKey,
+  activeSort,
+  onChange,
+}: {
+  label: string | ReactElement;
+  sortKey: string;
+  activeSort: SortInterface;
+  onChange: (sort: SortInterface) => void;
+}) => {
+  const sort = activeSort.sortKey === sortKey ? activeSort.sort : "none";
+  return (
+    <HudButton
+      kind="quiet"
+      size="sm"
+      icon={sort === "asc" ? "chevron-up" : sort === "desc" ? "chevron-down" : undefined}
+      aria-pressed={sort !== "none"}
+      onClick={() => onChange({ sortKey, sort: NEXT_SORT[sort] })}
+    >
+      {label}
+    </HudButton>
   );
 };
 

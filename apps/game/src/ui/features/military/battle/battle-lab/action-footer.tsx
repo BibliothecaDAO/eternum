@@ -66,7 +66,7 @@ export const ActionFooter = ({
 
       {warning && <HudNotice tone="bad" line={warning} />}
 
-      {tweet && <TwitterShareButton text={tweet} callToActionText="Share your Battle" variant="outline" />}
+      {tweet && <TwitterShareButton text={tweet} callToActionText="Share your Battle" />}
     </div>
   );
 };

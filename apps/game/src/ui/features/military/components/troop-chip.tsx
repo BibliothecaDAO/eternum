@@ -1,5 +1,5 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
+import { TierChip } from "../utils/tier-chip";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -51,7 +51,7 @@ export const TroopChip = ({
           direction === "row" ? "flex-row" : "flex-col"
         } ${currentSize.gap} border border-hud-divider`}
       >
-        <TroopTierChip tier={troops.tier} size={size} />
+        <TierChip tier={troops.tier} />
         <ResourceIcon
           withTooltip={false}
           resource={getTroopResourceId(troops.category as TroopType, TroopTier.T1)}

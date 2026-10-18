@@ -430,7 +430,7 @@ export const RaidResult = ({
             {/* Add Twitter Share Button */}
             {formattedTweet && raidResult.success === true && (
               <div className="mt-4 pt-4 border-t border-hud-divider">
-                <TwitterShareButton text={formattedTweet} callToActionText="Share your Raid" variant="outline" />
+                <TwitterShareButton text={formattedTweet} callToActionText="Share your Raid" />
               </div>
             )}
           </div>

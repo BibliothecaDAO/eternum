@@ -1,47 +1,19 @@
-import { Icon } from "@/ui/design-system/icon";
-import Button from "@/ui/design-system/atoms/button";
-import React from "react";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
-interface Props {
-  text: string;
-  className?: string;
-  callToActionText?: string;
-  buttonSize?: "xs" | "md";
-  variant?: "primary" | "secondary" | "success" | "red" | "danger" | "default" | "outline" | "opaque";
-}
-
-const TwitterShareButton: React.FC<Props> = ({
-  text,
-  className,
-  callToActionText,
-  buttonSize = "md",
-  variant = "primary",
-}) => {
-  const [hover, setHover] = React.useState(false);
-
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-
-  const iconSizeClasses = {
-    xs: "h-3 w-3",
-    md: "h-4 w-4",
-  };
-
-  return (
-    <a href={tweetUrl} target="_blank" rel="noopener noreferrer">
-      <Button
-        className={className}
-        size={buttonSize}
-        onPointerEnter={() => setHover(true)}
-        onPointerLeave={() => setHover(false)}
-        variant={variant}
-      >
-        <div className={`flex items-center justify-center mr-2 ${iconSizeClasses[buttonSize]}`}>
-          <Icon name="twitter" className={`${hover ? "animate-pulse" : ""} transition-all duration-300`} />
-        </div>
-        <span>{callToActionText ? callToActionText : "Share"}</span>
-      </Button>
-    </a>
-  );
-};
+/**
+ * Shares a line on X: the sheet's secondary button, opening X's compose page with `text` in a new tab, so the game
+ * stays where it was.
+ */
+const TwitterShareButton = ({ text, callToActionText = "Share" }: { text: string; callToActionText?: string }) => (
+  <HudButton
+    kind="secondary"
+    icon="twitter"
+    onClick={() =>
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer")
+    }
+  >
+    {callToActionText}
+  </HudButton>
+);
 
 export default TwitterShareButton;

@@ -1,4 +1,3 @@
-import { SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { divideByPrecision } from "@bibliothecadao/eternum";
 import { ResourceCost, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
@@ -46,6 +45,12 @@ export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
   return string.substring(0, 6) + "..." + string.substring(string.length - 4);
 }
+
+/** A list's sort: the key it sorts on, and which way (none keeps the list's own order). */
+export type SortInterface = {
+  sortKey: string;
+  sort: "asc" | "desc" | "none";
+};
 
 export function sortItems<T>(items: T[], activeSort: SortInterface, defaultSortKey: SortInterface): T[] {
   const compareValues = (a: T, b: T, sortKey: string, sortDirection: "asc" | "desc" | "none"): number => {

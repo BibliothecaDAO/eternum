@@ -2,13 +2,11 @@
   "apps/game/src/ui/design-system/atoms/checkbox.tsx": 6,
   "apps/game/src/ui/design-system/atoms/hud-typography.ts": 20,
   "apps/game/src/ui/design-system/atoms/lib/utils.ts": 1,
-  "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 29,
+  "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 17,
   "apps/game/src/ui/design-system/atoms/select.tsx": 35,
-  "apps/game/src/ui/design-system/atoms/sort-button.tsx": 3,
   "apps/game/src/ui/design-system/molecules/circle-button.tsx": 71,
   "apps/game/src/ui/design-system/molecules/relic-colors.tsx": 14,
   "apps/game/src/ui/design-system/molecules/requirement-chips.tsx": 4,
-  "apps/game/src/ui/design-system/molecules/select-relic.tsx": 15,
   "apps/game/src/ui/features/frontier/attributes/attribute-marks.tsx": 4,
   "apps/game/src/ui/features/frontier/board/season-detail.tsx": 4,
   "apps/game/src/ui/features/frontier/board/season-list.tsx": 18,
@@ -36,6 +34,5 @@
   "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 5,
   "apps/game/src/ui/features/world/containers/left-facets/suggestions-panel.tsx": 9,
   "apps/game/src/ui/features/world/containers/top-header/hud-header-layout.tsx": 1,
-  "apps/game/src/ui/features/world/hud/hud.css": 30,
-  "apps/game/src/ui/utils/tier-styles.ts": 18
+  "apps/game/src/ui/features/world/hud/hud.css": 30
 }

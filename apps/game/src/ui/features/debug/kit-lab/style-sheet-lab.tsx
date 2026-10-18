@@ -13,7 +13,6 @@ import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { PriceChip } from "@/ui/design-system/kit/price-chip";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
-import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
@@ -1128,9 +1127,6 @@ const ChipsSection = () => (
         <KitChip icons={["wheat"]} value="1,200" label="Wheat" />
         <KitTierChip tier={1} showWord />
         <KitTierChip tier={3} showWord={false} />
-        <TroopTierChip tier="T1" />
-        <TroopTierChip tier="T2" size="md" />
-        <TroopTierChip tier="T3" size="label" />
         <PriceChip of="essence" amount={300} />
       </>
     }

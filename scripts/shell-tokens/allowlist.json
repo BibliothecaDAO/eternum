@@ -5,19 +5,5 @@
     "count": 1,
     "reason": "AccountStatePrompt renders in the HUD's top header (identity-chip), not the shell; danger is the HUD's error red, not a palette colour",
     "issue": "#5052"
-  },
-  {
-    "file": "apps/game/src/ui/design-system/kit/troop-tier-chip.tsx",
-    "match": "text-[10px]",
-    "count": 1,
-    "reason": "TroopTierChip is the HUD's tier chip (army tile, guard slots, map plates), not the shell's: the HUD keeps its own small sizes (owner, 16 October 2026); the HUD sheet's type roles (HUD_TYPE, ux/stylesheet) replace them",
-    "issue": "#5052"
-  },
-  {
-    "file": "apps/game/src/ui/design-system/kit/troop-tier-chip.tsx",
-    "match": "text-[11px]",
-    "count": 1,
-    "reason": "TroopTierChip is the HUD's tier chip (army tile, guard slots, map plates), not the shell's: the HUD keeps its own small sizes (owner, 16 October 2026); the HUD sheet's type roles (HUD_TYPE, ux/stylesheet) replace them",
-    "issue": "#5052"
   }
 ]
