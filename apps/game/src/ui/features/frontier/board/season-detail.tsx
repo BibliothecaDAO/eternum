@@ -1,7 +1,7 @@
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { HudButton, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
-import { PopoverPanel } from "@/ui/design-system/molecules/popover";
+import { Sheet } from "@/ui/design-system/kit/sheet";
 import {
   CAMP,
   CHESTS,
@@ -47,49 +47,44 @@ export const SeasonDetailSheet = ({
   onClose,
 }: {
   detail: SeasonDetail;
-  /** The realm's name as text, for the window's title. */
+  /** The realm's name as text, for the sheet's label. */
   label: string;
   onVisit?: () => void;
   onClose: () => void;
 }) => (
-  // Docked at the right on a desktop, the bottom sheet on a phone; Escape or a tap outside closes it.
-  <PopoverPanel id="season-detail" ariaLabel={label} anchor="right-edge" onDismiss={onClose}>
-    <HudWindow title={label} size="task" onClose={onClose}>
-      <div className="flex flex-col gap-3">
-        <header className="flex items-center gap-2.5">
-          <OrderEmblem order={detail.order} size={34} />
-          <span className="min-w-0 flex-1 truncate text-hud-title">{detail.name}</span>
-          <FigureChip icons={["victory"]} label={SEASON} value={`#${detail.rank}`} />
-        </header>
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
-          <FigureChip icons={["flag"]} label={CLEARED} value={formatAmount(detail.sites.total)} />
-          <span aria-hidden className="text-hud-body text-hud-muted">
-            =
-          </span>
-          <FigureChip icons={["camp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />
-          <FigureChip icons={["rift"]} label={RIFT} value={formatAmount(detail.sites.rifts)} />
-          <FigureChip icons={["ruin"]} label={RUIN} value={formatAmount(detail.sites.ruins)} />
-          <FigureChip icons={["troops"]} label={STRAGGLERS} value={formatAmount(detail.sites.stragglers)} />
-        </div>
-        <div className="flex items-center justify-center gap-1.5">
-          <FigureChip icons={["chest"]} label={CHESTS} value={formatAmount(detail.chests)} />
-          <FigureChip icons={["lords"]} label={LORDS} value={formatAmount(detail.lords)} />
-          <FigureChip icons={["portal"]} label={ETHEREAL} value={reachShown(detail.reach)} />
-        </div>
-        <div className="flex items-center justify-center gap-1.5">
-          <FigureChip icons={["essence"]} label={ESSENCE} value={`+${formatAmount(detail.essence)}`} />
-          <FigureChip icons={["labor"]} label={LABOR} value={`+${formatAmount(detail.labor)}`} />
-        </div>
+  <Sheet label={label} onClose={onClose}>
+    <div className="flex flex-col gap-3">
+      <header className="flex items-center gap-2.5">
+        <OrderEmblem order={detail.order} size={34} />
+        <span className="min-w-0 flex-1 truncate text-hud-title">{detail.name}</span>
+        <FigureChip icons={["victory"]} label={SEASON} value={`#${detail.rank}`} />
+      </header>
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <FigureChip icons={["flag"]} label={CLEARED} value={formatAmount(detail.sites.total)} />
+        <span aria-hidden className="text-hud-body text-hud-muted">
+          =
+        </span>
+        <FigureChip icons={["camp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />
+        <FigureChip icons={["rift"]} label={RIFT} value={formatAmount(detail.sites.rifts)} />
+        <FigureChip icons={["ruin"]} label={RUIN} value={formatAmount(detail.sites.ruins)} />
+        <FigureChip icons={["troops"]} label={STRAGGLERS} value={formatAmount(detail.sites.stragglers)} />
+      </div>
+      <div className="flex items-center justify-center gap-1.5">
+        <FigureChip icons={["chest"]} label={CHESTS} value={formatAmount(detail.chests)} />
+        <FigureChip icons={["lords"]} label={LORDS} value={formatAmount(detail.lords)} />
+        <FigureChip icons={["portal"]} label={ETHEREAL} value={reachShown(detail.reach)} />
+      </div>
+      <div className="flex items-center justify-center gap-1.5">
+        <FigureChip icons={["essence"]} label={ESSENCE} value={`+${formatAmount(detail.essence)}`} />
+        <FigureChip icons={["labor"]} label={LABOR} value={`+${formatAmount(detail.labor)}`} />
       </div>
       {onVisit && (
-        <HudWindowFoot>
-          <HudButton kind="primary" icon="explore" onClick={onVisit}>
-            {VISIT}
-          </HudButton>
-        </HudWindowFoot>
+        <HudButton kind="primary" icon="explore" onClick={onVisit}>
+          {VISIT}
+        </HudButton>
       )}
-    </HudWindow>
-  </PopoverPanel>
+    </div>
+  </Sheet>
 );
 
 /** The deepest reach as its numeral; a realm that never went through reads 0, since a dash is kept for unknown. */

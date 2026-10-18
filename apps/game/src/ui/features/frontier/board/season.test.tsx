@@ -88,15 +88,14 @@ describe("the season list", () => {
       labor: 96_000,
     };
     const onVisit = vi.fn();
-    // The detail opens in a window the popover places, outside the list's own box.
     const other = render(<SeasonDetailSheet detail={detail} label="Aldric" onVisit={onVisit} onClose={vi.fn()} />);
-    expect(document.body.querySelector("[aria-label='Ruin 9']")).not.toBeNull();
-    expect(document.body.querySelector("[aria-label='Ethereal 0']")).not.toBeNull();
-    act(() => button(document.body, "Visit").click());
+    expect(other.host.querySelector("[aria-label='Ruin 9']")).not.toBeNull();
+    expect(other.host.querySelector("[aria-label='Ethereal 0']")).not.toBeNull();
+    act(() => button(other.host, "Visit").click());
     expect(onVisit).toHaveBeenCalled();
     other.unmount();
     const own = render(<SeasonDetailSheet detail={detail} label="You" onClose={vi.fn()} />);
-    expect(button(document.body, "Visit")).toBeUndefined();
+    expect(button(own.host, "Visit")).toBeUndefined();
     own.unmount();
   });
 });
