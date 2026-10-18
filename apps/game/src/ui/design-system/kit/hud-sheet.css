@@ -859,6 +859,20 @@ button.ui-relic:focus-visible {
 .ui-amount .ui-field input {
   width: 6rem;
 }
+/* A number set in steps: the field between a step down and a step up. */
+.ui-number {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.1);
+}
+.ui-number .ui-field {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.ui-number .ui-field input {
+  width: 100%;
+  text-align: center;
+}
 .ui-amount__of {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);

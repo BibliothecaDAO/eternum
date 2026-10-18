@@ -117,6 +117,101 @@ HudField.displayName = "HudField";
 
 const formatAmount = (amount: number) => Math.round(amount).toLocaleString("en-US");
 
+/**
+ * Whole units typed into an amount field, read as the game has always read them: a sign, digits and thousands commas,
+ * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null: the field
+ * stays blank until it loses focus, and nothing is reported.
+ */
+export const parseWholeAmount = (text: string, min: number, max: number): number | null => {
+  if (text.trim() === "") return null;
+  const match = text.match(/[+-]?[0-9,]+/);
+  const parsed = match ? Math.floor(Number.parseFloat(match[0].replace(/,/g, ""))) : Number.NaN;
+  return Math.min(Math.max(Number.isNaN(parsed) ? min : parsed, min), max);
+};
+
+/** The one amount input every amount element types into: whole units, formatted, blank while cleared. */
+const AmountInput = ({
+  label,
+  value,
+  min = 0,
+  max,
+  disabled,
+  autoFocus,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max: number;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  onChange: (amount: number) => void;
+}) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <label className="ui-field">
+      <span className="sr-only">{label}</span>
+      <input
+        aria-label={label}
+        inputMode="numeric"
+        value={draft ?? formatAmount(value)}
+        disabled={disabled}
+        autoFocus={autoFocus}
+        onChange={(event) => {
+          const amount = parseWholeAmount(event.target.value, min, max);
+          setDraft(amount === null ? "" : null);
+          if (amount !== null) onChange(amount);
+        }}
+        onBlur={() => setDraft(null)}
+      />
+    </label>
+  );
+};
+
+/**
+ * A number set in steps (a simulated army's troops or stamina): the amount typed, between `min` and `max`, and a step
+ * down and up on either side.
+ */
+export const HudNumberField = ({
+  label,
+  value,
+  min = 0,
+  max,
+  step = 1,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max: number;
+  step?: number;
+  disabled?: boolean;
+  onChange: (amount: number) => void;
+}) => (
+  <div className="ui-number">
+    <HudButton
+      kind="secondary"
+      size="sm"
+      aria-label={`Fewer: ${label}`}
+      disabled={disabled || value <= min}
+      onClick={() => onChange(Math.max(value - step, min))}
+    >
+      −
+    </HudButton>
+    <AmountInput label={label} value={value} min={min} max={max} disabled={disabled} onChange={onChange} />
+    <HudButton
+      kind="secondary"
+      size="sm"
+      aria-label={`More: ${label}`}
+      disabled={disabled || value >= max}
+      onClick={() => onChange(Math.min(value + step, max))}
+    >
+      +
+    </HudButton>
+  </div>
+);
+
 /** What one press of the quick button adds. */
 const QUICK_ADD = 500;
 
@@ -144,15 +239,7 @@ export const HudTroopAmount = ({
   const full = disabled || value >= most;
   return (
     <div className="ui-amount">
-      <label className="ui-field">
-        <span className="sr-only">{name}</span>
-        <input
-          inputMode="numeric"
-          value={formatAmount(value)}
-          disabled={disabled}
-          onChange={(event) => onChange(Math.min(most, Number(event.target.value.replace(/\D/g, "")) || 0))}
-        />
-      </label>
+      <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
       <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
         +{QUICK_ADD}
       </HudButton>
@@ -243,18 +330,13 @@ export const HudTransfer = ({
             </HudButton>
           ))}
         </span>
-        <label className="ui-field">
-          <span className="sr-only">{row.name}</span>
-          <input
-            aria-label={`${row.name}: total to send`}
-            inputMode="numeric"
-            autoFocus={row.focus}
-            value={formatAmount(row.value)}
-            onChange={(event) =>
-              onChange(index, Math.min(row.held, Number(event.target.value.replace(/\D/g, "")) || 0))
-            }
-          />
-        </label>
+        <AmountInput
+          label={`${row.name}: total to send`}
+          value={row.value}
+          max={row.held}
+          autoFocus={row.focus}
+          onChange={(amount) => onChange(index, amount)}
+        />
       </div>
     ))}
   </div>
