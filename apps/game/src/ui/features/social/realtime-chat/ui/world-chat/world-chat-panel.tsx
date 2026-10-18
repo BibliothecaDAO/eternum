@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
@@ -281,15 +282,12 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               <div ref={topSentinelRef} className="h-1" />
 
               {zone.historyError && (
-                <div role="status" className="mb-2 text-hud-label text-hud-muted">
-                  {zone.historyError}{" "}
-                  <button
-                    type="button"
-                    className="text-hud-accent underline"
-                    onClick={() => void loadHistory(zone.lastFetchedCursor ?? undefined)}
-                  >
-                    Retry
-                  </button>
+                <div className="mb-2">
+                  <HudNotice
+                    tone="bad"
+                    line={zone.historyError}
+                    retry={() => loadHistory(zone.lastFetchedCursor ?? undefined)}
+                  />
                 </div>
               )}
               {zone.isFetchingHistory && (

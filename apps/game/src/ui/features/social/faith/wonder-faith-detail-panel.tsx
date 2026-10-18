@@ -105,10 +105,10 @@ export const WonderFaithDetailPanel = ({
 
       {ordersAllowed && (
         <div className="flex flex-wrap gap-2">
-          <HudButton kind="secondary" disabled={claiming} onClick={() => void claim("wonder")}>
+          <HudButton kind="secondary" disabled={claiming} onClick={() => claim("wonder")}>
             Update wonder points
           </HudButton>
-          <HudButton kind="secondary" disabled={claiming} onClick={() => void claim("player")}>
+          <HudButton kind="secondary" disabled={claiming} onClick={() => claim("player")}>
             Claim faith points
           </HudButton>
         </div>
