@@ -5,7 +5,7 @@ import type { Call } from "starknet";
 import { afterEach, expect, it, vi } from "vitest";
 
 const signed = vi.hoisted(() => ({ calls: [] as Call[][], owners: [] as string[] }));
-vi.mock("@/ui/modules/identity/wallet-actions", () => ({
+vi.mock("@/shell/value/wallet-actions", () => ({
   WalletSign: ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => (
     <button
       type="button"

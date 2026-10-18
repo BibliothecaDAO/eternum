@@ -40,7 +40,7 @@ import {
 import { lobbyId } from "./lobby";
 
 const WalletSign = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
+  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
 /**

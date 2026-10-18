@@ -21,7 +21,7 @@ import { REWARD_WORDS } from "../words";
 import { entryMultipleOf, type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletSign })),
+  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
 
 /** Each rank band's chest, sealed or opened (0 the top 10 percent .. 4 the bottom 25). */

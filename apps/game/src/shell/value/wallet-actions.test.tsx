@@ -3,12 +3,12 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/context/starknet-provider", async () => ({
-  StarknetProvider: (await import("./test-wallet")).StandInStarknetProvider,
+  StarknetProvider: (await import("@/ui/modules/identity/test-wallet")).StandInStarknetProvider,
 }));
 
-import { installWallet } from "./test-wallet";
+import { installWallet } from "@/ui/modules/identity/test-wallet";
 import { WalletSign } from "./wallet-actions";
-import { rememberOpened } from "./wallet-holder";
+import { rememberOpened } from "@/ui/modules/identity/wallet-holder";
 
 const LINKED = "0x04a1000000000000000000000000000000000000000000000000000000003e9f";
 const OTHER = "0x0777000000000000000000000000000000000000000000000000000000000001";

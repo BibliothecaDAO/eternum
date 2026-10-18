@@ -13,11 +13,11 @@ import { Loading } from "@/shell/loading";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
 import { VALUE_WORDS, WALLET_WORDS } from "@/shell/words";
 
-import { failureSentence, WrongNetworkError } from "./identity-failures";
-import { assertWalletOnL2 } from "./l2-wallet";
-import { connectorHolding, rememberOpened } from "./wallet-holder";
-import { walletProofForAccount } from "./wallet-proof";
-import { sendFromWallet, type WalletSendOutcome, WrongWalletError } from "./wallet-send";
+import { failureSentence, WrongNetworkError } from "@/ui/modules/identity/identity-failures";
+import { assertWalletOnL2 } from "@/ui/modules/identity/l2-wallet";
+import { connectorHolding, rememberOpened } from "@/ui/modules/identity/wallet-holder";
+import { walletProofForAccount } from "@/ui/modules/identity/wallet-proof";
+import { sendFromWallet, type WalletSendOutcome, WrongWalletError } from "@/ui/modules/identity/wallet-send";
 
 /**
  * The wallets a Realms account links, in the order the picker lists them, each as the player knows it. A wallet whose
@@ -173,7 +173,7 @@ const WalletRows = ({
           type="button"
           disabled={wallet.pending !== null}
           onClick={() => void wallet.open(connector)}
-          className="flex h-[62px] items-center gap-3 rounded-[14px] border-2 border-kit-line bg-kit-ground/60 px-3.5 text-left disabled:opacity-60"
+          className="flex h-[62px] items-center gap-3 rounded-well border-2 border-kit-line bg-kit-ground/60 px-3.5 text-left disabled:opacity-60"
         >
           <SemanticIcon name="backpack" size={34} />
           <span className="font-body text-xl text-kit-cream">{choice.name}</span>

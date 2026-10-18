@@ -18,7 +18,7 @@ import { CodeBoxes } from "../sign-in/fields";
 import { WALLET_WORDS } from "../words";
 
 const WalletPicker = lazy(() =>
-  import("@/ui/modules/identity/wallet-actions").then((module) => ({ default: module.WalletPicker })),
+  import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletPicker })),
 );
 
 /** Ready's extension in this browser's store. */
