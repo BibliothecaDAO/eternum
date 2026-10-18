@@ -12,7 +12,6 @@ import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { RealmNumberPicker } from "@/ui/features/game-entry/realm-number-picker";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { HintModal } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal-content";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
@@ -85,7 +84,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
       />
     ),
   },
-  log: { name: "Log", draw: () => <EventLogPanel onDismiss={() => undefined} isInsideAnchor={() => false} /> },
   "transfer-automation": { name: "Transfer automation", draw: () => <TransferAutomationAdvancedModal /> },
   "craft-relic": {
     name: "Craft relic",
