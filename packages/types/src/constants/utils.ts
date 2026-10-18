@@ -4,11 +4,6 @@ export const findResourceById = (value: number) => {
   return resources.find((e) => e.id === value);
 };
 
-export const findResourceIdByTrait = (trait: string) => {
-  // @ts-ignore
-  return resources.find((e) => e?.trait === trait).id;
-};
-
 export const RESOURCE_PRECISION = 1_000_000_000;
 
 /** Victory points carry six decimals on chain: every points fact and points config is in these units. */

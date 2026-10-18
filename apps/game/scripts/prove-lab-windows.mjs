@@ -3,7 +3,7 @@
  * fixture game), one screenshot each at 1920×1080, then one per tab the window holds, pressed as a player presses it.
  * Run before and after a window moves onto the HUD sheet: the two runs show each window the same way.
  *
- *   node scripts/prove-lab-windows.mjs <base-url> <out-dir> [surface,surface]   (frontier/<state> for a Frontier window)
+ *   pnpm --dir apps/game prove:windows <base-url> <out-dir> [surface,surface]   (frontier/<state> for a Frontier window)
  */
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";

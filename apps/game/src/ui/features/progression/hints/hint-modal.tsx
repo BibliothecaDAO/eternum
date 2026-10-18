@@ -14,7 +14,7 @@ import { Trading } from "./trading";
 import { Transfers } from "./transfers";
 import { WorldStructures } from "./world-structures";
 
-export enum HintSection {
+enum HintSection {
   TheWorld = "The World",
   KeyConcepts = "Key Concepts",
   Resources = "Resources",
