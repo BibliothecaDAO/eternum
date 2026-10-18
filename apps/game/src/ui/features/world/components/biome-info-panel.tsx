@@ -64,18 +64,18 @@ const troopConfig = {
 const getBonusStyles = (bonus: number) => {
   if (bonus > 1) {
     return {
-      containerClass: "border-green-500/60 bg-green-900/30 shadow-green-500/20",
+      containerClass: "border-hud-good",
       textClass: "text-hud-good",
     };
   }
   if (bonus < 1) {
     return {
-      containerClass: "border-red-500/60 bg-red-900/30 shadow-red-500/20",
+      containerClass: "border-hud-bad",
       textClass: "text-hud-bad",
     };
   }
   return {
-    containerClass: "border-hud-line bg-brown-800/60 shadow-gold/10",
+    containerClass: "border-hud-line",
     textClass: "text-hud-ink",
   };
 };
@@ -117,19 +117,19 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
   if (!configManager.hasBiomeCombatEffects()) return null;
 
   return (
-    <div className="rounded-xl border border-hud-line bg-dark/70 backdrop-blur-sm shadow-md">
+    <div className="rounded-xl border border-hud-line bg-hud-surface">
       <button
         type="button"
         onClick={handleToggle}
         className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-1.5 text-left transition-colors hover:bg-hud-hover"
       >
         <div className="flex items-center gap-2">
-          <span className="text-hud-label uppercase tracking-[0.3em] text-hud-muted">Biome</span>
+          <span className="text-hud-label text-hud-muted">Biome</span>
           <span className="text-hud-strong text-hud-ink">{formatBiomeLabel(biome)}</span>
         </div>
         <div className="flex items-center gap-2">
           {troopBonuses.map(({ troopType, config, bonus, summaryTextClass }) => (
-            <div key={troopType} className="flex items-center gap-1 rounded-md bg-dark/60 px-1.5 py-0.5">
+            <div key={troopType} className="flex items-center gap-1 rounded-md bg-hud-well px-1.5 py-0.5">
               <ResourceIcon resource={config.resourceId} size="xs" withTooltip={false} />
               <span className={`text-hud-label leading-none ${summaryTextClass}`}>{formatBiomeBonus(bonus)}</span>
             </div>
@@ -143,14 +143,11 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
 
       {isExpanded && (
         <div
-          className="relative overflow-hidden rounded-b-xl border-t border-hud-divider p-3 shadow-inner"
-          style={{
-            backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.85), rgba(20, 16, 13, 0.85)), url(${getBiomeImage(biome)})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
+          className="relative overflow-hidden rounded-b-xl border-t border-hud-divider bg-cover bg-center p-3"
+          style={{ backgroundImage: `url(${getBiomeImage(biome)})` }}
         >
-          <div className="pointer-events-none absolute inset-0 rounded-b-xl border-2 border-transparent bg-gradient-to-br from-gold/5 to-transparent" />
+          {/* The biome's painting shows faintly through the panel's own ground, so its words read on it. */}
+          <div className="pointer-events-none absolute inset-0 bg-hud-surface opacity-90" />
 
           <div className="relative z-10 flex flex-col gap-3">
             <div className="flex items-center gap-2">
@@ -168,7 +165,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
               {troopBonuses.map(({ troopType, config, bonus, styles }) => (
                 <div
                   key={troopType}
-                  className={`group relative flex-1 rounded-lg border-2 px-2 py-2 shadow-lg transition-all duration-200 hover:shadow-xl ${styles.containerClass}`}
+                  className={`relative flex-1 rounded-lg border-2 px-2 py-2 ${styles.containerClass}`}
                   role="tooltip"
                   aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
                 >
@@ -176,13 +173,6 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
                     <ResourceIcon resource={config.resourceId} size="lg" withTooltip={false} className="opacity-90" />
                   </div>
                   <div className={`text-hud-strong text-center ${styles.textClass}`}>{formatBiomeBonus(bonus)}</div>
-                  {bonus !== 1 && (
-                    <div
-                      className={`pointer-events-none absolute inset-0 rounded-lg opacity-20 ${
-                        bonus > 1 ? "bg-green-400/20" : "bg-red-400/20"
-                      } animate-pulse`}
-                    />
-                  )}
                 </div>
               ))}
             </div>

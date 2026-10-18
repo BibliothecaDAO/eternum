@@ -3,7 +3,6 @@ import { realmLevelNumber } from "@/ui/lib/realm-level";
 
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   StructureRealmActions,
@@ -53,9 +52,9 @@ const resolveStatusTone = (
 };
 
 const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
-  green: "text-hud-good drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
-  amber: "text-hud-warn drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
-  red: "text-hud-bad drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
+  green: "text-hud-good",
+  amber: "text-hud-warn",
+  red: "text-hud-bad",
 };
 
 const InlineStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title?: string }) => (
@@ -165,11 +164,11 @@ export const StructureStatusRow = memo(
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          "pointer-events-auto cursor-pointer rounded-xl transition",
-          isFull && "h-[60px]",
+          "pointer-events-auto cursor-pointer rounded-xl border bg-hud-surface transition",
+          isFull && "h-16",
           isActive
-            ? "border border-hud-line-strong ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
-            : cn(OVERLAY_SURFACE_BASE, "hover:border-hud-line-strong"),
+            ? "border-hud-line-strong ring-1 ring-hud-line-strong"
+            : "border-hud-line hover:border-hud-line-strong",
         )}
         aria-pressed={isActive}
         title={structure.displayName}
@@ -226,7 +225,7 @@ export const StructureStatusRow = memo(
           </span>
           {hasAttention && (
             <span
-              className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_6px_rgba(223,170,84,0.7)]"
+              className="h-2 w-2 flex-shrink-0 rounded-full bg-hud-gold"
               aria-hidden="true"
               title="Needs attention"
             />
