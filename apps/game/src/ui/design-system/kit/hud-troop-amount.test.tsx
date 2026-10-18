@@ -146,3 +146,39 @@ describe("the stepped field", () => {
     expect(field.reported.at(-1)).toBe(50);
   });
 });
+
+describe("a decimal field", () => {
+  const mountDecimal = () =>
+    mountTyped((value, onChange) => (
+      <HudNumberField label="Price" value={value} max={1_000_000} step={1} decimals onChange={onChange} />
+    ));
+
+  it("reads a fraction, thousands commas and the bounds as typed", () => {
+    const field = mountDecimal();
+    for (const [text, expected] of [
+      ["0.25", 0.25],
+      [".5", 0.5],
+      ["1,200.75", 1_200.75],
+      ["-2", 0],
+      ["9999999", 1_000_000],
+      ["abc", 0],
+    ] as const) {
+      field.type(text);
+      expect(field.reported.at(-1), text).toBe(expected);
+    }
+  });
+
+  it("keeps a fraction being typed on screen, then shows the number once it loses focus", () => {
+    const field = mountDecimal();
+    field.type("0.");
+    expect(field.input().value).toBe("0.");
+    expect(field.reported.at(-1)).toBe(0);
+    field.type("0.05");
+    expect(field.input().value).toBe("0.05");
+    expect(field.reported.at(-1)).toBe(0.05);
+    act(() => {
+      field.input().dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    });
+    expect(field.input().value).toBe("0.05");
+  });
+});

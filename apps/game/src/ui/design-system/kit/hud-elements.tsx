@@ -129,12 +129,33 @@ export const parseWholeAmount = (text: string, min: number, max: number): number
   return Math.min(Math.max(Number.isNaN(parsed) ? min : parsed, min), max);
 };
 
-/** The one amount input every amount element types into: whole units, formatted, blank while cleared. */
+const DECIMAL = /[+-]?(?:[0-9,]+(?:[.][0-9]*)?|[.][0-9]+)/;
+
+/**
+ * A number with its fraction typed into a decimal field (a price, a swap), read as the game has always read it: a
+ * sign, digits, thousands commas and a fraction, at most `max`, and below `min` only as `min` ("-2" is 0). Nothing
+ * typed yet is null; anything else that holds no number is `min`.
+ */
+export const parseDecimalAmount = (text: string, min: number, max: number): number | null => {
+  if (text.trim() === "") return null;
+  const match = text.match(DECIMAL);
+  const parsed = match ? Number.parseFloat(match[0].replace(/,/g, "")) : Number.NaN;
+  return Math.min(Math.max(Number.isNaN(parsed) ? min : parsed, min), max);
+};
+
+/** A decimal as the field shows it: thousands commas from 1,000, its fraction as it is. */
+const formatDecimal = (amount: number) => (amount >= 1000 ? amount.toLocaleString("en-US") : String(amount));
+
+/**
+ * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
+ * what is typed on screen while it has focus, so a fraction can be typed one digit at a time ("0." stays "0.").
+ */
 const AmountInput = ({
   label,
   value,
   min = 0,
   max,
+  decimals = false,
   disabled,
   autoFocus,
   onChange,
@@ -143,6 +164,7 @@ const AmountInput = ({
   value: number;
   min?: number;
   max: number;
+  decimals?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
   onChange: (amount: number) => void;
@@ -153,13 +175,15 @@ const AmountInput = ({
       <span className="sr-only">{label}</span>
       <input
         aria-label={label}
-        inputMode="numeric"
-        value={draft ?? formatAmount(value)}
+        inputMode={decimals ? "decimal" : "numeric"}
+        value={draft ?? (decimals ? formatDecimal(value) : formatAmount(value))}
         disabled={disabled}
         autoFocus={autoFocus}
         onChange={(event) => {
-          const amount = parseWholeAmount(event.target.value, min, max);
-          setDraft(amount === null ? "" : null);
+          const text = event.target.value;
+          const amount = decimals ? parseDecimalAmount(text, min, max) : parseWholeAmount(text, min, max);
+          if (amount === null) setDraft("");
+          else setDraft(decimals ? (text.match(DECIMAL)?.[0] ?? formatDecimal(amount)) : null);
           if (amount !== null) onChange(amount);
         }}
         onBlur={() => setDraft(null)}
@@ -169,8 +193,8 @@ const AmountInput = ({
 };
 
 /**
- * A number set in steps (a simulated army's troops or stamina): the amount typed, between `min` and `max`, and a step
- * down and up on either side.
+ * A number set in steps (a simulated army's troops or stamina, a price): the amount typed, between `min` and `max`, and
+ * a step down and up on either side; whole units, or with `decimals` its fraction too.
  */
 export const HudNumberField = ({
   label,
@@ -178,6 +202,7 @@ export const HudNumberField = ({
   min = 0,
   max,
   step = 1,
+  decimals = false,
   disabled = false,
   onChange,
 }: {
@@ -186,6 +211,7 @@ export const HudNumberField = ({
   min?: number;
   max: number;
   step?: number;
+  decimals?: boolean;
   disabled?: boolean;
   onChange: (amount: number) => void;
 }) => (
@@ -199,7 +225,15 @@ export const HudNumberField = ({
     >
       −
     </HudButton>
-    <AmountInput label={label} value={value} min={min} max={max} disabled={disabled} onChange={onChange} />
+    <AmountInput
+      label={label}
+      value={value}
+      min={min}
+      max={max}
+      decimals={decimals}
+      disabled={disabled}
+      onChange={onChange}
+    />
     <HudButton
       kind="secondary"
       size="sm"

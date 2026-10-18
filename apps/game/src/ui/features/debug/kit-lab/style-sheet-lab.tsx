@@ -537,10 +537,11 @@ const FieldSection = () => {
   const [name, setName] = useState("Egonal");
   const [amount, setAmount] = useState("1,000");
   const [troops, setTroops] = useState(100);
+  const [price, setPrice] = useState(0.25);
   return (
     <Element
       name="Field"
-      rule="What is typed (a name, a search, an amount), in a well as wide as its container; focus rings it in the accent. It takes an input's own props (type, inputMode, maxLength, autoFocus, a key handler). A number set in steps has a step down and up either side; every amount reads whole units, its sign and its bounds as typed."
+      rule="What is typed (a name, a search, an amount), in a well as wide as its container; focus rings it in the accent. It takes an input's own props (type, inputMode, maxLength, autoFocus, a key handler). A number set in steps has a step down and up either side; every amount reads whole units, its sign and its bounds as typed; a decimal one (a price) its fraction too."
       sheet={
         <div className="grid grid-cols-2 gap-4">
           <HudField value={name} maxLength={30} aria-label="Realm name" onChange={setName} />
@@ -549,6 +550,7 @@ const FieldSection = () => {
           <HudField value="Egonal" disabled onChange={() => undefined} />
           <HudField value={amount} inputMode="numeric" aria-label="Wheat to sell" onChange={setAmount} />
           <HudNumberField label="Troops" value={troops} min={1} max={500_000} step={100} onChange={setTroops} />
+          <HudNumberField label="Lords per wheat" value={price} max={Infinity} decimals onChange={setPrice} />
         </div>
       }
       today={<NumberInput value={200} onChange={() => undefined} className="w-40" />}
