@@ -434,7 +434,13 @@ button.ui-ring:focus-visible .ui-ring__face {
   outline: none;
   box-shadow: var(--hud-focus);
 }
+/* The head stays over its rows as they scroll, on the surface, so no row shows through it. */
 .ui-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  align-items: start;
+  background: var(--hud-surface-from);
   border-bottom: 1px solid var(--hud-divider);
   color: var(--hud-muted);
   font-size: var(--hud-text-label);

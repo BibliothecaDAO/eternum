@@ -398,7 +398,7 @@ export const HudTableRow = ({
   </button>
 );
 
-/** A table's header: its column names on the same grid as its rows. */
+/** A table's header: its column names on the same grid as its rows, staying over them as they scroll. */
 export const HudTableHead = ({
   cols,
   colsWide,
