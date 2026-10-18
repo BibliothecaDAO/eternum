@@ -36,11 +36,6 @@ interface DerivedArmyData {
   structureOwnerName?: string;
 }
 
-interface AlignmentBadge {
-  label: string;
-  className: string;
-}
-
 export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions) => {
   const {
     account: { account },
@@ -126,27 +121,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     userAddress,
   ]);
 
-  const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
-    if (!derivedData) return undefined;
-
-    if (derivedData.isMine) {
-      return { label: "Your Army", className: "bg-hud-chosen border border-hud-line-strong text-hud-ink" };
-    }
-
-    if (derivedData.playerGuild) {
-      return {
-        label: `Guild · ${derivedData.playerGuild.name}`,
-        className: "bg-order-protection/20 border border-order-protection/40 text-order-protection",
-      };
-    }
-
-    if (derivedData.structureOwnerName) {
-      return { label: "Visiting", className: "bg-blueish/20 border border-blueish/40 text-blueish" };
-    }
-
-    return undefined;
-  }, [derivedData]);
-
   const handleDeleteExplorer = useCallback(async () => {
     setIsLoadingDelete(true);
     try {
@@ -168,7 +142,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     structureResources,
     relicEffects,
     derivedData,
-    alignmentBadge,
     isLoadingExplorer: explorer === undefined,
     isLoadingStructure: explorer?.owner !== undefined && structure === undefined,
     handleDeleteExplorer,

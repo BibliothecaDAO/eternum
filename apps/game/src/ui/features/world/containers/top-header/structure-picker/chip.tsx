@@ -2,6 +2,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
@@ -86,7 +87,7 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
   }
 
   return (
-    <div className="min-w-[220px] space-y-2 text-hud-ink">
+    <div className="min-w-56 space-y-2 text-hud-ink">
       <div className="flex items-center justify-between">
         <span className="text-hud-body text-hud-muted">Upgrade</span>
         {step.nextLevelName && <span className="text-hud-body text-hud-muted">to {step.nextLevelName}</span>}
@@ -99,10 +100,7 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
           return (
             <div
               key={`${req.resource}-${req.amount}`}
-              className={clsx(
-                "rounded border px-2 py-1",
-                isMet ? "border-hud-divider bg-hud-hover" : "border-red-400/40 bg-red-500/5",
-              )}
+              className={clsx("rounded border px-2 py-1", isMet ? "border-hud-divider bg-hud-hover" : "border-hud-bad")}
             >
               <div className="flex items-center gap-2">
                 <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
@@ -167,9 +165,9 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
     if (step.nextLevel >= 3) {
       return (
         <span className="relative flex h-4 w-4 items-center justify-center">
-          <SemanticIcon name="chevron-up" className="absolute h-3 w-3 -translate-y-[6px]" />
+          <SemanticIcon name="chevron-up" className="absolute h-3 w-3 -translate-y-1.5" />
           <SemanticIcon name="chevron-up" className="absolute h-3 w-3" />
-          <SemanticIcon name="chevron-up" className="absolute h-3 w-3 translate-y-[6px]" />
+          <SemanticIcon name="chevron-up" className="absolute h-3 w-3 translate-y-1.5" />
         </span>
       );
     }
@@ -184,34 +182,28 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
 
   return (
     <div className={clsx("flex items-center gap-2", className)}>
-      <button
-        type="button"
+      {/* Ready reads as a secondary outline, never the gold primary: the screen's one gold button is Next up's. */}
+      <HudButton
+        kind="secondary"
+        size="sm"
         onClick={takeStep}
         disabled={!step.ready}
-        className={clsx(
-          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-hud-label uppercase tracking-wide transition",
-          // Ready reads as a gold outline, never a filled or pulsing gold: the screen's one gold button is Next up's.
-          step.ready
-            ? "border-hud-line-strong text-hud-ink hover:bg-hud-hover"
-            : "border-hud-divider bg-hud-well text-hud-muted cursor-not-allowed",
-        )}
         aria-label={step.word}
         title={step.refusal ?? step.word}
       >
         {renderIcon()}
-      </button>
-      <button
-        type="button"
+      </HudButton>
+      <HudIconButton
+        icon="info"
+        label="View upgrade requirements"
+        kind="quiet"
+        size="sm"
         onMouseEnter={showRequirementsTooltip}
         onMouseLeave={hideRequirementsTooltip}
         onFocus={showRequirementsTooltip as never}
         onBlur={hideRequirementsTooltip}
         onClick={(event) => event.stopPropagation()}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-hud-line bg-hud-well text-hud-muted hover:text-hud-ink focus:outline-none focus:ring-1 focus:ring-gold/40"
-        aria-label="View upgrade requirements"
-      >
-        <SemanticIcon name="info" className="h-3.5 w-3.5" />
-      </button>
+      />
     </div>
   );
 };
@@ -293,7 +285,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
       )}
       <span
         className={clsx(
-          "min-w-0 flex-1 truncate font-semibold",
+          "min-w-0 flex-1 truncate text-hud-strong",
           structure.groupColor
             ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-hud-ink")
             : undefined,

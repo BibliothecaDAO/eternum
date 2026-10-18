@@ -213,7 +213,7 @@ export const MergedResourcePanel = memo(
                 className={cn(
                   "absolute -bottom-1 -left-1 z-20 inline-flex h-4 w-4 items-center justify-center rounded-full border shadow-md transition",
                   buildEnabled
-                    ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
+                    ? "border-hud-gold bg-hud-gold text-hud-dark"
                     : "border-hud-divider bg-hud-well text-hud-muted cursor-not-allowed opacity-70",
                 )}
                 title={buildEnabled ? `Build ${label}` : (buildReason ?? "Cannot build")}
@@ -267,7 +267,7 @@ export const MergedResourcePanel = memo(
         )}
         {tokens.length > 0 && (
           // Two token rows stay visible; more scroll inside. The inner padding keeps rings and badges off the clip edge.
-          <div className="max-h-[164px] overflow-y-auto overscroll-contain">
+          <div className="max-h-hud-ring-rows overflow-y-auto overscroll-contain">
             <div className="flex max-w-full flex-wrap justify-start gap-x-4 gap-y-5 px-5 pb-3 pt-3">{tokens}</div>
           </div>
         )}

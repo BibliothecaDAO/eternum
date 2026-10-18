@@ -30,11 +30,6 @@ interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
 }
 
-interface AlignmentBadge {
-  label: string;
-  className: string;
-}
-
 export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEntityDetailOptions) => {
   const {
     setup,
@@ -113,39 +108,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const guardSlotsMax =
     structure?.base.troop_max_guard_count !== undefined ? Number(structure?.base?.troop_max_guard_count) : undefined;
 
-  const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
-    if (!structure) return undefined;
-
-    const ownerValue = structure.owner;
-    const isUnclaimed = ownerValue === 0n;
-
-    if (isMine) {
-      return {
-        label: "Your Structure",
-        className: "bg-hud-chosen border border-hud-line-strong text-hud-ink",
-      };
-    }
-
-    if (isAlly && !isUnclaimed) {
-      return {
-        label: "Ally Controlled",
-        className: "bg-order-protection/20 border border-order-protection/40 text-order-protection",
-      };
-    }
-
-    if (isUnclaimed) {
-      return {
-        label: "Unclaimed",
-        className: "bg-blueish/20 border border-blueish/40 text-blueish",
-      };
-    }
-
-    return {
-      label: "Enemy Controlled",
-      className: "bg-danger/20 border border-danger/40 text-hud-bad",
-    };
-  }, [structure, isMine, isAlly]);
-
   const progress = useMemo(() => {
     return isHyperstructure && structure
       ? getHyperstructureProgress(safeInteger(structure.entity_id), store)
@@ -179,7 +141,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     isHyperstructure,
     typeLabel,
     backgroundImage,
-    alignmentBadge,
     progress,
     structureName,
     isLoadingStructure: false,

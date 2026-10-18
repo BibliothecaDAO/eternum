@@ -11,11 +11,6 @@ const spacingGap: Record<LayoutScale, string> = {
   compact: "gap-2",
 };
 
-const titleText: Record<LayoutScale, string> = {
-  default: "text-hud-label",
-  compact: "text-hud-label",
-};
-
 const bodyText: Record<LayoutScale, string> = {
   default: "text-hud-body",
   compact: "text-hud-label",
@@ -71,7 +66,7 @@ export const EntityDetailStat = ({
   const scale = getScale(compact);
   return (
     <div className={cn("flex flex-col", spacingGap[scale], className)}>
-      <span className={cn("font-semibold uppercase tracking-[0.18em] text-hud-muted", titleText[scale])}>{label}</span>
+      <span className="text-hud-label text-hud-muted">{label}</span>
       <span className={cn(emphasizeValue ? "text-hud-ink" : "text-hud-ink", bodyText[scale])}>{value}</span>
     </div>
   );
