@@ -25,6 +25,15 @@ const SHEET_PAGES = {
   "results-opened": "reward-lords/results/0x5245414c4d53-7",
 };
 
+/**
+ * The desktop bar at its limits: the longest name an account takes beside Play's install notice, at the desktop's
+ * narrowest width and a laptop's.
+ */
+const BAR_CASES = [
+  { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"] },
+  { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"] },
+];
+
 /** The app's other pages: still drawn with the shell kit inside the sheet's frame. */
 const OTHER_PAGES = {
   "first-visit": "first-visit",
@@ -65,14 +74,19 @@ const otherPages = () =>
  */
 const sheetPageChecks = (desktop) => (b) => {
   const measure = b.evaluate(`(() => {
-    const bottomOf = (element) => element.getBoundingClientRect().bottom;
-    const lowestIn = (element) => Math.max(bottomOf(element), ...[...element.querySelectorAll("*")].map(bottomOf));
+    // How far anything drawn in a block runs past the block's foot or its right side.
+    const rectOf = (element) => element.getBoundingClientRect();
+    const spillOf = (block) => {
+      const box = rectOf(block);
+      const inside = [...block.querySelectorAll("*")].map(rectOf).filter((rect) => rect.width > 0 && rect.height > 0);
+      return Math.max(0, ...inside.map((rect) => Math.max(rect.bottom - box.bottom, rect.right - box.right)));
+    };
     const body = document.querySelector('[data-band="body"]');
     const blocks = body ? [...body.querySelectorAll(":scope > * > *, :scope > *")] : [];
     const bar = document.querySelector('[data-band="bar"]')?.getBoundingClientRect();
     const player = document.querySelector(".app-bar__end > :last-child")?.getBoundingClientRect();
     return {
-      spill: Math.round(Math.max(0, ...blocks.map((block) => lowestIn(block) - bottomOf(block)))),
+      spill: Math.round(Math.max(0, ...blocks.map(spillOf))),
       height: document.documentElement.scrollHeight,
       glyphs: document.querySelectorAll("[data-icon]").length,
       painting: document.querySelector(".app-frame__painting")?.naturalWidth > 0,
@@ -90,6 +104,7 @@ const sheetPageChecks = (desktop) => (b) => {
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
     ...(desktop
       ? [
+          ...barChecks(b),
           { check: "stands on its painting", ok: measure.painting },
           // A full-screen step (the lobby) keeps the mark and the notice alone.
           {
@@ -100,6 +115,43 @@ const sheetPageChecks = (desktop) => (b) => {
       : []),
   ];
 };
+
+/**
+ * What holds for the desktop bar: everything drawn in it stays inside its bounds, its mark keeps its width, and each of
+ * its controls is whole and on the screen.
+ */
+const barChecks = (b) => {
+  const bar = b.evaluate(`(() => {
+    const bar = document.querySelector('[data-band="bar"]');
+    const box = bar.getBoundingClientRect();
+    const drawn = [...bar.querySelectorAll("*")].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && getComputedStyle(element).visibility !== "hidden";
+    });
+    const outside = drawn
+      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.top < box.top - 1 || rect.bottom > box.bottom + 1 || rect.left < box.left - 1 || rect.right > box.right + 1)
+      .map(({ element, rect }) => element.tagName.toLowerCase() + " " + (element.textContent ?? "").slice(0, 30) + " " + Math.round(rect.top) + "→" + Math.round(rect.bottom));
+    const controls = [...bar.querySelectorAll("a[href], button")].map((control) => {
+      const rect = control.getBoundingClientRect();
+      return { text: control.textContent.trim().slice(0, 30), whole: control.scrollWidth <= control.clientWidth + 1, onScreen: rect.left >= 0 && rect.right <= innerWidth && rect.width >= 24 };
+    });
+    return {
+      height: Math.round(box.height),
+      outside,
+      markWidth: Math.round(bar.querySelector('[data-role="lockup"] img')?.getBoundingClientRect().width ?? 0),
+      controls,
+    };
+  })()`);
+  return [
+    { check: "the bar's contents stay inside it", ok: bar.outside.length === 0, bar },
+    { check: "the bar's mark keeps its width", ok: bar.markWidth >= 100 },
+    { check: "the bar's controls are whole and on the screen", ok: bar.controls.every((control) => control.onScreen) },
+  ];
+};
+
+const barCases = () =>
+  BAR_CASES.map((bar) => ({ ...bar, path: `/lab/app/${bar.path}?capture=1`, more: sheetPageChecks(true) }));
 
 const sheetPages = (desktop) =>
   Object.entries(SHEET_PAGES).map(([page, path]) => ({
@@ -152,6 +204,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       if (parts.includes("others")) for (const page of otherPages()) records.push(await shoot(b, baseUrl, out, page));
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
       if (parts.includes("pages")) {
+        for (const bar of barCases()) {
+          b.run("set", "viewport", ...bar.viewport);
+          records.push(await shoot(b, baseUrl, out, bar));
+        }
         b.run("set", "viewport", ...PHONE);
         for (const page of sheetPages(false)) records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...VIEWPORT);

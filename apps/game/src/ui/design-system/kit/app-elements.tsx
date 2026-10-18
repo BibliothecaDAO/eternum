@@ -167,7 +167,9 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) => (
   >
     {place.portrait !== undefined ? (
       <>
-        {place.label}
+        <span className="app-bar__name" title={place.label}>
+          {place.label}
+        </span>
         <AppPortrait src={place.portrait} name={place.label} size="sm" own />
       </>
     ) : (

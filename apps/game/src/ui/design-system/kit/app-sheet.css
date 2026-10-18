@@ -224,9 +224,11 @@
   backdrop-filter: blur(12px);
   padding: 0 theme(spacing.12);
 }
-.app-bar__mark {
-  height: 28px;
-  width: auto;
+/* The mark and the places keep their size; what shares the rest is the end: the notice's line and the player's name
+   give way first, each to an ellipsis, so the bar holds from the desktop's narrowest width up. */
+.app-bar > [data-role="lockup"],
+.app-bar__places {
+  flex: none;
 }
 .app-bar__places {
   display: flex;
@@ -258,9 +260,36 @@
 }
 .app-bar__end {
   display: flex;
+  min-width: 0;
+  flex: 1 1 0;
   align-items: center;
+  justify-content: flex-end;
   gap: theme(spacing.3);
-  margin-left: auto;
+}
+/* The notice keeps one line in the bar: its words shorten, its buttons stay whole. */
+.app-bar__end > [data-band="notice"] :is([role="status"], [role="alert"]) > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.app-bar__end > .app-bar__player {
+  min-width: 0;
+}
+.app-bar__name {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 1279px) {
+  .app-bar {
+    gap: theme(spacing.4);
+    padding: 0 theme(spacing.6);
+  }
+  .app-bar__name {
+    max-width: 8rem;
+  }
 }
 .app-bar__player {
   padding-right: theme(spacing.1);

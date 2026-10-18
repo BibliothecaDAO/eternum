@@ -33,6 +33,7 @@ import {
   LAB_EMAIL_CODE,
   LAB_ENTRY_TERMS,
   LAB_GAME_KEYS,
+  LAB_NAMES,
   LAB_REWARDS,
   LAB_SEASON_PRIZES,
   LAB_PAYOUT_WALLETS,
@@ -108,7 +109,12 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
  */
 const useLabSession = (screen: LabScreen) => {
   useEffect(() => {
-    const session = { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: LAB_PAYOUT_WALLETS[screen] ?? null } };
+    const user = {
+      ...LAB_SESSION.user,
+      name: LAB_NAMES[screen] ?? LAB_SESSION.user.name,
+      address: LAB_PAYOUT_WALLETS[screen] ?? null,
+    };
+    const session = { ...LAB_SESSION, user };
     useIdentitySessionStore.getState().applySession(LAB_SCREENS[screen].signedIn ? session : null);
   }, [screen]);
 };

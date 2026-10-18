@@ -151,6 +151,9 @@ const eternum = game({
 export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
+  // notice: the desktop bar must hold both at its narrowest width.
+  "long-name": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
@@ -183,6 +186,11 @@ export const LAB_SCREENS = {
   "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
 } as const;
+
+/** The player's name on each screen whose player is not Maelis. */
+export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
+  "long-name": "WWWWWWWWWWWWWWWWWWWW",
+};
 
 /** The payout wallet linked on each screen's session; a screen not named here has none. */
 export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
