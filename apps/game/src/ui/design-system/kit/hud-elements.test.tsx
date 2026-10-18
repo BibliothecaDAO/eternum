@@ -9,6 +9,7 @@ import {
   HudIconButton,
   HudRow,
   HudSelect,
+  HudSlider,
   HudTableRow,
   HudWindow,
   HudWindowFoot,
@@ -130,6 +131,21 @@ describe("a row pressed to choose it", () => {
     act(() => chosen.click());
     act(() => sender.click());
     expect(pick.mock.calls).toEqual([["Hetokamohuti"]]);
+  });
+});
+
+describe("a slider", () => {
+  it("reports where it is dragged to, and fills its track to that share of its most", () => {
+    const moved = vi.fn();
+    act(() => root.render(<HudSlider label="Labor" value={25} max={100} onChange={moved} />));
+    const range = host.querySelector<HTMLInputElement>('input[type="range"]')!;
+    expect(range.style.getPropertyValue("--fill")).toBe("25%");
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    act(() => {
+      set.call(range, "60");
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(moved).toHaveBeenCalledWith(60);
   });
 });
 

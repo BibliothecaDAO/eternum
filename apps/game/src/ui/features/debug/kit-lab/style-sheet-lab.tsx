@@ -41,6 +41,7 @@ import {
   HudRing,
   HudRow,
   HudSelect,
+  HudSlider,
   HudSetting,
   HudSkeleton,
   HudSwitch,
@@ -463,6 +464,7 @@ const AmountSection = () => {
 };
 
 const TransferSection = () => {
+  const [share, setShare] = useState(35);
   const [rows, setRows] = useState([
     { icon: "wheat" as const, name: "Wheat", held: 6_400, value: 1_200 },
     { icon: "wood" as const, name: "Wood", held: 2_100, value: 0 },
@@ -480,6 +482,13 @@ const TransferSection = () => {
               setRows((current) => current.map((row, at) => (at === index ? { ...row, value: amount } : row)))
             }
           />
+          <div className="mt-4 flex max-w-sm flex-col gap-2">
+            <span data-lab-chrome className="text-xs text-white/50">
+              The slider on its own (Production&apos;s automation share), and disabled:
+            </span>
+            <HudSlider label="Labor share" value={share} max={100} onChange={setShare} />
+            <HudSlider label="Labor share, closed" value={40} max={100} disabled onChange={() => undefined} />
+          </div>
         </div>
       }
       today={

@@ -170,6 +170,37 @@ export const HudTroopAmount = ({
 /** The shares a transfer row's quick steps take of what is held. */
 const TRANSFER_STEPS = [0.25, 0.5, 0.75, 1] as const;
 
+/** How much of something, from none to `max`, dragged: the part taken fills the track in the age's accent. */
+export const HudSlider = ({
+  label,
+  value,
+  max,
+  step = 1,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  step?: number;
+  disabled?: boolean;
+  onChange: (value: number) => void;
+}) => (
+  <span className="ui-slider">
+    <input
+      type="range"
+      aria-label={label}
+      min={0}
+      max={max}
+      step={step}
+      value={value}
+      disabled={disabled}
+      style={{ "--fill": `${max > 0 ? (value / max) * 100 : 0}%` } as React.CSSProperties}
+      onChange={(event) => onChange(Number(event.target.value))}
+    />
+  </span>
+);
+
 /**
  * What a transfer moves: one row per resource, its painting and name, what is held, a slider, quick steps taking a share
  * of what is held, and the amount typed.
@@ -191,17 +222,7 @@ export const HudTransfer = ({
             <span className="ui-transfer__held">{formatAmount(row.held)} held</span>
           </span>
         </span>
-        <span className="ui-slider">
-          <input
-            type="range"
-            aria-label={row.name}
-            min={0}
-            max={row.held}
-            value={row.value}
-            style={{ "--fill": `${row.held > 0 ? (row.value / row.held) * 100 : 0}%` } as React.CSSProperties}
-            onChange={(event) => onChange(index, Number(event.target.value))}
-          />
-        </span>
+        <HudSlider label={row.name} value={row.value} max={row.held} onChange={(amount) => onChange(index, amount)} />
         <span className="ui-transfer__steps">
           {TRANSFER_STEPS.map((step) => (
             <HudButton
