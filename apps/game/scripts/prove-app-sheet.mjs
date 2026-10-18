@@ -20,6 +20,8 @@ const SETTLE_MS = 2_000;
 const SHEET_PAGES = {
   play: "home",
   lobby: "entry-choose/blitz/slot-blitz-1630",
+  // A launched game's lobby: its roster, the player's own seat ringed, and Enter.
+  "lobby-game": "blitz-seat/blitz/game-0x5245414c4d53-7",
   season: "season-running/season",
   results: "reward-sealed/results/0x5245414c4d53-7",
   "results-opened": "reward-lords/results/0x5245414c4d53-7",
