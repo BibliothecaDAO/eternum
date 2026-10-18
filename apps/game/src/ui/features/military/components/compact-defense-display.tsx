@@ -129,7 +129,7 @@ export const CompactDefenseDisplay = ({
   const valueTextClass = isBanner ? "text-hud-label" : "text-hud-label";
   const slotWidthClass = "w-full";
   const slotGapClass = isBanner ? "gap-0" : "gap-1.5";
-  const slotHeightClass = isBanner ? "min-h-[36px]" : "min-h-[48px]";
+  const slotHeightClass = isBanner ? "min-h-9" : "min-h-12";
   const baseSlotClasses = cn(
     "flex items-center rounded-md px-1 transition-colors",
     isBanner ? "py-0.5" : "py-1",

@@ -45,7 +45,7 @@ export const ArmyColumn = ({
   onSelectGuard,
   footer,
 }: ArmyColumnProps) => {
-  const accent = side === "attacker" ? "bg-red-500" : "bg-blue-500";
+  const accent = side === "attacker" ? "bg-hud-enemy" : "bg-hud-ally";
   // The army's own maximum where the chain gives it, else what its type and tier allow.
   const maxStamina = StaminaManager.getMaxStamina(army.troopType, army.tier, army.maxStamina);
 

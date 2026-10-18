@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 
@@ -7,6 +6,7 @@ import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";
 import { acceptsTroops } from "./transfer-eligibility";
 import { TroopBadge } from "./transfer-troop-badge";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 interface SlotTroopInfo {
   slot: number;
@@ -114,9 +114,8 @@ export const TransferSlotSelection = ({
             <div className="text-hud-label truncate text-hud-accent">Balance</div>
             {renderTroopPill(balanceOption.troop)}
             {balanceOption.disabledReason && (
-              <span className="self-start border border-hud-bad bg-danger/10 text-hud-bad px-1.5 py-0.5 rounded text-hud-label uppercase tracking-wide flex items-center gap-1.5">
-                <SemanticIcon name="warning" className="w-3 h-3" />
-                Explorer not owned by this structure
+              <span className="self-start">
+                <HudChip tone="bad">Explorer not owned by this structure</HudChip>
               </span>
             )}
           </button>
@@ -149,14 +148,7 @@ export const TransferSlotSelection = ({
           const orderNumber = orderIndex;
           const isFrontline = frontlineSlot === slotId;
           const isFinalLine = lastGuardSlot === slotId;
-          const orderBadgeClass = clsx(
-            "border rounded px-1.5 py-0.5 text-hud-label uppercase tracking-wide",
-            isFrontline
-              ? "border-hud-bad bg-danger/10 text-hud-bad"
-              : isFinalLine
-                ? "border-hud-line-strong bg-hud-hover text-hud-accent"
-                : "border-hud-line bg-hud-well text-hud-muted",
-          );
+          const orderBadgeTone = isFrontline ? "bad" : undefined;
           const orderBadgeText = (() => {
             if (isFrontline) return "Hit first";
             if (orderNumber === 2) return "Hit second";
@@ -197,9 +189,13 @@ export const TransferSlotSelection = ({
 
               {renderTroopPill(troopInfo)}
 
-              {orderedSlots.length > 0 && <span className={orderBadgeClass}>{orderBadgeText}</span>}
+              {orderedSlots.length > 0 && <HudChip tone={orderBadgeTone}>{orderBadgeText}</HudChip>}
 
-              {isCooldownActive && <GuardCooldownBadge seconds={cooldownSeconds} className="mt-1 self-start" />}
+              {isCooldownActive && (
+                <span className="mt-1 self-start">
+                  <GuardCooldownBadge seconds={cooldownSeconds} />
+                </span>
+              )}
             </button>
           );
         })}

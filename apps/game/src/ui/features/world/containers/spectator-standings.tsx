@@ -10,8 +10,11 @@ import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
+
+/** Rank, player, points and the last tick's change. */
+const STANDINGS_COLS = "2rem 1fr 4rem 3rem";
 
 /** The standings table without a frame or title, so the desktop panel and the compact sheet host the same rows. */
 export function SpectatorStandingsBody() {
@@ -46,12 +49,12 @@ function StandingsRows() {
 
   return (
     <>
-      <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-hud-label text-hud-cue">
+      <HudTableHead cols={STANDINGS_COLS}>
         <span>#</span>
         <span>Player</span>
         <span className="text-right">Points</span>
         <span className="text-right">Δ tick</span>
-      </div>
+      </HudTableHead>
       {rows.map((row) => {
         const address = BigInt(row.address);
         const name = displayPlayerName(address, players.find((player) => player.address === address)?.name);
@@ -59,20 +62,17 @@ function StandingsRows() {
           .filter((structure) => structure.owner === address && structure.base.category === StructureType.Realm)
           .toSorted((a, b) => (a.entity_id < b.entity_id ? -1 : 1))[0];
         return (
-          <button
+          <HudTableRow
             key={row.address}
-            type="button"
+            cols={STANDINGS_COLS}
+            label={`${name}: ${Math.floor(row.totalPoints).toLocaleString()} points`}
+            title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
+            selected={row.pinned}
             disabled={!capital}
-            aria-current={row.pinned ? "true" : undefined}
             onClick={() => {
               const site = capital && structureMapPosition(store, capital);
               if (site) navigate(Position.fromContract(site));
             }}
-            title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
-            className={cn(
-              "grid w-full grid-cols-[2rem_1fr_4rem_3rem] items-center px-3 py-2 font-sans text-hud-label normal-case tracking-normal text-hud-accent enabled:hover:bg-hud-hover disabled:opacity-60",
-              row.pinned && "bg-hud-chosen border-t border-hud-line",
-            )}
           >
             <span>{row.rank}</span>
             <span className="truncate text-left">{name}</span>
@@ -81,7 +81,7 @@ function StandingsRows() {
               {row.delta > 0 ? "+" : ""}
               {Math.floor(row.delta)}
             </span>
-          </button>
+          </HudTableRow>
         );
       })}
       {!rows.length && <p className="px-3 py-4 text-hud-label text-hud-muted">No points scored yet</p>}

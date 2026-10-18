@@ -24,7 +24,7 @@ const isDeploymentLevel = (level: number | null | undefined): level is number =>
 
 const Metric = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded border border-hud-divider bg-hud-well px-2 py-1">
-    <div className="text-hud-label uppercase tracking-[0.12em] text-hud-muted">{label}</div>
+    <div className="text-hud-label uppercase text-hud-muted">{label}</div>
     <div className="mt-1 text-hud-label text-hud-accent">{value}</div>
   </div>
 );
@@ -72,7 +72,7 @@ export const DeploymentStrengthSummary = ({
   if (!collapsible) {
     return (
       <div className={cn("rounded border border-hud-line bg-hud-well px-2 py-2", className)}>
-        <div className="text-hud-label uppercase tracking-[0.16em] text-hud-muted">Deployment & Strength</div>
+        <div className="text-hud-label uppercase text-hud-muted">Deployment & Strength</div>
         <div className="mt-2">{metrics}</div>
       </div>
     );
@@ -88,10 +88,8 @@ export const DeploymentStrengthSummary = ({
         aria-controls={metricsId}
       >
         <span className="flex items-center gap-2">
-          <span className="text-hud-label uppercase tracking-[0.16em] text-hud-muted">Deployment & Strength</span>
-          <span className="text-hud-label uppercase tracking-[0.12em] text-hud-cue">
-            {isExpanded ? "Hide details" : "Show details"}
-          </span>
+          <span className="text-hud-label uppercase text-hud-muted">Deployment & Strength</span>
+          <span className="text-hud-label uppercase text-hud-cue">{isExpanded ? "Hide details" : "Show details"}</span>
         </span>
         <SemanticIcon
           name="chevron-down"

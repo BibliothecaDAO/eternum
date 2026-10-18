@@ -1,5 +1,4 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import Button from "@/ui/design-system/atoms/button";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { GuildInviteList } from "@/ui/features/social/guilds/guild-invites-list";
 import { GuildMemberList } from "./guild-member-list";
@@ -13,6 +12,7 @@ import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
 import { env } from "../../../../../env";
+import { HudButton, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
 interface GuildMembersProps {
   players: PlayerInfo[];
@@ -134,7 +134,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h2 className="truncate text-hud-title text-hud-accent">{selectedGuild?.name || "Tribe"}</h2>
-            <p className="mt-1 text-hud-label uppercase tracking-[0.16em] text-hud-muted">
+            <p className="mt-1 text-hud-label uppercase text-hud-muted">
               {selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}
             </p>
           </div>
@@ -155,24 +155,14 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
 
       {userIsGuildMaster && (
         <div className="mb-3 grid grid-cols-2 gap-2">
-          <Button
-            className={`flex items-center justify-center gap-1.5 ${viewGuildInvites ? "" : "bg-hud-hover border-hud-line-strong"}`}
-            variant="outline"
-            size="xs"
-            onClick={() => setViewGuildInvites(false)}
-          >
-            <SemanticIcon name="people" className="h-4 w-4" />
-            <span>Members ({memberCount})</span>
-          </Button>
-          <Button
-            className={`flex items-center justify-center gap-1.5 ${viewGuildInvites ? "bg-hud-hover border-hud-line-strong" : ""}`}
-            variant="outline"
-            size="xs"
-            onClick={() => setViewGuildInvites(true)}
-          >
-            <SemanticIcon name="mail" className="h-4 w-4" />
-            <span>Invites ({inviteCount})</span>
-          </Button>
+          <HudTabs
+            tabs={[
+              { key: "members", label: "Members", count: memberCount, icon: "people" },
+              { key: "invites", label: "Invites", count: inviteCount, icon: "mail" },
+            ]}
+            value={viewGuildInvites ? "invites" : "members"}
+            onChange={(key) => setViewGuildInvites(key === "invites")}
+          />
         </div>
       )}
 
@@ -198,25 +188,24 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
 
       <div className="mt-4 flex flex-wrap gap-2">
         {userGuild?.entityId === selectedGuildEntityId && (
-          <Button
-            className="flex-1 flex items-center justify-center gap-1.5"
-            isLoading={isLoading}
-            variant="red"
+          <HudButton
+            kind="secondary"
+            tone="bad"
+            icon="minus"
+            busy={isLoading ? "Leaving…" : undefined}
             onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
           >
-            <SemanticIcon name="minus" className="h-4 w-4" />
-            <span>{userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}</span>
-          </Button>
+            {userGuild.isOwner ? "Disband Tribe" : "Leave Tribe"}
+          </HudButton>
         )}
         {!userGuild?.entityId && (selectedGuild?.isPublic || userIsInvited) && (
-          <Button
-            className="flex-1 flex items-center justify-center gap-1.5"
-            isLoading={isLoading}
-            variant="primary"
+          <HudButton
+            kind="primary"
+            busy={isLoading ? "Joining…" : undefined}
             onClick={() => joinGuild(selectedGuildEntityId)}
           >
             Join Tribe
-          </Button>
+          </HudButton>
         )}
       </div>
     </div>
@@ -227,7 +216,7 @@ const GuildMetaPill = ({ icon: Icon, label, value }: { icon: IconMeaning; label:
   <div className="rounded-md border border-hud-divider bg-hud-well px-2 py-1.5 text-hud-label">
     <div className="flex items-center gap-1 text-hud-muted">
       <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
-      <span className="uppercase tracking-[0.14em]">{label}</span>
+      <span className="uppercase">{label}</span>
     </div>
     <div className="mt-1 truncate text-hud-strong text-hud-accent">{value}</div>
   </div>

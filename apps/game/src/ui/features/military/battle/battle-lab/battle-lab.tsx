@@ -5,7 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { HudWindow } from "@/ui/design-system/kit/hud-elements";
+import { HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   type Army,
@@ -407,11 +407,14 @@ export const BattleLab = ({
             </div>
 
             {!state.hasDefender ? (
-              <div className="rounded-lg border border-hud-good bg-emerald-900/20 px-4 py-3 text-center text-hud-strong text-hud-good">
-                {rangedClaimBlocked
-                  ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
-                  : "No defending troops — this target can be claimed without a battle."}
-              </div>
+              <HudNotice
+                tone="good"
+                line={
+                  rangedClaimBlocked
+                    ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
+                    : "No defending troops — this target can be claimed without a battle."
+                }
+              />
             ) : (
               prediction && <OutcomeBanner outcomes={prediction.outcomes} />
             )}

@@ -3,6 +3,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ContractAddress, GuildMemberInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 interface GuildMemberListProps {
   guildMembers: GuildMemberInfo[];
@@ -75,11 +76,7 @@ const GuildMemberRow = ({
       >
         {guildMember.isGuildMaster && <SemanticIcon name="crown" className="h-4 w-4 shrink-0 " />}
         <span className="truncate text-hud-strong text-hud-accent">{guildMember.name}</span>
-        {guildMember.isUser && (
-          <span className="shrink-0 rounded-full border border-hud-warn bg-amber-200/20 px-2 py-0.5 text-hud-label uppercase tracking-[0.16em] text-hud-warn">
-            You
-          </span>
-        )}
+        {guildMember.isUser && <HudChip tone="warn">You</HudChip>}
       </button>
 
       {kickButtonEnabled && (

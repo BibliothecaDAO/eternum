@@ -1,9 +1,9 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import Button from "@/ui/design-system/atoms/button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { MAX_NAME_LENGTH } from "@bibliothecadao/types";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
 interface CreateGuildButtonProps {
   handleCreateGuild: (guildName: string, isPublic: boolean) => void;
@@ -71,9 +71,9 @@ export const CreateGuildButton = ({
           )}
         </button>
 
-        <Button variant="primary" onClick={handleSubmit} disabled={!guildName} className="min-w-[120px]">
+        <HudButton kind="primary" onClick={handleSubmit} disabled={!guildName}>
           Confirm
-        </Button>
+        </HudButton>
       </div>
     </div>
   );

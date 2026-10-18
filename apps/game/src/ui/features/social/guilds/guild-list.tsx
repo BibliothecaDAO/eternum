@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
+import { HudChip, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -22,8 +22,9 @@ interface GuildCustom extends GuildInfo {
   isPublic?: boolean;
 }
 
-const GUILD_GRID_TEMPLATE =
-  "grid-cols-[68px_minmax(0,_1.3fr)_minmax(0,_0.85fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1fr)_minmax(0,_0.85fr)]";
+/** Rank, name, members, structures, points and the two prizes. */
+const GUILD_COLS =
+  "68px minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 0.95fr) minmax(0, 0.95fr) minmax(0, 1fr) minmax(0, 0.85fr)";
 
 export const GuildListHeader = ({
   activeSort,
@@ -63,24 +64,16 @@ export const GuildListHeader = ({
   }, []);
 
   return (
-    <SortPanel
-      className={clsx(
-        "grid gap-x-4 items-center pb-3 border-b border-hud-line sticky top-0 z-10 bg-hud-well backdrop-blur-sm px-4",
-        GUILD_GRID_TEMPLATE,
-      )}
-    >
+    <HudTableHead cols={GUILD_COLS}>
       {sortingParams.map(({ label, sortKey, align }) => (
         <SortButton
           key={sortKey}
           label={label}
           sortKey={sortKey}
           activeSort={activeSort}
-          className={clsx(
-            "w-full gap-2 text-hud-label uppercase tracking-[0.16em] transition-colors hover:text-hud-warn",
-            align,
-          )}
+          className={clsx("w-full gap-2 transition-colors hover:text-hud-accent", align)}
           classNameCaret="w-2.5 h-2.5"
-          activeClassName="text-hud-warn"
+          activeClassName="text-hud-accent"
           inactiveClassName="text-hud-muted"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
@@ -90,55 +83,37 @@ export const GuildListHeader = ({
           }}
         />
       ))}
-    </SortPanel>
+    </HudTableHead>
   );
 };
 
-export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () => void }) => {
-  return (
-    <div
-      className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
-        "border border-hud-line-strong bg-hud-chosen hover:bg-hud-chosen": guild.isMember,
-        "border border-transparent bg-hud-well hover:border-hud-line hover:bg-hud-well": !guild.isMember,
-      })}
-    >
-      <div
-        className={clsx(
-          "grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-hud-label",
-          GUILD_GRID_TEMPLATE,
+export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () => void }) => (
+  // The player's own tribe is lit, as their own row is on the players' table.
+  <div className={clsx("mb-1 rounded-md", guild.isMember && "bg-hud-hover")}>
+    <HudTableRow cols={GUILD_COLS} label={`${guild.name}: its members`} onClick={onClick}>
+      <span className="text-center text-hud-muted">{guild.rank === null ? "—" : `#${guild.rank}`}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        {guild.isPublic ? (
+          <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-hud-good" />
+        ) : (
+          <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-hud-warn" />
         )}
-        onClick={onClick}
-      >
-        <p className="text-center italic text-hud-accent">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
-        <div className="flex min-w-0 items-center gap-2">
-          {guild.isPublic ? (
-            <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-hud-good" />
-          ) : (
-            <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-hud-warn" />
-          )}
-          <p className="truncate text-hud-strong text-hud-accent">{guild.name}</p>
-          {guild.isMember && (
-            <span className="shrink-0 rounded-full border border-hud-warn bg-amber-200/20 px-2 py-0.5 text-hud-label uppercase tracking-[0.16em] text-hud-warn">
-              Your Tribe
-            </span>
-          )}
-        </div>
-        <p className="text-center text-hud-body text-hud-accent">{guild.memberCount}</p>
-        <p className="text-center text-hud-body text-hud-accent">
-          {(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}
-        </p>
-        <p className="text-center text-hud-strong text-hud-warn">
-          {guild.points === null ? "—" : currencyIntlFormat(guild.points)}
-        </p>
-        <div className="flex items-center justify-center gap-1 text-hud-body text-hud-accent">
-          {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
-          <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" withTooltip={false} />
-        </div>
-        <div className="flex items-center justify-center gap-1 text-hud-body text-hud-accent">
-          {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
-          <SemanticIcon name="strk" size={16} className="h-4 w-4" />
-        </div>
+        <span className="truncate text-hud-strong">{guild.name}</span>
+        {guild.isMember && <HudChip tone="warn">Your Tribe</HudChip>}
       </div>
-    </div>
-  );
-};
+      <span className="text-center">{guild.memberCount}</span>
+      <span className="text-center">{(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}</span>
+      <span className="text-center text-hud-strong text-hud-gold">
+        {guild.points === null ? "—" : currencyIntlFormat(guild.points)}
+      </span>
+      <span className="flex items-center justify-center gap-1">
+        {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
+        <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" withTooltip={false} />
+      </span>
+      <span className="flex items-center justify-center gap-1">
+        {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
+        <SemanticIcon name="strk" size={16} className="h-4 w-4" />
+      </span>
+    </HudTableRow>
+  </div>
+);

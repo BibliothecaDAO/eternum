@@ -19,7 +19,7 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
   return (
     <div
       className={cn(
-        "modal-no-drag absolute right-3 top-3 z-50 max-h-[80%] w-80 overflow-y-auto rounded-xl p-4",
+        "modal-no-drag absolute right-3 top-3 z-50 max-h-full w-80 overflow-y-auto rounded-xl p-4",
         OVERLAY_SURFACE_BASE,
       )}
       onMouseDown={(event) => event.stopPropagation()}
@@ -31,7 +31,7 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
       <div className="space-y-2">
         {Object.entries(parameters).map(([key, value]) => (
           <label key={key} className="flex flex-col gap-1">
-            <span className="text-hud-label uppercase tracking-[0.12em] text-hud-muted">
+            <span className="text-hud-label uppercase text-hud-muted">
               {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
             </span>
             <input

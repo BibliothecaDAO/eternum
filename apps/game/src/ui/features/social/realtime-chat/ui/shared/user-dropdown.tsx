@@ -3,6 +3,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import React, { useState, useMemo } from "react";
 import type { PlayerPresence } from "../../model/types";
 import { UserAvatar } from "./user-avatar";
+import { HudChip, HudField } from "@/ui/design-system/kit/hud-elements";
 
 interface UserDropdownProps {
   users: PlayerPresence[];
@@ -53,10 +54,10 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
         <button onClick={() => onUserSelect(user.playerId)} className="flex items-center flex-1">
           <UserAvatar name={displayLabel} address={user.playerId} isOnline={!isOffline} size="sm" className="mr-2" />
           <span className="text-hud-body truncate text-hud-ink">{displayLabel}</span>
-          {!isOffline && <div className="ml-auto w-2 h-2 bg-green-500 rounded-full" />}
+          {!isOffline && <div className="ml-auto w-2 h-2 bg-hud-good rounded-full" />}
           {unreadCount > 0 && (
-            <span className="ml-1 animate-pulse bg-red-500 text-hud-ink text-hud-label px-2 py-0.5 bg-red/30 rounded-full">
-              {unreadCount}
+            <span className="ml-1 animate-pulse">
+              <HudChip tone="bad">{unreadCount}</HudChip>
             </span>
           )}
         </button>
@@ -89,19 +90,19 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({
 
   return (
     <div
-      className={`user-dropdown absolute top-full left-0 mt-1 w-64 max-h-[400px] bg-hud-well border border-hud-line rounded shadow-lg z-50 overflow-hidden ${className}`}
+      className={`user-dropdown absolute top-full left-0 mt-1 w-64 max-h-96 bg-hud-well border border-hud-line rounded shadow-lg z-50 overflow-hidden ${className}`}
     >
       <div className="px-2 py-2 border-b border-hud-line">
-        <input
+        <HudField
           type="text"
           placeholder="Search users..."
+          aria-label="Search users"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-2 py-1.5 bg-hud-chosen border border-hud-line rounded text-hud-accent placeholder-gold/50 text-hud-body focus:outline-none focus:border-hud-line-strong"
+          onChange={setSearchQuery}
         />
       </div>
 
-      <div className="overflow-y-auto max-h-[320px]">
+      <div className="overflow-y-auto max-h-80">
         {usersWithUnread.length > 0 && (
           <section className="mb-2 px-2 py-2">
             <h3 className="px-1 pb-1 text-hud-label uppercase tracking-wide text-hud-muted">
