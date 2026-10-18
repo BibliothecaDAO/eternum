@@ -3,7 +3,7 @@ import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
-import { useCallback, useState } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { EventsCard } from "./events-card";
 import { NextUp } from "./next-up";
 
@@ -20,37 +20,50 @@ export const GuidedRail = () => {
   const setChatOpen = useCallback((open: boolean) => setFocus(open ? "chat" : "none"), []);
   const { isMapView } = useQuery();
   return (
-    <aside
-      {...HUD_COLUMN_MARK}
-      aria-label="Guided rail"
-      className="pointer-events-none fixed bottom-4 right-3 top-hud-header z-hud-rail flex w-hud-column flex-col gap-2"
-    >
+    <RailFrame>
       <NextUp />
       <EventsCard logOpen={focus === "log"} onLogToggle={toggleLog} />
       {isMapView ? <PickedMapTile /> : <PickedBuilding />}
-      <div className="mt-auto">
-        <HudChatWindow open={focus === "chat"} onOpenChange={setChatOpen} />
-      </div>
-    </aside>
+      <HudChatWindow open={focus === "chat"} onOpenChange={setChatOpen} />
+    </RailFrame>
   );
 };
 
-const TILE_DETAILS = "pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin";
+/**
+ * The rail's frame: the right column, from under the top bar down to the base band. Its stacking rule: the panels that
+ * are always on keep their height; the picked tile's details and the open chat share the room left, each giving up
+ * room in proportion to its height, the details scrolling inside theirs and chat keeping at least its least height
+ * (`chat-least`), so neither covers the other.
+ */
+export const RailFrame = ({ children }: { children: ReactNode }) => (
+  <aside
+    {...HUD_COLUMN_MARK}
+    aria-label="Guided rail"
+    className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex w-hud-column flex-col gap-2"
+  >
+    {children}
+  </aside>
+);
+
+/** The picked tile's details in the rail: they shrink with the room the rail leaves them and scroll inside it. */
+export const TileDetails = ({ children }: { children: ReactNode }) => (
+  <div
+    aria-label="Tile details"
+    className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin"
+  >
+    {children}
+  </div>
+);
 
 /** The building picked in the realm view, with its actions, in one panel. */
 const PickedBuilding = () => {
   const building = useSelectedTileDetails();
-  if (!building) return null;
-  return (
-    <div aria-label="Tile details" className={TILE_DETAILS}>
-      {building}
-    </div>
-  );
+  return building ? <TileDetails>{building}</TileDetails> : null;
 };
 
 /** The picked map tile as the tile panel draws it: what stands on it, then its biome. */
 const PickedMapTile = () => (
-  <div aria-label="Tile details" className={TILE_DETAILS}>
+  <TileDetails>
     <SelectedWorldmapEntity />
-  </div>
+  </TileDetails>
 );

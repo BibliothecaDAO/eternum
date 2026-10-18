@@ -54,7 +54,7 @@ const LeftColumn = () => {
     <aside
       {...HUD_COLUMN_MARK}
       aria-label="Holdings"
-      className="pointer-events-none fixed bottom-4 left-3 top-hud-header z-hud-column flex w-hud-column flex-col gap-2"
+      className="pointer-events-none fixed bottom-hud-base left-3 top-hud-header z-hud-column flex w-hud-column flex-col gap-2"
     >
       {ordersAllowed ? (
         <HoldingsAndCard />

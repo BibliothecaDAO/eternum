@@ -66,14 +66,14 @@ export interface CoachStep {
 /**
  * What scores most for the player right now, then what scores next. With no army in the field: raise one where troops
  * are on hand, or build a barracks. Then a crate an army stands beside (+250, opened from here); an army that can
- * explore (+5 a tile); a crate farther off; The Vanguard's camps and rifts (+250) and Hyperstructures (+1,000, then
+ * explore (+5 a tile: the selected one, else the newest); a crate farther off; The Vanguard's camps and rifts (+250) and Hyperstructures (+1,000, then
  * points every second). A target the nearest army would surely lose to asks for its home realm's level-up first, which
  * raises bigger armies. Once the army a step names is selected, the step says how to take it on the map instead.
  */
 export const coachSteps = (state: CoachState): CoachStep[] => {
   if (state.armies.length === 0) return [raiseStep(state)];
   const besideCrate = nearest("crate", state, (pair) => pair.distance === 1);
-  const explorer = state.armies.find((army) => army.canExplore);
+  const explorer = armyToExplore(state.armies);
   return [
     ...(besideCrate ? [openCrateStep(besideCrate, state.grants)] : []),
     ...(explorer ? [exploreStep(explorer, state.grants)] : []),
@@ -98,6 +98,15 @@ export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHa
         verb: "Build a barracks",
         act: { kind: "build" },
       };
+
+/**
+ * The army Next up sends exploring: the selected one when it can, else the newest that can (entity ids rise as armies
+ * are raised), the one the player most likely just raised for it.
+ */
+const armyToExplore = (armies: readonly CoachArmy[]): CoachArmy | undefined => {
+  const able = armies.filter((army) => army.canExplore);
+  return able.find((army) => army.selected) ?? able.toSorted((left, right) => right.entityId - left.entityId)[0];
+};
 
 const openCrateStep = ({ army, target }: Pair, grants: PointsGrants): CoachStep => ({
   key: `coach:open-crate:${target.hex.col}:${target.hex.row}`,

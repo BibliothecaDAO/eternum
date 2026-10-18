@@ -22,11 +22,14 @@
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
 }
+/* The header band: the name, then the cue on the same line while both fit whole. A name is never cut to make room for
+   its cue: the cue wraps under it instead, at the right, and a name wider than the whole band is cut alone. */
 .ui-panel__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: theme(spacing.2);
+  gap: theme(spacing.1) theme(spacing.2);
   border-bottom: 1px solid var(--hud-divider);
   padding: theme(spacing.2) theme(spacing.3);
   color: var(--hud-muted);
@@ -71,6 +74,7 @@ button.ui-panel__name {
 }
 .ui-panel__cue {
   flex: none;
+  margin-left: auto;
   color: var(--hud-cue);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);

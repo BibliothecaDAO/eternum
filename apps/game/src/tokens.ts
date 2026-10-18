@@ -552,13 +552,16 @@ export const HUD_PHONE = {
 
 /**
  * The HUD's frame on a desktop, as Tailwind's `hud-*` spacing (`w-hud-column`, `top-hud-header`, `max-h-hud-list`): its
- * two columns' width, where they start under the top bar, the foot's inset that keeps the order bubbles clear of both
- * columns, how tall a list grows before it scrolls, the minimap's least height, the compact HUD's section height and two
- * rows of resource rings with their badges; and the chat dock opened: its width, its tall height, and the cap that keeps it off half a laptop screen.
+ * two columns' width, where they start under the top bar and where they end above the screen's foot (the band under
+ * them is the build tag's row, so nothing in a column covers it), the foot's inset that keeps the order bubbles clear
+ * of both columns, how tall a list grows before it scrolls, the minimap's least height, the compact HUD's section height
+ * and two rows of resource rings with their badges; and the chat dock opened: its width, its tall height, and the cap
+ * that keeps it off half a laptop screen.
  */
 export const HUD_LAYOUT = {
   column: "320px",
   header: "60px",
+  base: "16px",
   foot: "344px",
   list: "40vh",
   minimap: "160px",
@@ -571,15 +574,18 @@ export const HUD_LAYOUT = {
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-pane": "min(60vh, 520px)",
+  /** The open chat's least height in the right column, its strip included: the composer and a few lines of history. */
+  "chat-least": "300px",
   "chat-cap": "45vw",
   /**
-   * The Frontier HUD's frame on a desktop (hud-bands): the status strip, the page beside the map and its top and
-   * room, the stage between the columns, the guide's place, the action foot, the dock, the places and the chat.
+   * The Frontier HUD's frame on a desktop (hud-bands): the status strip, the page beside the map, its top and its room
+   * (from that top down to the base band: 76px + 16px), the stage between the columns, the guide's place, the action
+   * foot, the dock, the places and the chat.
    */
   "frontier-strip": "560px",
   "frontier-page": "440px",
   "frontier-page-top": "76px",
-  "frontier-page-room": "calc(100% - 84px)",
+  "frontier-page-room": "calc(100% - 92px)",
   "frontier-stage-top": "150px",
   "frontier-stage-bottom": "140px",
   "frontier-guide": "380px",

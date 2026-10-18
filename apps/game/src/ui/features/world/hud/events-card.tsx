@@ -2,7 +2,7 @@ import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { QuickFeedRows, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
-import { useRef } from "react";
+import { forwardRef, type ReactNode, useRef } from "react";
 
 /**
  * The rail's events: the client's toasts (offline, notices, the clock's milestones), then the game's three newest
@@ -21,29 +21,40 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
           isInsideAnchor={(target) => target instanceof Node && Boolean(button.current?.contains(target))}
         />
       )}
-      <HudPanel
-        label="Events"
-        title="Events"
-        cue={
-          <span className="inline-flex items-center gap-3">
-            <EventsFilterSwitch />
-            <HudButton
-              ref={button}
-              kind="quiet"
-              size="sm"
-              aria-label="Log"
-              aria-expanded={logOpen}
-              onClick={onLogToggle}
-            >
-              Log
-              <UnreadFeedBadge count={unread} />
-            </HudButton>
-          </span>
-        }
-        bodyClassName="flex flex-col gap-1 empty:hidden"
-      >
+      <EventsPanel ref={button} logOpen={logOpen} onLogToggle={onLogToggle} unread={unread}>
         <QuickFeedRows />
-      </HudPanel>
+      </EventsPanel>
     </>
   );
 };
+
+/** The events' panel: its name, the filter and Log with its unread count, over the rows it is given. */
+export const EventsPanel = forwardRef<
+  HTMLButtonElement,
+  { logOpen: boolean; onLogToggle: () => void; unread: number; children: ReactNode }
+>(({ logOpen, onLogToggle, unread, children }, logButton) => (
+  <HudPanel
+    label="Events"
+    title="Events"
+    cue={
+      <span className="inline-flex items-center gap-3">
+        <EventsFilterSwitch />
+        <HudButton
+          ref={logButton}
+          kind="quiet"
+          size="sm"
+          aria-label="Log"
+          aria-expanded={logOpen}
+          onClick={onLogToggle}
+        >
+          Log
+          <UnreadFeedBadge count={unread} />
+        </HudButton>
+      </span>
+    }
+    bodyClassName="flex flex-col gap-1 empty:hidden"
+  >
+    {children}
+  </HudPanel>
+));
+EventsPanel.displayName = "EventsPanel";

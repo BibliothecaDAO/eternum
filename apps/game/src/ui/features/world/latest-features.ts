@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Chat and the right column fit",
+    description:
+      "Open chat now shares the right column with the selected army's details instead of covering its troops, stamina and biome. Next up's Select the army picks your newest army that can explore. Events keeps its name beside the Log count, chat's oldest messages show their date, and the build tag no longer sits under the chat strip.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-18",
     title: "Ring badges no longer overlap",
     description:
       "A resource ring's building count and its time left share the top of the ring and never cover each other or the next ring. The time shows its largest unit (7h, 2d, then weeks or years for long ones), and production that never runs out, like a farm's wheat, shows no countdown. Screen readers hear the full time left, or that production never runs out.",

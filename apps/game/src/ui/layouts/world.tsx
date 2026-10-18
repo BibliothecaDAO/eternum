@@ -1,7 +1,6 @@
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { Leva } from "leva";
-import { env } from "../../../env";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { DevSyncOverlay } from "../debug/dev-sync-overlay";
 import { ActionTimelineOverlay } from "../debug/action-timeline-overlay";
@@ -30,6 +29,7 @@ import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
 import { MotionLayer } from "@/ui/motion/motion-layer";
 import { PlayOverlayManager } from "./play-overlay-manager";
+import { BuildTag } from "./build-tag";
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -60,7 +60,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         {/* Utility overlays */}
         <Leva hidden={!DEV_MODE_ENABLED} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
-        <VersionDisplay />
+        <BuildTag />
         <ArmyMovementLatencyOverlay />
         <ActionTimelineOverlay />
         {DEV_MODE_ENABLED && <DevSyncOverlay />}
@@ -150,11 +150,3 @@ const ArenaHud = () => {
     </>
   );
 };
-
-const VersionDisplay = () => (
-  <div className="pointer-events-auto absolute bottom-4 right-6 text-hud-label text-hud-cue hover:text-hud-ink max-lg:hidden">
-    <a target="_blank" href={"https://github.com/BibliothecaDAO/eternum"} rel="noopener noreferrer">
-      {env.VITE_PUBLIC_GAME_VERSION}
-    </a>
-  </div>
-);

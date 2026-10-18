@@ -114,3 +114,19 @@ it("asks for the home realm's level-up before a target the army would surely los
     },
   ]);
 });
+
+it("sends the newest army that can explore, or the selected one when it can", () => {
+  const explore = (armies: CoachArmy[]) => steps(armies).find(({ key }) => key.startsWith("coach:explore"));
+  const stolsli = army(4, 0);
+  const raisedLater = army(9, 3, { home: { realmId: 8, name: "Hetokamohuti" } });
+  const resting = army(12, 5, { canExplore: false });
+
+  expect(explore([stolsli, raisedLater, resting])?.act).toEqual({ kind: "go", armyId: 9, target: null });
+  expect(explore([raisedLater, stolsli])?.act).toEqual({ kind: "go", armyId: 9, target: null });
+  expect(explore([{ ...stolsli, selected: true }, raisedLater])?.key).toBe("coach:explore:4:selected");
+  expect(explore([stolsli, raisedLater, { ...resting, selected: true }])?.act).toEqual({
+    kind: "go",
+    armyId: 9,
+    target: null,
+  });
+});

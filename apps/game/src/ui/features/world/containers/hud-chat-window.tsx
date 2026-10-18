@@ -55,9 +55,10 @@ export function useGameChat(open: boolean) {
   return { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread };
 }
 
-/** The strip at the foot of the right column: last message and unread count. Open, a fixed-height pane rises
- *  above the strip and the details above keep whatever room is left. `foldToIcon` shrinks the strip to its icon and
- *  unread count on a phone held upright, when something else needs the room. */
+/** The strip at the foot of the right column: last message and unread count. Open, a pane rises above the strip, as
+ *  tall as `chat-pane` while there is room; in a column short of room it gives up height with what stands above it,
+ *  down to `chat-least` (the rail's stacking rule). `foldToIcon` shrinks the strip to its icon and unread count on a
+ *  phone held upright, when something else needs the room. */
 export function HudChatWindow({
   open,
   onOpenChange,
@@ -107,9 +108,9 @@ export function HudChatWindow({
         : "No messages yet";
 
   return (
-    <div className="mt-auto flex shrink-0 flex-col gap-2">
+    <div className={cn("mt-auto flex flex-col gap-2", open ? "min-h-hud-chat-least" : "shrink-0")}>
       {open && (
-        <div ref={pane} className="pointer-events-auto flex h-hud-chat-pane shrink-0 flex-col">
+        <div ref={pane} className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
           <HudPanel
             label="Chat"
             collapsible={false}
@@ -128,7 +129,7 @@ export function HudChatWindow({
           </HudPanel>
         </div>
       )}
-      <div className={cn("pointer-events-auto", foldToIcon && "portrait:w-auto portrait:self-start")}>
+      <div className={cn("pointer-events-auto shrink-0", foldToIcon && "portrait:w-auto portrait:self-start")}>
         <HudButton
           kind="quiet"
           icon="chat"
