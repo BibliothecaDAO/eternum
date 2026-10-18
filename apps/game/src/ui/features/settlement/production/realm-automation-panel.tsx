@@ -10,8 +10,16 @@ import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
-import { HudButton, HudEmpty, HudNotice, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import {
+  HudButton,
+  HudEmpty,
+  HudField,
+  HudNotice,
+  HudPanel,
+  HudRow,
+  HudSlider,
+} from "@/ui/design-system/kit/hud-elements";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   resolveProductionPercentages,
   REALM_PRESETS,
@@ -606,62 +614,48 @@ export const RealmAutomationPanel = ({
                 const overBudgetResources = impactedResources.filter(
                   (id) => (aggregatedUsageRecord[id] ?? 0) > MAX_RESOURCE_ALLOCATION_PERCENT,
                 );
-                const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-                  const next = clampPercent(Number(event.target.value));
-                  onChange(next);
-                };
-
                 return (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-gold/80">
-                      <span>{sliderLabel}</span>
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          min={0}
-                          max={MAX_RESOURCE_ALLOCATION_PERCENT}
-                          step={sliderStep}
-                          value={value}
-                          onChange={handleInputChange}
-                          className="w-16 rounded border border-gold/30 bg-black/40 px-2 py-1 text-right text-xs text-gold focus:border-gold/60 focus:outline-none"
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-hud-label text-hud-muted">{sliderLabel}</span>
+                      <span className="flex w-24 items-center gap-1">
+                        <HudField
+                          value={String(value)}
+                          inputMode="numeric"
+                          aria-label={`${label} ${sliderLabel.toLowerCase()} share`}
+                          onChange={(typed) => onChange(clampPercent(Number(typed.replace(/\D/g, "")) || 0))}
                         />
-                        <span className="font-semibold text-gold">%</span>
-                      </div>
+                        <span className="text-hud-strong">%</span>
+                      </span>
                     </div>
-                    <input
-                      type="range"
-                      min={0}
+                    <HudSlider
+                      label={`${label} ${sliderLabel.toLowerCase()} share`}
+                      value={value}
                       max={MAX_RESOURCE_ALLOCATION_PERCENT}
                       step={sliderStep}
-                      value={value}
-                      onChange={(event) => onChange(Number(event.target.value))}
-                      className="w-full accent-gold/80 bg-black/40"
+                      onChange={onChange}
                     />
                     {impactedResources.length > 0 && (
-                      <div className="space-y-1 text-xxs text-gold/60">
-                        <span className="font-semibold uppercase tracking-wide text-gold/50">Inputs</span>
-                        <div className="grid grid-cols-4 gap-1">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-hud-label text-hud-cue">Inputs</span>
+                        <div className="flex flex-wrap gap-1">
                           {impactedResources.map((impacted) => (
-                            <div
-                              key={`impact-${resourceId}-${impacted}`}
-                              className="flex items-center justify-center rounded border border-gold/20 bg-black/10 p-2"
-                              title={resolveResourceLabel(impacted)}
-                            >
+                            <span key={`impact-${resourceId}-${impacted}`} title={resolveResourceLabel(impacted)}>
                               <ResourceIcon resource={impacted as ResourcesIds} size="sm" />
-                            </div>
+                            </span>
                           ))}
                         </div>
                         {impactedTotals.length > 0 && (
-                          <span className="block text-right text-[10px] text-gold/50">
+                          <span className="text-right text-hud-label text-hud-cue">
                             Peak usage {Math.round(Math.max(...impactedTotals))}%
                           </span>
                         )}
                       </div>
                     )}
                     {overBudgetResources.length > 0 && (
-                      <div className="text-[10px] text-danger/80">
+                      <span className="text-hud-label text-hud-bad">
                         Over budget for {overBudgetResources.map((res) => resolveResourceLabel(res)).join(", ")}
-                      </div>
+                      </span>
                     )}
                   </div>
                 );
@@ -688,7 +682,7 @@ export const RealmAutomationPanel = ({
                     ) : undefined
                   }
                 >
-                  <div className="space-y-3">
+                  <div className="flex flex-col gap-3">
                     {renderSlider(
                       "Resource",
                       percentages.resourceToResource,

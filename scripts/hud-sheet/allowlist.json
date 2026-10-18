@@ -105,7 +105,6 @@
   "apps/game/src/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx": 19,
   "apps/game/src/ui/features/relics/components/relic-activation-selector.tsx": 32,
   "apps/game/src/ui/features/relics/components/relic-activation-shared.tsx": 33,
-  "apps/game/src/ui/features/settlement/production/realm-automation-panel.tsx": 21,
   "apps/game/src/ui/features/social/components/end-season-button.tsx": 6,
   "apps/game/src/ui/features/social/components/player-id.tsx": 8,
   "apps/game/src/ui/features/social/components/social-board.tsx": 6,
