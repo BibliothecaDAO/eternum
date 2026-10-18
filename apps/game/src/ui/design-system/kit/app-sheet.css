@@ -577,10 +577,13 @@
 }
 .app-row__trail {
   display: flex;
-  flex: none;
+  max-width: 100%;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   margin-left: auto;
   align-items: center;
-  gap: theme(spacing.3);
+  gap: theme(spacing.2) theme(spacing.3);
   font-variant-numeric: tabular-nums;
   font-family: var(--app-face-strong);
   font-size: var(--app-text-strong);
