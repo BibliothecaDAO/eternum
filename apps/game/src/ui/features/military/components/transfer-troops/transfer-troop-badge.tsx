@@ -1,4 +1,4 @@
-import { ResourceIcon } from "@/ui/design-system/molecules";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";

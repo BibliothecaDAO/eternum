@@ -1,4 +1,4 @@
-import { ResourceIcon } from "@/ui/design-system/molecules";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";

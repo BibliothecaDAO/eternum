@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { ResourceIcon } from "@/ui/design-system/molecules";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
