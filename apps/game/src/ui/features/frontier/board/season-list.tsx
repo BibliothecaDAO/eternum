@@ -8,9 +8,11 @@ import {
   HudPanel,
   HudRarity,
   HudSkeleton,
+  HudTableHead,
+  HudTableRow,
 } from "@/ui/design-system/kit/hud-elements";
 
-import { SeasonRow } from "@/ui/design-system/kit/season-row";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
@@ -30,12 +32,13 @@ import type { ReactNode } from "react";
 
 import { FigureChip } from "./figure-chip";
 
-/** A realm's row on the list: what SeasonRow draws, keyed to open its detail. */
+/** A realm's row on the list, keyed to open its detail; `label` is its name as text, for assistive technology. */
 export type SeasonListRow = {
   key: string;
   rank: number;
   order: number;
   name: ReactNode;
+  label: string;
   sitesCleared: number;
   lords: number;
   own: boolean;
@@ -151,33 +154,36 @@ const PoolFigure = ({ word, value }: { word: string; value: string }) => (
   </div>
 );
 
+/** Rank, Order, name, sites cleared (what ranks) and LORDS: the list's head and its rows share these columns. */
+const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
+
+/** One realm on the list, a row of the sheet's table that opens its detail; the player's own carries the chosen bar. */
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
-  <SeasonRow
-    rank={row.rank}
-    order={row.order}
-    name={row.name}
-    sitesCleared={row.sitesCleared}
-    lords={row.lords}
-    own={row.own}
-    onOpen={() => onOpen(row.key)}
-  />
+  <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
+    <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
+    <OrderEmblem order={row.order} />
+    <span className="min-w-0 truncate">{row.name}</span>
+    <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
+    <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>
+  </HudTableRow>
 );
 
 /**
- * The columns' icons over SeasonRow's numbers: sites cleared, then LORDS. Each icon names its column on the tooltip:
+ * The columns' icons over the rows' numbers: sites cleared, then LORDS. Each icon names its column on the tooltip:
  * hover it, or press and hold it on a phone.
  */
 const BoardHead = () => (
-  <div className="flex h-6 shrink-0 items-center gap-2 px-1">
-    <span className="flex-1" />
-    <span role="img" aria-label={SITES_CLEARED} className="flex h-6 w-12 items-center justify-end">
+  <HudTableHead cols={COLS}>
+    <span />
+    <span />
+    <span />
+    <span role="img" aria-label={SITES_CLEARED} className="flex justify-end">
       <SemanticIcon name="flag" size={18} />
     </span>
-    <span role="img" aria-label={LORDS_EARNED} className="flex h-6 w-14 items-center justify-end">
+    <span role="img" aria-label={LORDS_EARNED} className="flex justify-end">
       <SemanticIcon name="lords" size={18} />
     </span>
-    <span className="w-5" />
-  </div>
+  </HudTableHead>
 );
 
 const rankShown = (rank: number | undefined) => (rank === undefined ? "—" : `#${rank}`);

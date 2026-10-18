@@ -407,6 +407,7 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
   rank: index + 1,
   order: index + 1,
   name,
+  label: name,
   sitesCleared: SEASON_SITES[index],
   lords: SEASON_LORDS[index],
   own: false,
@@ -417,7 +418,16 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  */
 const SEASON_POOL_FIGURES = { lords: 1_000_000, today: 50_000, price: 12, ceiling: 16 };
 const SEASON_COMMON_CHEST = { tier: 1 as const, lords: 24 };
-const OWN_ROW: SeasonListRow = { key: "you", rank: 12, order: 12, name: YOU, sitesCleared: 88, lords: 192, own: true };
+const OWN_ROW: SeasonListRow = {
+  key: "you",
+  rank: 12,
+  order: 12,
+  name: YOU,
+  label: YOU,
+  sitesCleared: 88,
+  lords: 192,
+  own: true,
+};
 
 /** The guide's lab lines, by the step they show. */
 const GUIDE_LINES = {

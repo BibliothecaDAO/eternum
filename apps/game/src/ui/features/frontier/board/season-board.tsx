@@ -19,6 +19,7 @@ import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
 import { type SeasonLords, seasonLordsOf } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, wholeResource } from "./standings";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -137,6 +138,7 @@ const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
   rank: entry.rank,
   order: entry.order,
   name: <PlayerName account={entry.address} you={own} portrait />,
+  label: getPlayerDisplayName(entry.address),
   sitesCleared: entry.sites_cleared.total,
   lords: wholeLords(entry.rewards.lords),
   own,

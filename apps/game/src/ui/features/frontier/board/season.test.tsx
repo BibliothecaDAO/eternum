@@ -20,6 +20,7 @@ const row = (rank: number, own = false): SeasonListRow => ({
   rank,
   order: rank,
   name: `Realm ${rank}`,
+  label: `Realm ${rank}`,
   sitesCleared: 100 - rank,
   lords: 50,
   own,
