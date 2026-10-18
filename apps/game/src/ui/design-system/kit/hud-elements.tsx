@@ -25,10 +25,10 @@ import { createPortal } from "react-dom";
 type ButtonKind = "primary" | "secondary" | "quiet";
 type Tone = "good" | "bad" | "warn";
 
-/** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
 /** A price a button pays: its painting (or, with none, its word, as XP) and how much; named whole for assistive technology. */
-export type HudPrice = { icon?: IconMeaning; word: string; amount: string };
+type HudPrice = { icon?: IconMeaning; word: string; amount: string };
 
+/** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
 export const HudButton = forwardRef<
   HTMLButtonElement,
   {
@@ -1161,7 +1161,7 @@ export const HudMeter = ({
 );
 
 /** What a relic works on: its chip takes that kind's colour. */
-export type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";
+type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";
 
 /**
  * A relic: its painting, what it gives (its name, its bonus) in its kind's colour, then how long it still works or how
