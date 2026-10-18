@@ -94,7 +94,7 @@ const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
             icon={resourceMeaning(relicId)}
             kind={info ? (info.type.toLowerCase().replace(" ", "-") as RelicKind) : "production"}
             gives={info?.name ?? ResourcesIds[relicId]}
-            title={info?.effect}
+            tip={info?.effect}
           />
         </li>
       );

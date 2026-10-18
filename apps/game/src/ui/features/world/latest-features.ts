@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-18",
     title: "Military, rings and the leaderboard in the new style",
     description:
-      "The resource rings, the leaderboard and tribes, the Military form and deploy picker, Combat, the attack preview, troop and relic transfers, chat and the crate panel now wear your game's colours and the one set of buttons, tabs, fields and chips. A ring's rim shows whether it is producing. Disbanding an army acts at once in Blitz and Eternum, and asks first only in Frontier, where it cannot be undone.",
+      "The resource rings, the leaderboard and tribes, the Military form and deploy picker, Combat, the attack preview, troop and relic transfers, chat and the crate panel now wear your game's colours and the one set of buttons, tabs, fields and chips. A ring's rim shows whether it is producing. Disbanding an army or dismissing a guard acts at once in Blitz and Eternum, and asks first only in Frontier, where it cannot be undone.",
     type: "improvement",
   },
   {

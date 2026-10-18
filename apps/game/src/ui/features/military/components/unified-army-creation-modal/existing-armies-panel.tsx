@@ -11,8 +11,7 @@ import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { type ArmyInfo, type ID, type TroopTier, type TroopType } from "@bibliothecadao/types";
 
 import { memo, useMemo, useState } from "react";
-import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useConfirmFor, useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
 import { HudConfirm, HudIconButton, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { TierChip } from "../../utils/tier-chip";
 
@@ -60,8 +59,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const timestamp = useCurrentDefaultTick();
   const { confirming, ask, close } = useConfirmFor(army.entityId);
   const [deleting, setDeleting] = useState(false);
-  // The owner's ruling: a confirm only in Frontier, where disbanding cannot be undone; Blitz and Eternum act at once.
-  const confirmsDisband = useGameModeConfig().id === "frontier";
+  const confirmsDisband = useConfirmsLoss();
 
   // troops.count is the raw precision value; currencyFormat divides internally.
   const rawCount = Number(army.troops?.count ?? 0);

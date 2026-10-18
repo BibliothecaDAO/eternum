@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useConfirmFor } from "@/hooks/helpers/use-confirm-for";
+import { useConfirmFor, useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
 import { configManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
@@ -26,6 +26,7 @@ export const GuardDismissal = ({
   const structure = useNativeRow("Structure", { game_id, entity_id: structureId });
   const guard = useNativeRow("Guard", { game_id, structure_id: structureId, slot });
   const { confirming, ask, close } = useConfirmFor(`${structureId}:${slot}`);
+  const confirmsDismissal = useConfirmsLoss();
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
   const canDismiss =
@@ -70,7 +71,13 @@ export const GuardDismissal = ({
           </HudConfirm>
         </>
       ) : (
-        <HudButton kind="secondary" tone="bad" disabled={disabled} onClick={ask}>
+        <HudButton
+          kind="secondary"
+          tone="bad"
+          disabled={disabled}
+          busy={pending ? "Dismissing…" : undefined}
+          onClick={confirmsDismissal ? ask : dismiss}
+        >
           Dismiss guard
         </HudButton>
       )}
