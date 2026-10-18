@@ -16,7 +16,7 @@ import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { relayOperation } from "./ports";
-import { paidClaimFact, postedResultFact, runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
+import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv extends MonitorSettings {
   LAUNCH: import("@realms-world/value-ledger").LaunchCohorts;
@@ -137,7 +137,9 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
       ...slotRosterReads(cohort, this.env.L2_RPC_URL, ledgerAddress(this.env.ENVIRONMENT), this.env.IDENTITY),
       pause: async () => {
         const row = `roster:${cohort.chainId}:${cohort.slotId}`;
-        await this.ctx.storage.put("progress", { ...(await this.status()), halted: row, fault: { row } });
+        // A roster check has no fact to waive: its reset re-observes the roster.
+        const halted: MonitorProgress = { ...(await this.status()), halted: row, fault: { row } };
+        await this.ctx.storage.put("progress", halted);
         await Effect.runPromise(monitorPortsOf(this.env, this.ctx.storage).ledger.pause());
       },
     });
@@ -176,16 +178,19 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
             const previous = (await tx.get<MonitorProgress>("progress")) ?? { halted: null };
             const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
             const progress = resetMonitorRow({ ...previous, fault }, row);
+            // What this reset cleared: the fault's exact fact, or null when it only cleared the halt and re-observes.
+            const waived = fault.fact ?? null;
             await tx.put(`reset:${sequence}`, {
               row,
               reason: reason.trim(),
               at: Math.floor(Date.now() / 1000),
               previous,
+              waived,
             });
             await tx.put("reset:sequence", sequence);
             await tx.put("progress", progress);
             await tx.delete("observation");
-            return progress;
+            return { ...progress, waived };
           });
         }),
       ),
@@ -227,13 +232,8 @@ const legacyFault = async (
     row !== `${stream}:${value.chainId}:${"transactionHash" in value ? value.transactionHash : value.gameId}`
   )
     throw new Error("fault_row_mismatch");
-  return {
-    row,
-    fact: "transactionHash" in value ? paidClaimFact(value) : postedResultFact(value),
-    stream,
-    cursor: { fromBlock: cursor.fromBlock, page: cursor.page ?? JSON.stringify({ head: page.head, token: "" }) },
-    offset: index,
-  };
+  // The halt names the row but never recorded what the operator saw, so its reset waives nothing and re-observes.
+  return { row };
 };
 
 const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {

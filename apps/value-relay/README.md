@@ -51,8 +51,12 @@ retained hash still matching the restored chain, checks that anchor again, drops
 already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay starts at genesis. A
 changed anchor refuses reset. The ledger's claim identity prevents a second payment.
 
-`POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It records the exact fault and
-advances past only that row. An availability reset retries its checkpoint. Neither reset unpauses the ledger.
+`POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It waives the fault's exact fact,
+everything its check compared, and advances past only that row: a rewind that replays the same evidence stays cleared,
+and a rewritten row on the same claim or game is checked again. The answer's `waived` names that fact, or is `null` for
+a fault that recorded none (a roster check, or one written before facts were recorded): that reset clears the halt and
+the check runs again, halting once more, with its fact, if the evidence still disagrees. An availability reset retries
+its checkpoint. No reset unpauses the ledger.
 
 ## Season prizes and mystery chests
 

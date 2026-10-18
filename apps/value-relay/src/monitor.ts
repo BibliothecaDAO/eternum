@@ -19,8 +19,11 @@ interface AuditCursor {
 }
 interface FaultRow {
   row: string;
-  /** Exactly what the failed check compared; the operator's reset clears this fact, never the row's identity. */
-  fact: string;
+  /**
+   * Exactly what the failed check compared; the operator's reset clears this fact, never the row's identity. A fault
+   * with none (a roster check, or one the previous version recorded) waives nothing: its reset re-observes.
+   */
+  fact?: string;
   stream?: "paidClaims" | "postedResults";
   cursor?: AuditCursor;
   offset?: number;
@@ -209,10 +212,10 @@ const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment
 const hex = (value: string) => `0x${BigInt(value).toString(16)}`;
 
 /** Every field the paid-claim check compares, and nothing block-dependent, so a replay at a new anchor is the same fact. */
-export const paidClaimFact = (paid: PaidClaim) =>
+const paidClaimFact = (paid: PaidClaim) =>
   `paidClaims:${hex(paid.chainId)}:${hex(paid.transactionHash)}:${paid.seasonId}:${BigInt(paid.amount)}:${hex(paid.wallet)}:${hex(paid.paymentTransactionHash)}`;
 /** Every field the posted-result check compares. */
-export const postedResultFact = (posted: BlitzCommitment) =>
+const postedResultFact = (posted: BlitzCommitment) =>
   `postedResults:${hex(posted.chainId)}:${posted.gameId}:${hex(posted.commitment)}`;
 
 const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?.includes(fact) ?? false;
@@ -220,15 +223,17 @@ const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?
 const recordFault = (store: MonitorStore, fault: FaultRow) =>
   relayOperation("record faulting audit row", async () => store.save({ ...(await store.load()), fault }));
 
+/**
+ * Clears the halt the operator names. A fault with a recorded fact waives exactly that fact and moves its stream past
+ * the row. One without a fact waives nothing and keeps the cursor: its check runs again from where it stopped and halts
+ * again, now recording its fact, if the evidence still disagrees. A reset never unpauses the ledger.
+ */
 export const resetMonitorRow = (previous: MonitorProgress, row: string): MonitorProgress => {
   if (!previous.halted || previous.fault?.row !== row) throw new Error("fault_row_mismatch");
   const fault = previous.fault;
-  const next: MonitorProgress = {
-    ...previous,
-    halted: null,
-    fault: null,
-    cleared: [...(previous.cleared ?? []), fault.fact],
-  };
+  const next: MonitorProgress = { ...previous, halted: null, fault: null };
+  if (!fault.fact) return next;
+  next.cleared = [...(previous.cleared ?? []), fault.fact];
   if (fault.stream && fault.cursor && fault.offset !== undefined)
     next.cursors = { ...previous.cursors, [fault.stream]: { ...fault.cursor, offset: fault.offset + 1 } };
   return next;

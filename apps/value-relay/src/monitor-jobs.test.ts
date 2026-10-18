@@ -3,8 +3,11 @@ vi.mock("./environment", async (original) => ({
   ...(await original<typeof import("./environment")>()),
   ledgerAddress: address,
 }));
-import { beforeEach, expect, it, vi } from "vitest";
+import { Effect } from "effect";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import worker, { ValueMonitor } from "./monitor-worker";
+import { runMonitor, type MonitorProgress } from "./monitor";
+import type { MonitorPorts } from "./ports";
 
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
@@ -108,14 +111,97 @@ it("requires an operator token and a recorded reason to clear a monitor halt wit
     });
   expect((await worker.fetch(request("Investigated", "wrong-token"), env)).status).toBe(401);
   expect((await worker.fetch(request(""), env)).status).toBe(400);
-  expect((await worker.fetch(request("Receipt RPC corrected; replay verified"), env)).status).toBe(200);
-  expect(await f.monitor.status()).toMatchObject({
-    halted: null,
-    cursors: { paidClaims: { fromBlock: 11, page: JSON.stringify({ head: 20, token: "" }), offset: 1 } },
-  });
+  const answer = await worker.fetch(request("Receipt RPC corrected; replay verified"), env);
+  expect(answer.status).toBe(200);
+  // This fault, in the shape the previous version wrote, recorded no fact: the reset waives nothing and keeps the
+  // cursor where the check stopped, so the row is checked again.
+  expect(await answer.json()).toMatchObject({ halted: null, waived: null });
+  const status = await f.monitor.status();
+  expect(status).toMatchObject({ halted: null, fault: null, cursors: { paidClaims: { fromBlock: 11, page: null } } });
+  expect(status.cleared).toBeUndefined();
   expect(f.data.get("reset:sequence")).toBe(1);
-  expect(f.data.get("reset:1")).toMatchObject({ reason: "Receipt RPC corrected; replay verified", previous: progress });
+  expect(f.data.get("reset:1")).toMatchObject({
+    reason: "Receipt RPC corrected; replay verified",
+    previous: progress,
+    waived: null,
+  });
 });
+
+describe.each(["paidClaims", "postedResults"] as const)(
+  "resetting a %s halt the previous version recorded",
+  (stream) => {
+    const row = stream === "paidClaims" ? "paidClaims:0x1:0xabc" : "postedResults:0x1:1";
+    const ledger = {
+      paid: [
+        {
+          chainId: "0x1",
+          transactionHash: "0xabc",
+          seasonId: 1,
+          wallet: "0x123",
+          amount: "1",
+          paymentTransactionHash: "0xdef",
+          paidAt: 1,
+        },
+      ],
+      posted: [{ chainId: "0x1", gameId: 1, commitment: "0x2" }],
+      anchor: "0xa",
+    };
+    const pause = vi.fn(() => Effect.void);
+    const page = <A>(rows: A[]) =>
+      Effect.succeed({ rows, head: 10, anchor: { number: 10, hash: ledger.anchor }, rewind: true, next: null });
+    const ports: MonitorPorts = {
+      // The check always disagrees: neither identity nor the shard matches the ledger.
+      identity: { matchesPayDecision: () => Effect.succeed(false) },
+      shard: {
+        conservation: () => Effect.succeed([]),
+        withdrawal: (chainId, transactionHash) =>
+          Effect.succeed({ chainId, transactionHash, seasonId: 1, amount: "1", realmsId: "0x2", confirmedAt: 1 }),
+        result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
+      },
+      ledger: {
+        frontierPool: () => Effect.succeed("0"),
+        paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
+        postedResults: () => page(stream === "postedResults" ? ledger.posted : []),
+        pause,
+      },
+    };
+    /** The Durable Object's progress, read and written only through JSON, as storage keeps it. */
+    const persisted = (data: Map<string, unknown>) => ({
+      load: async (): Promise<MonitorProgress> => JSON.parse(JSON.stringify(data.get("progress"))),
+      save: async (next: MonitorProgress) => {
+        data.set("progress", JSON.parse(JSON.stringify(next)));
+      },
+    });
+
+    it("waives nothing, re-observes the row, and makes the next reset durable", async () => {
+      const f = fixture();
+      f.data.set("progress", {
+        halted: stream === "paidClaims" ? "paid_wallet_mismatch:0xabc" : "blitz_result_mismatch:1",
+        fault: { row, stream, cursor: { fromBlock: 0, page: null }, offset: 0 },
+      });
+      expect(await f.monitor.reset(row, "Investigated")).toMatchObject({ halted: null, waived: null });
+      pause.mockClear();
+      // The unchanged row is checked again and halts again, this time recording what it saw.
+      await Effect.runPromise(runMonitor(ports, persisted(f.data)));
+      expect(pause).toHaveBeenCalledOnce();
+      const fact = (await f.monitor.status()).fault?.fact;
+      expect(fact).toMatch(new RegExp(`^${stream}:`));
+      expect(await f.monitor.reset(row, "Investigated again")).toMatchObject({ halted: null, waived: fact });
+      // That clearance is durable: an unchanged replay at a new anchor stays cleared...
+      ledger.anchor = "0xb";
+      pause.mockClear();
+      await Effect.runPromise(runMonitor(ports, persisted(f.data)));
+      expect(pause).not.toHaveBeenCalled();
+      // ...and a rewritten row on the same claim or game is checked again and pauses.
+      if (stream === "paidClaims") ledger.paid = [{ ...ledger.paid[0]!, amount: "2", wallet: "0x999" }];
+      else ledger.posted = [{ ...ledger.posted[0]!, commitment: "0x3" }];
+      ledger.anchor = "0xc";
+      await Effect.runPromise(runMonitor(ports, persisted(f.data)));
+      expect(pause).toHaveBeenCalledOnce();
+      expect((await f.monitor.status()).halted).toMatch(/mismatch/);
+    });
+  },
+);
 
 it("records the missing ledger after running shard conservation", async () => {
   address.mockImplementation(() => {
