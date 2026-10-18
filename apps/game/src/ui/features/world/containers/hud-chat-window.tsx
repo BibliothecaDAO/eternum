@@ -114,7 +114,8 @@ export function HudChatWindow({
             label="Chat"
             collapsible={false}
             className="min-h-0 flex-1"
-            bodyClassName="flex min-h-0 flex-1 flex-col"
+            // The chat shell pads its own tabs, history and composer.
+            bodyClassName="flex min-h-0 flex-1 flex-col p-0"
           >
             <RealtimeChatShell
               defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}

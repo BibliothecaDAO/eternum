@@ -11,7 +11,11 @@
 }
 
 /* ── Panel: the HUD's one panel, a header band naming it over a divider, then its body; a section is a part of one. ── */
+/* A panel is a column: given a height, its body takes what the head leaves and may shrink below its content, so a
+   list inside it scrolls within the panel rather than pushing past it. */
 .ui-panel {
+  display: flex;
+  flex-direction: column;
   pointer-events: auto;
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-panel);
@@ -72,8 +76,13 @@ button.ui-panel__name {
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
 }
-.ui-panel__body {
+/* The body's padding is a default the caller's layout may change (bodyClassName's p-0, pt-0): it carries no weight
+   of its own, so a utility always wins whichever stylesheet loads last. */
+:where(.ui-panel__body) {
   padding: theme(spacing[1.5]) theme(spacing.3) theme(spacing.3);
+}
+.ui-panel__body {
+  min-height: 0;
 }
 /* A body of sections: each section brings its own padding, a divider between each. */
 .ui-panel__body[data-divided] {
@@ -84,8 +93,10 @@ button.ui-panel__name {
 }
 
 /* ── Button: primary (the one verb), secondary (beside it), quiet (a way out), icon (a square of the secondary). ── */
+/* A button never outgrows the box it stands in: its words shrink and truncate inside it instead. */
 .ui-button {
   display: inline-flex;
+  max-width: 100%;
   height: var(--hud-control);
   align-items: center;
   justify-content: center;

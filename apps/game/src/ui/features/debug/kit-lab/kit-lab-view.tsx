@@ -43,6 +43,7 @@ import { HudLab } from "./hud-lab";
 import { PanelsLab } from "./panels-lab";
 import { GuidanceLab } from "./guidance-lab";
 import { StyleSheetLab } from "./style-sheet-lab";
+import { ChatLab } from "./chat-lab";
 import { WindowsLab } from "./windows-lab";
 import { WordsLab } from "./words-lab";
 
@@ -70,6 +71,7 @@ export const KitLabView = () => {
       <Route path="words" element={<WordsLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="shell" element={<Components />} />
+      <Route path="chat" element={<ChatLab />} />
       <Route path="*" element={<StyleSheetLab />} />
     </Routes>
   );
