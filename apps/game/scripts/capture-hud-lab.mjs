@@ -21,6 +21,8 @@ const SETTLE_MS = "1200";
 export const SURFACES = [
   { name: "blitz-left-column", path: "/lab/kit/panels", mark: "left-column" },
   { name: "blitz-top-header", path: "/lab/kit/panels?part=top-header", mark: "top-header" },
+  { name: "blitz-tile-army", path: "/lab/kit/panels?tile=army", mark: "tile" },
+  { name: "blitz-tile-empty", path: "/lab/kit/panels?tile=empty", mark: "tile" },
   { name: "blitz-next-up-and-events", path: "/lab/kit/guidance", mark: "next-up" },
   { name: "frontier-hud", path: "/lab/kit/hud/idle", mark: "frontier" },
   { name: "frontier-selected", path: "/lab/kit/hud/selected", mark: "frontier" },

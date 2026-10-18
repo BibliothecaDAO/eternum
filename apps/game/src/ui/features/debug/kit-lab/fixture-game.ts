@@ -16,8 +16,8 @@ export const PLAYER = "0x111";
  * The deploy fixture's game, made the one this page plays before anything draws: what the HUD reads that the fixture
  * leaves out, its clock, its player and its realm.
  */
-export const installFixtureGame = () => {
-  const { store } = frontierDay();
+export const installFixtureGame = (base: () => { store: NativeFactStore } = frontierDay) => {
+  const { store } = base();
   // What the HUD reads that the deploy fixture leaves out: the game's upgrade limits.
   store.applyFacts([
     { model: "UpgradeLimits", key: "0x9", value: { game_id: 1, realm_max: 3, village_max: 3 } },
