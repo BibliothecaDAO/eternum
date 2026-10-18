@@ -39,6 +39,9 @@ match them (README step 9):
   the verified email on every `/api/actions/` call. One Access application covers the page: its writes are fetches,
   which could not follow a second application's sign-in.
 
+A write must also come from the page itself: the Worker refuses an `/api/actions/` call whose `Origin` is not its own,
+and setup keeps the Access cookie `SameSite=Lax`, so another site cannot send an action with an operator's session.
+
 To grant, add the email and rerun setup with `--apply`. To revoke, remove it and rerun: setup also ends that person's
 Access sessions, on every application of the account (Cloudflare revokes a user account-wide).
 

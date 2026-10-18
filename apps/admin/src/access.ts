@@ -37,12 +37,22 @@ const json = (part: string): Record<string, unknown> => JSON.parse(decoder.decod
 const signingKeys = async (teamDomain: string, send: Send, nowMs: number): Promise<Jwk[]> => {
   const cached = certs.get(teamDomain);
   if (cached && cached.until > nowMs) return cached.keys;
+  return fetchSigningKeys(teamDomain, send, nowMs);
+};
+
+const fetchSigningKeys = async (teamDomain: string, send: Send, nowMs: number): Promise<Jwk[]> => {
   const response = await send(`https://${teamDomain}/cdn-cgi/access/certs`);
   if (!response.ok) throw new Error(`Access certificates answered ${response.status}`);
   const { keys } = (await response.json()) as { keys?: Jwk[] };
   if (!Array.isArray(keys) || keys.length === 0) throw new Error("Access published no signing keys");
   certs.set(teamDomain, { keys, until: nowMs + CERTS_TTL_MS });
   return keys;
+};
+
+/** The key a token names; a name the cached keys lack means Access rotated since, so the keys are read again once. */
+const signingKey = async (teamDomain: string, kid: unknown, send: Send, nowMs: number): Promise<Jwk | undefined> => {
+  const named = (keys: Jwk[]) => keys.find((key) => key.kid === kid);
+  return named(await signingKeys(teamDomain, send, nowMs)) ?? named(await fetchSigningKeys(teamDomain, send, nowMs));
 };
 
 const hasAudience = (claim: unknown, audience: string) =>
@@ -60,7 +70,7 @@ export const verifyAccess = async (
   const [header, payload, signature] = parts as [string, string, string];
   const { alg, kid } = json(header);
   if (alg !== "RS256") throw new AccessDenied("Unexpected Access token algorithm");
-  const jwk = (await signingKeys(policy.teamDomain, send, nowMs)).find((key) => key.kid === kid);
+  const jwk = await signingKey(policy.teamDomain, kid, send, nowMs);
   if (!jwk) throw new AccessDenied("Unknown Access signing key");
   const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, [
     "verify",

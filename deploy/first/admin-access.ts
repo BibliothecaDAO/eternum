@@ -25,6 +25,8 @@ export interface AdminAccess {
 export const ADMIN_ACCESS_LIST = "admin-access.json";
 export const ADMIN_ACCESS = "admin-access-applied.json";
 const SESSION = "8h";
+/** The page's writes are same-site fetches; a cross-site form must not carry the operator's Access cookie. */
+const SAME_SITE = "lax";
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const emails = (value: unknown, name: string): string[] => {
@@ -72,6 +74,7 @@ interface App {
   domain: string;
   aud: string;
   policies?: { id: string }[];
+  same_site_cookie_attribute?: string;
 }
 
 const policyBody = (name: string, members: string[]) => ({
@@ -133,11 +136,15 @@ export async function syncAdminAccess(
       domain,
       type: "self_hosted",
       session_duration: SESSION,
+      same_site_cookie_attribute: SAME_SITE,
       app_launcher_visible: false,
       policies: policy ? [{ id: policy, precedence: 1 }] : [],
     };
     const current =
-      existing?.domain === domain && existing.policies?.length === 1 && existing.policies[0]!.id === policy;
+      existing?.domain === domain &&
+      existing.same_site_cookie_attribute === SAME_SITE &&
+      existing.policies?.length === 1 &&
+      existing.policies[0]!.id === policy;
     if (existing && current) return existing.aud;
     const saved = existing
       ? await change<App>(`${account}/apps/${existing.id}`, "PUT", body)

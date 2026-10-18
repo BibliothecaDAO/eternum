@@ -3,7 +3,7 @@ import { GAME_ENVIRONMENTS } from "@bibliothecadao/launch-service/operator-api";
 import { AccessDenied, verifyAccess, type AccessIdentity } from "./access";
 import type { AuditLog } from "./audit";
 import type { AdminConfig } from "./env";
-import { LaunchService } from "./launch";
+import { type LaunchAnswer, LaunchService } from "./launch";
 import { deploysView, gamesView } from "./views";
 
 interface AdminDependencies {
@@ -27,6 +27,12 @@ interface Action {
   carriesBody: boolean;
   route: (params: Record<string, string>) => { path: string; action: string } | null;
 }
+
+/**
+ * A write must come from the page itself. Browsers name a fetch's or a form's origin on every POST and PUT, so a write
+ * whose Origin is not this Worker's was sent by another site riding the operator's Access cookie.
+ */
+const isFromThisPage = (context: Context) => context.req.header("origin") === new URL(context.req.url).origin;
 
 const isGameEnvironment = (value: string | undefined) => GAME_ENVIRONMENTS.some((id) => id === value);
 const named = (value: string | undefined): value is string => value !== undefined && NAME.test(value);
@@ -83,9 +89,11 @@ export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
   const app = new Hono<{ Variables: { identity: AccessIdentity } }>();
   const launch = new LaunchService(config, send);
 
-  // Every API call proves its Access identity; on production, a write also needs its sender among the writers.
+  // Every API call proves its Access identity; a write also comes from the page, and on production from a writer.
   app.use("/api/*", async (context, next) => {
     try {
+      if (context.req.path.startsWith(ACTIONS) && !isFromThisPage(context))
+        throw new AccessDenied("Actions are sent from the admin page only");
       const identity = await verifyAccess(
         context.req.header("cf-access-jwt-assertion") ?? null,
         config.access,
@@ -133,15 +141,20 @@ export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
       },
       now(),
     );
+    let answer: LaunchAnswer;
     try {
-      const answer = await launch.write(action.method, route.path, body);
-      await audit.answered(id, answer.status, answer.body);
-      return new Response(answer.body, { status: answer.status, headers: { "content-type": "application/json" } });
+      answer = await launch.write(action.method, route.path, body);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await audit.failed(id, message);
       return context.json({ error: message }, 502);
     }
+    // The launch service has acted: its answer goes back even if the log cannot record it (the row then stays "sent"),
+    // so nobody retries a write that went through.
+    await audit.answered(id, answer.status, answer.body).catch((error: unknown) => {
+      console.error("admin audit: could not record a launch answer", id, error);
+    });
+    return new Response(answer.body, { status: answer.status, headers: { "content-type": "application/json" } });
   };
 
   app.post(`${ACTIONS}test-blitz`, write("test-blitz"));

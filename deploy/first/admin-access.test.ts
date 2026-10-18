@@ -28,7 +28,14 @@ function cloudflare({ organization = true } = {}) {
   const state = {
     providers: [] as { id: string; type: string }[],
     policies: [] as { id: string; name: string; decision: string; include: { email: { email: string } }[] }[],
-    apps: [] as { id: string; name: string; domain: string; aud: string; policies: { id: string }[] }[],
+    apps: [] as {
+      id: string;
+      name: string;
+      domain: string;
+      aud: string;
+      same_site_cookie_attribute?: string;
+      policies: { id: string }[];
+    }[],
     revoked: [] as string[],
     writes: [] as string[],
   };
@@ -82,6 +89,7 @@ function cloudflare({ organization = true } = {}) {
         aud,
         name: body.name,
         domain: body.domain,
+        same_site_cookie_attribute: body.same_site_cookie_attribute,
         policies: body.policies.map(({ id }: { id: string }) => ({ id })),
       };
       state.apps = [...state.apps.filter((entry) => entry.id !== id), app];
@@ -114,7 +122,9 @@ test("dev gets one-time PIN, one policy and one application for the page, and a 
   expect(api.policies).toMatchObject([
     { name: "Realms admin operators (dev)", decision: "allow", include: [{ email: { email: "owner@realms.world" } }] },
   ]);
-  expect(api.apps).toMatchObject([{ name: "Realms admin (dev)", domain: "admin.dev-realms.party" }]);
+  expect(api.apps).toMatchObject([
+    { name: "Realms admin (dev)", domain: "admin.dev-realms.party", same_site_cookie_attribute: "lax" },
+  ]);
   expect(store.read<AdminAccess>(ADMIN_ACCESS)).toEqual({
     teamDomain: "realms.cloudflareaccess.com",
     audience: api.apps[0]!.aud,
@@ -192,11 +202,24 @@ test("a first setup interrupted after Cloudflare created the admin's entries reu
     name: "Realms admin (dev)",
     domain: "admin.dev-realms.party",
     aud: "aud-admin",
+    same_site_cookie_attribute: "lax",
     policies: [{ id: "policy-admin" }],
   });
   expect(await syncAdminAccess(platform, store, "dev", read(), true)).toEqual({ changed: true });
   expect(api.writes).toEqual([]);
   expect(store.read<AdminAccess>(ADMIN_ACCESS)).toMatchObject({ audience: "aud-admin" });
+});
+
+test("an application set up before its cookie was same-site is updated in place to lax", async () => {
+  const api = cloudflare();
+  const { store, platform, read } = setup("dev", { operators: ["owner@realms.world"] });
+  await syncAdminAccess(platform, store, "dev", read(), true);
+  const app = api.apps[0]!;
+  delete app.same_site_cookie_attribute;
+  api.writes.length = 0;
+  expect(await syncAdminAccess(platform, store, "dev", read(), true)).toEqual({ changed: true });
+  expect(api.writes).toEqual([`PUT /apps/${app.id}`]);
+  expect(api.apps).toMatchObject([{ id: app.id, aud: app.aud, same_site_cookie_attribute: "lax" }]);
 });
 
 test("inspecting reads only and reports the difference", async () => {

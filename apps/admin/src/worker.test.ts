@@ -26,6 +26,8 @@ let production: Miniflare;
 let bundleRoot: string;
 let signingKey: CryptoKey;
 let strangerKey: CryptoKey;
+/** The keys Access publishes; a test rotates them. */
+let publishedKeys: (JsonWebKey & { kid: string })[] = [];
 let launchCalls: { url: string; method: string; authorization: string | null; body: string }[] = [];
 let launchRedirects = false;
 
@@ -50,14 +52,17 @@ const owner = () => accessToken({ aud: [AUD], email: "owner@realms.world" });
 /** An operator Access lets in, who is not among production's writers. */
 const operator = () => accessToken({ aud: [AUD], email: "ops@realms.world" });
 
+/** The page's own origin, which its fetches name on every write. */
+const PAGE = "https://admin.test";
+
 const call = async (
   worker: Miniflare,
   path: string,
   token: string | null,
-  init: { method?: string; body?: string } = {},
+  { origin = PAGE, ...init }: { method?: string; body?: string; origin?: string } = {},
 ) => {
-  const headers: Record<string, string> = token ? { "cf-access-jwt-assertion": token } : {};
-  const response = await worker.dispatchFetch(`https://admin.test${path}`, { ...init, headers });
+  const headers: Record<string, string> = { origin, ...(token ? { "cf-access-jwt-assertion": token } : {}) };
+  const response = await worker.dispatchFetch(`${PAGE}${path}`, { ...init, headers });
   return { status: response.status, body: (await response.json()) as Record<string, any> };
 };
 
@@ -107,7 +112,6 @@ const startAdmin = async (
     cwd: new URL("..", import.meta.url).pathname,
     stdio: "ignore",
   });
-  const jwk = { ...(await crypto.subtle.exportKey("jwk", publicKey)), kid: "key-1", alg: "RS256", use: "sig" };
   const worker = new Miniflare({
     modulesRoot: bundle,
     modules: [{ type: "ESModule", path: join(bundle, "worker.js") }],
@@ -124,7 +128,7 @@ const startAdmin = async (
     },
     outboundService: async (request: Request) => {
       const url = new URL(request.url);
-      if (url.host === TEAM && url.pathname === "/cdn-cgi/access/certs") return Response.json({ keys: [jwk] });
+      if (url.host === TEAM && url.pathname === "/cdn-cgi/access/certs") return Response.json({ keys: publishedKeys });
       if (url.origin !== DEV && url.origin !== PRODUCTION) return new Response("unknown host", { status: 599 });
       const body = await request.text();
       if (request.method !== "GET") {
@@ -155,13 +159,24 @@ const startAdmin = async (
 };
 
 let publicKey: CryptoKey;
+let strangerPublicKey: CryptoKey;
+
+const publishedKey = async (key: CryptoKey, kid: string): Promise<JsonWebKey & { kid: string }> => ({
+  ...((await crypto.subtle.exportKey("jwk", key)) as JsonWebKey),
+  kid,
+  alg: "RS256",
+  use: "sig",
+});
 
 beforeAll(async () => {
   bundleRoot = mkdtempSync(join(tmpdir(), "admin-bundle-"));
   const pair = await rsaKeys();
   signingKey = pair.privateKey;
   publicKey = pair.publicKey;
-  strangerKey = (await rsaKeys()).privateKey;
+  const stranger = await rsaKeys();
+  strangerKey = stranger.privateKey;
+  strangerPublicKey = stranger.publicKey;
+  publishedKeys = [await publishedKey(publicKey, "key-1")];
   dev = await startAdmin("staging", { OPERATOR_TOKEN: "dev-operator-token" }, "0xdev");
   production = await startAdmin(
     "production",
@@ -173,6 +188,7 @@ beforeAll(async () => {
 afterEach(async () => {
   launchCalls = [];
   launchRedirects = false;
+  publishedKeys = publishedKeys.slice(0, 1);
   for (const worker of [dev, production]) await (await worker.getD1Database("DB")).prepare("DELETE FROM actions").run();
 });
 
@@ -213,6 +229,24 @@ describe("who may call", () => {
     expect(launchCalls.map((sent) => [sent.url, sent.authorization])).toEqual([
       [`${PRODUCTION}/api/slots`, "Bearer production-operator-token"],
     ]);
+  });
+
+  it("refuses a write another site sends with the operator's cookie, sending and logging nothing", async () => {
+    const slot = { method: "POST", body: JSON.stringify({ name: "blitz-20261017-1200" }) };
+    for (const origin of ["https://attacker.test", "null", ""])
+      expect(await call(production, "/api/actions/slots", await owner(), { ...slot, origin }), origin).toEqual({
+        status: 403,
+        body: { error: "Actions are sent from the admin page only" },
+      });
+    expect(launchCalls).toEqual([]);
+    expect((await call(production, "/api/audit", await owner())).body.actions).toEqual([]);
+  });
+
+  it("accepts a token signed with a key Access rotated in after the keys were cached", async () => {
+    expect((await call(dev, "/api/session", await owner())).status).toBe(200);
+    publishedKeys = [...publishedKeys, await publishedKey(strangerPublicKey, "key-2")];
+    const rotated = await accessToken({ aud: [AUD], email: "owner@realms.world" }, strangerKey, "key-2");
+    expect((await call(dev, "/api/session", rotated)).status).toBe(200);
   });
 
   it("serves the page itself from the assets, without the API", async () => {

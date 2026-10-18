@@ -181,11 +181,21 @@ def slice_directory(name):
     return Path(*('-'.join(parts[:depth]) + '.slice' for depth in range(1, len(parts) + 1)))
 
 
+def working_set_bytes(scope):
+    """What the scope holds that the kernel cannot simply drop: memory.current less its inactive file cache, as
+    docker stats and the kubelet count it. Madara's reads keep page cache that only host pressure reclaims, so raw
+    memory.current grows towards the host's RAM on a healthy node with no memory limit."""
+    current = int((scope / 'memory.current').read_text())
+    stat = dict(line.split() for line in (scope / 'memory.stat').read_text().splitlines() if line)
+    return max(0, current - int(stat.get('inactive_file', 0)))
+
+
 def write_node_health(root, node_slice, output, now):
-    """The node's memory, or null while no node runs in its slice, beside the host's, replaced whole each sample."""
+    """The node's working set, or null while no node runs in its slice, beside the host's memory, replaced whole each
+    sample."""
     scopes = sorted((root / slice_directory(node_slice)).glob('*.scope'))
     try:
-        memory = sum(int((scope / 'memory.current').read_text()) for scope in scopes) if scopes else None
+        memory = sum(working_set_bytes(scope) for scope in scopes) if scopes else None
     except FileNotFoundError:
         memory = None  # The node stopped between listing its scope and reading it.
     health = {'sampled_at': now, 'memory_bytes': memory, 'host_memory_bytes': host_memory_bytes()}

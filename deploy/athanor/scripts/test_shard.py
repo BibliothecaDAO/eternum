@@ -566,7 +566,7 @@ class ShardTest(unittest.TestCase):
         self.assertIsNone(alarm.observe(6, .060))
         self.assertEqual(alarm.observe(7, .001)['event'], 'node_close_recovered')
 
-    def test_node_health_reads_the_node_slice_memory_and_reports_a_missing_node_as_null(self):
+    def test_node_health_reads_the_node_slice_working_set_and_reports_a_missing_node_as_null(self):
         sampler = load_cpu_sampler()
         self.assertEqual(sampler.slice_directory("node-realms-dev.slice"),
                          Path("node.slice/node-realms.slice/node-realms-dev.slice"))
@@ -577,13 +577,16 @@ class ShardTest(unittest.TestCase):
             self.assertIsNone(json.loads(output.read_text())["memory_bytes"])
             (node / "docker-abc.scope").mkdir(parents=True)
             (node / "docker-abc.scope/memory.current").write_text("1900000000\n")
+            # Inactive page cache is reclaimable, so it is not the node's: only the working set counts.
+            (node / "docker-abc.scope/memory.stat").write_text("anon 1500000000\ninactive_file 400000000\n")
             # Another shard's node, one dash deeper, is not this one's.
             (node / "node-realms-dev-two.slice/docker-def.scope").mkdir(parents=True)
             (node / "node-realms-dev-two.slice/docker-def.scope/memory.current").write_text("5\n")
+            (node / "node-realms-dev-two.slice/docker-def.scope/memory.stat").write_text("inactive_file 0\n")
             sampler.write_node_health(root, "node-realms-dev.slice", output, 1_800_000_010)
             health = json.loads(output.read_text())
             self.assertEqual(health["sampled_at"], 1_800_000_010)
-            self.assertEqual(health["memory_bytes"], 1_900_000_000)
+            self.assertEqual(health["memory_bytes"], 1_500_000_000)
             self.assertGreater(health["host_memory_bytes"], 0)
             self.assertEqual(sorted(path.name for path in Path(directory).iterdir()), ["cgroup", "node-health.json"])
 
