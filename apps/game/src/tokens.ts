@@ -558,6 +558,8 @@ export const HUD_LAYOUT = {
   minimap: "160px",
   section: "clamp(180px, 30vh, 320px)",
   "ring-rows": "164px",
+  /** The top bar's Settings panel, opened under its button. */
+  settings: "420px",
   "chat-width": "800px",
   "chat-height": "600px",
   "chat-cap": "45vw",
