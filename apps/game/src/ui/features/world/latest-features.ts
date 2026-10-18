@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Ring badges no longer overlap",
+    description:
+      "A resource ring's building count and its time left share the top of the ring and never cover each other. The time shows its largest unit (7h, 2d), and production that never runs out, like a farm's wheat, shows no countdown.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-18",
     title: "Clearer resource and landmark icons",
     description:
       "Icons fill their frames. Production resources return to their familiar designs, Research has teal liquid, and landmarks show the built Hyperstructure and chest without its tile.",

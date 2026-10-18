@@ -1146,7 +1146,7 @@ const ChipsSection = () => (
 const RingSection = () => (
   <Element
     name="Ring badge"
-    rule="A painting in a round well; buildings top left and the time left top right in one badge, the amount on the foot; an arc for production."
+    rule="A painting in a round well; buildings top left and the time left top right on one line, pushed apart, the amount on the foot; an arc for production."
     sheet={
       <div className="flex items-center gap-6 pb-2">
         <HudRing
@@ -1155,7 +1155,7 @@ const RingSection = () => (
           tip="Wheat"
           state="producing"
           corner={3}
-          timer="17m"
+          timeLeft={1_020}
           foot="1.2K"
           progress={0.6}
         />

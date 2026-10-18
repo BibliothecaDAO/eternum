@@ -1,5 +1,6 @@
 import {
   formatCharge,
+  formatDuration,
   formatExact,
   formatPercent,
   readTypedNumber,
@@ -743,8 +744,11 @@ export const HudDial = ({
 /**
  * A painting in a round well with its numbers on the rim, all in one badge: buildings top left, the time left top
  * right, the amount on the foot; how far production has come as an arc, its rim in its state's tone (producing good,
- * idle warn). One size wherever it stands, in a list or a panel, so every ring in a row reads alike. `tip` is its hover
- * (the resource's name), `label` all it says for assistive technology. With `onClick` it is a button.
+ * idle warn). One size wherever it stands, in a list or a panel, so every ring in a row reads alike. The two top badges
+ * share one line, so they push apart and never cover each other, and the ring writes the time left (`timeLeft`, in
+ * seconds) by its largest unit, the most that fits beside a count; a time that never runs out has nothing to count and
+ * shows no badge. `tip` is its hover (the resource's name), `label` all it says for assistive technology. With
+ * `onClick` it is a button.
  */
 export const HudRing = ({
   icon,
@@ -752,7 +756,7 @@ export const HudRing = ({
   tip,
   state,
   corner,
-  timer,
+  timeLeft,
   foot,
   progress,
   onClick,
@@ -762,11 +766,13 @@ export const HudRing = ({
   tip?: string;
   state?: "producing" | "idle";
   corner?: ReactNode;
-  timer?: ReactNode;
+  timeLeft?: number;
   foot?: ReactNode;
   progress?: number;
   onClick?: () => void;
 }) => {
+  const time =
+    timeLeft !== undefined && Number.isFinite(timeLeft) ? formatDuration(timeLeft, { largest: true }) : undefined;
   const body = (
     <>
       {progress !== undefined && (
@@ -778,14 +784,18 @@ export const HudRing = ({
       <span className="ui-ring__face">
         <Icon name={icon} size={32} />
       </span>
-      {corner !== undefined && (
-        <span className="ui-ring__badge" data-at="corner">
-          {corner}
-        </span>
-      )}
-      {timer !== undefined && (
-        <span className="ui-ring__badge" data-at="timer">
-          {timer}
+      {(corner !== undefined || time !== undefined) && (
+        <span className="ui-ring__top">
+          {corner !== undefined && (
+            <span className="ui-ring__badge" data-at="corner">
+              {corner}
+            </span>
+          )}
+          {time !== undefined && (
+            <span className="ui-ring__badge" data-at="timer">
+              {time}
+            </span>
+          )}
         </span>
       )}
       {foot !== undefined && (

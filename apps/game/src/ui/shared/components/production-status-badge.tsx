@@ -2,7 +2,6 @@ import { type FC } from "react";
 
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudRing } from "@/ui/design-system/kit/hud-elements";
-import { productionTimeLeft } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
@@ -11,7 +10,8 @@ const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
  * The one resource ring, wherever a resource shows with its production (the holding card, the structure details, the
  * Production and Build windows): the sheet's ring, its rim in its state's tone, its arc emptying over the last ten
  * minutes of production, how many buildings make it on the top-left badge, how much is held on the foot, and while it
- * produces, the time left top right. Its hover names the resource only; the badges say the rest.
+ * produces, the time left top right (none for a production that never runs out). Its hover names the resource only;
+ * the badges say the rest.
  */
 interface ProductionStatusBadgeProps {
   resource: ResourcesIds;
@@ -49,11 +49,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       corner={buildings > 0 ? buildings : undefined}
       // Whole minutes only: automation refills inputs every minute, so under a minute is a topped-up resource's
       // normal state, not a warning, and shows no badge.
-      timer={
-        isProducing && remaining !== null && remaining >= 60
-          ? productionTimeLeft(Math.ceil(remaining / 60) * 60)
-          : undefined
-      }
+      timeLeft={isProducing && remaining !== null && remaining >= 60 ? Math.ceil(remaining / 60) * 60 : undefined}
       foot={amount}
       progress={
         !isProducing

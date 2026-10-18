@@ -29,14 +29,22 @@ describe("the resource ring", () => {
     expect(chip(host, "timer")).toBe("18m");
     expect(chip(host, "foot")).toBe("1.3K");
     expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 3600 }), "timer")).toBe("3h");
-    // Production with no inputs to run out of (a farm's wheat) never stops: the badge says so.
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: Number.POSITIVE_INFINITY }), "timer")).toBe("no end");
   });
 
-  it("shows no time while idle, without a known time, or under a minute", () => {
+  it("writes the time left by its largest unit, the most that fits on the rim beside a count", () => {
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 7 * 3600 + 14 * 60 }), "timer")).toBe("7h");
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 23 * 3600 + 59 * 60 }), "timer")).toBe("23h");
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 86_400 + 4 * 3600 }), "timer")).toBe("3d");
+  });
+
+  it("shows no time while idle, without a known time, under a minute, or when production never runs out", () => {
     expect(chip(ring({ isProducing: false, timeRemainingSeconds: 600 }), "timer")).toBeNull();
     expect(chip(ring({ isProducing: true, timeRemainingSeconds: null }), "timer")).toBeNull();
     expect(chip(ring({ isProducing: true, timeRemainingSeconds: 45 }), "timer")).toBeNull();
+    // A farm's wheat has no inputs to run out of: there is no time left to count, and its count stands alone.
+    const endless = ring({ isProducing: true, timeRemainingSeconds: Number.POSITIVE_INFINITY });
+    expect(chip(endless, "timer")).toBeNull();
+    expect(chip(endless, "corner")).toBe("3");
   });
 
   it("tells producing from idle by its rim", () => {

@@ -11,21 +11,23 @@ const AGO = "ago";
 /**
  * A duration as "3d 4h", "7h 14m", "12h" or "42m", counted up to the next whole minute so time still left never reads
  * 0m. Frontier passes `{ days: false }`: its days run 8 to 24 hours, so a count of 24-hour days would misread there, and
- * its durations stay in hours ("30h").
+ * its durations stay in hours ("30h"). `{ largest: true }` keeps its first unit only ("3d", "7h", "42m"), where a
+ * glance is all that fits: a resource ring's rim.
  */
-export const formatDuration = (seconds: number | undefined, { days = true } = {}): string => {
+export const formatDuration = (seconds: number | undefined, { days = true, largest = false } = {}): string => {
   if (seconds === undefined) return DASH;
   const minutes = Math.max(0, Math.ceil(seconds / 60));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
+  const units = (written: string[]) => (largest ? written.slice(0, 1) : written).join(" ");
   if (days && hours >= 24) {
     // Past a day the minutes go, rounded into the hour, as they are rounded into the minute below.
     const wholeHours = Math.ceil(minutes / 60);
     const left = wholeHours % 24;
-    return left === 0 ? `${wholeHours / 24}d` : `${Math.floor(wholeHours / 24)}d ${left}h`;
+    return units(left === 0 ? [`${wholeHours / 24}d`] : [`${Math.floor(wholeHours / 24)}d`, `${left}h`]);
   }
   if (hours === 0) return `${rest}m`;
-  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+  return units(rest === 0 ? [`${hours}h`] : [`${hours}h`, `${rest}m`]);
 };
 
 /**

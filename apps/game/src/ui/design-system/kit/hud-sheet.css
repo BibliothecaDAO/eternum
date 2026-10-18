@@ -488,7 +488,8 @@ button.ui-panel__name {
 }
 
 /* ── Ring: a painting in a round well, its numbers on badges pinned to the rim, all in one badge: buildings top left,
-   the time left top right, the amount on the foot; a production arc around it. ── */
+   the time left top right, the amount on the foot; a production arc around it. The two top badges share one line as
+   wide as the rim, so they push apart rather than cover each other. ── */
 .ui-ring {
   --ring-size: 48px;
   --ring-face: 40px;
@@ -539,12 +540,21 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-ring[data-production] .ui-ring__face {
   border-color: var(--ring-tone);
 }
-.ui-ring__badge {
+.ui-ring__top {
   position: absolute;
+  top: -2px;
+  left: 50%;
+  display: flex;
+  width: max-content;
+  min-width: calc(100% + 4px);
+  gap: 2px;
+  transform: translateX(-50%);
+}
+.ui-ring__badge {
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-round);
   background: var(--hud-surface-to);
-  padding: 0 theme(spacing.1);
+  padding: 0 3px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-badge);
   line-height: var(--hud-line-badge);
@@ -552,18 +562,14 @@ button.ui-ring:focus-visible .ui-ring__face {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.ui-ring__badge[data-at="corner"] {
-  top: -2px;
-  left: -2px;
+.ui-ring__badge[data-at="timer"] {
+  margin-left: auto;
 }
 .ui-ring__badge[data-at="foot"] {
+  position: absolute;
   bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-}
-.ui-ring__badge[data-at="timer"] {
-  top: -2px;
-  right: -2px;
 }
 
 /* ── List row: one thing of a list (a holding, a player): what it is, what it says, its value; chosen, a gold bar. ── */

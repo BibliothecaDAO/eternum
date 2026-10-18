@@ -116,6 +116,14 @@ describe("times", () => {
     expect(formatDuration(7 * 3600 + 14 * 60)).toBe("7h 14m");
   });
 
+  it("writes a duration's largest unit alone where only a glance fits", () => {
+    expect(formatDuration(3 * 86_400 + 4 * 3600 + 120, { largest: true })).toBe("3d");
+    expect(formatDuration(23 * 3600 + 59 * 60, { largest: true })).toBe("23h");
+    expect(formatDuration(7 * 3600 + 14 * 60, { largest: true })).toBe("7h");
+    expect(formatDuration(17 * 60 + 5, { largest: true })).toBe("18m");
+    expect(formatDuration(30 * 3600, { days: false, largest: true })).toBe("30h");
+  });
+
   it("says how long ago a moment was, and its date from a day back", () => {
     const now = new Date(2026, 9, 18, 12, 0).getTime() / 1000;
     expect(formatAgo(now - 3, now)).toBe("just now");
