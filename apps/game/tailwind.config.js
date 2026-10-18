@@ -8,6 +8,8 @@ import {
   HUD_COLOR_CLASSES,
   HUD_COLORS,
   HUD_FINISH,
+  HUD_LAYERS,
+  HUD_LAYOUT,
   HUD_MODES,
   HUD_PHONE,
   HUD_TYPE,
@@ -22,6 +24,10 @@ import {
   TYPE,
   WIDTHS,
 } from "./src/tokens";
+
+/** A token group as theme values named `<prefix>-<name>` (`hud-column`), so a class reads its role (`w-hud-column`). */
+const prefixed = (group, prefix) =>
+  Object.fromEntries(Object.entries(group).map(([name, value]) => [`${prefix}-${name}`, value]));
 
 /**
  * A finish group as theme values that read the surface's variable (`var(--shadow-mark)`), so one class draws the HUD's
@@ -62,7 +68,8 @@ export default {
       borderRadius: RADII,
       maxWidth: WIDTHS,
       width: WIDTHS,
-      spacing: GUTTERS,
+      spacing: { ...GUTTERS, ...prefixed(HUD_LAYOUT, "hud") },
+      zIndex: prefixed(HUD_LAYERS, "hud"),
       screens: SCREENS,
       typography: ({ theme }) => ({
         pink: {

@@ -10,8 +10,9 @@
   font-weight: var(--hud-weight-body);
 }
 
-/* ── Panel: the HUD's one panel (InfoBubble), a header band naming it over a divider, then its body. ── */
+/* ── Panel: the HUD's one panel, a header band naming it over a divider, then its body; a section is a part of one. ── */
 .ui-panel {
+  pointer-events: auto;
   border: 1px solid var(--hud-line);
   border-radius: var(--hud-radius-panel);
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
@@ -29,7 +30,43 @@
   line-height: var(--hud-line-title);
   font-weight: var(--hud-weight-title);
 }
+/* The panel's name: its chevron (when it folds), its icon and its title, one line. */
+.ui-panel__name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing.2);
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.ui-panel__name {
+  cursor: pointer;
+  user-select: none;
+}
+.ui-panel__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-panel__chevron,
+.ui-panel__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.ui-panel__chevron {
+  opacity: 0.8;
+  transition: transform var(--hud-fast) var(--hud-ease);
+}
+.ui-panel__chevron[data-folded="true"] {
+  transform: rotate(-90deg);
+}
 .ui-panel__cue {
+  flex: none;
   color: var(--hud-cue);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
@@ -37,6 +74,13 @@
 }
 .ui-panel__body {
   padding: theme(spacing[1.5]) theme(spacing.3) theme(spacing.3);
+}
+/* A body of sections: each section brings its own padding, a divider between each. */
+.ui-panel__body[data-divided] {
+  padding: 0;
+}
+.ui-panel__body[data-divided] > * + * {
+  border-top: 1px solid var(--hud-divider);
 }
 
 /* ── Button: primary (the one verb), secondary (beside it), quiet (a way out), icon (a square of the secondary). ── */
@@ -605,9 +649,14 @@ button.ui-row {
 
 /* ── Minimap frame: a panel with no header, its map in a well. ── */
 .ui-minimap {
+  display: flex;
+  flex-direction: column;
   padding: theme(spacing[1.5]);
 }
 .ui-minimap__well {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--hud-divider);
   border-radius: var(--hud-radius-control);
@@ -1128,6 +1177,12 @@ button.ui-row {
   to {
     transform: rotate(360deg);
   }
+}
+.ui-minimap__loading.ui-skeleton {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  border-radius: 0;
 }
 .ui-skeleton {
   height: 12px;

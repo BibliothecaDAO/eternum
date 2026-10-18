@@ -1,3 +1,4 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   type ButtonHTMLAttributes,
@@ -197,23 +198,93 @@ export const HudTip = ({ line, why, how }: { line: string; why?: string; how?: s
   </span>
 );
 
-/** The HUD's one panel (the InfoBubble look): a header band naming it, a cue at its end, then its body. */
+/**
+ * The HUD's one panel: a header band naming it (its icon, its title, a cue at its end) over a divider, then its body.
+ * With a `label` it is a named section for assistive technology (a landmark). Its chevron and title fold its body away
+ * unless `collapsible` is off; the cue's own controls never fold it. A `section` is a part of a panel: the same header
+ * and body on the panel's surface, and a `divided` body stacks such sections with a divider between each.
+ * `className` and `bodyClassName` place the panel and lay out its body (flex, overflow, a height, no padding), never
+ * its look.
+ */
 export const HudPanel = ({
   title,
   cue,
+  icon,
+  label,
+  collapsible = true,
+  defaultCollapsed = false,
+  kind = "panel",
+  divided = false,
+  className,
+  bodyClassName,
   children,
-  ...rest
-}: { title?: ReactNode; cue?: ReactNode; children: ReactNode } & HTMLAttributes<HTMLElement>) => (
-  <section {...rest} className="ui ui-panel">
-    {title !== undefined && (
-      <header className="ui-panel__head">
-        <span>{title}</span>
-        {cue !== undefined && <span className="ui-panel__cue">{cue}</span>}
-      </header>
-    )}
-    <div className="ui-panel__body">{children}</div>
-  </section>
-);
+}: {
+  title?: ReactNode;
+  cue?: ReactNode;
+  icon?: IconMeaning;
+  label?: string;
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+  kind?: "panel" | "section";
+  divided?: boolean;
+  className?: string;
+  bodyClassName?: string;
+  children: ReactNode;
+}) => {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const folded = collapsible && collapsed;
+  const Root = label ? "section" : "div";
+  return (
+    <Root aria-label={label} className={cn(kind === "panel" ? "ui ui-panel" : "ui-section", "shrink-0", className)}>
+      {title !== undefined && (
+        <PanelHead
+          title={title}
+          icon={icon}
+          cue={cue}
+          fold={collapsible ? { folded, toggle: () => setCollapsed((value) => !value) } : null}
+        />
+      )}
+      {!folded && (
+        <div className={cn("ui-panel__body", bodyClassName)} data-divided={divided || undefined}>
+          {children}
+        </div>
+      )}
+    </Root>
+  );
+};
+
+/** A panel's header band: its name (a fold toggle when the panel folds) and its cue. */
+const PanelHead = ({
+  title,
+  icon,
+  cue,
+  fold,
+}: {
+  title: ReactNode;
+  icon?: IconMeaning;
+  cue?: ReactNode;
+  fold: { folded: boolean; toggle: () => void } | null;
+}) => {
+  const name = (
+    <>
+      {fold && <Icon name="chevron-down" className="ui-panel__chevron" data-folded={fold.folded} />}
+      {icon && <Icon name={icon} className="ui-panel__icon" />}
+      <span className="ui-panel__title">{title}</span>
+    </>
+  );
+  return (
+    <header className="ui-panel__head">
+      {fold ? (
+        <button type="button" className="ui-panel__name" aria-expanded={!fold.folded} onClick={fold.toggle}>
+          {name}
+        </button>
+      ) : (
+        <span className="ui-panel__name">{name}</span>
+      )}
+      {cue !== undefined && <span className="ui-panel__cue">{cue}</span>}
+    </header>
+  );
+};
 
 /** A strip of choices; the chosen one in the age's accent. */
 export const HudTabs = <K extends string>({
@@ -884,9 +955,22 @@ export const HudPortrait = ({ icon, label }: { icon: IconMeaning; label: string 
   </span>
 );
 
-/** The minimap's frame: a panel with no header, its map in a well. */
-export const HudMinimapFrame = ({ children }: { children: ReactNode }) => (
-  <section className="ui ui-panel ui-minimap" aria-label="Minimap">
-    <div className="ui-minimap__well">{children}</div>
+/** The minimap's frame: a panel with no header, its map filling a well. */
+export const HudMinimapFrame = ({
+  loading = false,
+  className,
+  children,
+}: {
+  /** The map's tiles are still coming: the sheet's shimmer lies over the well. */
+  loading?: boolean;
+  /** Where the frame sits and how big it is, never its look. */
+  className?: string;
+  children: ReactNode;
+}) => (
+  <section className={cn("ui ui-panel ui-minimap", className)} aria-label="Minimap">
+    <div className="ui-minimap__well">
+      {children}
+      {loading && <span className="ui-minimap__loading ui-skeleton" aria-hidden="true" />}
+    </div>
   </section>
 );

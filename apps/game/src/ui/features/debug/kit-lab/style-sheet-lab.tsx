@@ -60,7 +60,6 @@ import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { TroopAmount } from "@/ui/features/military/components/unified-army-creation-modal/troop-amount";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { HoldingsList, useHoldings } from "@/ui/features/world/hud/holdings";
 import { Medallion } from "@/ui/features/world/hud/medallion";
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -783,30 +782,33 @@ const TooltipSection = () => (
 const PanelSection = () => (
   <Element
     name="Panel"
-    rule="The HUD's one panel: a header band naming it over a divider, a cue at its end, then its body."
+    rule="The HUD's one panel: a header band naming it (icon, title, a cue at its end) over a divider, then its body. Its chevron and title fold it, unless it never folds; a panel of parts stacks sections with a divider between each."
     sheet={
-      <div className="flex gap-4">
-        <div className="w-80">
-          <HudPanel title="Structure Tile · (-4, -3)" cue="1/1">
+      <div className="grid grid-cols-2 gap-4">
+        <HudPanel title="Next up" icon="hourglass" cue="1 of 4">
+          <HudRow title="Your army can explore" detail="+10 points a tile" />
+        </HudPanel>
+        <HudPanel title="Next up" icon="hourglass" cue="1 of 4" defaultCollapsed>
+          <HudRow title="Folded: the cue stays" />
+        </HudPanel>
+        <HudPanel title="Structure Tile · (-4, -3)" cue="1/1" collapsible={false}>
+          <HudRow title="djizus" detail="Egonal" />
+        </HudPanel>
+        <HudPanel collapsible={false}>
+          <p className="ui-row__detail">A panel with no header (the minimap's).</p>
+        </HudPanel>
+        <HudPanel divided>
+          <HudPanel kind="section" title="Structure Tile · (-4, -3)" collapsible={false}>
             <HudRow title="djizus" detail="Egonal" />
           </HudPanel>
-        </div>
-        <div className="w-80">
-          <HudPanel>
-            <p className="ui-row__detail">A panel with no header (the minimap's).</p>
+          <HudPanel kind="section" title="Guards" icon="defend" cue="2/4">
+            <HudRow title="1,100 T1 Knights" />
           </HudPanel>
-        </div>
+        </HudPanel>
       </div>
     }
     today={
-      <>
-        <div className="w-72">
-          <InfoBubble title="Structure Tile · (-4, -3)" cue="1/1">
-            <p className="text-sm text-gold">djizus · Egonal</p>
-          </InfoBubble>
-        </div>
-        <div className={cn(OVERLAY_SURFACE_BASE, "w-72 rounded-lg p-3 text-sm text-gold")}>A local overlay surface</div>
-      </>
+      <div className={cn(OVERLAY_SURFACE_BASE, "w-72 rounded-lg p-3 text-sm text-gold")}>A local overlay surface</div>
     }
   />
 );
@@ -1225,13 +1227,7 @@ const MinimapSection = () => (
         </HudMinimapFrame>
       </div>
     }
-    today={
-      <div className="w-72">
-        <InfoBubble>
-          <div className="h-40 rounded bg-black/40" />
-        </InfoBubble>
-      </div>
-    }
+    today={<div className="h-40 w-72 rounded bg-black/40" />}
   />
 );
 

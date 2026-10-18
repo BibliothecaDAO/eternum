@@ -525,6 +525,23 @@ export const HUD_PHONE = {
   "text-label": "13px",
 } as const;
 
+/**
+ * The HUD's frame on a desktop, as Tailwind's `hud-*` spacing (`w-hud-column`, `top-hud-header`, `max-h-hud-list`): its
+ * two columns' width, where they start under the top bar, the foot's inset that keeps the order bubbles clear of both
+ * columns, how tall a list grows before it scrolls, the minimap's least height and the compact HUD's section height.
+ */
+export const HUD_LAYOUT = {
+  column: "320px",
+  header: "60px",
+  foot: "344px",
+  list: "40vh",
+  minimap: "160px",
+  section: "clamp(180px, 30vh, 320px)",
+} as const;
+
+/** The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both. */
+export const HUD_LAYERS = { column: "20", foot: "26", rail: "30" } as const;
+
 /** The HUD sheet's CSS variables: `--hud-<name>`, and each type role as `--hud-text-<role>`, `--hud-line-<role>`, `--hud-weight-<role>`. */
 export const hudVariables = (): Record<string, string> => ({
   ...Object.fromEntries(Object.entries(HUD_SHEET).map(([name, value]) => [`--hud-${name}`, value])),
