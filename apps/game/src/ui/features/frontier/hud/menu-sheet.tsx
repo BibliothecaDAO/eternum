@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { EXIT, GUIDE, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
@@ -62,9 +62,15 @@ export const MenuSheet = ({
       )}
       <MenuRow icon="menu" word={SETTINGS} onClick={onSettings} />
     </nav>
-    <div className="flex gap-2">
-      <Button role="secondary" icon="exit" word={EXIT} onClick={onExit} className="w-32" />
-      <Button role="primary" word={RESUME} onClick={onClose} className="flex-1" />
+    <div className="grid grid-cols-3 gap-2">
+      <HudButton kind="secondary" icon="exit" onClick={onExit}>
+        {EXIT}
+      </HudButton>
+      <span className="col-span-2 grid">
+        <HudButton kind="primary" onClick={onClose}>
+          {RESUME}
+        </HudButton>
+      </span>
     </div>
   </Sheet>
 );

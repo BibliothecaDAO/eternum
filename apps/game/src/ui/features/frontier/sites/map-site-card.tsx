@@ -8,7 +8,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { hudPrices } from "../hud-prices";
 import { Chip } from "@/ui/design-system/kit/chip";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
@@ -114,19 +115,22 @@ export const MapSiteCard = ({
         )}
       </div>
       {plan.usable ? (
-        <Button role="primary" word={USE} loading={inFlightWord(inFlight, "use", USING)} onClick={() => void use()} />
+        <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={() => void use()}>
+          {USE}
+        </HudButton>
       ) : (
         approach && (
-          <Button
-            role="primary"
+          <HudButton
+            kind="primary"
             icon="move"
-            word={MOVE}
-            prices={[
+            prices={hudPrices([
               { of: "stamina", amount: approach.stamina.cost },
               { of: "wheat", amount: approach.wheat.cost },
-            ]}
+            ])}
             onClick={() => requestOrderAt(approach.target)}
-          />
+          >
+            {MOVE}
+          </HudButton>
         )
       )}
     </Sheet>

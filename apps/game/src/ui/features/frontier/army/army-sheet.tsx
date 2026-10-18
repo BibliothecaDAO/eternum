@@ -1,7 +1,8 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { hudPrices } from "../hud-prices";
 import { Chip, FullIn } from "@/ui/design-system/kit/chip";
 
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
@@ -245,13 +246,14 @@ const ChosenTier = ({
         <RefillFits refills={refills} of={refillOnBuy} />
       </div>
       {xp >= price ? (
-        <Button
-          role="primary"
-          word={UPGRADE}
-          prices={[{ of: "xp", amount: price }]}
-          loading={sending ? UPGRADING : undefined}
+        <HudButton
+          kind="primary"
+          prices={hudPrices([{ of: "xp", amount: price }])}
+          busy={sending ? UPGRADING : undefined}
           onClick={onUpgrade}
-        />
+        >
+          {UPGRADE}
+        </HudButton>
       ) : (
         <ReasonPlate reason={{ kind: "short", of: "xp", held: xp, need: price }} />
       )}

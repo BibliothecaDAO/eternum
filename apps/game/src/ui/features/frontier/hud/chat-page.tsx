@@ -1,4 +1,4 @@
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { SIGN_IN } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell } from "@/ui/features/social";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
@@ -36,7 +36,9 @@ export const ChatPage = ({
       />
     ) : (
       <div className="flex flex-1 items-center justify-center p-4">
-        <Button role="primary" word={SIGN_IN} onClick={onSignIn} />
+        <HudButton kind="primary" onClick={onSignIn}>
+          {SIGN_IN}
+        </HudButton>
       </div>
     )}
   </section>

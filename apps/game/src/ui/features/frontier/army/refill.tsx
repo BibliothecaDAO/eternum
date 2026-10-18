@@ -1,6 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { hudPrices } from "../hud-prices";
 import { Chip } from "@/ui/design-system/kit/chip";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
@@ -38,14 +39,15 @@ export const RefillButton = ({
       </span>
     </span>
   ) : (
-    <Button
-      role="secondary"
+    <HudButton
+      kind="secondary"
       icon="stamina"
-      word={REFILL}
-      prices={[{ of: "lords", amount: price }]}
-      loading={refilling ? REFILLING : undefined}
+      prices={hudPrices([{ of: "lords", amount: price }])}
+      busy={refilling ? REFILLING : undefined}
       onClick={onRefill}
-    />
+    >
+      {REFILL}
+    </HudButton>
   );
 
 /**
@@ -84,16 +86,20 @@ export const RefillConfirm = ({
           value={`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}
         />
       </div>
-      <div className="flex gap-2">
-        <Button role="outline" word={CANCEL} onClick={onCancel} className="w-32" />
-        <Button
-          role="primary"
-          word={REFILL}
-          prices={[{ of: "lords", amount: price }]}
-          loading={sending ? REFILLING : undefined}
-          onClick={onRefill}
-          className="flex-1"
-        />
+      <div className="grid grid-cols-3 gap-2">
+        <HudButton kind="quiet" onClick={onCancel}>
+          {CANCEL}
+        </HudButton>
+        <span className="col-span-2 grid">
+          <HudButton
+            kind="primary"
+            prices={hudPrices([{ of: "lords", amount: price }])}
+            busy={sending ? REFILLING : undefined}
+            onClick={onRefill}
+          >
+            {REFILL}
+          </HudButton>
+        </span>
       </div>
     </Sheet>
   );

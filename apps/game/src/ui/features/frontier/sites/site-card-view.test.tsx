@@ -75,7 +75,7 @@ describe("a guarded site's card", () => {
     expect(card.querySelector('[aria-label="Rare"]')).not.toBeNull();
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
-    expect(attack.dataset.warns).toBe("true");
+    expect([attack.dataset.kind, attack.dataset.tone]).toEqual(["secondary", "bad"]);
     expect(document.querySelector('[role="status"]')?.textContent).toBe("Army will be lost");
   });
 

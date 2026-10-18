@@ -1,7 +1,9 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { Button, type Price } from "@/ui/design-system/kit/button";
+import type { Price } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { hudPrices } from "../hud-prices";
 import { Chip } from "@/ui/design-system/kit/chip";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
@@ -306,30 +308,32 @@ const Verb = ({
   if (!verb) return null;
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        {onRealm && <Button role="secondary" icon="realm" word={REALM} className="w-32" onClick={onRealm} />}
-        {verb.kind === "move" ? (
-          <Button
-            role="primary"
-            icon="move"
-            word={MOVE}
-            prices={verb.prices}
-            onClick={verb.onMove}
-            className="flex-1"
-          />
-        ) : (
-          <Button
-            role="primary"
-            icon="attack"
-            word={ATTACK}
-            prices={attackPrices(verb)}
-            loading={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
-            disabled={verb.kind !== "attack"}
-            warns={warns}
-            onClick={verb.kind === "attack" ? verb.onAttack : undefined}
-            className="flex-1"
-          />
+      <div className={cn("grid gap-2", onRealm && "grid-cols-3")}>
+        {onRealm && (
+          <HudButton kind="secondary" icon="realm" onClick={onRealm}>
+            {REALM}
+          </HudButton>
         )}
+        <span className={cn("grid", onRealm && "col-span-2")}>
+          {verb.kind === "move" ? (
+            <HudButton kind="primary" icon="move" prices={hudPrices(verb.prices)} onClick={verb.onMove}>
+              {MOVE}
+            </HudButton>
+          ) : (
+            // An attack that loses the army is no gold verb: it says so in the bad tone and waits for a deliberate tap.
+            <HudButton
+              kind={warns ? "secondary" : "primary"}
+              tone={warns ? "bad" : undefined}
+              icon="attack"
+              prices={hudPrices(attackPrices(verb))}
+              busy={verb.kind === "attack" ? inFlightWord(verb.inFlight, "attack", ATTACKING) : undefined}
+              disabled={verb.kind !== "attack"}
+              onClick={verb.kind === "attack" ? verb.onAttack : undefined}
+            >
+              {ATTACK}
+            </HudButton>
+          )}
+        </span>
       </div>
       <VerbLine {...verbLine(verb, site, warns)} />
     </div>

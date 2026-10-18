@@ -1,6 +1,7 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { formatAmount, formatCharge, formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { Chip } from "@/ui/design-system/kit/chip";
 
 import { formatDuration } from "@/ui/design-system/kit/time";
@@ -70,15 +71,18 @@ export const OrderBar = ({
         {covered && kind === "explore" && <Chip icons={[]} label={XP} value={`+${formatAmount(xp)}`} unit={XP} />}
         {covered && kind === "move" && <Chip icons={["move"]} label={MOVE} value={formatAmount(tiles)} />}
       </div>
-      <div className="pointer-events-auto flex gap-2">
-        <Button
-          role="outline"
-          word={CANCEL}
-          onClick={onCancel}
-          className={covered || staminaShort ? "!h-14 w-hud-frontier-side" : "!h-14 flex-1"}
-        />
-        {covered && <Button role="primary" icon={verb.icon} word={verb.word} onClick={onGo} className="flex-1" />}
-        {staminaShort && refill}
+      <div className={cn("pointer-events-auto grid gap-2", (covered || staminaShort) && "grid-cols-3")}>
+        <HudButton kind="quiet" onClick={onCancel}>
+          {CANCEL}
+        </HudButton>
+        {covered && (
+          <span className="col-span-2 grid">
+            <HudButton kind="primary" icon={verb.icon} onClick={onGo}>
+              {verb.word}
+            </HudButton>
+          </span>
+        )}
+        {staminaShort && <span className="col-span-2 grid">{refill}</span>}
       </div>
     </>
   );
@@ -89,11 +93,13 @@ export const OrderBar = ({
  * next order, which leaves when the order in flight applies. Cancel drops it; another tap replaces it.
  */
 export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
-  <div className="pointer-events-auto flex gap-2">
-    <div className="frontier-card flex min-h-11 flex-1 items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
+  <div className="pointer-events-auto grid grid-cols-3 gap-2">
+    <div className="frontier-card col-span-2 flex min-h-11 items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
       <Chip icons={["hourglass"]} label={NEXT_ORDER} value={QUEUED} />
     </div>
-    <Button role="outline" word={CANCEL} onClick={onCancel} className="!h-14 w-hud-frontier-side" />
+    <HudButton kind="quiet" onClick={onCancel}>
+      {CANCEL}
+    </HudButton>
   </div>
 );
 
