@@ -205,7 +205,6 @@ const ResourceRings = ({
             timeRemainingSeconds={reading.secondsLeft}
             buildings={reading.buildings}
             amount={formatInventoryAmount(reading.held)}
-            size="md"
           />
         </li>
       ))}

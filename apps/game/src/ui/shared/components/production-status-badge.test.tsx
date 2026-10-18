@@ -14,7 +14,7 @@ import { ProductionStatusBadge } from "./production-status-badge";
 const ring = (props: { isProducing: boolean; timeRemainingSeconds: number | null }) => {
   const host = document.createElement("div");
   host.innerHTML = renderToStaticMarkup(
-    <ProductionStatusBadge resource={ResourcesIds.Wood} buildings={3} amount="1.3K" size="md" {...props} />,
+    <ProductionStatusBadge resource={ResourcesIds.Wood} buildings={3} amount="1.3K" {...props} />,
   );
   return host;
 };

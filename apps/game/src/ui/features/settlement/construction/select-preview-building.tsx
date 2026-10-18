@@ -1144,7 +1144,6 @@ export const BuildingCard = ({
         resource={resource}
         isProducing={productionStatus.isProducing}
         timeRemainingSeconds={effectiveRemainingSeconds}
-        size="md"
         showTooltip={false}
         buildings={totalProductionBuildings}
         amount={outputLabel}

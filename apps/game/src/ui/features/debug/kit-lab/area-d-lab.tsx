@@ -97,7 +97,6 @@ export const AreaDLab = () => {
               timeRemainingSeconds={1_020}
               buildings={3}
               amount="1.2K"
-              size="md"
             />
             <ProductionStatusBadge
               resource={ResourcesIds.Wood}
@@ -105,14 +104,12 @@ export const AreaDLab = () => {
               timeRemainingSeconds={240}
               buildings={2}
               amount="840"
-              size="md"
             />
             <ProductionStatusBadge
               resource={ResourcesIds.Essence}
               isProducing={false}
               timeRemainingSeconds={null}
               amount="6.4K"
-              size="md"
             />
           </div>
         </Surface>

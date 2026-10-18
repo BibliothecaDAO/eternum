@@ -1169,14 +1169,12 @@ const RingSection = () => (
           timeRemainingSeconds={1020}
           buildings={3}
           amount="1.2K"
-          size="md"
         />
         <ProductionStatusBadge
           resource={ResourcesIds.Essence}
           isProducing={false}
           timeRemainingSeconds={null}
           amount="6.4K"
-          size="md"
         />
         <Medallion icon="realm" size="lg" corner={2} foot="Lv 2" />
       </>

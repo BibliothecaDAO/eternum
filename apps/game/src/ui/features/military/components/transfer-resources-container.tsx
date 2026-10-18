@@ -489,12 +489,7 @@ export const TransferResourcesContainer = ({
             <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
             <span className="ml-2">{ResourcesIds[resource.resourceId]}</span>
           </div>
-          <HudButton
-            kind="secondary"
-            size="sm"
-            tone={isSelected ? "bad" : undefined}
-            onClick={() => toggleResourceSelection(resource)}
-          >
+          <HudButton kind="secondary" size="sm" onClick={() => toggleResourceSelection(resource)}>
             {isSelected ? "Remove" : "Select"}
           </HudButton>
         </div>

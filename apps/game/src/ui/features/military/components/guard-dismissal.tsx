@@ -72,8 +72,7 @@ export const GuardDismissal = ({
         </>
       ) : (
         <HudButton
-          kind="secondary"
-          tone="bad"
+          kind="danger"
           disabled={disabled}
           busy={pending ? "Dismissing…" : undefined}
           onClick={confirmsDismissal ? ask : dismiss}

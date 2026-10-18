@@ -159,7 +159,6 @@ const SidebarRealm = ({
                 isProducing={summary.isProducing}
                 timeRemainingSeconds={summary.timeRemainingSeconds}
                 buildings={summary.totalBuildings}
-                size="sm"
                 onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
               />
             ))
@@ -290,8 +289,7 @@ export const ProductionSidebar = memo(
                 <HudButton
                   key={preset.id}
                   kind="secondary"
-                  size="sm"
-                  title={preset.description}
+                    title={preset.description}
                   onClick={() => applyPreset(preset.id)}
                 >
                   {preset.label}

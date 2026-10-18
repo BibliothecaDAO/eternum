@@ -21,8 +21,6 @@ interface ProductionStatusBadgeProps {
   buildings?: number;
   /** How much is held, already formatted ("12.4K"): the foot. */
   amount?: string;
-  /** sm in a list, md in a card or panel. */
-  size?: "sm" | "md";
   onClick?: () => void;
   showTooltip?: boolean;
   /** Changes when the caller wants one accrual sweep around the ring; unchanged keys never replay it. */
@@ -35,7 +33,6 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   timeRemainingSeconds,
   buildings = 0,
   amount,
-  size = "md",
   onClick,
   showTooltip = true,
   accrualKey,
@@ -48,7 +45,6 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       icon={meaning}
       label={name}
       tip={showTooltip ? name : undefined}
-      size={size}
       state={isProducing ? "producing" : "idle"}
       corner={buildings > 0 ? buildings : undefined}
       // Whole minutes only: automation refills inputs every minute, so under a minute is a topped-up resource's

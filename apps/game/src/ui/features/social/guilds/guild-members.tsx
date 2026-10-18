@@ -189,8 +189,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
       <div className="mt-4 flex flex-wrap gap-2">
         {userGuild?.entityId === selectedGuildEntityId && (
           <HudButton
-            kind="secondary"
-            tone="bad"
+            kind="danger"
             icon="minus"
             busy={isLoading ? "Leaving…" : undefined}
             onClick={() => (userGuild.isOwner ? disbandGuild() : leaveGuild())}
