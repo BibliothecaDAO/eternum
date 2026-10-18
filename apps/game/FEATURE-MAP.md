@@ -17,10 +17,15 @@ the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every s
 each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's fixtures;
 `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks them
 (nothing spills out of its block, every picture loads, one gold verb at most, the painting and the bar on a desktop),
-then the app's other pages and every element of the sheet. `/lab/kit/panels` the HUD's holdings and selected-realm
-panels as a player sees them, on a fixture realm. `/lab/kit/guidance` the points-first guidance (the goal in the top
-bar, Next up's route, Events rows with outcomes). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and
-window body, Combat and crate panel as the game draws them, on the deploy fixture's realm; capture them with
+the bar with the longest name beside the install notice at 1024 and 1440 px (`/lab/app/long-name`), the lobby's entry
+with every choice taken at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet. The four
+pages: Play (`/`) the lead widest and each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry
+and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results
+(`/results/:id`) the player's place and points, the game's board, points by kind and the chest at its tier.
+`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with outcomes).
+`/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate panel as the game
+draws them, on the deploy fixture's realm; capture them with
 `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
 number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
 text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any

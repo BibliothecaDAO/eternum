@@ -35,9 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
-    title: "The app's new look on desktop",
+    title: "The app's new look",
     description:
-      "On a desktop every page outside a game stands on its painting under one bar: Play and Season with their icons, your name and portrait at its right end. Back shows its Esc key and a page's one gold step its Enter key.",
+      "Play, the Blitz lobby, Season and Results have a new look. Each stands on its painting under one bar: Play and Season with their icons, your name and portrait at its right end. Play shows each age side by side, the lobby who is in, the entry and the chat together, Season your place over both boards, and Results your place, your points by kind and your chest at its tier.",
     type: "improvement",
   },
   {

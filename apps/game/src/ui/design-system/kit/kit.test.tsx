@@ -24,7 +24,7 @@ import { SectionLabel } from "./section-label";
 import { SettingRow } from "./setting-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
-import { FailureCard, StateCard } from "./state-card";
+import { StateCard } from "./state-card";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
 import { Title } from "./title";
@@ -431,7 +431,7 @@ describe("Panel", () => {
 });
 
 describe("StateCard", () => {
-  it("shows its painting over one line, and a failed read as the storm with the service's line and Try again", () => {
+  it("shows its painting over one line, at the width its host gives it", () => {
     const card = renderToStaticMarkup(
       <StateCard painting="brooding-plains" sizes="50vw">
         <p>No season running</p>
@@ -439,12 +439,6 @@ describe("StateCard", () => {
     );
     expect(card).toContain("brooding-plains-800.webp");
     expect(card).toContain('sizes="50vw"');
-    const retry = vi.fn();
-    act(() => root.render(<FailureCard service="season" error={new Error("down")} retry={retry} />));
-    expect(host.querySelector("img")?.getAttribute("src")).toContain("stormy");
-    expect(host.textContent).toContain("Season did not answer.");
-    act(() => host.querySelector("button")!.click());
-    expect(retry).toHaveBeenCalled();
   });
 });
 

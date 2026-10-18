@@ -251,6 +251,20 @@ export const YOU = "You";
 
 /** The season list and its end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_OVER = "Season over";
+
+/** A finished game's Results: its panels and how its points were made, each kind on its row. */
+export const RESULT_WORDS = {
+  theGame: "The game",
+  yourPoints: "Your points",
+  tiles: "Tiles explored",
+  crates: "Crates opened",
+  riftsAndCamps: "Rifts and camps",
+  hyperstructuresTaken: "Hyperstructures taken",
+  hyperstructuresHeld: "Hyperstructures held",
+  sitesCleared: "Sites cleared",
+  chests: "Chests",
+  deepest: "Deepest",
+} as const;
 export const YOU_PLACED = "You placed";
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 export const SEASON_ERROR = "Season did not answer.";

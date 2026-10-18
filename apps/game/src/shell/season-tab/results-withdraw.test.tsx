@@ -95,5 +95,5 @@ it("leads Back to the list that opened it, with no Continue; opened from Play, C
 
   const fromPlay = await open("/results/0x52-3");
   expect(fromPlay.container.querySelector('[data-role="back"]')).toBeNull();
-  expect(fromPlay.button("Continue")!.className).toContain("primary");
+  expect(fromPlay.button("Continue")!.dataset.kind).toBe("primary");
 });

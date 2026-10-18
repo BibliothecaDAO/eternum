@@ -64,50 +64,37 @@ const open = async (width: number) => {
       </QueryClientProvider>,
     ),
   );
-  // The card's module loads before it draws.
-  for (let tick = 0; tick < 50 && !container.querySelector("svg[role=img]"); tick += 1) {
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
-  }
   unmount = () => act(async () => root.unmount());
   return container;
 };
 
 it.each([390, 1440])(
-  "leads a Blitz result with the player's score card at %i px, its buttons the page's own",
+  "leads a Blitz result with the player's place and points at %i px, its buttons the page's own",
   async (width) => {
     const page = await open(width);
     const body = page.querySelector('[data-band="body"]')!;
-    // The first thing in the body is the card, naming the player's place and points.
-    const card = body.querySelector("svg[role=img]")!;
-    expect(card.getAttribute("aria-label")).toContain("at 3rd place");
-    expect(card.textContent).toContain("352");
-    expect(body.firstElementChild!.contains(card)).toBe(true);
-    // The card carries no buttons: Continue (the gold, with no chest to open) and Share are the page's.
-    const buttons = [...page.querySelectorAll("button")].map((button) => [
-      button.textContent,
-      /primary/.test(button.className),
-    ]);
+    // The first panel in the body is the outcome: the player's place of the field and their points.
+    const outcome = body.querySelector(".app-panel")!;
+    expect(outcome.textContent).toContain("3rd of 3");
+    expect(outcome.textContent).toContain("352 points");
+    // Continue (the gold, with no chest to open) and Share are the page's own.
+    const buttons = [...page.querySelectorAll("button")].map((button) => [button.textContent, button.dataset.kind]);
     expect(buttons).toEqual([
-      ["Continue", true],
-      ["Share", false],
+      ["Share", "quiet"],
+      ["Continue", "primary"],
     ]);
   },
 );
 
-it.each([
-  [390, "0 0 340 630", "portrait"],
-  [1440, "0 0 960 540", "landscape"],
-])("draws the card at %i px with viewBox %s, its %s arrangement", async (width, viewBox) => {
-  const card = (await open(width)).querySelector("svg[role=img]")!;
-  expect(card.getAttribute("viewBox")).toBe(viewBox);
-  // The same parts either way: the place, the points and the five ways they were scored.
-  for (const label of [
-    "Points Secured",
-    "Tiles Explored",
-    "Crates Opened",
-    "Rifts & Camps",
-    "Hyperstructures taken",
-    "Hyperstructures held",
-  ])
-    expect(card.textContent).toContain(label);
+it("says how the player's points were made, a row per kind with its count and points, none counted twice", async () => {
+  const page = await open(1440);
+  const panels = [...page.querySelectorAll(".app-panel")];
+  const points = panels.find((panel) => panel.querySelector("h2")?.textContent === "Your points")!;
+  expect([...points.querySelectorAll(".app-row")].map((row) => row.textContent)).toEqual([
+    "Tiles explored× 3672 points",
+    "Crates opened× 330 points",
+    "Rifts and camps× 240 points",
+    "Hyperstructures taken× 1100 points",
+    "Hyperstructures held110 points",
+  ]);
 });

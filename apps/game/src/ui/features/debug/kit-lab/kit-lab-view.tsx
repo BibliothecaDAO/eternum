@@ -20,7 +20,7 @@ import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { SectionLabel } from "@/ui/design-system/kit/section-label";
 import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { FailureCard, StateCard } from "@/ui/design-system/kit/state-card";
+import { StateCard } from "@/ui/design-system/kit/state-card";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
@@ -520,7 +520,7 @@ const PanelsSection = () => (
 );
 
 const StateCardsSection = () => (
-  <Section title="StateCard · FailureCard">
+  <Section title="StateCard">
     <StateCard painting="brooding-plains">
       <p className="font-body text-lg font-bold text-kit-cream">No season running</p>
     </StateCard>
@@ -530,7 +530,6 @@ const StateCardsSection = () => (
     <StateCard painting="stormy" image="lg" sizes="100vw">
       <p className="font-body text-lg font-bold text-kit-cream">Nothing here</p>
     </StateCard>
-    <FailureCard service="season" error={new Error("lab")} retry={() => undefined} />
   </Section>
 );
 

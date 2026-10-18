@@ -1,16 +1,26 @@
-import { formatAmount, formatPoints } from "@bibliothecadao/types";
+import { formatAmount, formatOrdinal, formatPoints } from "@bibliothecadao/types";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboardEntry, HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { buildLandingLeaderboard } from "@/services/leaderboard/landing-leaderboard-service";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import {
+  AppButton,
+  AppChip,
+  AppFigure,
+  AppPanel,
+  AppPortrait,
+  AppRank,
+  AppRow,
+} from "@/ui/design-system/kit/app-elements";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import {
   CONTINUE,
+  RESULT_WORDS,
   SEASON_ENDINGS,
   SEASON_OVER,
   WITHDRAW,
@@ -28,7 +38,7 @@ import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { entryHref } from "../game-links";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
-import { backFrom, isOpenedFrom, openedFrom } from "../frame/opened-from";
+import { backFrom, isOpenedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
 import { Loading } from "../loading";
@@ -37,12 +47,11 @@ import type { Painting } from "@/ui/design-system/kit/paintings";
 import { ageOf } from "../play/ages";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
-import { FailureCard } from "@/ui/design-system/kit/state-card";
-import { Title } from "@/ui/design-system/kit/title";
-import { Figure } from "@/ui/design-system/kit/figure";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
+import { FrontierRow } from "./frontier-row";
 import { gameTitle } from "./history-row";
 import { gameOfResults } from "./results-link";
 import { type RewardSeat, useSealedChest } from "./reward";
@@ -51,11 +60,6 @@ import { RewardPanel } from "./reward-panel";
 /** The post-game score and share cards; heavy, so they load only when a player taps Share. */
 const GameReviewModal = lazy(() =>
   import("@/ui/features/game-review/game-review-modal").then((module) => ({ default: module.GameReviewModal })),
-);
-
-/** The game's score card, the one the review shows and shares; it draws a large SVG, so it loads with the page's data. */
-const ScoreCardContent = lazy(() =>
-  import("@/ui/features/game-review/score-card-content").then((module) => ({ default: module.ScoreCardContent })),
 );
 
 /** How many of the board's rows a result shows: the top three on a phone, the final top five on desktop. */
@@ -71,11 +75,11 @@ const useFinishedGame = (ref: GameRef | null) => {
 };
 
 /**
- * A finished game's Results (spec 08): the outcome first, at the top (a Blitz player's score card, the one the game's
- * review shares; or the season's ending), the board's first rows with the player's own, and Continue; Share for
- * Blitz, Season for Frontier. Opened from a list it
- * has Back to that list and no Continue; after a match (or from Play) it has no Back. A sealed chest's Open is the
- * page's one gold step, and Continue stands beside it in outline. Opening it marks the result seen on this device.
+ * A finished game's Results (spec 08; the owner's pick, C · Ledger): the outcome first (a Blitz player's place and
+ * points, or the season's ending), the board's first rows with the player's own, and Continue; Share for Blitz, Season
+ * for Frontier. Opened from a list it has Back to that list and no Continue; after a match (or from Play) it has no
+ * Back. A sealed chest's Open is the page's one gold step, and Continue stands beside it in outline. Opening it marks
+ * the result seen on this device.
  */
 export const ResultsPage = () => {
   const { id } = useParams();
@@ -93,21 +97,31 @@ export const ResultsPage = () => {
   );
 };
 
-/** Back to the list that opened it; after a match, none. The painting is the page's ground on desktop. */
+/**
+ * Back to the list that opened it; after a match, none. The painting is the page's ground on desktop. The page's
+ * buttons stand at the head's end on a desktop and in the foot on a phone.
+ */
 const ResultsFrame = ({
   fromList,
   painting,
-  foot,
+  buttons,
   children,
 }: {
   fromList: boolean;
   painting?: Painting;
-  foot?: ReactNode;
+  buttons?: ReactNode;
   children: ReactNode;
 }) => {
   const back = backFrom(useLocation(), "/profile");
+  const phone = useLayout() === "phone";
   return (
-    <PageFrame back={fromList ? back : undefined} title={WORDS.results} painting={painting} foot={foot}>
+    <PageFrame
+      back={fromList ? back : undefined}
+      title={WORDS.results}
+      aside={phone ? undefined : buttons}
+      foot={phone ? buttons : undefined}
+      painting={painting}
+    >
       {children}
     </PageFrame>
   );
@@ -120,7 +134,9 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
   if (board.isError)
     return (
       <ResultsFrame fromList={fromList}>
-        <FailureCard service="results" error={board.error} retry={() => void board.refetch()} />
+        <AppPanel>
+          <ServiceFailure service="results" error={board.error} retry={() => void board.refetch()} />
+        </AppPanel>
       </ResultsFrame>
     );
   if (board.isPending)
@@ -136,82 +152,20 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
   );
 };
 
+/** Continue to Play after a match: the step, unless a sealed chest's Open is the page's. */
+const ContinueButton = ({ fromList, chestToOpen = false }: { fromList: boolean; chestToOpen?: boolean }) =>
+  fromList ? null : (
+    <AppButton kind={chestToOpen ? "secondary" : "primary"} icon="play" step={!chestToOpen} to="/">
+      {CONTINUE}
+    </AppButton>
+  );
+
 /**
- * The outcome at the top with the board's rows: on a phone one column, the outcome above the rows; on desktop the
- * outcome and its buttons at the left, the rows at the right, over the painting as the page's ground.
+ * A Blitz's Results (the owner's pick, C · Ledger), on Blitz's painting: the player's outcome (their place, their
+ * points), and beside it the chest their seat earned with the rating it moved; under the outcome, the game's board and
+ * how the player's points were made. Share and Continue stand at the head's end on a desktop, in the foot on a phone. A
+ * reader who did not play sees which game it was and its board.
  */
-const ResultLayout = ({
-  painting,
-  outcome,
-  rows,
-  buttons,
-  fromList,
-}: {
-  painting: Painting;
-  outcome: ReactNode;
-  rows: ReactNode;
-  buttons: ReactNode;
-  fromList: boolean;
-}) =>
-  useLayout() === "phone" ? (
-    <ResultsFrame fromList={fromList} foot={buttons}>
-      <div className="flex flex-col gap-4">
-        <section className="flex flex-col gap-1">{outcome}</section>
-        {rows}
-      </div>
-    </ResultsFrame>
-  ) : (
-    <ResultsFrame fromList={fromList} painting={painting}>
-      <div className="grid grid-cols-[1fr_28rem] items-start gap-8">
-        <section className="flex flex-col gap-1">
-          {outcome}
-          <div className="pt-4">{buttons}</div>
-        </section>
-        {rows}
-      </div>
-    </ResultsFrame>
-  );
-
-/** The place, large in gold: "You placed #12 of 1,240". */
-const Placed = ({ lead, place, field }: { lead?: string; place: string; field: number }) => (
-  <p className="flex items-baseline gap-2 font-body text-base font-semibold text-kit-cream">
-    {lead}
-    <Figure size="figure" tone="gold" weight="extrabold" className="leading-none">
-      {place}
-    </Figure>
-    <span className="text-kit-muted">
-      {SEASON_WORDS.of} {formatAmount(field)}
-    </span>
-  </p>
-);
-
-/** Continue to Play after a match: the gold step, unless a sealed chest's Open is the page's. */
-const Buttons = ({
-  fromList,
-  chestToOpen = false,
-  children,
-}: {
-  fromList: boolean;
-  chestToOpen?: boolean;
-  children: ReactNode;
-}) => {
-  const navigate = useNavigate();
-  return (
-    <div className="flex gap-2">
-      {!fromList && (
-        <Button
-          role={chestToOpen ? "secondary" : "primary"}
-          word={CONTINUE}
-          icon="play"
-          className="flex-1"
-          onClick={() => navigate("/")}
-        />
-      )}
-      {children}
-    </div>
-  );
-};
-
 const BlitzResult = ({
   gameRef,
   game,
@@ -231,88 +185,135 @@ const BlitzResult = ({
   const chestToOpen = useSealedChest(game ? rewardSeatOf(game) : null);
   const top = entries.slice(0, ROWS[layout]);
   const rows = own && !top.includes(own) ? [...top, own] : top;
-  return (
-    <ResultLayout
-      painting="blitz-aftermath"
-      fromList={fromList}
-      outcome={own ? <ScoreCard own={own} game={game} /> : <GameLine game={game} />}
-      rows={
-        <div className="flex flex-col gap-5">
-          <ol className="plate px-2">
-            {rows.map((entry) => {
-              const isOwn = entry === own;
-              return (
-                <li
-                  key={entry.address}
-                  className="flex h-[52px] items-center gap-2 border-b border-kit-line px-1 last:border-b-0"
-                >
-                  <span className="w-[34px] text-center text-base tabular-nums">{entry.rank}</span>
-                  <span className="min-w-0 flex-1 text-base">
-                    <PlayerName account={entry.address} you={isOwn} portrait />
-                  </span>
-                  <span className="text-base font-bold tabular-nums">
-                    {formatPoints(Math.round(entry.totalPoints))}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-          {game && <GameReward game={game} />}
-        </div>
-      }
-      buttons={
-        <Buttons fromList={fromList} chestToOpen={chestToOpen}>
-          <Button
-            role="secondary"
-            word={SEASON_WORDS.share}
-            icon="share"
-            className="flex-1"
-            onClick={() => setSharing(true)}
+  const buttons = (
+    <span className="flex flex-wrap gap-2">
+      <AppButton kind="quiet" icon="share" onClick={() => setSharing(true)}>
+        {SEASON_WORDS.share}
+      </AppButton>
+      <ContinueButton fromList={fromList} chestToOpen={chestToOpen} />
+      {sharing && (
+        <Suspense fallback={null}>
+          <GameReviewModal
+            isOpen
+            world={{ chainId: gameRef.chainId, gameId: gameRef.gameId, name: game?.name ?? "" }}
+            nextGame={null}
+            onClose={() => setSharing(false)}
           />
-          {sharing && (
-            <Suspense fallback={null}>
-              <GameReviewModal
-                isOpen
-                world={{ chainId: gameRef.chainId, gameId: gameRef.gameId, name: game?.name ?? "" }}
-                nextGame={null}
-                onClose={() => setSharing(false)}
-              />
-            </Suspense>
-          )}
-        </Buttons>
-      }
-    />
+        </Suspense>
+      )}
+    </span>
   );
-};
-
-/**
- * The player's score card, as the game's review draws it, stacked for a portrait phone; sharing it is the page's Share
- * (the review's landscape image), so the card has no buttons.
- */
-const ScoreCard = ({ own, game }: { own: HeraldLeaderboardEntry; game: DirectoryGame | undefined }) => {
-  const layout = useLayout() === "phone" ? "portrait" : "landscape";
+  const reward = game && <GameReward game={game} />;
   return (
-    <Suspense fallback={<Loading />}>
-      <ScoreCardContent
-        worldName={game?.name ?? ""}
-        playerEntry={buildLandingLeaderboard([own])[0]}
-        showActions={false}
-        layout={layout}
-      />
-    </Suspense>
+    <ResultsFrame fromList={fromList} painting="blitz-aftermath" buttons={buttons}>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <AppPanel className="lg:col-span-8">
+          {own ? <BlitzOutcome own={own} field={entries.length} game={game} /> : <GameLine game={game} />}
+        </AppPanel>
+        {reward && <div className="flex flex-col gap-6 lg:col-span-4 lg:row-span-2">{reward}</div>}
+        <AppPanel title={RESULT_WORDS.theGame} icon="leaderboard" flush className="lg:col-span-4">
+          <ol>
+            {rows.map((entry) => (
+              <li key={entry.address}>
+                <AppRow
+                  own={entry === own}
+                  lead={<AppRank rank={entry.rank} />}
+                  title={<PlayerName account={entry.address} you={entry === own} portrait />}
+                  trail={<AppChip icon="star">{formatPoints(Math.round(entry.totalPoints))}</AppChip>}
+                />
+              </li>
+            ))}
+          </ol>
+        </AppPanel>
+        {own && (
+          <AppPanel title={RESULT_WORDS.yourPoints} icon="star" flush className="lg:col-span-4">
+            <PointsBreakdown own={own} />
+          </AppPanel>
+        )}
+      </div>
+    </ResultsFrame>
   );
 };
 
-/** A reader who did not play it: which game, and when it ended. */
+/** The player's outcome: their portrait, the game, their place of the field and their points. */
+const BlitzOutcome = ({
+  own,
+  field,
+  game,
+}: {
+  own: HeraldLeaderboardEntry;
+  field: number;
+  game: DirectoryGame | undefined;
+}) => (
+  <div className="flex flex-wrap items-center gap-8">
+    <PlayerPortrait account={own.address} />
+    <div className="flex flex-col gap-3">
+      <GameLine game={game} />
+      <span className="text-app-display text-app-ink">{`${formatOrdinal(own.rank)} ${SEASON_WORDS.of} ${formatAmount(field)}`}</span>
+      <AppFigure icon="star" tone="gold" value={formatPoints(Math.round(own.totalPoints))} />
+    </div>
+  </div>
+);
+
+/** A player's portrait, large: their chosen one, else their account's. */
+const PlayerPortrait = ({ account }: { account: string }) => {
+  const profile = usePlayerProfile(account);
+  return <AppPortrait src={playerPortraitUrl(account, profile.portrait)} name={account} size="lg" own />;
+};
+
+/** How the player's points were made, a row per kind with its icon, its count and its points; kinds with none left out. */
+const PointsBreakdown = ({ own }: { own: HeraldLeaderboardEntry }) => {
+  const entry = buildLandingLeaderboard([own])[0];
+  const kinds = [
+    { icon: "explore", word: RESULT_WORDS.tiles, count: entry.exploredTiles, points: entry.exploredTilePoints },
+    { icon: "chest", word: RESULT_WORDS.crates, count: entry.relicCratesOpened, points: entry.relicCratePoints },
+    // Herald counts rifts and camps as one: one row, as the share card draws it.
+    { icon: "rift", word: RESULT_WORDS.riftsAndCamps, count: entry.riftsTaken, points: entry.riftPoints },
+    {
+      icon: "hyperstructure",
+      word: RESULT_WORDS.hyperstructuresTaken,
+      count: entry.hyperstructuresConquered,
+      points: entry.hyperstructurePoints,
+    },
+    {
+      icon: "crown",
+      word: RESULT_WORDS.hyperstructuresHeld,
+      count: entry.hyperstructuresHeld ?? undefined,
+      points: entry.hyperstructuresHeldPoints,
+    },
+  ] as const;
+  return (
+    <div>
+      {kinds
+        .filter((kind) => (kind.points ?? 0) > 0)
+        .map((kind) => (
+          <AppRow
+            key={kind.word}
+            lead={<SemanticIcon name={kind.icon} size={28} />}
+            title={kind.word}
+            detail={kind.count ? `× ${formatAmount(kind.count)}` : undefined}
+            trail={<AppChip icon="star">{formatPoints(kind.points ?? 0)}</AppChip>}
+          />
+        ))}
+    </div>
+  );
+};
+
+/** Which game it was, and when it ended. */
 const GameLine = ({ game }: { game: DirectoryGame | undefined }) => {
   const now = useNowSeconds();
   return (
-    <p className="text-base text-kit-muted">
+    <p className="text-app-label text-app-age">
       {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
     </p>
   );
 };
 
+/**
+ * A season's Results, on the mist lifted: the season's ending and the player's place of the field with what their
+ * realm made, then the board's first rows with their own. Season and Withdraw (the realm's LORDS still to take, from the
+ * season's last card) stand at the head's end.
+ */
 const FrontierResult = ({
   gameRef,
   entries,
@@ -324,70 +325,64 @@ const FrontierResult = ({
   player: string | null;
   fromList: boolean;
 }) => {
-  const navigate = useNavigate();
-  const here = useLocation();
   const own = findOwnEntry(entries, player);
   const rows = boardRows(entries, player, ROWS[useLayout()]);
+  const frontier = ageOf("frontier");
+  const buttons = (
+    <span className="flex flex-wrap gap-2">
+      <AppButton kind="secondary" icon="leaderboard" to="/season">
+        {WORDS.season}
+      </AppButton>
+      {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
+      {own && (
+        <AppButton
+          kind="secondary"
+          icon="lords"
+          to={entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "play")}
+        >
+          {WITHDRAW}
+        </AppButton>
+      )}
+      <ContinueButton fromList={fromList} />
+    </span>
+  );
   return (
-    <ResultLayout
-      // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
-      painting={ageOf("eternum").painting}
-      fromList={fromList}
-      outcome={
-        <>
-          <Title level="hero" as="p" className="leading-tight lg:text-display">
-            {SEASON_OVER}
-          </Title>
-          <p className="font-body text-base font-bold text-kit-gold2">{SEASON_ENDINGS.lifted}</p>
-          {own && <Placed lead={YOU_PLACED} place={`#${own.rank}`} field={entries.length} />}
-          {own && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Chip icons={["flag"]} value={formatAmount(own.sites_cleared.total)} label="Sites cleared" />
-              <Chip icons={["reward-chest"]} value={formatAmount(own.chests_earned)} label="Chests" />
-              <Chip icons={["lords"]} value={formatAmount(wholeLords(own.rewards.lords))} label="LORDS" />
-              <Chip icons={["portal"]} value={formatAmount(own.deepest_depth)} label="Deepest" />
-            </div>
-          )}
-        </>
-      }
-      rows={
-        <section className="plate px-2">
-          {rows.map(({ entry, own: isOwn }) => (
-            <SeasonRow
-              key={entry.address}
-              rank={entry.rank}
-              order={entry.order}
-              name={<PlayerName account={entry.address} you={isOwn} portrait />}
-              sitesCleared={entry.sites_cleared.total}
-              lords={wholeLords(entry.rewards.lords)}
-              own={isOwn}
-              onOpen={() => navigate(`/p/${entry.address}`, { state: openedFrom(here) })}
-            />
-          ))}
-        </section>
-      }
-      buttons={
-        <Buttons fromList={fromList}>
-          <Button
-            role="secondary"
-            word={WORDS.season}
-            icon="victory"
-            className="flex-1"
-            onClick={() => navigate("/season")}
-          />
-          {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
-          {own && (
-            <Button
-              role="secondary"
-              word={WITHDRAW}
-              icon="lords"
-              className="flex-1"
-              onClick={() => navigate(entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "play"))}
-            />
-          )}
-        </Buttons>
-      }
-    />
+    // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
+    <ResultsFrame fromList={fromList} painting={ageOf("eternum").painting} buttons={buttons}>
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <AppPanel className="lg:col-span-8">
+          <div className="flex flex-col gap-4">
+            <span className="text-app-display text-app-ink">{SEASON_OVER}</span>
+            <p className="text-app-strong text-app-gold">{SEASON_ENDINGS.lifted}</p>
+            {own && (
+              <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
+                <AppFigure
+                  icon="leaderboard"
+                  tone="gold"
+                  value={`#${formatAmount(own.rank)}`}
+                  label={`${YOU_PLACED} · ${SEASON_WORDS.of} ${formatAmount(entries.length)}`}
+                />
+                <AppFigure icon="lords" tone="gold" value={formatAmount(wholeLords(own.rewards.lords))} label="LORDS" />
+              </div>
+            )}
+            {own && (
+              <div className="flex flex-wrap gap-2">
+                <AppChip icon="explore">{`${formatAmount(own.sites_cleared.total)} · ${RESULT_WORDS.sitesCleared}`}</AppChip>
+                <AppChip icon="reward-chest">{`${formatAmount(own.chests_earned)} · ${RESULT_WORDS.chests}`}</AppChip>
+                <AppChip icon="portal">{`${formatAmount(own.deepest_depth)} · ${RESULT_WORDS.deepest}`}</AppChip>
+              </div>
+            )}
+          </div>
+        </AppPanel>
+        <div data-age="frontier" className="lg:col-span-4">
+          <AppPanel title={frontier.name} icon="leaderboard" painting={frontier.painting} flush>
+            {rows.map(({ entry, own: isOwn }) => (
+              <FrontierRow key={entry.address} entry={entry} own={isOwn} />
+            ))}
+          </AppPanel>
+        </div>
+      </div>
+    </ResultsFrame>
   );
 };
 

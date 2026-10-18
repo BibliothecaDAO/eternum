@@ -124,11 +124,15 @@ const otherPages = () =>
  */
 const sheetPageChecks = (desktop) => (b) => {
   const measure = b.evaluate(`(() => {
-    // How far anything drawn in a block runs past the block's foot or its right side.
+    // How far anything a block shows runs past the block's foot or its right side. Decoration (aria-hidden: a stage's
+    // rays) may run past and be cut; content that is cut is the defect this catches, so it counts whole.
     const rectOf = (element) => element.getBoundingClientRect();
     const spillOf = (block) => {
       const box = rectOf(block);
-      const inside = [...block.querySelectorAll("*")].map(rectOf).filter((rect) => rect.width > 0 && rect.height > 0);
+      const inside = [...block.querySelectorAll("*")]
+        .filter((element) => !element.closest('[aria-hidden="true"]'))
+        .map(rectOf)
+        .filter((rect) => rect.width > 0 && rect.height > 0);
       return Math.max(0, ...inside.map((rect) => Math.max(rect.bottom - box.bottom, rect.right - box.right)));
     };
     const body = document.querySelector('[data-band="body"]');

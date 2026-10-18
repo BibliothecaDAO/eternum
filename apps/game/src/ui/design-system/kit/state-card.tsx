@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { paintingSources, type Painting } from "./paintings";
-import { ServiceFailure } from "./service-failure";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 const IMAGES = { sm: "h-36", md: "h-40", lg: "h-44" } as const;
@@ -33,19 +32,4 @@ export const StateCard = ({
     />
     {children}
   </section>
-);
-
-/** A card whose read failed: the storm, and the failing service's one line with Try again. */
-export const FailureCard = ({
-  service,
-  error,
-  retry,
-}: {
-  service: Parameters<typeof ServiceFailure>[0]["service"];
-  error: unknown;
-  retry: () => void;
-}) => (
-  <StateCard painting="stormy">
-    <ServiceFailure service={service} error={error} retry={retry} />
-  </StateCard>
 );

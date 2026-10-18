@@ -1,14 +1,10 @@
 import { rewardChestMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { REWARD_WORDS } from "@/ui/design-system/kit/words";
 import { formatExact, formatDate } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { type ComponentProps, lazy, type ReactNode, Suspense, useState } from "react";
+import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import { Button } from "@/ui/design-system/kit/button";
-import { IconLine } from "@/ui/design-system/kit/icon-line";
-import { Panel } from "@/ui/design-system/kit/panel";
-import { Pill } from "@/ui/design-system/kit/pill";
-import { Figure } from "@/ui/design-system/kit/figure";
+import { AppButton, AppChip, AppFigure, AppPanel } from "@/ui/design-system/kit/app-elements";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { getChestAssetFromAttributesRaw } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
@@ -69,21 +65,22 @@ const RatingChange = ({ reward }: { reward: Reward }) => {
     : reward.registration.shield && { icon: "defend" as const, word: "½" };
   return (
     <Plate icon="rating-conqueror" title={REWARD_WORDS.rating}>
-      <Figure as="p" size="title" className="flex items-center gap-3">
-        <span className="text-kit-muted">{formatExact(mmrBefore)}</span>
+      <p className="flex flex-wrap items-center gap-3 text-app-title">
+        <span className="text-app-muted">{formatExact(mmrBefore)}</span>
         <SemanticIcon name="arrow-right" size={22} />
-        <span className="text-kit-cream">{formatExact(mmrAfter)}</span>
-        <span className={cn("ml-auto text-heading", gain ? "text-kit-sage" : "text-kit-red")}>
-          {gain ? "+" : "−"}
-          {formatExact(Math.abs(mmrAfter - mmrBefore))}
+        <span className="text-app-ink">{formatExact(mmrAfter)}</span>
+        <span className="ml-auto flex items-center gap-2">
+          <AppChip tone={gain ? "good" : "bad"}>
+            {gain ? "+" : "−"}
+            {formatExact(Math.abs(mmrAfter - mmrBefore))}
+          </AppChip>
+          {flag && (
+            <AppChip icon={flag.icon} tone="gold">
+              {flag.word}
+            </AppChip>
+          )}
         </span>
-        {flag && (
-          <span className="inline-flex items-center gap-1 font-body text-lg text-kit-gold2">
-            <SemanticIcon name={flag.icon} size={26} />
-            {flag.word}
-          </span>
-        )}
-      </Figure>
+      </p>
     </Plate>
   );
 };
@@ -110,9 +107,7 @@ const ChestPlate = ({
     return (
       <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <IconLine tone="muted" icon="hourglass">
-          {REWARD_WORDS.arrives}
-        </IconLine>
+        <RewardLine icon="hourglass">{REWARD_WORDS.arrives}</RewardLine>
       </Plate>
     );
   if (state === "opened")
@@ -128,7 +123,7 @@ const ChestPlate = ({
       <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <Stage>
           <SemanticIcon name={chestIcon} size={192} className="relative animate-pulse" />
-          <span className="relative font-body text-xl text-kit-gold2">{REWARD_WORDS.opening}</span>
+          <span className="relative text-app-heading text-app-gold">{REWARD_WORDS.opening}</span>
         </Stage>
       </Plate>
     );
@@ -136,9 +131,7 @@ const ChestPlate = ({
     return (
       <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
-        <IconLine tone="muted" icon="chronicles">
-          {REWARD_WORDS.traded}
-        </IconLine>
+        <RewardLine icon="chronicles">{REWARD_WORDS.traded}</RewardLine>
       </Plate>
     );
   const open = signing ? (
@@ -162,7 +155,11 @@ const ChestPlate = ({
           <TokensUntil shares={reward.token.shares} seasonEnd={reward.seasonEnd} now={now} />
         </p>
       )}
-      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon={chestIcon} onClick={() => setSigning(true)} />}
+      {open ?? (
+        <AppButton kind="primary" size="lg" icon={chestIcon} step onClick={() => setSigning(true)}>
+          {REWARD_WORDS.open}
+        </AppButton>
+      )}
     </Plate>
   );
 };
@@ -173,13 +170,13 @@ const ChestPlate = ({
  */
 const TokensUntil = ({ shares, seasonEnd, now }: { shares: number; seasonEnd: number; now: number }) =>
   now < seasonEnd ? (
-    <Pill size="lg" tone="gold" icon="lords">
+    <AppChip tone="gold" icon="lords">
       {REWARD_WORDS.entryUntil(shares, formatDate(seasonEnd))}
-    </Pill>
+    </AppChip>
   ) : (
-    <Pill size="lg" tone="muted" icon="lords" struck>
-      {REWARD_WORDS.noLords}
-    </Pill>
+    <AppChip icon="lords">
+      <s>{REWARD_WORDS.noLords}</s>
+    </AppChip>
   );
 
 /** What the chest delivered: an item, tokens as a multiple of the slot's entry with the sum sent, or a credit. */
@@ -189,15 +186,13 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
     return (
       <Card>
         {item && <img src={item.imagePath} alt="" className="size-40 rounded-control object-cover" />}
-        <span className="rounded-full border border-kit-line2 px-3 py-1 font-body text-sm font-bold capitalize text-kit-gold2">
-          {item?.rarity ?? REWARD_WORDS.cosmetic}
-        </span>
-        <b className="font-body text-title font-bold leading-tight text-kit-cream">
-          {item?.name ?? REWARD_WORDS.cosmetic}
-        </b>
-        <Pill size="lg" tone="sage" icon="check">
+        <AppChip tone="gold">
+          <span className="capitalize">{item?.rarity ?? REWARD_WORDS.cosmetic}</span>
+        </AppChip>
+        <b className="text-app-title text-app-ink">{item?.name ?? REWARD_WORDS.cosmetic}</b>
+        <AppChip tone="good" icon="check">
           {REWARD_WORDS.inCollection}
-        </Pill>
+        </AppChip>
       </Card>
     );
   }
@@ -205,12 +200,10 @@ const Prize = ({ content, entryFee }: { content: ChestContent; entryFee: bigint 
   return (
     <Card>
       <SemanticIcon name={content.kind === "sword" ? "attack" : "defend"} size={96} />
-      <b className="font-body text-title font-bold leading-tight text-kit-cream">
+      <b className="text-app-title text-app-ink">
         {content.kind === "sword" ? REWARD_WORDS.swordCredit : REWARD_WORDS.shieldCredit}
       </b>
-      <Pill size="lg" tone="muted" icon="lords">
-        {REWARD_WORDS.nextEntry}
-      </Pill>
+      <AppChip icon="lords">{REWARD_WORDS.nextEntry}</AppChip>
     </Card>
   );
 };
@@ -224,21 +217,20 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   const sum = formatExact(lordsOf(amount));
   return (
     <Card>
-      <SemanticIcon name="lords" size={96} />
-      <Figure size="figure" tone="gold2" className="leading-none">
-        {multiple === null ? sum : `${multiple}×`}
-      </Figure>
-      <span className="font-body text-xl text-kit-muted">
-        {multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
-      </span>
+      <AppFigure
+        icon="lords"
+        tone="gold"
+        value={multiple === null ? sum : `${multiple}×`}
+        label={multiple === null ? REWARD_WORDS.lords : REWARD_WORDS.theEntry}
+      />
       {multiple !== null && (
-        <Pill size="lg" tone="gold" icon="lords">
+        <AppChip tone="gold" icon="lords">
           {`${sum} ${REWARD_WORDS.lords}`}
-        </Pill>
+        </AppChip>
       )}
-      <Pill size="lg" tone="sage" icon="check">
+      <AppChip tone="good" icon="check">
         {REWARD_WORDS.lordsSent}
-      </Pill>
+      </AppChip>
     </Card>
   );
 };
@@ -247,15 +239,13 @@ const ChestArt = ({ band, dim = false, glow = false }: { band?: number; dim?: bo
   <div className={cn("relative flex h-48 items-center justify-center rounded-control", glow && "bg-halo")}>
     <SemanticIcon name={rewardChestMeaning(band)} size={176} className={cn(dim && "opacity-40 grayscale")} />
     <span className="absolute bottom-1 left-1">
-      <Pill size="lg" tone="muted" icon="victory">
-        {band === undefined ? REWARD_WORDS.chest : REWARD_WORDS.band[band]}
-      </Pill>
+      <AppChip icon="victory">{band === undefined ? REWARD_WORDS.chest : REWARD_WORDS.band[band]}</AppChip>
     </span>
   </div>
 );
 
 const Stage = ({ children }: { children: ReactNode }) => (
-  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-kit-ink py-4">
+  <div className="relative isolate flex min-h-[22rem] flex-col items-center justify-center gap-3 overflow-hidden rounded-control bg-app-well py-4">
     <span
       aria-hidden
       className="absolute left-1/2 top-[45%] -z-10 size-[56rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-rays [mask-image:radial-gradient(circle,black,transparent_55%)]"
@@ -265,12 +255,20 @@ const Stage = ({ children }: { children: ReactNode }) => (
 );
 
 const Card = ({ children }: { children: ReactNode }) => (
-  <div className="relative flex w-[85%] flex-col items-center gap-2.5 rounded-plate border-2 border-kit-gold bg-kit-plate/95 px-4 py-5 text-center">
-    {children}
-  </div>
+  <div className="relative flex w-[85%] flex-col items-center gap-3 px-4 py-5 text-center">{children}</div>
 );
 
-/** The reward's plates: a line-ruled Panel on a plate with room around its art. */
-const Plate = (props: Omit<ComponentProps<typeof Panel>, "rule" | "surface" | "pad">) => (
-  <Panel rule="line" pad="lg" {...props} />
+/** The reward's panels: its icon and title, then its parts one under another. */
+const Plate = ({ icon, title, children }: { icon: IconMeaning; title: string; children: ReactNode }) => (
+  <AppPanel icon={icon} title={title}>
+    <div className="flex flex-col items-stretch gap-4">{children}</div>
+  </AppPanel>
+);
+
+/** A line of where the reward stands, by its icon. */
+const RewardLine = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
+  <p className="flex items-center gap-2 text-app-body text-app-muted">
+    <SemanticIcon name={icon} size={22} />
+    <span>{children}</span>
+  </p>
 );
