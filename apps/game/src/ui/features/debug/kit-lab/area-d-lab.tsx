@@ -1,3 +1,4 @@
+import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
@@ -67,9 +68,9 @@ const GUILD = {
   isPublic: true,
 } as unknown as Parameters<typeof GuildRow>[0]["guild"];
 
-/** One surface of area D, captured on its own: its name, then the real component. */
+/** One surface of area D, captured on its own (`pnpm hud:capture … --page /lab/kit/area-d`): its name, then the real component. */
 const Surface = ({ name, children }: { name: string; children: ReactNode }) => (
-  <section data-area-d={name} className="flex flex-col gap-2 p-4">
+  <section data-sheet-element={name} className="flex flex-col gap-2 p-4">
     <h2 data-lab-chrome className="text-sm text-white/60">
       {name}
     </h2>
@@ -136,7 +137,9 @@ export const AreaDLab = () => {
         </Surface>
         <Surface name="military-window">
           <div className="w-[60rem]">
-            <UnifiedArmyCreationBody structureId={7} />
+            <HudWindow title="Military" icon="military" onClose={() => undefined}>
+              <UnifiedArmyCreationBody structureId={7} />
+            </HudWindow>
           </div>
         </Surface>
         <Surface name="combat">
