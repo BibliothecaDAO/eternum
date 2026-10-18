@@ -10,7 +10,7 @@ import { ResourceBurnPopover } from "@/ui/features/economy/resources/resource-bu
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
-import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { HudIconButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { currencyFormat, currencyIntlFormat, knownBalance } from "@/ui/utils/utils";
 import {
@@ -35,7 +35,6 @@ import { useCallback, useMemo } from "react";
 export const ResourceChip = ({
   resourceId,
   resourceManager,
-  size = "default",
   hideZeroBalance = false,
   showTransfer = true,
   storageCapacity = 0,
@@ -47,7 +46,6 @@ export const ResourceChip = ({
 }: {
   resourceId: ID;
   resourceManager: ResourceManager;
-  size?: "default" | "large";
   hideZeroBalance?: boolean;
   showTransfer?: boolean;
   storageCapacity?: number;
@@ -96,7 +94,7 @@ export const ResourceChip = ({
 
   const icon = useMemo(() => {
     return <ResourceIcon withTooltip={false} resource={resourceId} size="sm" className="self-center" />;
-  }, [resourceId, size]);
+  }, [resourceId]);
 
   const handleMouseLeave = useCallback(() => setTooltip(null), [setTooltip]);
 
@@ -165,176 +163,159 @@ export const ResourceChip = ({
   const ratePerHour = isProducing && !hasReachedMaxCap ? `+${currencyIntlFormat(productionRate * 60 * 60, 4)}/h` : null;
   const timeLeft =
     timeUntilValueReached > 0 && timeUntilValueReached <= 1_000_000_000 ? formatTime(timeUntilValueReached) : null;
-  const actionButton =
-    "rounded p-1 text-gold/80 transition hover:bg-gold/15 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50";
+  // Each action keeps the app's named tip on hover, as before; the chip is the anchor it hangs from.
+  const tipOn = (content: string) => (event: React.MouseEvent<HTMLElement>) =>
+    setTooltip({ anchorElement: event.currentTarget, content, position: "bottom" });
+  const tipOff = () => setTooltip(null);
 
   return (
-    <div
-      data-tooltip-anchor
-      className={cn(
-        "group flex items-center gap-2 rounded-lg border border-gold/15 bg-black/25 transition hover:border-gold/35",
-        size === "large" ? "px-3 py-2" : "px-2 py-1.5",
-        relicEffectActivated && "animate-pulse border-purple-500/50 bg-purple-500/20",
-      )}
-      onMouseLeave={handleMouseLeave}
-    >
-      {icon}
-      <CountUpNumber
-        value={balance}
-        format={(v) => currencyFormat(v, 2)}
-        className={cn(HUD_VALUE, "tabular-nums", relicEffectActivated && "text-relic")}
-        highlightClassName="text-green font-bold scale-105"
-      />
-      {relicEffectActivated && (
-        <span
-          className="inline-flex items-center gap-1 text-[10px] font-semibold text-relic2"
-          onMouseEnter={(e) => {
-            e.stopPropagation();
-            setTooltip({
-              anchorElement: e.currentTarget,
-              position: "top",
-              content: <span className="text-sm">Relic effect expires in {formatTime(relicTimeRemaining)}</span>,
-            });
-          }}
-          onMouseLeave={(e) => {
-            e.stopPropagation();
-            setTooltip(null);
-          }}
-        >
-          <SemanticIcon name="relics" className="h-3 w-3 animate-pulse" />
-          {formatTime(relicTimeRemaining)}
-        </span>
-      )}
-      {ratePerHour && <span className="text-[10px] font-semibold tabular-nums text-emerald-300">{ratePerHour}</span>}
-      {hasReachedMaxCap && amountProduced > 0n && (
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-300">Max</span>
-      )}
-      {timeLeft && <span className={cn(HUD_CUE, "tracking-normal")}>{timeLeft}</span>}
-      <span className="ml-auto" />
-      {canShowProductionShortcut && (
-        <button
-          data-tooltip-anchor
-          aria-label="Manage production"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleOpenProduction();
-          }}
-          onMouseEnter={(event) =>
-            setTooltip({
-              anchorElement: event.currentTarget,
-              content: "Manage Production",
-              position: "bottom",
-            })
-          }
-          onMouseLeave={() => setTooltip(null)}
-          disabled={disableButtons}
-          className={actionButton}
-        >
-          <SemanticIcon name="production" className="h-4 w-4" />
-        </button>
-      )}
-      {canOpenCraftRelic && (
-        <button
-          data-tooltip-anchor
-          onClick={(event) => {
-            event.stopPropagation();
-            import("./craft-relic-popup").then(({ CraftRelicPopup }) => {
-              openSurface({
-                id: "craft-relic",
-                content: <CraftRelicPopup structureId={resourceManager.entityId} onClose={closeSurface} />,
-                anchor: surfaceAnchorFrom(event.currentTarget),
-              });
-            });
-          }}
-          onMouseEnter={(event) =>
-            setTooltip({
-              anchorElement: event.currentTarget,
-              content: "Craft Relic from Research",
-              position: "bottom",
-            })
-          }
-          onMouseLeave={() => setTooltip(null)}
-          disabled={disableButtons}
-          title="Craft relic from research"
-          aria-label="Craft relic from research"
-          className={cn(actionButton, "border border-relic/35 bg-relic/10 text-relic2 hover:bg-relic/20")}
-        >
-          <SemanticIcon name="research" className="h-4 w-4" />
-        </button>
-      )}
-      {showTransfer && (
-        <button
-          data-tooltip-anchor
-          type="button"
-          aria-label={`Transfer ${resourceName}`}
-          title="Transfer"
-          onClick={(event) => {
-            event.stopPropagation();
-            openTransfer({ sourceId: resourceManager.entityId, destinationIds: [], resource: resourceId });
-          }}
-          disabled={disableButtons}
-          className={actionButton}
-        >
-          <SemanticIcon name="swap" className="h-4 w-4" />
-        </button>
-      )}
-      {showTransfer && (balance ?? 0) > 0 && (
-        <ResourceBurnPopover
-          structureId={resourceManager.entityId}
-          resourceId={resourceEnumId}
-          trigger={(toggle) => (
-            <button
-              data-tooltip-anchor
-              type="button"
-              aria-label={`Burn ${resourceName}`}
-              title="Burn"
-              onClick={(event) => {
-                event.stopPropagation();
-                toggle();
-              }}
-              disabled={disableButtons}
-              className={actionButton}
-            >
-              <SemanticIcon name="flame" className="h-4 w-4" />
-            </button>
-          )}
-        />
-      )}
-      {isRelic && balance > 0 && (
-        <button
-          data-tooltip-anchor
-          onClick={(event) => {
-            event.stopPropagation();
-            import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
-              openSurface({
-                id: "relic-activation",
-                content: (
-                  <RelicActivationPopup
-                    entityId={resourceManager.entityId}
-                    entityOwnerId={resourceManager.entityId}
-                    recipientType={RelicRecipientType.Structure}
-                    relicId={resourceId}
-                    relicBalance={divideByPrecision(balance)}
-                    onClose={closeSurface}
+    <div data-tooltip-anchor className="group" onMouseLeave={handleMouseLeave}>
+      <HudRow
+        lead={icon}
+        title={
+          <CountUpNumber
+            value={balance}
+            format={(v) => currencyFormat(v, 2)}
+            className={cn("tabular-nums text-hud-strong", relicEffectActivated && "text-hud-accent")}
+            highlightClassName="text-hud-good scale-105"
+          />
+        }
+        detail={
+          (relicEffectActivated || ratePerHour || (hasReachedMaxCap && amountProduced > 0n) || timeLeft) && (
+            <span className="flex flex-wrap items-center gap-2">
+              {relicEffectActivated && (
+                <span
+                  className="inline-flex items-center gap-1 text-hud-accent"
+                  onMouseEnter={(e) => {
+                    e.stopPropagation();
+                    setTooltip({
+                      anchorElement: e.currentTarget,
+                      position: "top",
+                      content: `Relic effect expires in ${formatTime(relicTimeRemaining)}`,
+                    });
+                  }}
+                  onMouseLeave={(e) => {
+                    e.stopPropagation();
+                    setTooltip(null);
+                  }}
+                >
+                  <SemanticIcon name="relics" className="h-3 w-3" />
+                  {formatTime(relicTimeRemaining)}
+                </span>
+              )}
+              {ratePerHour && <span className="tabular-nums text-hud-good">{ratePerHour}</span>}
+              {hasReachedMaxCap && amountProduced > 0n && <span className="text-hud-warn">Max</span>}
+              {timeLeft && <span className="text-hud-cue">{timeLeft}</span>}
+            </span>
+          )
+        }
+        trail={
+          <>
+            {canShowProductionShortcut && (
+              <HudIconButton
+                icon="production"
+                label="Manage production"
+                kind="quiet"
+                size="sm"
+                disabled={disableButtons}
+                onMouseEnter={tipOn("Manage Production")}
+                onMouseLeave={tipOff}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleOpenProduction();
+                }}
+              />
+            )}
+            {canOpenCraftRelic && (
+              <HudIconButton
+                icon="research"
+                label="Craft relic from research"
+                kind="quiet"
+                size="sm"
+                disabled={disableButtons}
+                onMouseEnter={tipOn("Craft Relic from Research")}
+                onMouseLeave={tipOff}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  const anchor = surfaceAnchorFrom(event.currentTarget);
+                  import("./craft-relic-popup").then(({ CraftRelicPopup }) => {
+                    openSurface({
+                      id: "craft-relic",
+                      content: <CraftRelicPopup structureId={resourceManager.entityId} onClose={closeSurface} />,
+                      anchor,
+                    });
+                  });
+                }}
+              />
+            )}
+            {showTransfer && (
+              <HudIconButton
+                icon="swap"
+                label={`Transfer ${resourceName}`}
+                title="Transfer"
+                kind="quiet"
+                size="sm"
+                disabled={disableButtons}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  openTransfer({ sourceId: resourceManager.entityId, destinationIds: [], resource: resourceId });
+                }}
+              />
+            )}
+            {showTransfer && (balance ?? 0) > 0 && (
+              <ResourceBurnPopover
+                structureId={resourceManager.entityId}
+                resourceId={resourceEnumId}
+                trigger={(toggle) => (
+                  <HudIconButton
+                    icon="flame"
+                    label={`Burn ${resourceName}`}
+                    title="Burn"
+                    kind="quiet"
+                    size="sm"
+                    disabled={disableButtons}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggle();
+                    }}
                   />
-                ),
-              });
-            });
-          }}
-          disabled={disableButtons || relicTimeRemaining > 0}
-          onMouseEnter={(event) =>
-            setTooltip({
-              anchorElement: event.currentTarget,
-              content: `Activate · ${relicLine(resourceId, knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
-              position: "bottom",
-            })
-          }
-          onMouseLeave={() => setTooltip(null)}
-          className={actionButton}
-        >
-          <SemanticIcon name="relics" className="h-4 w-4" />
-        </button>
-      )}
+                )}
+              />
+            )}
+            {isRelic && balance > 0 && (
+              <HudIconButton
+                icon="relics"
+                label={`Activate ${resourceName}`}
+                kind="quiet"
+                size="sm"
+                disabled={disableButtons || relicTimeRemaining > 0}
+                onMouseEnter={tipOn(
+                  `Activate · ${relicLine(resourceId, knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
+                )}
+                onMouseLeave={tipOff}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  import("./relic-activation-popup").then(({ RelicActivationPopup }) => {
+                    openSurface({
+                      id: "relic-activation",
+                      content: (
+                        <RelicActivationPopup
+                          entityId={resourceManager.entityId}
+                          entityOwnerId={resourceManager.entityId}
+                          recipientType={RelicRecipientType.Structure}
+                          relicId={resourceId}
+                          relicBalance={divideByPrecision(balance)}
+                          onClose={closeSurface}
+                        />
+                      ),
+                    });
+                  });
+                }}
+              />
+            )}
+          </>
+        }
+      />
     </div>
   );
 };

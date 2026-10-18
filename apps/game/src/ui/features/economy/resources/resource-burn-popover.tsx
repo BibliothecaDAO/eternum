@@ -1,7 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceManager } from "@bibliothecadao/eternum";
@@ -25,12 +25,7 @@ export const ResourceBurnPopover = ({
   const toggle = usePopoverStore((state) => state.toggle);
   const label = (findResourceById(resourceId)?.trait as string) ?? "resource";
   return (
-    <Popover
-      id={popoverId}
-      ariaLabel={`Burn ${label}`}
-      className="w-[320px] p-4"
-      trigger={trigger(() => toggle(popoverId))}
-    >
+    <Popover id={popoverId} ariaLabel={`Burn ${label}`} className="w-80" trigger={trigger(() => toggle(popoverId))}>
       <ResourceBurn structureId={structureId} resourceId={resourceId} label={label} />
     </Popover>
   );
@@ -77,27 +72,24 @@ const ResourceBurn = ({
   }, [account, amount, label, resourceId, structureId, structure_burn]);
 
   return (
-    <div className="space-y-3 text-sm text-gold/80">
-      <p>Permanently destroy {label} from this location. This action cannot be undone.</p>
-      <input
-        aria-label={`${label} to burn`}
-        type="range"
-        min="0"
-        max={held}
-        step="0.01"
-        value={amount}
-        onChange={(event) => setAmount(Number(event.target.value))}
-        className="w-full accent-gold"
-      />
-      <div className="flex items-center justify-between text-xs uppercase text-gold/60">
-        <span>Burn amount</span>
-        <span className="font-semibold text-gold">
+    <div className="ui flex flex-col gap-3">
+      <p className="text-hud-muted">Permanently destroy {label} from this location. This action cannot be undone.</p>
+      <HudSlider label={`${label} to burn`} value={amount} max={held} step={0.01} onChange={setAmount} />
+      <div className="flex items-center justify-between">
+        <span className="text-hud-label text-hud-muted">Burn amount</span>
+        <span className="text-hud-strong">
           {amount.toLocaleString()} {label}
         </span>
       </div>
-      <Button size="xs" variant="danger" onClick={() => void burn()} disabled={amount === 0 || busy}>
+      <HudButton
+        kind="secondary"
+        tone="bad"
+        busy={busy ? "Burning…" : undefined}
+        disabled={amount === 0}
+        onClick={() => void burn()}
+      >
         Burn {label}
-      </Button>
+      </HudButton>
     </div>
   );
 };

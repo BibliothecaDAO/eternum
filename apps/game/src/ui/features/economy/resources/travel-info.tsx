@@ -1,3 +1,4 @@
+import { HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatArrivalTime } from "@/ui/utils/utils";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -65,89 +66,57 @@ export const TravelInfo = ({
   }, [canCarry, setCanCarry]);
 
   return (
-    <>
-      <table className="w-full border-collapse text-sm">
-        <tbody className="divide-y divide-gold/20">
-          {formattedArrivalTime ? (
-            <tr className="hover:bg-gold/5 transition-colors">
-              <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Estimated Arrival</td>
-              <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{formattedArrivalTime}</td>
-            </tr>
-          ) : (
-            ""
-          )}
-          <tr className="hover:bg-gold/5 transition-colors">
-            <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Total Transfer Weight</td>
-            <td className="px-4 py-1 text-gold text-left whitespace-nowrap">{`${resourceWeightKg} kg`}</td>
-          </tr>
-          <tr className="hover:bg-gold/5 transition-colors">
-            <td className="px-4 py-1 font-semibold text-right whitespace-nowrap">Donkeys Burnt for Transfer</td>
-            <td className={`px-4 py-1 whitespace-nowrap text-left ${canCarry ? "text-green" : "text-red"}`}>
-              {neededDonkeys.toLocaleString()} 🔥🫏 [
-              {donkeyBalance === undefined ? "—" : donkeyBalance.toLocaleString()}]
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <ResourceWeight className="mt-2 text-xs opacity-75" />
-    </>
-  );
-};
-
-const ResourceWeight = ({ className }: { className?: string }) => {
-  return (
-    <div className={`text-xs text-gray-200 mx-auto ${className}`}>
-      <p className="italic text-xs">Resource weights per unit:</p>
-      <div className="grid grid-cols-2 gap-x-2 gap-y-2 my-1">
-        {/* Zero weight resources (Lords and Donkey) */}
-        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-xs font-medium">0 kg/unit</div>
-          <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
-            <ResourceIcon resource={ResourcesIds.Donkey} size="sm" />
-          </div>
-        </div>
-
-        {/* Ancient Fragments */}
-        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
-          <div className="flex items-center justify-center">
-            <ResourceIcon resource={ResourcesIds.AncientFragment} size="sm" />
-            <span className="ml-1 text-2xs">(Fragment)</span>
-          </div>
-        </div>
-
-        {/* Food resources */}
-        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-xs font-medium">0.1 kg/unit</div>
-          <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds.Wheat} size="sm" />
-            <ResourceIcon resource={ResourcesIds.Fish} size="sm" />
-            <span className="ml-1 text-2xs">(Food)</span>
-          </div>
-        </div>
-
-        {/* Resource materials */}
-        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30">
-          <div className="text-center text-gold/90 text-xs font-medium">1 kg/unit</div>
-          <div className="flex items-center justify-center">
-            <ResourceIcon resource={ResourcesIds.Wood} size="xs" />
-            <ResourceIcon resource={ResourcesIds.Stone} size="xs" />
-            <ResourceIcon resource={ResourcesIds.Gold} size="xs" />
-            <span className="ml-1 text-2xs">(Resources)</span>
-          </div>
-        </div>
-
-        {/* Troops */}
-        <div className="p-1.5 border border-gold/20 rounded-md bg-brown-900/30 col-span-2">
-          <div className="text-center text-gold/90 text-xs font-medium">5 kg/unit (All Troops)</div>
-          <div className="flex items-center justify-center gap-1.5">
-            <ResourceIcon resource={ResourcesIds.Knight} size="sm" />
-            <ResourceIcon resource={ResourcesIds.Crossbowman} size="sm" />
-            <ResourceIcon resource={ResourcesIds.Paladin} size="sm" />
-          </div>
-        </div>
-      </div>
+    <div className="flex flex-col gap-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+        {formattedArrivalTime && (
+          <>
+            <dt className="text-right text-hud-label text-hud-muted">Estimated Arrival</dt>
+            <dd className="text-hud-strong">{formattedArrivalTime}</dd>
+          </>
+        )}
+        <dt className="text-right text-hud-label text-hud-muted">Total Transfer Weight</dt>
+        <dd className="text-hud-strong">{`${resourceWeightKg} kg`}</dd>
+        <dt className="text-right text-hud-label text-hud-muted">Donkeys Burnt for Transfer</dt>
+        <dd className={canCarry ? "text-hud-strong text-hud-good" : "text-hud-strong text-hud-bad"}>
+          {neededDonkeys.toLocaleString()} 🔥🫏 [{donkeyBalance === undefined ? "—" : donkeyBalance.toLocaleString()}]
+        </dd>
+      </dl>
+      <ResourceWeight />
     </div>
   );
 };
+
+/** What one unit of each kind of good weighs, the goods of each kind painted beside it. */
+const WEIGHTS: { weight: string; kind?: string; resources: ResourcesIds[] }[] = [
+  { weight: "0 kg/unit", resources: [ResourcesIds.Lords, ResourcesIds.Donkey] },
+  { weight: "0.1 kg/unit", kind: "Fragment", resources: [ResourcesIds.AncientFragment] },
+  { weight: "0.1 kg/unit", kind: "Food", resources: [ResourcesIds.Wheat, ResourcesIds.Fish] },
+  { weight: "1 kg/unit", kind: "Resources", resources: [ResourcesIds.Wood, ResourcesIds.Stone, ResourcesIds.Gold] },
+  {
+    weight: "5 kg/unit",
+    kind: "All Troops",
+    resources: [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin],
+  },
+];
+
+const ResourceWeight = () => (
+  <div className="flex flex-col gap-1">
+    <p className="text-hud-label italic text-hud-muted">Resource weights per unit:</p>
+    <div className="grid grid-cols-2 gap-1">
+      {WEIGHTS.map(({ weight, kind, resources }) => (
+        <HudRow
+          key={`${weight}-${kind ?? "none"}`}
+          lead={
+            <span className="flex items-center gap-1">
+              {resources.map((resource) => (
+                <ResourceIcon key={resource} resource={resource} size="sm" />
+              ))}
+            </span>
+          }
+          title={weight}
+          detail={kind}
+        />
+      ))}
+    </div>
+  </div>
+);

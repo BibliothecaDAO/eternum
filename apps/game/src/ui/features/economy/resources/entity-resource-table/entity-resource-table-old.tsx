@@ -175,7 +175,6 @@ export const EntityResourceTableOld = React.memo(
                       return (
                         <ResourceChip
                           key={resourceId}
-                          size="large"
                           resourceId={resourceId}
                           resourceManager={resourceManager}
                           hideZeroBalance={!showAllResources && !ALWAYS_SHOW_RESOURCES.includes(resourceId)}

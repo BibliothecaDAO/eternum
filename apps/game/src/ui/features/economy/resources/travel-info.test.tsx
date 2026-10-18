@@ -79,8 +79,8 @@ afterEach(() => vi.restoreAllMocks());
 const arrival = async (resources: Array<{ resourceId: ResourcesIds; amount: number }>) => {
   const root = createRoot(host);
   await act(async () => root.render(<TravelInfo entityId={REALM} bankId={BANK} resources={resources} isAmm />));
-  const row = [...host.querySelectorAll("tr")].find((tr) => tr.textContent?.startsWith("Estimated Arrival"));
-  const text = row?.querySelectorAll("td")[1].textContent?.trim();
+  const term = [...host.querySelectorAll("dt")].find((dt) => dt.textContent === "Estimated Arrival");
+  const text = term?.nextElementSibling?.textContent?.trim();
   await act(async () => root.unmount());
   return text;
 };
