@@ -1,11 +1,11 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { findResourceById, ID, ResourcesIds } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
+import { MARKET_RESOURCE_COLS } from "./market-resource-sidebar";
 
 interface MarketResourceRowProps {
   entityId: ID;
@@ -19,7 +19,12 @@ interface MarketResourceRowProps {
   ammPrice: number;
 }
 
-const PRICE_CLASS = "text-right text-[11px] font-semibold tabular-nums";
+/** A price in its side's tone (buying green, selling red), muted while no one offers it. */
+const Price = ({ price, tone }: { price: number; tone?: "text-hud-good" | "text-hud-bad" }) => (
+  <span className={`text-right tabular-nums ${price > 0 ? (tone ?? "") : "text-hud-muted"}`}>
+    {formatNumber(price, 4)}
+  </span>
+);
 
 export const MarketResourceRow = memo(
   ({ entityId, resourceId, active, onClick, buyPrice, sellPrice, ammPrice }: MarketResourceRowProps) => {
@@ -32,30 +37,16 @@ export const MarketResourceRow = memo(
     const trait = findResourceById(resourceId)?.trait ?? "";
 
     return (
-      <button
-        type="button"
-        onClick={() => onClick(resourceId)}
-        aria-pressed={active}
-        className={cn(
-          "grid h-8 w-full grid-cols-[minmax(0,2fr)_1fr_1fr_1fr] items-center rounded-md border px-1.5 text-left transition-colors max-lg:h-10",
-          active ? "border-gold/60 bg-gold/10" : "border-transparent hover:bg-gold/10",
-        )}
-      >
+      <HudTableRow cols={MARKET_RESOURCE_COLS} label={trait} selected={active} onClick={() => onClick(resourceId)}>
         <span className="flex min-w-0 items-center gap-1.5">
           <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
-          <span className="truncate text-[11px] text-gold">{trait}</span>
-          <span className={cn(HUD_CUE, "shrink-0 tracking-normal")}>{currencyFormat(balance, 0)}</span>
+          <span className="truncate">{trait}</span>
+          <span className="shrink-0 text-hud-label text-hud-muted">{currencyFormat(balance, 0)}</span>
         </span>
-        <span className={cn(PRICE_CLASS, buyPrice > 0 ? "text-green" : "text-gold/30")}>
-          {formatNumber(buyPrice, 4)}
-        </span>
-        <span className={cn(PRICE_CLASS, sellPrice > 0 ? "text-red" : "text-gold/30")}>
-          {formatNumber(sellPrice, 4)}
-        </span>
-        <span className={cn(PRICE_CLASS, ammPrice > 0 ? "text-blueish" : "text-gold/30")}>
-          {formatNumber(ammPrice, 4)}
-        </span>
-      </button>
+        <Price price={buyPrice} tone="text-hud-good" />
+        <Price price={sellPrice} tone="text-hud-bad" />
+        <Price price={ammPrice} />
+      </HudTableRow>
     );
   },
 );

@@ -1,4 +1,4 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { HudEmpty } from "@/ui/design-system/kit/hud-elements";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { StructureArrivals } from "@/ui/features/economy/resources/resource-arrival";
@@ -12,20 +12,11 @@ export const AllResourceArrivals = memo(
     const { currentBlockTimestamp } = getBlockTimestamp();
     const now = currentBlockTimestamp;
 
-    if (!hasArrivals) {
-      return (
-        <div className="h-full flex items-center justify-center p-6">
-          <div className="flex flex-col items-center gap-3 text-gold/40">
-            <SemanticIcon name="resources" size={28} />
-            <p className="text-xs uppercase tracking-widest">No incoming transfers</p>
-          </div>
-        </div>
-      );
-    }
+    if (!hasArrivals) return <HudEmpty icon="resources" line="No incoming transfers" />;
 
     return (
-      <div className={`p-3 flex flex-col overflow-y-auto gap-3 ${className}`}>
-        <p className="text-[10px] uppercase tracking-wider text-gold/40 px-1">
+      <div className={`flex flex-col gap-3 overflow-y-auto ${className}`}>
+        <p className="text-hud-label text-hud-muted">
           Arrived resources are auto-claimed into your structure's balance.
         </p>
         {playerStructures.map((structure) => (

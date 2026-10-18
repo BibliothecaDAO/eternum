@@ -6,13 +6,8 @@ import { useCompactLane, type CompactLane } from "@/hooks/helpers/use-compact-hu
 import { useMarketStore } from "@/hooks/store/use-market-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
-import { REQUIREMENT_CHIP } from "@/ui/design-system/molecules/requirement-chips";
+import { HudButton, HudChip, HudLoading, HudTabs, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -63,15 +58,9 @@ export const MarketModal = () => {
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   return (
-    <SurfaceFrame
-      title="Market"
-      icon={"trade" as const}
-      onClose={closeSurface}
-      className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="overflow-hidden"
-    >
+    <HudWindow title="Market" icon="trade" size="workspace" onClose={closeSurface}>
       <MarketContent />
-    </SurfaceFrame>
+    </HudWindow>
   );
 };
 
@@ -106,11 +95,11 @@ const useMarketDesk = (): MarketDesk => {
 
 /** The resource list beside the trade view. */
 const DesktopMarketContent = ({ desk }: { desk: MarketDesk }) => (
-  <div className="market-modal-selector grid h-full min-h-0 grid-cols-12">
+  <div className="grid h-full min-h-0 grid-cols-12 gap-3">
     <MarketResourcePicker
       desk={desk}
       onResourceSelect={desk.onResourceSelect}
-      className="col-span-3 border-r border-gold/15"
+      className="col-span-3 border-r border-hud-divider pr-3"
     />
     <MarketTradeView desk={desk} className="col-span-9" />
   </div>
@@ -127,14 +116,9 @@ const CompactMarketContent = ({ desk }: { desk: MarketDesk }) => {
 
   return (
     <>
-      {view === "picker" && (
-        <MarketResourcePicker desk={desk} onResourceSelect={pickResource} className="market-modal-selector h-full" />
-      )}
+      {view === "picker" && <MarketResourcePicker desk={desk} onResourceSelect={pickResource} className="h-full" />}
       {/* Keep trading state mounted while the picker is open, including the AMM subtab and unfinished forms. */}
-      <div
-        hidden={view === "picker"}
-        className={cn("market-modal-selector h-full min-h-0 flex-col", view === "trade" && "flex")}
-      >
+      <div hidden={view === "picker"} className={cn("h-full min-h-0 flex-col gap-2", view === "trade" && "flex")}>
         <div className="shrink-0 max-lg:landscape:grid max-lg:landscape:grid-cols-2">
           <TradingStructureHeader structureEntityId={desk.structureEntityId} onSelect={desk.onStructureChange} />
           <SelectedResourceHeader desk={desk} onChange={() => setView("picker")} />
@@ -173,25 +157,25 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
   const bestPrices = useMemo(() => resolveBestPrices(desk.bidOffers, desk.askOffers), [desk.bidOffers, desk.askOffers]);
 
   return (
-    <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 border-b border-gold/15 px-3 py-1">
+    <div className="flex min-w-0 shrink-0 items-center justify-between gap-2 border-b border-hud-divider pb-1">
       <span className="flex min-w-0 items-center gap-2">
         <ResourceIcon resource={desk.selectedResource} size="sm" withTooltip={false} />
         <span className="flex min-w-0 flex-col">
-          <span className={cn(HUD_VALUE, "truncate")}>{trait}</span>
-          <span className={cn(HUD_CUE, "flex flex-wrap gap-x-2")}>
+          <span className="truncate text-hud-strong">{trait}</span>
+          <span className="flex flex-wrap gap-x-2 text-hud-label text-hud-muted">
             <span title="Balance">{currencyFormat(balance, 0)} owned</span>
-            <span className="text-green" title="Best ask">
+            <span className="text-hud-good" title="Best ask">
               Buy {formatPrice(bestPrices.lowestAsk.get(desk.selectedResource))}
             </span>
-            <span className="text-red" title="Best bid">
+            <span className="text-hud-bad" title="Best bid">
               Sell {formatPrice(bestPrices.highestBid.get(desk.selectedResource))}
             </span>
           </span>
         </span>
       </span>
-      <button type="button" onClick={onChange} className={cn(HUD_PILL_BUTTON, "shrink-0 min-h-11 py-2")}>
+      <HudButton kind="secondary" size="sm" onClick={onChange}>
         Change
-      </button>
+      </HudButton>
     </div>
   );
 };
@@ -208,20 +192,19 @@ const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) 
 };
 
 const MarketTradeView = ({ desk, className }: { desk: MarketDesk; className?: string }) => (
-  <div className={cn("flex min-h-0 flex-col", className)}>
-    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gold/15 px-3 py-2 max-lg:flex-wrap max-lg:landscape:py-0">
-      <HudTabStrip
-        className="max-lg:[&_button]:min-h-11"
-        tabs={MARKET_TABS}
-        selected={desk.tab}
-        onSelect={desk.onTabChange}
+  <div className={cn("flex min-h-0 flex-col gap-2", className)}>
+    <div className="flex shrink-0 items-center justify-between gap-3 max-lg:flex-wrap">
+      <HudTabs
+        tabs={MARKET_TABS.map((tab) => ({ key: tab.key, label: tab.label }))}
+        value={desk.tab}
+        onChange={desk.onTabChange}
       />
       <div className="max-lg:landscape:hidden">
         <TradeSummaryBar bidOffers={desk.bidOffers} askOffers={desk.askOffers} entityId={desk.structureEntityId} />
       </div>
     </div>
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <Suspense fallback={<LoadingAnimation />}>
+      <Suspense fallback={<HudLoading line="Opening the market…" />}>
         <MarketTabContent desk={desk} />
       </Suspense>
     </div>
@@ -269,7 +252,7 @@ const TradingStructureHeader = ({
   }, [resourceManager, currentDefaultTick]);
 
   return (
-    <div className="market-realm-selector min-w-0 flex shrink-0 flex-col gap-1 border-b border-gold/15 px-3 py-1 max-lg:landscape:[&>div:last-child]:hidden">
+    <div className="flex min-w-0 shrink-0 flex-col gap-1 pb-1 max-lg:landscape:[&>div:last-child]:hidden">
       <StructureSelect
         value={structureEntityId}
         onChange={onSelect}
@@ -279,19 +262,17 @@ const TradingStructureHeader = ({
         }))}
       />
       <div className="flex items-center gap-1.5">
-        <span className={cn(REQUIREMENT_CHIP, "text-gold")} title="Lords">
-          <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
-          {currencyFormat(balances.lords, 0)}
+        <span title="Lords">
+          <HudChip>
+            <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
+            {currencyFormat(balances.lords, 0)}
+          </HudChip>
         </span>
-        <span
-          className={cn(
-            REQUIREMENT_CHIP,
-            balances.donkeys !== undefined && balances.donkeys > 0 ? "text-gold" : "text-red",
-          )}
-          title="Donkeys"
-        >
-          <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
-          {currencyFormat(balances.donkeys, 0)}
+        <span title="Donkeys">
+          <HudChip tone={balances.donkeys !== undefined && balances.donkeys > 0 ? undefined : "bad"}>
+            <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
+            {currencyFormat(balances.donkeys, 0)}
+          </HudChip>
         </span>
       </div>
     </div>

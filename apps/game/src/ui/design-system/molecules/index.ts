@@ -5,7 +5,6 @@ export * from "./loading-animation";
 export * from "./resource-cost";
 export * from "./resource-icon";
 export * from "./select-biome";
-export * from "./select-resource";
 export * from "./select-tier";
 export * from "./select-troop";
 export * from "./sort-panel";

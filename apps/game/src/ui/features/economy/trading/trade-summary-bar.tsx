@@ -1,6 +1,5 @@
 import { ResourcesIds } from "@bibliothecadao/types";
 import { filterPendingOrders } from "@/hooks/helpers/use-pending-orders";
-import { HUD_CUE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { ID, MarketInterface } from "@bibliothecadao/types";
@@ -22,14 +21,14 @@ export const TradeSummaryBar = memo(({ bidOffers, askOffers, entityId }: TradeSu
   if (count === 0) return null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 text-hud-label">
       <span className="flex items-center gap-1">
-        <span className={HUD_CUE}>Open orders</span>
-        <span className={HUD_VALUE}>{count}</span>
+        <span className="text-hud-muted">Open orders</span>
+        <span className="text-hud-strong">{count}</span>
       </span>
       <span className="flex items-center gap-1">
-        <span className={HUD_CUE}>Locked</span>
-        <span className={HUD_VALUE}>{currencyFormat(totalLordsLocked, 0)}</span>
+        <span className="text-hud-muted">Locked</span>
+        <span className="text-hud-strong">{currencyFormat(totalLordsLocked, 0)}</span>
         <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
       </span>
     </div>

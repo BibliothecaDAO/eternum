@@ -1,9 +1,6 @@
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import { HUD_BODY_MUTED, HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
-import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { SelectResource } from "@/ui/design-system/molecules/select-resource";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { HudButton, HudEmpty, HudLoading, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./trade-history-event";
 import { useGame } from "@/hooks/context/game-context";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -50,6 +47,7 @@ export const MarketTradingHistory = memo(() => {
   );
 
   const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
+  const resourceOptions = useResourceFilterOptions();
 
   // First filter and sort all events
   const filteredAndSortedEvents = useMemo(() => {
@@ -85,59 +83,82 @@ export const MarketTradingHistory = memo(() => {
   const showPagination = totalPages > 1;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center justify-between gap-3 px-3 py-2 max-lg:flex-wrap">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex items-center justify-between gap-3 max-lg:flex-wrap">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
+          <HudButton
+            kind="secondary"
+            size="sm"
             aria-pressed={showOnlyYourSwaps}
             onClick={() => setShowOnlyYourSwaps((prev) => !prev)}
-            className={cn(HUD_PILL_BUTTON, showOnlyYourSwaps ? "border-gold/60 bg-gold/15" : "text-gold/65")}
           >
             Only mine
-          </button>
-          <span className={HUD_CUE}>{filteredAndSortedEvents.length} swaps</span>
+          </HudButton>
+          <span className="text-hud-label text-hud-muted">{filteredAndSortedEvents.length} swaps</span>
         </div>
-        <SelectResource onSelect={(resourceId) => setSelectedResourceId(resourceId)} className="w-48" />
+        <span className="w-48">
+          <HudSelect
+            label="Resource"
+            value={selectedResourceId ?? ALL_RESOURCES}
+            options={resourceOptions}
+            onChange={(resourceId) => setSelectedResourceId(resourceId === ALL_RESOURCES ? null : resourceId)}
+          />
+        </span>
       </div>
-      <p className={cn(HUD_BODY_MUTED, "px-3 pb-2")}>AMM swaps only. Order book fills return later.</p>
+      <p className="text-hud-muted">AMM swaps only. Order book fills return later.</p>
       <TradeHistoryRowHeader />
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div role="table" aria-label="Swaps" className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <LoadingAnimation />
-          </div>
+          <HudLoading line="Loading swaps…" />
         ) : paginatedEvents.length === 0 ? (
-          <p className={cn(HUD_BODY_MUTED, "px-3 py-6 text-center")}>No swaps yet</p>
+          <HudEmpty icon="trade" line="No swaps yet" />
         ) : (
           paginatedEvents.map((trade) => <TradeHistoryEvent key={trade.id} trade={trade} />)
         )}
       </div>
       {showPagination && (
-        <div className="flex items-center justify-center gap-3 border-t border-gold/15 px-3 py-2">
-          <button
-            type="button"
+        <div className="flex items-center justify-center gap-3 border-t border-hud-divider pt-2">
+          <HudButton
+            kind="secondary"
+            size="sm"
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className={HUD_PILL_BUTTON}
           >
             Prev
-          </button>
-          <span className={HUD_CUE}>
+          </HudButton>
+          <span className="text-hud-label text-hud-muted">
             Page {currentPage} of {totalPages}
           </span>
-          <button
-            type="button"
+          <HudButton
+            kind="secondary"
+            size="sm"
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className={HUD_PILL_BUTTON}
           >
             Next
-          </button>
+          </HudButton>
         </div>
       )}
     </div>
   );
 });
+
+/** No resource chosen: every swap shows. */
+const ALL_RESOURCES = 0;
+
+/** The swaps' resource filter: every resource but Lords, in the mode's tier order, after "All resources". */
+const useResourceFilterOptions = () => {
+  const mode = useGameModeConfig();
+  return useMemo(
+    () => [
+      { value: ALL_RESOURCES, label: "All resources" },
+      ...Object.values(mode.resources.getTiers())
+        .flat()
+        .filter((resourceId) => resourceId !== ResourcesIds.Lords)
+        .map((resourceId) => ({ value: resourceId as number, label: ResourcesIds[resourceId] })),
+    ],
+    [mode],
+  );
+};
 
 MarketTradingHistory.displayName = "MarketTradingHistory";
