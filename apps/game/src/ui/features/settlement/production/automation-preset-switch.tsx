@@ -1,3 +1,4 @@
+import { HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { useAutomationStore, type RealmEntityType } from "@/hooks/store/use-automation-store";
 import { automationRefusal, presetLine } from "./automation-words";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -16,26 +17,21 @@ export function AutomationPresetSwitch({ entityId, entityType }: { entityId: num
     store.upsertRealm(realmId, { entityType, presetId });
     store.setRealmPreset(realmId, presetId);
   };
+  const preset = inferRealmPreset(automation);
   return (
+    // The realm card's header holds it: its keys choose here, never the map's shortcuts.
     <span
-      role="group"
-      aria-label="Production automation"
-      className="inline-flex rounded border border-gold/30"
+      className="inline-flex"
+      data-tip={refusal ?? presetLine(preset)}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      {REALM_PRESETS.map((preset) => (
-        <button
-          key={preset.id}
-          type="button"
-          aria-pressed={inferRealmPreset(automation) === preset.id}
-          data-tip={refusal ?? presetLine(preset.id)}
-          disabled={refusal !== null}
-          onClick={() => selectPreset(preset.id)}
-          className="px-1.5 py-1 text-[10px] normal-case tracking-normal aria-pressed:bg-gold/20 disabled:opacity-50"
-        >
-          {preset.label}
-        </button>
-      ))}
+      <HudSelect
+        label="Production automation"
+        value={preset}
+        options={REALM_PRESETS.map((entry) => ({ value: entry.id, label: entry.label }))}
+        disabled={refusal !== null}
+        onChange={selectPreset}
+      />
     </span>
   );
 }

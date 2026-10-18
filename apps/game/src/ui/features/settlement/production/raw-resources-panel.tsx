@@ -1,9 +1,6 @@
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import Button from "@/ui/design-system/atoms/button";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+
+import { ResourceInputRow } from "./resource-input-row";
 
 interface RawResourcesPanelProps {
   /** Each input per unit of output; undefined when the recipe is unknown here. */
@@ -51,29 +48,20 @@ export const RawResourcesPanel = ({
 
   return (
     <div className="cursor-pointer space-y-1" onClick={onSelect}>
-      <div className={HUD_LABEL}>Resources required</div>
-      {inputs === undefined && <div className={HUD_VALUE}>—</div>}
-      {inputs?.map((input) => {
-        const balance = resourceBalances[input.resource] || 0;
-        const isShort = balance < input.amount * productionAmount;
-        return (
-          <div key={input.resource} className="flex items-center gap-2 py-0.5">
-            <ResourceIcon resource={input.resource} size="sm" withTooltip={false} />
-            <span className={cn(HUD_VALUE, "w-24 shrink-0 tabular-nums", isShort && "text-red-300")}>
-              {balance.toLocaleString()}
-            </span>
-            <NumberInput
-              value={Math.round(input.amount * productionAmount)}
-              onChange={(value) => handleInputChange(value, input.resource)}
-              min={0}
-              className="h-8 flex-1 text-sm"
-            />
-          </div>
-        );
-      })}
-      <Button variant="outline" size="xs" onClick={handleMaxClick} className="mt-1">
+      <div className="text-hud-label text-hud-muted">Resources required</div>
+      {inputs === undefined && <div className="text-hud-strong">—</div>}
+      {inputs?.map((input) => (
+        <ResourceInputRow
+          key={input.resource}
+          resource={input.resource}
+          held={resourceBalances[input.resource] || 0}
+          needed={Math.round(input.amount * productionAmount)}
+          onNeeded={(value) => handleInputChange(value, input.resource)}
+        />
+      ))}
+      <HudButton kind="secondary" size="sm" onClick={handleMaxClick}>
         Max
-      </Button>
+      </HudButton>
     </div>
   );
 };

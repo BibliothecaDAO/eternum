@@ -1,9 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { Button, NumberInput, Tabs } from "@/ui/design-system/atoms";
-import { HUD_BODY_MUTED, HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudButton, HudField, HudNotice, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
@@ -236,34 +234,44 @@ export const ResourceProductionControls = ({
 
   if (rawCurrentInputs?.length === 0 && laborCurrentInputs.length === 0) return null;
 
+  const produce = useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce;
+  const amountField = (
+    <HudField
+      value={String(Math.round(productionAmount))}
+      inputMode="numeric"
+      aria-label={`Amount of ${ResourcesIds[selectedResource]}`}
+      onChange={(typed) => setProductionAmount(Math.max(1, Number(typed.replace(/\D/g, "")) || 0))}
+    />
+  );
+
   if (compact)
     return (
-      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="space-y-2 text-xs">
+      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="flex flex-col gap-2">
         {canUseLabor && (
           <div role="group" aria-label="Production recipe" className="flex gap-1">
-            <button
-              type="button"
+            <HudButton
+              kind="secondary"
+              size="sm"
               aria-pressed={useRawResources}
               onClick={() => setUseRawResources(true)}
-              className="rounded border border-gold/30 px-2 py-1"
             >
               Resources
-            </button>
-            <button
-              type="button"
+            </HudButton>
+            <HudButton
+              kind="secondary"
+              size="sm"
               aria-pressed={!useRawResources}
               onClick={() => setUseRawResources(false)}
-              className="rounded border border-gold/30 px-2 py-1"
             >
               Labor
-            </button>
+            </HudButton>
           </div>
         )}
-        <label className="block space-y-1">
-          Amount of {ResourcesIds[selectedResource]}
-          <NumberInput value={Math.round(productionAmount)} onChange={setProductionAmount} min={1} arrows={false} />
-        </label>
-        <p>
+        <span className="flex flex-col gap-1">
+          <span className="text-hud-label text-hud-muted">Amount of {ResourcesIds[selectedResource]}</span>
+          {amountField}
+        </span>
+        <p className="text-hud-label">
           {currentInputs === undefined
             ? "—"
             : currentInputs
@@ -274,26 +282,27 @@ export const ResourceProductionControls = ({
                 .join(" · ")}
         </p>
         {(error || isDisabled || refusal) && (
-          <p role="status">
-            {error ??
+          <HudNotice
+            tone={error ? "bad" : undefined}
+            line={
+              error ??
               refusal ??
               (currentInputs === undefined
                 ? "This recipe is unknown here."
                 : isOverBalance
                   ? "Not enough resources."
-                  : "Enter at least one production cycle.")}
-          </p>
+                  : "Enter at least one production cycle.")
+            }
+          />
         )}
-        <Button
-          onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-          disabled={!ordersAllowed || isDisabled || isLoading || refusal !== null}
-          isLoading={isLoading}
-          variant="gold"
-          className="w-full"
-          size="xs"
+        <HudButton
+          kind="primary"
+          busy={isLoading ? "Starting…" : undefined}
+          disabled={!ordersAllowed || isDisabled || refusal !== null}
+          onClick={produce}
         >
           Start Production
-        </Button>
+        </HudButton>
       </section>
     );
 
@@ -302,79 +311,59 @@ export const ResourceProductionControls = ({
     : "0s";
 
   return (
-    <div className="space-y-3 rounded-lg border border-gold/15 bg-black/25 p-4">
-      <div className={cn("grid gap-4", canUseLabor ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
-        <div className="space-y-2">
-          <h3 className={HUD_HEADLINE}>Start production · {ResourcesIds[selectedResource]}</h3>
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={selectedResource} size="md" />
-            <NumberInput
-              value={Math.round(productionAmount)}
-              onChange={(value) => setProductionAmount(value)}
-              min={1}
-              className="min-h-11 w-full min-w-0 text-base lg:h-9 lg:w-52 lg:text-sm"
-            />
-          </div>
-          <p className={HUD_BODY_MUTED}>Type the output; the inputs follow.</p>
-        </div>
-        {selectableTabs.length > 1 ? (
-          <Tabs
-            selectedIndex={selectedTab}
-            onChange={(index: any) => {
-              setUseRawResources(selectableTabs[index].isRaw);
-            }}
-          >
-            <Tabs.List className="w-full">
-              {selectableTabs.map((tab, index) => (
-                <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-              ))}
-            </Tabs.List>
-
-            <Tabs.Panels className="overflow-hidden pt-2">
-              {selectableTabs.map((tab, index) => (
-                <Tabs.Panel key={index}>{tab.component}</Tabs.Panel>
-              ))}
-            </Tabs.Panels>
-          </Tabs>
-        ) : (
+    <HudPanel kind="section" title={`Start production · ${ResourcesIds[selectedResource]}`} collapsible={false}>
+      <div className="flex flex-col gap-3">
+        <div className={canUseLabor ? "grid grid-cols-1 gap-4 lg:grid-cols-2" : "grid grid-cols-1 gap-4"}>
           <div className="flex flex-col gap-2">
-            <RawResourcesPanel
-              inputs={rawCurrentInputs}
-              productionAmount={productionAmount}
-              setProductionAmount={setProductionAmount}
-              resourceBalances={resourceBalances}
-              isSelected={true}
-              onSelect={() => setUseRawResources(true)}
-            />
-            <p className={HUD_BODY_MUTED}>Only standard production is available for this resource.</p>
+            <div className="flex items-center gap-2">
+              <ResourceIcon resource={selectedResource} size="md" />
+              {amountField}
+            </div>
+            <p className="text-hud-muted">Type the output; the inputs follow.</p>
           </div>
-        )}
-      </div>
+          {selectableTabs.length > 1 ? (
+            <div className="flex flex-col gap-2">
+              <HudTabs
+                tabs={selectableTabs.map((tab, index) => ({ key: index, label: tab.label }))}
+                value={selectedTab}
+                onChange={(index) => setUseRawResources(selectableTabs[index].isRaw)}
+              />
+              <div role="tabpanel">{selectableTabs[selectedTab]?.component}</div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <RawResourcesPanel
+                inputs={rawCurrentInputs}
+                productionAmount={productionAmount}
+                setProductionAmount={setProductionAmount}
+                resourceBalances={resourceBalances}
+                isSelected={true}
+                onSelect={() => setUseRawResources(true)}
+              />
+              <p className="text-hud-muted">Only standard production is available for this resource.</p>
+            </div>
+          )}
+        </div>
 
-      {error && (
-        <p role="status" className="text-xs text-danger">
-          {error}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gold/15 pt-3">
-        <span className={cn(HUD_VALUE, "flex items-center gap-1.5")}>
-          {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
-          <ResourceIcon resource={selectedResource} size="xs" withTooltip={false} />
-          {bonus > 1 && <span className="text-relic-activated">+{Math.round((bonus - 1) * 100)}% bonus</span>}
-        </span>
-        <span className={HUD_CUE}>Time required {timeRequired}</span>
+        {error && <HudNotice tone="bad" line={error} />}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hud-divider pt-3">
+          <span className="flex items-center gap-1.5 text-hud-strong">
+            {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
+            <ResourceIcon resource={selectedResource} size="xs" withTooltip={false} />
+            {bonus > 1 && <span className="text-hud-good">+{Math.round((bonus - 1) * 100)}% bonus</span>}
+          </span>
+          <span className="text-hud-label text-hud-cue">Time required {timeRequired}</span>
+        </div>
+        <HudButton
+          kind={isDisabled || refusal ? "secondary" : "primary"}
+          busy={isLoading ? "Starting…" : undefined}
+          disabled={!ordersAllowed || isDisabled || refusal !== null}
+          onClick={produce}
+        >
+          {refusal ?? (isDisabled ? "Not enough resources" : "Start production")}
+        </HudButton>
       </div>
-      <Button
-        onClick={useRawResources ? handleRawResourcesProduce : handleLaborResourcesProduce}
-        disabled={!ordersAllowed || isDisabled || isLoading || refusal !== null}
-        isLoading={isLoading}
-        variant={isDisabled || refusal ? "outline" : "gold"}
-        className="sticky bottom-0 min-h-11 w-full"
-        size="md"
-      >
-        {refusal ?? (isDisabled ? "Not enough resources" : "Start production")}
-      </Button>
-    </div>
+    </HudPanel>
   );
 };
 
