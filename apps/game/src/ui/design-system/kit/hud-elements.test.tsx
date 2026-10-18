@@ -200,6 +200,25 @@ describe("a select", () => {
   });
 });
 
+describe("a row's hover", () => {
+  it("says the row in full on the app's hover, however the row is drawn", () => {
+    act(() =>
+      root.render(
+        <>
+          <HudRow title="Farm" tip="Farm: Fields wheat 1,500 → 1,800/h" onClick={() => undefined} />
+          <HudRow title="Hut" tip="Hut: population +2" />
+          <HudRow title="Well" tip="Well: stamina +20" trail={<span>2,000</span>} />
+        </>,
+      ),
+    );
+    expect([...host.querySelectorAll("[data-tip]")].map((row) => row.getAttribute("data-tip"))).toEqual([
+      "Farm: Fields wheat 1,500 → 1,800/h",
+      "Hut: population +2",
+      "Well: stamina +20",
+    ]);
+  });
+});
+
 describe("a row pressed to choose it", () => {
   it("is a button that says it is chosen, and a disabled one cannot be pressed", () => {
     const pick = vi.fn();

@@ -831,6 +831,7 @@ export const HudRow = ({
   selected = false,
   state,
   disabled,
+  tip,
   onClick,
 }: {
   lead?: ReactNode;
@@ -845,11 +846,13 @@ export const HudRow = ({
   selected?: boolean;
   state?: string;
   disabled?: boolean;
+  /** What the row stands for in full, on the app's hover (a research row's next tier). */
+  tip?: string;
   onClick?: () => void;
 }) => {
   if (trail !== undefined) {
     return (
-      <div className="ui-row" aria-selected={selected} aria-disabled={disabled} data-state={state}>
+      <div className="ui-row" aria-selected={selected} aria-disabled={disabled} data-state={state} data-tip={tip}>
         {lead}
         {onClick ? (
           <button
@@ -888,13 +891,21 @@ export const HudRow = ({
       role="option"
       aria-selected={selected}
       data-state={state}
+      data-tip={tip}
       disabled={disabled}
       onClick={onClick}
     >
       {words}
     </button>
   ) : (
-    <div className="ui-row" role="option" aria-selected={selected} aria-disabled={disabled} data-state={state}>
+    <div
+      className="ui-row"
+      role="option"
+      aria-selected={selected}
+      aria-disabled={disabled}
+      data-state={state}
+      data-tip={tip}
+    >
       {words}
     </div>
   );

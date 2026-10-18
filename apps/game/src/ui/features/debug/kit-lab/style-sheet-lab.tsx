@@ -1268,12 +1268,18 @@ const CardSection = () => (
 const RowsSection = () => (
   <Element
     name="List row"
-    rule="One thing of a list: what it is and what it says; hover lights it, the chosen one carries a bar in the age's accent."
+    rule="One thing of a list: what it is and what it says, and in full on hover where it has more to say; hover lights it, the chosen one carries a bar in the age's accent."
     sheet={
       <div className="flex w-80 flex-col gap-1">
         <HudRow title="Egonal" detail="Settlement · 1,000 guarding" selected />
         <HudRow title="Noykkuynoyk" detail="City · Undefended" state="hover" />
         <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" />
+        <HudRow
+          title="Farm"
+          detail="Uncommon · 4,000 Essence, 3,000 labor"
+          tip="Farm: Fields wheat 1,500 → 1,800/h · Granary limit 18K → 27K"
+          onClick={() => undefined}
+        />
         <span data-lab-chrome className="mt-3 text-xs text-white/50">
           A row with its own controls: its star, the button that chooses it, its Level up:
         </span>
