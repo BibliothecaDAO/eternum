@@ -9,22 +9,24 @@ const matches = (source) => findViolations(source, "x.tsx", COLORS, STEPS).map((
 
 test("a HUD file drawn only with the sheet passes", () =>
   assert.deepEqual(
-    matches(`<HudPanel title="Military"><span className="text-hud-body flex gap-2 bg-transparent">
-      <div className="h-[var(--hud-control)]" /></span></HudPanel>`),
+    matches(`<HudPanel title="Military"><span className="text-hud-body text-hud-muted border-hud-line flex gap-2 bg-transparent">
+      <div className="border-b" /></span></HudPanel>`),
     [],
   ));
 
 test("a one-off size, colour, type size or weight fails, each where it is written", () =>
   assert.deepEqual(
-    matches(`<div className="text-[11px] h-[38px] text-gold/70 bg-black/40 border-kit-line text-xs text-caption font-semibold" style={{ color: "#f3d08a" }} />
+    matches(`<div className="text-[11px] h-[38px] w-[var(--hud-control)] text-gold/70 bg-black/40 border-kit-line text-hud-muted/50 text-xs text-caption font-semibold" style={{ color: "#f3d08a" }} />
 .plate { font-size: 13px; background: rgba(0, 0, 0, 0.4); }`),
     [
       "text-[11px]",
       "h-[38px]",
+      "w-[var(--hud-control)]",
       "#f3d08a",
       "text-gold/70",
       "bg-black/40",
       "border-kit-line",
+      "text-hud-muted/50",
       "text-xs",
       "text-caption",
       "font-semibold",

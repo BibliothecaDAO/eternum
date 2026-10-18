@@ -24,7 +24,7 @@
   gap: theme(spacing.2);
   border-bottom: 1px solid var(--hud-divider);
   padding: theme(spacing.2) theme(spacing.3);
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-title);
   line-height: var(--hud-line-title);
   font-weight: var(--hud-weight-title);
@@ -82,7 +82,7 @@
 }
 .ui-button[data-kind="quiet"] {
   background: transparent;
-  color: var(--hud-label);
+  color: var(--hud-muted);
 }
 .ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
@@ -207,7 +207,7 @@
 }
 .ui-tab:is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
-  color: var(--hud-label);
+  color: var(--hud-muted);
 }
 .ui-tab[aria-selected="true"] {
   border-bottom-color: rgb(var(--hud-accent));
@@ -342,7 +342,7 @@
   font-weight: var(--hud-weight-body);
 }
 .ui-row__detail {
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -380,7 +380,7 @@
   height: 6px;
   align-self: center;
   border-radius: var(--hud-radius-round);
-  background: var(--hud-label);
+  background: var(--hud-muted);
 }
 .ui-event[data-tone="good"] .ui-event__mark {
   background: var(--hud-good);
@@ -474,7 +474,7 @@
 .ui .mp-label,
 .ui .mp-cue {
   font-weight: var(--hud-weight-body);
-  color: var(--hud-label);
+  color: var(--hud-muted);
 }
 .ui .mp-count {
   font-weight: var(--hud-weight-strong);
@@ -493,7 +493,7 @@
 }
 .ui-window__note {
   margin-right: auto;
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -510,7 +510,7 @@
 }
 .ui-amount__of {
   margin-right: auto;
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -581,7 +581,7 @@
   gap: theme(spacing[1.5]);
 }
 .ui-transfer__held {
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -743,7 +743,7 @@
   font-weight: var(--hud-weight-title);
 }
 .ui-setting__about {
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -784,7 +784,7 @@
   align-items: flex-start;
   gap: theme(spacing.2);
   border: 1px solid var(--hud-line);
-  border-left: 3px solid var(--hud-label);
+  border-left: 3px solid var(--hud-muted);
   border-radius: var(--hud-radius-control);
   background: var(--hud-well);
   padding: theme(spacing.2) theme(spacing.3);
@@ -799,7 +799,7 @@
   border-left-color: var(--hud-warn);
 }
 .ui-notice__why {
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
@@ -813,7 +813,7 @@
   gap: theme(spacing.1);
   border: 0;
   background: transparent;
-  color: var(--hud-label);
+  color: var(--hud-muted);
   font-family: inherit;
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
@@ -930,7 +930,7 @@
   display: flex;
   align-items: center;
   gap: theme(spacing.2);
-  color: var(--hud-label);
+  color: var(--hud-muted);
 }
 
 /* ── Empty: nothing to show yet, said once, with the one thing that would fill it. ── */
@@ -940,7 +940,7 @@
   align-items: center;
   gap: theme(spacing.2);
   padding: theme(spacing.4) theme(spacing.3);
-  color: var(--hud-label);
+  color: var(--hud-muted);
   text-align: center;
 }
 .ui-empty__line {

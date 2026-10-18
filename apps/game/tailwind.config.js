@@ -5,6 +5,7 @@ import {
   FONT_FACES,
   FONTS,
   GUTTERS,
+  HUD_COLOR_CLASSES,
   HUD_COLORS,
   HUD_FINISH,
   HUD_MODES,
@@ -106,6 +107,8 @@ export default {
         kit: Object.fromEntries(
           Object.keys(HUD_COLORS).map((name) => [name, `rgb(var(--kit-${name}) / <alpha-value>)`]),
         ),
+        // The HUD sheet's colour roles (src/tokens.ts HUD_COLOR_CLASSES): `text-hud-muted`, `border-hud-line`.
+        hud: HUD_COLOR_CLASSES,
         gold: HUD_COLORS.gold,
         crimson: "#582C4D",
         relic: "#a78bfa", // purple-300

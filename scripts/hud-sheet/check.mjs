@@ -64,21 +64,25 @@ const RAW_COLOR = /#[0-9a-fA-F]{3,8}\b|(?<![a-zA-Z-])(?:rgba?|hsla?|oklch)\(/g;
 
 /**
  * Each rule, by the value it refuses. `colors` are the Tailwind config's colour names (`gold`, `danger`, the shell's
- * `kit`), `steps` the shell's type steps (TYPE): the HUD reads neither.
+ * `kit`) but the sheet's own `hud`, `steps` the shell's type steps (TYPE): the HUD reads neither. A `hud-*` colour
+ * takes no opacity modifier: each is a role.
  */
 export const rules = (colors, steps) => [
   {
-    rule: "one-off value: use a HUD element or a --hud-* token",
+    rule: "one-off value: use a HUD element, a hud-* colour or a HUD token",
     pattern: /(?<![\w-])-?[a-z][a-z0-9-]*-\[[^\]\s]+\]/g,
-    allows: (match) => match.includes("var(--hud-"),
   },
   { rule: "raw colour: use a --hud-* colour", pattern: RAW_COLOR },
   {
-    rule: "colour class outside the sheet: use a HUD element or a --hud-* colour",
+    rule: "colour class outside the sheet: use a HUD element or a hud-* colour (text-hud-muted, border-hud-line)",
     pattern: new RegExp(
       `(?<![\\w-])${COLOR_UTILITY}-(?:${[...colors, ...TAILWIND_COLORS].sort((a, b) => b.length - a.length).join("|")})(?:-[a-z0-9_]+)*(?:/\\d+)?(?![\\w-])`,
       "g",
     ),
+  },
+  {
+    rule: "a hud-* colour is a role: no opacity modifier",
+    pattern: new RegExp(`(?<![\\w-])${COLOR_UTILITY}-hud-[a-z-]+/\\d+`, "g"),
   },
   {
     rule: "type size outside the sheet: use text-hud-<role> (HUD_TYPE)",
@@ -136,7 +140,12 @@ const filesUnder = (path) =>
         .filter(isScanned);
 
 const main = () => {
-  const colors = [...configColorsOf(readFileSync(join(ROOT, "apps/game/tailwind.config.js"), "utf8")), "kit"];
+  const colors = [
+    ...configColorsOf(readFileSync(join(ROOT, "apps/game/tailwind.config.js"), "utf8")).filter(
+      (name) => name !== "hud",
+    ),
+    "kit",
+  ];
   const steps = stepsOf(readFileSync(join(ROOT, APP, "tokens.ts"), "utf8"));
   const allowlist = JSON.parse(readFileSync(ALLOWLIST, "utf8"));
   const violations = SCOPE.flatMap(filesUnder).flatMap((path) =>

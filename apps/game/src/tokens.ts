@@ -464,7 +464,7 @@ export const HUD_DERIVED = {
   line: "rgb(var(--hud-accent) / 0.25)",
   "line-strong": "rgb(var(--hud-accent) / 0.5)",
   divider: "rgb(var(--hud-accent) / 0.15)",
-  label: "rgb(var(--hud-accent) / 0.75)",
+  muted: "rgb(var(--hud-accent) / 0.75)",
   cue: "rgb(var(--hud-accent) / 0.6)",
   hover: "rgb(var(--hud-accent) / 0.1)",
   chosen: "rgb(var(--hud-accent) / 0.18)",
@@ -472,6 +472,31 @@ export const HUD_DERIVED = {
   "shadow-control": "0 1px 2px rgb(0 0 0 / 0.4)",
   focus: "0 0 0 2px rgb(var(--hud-accent) / 0.65)",
 } as const;
+
+/**
+ * The sheet's colours as Tailwind colour names, for the words and rules inside an element (`text-hud-muted`,
+ * `border-hud-line`). Each is a role, so none takes an opacity modifier; none shares a name with a HUD_TYPE role.
+ */
+export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
+  ...["accent", "gold", "ink", "dark"].map((name) => [name, `rgb(var(--hud-${name}))`]),
+  ...[
+    "well",
+    "own",
+    "ally",
+    "enemy",
+    "neutral",
+    "good",
+    "bad",
+    "warn",
+    "line",
+    "line-strong",
+    "divider",
+    "muted",
+    "cue",
+    "hover",
+    "chosen",
+  ].map((name) => [name, `var(--hud-${name})`]),
+]);
 
 /**
  * Each game is an age of the lore ("Realms · The Lost Ages"), and wears its age's colours (owner, 17 October 2026: "a
