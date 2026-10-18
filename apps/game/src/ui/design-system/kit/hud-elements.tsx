@@ -2,11 +2,13 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   type ButtonHTMLAttributes,
+  createContext,
   forwardRef,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent,
   type ReactNode,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -620,43 +622,58 @@ export const HudNotice = ({ tone, line, why }: { tone?: Tone; line: string; why?
  */
 type WindowSize = "task" | "page" | "workspace" | "fit";
 
+/** The foot of the window a body is drawn in, once the window is drawn. */
+const WindowFootContext = createContext<HTMLElement | null>(null);
+
 /**
  * A panel the size of a task: its title bar with a way out (dragging the bar moves the window), its body, which scrolls
- * within the window's height, and its foot: what it costs on the left, the way out and the one verb on the right, the
- * verb last.
+ * within the window's height, and its foot, which its body fills (HudWindowFoot) and which is hidden while empty.
  */
 export const HudWindow = ({
   title,
   icon,
   size,
   onClose,
-  note,
-  actions,
   children,
 }: {
   title: string;
   icon?: IconMeaning;
   size?: WindowSize;
   onClose: () => void;
-  note?: ReactNode;
-  actions?: ReactNode;
   children: ReactNode;
-}) => (
-  <section className="ui ui-window" role="dialog" aria-label={title} data-size={size}>
-    <header className="ui-window__bar" data-popover-drag-handle>
-      {icon && <Icon name={icon} size={22} />}
-      <span>{title}</span>
-      <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
-    </header>
-    <div className="ui-window__body">{children}</div>
-    {(note !== undefined || actions !== undefined) && (
-      <footer className="ui-window__foot">
-        <span className="ui-window__note">{note}</span>
-        {actions}
-      </footer>
-    )}
-  </section>
-);
+}) => {
+  const [foot, setFoot] = useState<HTMLElement | null>(null);
+  return (
+    <section className="ui ui-window" role="dialog" aria-label={title} data-size={size}>
+      <header className="ui-window__bar" data-popover-drag-handle>
+        {icon && <Icon name={icon} size={22} />}
+        <span>{title}</span>
+        <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
+      </header>
+      <WindowFootContext.Provider value={foot}>
+        <div className="ui-window__body">{children}</div>
+      </WindowFootContext.Provider>
+      <footer ref={setFoot} className="ui-window__foot" />
+    </section>
+  );
+};
+
+/**
+ * The one way to fill a window's foot: what it costs on the left, then the way out and the one verb, the verb last.
+ * It is drawn where its state lives, anywhere in the window's body (as the body's first child when the verb is known at
+ * the top), and lands in the window's foot.
+ */
+export const HudWindowFoot = ({ note, children }: { note?: ReactNode; children?: ReactNode }) => {
+  const foot = useContext(WindowFootContext);
+  if (!foot) return null;
+  return createPortal(
+    <>
+      <span className="ui-window__note">{note}</span>
+      {children}
+    </>,
+    foot,
+  );
+};
 
 /** A question that stops the task: what it does and costs, the way back, and the verb (red when it cannot be undone). */
 export const HudConfirm = ({

@@ -767,6 +767,9 @@ span.ui-row__choose {
 }
 
 /* ── Window footer: what the task costs or says on the left, its way out and its one verb on the right, the verb last. */
+.ui-window__foot:empty {
+  display: none;
+}
 .ui-window__foot {
   display: flex;
   align-items: center;

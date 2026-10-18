@@ -2,7 +2,7 @@ import { act, createRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HudButton, HudField, HudRow, HudSelect, HudWindow } from "./hud-elements";
+import { HudButton, HudField, HudRow, HudSelect, HudWindow, HudWindowFoot } from "./hud-elements";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -147,23 +147,58 @@ describe("a window", () => {
     const ref = createRef<HTMLButtonElement>();
     act(() =>
       root.render(
-        <HudWindow
-          title="Edit structure"
-          size="task"
-          onClose={close}
-          actions={
-            <HudButton ref={ref} kind="primary">
-              Save
-            </HudButton>
-          }
-        >
+        <HudWindow title="Edit structure" size="task" onClose={close}>
           body
         </HudWindow>,
       ),
     );
     expect(host.querySelector("[data-popover-drag-handle]")?.textContent).toBe("Edit structure");
-    expect(ref.current?.textContent).toBe("Save");
     act(() => host.querySelector<HTMLButtonElement>('[aria-label="Close"]')!.click());
     expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("holds in its one foot what its body puts there, from wherever the verb's state lives, and nothing else", () => {
+    const ref = createRef<HTMLButtonElement>();
+    const Form = () => {
+      const [count, setCount] = useState(0);
+      return (
+        <div>
+          <button type="button" onClick={() => setCount(500)}>
+            +500
+          </button>
+          <section>
+            <HudWindowFoot note={`Costs ${count} wheat`}>
+              <HudButton ref={ref} kind="primary">
+                Deploy
+              </HudButton>
+            </HudWindowFoot>
+          </section>
+        </div>
+      );
+    };
+    act(() =>
+      root.render(
+        <HudWindow title="Military" onClose={() => undefined}>
+          <Form />
+        </HudWindow>,
+      ),
+    );
+    const foot = () => host.querySelector("footer.ui-window__foot")!;
+    expect(foot().textContent).toBe("Costs 0 wheatDeploy");
+    expect(foot().contains(ref.current)).toBe(true);
+    act(() => host.querySelector<HTMLButtonElement>(".ui-window__body button")!.click());
+    expect(foot().textContent).toBe("Costs 500 wheatDeploy");
+    expect(host.querySelectorAll("footer")).toHaveLength(1);
+  });
+
+  it("leaves its foot empty, to be hidden, when the body puts nothing there", () => {
+    act(() =>
+      root.render(
+        <HudWindow title="Leaderboard" onClose={() => undefined}>
+          rows
+        </HudWindow>,
+      ),
+    );
+    expect(host.querySelector("footer.ui-window__foot")!.childNodes).toHaveLength(0);
   });
 });

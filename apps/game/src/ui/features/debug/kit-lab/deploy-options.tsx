@@ -6,6 +6,7 @@ import {
   HudTierChip,
   HudTroopAmount,
   HudWindow,
+  HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { useState } from "react";
 
@@ -202,12 +203,10 @@ const MapPicker = ({ Body }: { Body: (props: { deploy: Deploy }) => React.ReactN
   const deploy = useDeploy(GARRISON[6]);
   return (
     <div className="w-[22.5rem]">
-      <HudWindow
-        title="Deploy field army"
-        icon="military"
-        onClose={() => undefined}
-        actions={<DeployButton deploy={deploy} />}
-      >
+      <HudWindow title="Deploy field army" icon="military" onClose={() => undefined}>
+        <HudWindowFoot>
+          <DeployButton deploy={deploy} />
+        </HudWindowFoot>
         <Body deploy={deploy} />
       </HudWindow>
     </div>
@@ -222,7 +221,10 @@ const MilitaryForm = ({ Body }: { Body: (props: { deploy: Deploy }) => React.Rea
   const [slot, setSlot] = useState(2);
   return (
     <div className="w-[30rem]">
-      <HudWindow title="Military" icon="military" onClose={() => undefined} actions={<DeployButton deploy={deploy} />}>
+      <HudWindow title="Military" icon="military" onClose={() => undefined}>
+        <HudWindowFoot>
+          <DeployButton deploy={deploy} />
+        </HudWindowFoot>
         <div className="flex flex-col gap-4">
           <HudTabs
             tabs={[

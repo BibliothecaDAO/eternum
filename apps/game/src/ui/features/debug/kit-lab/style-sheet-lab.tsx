@@ -49,6 +49,7 @@ import {
   HudTroopAmount,
   HudTransfer,
   HudWindow,
+  HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { Confirm } from "@/ui/design-system/kit/confirm";
@@ -1183,29 +1184,19 @@ const WindowSection = () => (
     rule="A panel the size of a task: its title bar with a way out (dragging it moves the window), its body, which scrolls within the window, and a foot with what it costs on the left, the way out and the one verb on the right. Four sizes, by what it holds: task, page, workspace, and fit, as large as its content (a table)."
     sheet={
       <div className="flex flex-col items-start gap-4">
-        <HudWindow
-          title="Edit structure"
-          icon="edit"
-          size="task"
-          onClose={() => undefined}
-          actions={<HudButton kind="primary">Save</HudButton>}
-        >
+        <HudWindow title="Edit structure" icon="edit" size="task" onClose={() => undefined}>
+          <HudWindowFoot>
+            <HudButton kind="primary">Save</HudButton>
+          </HudWindowFoot>
           <HudField value="Egonal" aria-label="Structure name" onChange={() => undefined} />
         </HudWindow>
-        <HudWindow
-          title="Military"
-          icon="military"
-          onClose={() => undefined}
-          note="Deploying costs 1,000 wheat"
-          actions={
-            <>
-              <HudButton kind="quiet">Cancel</HudButton>
-              <HudButton kind="primary" icon="military">
-                Deploy
-              </HudButton>
-            </>
-          }
-        >
+        <HudWindow title="Military" icon="military" onClose={() => undefined}>
+          <HudWindowFoot note="Deploying costs 1,000 wheat">
+            <HudButton kind="quiet">Cancel</HudButton>
+            <HudButton kind="primary" icon="military">
+              Deploy
+            </HudButton>
+          </HudWindowFoot>
           <HudTroopAmount name="Paladins" value={1_000} most={1_800} held={2_000} onChange={() => undefined} />
         </HudWindow>
         <HudWindow title="Leaderboard" icon="victory" size="fit" onClose={() => undefined}>
