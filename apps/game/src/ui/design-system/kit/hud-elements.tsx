@@ -1,5 +1,16 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import {
+  type ButtonHTMLAttributes,
+  forwardRef,
+  type HTMLAttributes,
+  type InputHTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 
 import "./hud-sheet.css";
 
@@ -13,63 +24,50 @@ type ButtonKind = "primary" | "secondary" | "quiet";
 type Tone = "good" | "bad" | "warn";
 
 /** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
-export const HudButton = ({
-  kind,
-  size = "md",
-  icon,
-  children,
-  ...rest
-}: {
-  kind: ButtonKind;
-  size?: "md" | "sm";
-  icon?: IconMeaning;
-  children?: ReactNode;
-} & ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button type="button" {...rest} className="ui-button" data-kind={kind} data-size={size}>
+export const HudButton = forwardRef<
+  HTMLButtonElement,
+  {
+    kind: ButtonKind;
+    size?: "md" | "sm";
+    icon?: IconMeaning;
+    children?: ReactNode;
+  } & ButtonHTMLAttributes<HTMLButtonElement>
+>(({ kind, size = "md", icon, children, ...rest }, ref) => (
+  <button ref={ref} type="button" {...rest} className="ui-button" data-kind={kind} data-size={size}>
     {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
     {children}
   </button>
-);
+));
+HudButton.displayName = "HudButton";
 
 /** A button that is only its painting, named for assistive technology and the app's tooltip. */
-export const HudIconButton = ({
-  icon,
-  label,
-  kind = "secondary",
-  ...rest
-}: { icon: IconMeaning; label: string; kind?: ButtonKind } & ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button type="button" aria-label={label} {...rest} className="ui-button" data-kind={kind} data-icon-only>
+export const HudIconButton = forwardRef<
+  HTMLButtonElement,
+  { icon: IconMeaning; label: string; kind?: ButtonKind } & ButtonHTMLAttributes<HTMLButtonElement>
+>(({ icon, label, kind = "secondary", ...rest }, ref) => (
+  <button ref={ref} type="button" aria-label={label} {...rest} className="ui-button" data-kind={kind} data-icon-only>
     <Icon name={icon} size={20} />
   </button>
-);
+));
+HudIconButton.displayName = "HudIconButton";
 
-/** What is typed (a name, a search), in a well. */
-export const HudField = ({
-  value,
-  placeholder,
-  icon,
-  state,
-  disabled = false,
-  onChange,
-}: {
-  value: string;
-  placeholder?: string;
-  icon?: IconMeaning;
-  state?: string;
-  disabled?: boolean;
-  onChange: (value: string) => void;
-}) => (
-  <label className="ui-field" data-state={state}>
+/** What is typed (a name, a search, an amount), in a well as wide as its container. */
+export const HudField = forwardRef<
+  HTMLInputElement,
+  {
+    value: string;
+    icon?: IconMeaning;
+    /** The lab's forced state. */
+    state?: string;
+    onChange: (value: string) => void;
+  } & Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "className" | "style">
+>(({ value, icon, state, onChange, ...input }, ref) => (
+  <label className="ui-field" data-fill data-state={state}>
     {icon && <Icon name={icon} size={16} />}
-    <input
-      className="!w-48"
-      value={value}
-      placeholder={placeholder}
-      disabled={disabled}
-      onChange={(event) => onChange(event.target.value)}
-    />
+    <input ref={ref} {...input} value={value} onChange={(event) => onChange(event.target.value)} />
   </label>
-);
+));
+HudField.displayName = "HudField";
 
 const formatAmount = (amount: number) => Math.round(amount).toLocaleString("en-US");
 
@@ -341,28 +339,54 @@ export const HudRing = ({
   );
 };
 
-/** One thing of a list: what it is and what it says; hover lights it, the chosen one carries a bar in the accent. */
+/**
+ * One thing of a list: what it is and what it says; hover lights it, the chosen one carries a bar in the accent. With
+ * `onClick` it is a button: choosing it is pressing it.
+ */
 export const HudRow = ({
   lead,
   title,
   detail,
   selected = false,
   state,
+  disabled,
+  onClick,
 }: {
   lead?: ReactNode;
   title: ReactNode;
   detail?: ReactNode;
   selected?: boolean;
   state?: string;
-}) => (
-  <div className="ui-row" role="option" aria-selected={selected} data-state={state}>
-    {lead}
-    <span className="flex min-w-0 flex-col">
-      <span className="ui-row__title">{title}</span>
-      {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
-    </span>
-  </div>
-);
+  disabled?: boolean;
+  onClick?: () => void;
+}) => {
+  const words = (
+    <>
+      {lead}
+      <span className="flex min-w-0 flex-col">
+        <span className="ui-row__title">{title}</span>
+        {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
+      </span>
+    </>
+  );
+  return onClick ? (
+    <button
+      type="button"
+      className="ui-row"
+      role="option"
+      aria-selected={selected}
+      data-state={state}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {words}
+    </button>
+  ) : (
+    <div className="ui-row" role="option" aria-selected={selected} aria-disabled={disabled} data-state={state}>
+      {words}
+    </div>
+  );
+};
 
 /**
  * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up), with
@@ -433,12 +457,20 @@ export const HudNotice = ({ tone, line, why }: { tone?: Tone; line: string; why?
 );
 
 /**
- * A panel the size of a task: its title bar with a way out, its body, and its foot: what it costs on the left, the way
- * out and the one verb on the right, the verb last.
+ * How big a window is, by what it holds: one task (a name, a relic, a confirmation), a page to read (the Lordpedia), or a
+ * workspace (Build, Production, Transfer, the market) that fills the desk on desktop and the sheet on a phone.
+ */
+type WindowSize = "task" | "page" | "workspace";
+
+/**
+ * A panel the size of a task: its title bar with a way out (dragging the bar moves the window), its body, which scrolls
+ * within the window's height, and its foot: what it costs on the left, the way out and the one verb on the right, the
+ * verb last.
  */
 export const HudWindow = ({
   title,
   icon,
+  size,
   onClose,
   note,
   actions,
@@ -446,13 +478,14 @@ export const HudWindow = ({
 }: {
   title: string;
   icon?: IconMeaning;
+  size?: WindowSize;
   onClose: () => void;
   note?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
 }) => (
-  <section className="ui ui-window" role="dialog" aria-label={title}>
-    <header className="ui-window__bar">
+  <section className="ui ui-window" role="dialog" aria-label={title} data-size={size}>
+    <header className="ui-window__bar" data-popover-drag-handle>
       {icon && <Icon name={icon} size={22} />}
       <span>{title}</span>
       <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
@@ -502,33 +535,26 @@ export const HudConfirm = ({
   </section>
 );
 
-/** A choice's trigger: what is chosen, and the cue that it opens. */
-export const HudSelect = ({ value, state, onClick }: { value: string; state?: string; onClick?: () => void }) => (
-  <button type="button" className="ui-select" data-state={state} aria-haspopup="listbox" onClick={onClick}>
-    <span>{value}</span>
-    <Icon name="chevron-down" size={16} />
-  </button>
-);
+type MenuItem =
+  | { kind: "rule" }
+  | {
+      kind?: "item";
+      label: string;
+      icon?: IconMeaning;
+      hint?: string;
+      checked?: boolean;
+      disabled?: boolean;
+      tone?: "bad";
+      state?: string;
+      onSelect?: () => void;
+    };
 
 /** The list a select opens: each choice, the chosen one checked, a rule between groups. The map has no menu: a right-click acts. */
-export const HudMenu = ({
-  items,
-}: {
-  items: readonly (
-    | { kind: "rule" }
-    | {
-        kind?: "item";
-        label: string;
-        icon?: IconMeaning;
-        hint?: string;
-        checked?: boolean;
-        disabled?: boolean;
-        tone?: "bad";
-        state?: string;
-      }
-  )[];
-}) => (
-  <div className="ui ui-menu" role="menu">
+export const HudMenu = forwardRef<
+  HTMLDivElement,
+  { items: readonly MenuItem[] } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "role" | "style">
+>(({ items, ...rest }, ref) => (
+  <div ref={ref} {...rest} className="ui ui-menu" role="menu">
     {items.map((item, index) =>
       item.kind === "rule" ? (
         <span key={index} className="ui-menu__rule" role="separator" />
@@ -542,6 +568,7 @@ export const HudMenu = ({
           disabled={item.disabled}
           data-tone={item.tone}
           data-state={item.state}
+          onClick={item.onSelect}
         >
           {item.icon && <Icon name={item.icon} size={16} />}
           {item.label}
@@ -550,7 +577,147 @@ export const HudMenu = ({
       ),
     )}
   </div>
-);
+));
+HudMenu.displayName = "HudMenu";
+
+const MENU_GAP_PX = 4;
+
+/** Where an open select's list sits: under its trigger, or over it when the screen has no room below. */
+const menuPlace = (trigger: HTMLElement, menu: HTMLElement | null) => {
+  const rect = trigger.getBoundingClientRect();
+  const height = menu?.offsetHeight ?? 0;
+  const roomBelow = rect.bottom + MENU_GAP_PX + height <= window.innerHeight;
+  return {
+    left: rect.left,
+    minWidth: rect.width,
+    top: roomBelow ? rect.bottom + MENU_GAP_PX : Math.max(MENU_GAP_PX, rect.top - MENU_GAP_PX - height),
+  };
+};
+
+/** The choices of an open list a key can reach: every item not disabled. */
+const reachableItems = (menu: HTMLElement | null) =>
+  menu ? [...menu.querySelectorAll<HTMLButtonElement>(".ui-menu__item:not(:disabled)")] : [];
+
+/**
+ * A choice opened from its trigger: what is chosen and the cue that it opens; its list under it, drawn over every surface
+ * so no window clips it. Arrows move through the list, Enter chooses, Escape and a press outside close it.
+ */
+export const HudSelect = <K extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+  state,
+}: {
+  /** What is chosen, for assistive technology. */
+  label: string;
+  value: K;
+  options: readonly { value: K; label: string; disabled?: boolean; hint?: string }[];
+  onChange: (value: K) => void;
+  disabled?: boolean;
+  /** The lab's forced state. */
+  state?: string;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [place, setPlace] = useState<ReturnType<typeof menuPlace> | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const chosen = options.find((option) => option.value === value);
+
+  const close = (refocus: boolean) => {
+    setOpen(false);
+    setPlace(null);
+    if (refocus) trigger.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!open || !trigger.current) return;
+    setPlace(menuPlace(trigger.current, menu.current));
+    const items = reachableItems(menu.current);
+    (items.find((item) => item.getAttribute("aria-checked") === "true") ?? items[0])?.focus({ preventScroll: true });
+    const dismiss = () => {
+      setOpen(false);
+      setPlace(null);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!trigger.current?.contains(target) && !menu.current?.contains(target)) dismiss();
+    };
+    // The list sits where its trigger was; a scroll or a resize under it moves the trigger away, so it closes.
+    const onScroll = (event: Event) => {
+      if (!menu.current?.contains(event.target as Node)) dismiss();
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", dismiss);
+    };
+  }, [open]);
+
+  const onTriggerKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    setOpen(true);
+  };
+  const onMenuKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape" || event.key === "Tab") {
+      event.preventDefault();
+      event.stopPropagation();
+      close(true);
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const items = reachableItems(menu.current);
+    const at = items.indexOf(document.activeElement as HTMLButtonElement);
+    items[(at + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus({ preventScroll: true });
+  };
+
+  return (
+    <>
+      <button
+        ref={trigger}
+        type="button"
+        className="ui-select"
+        data-state={state}
+        aria-label={label}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => (open ? close(false) : setOpen(true))}
+        onKeyDown={onTriggerKey}
+      >
+        <span>{chosen?.label ?? ""}</span>
+        <Icon name="chevron-down" size={16} />
+      </button>
+      {open &&
+        createPortal(
+          <div className="ui-select__layer" data-placed={place !== null} style={place ?? undefined}>
+            <HudMenu
+              ref={menu}
+              aria-label={label}
+              onKeyDown={onMenuKey}
+              items={options.map((option) => ({
+                label: option.label,
+                hint: option.hint,
+                disabled: option.disabled,
+                checked: option.value === value,
+                onSelect: () => {
+                  onChange(option.value);
+                  close(true);
+                },
+              }))}
+            />
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+};
 
 /** On or off, at once. */
 export const HudSwitch = ({

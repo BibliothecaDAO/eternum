@@ -144,6 +144,17 @@
 .ui-field:has(input:disabled) {
   opacity: 0.45;
 }
+/* A field on its own (a name, a search, an amount) is as wide as its container; the amount rows size their own. */
+.ui-field[data-fill] {
+  display: flex;
+  width: 100%;
+  gap: theme(spacing.2);
+}
+.ui-field[data-fill] input {
+  min-width: 0;
+  flex: 1 1 auto;
+  width: auto;
+}
 /* ── Tooltip: the app's one tooltip, and the map's order line in it. Its words are its own: no caller restyles them. ── */
 .ui-tip {
   display: inline-flex;
@@ -367,6 +378,25 @@ button.ui-ring:focus-visible .ui-ring__face {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
+/* A row that is pressed to choose it is a button with the row's look. */
+button.ui-row {
+  width: 100%;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.ui-row:is(:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ui-row:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
 .ui-row__title {
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-body);
@@ -514,8 +544,51 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-window__bar > :last-child {
   margin-left: auto;
 }
+/* Dragging the bar moves a window that hangs from the screen (the popover's drag reads data-popover-drag-handle). */
+.ui-window__bar[data-popover-drag-handle] {
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
 .ui-window__body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
   padding: theme(spacing.4);
+}
+/* Sizes, by what a window holds: one task, a page to read, a workspace that fills the desk. Every size stays inside the
+   screen, and its body scrolls within it. */
+.ui-window[data-size] {
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100dvh - 7rem);
+}
+.ui-window[data-size="task"] {
+  width: 35rem;
+}
+.ui-window[data-size="page"] {
+  width: 68.75rem;
+}
+.ui-window[data-size="workspace"] {
+  width: 73.75rem;
+  height: calc(100dvh - 9rem);
+}
+/* Below the desktop HUD a workspace is the full bottom sheet, or the drawer down the right edge on a phone held
+   sideways; the drawer's height is the header clearance plus its bottom inset (popover.tsx, SURFACE_WORKSPACE_CLASS). */
+@media (max-width: 1023px) {
+  .ui-window__bar[data-popover-drag-handle] {
+    cursor: default;
+  }
+  .ui-window[data-size="workspace"] {
+    width: 100vw;
+    max-width: 100vw;
+    height: min(85dvh, calc(var(--surface-viewport-height, 100dvh) - 4rem));
+  }
+}
+@media (max-width: 1023px) and (orientation: landscape) {
+  .ui-window[data-size="workspace"] {
+    width: min(60vw, 640px);
+    height: calc(var(--surface-viewport-height, 100dvh) - 3.5rem - max(1rem, env(safe-area-inset-bottom)) - 2px);
+  }
 }
 
 /* ── Minimap frame: a panel with no header, its map in a well. ── */
@@ -710,6 +783,24 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-select:is(:focus-visible, [data-state="focus"]) {
   outline: none;
   box-shadow: var(--hud-focus);
+}
+/* An open select's list, over every surface (the popover's 130) and under the tooltip (250), where its trigger is. */
+.ui-select__layer {
+  position: fixed;
+  z-index: 200;
+}
+.ui-select__layer[data-placed="false"] {
+  top: 0;
+  left: 0;
+  visibility: hidden;
+}
+.ui-select__layer > .ui-menu {
+  max-height: min(20rem, 60dvh);
+  overflow-y: auto;
+}
+.ui-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 .ui-menu {
   display: flex;

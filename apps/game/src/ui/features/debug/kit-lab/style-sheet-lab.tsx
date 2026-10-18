@@ -435,21 +435,36 @@ const BubbleSection = () => (
 
 const FieldSection = () => {
   const [name, setName] = useState("Egonal");
+  const [amount, setAmount] = useState("1,000");
   return (
     <Element
       name="Field"
-      rule="What is typed (a name, a search), in a well; focus rings it in the accent."
+      rule="What is typed (a name, a search, an amount), in a well as wide as its container; focus rings it in the accent. It takes an input's own props (type, inputMode, maxLength, autoFocus, a key handler)."
       sheet={
-        <div className="flex flex-wrap gap-4">
-          <HudField value={name} onChange={setName} />
+        <div className="grid grid-cols-2 gap-4">
+          <HudField value={name} maxLength={30} aria-label="Realm name" onChange={setName} />
           <HudField value="" placeholder="Search a realm" icon="search" onChange={() => undefined} />
           <HudField value="Egonal" state="focus" onChange={() => undefined} />
           <HudField value="Egonal" disabled onChange={() => undefined} />
+          <HudField value={amount} inputMode="numeric" aria-label="Wheat to sell" onChange={setAmount} />
         </div>
       }
       today={<NumberInput value={200} onChange={() => undefined} className="w-40" />}
     />
   );
+};
+
+const AUTOMATION = [
+  { value: "smart", label: "Smart" },
+  { value: "custom", label: "Custom" },
+  { value: "off", label: "Off" },
+  { value: "idle", label: "Idle", disabled: true, hint: "Level 2" },
+] as const;
+
+/** A select that opens: arrows move, Enter chooses, Escape or a press outside closes. */
+const LabSelect = () => {
+  const [mode, setMode] = useState<(typeof AUTOMATION)[number]["value"]>("smart");
+  return <HudSelect label="Automation" value={mode} options={AUTOMATION} onChange={setMode} />;
 };
 
 const MenuSection = () => (
@@ -459,9 +474,10 @@ const MenuSection = () => (
     sheet={
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex flex-col gap-3">
-          <HudSelect value="Smart" />
-          <HudSelect value="Smart" state="hover" />
-          <HudSelect value="Smart" state="focus" />
+          <LabSelect />
+          <HudSelect label="Automation" value="smart" options={AUTOMATION} onChange={() => undefined} state="hover" />
+          <HudSelect label="Automation" value="smart" options={AUTOMATION} onChange={() => undefined} state="focus" />
+          <HudSelect label="Automation" value="smart" options={AUTOMATION} onChange={() => undefined} disabled />
         </div>
         <HudMenu
           items={[
@@ -942,6 +958,24 @@ const RingSection = () => (
 const LabHoldings = () => <HoldingsList holdings={useHoldings()} />;
 
 const TABLE_COLS = "40px 1fr 48px 56px";
+/** Rows pressed to choose: each is a button, the chosen one carries the bar; a row that cannot be chosen is faint. */
+const LabPickRows = () => {
+  const [picked, setPicked] = useState("Hetokamohuti");
+  return (
+    <div className="mt-3 flex flex-col gap-1" role="listbox" aria-label="Send to">
+      {["Hetokamohuti", "Ilgzhijajilg"].map((name) => (
+        <HudRow
+          key={name}
+          title={name}
+          detail="lands in 2 min"
+          selected={picked === name}
+          onClick={() => setPicked(name)}
+        />
+      ))}
+      <HudRow title="Stolsli" detail="the one sending" disabled onClick={() => undefined} />
+    </div>
+  );
+};
 
 const RowsSection = () => (
   <Element
@@ -952,6 +986,7 @@ const RowsSection = () => (
         <HudRow title="Egonal" detail="Settlement · 1,000 guarding" selected />
         <HudRow title="Noykkuynoyk" detail="City · Undefended" state="hover" />
         <HudRow title="'oak Leukue" detail="Kingdom · 1,455 guarding" />
+        <LabPickRows />
         <span data-lab-chrome className="mt-3 text-xs text-white/50">
           A table row (the leaderboard), its columns on the caller&apos;s grid:
         </span>
@@ -1022,9 +1057,18 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
 const WindowSection = () => (
   <Element
     name="Window"
-    rule="A panel the size of a task: its title bar with a way out, its body, and a foot with what it costs on the left, the way out and the one verb on the right."
+    rule="A panel the size of a task: its title bar with a way out (dragging it moves the window), its body, which scrolls within the window, and a foot with what it costs on the left, the way out and the one verb on the right. Three sizes, by what it holds: task, page, workspace."
     sheet={
-      <div className="w-[34rem]">
+      <div className="flex flex-col items-start gap-4">
+        <HudWindow
+          title="Edit structure"
+          icon="edit"
+          size="task"
+          onClose={() => undefined}
+          actions={<HudButton kind="primary">Save</HudButton>}
+        >
+          <HudField value="Egonal" aria-label="Structure name" onChange={() => undefined} />
+        </HudWindow>
         <HudWindow
           title="Military"
           icon="military"
