@@ -128,7 +128,6 @@ export const SHELL_CLASSES = [
   "plate",
   "plate-title",
   "painted",
-  "grain",
   "leather",
 ];
 

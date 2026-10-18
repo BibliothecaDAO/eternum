@@ -159,7 +159,7 @@ const DesktopTitle = ({ back, title }: { back: To | undefined; title?: string })
 const Backdrop = ({ painting, stage }: { painting: Painting; stage: boolean }) => (
   <div
     aria-hidden
-    className={cn("grain pointer-events-none absolute inset-x-0 top-0 -z-10", stage ? "h-screen" : "h-[42rem]")}
+    className={cn("pointer-events-none absolute inset-x-0 top-0 -z-10", stage ? "h-screen" : "h-[42rem]")}
   >
     <img {...paintingSources(painting)} sizes="100vw" alt="" className="size-full object-cover object-[50%_40%]" />
     <span className="absolute inset-0 bg-grade" />

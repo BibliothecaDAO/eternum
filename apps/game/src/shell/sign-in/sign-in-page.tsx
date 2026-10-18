@@ -190,7 +190,7 @@ const PANEL = "w-column wide:w-column-wide";
 const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode }) => (
   <>
     {/* No stacking context of its own: the fixed painting must sit behind the frame's title row (Back), not over it. */}
-    <div aria-hidden className="grain pointer-events-none fixed inset-0 -z-10">
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
       <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
     </div>

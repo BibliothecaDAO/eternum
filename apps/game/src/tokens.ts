@@ -11,7 +11,7 @@
  * - The shell and the HUD are two surfaces. The HUD reads `HUD_COLORS` and `HUD_FINISH` (on :root); the shell reads
  *   `SHELL_COLORS` and `SHELL_FINISH` (under `data-surface="shell"`, which PageFrame, the doorway and the install sheet
  *   set). The `kit-*` classes and index.css's shared classes (the primary button, sheet, chip, card, plate, painted
- *   card, leather and grain) resolve to whichever surface they render in, so a shell value never moves a HUD pixel and
+ *   card and leather) resolve to whichever surface they render in, so a shell value never moves a HUD pixel and
  *   a HUD value never moves a shell pixel.
  * - Faces (`FONTS`), the type scale, radii, widths, gutters, the spacing scale and screens are one set for the whole
  *   app: the HUD's kit components (a Button, a Panel) follow them too.
@@ -89,7 +89,7 @@ export const SHELL_COLORS: Palette = {
 };
 
 /**
- * A surface's finish: the gradients, shadows, ornament and shapes its stylesheet classes and named utilities draw, built
+ * A surface's finish: the gradients, shadows and shapes its stylesheet classes and named utilities draw, built
  * from its own palette. Each value is a CSS variable `--<group>-<name>` (`--primary-face`); `textShadow`, `shadow` and
  * `gradient` are also classes (`text-shadow-title`, `shadow-mark`, `bg-halo`).
  */
@@ -183,17 +183,6 @@ const finishOf = (c: Palette) => ({
   leather: {
     face: `linear-gradient(90deg, ${c.plate}, ${c.ground})`,
     shadow: `inset -1px 0 0 rgb(255 222 160 / 0.07), 6px 0 24px ${withAlpha(c.shade, 0.5)}`,
-  },
-  /** The fine grain over a painted card and a backdrop (`.grain`). */
-  grain: { opacity: "0.32" },
-  /** The ornament's art (public/images/ornament/SOURCE.md). */
-  ornament: {
-    "corner-top-left": 'url("/images/ornament/corner-top-left.svg")',
-    "corner-top-right": 'url("/images/ornament/corner-top-right.svg")',
-    "corner-bottom-right": 'url("/images/ornament/corner-bottom-right.svg")',
-    "corner-bottom-left": 'url("/images/ornament/corner-bottom-left.svg")',
-    leather: 'url("/images/ornament/leather.svg")',
-    grain: 'url("/images/ornament/grain.svg")',
   },
 });
 

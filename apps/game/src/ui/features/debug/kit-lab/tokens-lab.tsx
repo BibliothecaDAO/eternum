@@ -146,8 +146,6 @@ const FINISH_GROUPS: Record<keyof typeof HUD_FINISH, string> = {
   plate: "Plate: .plate, .plate-title (desktop)",
   painted: "Painted card: .painted (desktop)",
   leather: "Leather: .leather (desktop)",
-  grain: "Grain: .grain, .painted (desktop)",
-  ornament: "Ornament art",
 };
 
 const FinishSection = () => (

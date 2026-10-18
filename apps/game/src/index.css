@@ -1285,9 +1285,8 @@ body.urgency-border-final::before {
 }
 
 /*
- * The app's image treatment (public/images/ornament/SOURCE.md). A phone draws plates and paintings flat; from the
- * desktop width up, plates are leather with engraved corners, a painted card wears a gold keyline over a fine grain,
- * and a backdrop the grain alone.
+ * The app's plates and painted cards. A phone draws them flat; from the desktop width up, a plate takes its face and
+ * shadow, and a painted card a gold keyline.
  */
 @layer components {
   /* The app's one panel surface. */
@@ -1304,24 +1303,7 @@ body.urgency-border-final::before {
   @media (min-width: 1024px) {
     .plate {
       border-color: var(--line2);
-      background-image:
-        var(--ornament-corner-top-left), var(--ornament-corner-top-right), var(--ornament-corner-bottom-right),
-        var(--ornament-corner-bottom-left), var(--ornament-leather), var(--plate-face);
-      background-position:
-        top 5px left 5px,
-        top 5px right 5px,
-        bottom 5px right 5px,
-        bottom 5px left 5px,
-        0 0,
-        0 0;
-      background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, no-repeat;
-      background-size:
-        18px 18px,
-        18px 18px,
-        18px 18px,
-        18px 18px,
-        300px 300px,
-        100% 100%;
+      background-image: var(--plate-face);
       box-shadow: var(--plate-shadow);
     }
 
@@ -1335,18 +1317,6 @@ body.urgency-border-final::before {
     .painted {
       border-color: var(--painted-rim);
       box-shadow: var(--painted-shadow);
-    }
-
-    /* The grain sits on the paint, under the card's words; a backdrop wears it too. */
-    .painted::before,
-    .grain::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: var(--ornament-grain);
-      opacity: var(--grain-opacity);
-      mix-blend-mode: overlay;
-      pointer-events: none;
     }
 
     /* The keyline's inner shadow sits over everything, as the frame's edge. */
@@ -1363,7 +1333,7 @@ body.urgency-border-final::before {
     .leather {
       border-color: var(--line2);
       background-color: var(--ground);
-      background-image: var(--ornament-leather), var(--leather-face);
+      background-image: var(--leather-face);
       box-shadow: var(--leather-shadow);
     }
   }

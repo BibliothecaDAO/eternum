@@ -24,7 +24,7 @@ describe("tokens lab", () => {
     for (const name of Object.keys(WIDTHS)) expect(text).toContain(`w-${name}`);
   });
 
-  it("draws every finish value of both surfaces: gradients, shadows, ornament and the shared classes'", () => {
+  it("draws every finish value of both surfaces: gradients, shadows and the shared classes'", () => {
     const text = page().textContent ?? "";
     for (const [surface, finish] of [
       ["shell", SHELL_FINISH],

@@ -84,7 +84,7 @@ test("the shell's index.css classes pass when they draw only the token file's va
 /* .plate { background: #fff } is a comment, not a rule */
 .plate { @apply border border-kit-line bg-kit-plate; border-radius: var(--radius-plate); }
 @media (min-width: 1024px) {
-  .plate { background-image: var(--ornament-leather), var(--plate-face); box-shadow: var(--plate-shadow); }
+  .plate { background-image: var(--plate-face); box-shadow: var(--plate-shadow); }
 }
 html,
 body { text-shadow: var(--text-shadow-ambient); }
@@ -100,7 +100,7 @@ test("a literal colour, image or theme() in a shell class fails, at its line", (
 @layer components {
   @media (min-width: 1024px) {
     .painted::after { box-shadow: inset 0 0 0 4px theme(colors.kit.gold / 18%), 0 0 1px rgb(0 0 0 / 0.5); }
-    .grain::before { background: url("/images/ornament/grain.svg"); }
+    .leather { background: url("/images/leather.svg"); }
   }
 }
 .frontier-chip[data-tone="loss"] .frontier-chip-number { color: rgba(255, 138, 115, 1); }
@@ -123,6 +123,6 @@ html, body { text-shadow: 2px 2px 4px hsl(60 100% 50% / 0.1); }`,
 
 test("the real stylesheet's shell classes are scanned: each one appears in a rule", () => {
   const css = readFileSync(new URL("../../apps/game/src/index.css", import.meta.url), "utf8");
-  for (const name of ["frontier-primary", "frontier-sheet", "plate", "plate-title", "painted", "grain", "leather"])
+  for (const name of ["frontier-primary", "frontier-sheet", "plate", "plate-title", "painted", "leather"])
     assert.match(css, new RegExp(`\\.${name}\\b[^{]*\\{`));
 });
