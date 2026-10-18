@@ -528,7 +528,8 @@ export const HUD_PHONE = {
 /**
  * The HUD's frame on a desktop, as Tailwind's `hud-*` spacing (`w-hud-column`, `top-hud-header`, `max-h-hud-list`): its
  * two columns' width, where they start under the top bar, the foot's inset that keeps the order bubbles clear of both
- * columns, how tall a list grows before it scrolls, the minimap's least height and the compact HUD's section height.
+ * columns, how tall a list grows before it scrolls, the minimap's least height and the compact HUD's section height;
+ * and the chat dock opened: its width, its tall height, and the cap that keeps it off half a laptop screen.
  */
 export const HUD_LAYOUT = {
   column: "320px",
@@ -537,6 +538,9 @@ export const HUD_LAYOUT = {
   list: "40vh",
   minimap: "160px",
   section: "clamp(180px, 30vh, 320px)",
+  "chat-width": "800px",
+  "chat-height": "600px",
+  "chat-cap": "45vw",
 } as const;
 
 /** The HUD's stacking above the map: its columns, the order bubbles between them, the rail over both. */
