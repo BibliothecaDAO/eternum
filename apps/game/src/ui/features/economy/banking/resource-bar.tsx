@@ -1,18 +1,12 @@
-import { MaxButton } from "@/ui/design-system/atoms";
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
-import TextInput from "@/ui/design-system/atoms/text-input";
-import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
+import { HudButton, HudNumberField, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { formatNumber, knownBalance } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-
-import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
+import { getBlockTimestamp, getBalance } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/types";
-import { memo, useEffect, useRef, useState } from "react";
+import { ID, Resources, ResourcesIds, findResourceById } from "@bibliothecadao/types";
+import { memo } from "react";
 
+/** One side of a bank trade: how much (typed, or all that is held), and of which resource. */
 export const ResourceBar = memo(
   ({
     entityId,
@@ -23,8 +17,6 @@ export const ResourceBar = memo(
     amount,
     setAmount,
     disableInput = false,
-    onFocus,
-    onBlur,
     max = Infinity,
   }: {
     entityId: ID;
@@ -35,132 +27,53 @@ export const ResourceBar = memo(
     amount: number;
     setAmount: (amount: number) => void;
     disableInput?: boolean;
-    onFocus?: () => void; // New prop
-    onBlur?: () => void; // New prop
     max?: number;
   }) => {
     const game = useGame();
     useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Market", "Liquidity", "Structure"]);
     const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+    const balanceOf = (id: number) =>
+      knownBalance(getBalance(entityId, id, currentDefaultTick, game.setup.store).balance);
 
-    const selectedResourceBalance = knownBalance(
-      getBalance(entityId, Number(resourceId), currentDefaultTick, game.setup.store).balance,
-    );
-    const [searchInput, setSearchInput] = useState("");
-    const [open, setOpen] = useState(false);
-
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const handleResourceChange = (trait: string) => {
-      const newResourceId = findResourceIdByTrait(trait);
-      setResourceId(newResourceId);
-    };
-
-    const handleAmountChange = (amount: number) => {
-      setAmount(amount);
-    };
-
+    const selectedResourceBalance = balanceOf(Number(resourceId));
     const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
     const finalResourceBalance =
       selectedResourceBalance === undefined ? undefined : selectedResourceBalance - (hasLordsFees ? lordsFee : 0);
-
-    const filteredResources = resources.filter(
-      (resource) => resource.trait.toLowerCase().startsWith(searchInput.toLowerCase()) || resource.id === resourceId,
-    );
-
-    const handleOpenChange = (newOpen: boolean) => {
-      setOpen(newOpen);
-      if (newOpen && inputRef.current) {
-        setResourceId(ResourcesIds.Wood);
-        setSearchInput("");
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 0);
-      }
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        if (filteredResources.length > 0) {
-          const selectedResource = filteredResources.find((resource) => resource.id !== resourceId);
-          if (selectedResource) {
-            setResourceId(selectedResource.id);
-            setOpen(false);
-          }
-        }
-        setSearchInput("");
-      } else {
-        e.stopPropagation();
-      }
-    };
+    const trait = findResourceById(Number(resourceId))?.trait ?? "";
 
     return (
-      <div className="resource-bar-selector w-full bg-black/30 border border-gold/15 rounded-xl p-3 flex justify-between gap-2 h-28 flex-wrap max-lg:h-auto">
-        <div className="self-center">
-          <NumberInput
-            className="text-xl"
-            value={amount}
-            onChange={handleAmountChange}
-            max={max}
-            arrows={false}
-            allowDecimals
-            onFocus={onFocus}
-            onBlur={onBlur}
-          />
-
+      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-hud-divider pb-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <HudNumberField label={`${trait} amount`} value={amount} onChange={setAmount} max={max} decimals />
           {!disableInput && (
-            <div className="flex text-xs mt-1.5 items-center text-gold/50">
-              <MaxButton
-                max={finalResourceBalance ?? 0}
-                onChange={(value) => handleAmountChange(parseFloat(value))}
-                variant="text"
-                label={`Max: ${selectedResourceBalance === undefined ? "—" : selectedResourceBalance.toLocaleString()}`}
-                className="hover:text-gold"
-              />
+            <span className="flex items-center gap-2 text-hud-label">
+              <HudButton
+                kind="quiet"
+                size="sm"
+                disabled={(finalResourceBalance ?? 0) <= 0}
+                onClick={() => setAmount(finalResourceBalance ?? 0)}
+              >
+                Max: {selectedResourceBalance === undefined ? "—" : selectedResourceBalance.toLocaleString()}
+              </HudButton>
               {hasLordsFees && (
-                <div className="text-danger ml-2">
-                  <div>{`[+${isNaN(lordsFee) ? "0" : formatNumber(lordsFee, 2)}]`}</div>
-                </div>
+                <span className="text-hud-bad">{`[+${isNaN(lordsFee) ? "0" : formatNumber(lordsFee, 2)}]`}</span>
               )}
-            </div>
+            </span>
           )}
         </div>
-
-        <Select
-          open={open}
-          onOpenChange={handleOpenChange}
-          value={findResourceById(Number(resourceId))?.trait || ""}
-          onValueChange={(trait) => {
-            handleResourceChange(trait);
-            setOpen(false);
-            setSearchInput("");
-          }}
-        >
-          <SelectTrigger className="w-[130px]">
-            <SelectValue placeholder={HintSection.Resources} />
-          </SelectTrigger>
-          <SelectContent>
-            {resources.length > 1 && (
-              <div className="p-2">
-                <TextInput
-                  ref={inputRef}
-                  onChange={setSearchInput}
-                  placeholder="Filter resources..."
-                  onKeyDown={handleKeyDown}
-                />
-              </div>
-            )}
-            {filteredResources.map((resource) => (
-              <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
-                <ResourceCost
-                  resourceId={resource.id}
-                  amount={knownBalance(getBalance(entityId, resource.id, currentDefaultTick, game.setup.store).balance)}
-                  className="border-0 bg-transparent"
-                />
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span className="w-40">
+          <HudSelect
+            label="Resource"
+            value={Number(resourceId) as ResourcesIds}
+            disabled={resources.length <= 1}
+            options={resources.map((resource) => ({
+              value: resource.id as ResourcesIds,
+              label: resource.trait,
+              hint: balanceOf(resource.id)?.toLocaleString() ?? "—",
+            }))}
+            onChange={setResourceId}
+          />
+        </span>
       </div>
     );
   },

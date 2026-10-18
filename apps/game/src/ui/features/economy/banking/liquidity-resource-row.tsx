@@ -1,8 +1,18 @@
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
-import Button from "@/ui/design-system/atoms/button";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import {
+  HudButton,
+  HudNotice,
+  HudRow,
+  HudSlider,
+  HudTableRow,
+  HudWindow,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ConfirmationPopup } from "./confirmation-popup";
+import { LIQUIDITY_COLS } from "./liquidity-table";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
@@ -15,6 +25,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bibliothecadao/types";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import React, { useCallback, useMemo, useState } from "react";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -22,20 +33,14 @@ type LiquidityResourceRowProps = {
   playerStructureIds: ID[];
   entityId: ID;
   resourceId: ResourcesIds;
-  isFirst?: boolean;
 };
 
-export const LiquidityResourceRow = ({
-  playerStructureIds,
-  entityId,
-  resourceId,
-  isFirst,
-}: LiquidityResourceRowProps) => {
+export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId }: LiquidityResourceRowProps) => {
   const gameContext = useGame();
   const [isLoading, setIsLoading] = useState(false);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
-  const [showInputResourcesPrice, setShowInputResourcesPrice] = useState(false);
+  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const [withdrawalPercentage, setWithdrawalPercentage] = useState(100);
 
   const market = useNativeRow("Market", { game_id: configManager.getActiveGameId(), resource_type: resourceId });
@@ -54,11 +59,11 @@ export const LiquidityResourceRow = ({
 
   const pair = useMemo(
     () => (
-      <div className="flex flex-row items-center">
+      <span className="flex items-center">
         <ResourceIcon resource={ResourcesIds.Lords} size="md" />
         {" / "}
         {resource && <ResourceIcon resource={resourceId} size="md" />}
-      </div>
+      </span>
     ),
     [resource],
   );
@@ -116,7 +121,7 @@ export const LiquidityResourceRow = ({
     [marketManager, lordsAmount, resourceAmount],
   );
 
-  const renderConfirmationPopup = useCallback(() => {
+  const renderWithdrawForm = useCallback(() => {
     const { lords, resource } = calculateWithdrawAmounts(withdrawalPercentage);
 
     const isVillageAndMilitaryResource =
@@ -133,57 +138,52 @@ export const LiquidityResourceRow = ({
     if (!closestBank) return null;
 
     return (
-      <ConfirmationPopup
-        title="Confirm Withdraw"
-        warning="Warning: not enough donkeys to transport resources"
-        disabled={!canCarry || isVillageAndMilitaryResource}
-        isLoading={isLoading}
-        onConfirm={() => onWithdraw(withdrawalPercentage)}
-        onCancel={() => setOpenConfirmation(false)}
-      >
-        <div className="space-y-4">
-          {isVillageAndMilitaryResource && (
-            <div className="mb-4 p-2 bg-red/20 text-red rounded-md">
-              Military resources cannot be traded from village structures.
-            </div>
-          )}
-
-          <div className="flex flex-col items-center space-y-2">
-            <div className="w-full flex items-center justify-between">
-              <span>Withdrawal Amount:</span>
-              <span className="font-bold">{withdrawalPercentage}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
+      <PopoverPanel id="confirm" ariaLabel="Withdraw" anchor="top-center" onDismiss={() => setOpenConfirmation(false)}>
+        <HudWindow
+          title="Withdraw"
+          icon={resourceMeaning(resourceId)}
+          size="task"
+          onClose={() => setOpenConfirmation(false)}
+        >
+          <HudWindowFoot>
+            <HudButton kind="quiet" onClick={() => setOpenConfirmation(false)}>
+              Cancel
+            </HudButton>
+            <HudButton
+              kind="primary"
+              busy={isLoading ? "Withdrawing…" : undefined}
+              disabled={!canCarry || isVillageAndMilitaryResource}
+              onClick={() => onWithdraw(withdrawalPercentage)}
+            >
+              Withdraw
+            </HudButton>
+          </HudWindowFoot>
+          <div className="flex flex-col gap-3">
+            {isVillageAndMilitaryResource && (
+              <HudNotice tone="bad" line="Military resources cannot be traded from village structures." />
+            )}
+            <HudRow title="Withdrawal Amount" trail={`${withdrawalPercentage}%`} />
+            <HudSlider
+              label="Withdrawal amount, in percent"
               value={withdrawalPercentage}
-              onChange={(e) => setWithdrawalPercentage(Number(e.target.value))}
-              className="w-full appearance-none bg-gold/20 h-2 rounded-lg focus:outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-gold [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-gold [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer"
+              max={100}
+              onChange={setWithdrawalPercentage}
             />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-center space-x-2">
+            <span className="flex items-center justify-center gap-2">
               {travelResources.map((cost, index) => (
-                <div key={index} className="flex items-center">
-                  <ResourceCost withTooltip amount={cost.amount} resourceId={cost.resourceId} />
-                </div>
+                <ResourceCost key={index} withTooltip amount={cost.amount} resourceId={cost.resourceId} />
               ))}
-            </div>
-            <div className="bg-gold/10 p-2 mt-2 rounded-lg h-auto">
-              <div className="flex flex-col items-center">
-                <TravelInfo
-                  entityId={entityId}
-                  resources={travelResources}
-                  bankId={closestBank.bankId}
-                  setCanCarry={setCanCarry}
-                />
-              </div>
-            </div>
+            </span>
+            <TravelInfo
+              entityId={entityId}
+              resources={travelResources}
+              bankId={closestBank.bankId}
+              setCanCarry={setCanCarry}
+            />
+            {!canCarry && <HudNotice tone="bad" line="Warning: not enough donkeys to transport resources" />}
           </div>
-        </div>
-      </ConfirmationPopup>
+        </HudWindow>
+      </PopoverPanel>
     );
   }, [
     withdrawalPercentage,
@@ -199,47 +199,31 @@ export const LiquidityResourceRow = ({
   ]);
 
   return (
-    <>
-      <div className="grid grid-cols-7 gap-4 text-lg hover:bg-gold/20 my-1 border border-gold/10 px-2">
-        {pair}
-
-        <div
-          className="flex items-center relative"
-          onMouseEnter={() => setShowInputResourcesPrice(true)}
-          onMouseLeave={() => setShowInputResourcesPrice(false)}
-        >
-          {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
-          {showInputResourcesPrice && (
-            <div className={`${isFirst ? "top-10" : "bottom-10"} absolute left-0 z-[100] pointer-events-none`}>
-              <InputResourcesPrice marketManager={marketManager} />
-            </div>
-          )}
-        </div>
-        <TotalLiquidity totalLords={totalLords} totalResource={totalResource} resourceId={resourceId} />
-        <MyLiquidity
-          playerStructureIds={playerStructureIds}
-          lordsAmount={lordsAmount}
-          resourceAmount={resourceAmount}
-          totalLords={totalLords}
-          totalResource={totalResource}
-          marketManager={marketManager}
-        />
-
-        <div>
-          <div className="flex items-center h-full">
-            <Button
-              variant="outline"
-              onClick={() => setOpenConfirmation(true)}
-              isLoading={false}
-              disabled={!canWithdraw}
-            >
-              Withdraw
-            </Button>
-          </div>
-        </div>
-      </div>
-      {openConfirmation && renderConfirmationPopup()}
-    </>
+    <HudTableRow cols={LIQUIDITY_COLS} label={`Lords / ${resource?.trait ?? ""} pool`}>
+      {pair}
+      <span
+        className="flex items-center"
+        onMouseEnter={() =>
+          setTooltip({ content: <InputResourcesPrice marketManager={marketManager} />, position: "top" })
+        }
+        onMouseLeave={() => setTooltip(null)}
+      >
+        {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
+      </span>
+      <TotalLiquidity totalLords={totalLords} totalResource={totalResource} resourceId={resourceId} />
+      <MyLiquidity
+        playerStructureIds={playerStructureIds}
+        lordsAmount={lordsAmount}
+        resourceAmount={resourceAmount}
+        totalLords={totalLords}
+        totalResource={totalResource}
+        marketManager={marketManager}
+      />
+      <HudButton kind="secondary" size="sm" onClick={() => setOpenConfirmation(true)} disabled={!canWithdraw}>
+        Withdraw
+      </HudButton>
+      {openConfirmation && renderWithdrawForm()}
+    </HudTableRow>
   );
 };
 
@@ -253,7 +237,7 @@ const TotalLiquidity = ({
   resourceId: ResourcesIds;
 }) => {
   return (
-    <div className="flex flex-col col-span-2 justify-center">
+    <div className="flex flex-col justify-center tabular-nums">
       <div className="flex">
         <div>{divideByPrecision(totalLords).toLocaleString()}</div>
         <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
@@ -314,12 +298,12 @@ const MyLiquidity = ({
   }, [playerLiquidityInfo, totalLords, totalResource, marketManager]);
 
   return (
-    <div className="flex flex-col col-span-2">
+    <div className="flex flex-col tabular-nums">
       <div className="flex">
         <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
         <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
         {playerLiquidityInfo && lordsAmount > 0 && (
-          <span className={`ml-1 text-xs ${lordsDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`ml-1 text-hud-label ${lordsDifferencePercentage >= 0 ? "text-hud-good" : "text-hud-bad"}`}>
             ({lordsDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(lordsDifferencePercentage, 4)}%)
           </span>
@@ -330,7 +314,9 @@ const MyLiquidity = ({
         <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
         <ResourceIcon resource={resourceId} size="sm" />
         {playerLiquidityInfo && resourceAmount > 0 && (
-          <span className={`ml-1 text-xs ${resourceDifferencePercentage >= 0 ? "text-green" : "text-red"}`}>
+          <span
+            className={`ml-1 text-hud-label ${resourceDifferencePercentage >= 0 ? "text-hud-good" : "text-hud-bad"}`}
+          >
             ({resourceDifferencePercentage > 0 ? "+" : ""}
             {formatNumber(resourceDifferencePercentage, 4)}%)
           </span>
@@ -339,7 +325,7 @@ const MyLiquidity = ({
 
       {totalValueDifferenceInLords !== 0 && (
         <div className="flex mt-1">
-          <span className={`text-xs ${totalValueDifferenceInLords >= 0 ? "text-green" : "text-red"}`}>
+          <span className={`text-hud-label ${totalValueDifferenceInLords >= 0 ? "text-hud-good" : "text-hud-bad"}`}>
             {totalValueDifferenceInLords >= 0 ? "+" : "-"}
             {formatNumber(Math.abs(totalValueDifferenceInLords), 4)} Lords (uPNL)
           </span>
@@ -364,7 +350,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
       return sum + Number(price) * resource.amount;
     }, 0) / outputAmount;
   return (
-    <div className="p-2 w-full flex flex-col items-center justify-center bg-brown/70 rounded-lg shadow-xl">
+    <div className="flex flex-col items-center gap-1">
       <div className="flex items-center justify-center">
         {inputResources.map(({ resource }, index) => (
           <React.Fragment key={index}>
@@ -373,10 +359,10 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
           </React.Fragment>
         ))}
       </div>
-      <div className="flex flex-row text-xxs text-gold w-full items-center justify-between mt-1">
-        <span className="mr-1 whitespace-nowrap">production cost:</span>
-        <div className="flex items-center space-x-1">
-          <span className="font-semibold ">{formatNumber(totalPrice, 4)}</span>
+      <div className="flex w-full items-center justify-between gap-1 text-hud-label">
+        <span className="whitespace-nowrap">production cost:</span>
+        <div className="flex items-center gap-1">
+          <span className="text-hud-strong">{formatNumber(totalPrice, 4)}</span>
           <ResourceIcon resource={ResourcesIds.Lords} size="xs" />
         </div>
       </div>

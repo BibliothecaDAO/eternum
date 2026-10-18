@@ -16,7 +16,6 @@ import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
 import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
@@ -942,7 +941,6 @@ const PanelSection = () => (
 
 const TabsSection = () => {
   const [tab, setTab] = useState<"realms" | "camps" | "rifts">("realms");
-  const [hud, setHud] = useState<"structure" | "biome">("structure");
   const [view, setView] = useState<"realm" | "world">("world");
   return (
     <Element
@@ -1005,14 +1003,6 @@ const TabsSection = () => {
       }
       today={
         <div className="flex w-full flex-col gap-4">
-          <HudTabStrip
-            tabs={[
-              { key: "structure", label: "Structure" },
-              { key: "biome", label: "Biome" },
-            ]}
-            selected={hud}
-            onSelect={setHud}
-          />
           <AtomTabs>
             <AtomTabs.List>
               <AtomTabs.Tab>Transfer</AtomTabs.Tab>

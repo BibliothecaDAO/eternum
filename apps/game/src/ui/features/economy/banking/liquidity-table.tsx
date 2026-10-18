@@ -2,7 +2,7 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
-import TextInput from "@/ui/design-system/atoms/text-input";
+import { HudField, HudTableHead } from "@/ui/design-system/kit/hud-elements";
 import { LiquidityResourceRow } from "./liquidity-resource-row";
 import { ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
@@ -11,13 +11,17 @@ type LiquidityTableProps = {
   entity_id: ID;
 };
 
+/** The pools' columns: the pair, its price, all the liquidity, yours, and the way out. */
+export const LIQUIDITY_COLS = "5rem 1fr 2fr 2fr auto";
+
 export const LiquidityTableHeader = () => (
-  <div className="grid grid-cols-7 gap-4 px-2 pb-2 mb-2 border-b border-gold/10">
-    <div className="text-[10px] uppercase text-gold/50 font-medium">Pair</div>
-    <div className="text-[10px] uppercase text-gold/50 font-medium">Price</div>
-    <div className="text-[10px] uppercase text-gold/50 font-medium col-span-2">Total Liquidity</div>
-    <div className="text-[10px] uppercase text-gold/50 font-medium col-span-2">My Liquidity</div>
-  </div>
+  <HudTableHead cols={LIQUIDITY_COLS}>
+    <span>Pair</span>
+    <span>Price</span>
+    <span>Total Liquidity</span>
+    <span>My Liquidity</span>
+    <span />
+  </HudTableHead>
 );
 
 export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
@@ -40,21 +44,24 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const playerStructureIds = playerStructures.map((structure) => structure.entityId);
 
   return (
-    <div className="amm-liquidity-selector h-full overflow-x-auto relative">
-      <TextInput placeholder="Search resources..." onChange={setSearchTerm} className="w-full mb-4" />
-      <div className="max-lg:min-w-[640px]">
+    <div className="flex h-full flex-col gap-2 overflow-x-auto">
+      <HudField
+        value={searchTerm}
+        icon="search"
+        placeholder="Search resources..."
+        aria-label="Search pools"
+        onChange={setSearchTerm}
+      />
+      <div role="table" aria-label="Pools" className="flex flex-col gap-1">
         <LiquidityTableHeader />
-        <div className="grid gap-2 relative">
-          {filteredResources.map((resourceId, index) => (
-            <LiquidityResourceRow
-              key={resourceId}
-              playerStructureIds={playerStructureIds}
-              entityId={entity_id}
-              resourceId={resourceId}
-              isFirst={index === 0 ? true : false}
-            />
-          ))}
-        </div>
+        {filteredResources.map((resourceId) => (
+          <LiquidityResourceRow
+            key={resourceId}
+            playerStructureIds={playerStructureIds}
+            entityId={entity_id}
+            resourceId={resourceId}
+          />
+        ))}
       </div>
     </div>
   );

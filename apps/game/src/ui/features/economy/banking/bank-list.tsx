@@ -1,4 +1,4 @@
-import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
+import { HudTabs } from "@/ui/design-system/kit/hud-elements";
 import AddLiquidity from "./add-liquidity";
 import { LiquidityTable } from "./liquidity-table";
 import { ResourceSwap } from "./swap";
@@ -20,14 +20,14 @@ export const BankPanel = ({ structureEntityId, selectedResource }: BankListProps
   const [tab, setTab] = useState<BankTab>("swap");
 
   return (
-    <div className="amm-selector flex min-h-0 flex-1 flex-col px-3 py-2">
-      <HudTabStrip tabs={BANK_TABS} selected={tab} onSelect={setTab} className="pb-2" />
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <HudTabs tabs={BANK_TABS.map((each) => ({ key: each.key, label: each.label }))} value={tab} onChange={setTab} />
       {tab === "swap" ? (
         <ResourceSwap entityId={structureEntityId} listResourceId={selectedResource} />
       ) : (
         <AddLiquidity entityId={structureEntityId} listResourceId={selectedResource} />
       )}
-      <div className="mt-3 flex-1 overflow-y-auto border-t border-gold/15 pt-3 text-xs">
+      <div className="flex-1 overflow-y-auto border-t border-hud-divider pt-3">
         <LiquidityTable entity_id={structureEntityId} />
       </div>
     </div>

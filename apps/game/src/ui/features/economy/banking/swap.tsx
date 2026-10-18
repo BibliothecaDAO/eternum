@@ -1,10 +1,9 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
-import { Button } from "@/ui/design-system/atoms";
-import { ResourceIcon } from "@/ui/design-system/molecules";
-import { ConfirmationPopup } from "./confirmation-popup";
+import { useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
+import { HudButton, HudConfirm, HudIconButton, HudNotice, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { PopoverPanel } from "@/ui/design-system/molecules/popover";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber, knownBalance } from "@/ui/utils/utils";
@@ -51,6 +50,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const [resourceAmount, setResourceAmount] = useState(0);
   const [canCarry, setCanCarry] = useState(false);
   const [openConfirmation, setOpenConfirmation] = useState(false);
+  const confirmsLoss = useConfirmsLoss();
 
   const ownerFee = lordsAmount * configManager.getAdminBankOwnerFee();
   const lpFee = (isBuyResource ? lordsAmount : resourceAmount) * configManager.getAdminBankLpFee();
@@ -220,158 +220,138 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     ],
   );
 
-  const renderConfirmationPopup = useCallback(() => {
-    const warningMessage = `Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`;
-    const negativeAmount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
-    const positiveAmount = isBuyResource ? resourceAmount : lordsAmount;
-    const negativeResource = isBuyResource ? ResourcesIds.Lords : resourceId;
-    const positiveResource = isBuyResource ? resourceId : ResourcesIds.Lords;
-    const resourcesToTransport = isBuyResource
-      ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
-      : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }];
-
-    const closestBank = getClosestBank(entityId, store);
-
-    if (!closestBank) return;
-
-    const isVillageAndMilitaryResource =
-      store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
-        StructureType.Village && isMilitaryResource(resourceId);
-
-    return (
-      <ConfirmationPopup
-        title="Confirm Swap"
-        warning={warningMessage}
-        disabled={!canCarry || isVillageAndMilitaryResource}
-        isLoading={isLoading}
-        onConfirm={onSwap}
-        onCancel={() => setOpenConfirmation(false)}
-      >
-        {isVillageAndMilitaryResource && (
-          <div className="mb-4 bg-red/20 text-red rounded-md">
-            Military resources cannot be traded from village structures.
-          </div>
-        )}
-        <div className="amm-swap-fee-selector">
-          <div className=" flex items-center justify-center space-x-2 text-2xl">
-            <div className="flex justify-center items-center text-danger">
-              -{negativeAmount.toLocaleString()}
-              <ResourceIcon resource={negativeResource} size="md" />
-            </div>
-            <span>→</span>
-            <div className="flex items-center text-green">
-              +{positiveAmount.toLocaleString()}
-              <ResourceIcon resource={positiveResource} size="md" />
-            </div>
-          </div>
-          <div className="amm-swap-donkey-selector rounded-lg h-auto">
-            <TravelInfo
-              entityId={entityId}
-              resources={resourcesToTransport}
-              bankId={closestBank.bankId}
-              setCanCarry={setCanCarry}
-              isAmm={true}
-            />
-          </div>
-        </div>
-      </ConfirmationPopup>
-    );
-  }, [
-    isBuyResource,
-    chosenResourceName,
-    lordsAmount,
-    ownerFee,
-    resourceAmount,
-    resourceId,
-    canCarry,
-    isLoading,
-    onSwap,
-    entityId,
-    setCanCarry,
-  ]);
+  const closestBank = getClosestBank(entityId, store);
+  const isVillageAndMilitaryResource =
+    store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
+      StructureType.Village && isMilitaryResource(resourceId);
+  const swapLabel = `Swap ${isBuyResource ? "Lords" : chosenResourceName} for ${isBuyResource ? chosenResourceName : "Lords"}`;
+  // The swap acts at once; in Frontier it asks first, with what it takes and gives.
+  const pressSwap = () => (confirmsLoss ? setOpenConfirmation(true) : void onSwap());
 
   return (
-    <div>
-      <div className="amm-swap-selector mx-auto max-w-lg">
-        <div className="flex flex-col gap-1 my-2">
-          {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
-          <div className="flex justify-center -my-2 relative z-10">
-            <Button
-              isLoading={false}
-              disabled={false}
-              onClick={onInvert}
-              size="md"
-              className="rounded-full border border-gold/20 bg-brown/90 hover:bg-gold/10"
-            >
-              <SemanticIcon
-                name="refresh"
-                className={`text-gold cursor-pointer h-4 duration-150 ${isBuyResource ? "rotate-180" : ""}`}
-              />
-            </Button>
-          </div>
-          {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
-        </div>
-        <div className="p-2 w-full mx-auto">
-          <div className="space-y-2 text-xs">
-            {/* Price */}
-            <div className="flex justify-between items-center">
-              <span className="text-gold/60">Price</span>
-              <span className="text-gold">{`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}</span>
-            </div>
-            {/* Slippage */}
-            <div className="flex justify-between items-center">
-              <span className="text-gold/60">Slippage</span>
-              <span className="text-red">
-                -
-                {formatNumber(
-                  marketManager.slippage(
-                    isBuyResource
-                      ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
-                      : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
-                    isBuyResource,
-                  ) || 0,
-                  4,
-                )}
-                %
-              </span>
-            </div>
-            {/* Bank Owner Fees */}
-            <div className="flex justify-between items-center">
-              <span className="text-gold/60">
-                Bank Owner Fee <span className="text-green">({configManager.getAdminBankOwnerFee() * 100}%)</span>
-              </span>
-              <span className="text-red">{formatNumber(-ownerFee, 4)} Lords</span>
-            </div>
-            {/* LP Fees */}
-            <div className="flex justify-between items-center">
-              <span className="text-gold/60">
-                LP Fee <span className="text-green">({configManager.getAdminBankLpFee() * 100}%)</span>
-              </span>
-              <span className="text-red">
-                {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
-              </span>
-            </div>
-          </div>
-          <div className="w-full flex flex-col justify-center mt-3 gap-2">
-            <Button
-              className="swap-button-selector text-brown"
-              isLoading={false}
-              disabled={!canSwap}
-              onClick={() => setOpenConfirmation(true)}
-              variant="primary"
-            >
-              Swap {isBuyResource ? "Lords" : chosenResourceName} for {isBuyResource ? chosenResourceName : "Lords"}
-            </Button>
-            {!canSwap && (
-              <div className="mt-2 p-2 rounded-lg bg-red/10 border border-red/20 text-center">
-                {!amountsBiggerThanZero && <div className="text-xs text-red/80">Enter an amount to swap</div>}
-                {!hasEnough && <div className="text-xs text-red">Insufficient balance</div>}
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="mx-auto flex max-w-lg flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        {isBuyResource ? renderResourceBar(false, true) : renderResourceBar(false, false)}
+        <span className="flex justify-center">
+          <HudIconButton icon="refresh" label="Swap sides" kind="secondary" size="sm" onClick={onInvert} />
+        </span>
+        {isBuyResource ? renderResourceBar(true, false) : renderResourceBar(true, true)}
       </div>
-      {openConfirmation && renderConfirmationPopup()}
+      <div className="flex flex-col gap-1">
+        <HudRow
+          title="Price"
+          trail={`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}
+        />
+        <HudRow
+          title="Slippage"
+          trail={
+            <span className="text-hud-bad">
+              -
+              {formatNumber(
+                marketManager.slippage(
+                  isBuyResource
+                    ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
+                    : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
+                  isBuyResource,
+                ) || 0,
+                4,
+              )}
+              %
+            </span>
+          }
+        />
+        <HudRow
+          title={`Bank Owner Fee (${configManager.getAdminBankOwnerFee() * 100}%)`}
+          trail={<span className="text-hud-bad">{formatNumber(-ownerFee, 4)} Lords</span>}
+        />
+        <HudRow
+          title={`LP Fee (${configManager.getAdminBankLpFee() * 100}%)`}
+          trail={
+            <span className="text-hud-bad">
+              {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
+            </span>
+          }
+        />
+      </div>
+      {closestBank && (
+        <TravelInfo
+          entityId={entityId}
+          resources={
+            isBuyResource
+              ? [{ resourceId: Number(resourceId), amount: resourceAmount }]
+              : [{ resourceId: ResourcesIds.Lords, amount: lordsAmount }]
+          }
+          bankId={closestBank.bankId}
+          setCanCarry={setCanCarry}
+          isAmm={true}
+        />
+      )}
+      {isVillageAndMilitaryResource && (
+        <HudNotice tone="bad" line="Military resources cannot be traded from village structures." />
+      )}
+      {canSwap && !canCarry && (
+        <HudNotice
+          tone="bad"
+          line={`Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`}
+        />
+      )}
+      {!amountsBiggerThanZero && <HudNotice tone="warn" line="Enter an amount to swap" />}
+      {!hasEnough && <HudNotice tone="bad" line="Insufficient balance" />}
+      <HudButton
+        kind="primary"
+        busy={isLoading ? "Swapping…" : undefined}
+        disabled={!canSwap || !canCarry || isVillageAndMilitaryResource || !closestBank}
+        onClick={pressSwap}
+      >
+        {swapLabel}
+      </HudButton>
+      {openConfirmation && (
+        <PopoverPanel
+          id="confirm"
+          ariaLabel="Confirm Swap"
+          anchor="top-center"
+          onDismiss={() => setOpenConfirmation(false)}
+        >
+          <HudConfirm
+            question="Confirm Swap"
+            verb={swapLabel}
+            onConfirm={() => void onSwap()}
+            onBack={() => setOpenConfirmation(false)}
+          >
+            <SwapSummary
+              gives={{
+                resourceId: isBuyResource ? ResourcesIds.Lords : resourceId,
+                amount: isBuyResource ? lordsAmount + ownerFee : resourceAmount,
+              }}
+              gets={{
+                resourceId: isBuyResource ? resourceId : ResourcesIds.Lords,
+                amount: isBuyResource ? resourceAmount : lordsAmount,
+              }}
+            />
+          </HudConfirm>
+        </PopoverPanel>
+      )}
     </div>
   );
 };
+
+/** What a swap takes, in the bad tone, and what it gives, in the good. */
+const SwapSummary = ({
+  gives,
+  gets,
+}: {
+  gives: { resourceId: ResourcesIds; amount: number };
+  gets: { resourceId: ResourcesIds; amount: number };
+}) => (
+  <span className="flex items-center justify-center gap-2 text-hud-strong">
+    <span className="flex items-center text-hud-bad">
+      -{gives.amount.toLocaleString()}
+      <ResourceIcon resource={gives.resourceId} size="md" />
+    </span>
+    <span>→</span>
+    <span className="flex items-center text-hud-good">
+      +{gets.amount.toLocaleString()}
+      <ResourceIcon resource={gets.resourceId} size="md" />
+    </span>
+  </span>
+);
