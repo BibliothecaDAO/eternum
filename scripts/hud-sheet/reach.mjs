@@ -28,6 +28,7 @@ const AREAS = {
     "ui/features/frontier/value",
     "ui/features/frontier/deploy/deploy-view.tsx",
     "ui/features/frontier/deploy/deploy-sheet.tsx",
+    "ui/features/frontier/attributes/attribute-marks.tsx",
     "ui/features/frontier/amount-range.tsx",
     "ui/features/frontier/day-ends.tsx",
     "ui/features/frontier/refused-verb.tsx",
