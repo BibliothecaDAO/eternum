@@ -646,10 +646,21 @@ export const HudBubble = ({
   </button>
 );
 
-/** How full a thing is (stamina, production, a load), from 0 to 1, in a tone. */
-export const HudMeter = ({ share, tone, label }: { share: number; tone?: Tone; label: string }) => (
+/** How full a thing is (stamina, production, a load), from 0 to 1, in a tone; `filling` while it refills (stamina). */
+export const HudMeter = ({
+  share,
+  tone,
+  label,
+  filling = false,
+}: {
+  share: number;
+  tone?: Tone;
+  label: string;
+  filling?: boolean;
+}) => (
   <span
     className="ui-meter block"
+    data-filling={filling || undefined}
     role="meter"
     aria-label={label}
     aria-valuenow={Math.round(share * 100)}

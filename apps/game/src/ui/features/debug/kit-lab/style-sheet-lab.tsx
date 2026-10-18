@@ -524,6 +524,7 @@ const MeterSection = () => (
     sheet={
       <div className="flex max-w-xs flex-col gap-3">
         <HudMeter share={0.62} tone="good" label="Stamina" />
+        <HudMeter share={0.62} tone="good" label="Stamina, refilling" filling />
         <HudMeter share={0.35} label="Production" />
         <HudMeter share={0.9} tone="warn" label="Storage" />
         <HudMeter share={0.1} tone="bad" label="Food" />

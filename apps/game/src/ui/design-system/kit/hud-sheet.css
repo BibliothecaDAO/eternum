@@ -984,6 +984,33 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-meter[data-tone="bad"] > i {
   background: var(--hud-bad);
 }
+/* Filling (stamina refilling): a light sweeps across the fill, on its own tone; still, a brighter leading edge. */
+.ui-meter[data-filling] > i {
+  position: relative;
+  overflow: hidden;
+}
+.ui-meter[data-filling] > i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgb(var(--hud-ink) / 0.4) 45%, transparent 100%);
+  transform: translateX(-140%);
+  animation: ui-meter-fill 1.9s var(--hud-ease) infinite;
+}
+@keyframes ui-meter-fill {
+  to {
+    transform: translateX(140%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-meter[data-filling] > i::after {
+    left: auto;
+    width: 3px;
+    transform: none;
+    animation: none;
+    background: rgb(var(--hud-ink) / 0.7);
+  }
+}
 
 /* ── Loading: a spinner where an answer is awaited, rows standing in for a list, a line while the game comes in. ── */
 .ui-spinner {
