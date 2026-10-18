@@ -4,7 +4,6 @@ import { knownBalance } from "@/ui/utils/utils";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { getMinePresentation } from "@bibliothecadao/types";
-import { HUD_COLUMN_WIDTH } from "@/ui/features/world/containers/hud-layout";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -17,9 +16,8 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import { formatTilePanelTitle } from "./tile-panel-title";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import Button from "@/ui/design-system/atoms/button";
 import {
   configManager,
   divideByPrecision,
@@ -55,7 +53,7 @@ import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-det
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
-import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, MINIMAP_SIZE } from "./constants";
+import { BOTTOM_PANEL_HEIGHT, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -451,8 +449,11 @@ const LocalTilePanel = () => {
           const isPreviewing =
             previewBuilding?.type === buildingCategory && previewBuilding?.resource === producedResource;
           return (
-            <button
-              type="button"
+            <HudIconButton
+              icon="pickaxe"
+              label={isPreviewing ? "Cancel build" : "Build another"}
+              kind={isPreviewing || !canBuildAnother ? "secondary" : "primary"}
+              size="sm"
               onClick={() => {
                 if (isPreviewing) {
                   // Toggle off — exit build mode and unstick clicks.
@@ -463,14 +464,6 @@ const LocalTilePanel = () => {
                 setPreviewBuilding({ type: buildingCategory, resource: producedResource });
               }}
               disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
-              className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
-                isPreviewing
-                  ? "border-emerald-400 bg-emerald-500/30 text-hud-good shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
-                  : canBuildAnother
-                    ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                    : "border-hud-divider bg-hud-well text-hud-muted cursor-not-allowed",
-              )}
               title={
                 isPreviewing
                   ? "Cancel build — click again to place a new building"
@@ -478,49 +471,45 @@ const LocalTilePanel = () => {
                     ? "Build another — pick an empty tile to place it"
                     : buildBlockedReason
               }
-              aria-label={isPreviewing ? "Cancel build" : "Build another"}
               aria-pressed={isPreviewing}
-            >
-              <SemanticIcon name="pickaxe" className="h-3.5 w-3.5" />
-            </button>
+            />
           );
         })()}
       {buildingCategory !== BuildingType.WorkersHut &&
         configManager.isCommandEnabled(isPaused ? "ResumeBuildingProduction" : "PauseBuildingProduction") && (
-          <button
-            type="button"
+          <HudIconButton
+            icon={isPaused ? "play" : "pause"}
+            label={isPaused ? "Resume" : "Stop"}
+            title={isPaused ? "Resume" : "Stop"}
+            size="sm"
             onClick={handleToggleProduction}
             disabled={isActionLoading}
-            className={cn(
-              "inline-flex h-7 w-7 items-center justify-center rounded-md border text-hud-ink shadow transition disabled:cursor-not-allowed disabled:opacity-60",
-              isPaused
-                ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
-                : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-            )}
-            title={isPaused ? "Resume" : "Stop"}
-            aria-label={isPaused ? "Resume" : "Stop"}
-          >
-            {isPaused ? (
-              <SemanticIcon name="play" className="h-3.5 w-3.5" />
-            ) : (
-              <SemanticIcon name="pause" className="h-3.5 w-3.5" />
-            )}
-          </button>
+          />
         )}
-      <button
-        type="button"
-        onClick={handleDestroy}
-        disabled={isActionLoading}
-        className={cn(
-          "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-hud-label uppercase tracking-[0.16em] text-hud-ink shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
-          !showDestroyConfirm && "w-7 justify-center px-0",
-        )}
-        title={showDestroyConfirm ? "Confirm delete" : "Delete"}
-        aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
-      >
-        <SemanticIcon name="trash" className="h-3.5 w-3.5" />
-        {showDestroyConfirm && <span>OK</span>}
-      </button>
+      {showDestroyConfirm ? (
+        <HudButton
+          kind="secondary"
+          size="sm"
+          tone="bad"
+          icon="trash"
+          onClick={handleDestroy}
+          disabled={isActionLoading}
+          title="Confirm delete"
+          aria-label="Confirm delete"
+        >
+          OK
+        </HudButton>
+      ) : (
+        <HudIconButton
+          icon="trash"
+          label="Delete"
+          title="Delete"
+          size="sm"
+          tone="bad"
+          onClick={handleDestroy}
+          disabled={isActionLoading}
+        />
+      )}
     </div>
   ) : undefined;
 
@@ -531,18 +520,18 @@ const LocalTilePanel = () => {
       <HudPanel title={panelTitle} icon={"production" as const} cue={buildingActions}>
         <div className="flex flex-col gap-1.5 divide-y divide-hud-divider [&>*:not(:first-child)]:pt-1.5">
           {isPaused && (
-            <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
-              <span className="text-hud-label uppercase tracking-[0.2em] text-hud-bad">⚠️ Production paused</span>
+            <div className="flex items-center justify-between gap-2">
+              <HudNotice tone="bad" line="Production paused" />
               {canManageBuilding && (
-                <Button
-                  size="xs"
-                  variant="outline"
+                <HudButton
+                  kind="secondary"
+                  size="sm"
+                  icon="play"
                   disabled={isActionLoading}
                   onClick={handleToggleProduction}
-                  className="h-7 border-green/50 bg-green/20 px-2 text-hud-label hover:bg-green/40"
                 >
-                  ▶ Resume
-                </Button>
+                  Resume
+                </HudButton>
               )}
             </div>
           )}
@@ -560,7 +549,7 @@ const LocalTilePanel = () => {
                     position: "right",
                     content: (
                       <div className="space-y-2">
-                        <p className="text-hud-label uppercase tracking-[0.25em] text-hud-muted">Consumed by</p>
+                        <p className="text-hud-label text-hud-muted">Consumed by</p>
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {

@@ -32,7 +32,7 @@ export interface IdentityChipInput {
 
 export const NO_OWNED_STRUCTURES: OwnedStructureCounts = { structures: 0, realms: 0 };
 
-// A brand-new player at rank #9000 with 0 points gains nothing from seeing it; the rank shows once they have
+// A brand-new player at rank 9000 with 0 points gains nothing from seeing it; the rank shows once they have
 // either scored or climbed into the top 500.
 const RANK_THRESHOLD = 500;
 

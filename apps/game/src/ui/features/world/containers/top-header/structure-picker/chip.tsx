@@ -53,10 +53,10 @@ export type StructureWithMetadata = Structure & {
 
 const StructureInfoStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title: string }) => (
   <span
-    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
+    className="inline-flex items-center gap-1 rounded border border-hud-divider bg-hud-well px-1.5 py-0.5 text-hud-label text-hud-muted"
     title={title}
   >
-    <SemanticIcon name={Icon} className="h-3 w-3 text-gold/60" />
+    <SemanticIcon name={Icon} className="h-3 w-3 text-hud-muted" />
     <span>{label}</span>
   </span>
 );
@@ -82,17 +82,17 @@ const StructureStatusStats = ({
  */
 export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
   if (step.mode === "max") {
-    return <div className="text-sm text-kit-muted">Castle fully upgraded.</div>;
+    return <div className="text-hud-body text-hud-muted">Castle fully upgraded.</div>;
   }
 
   return (
-    <div className="min-w-[220px] space-y-2 text-gold">
+    <div className="min-w-[220px] space-y-2 text-hud-ink">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-kit-muted">Upgrade</span>
-        {step.nextLevelName && <span className="text-sm text-kit-muted">to {step.nextLevelName}</span>}
+        <span className="text-hud-body text-hud-muted">Upgrade</span>
+        {step.nextLevelName && <span className="text-hud-body text-hud-muted">to {step.nextLevelName}</span>}
       </div>
-      {step.refusal && <p className="text-sm text-red-300">{step.refusal}</p>}
-      {step.requirements.length === 0 && <p className="text-sm text-kit-cream">Nothing to pay for this level.</p>}
+      {step.refusal && <p className="text-hud-body text-hud-bad">{step.refusal}</p>}
+      {step.requirements.length === 0 && <p className="text-hud-body text-hud-ink">Nothing to pay for this level.</p>}
       <div className="space-y-1">
         {step.requirements.map((req) => {
           const isMet = req.current !== undefined && req.current >= req.amount;
@@ -101,19 +101,19 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
               key={`${req.resource}-${req.amount}`}
               className={clsx(
                 "rounded border px-2 py-1",
-                isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
+                isMet ? "border-hud-divider bg-hud-hover" : "border-red-400/40 bg-red-500/5",
               )}
             >
               <div className="flex items-center gap-2">
                 <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
-                <span className="flex-1 text-sm text-kit-cream">{ResourcesIds[req.resource]}</span>
-                <span className={clsx("text-sm font-semibold", isMet ? "text-gold" : "text-red-300")}>
+                <span className="flex-1 text-hud-body text-hud-ink">{ResourcesIds[req.resource]}</span>
+                <span className={clsx("text-hud-strong ", isMet ? "text-hud-ink" : "text-hud-bad")}>
                   {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
                   {req.amount.toLocaleString()}
                 </span>
               </div>
               {req.incoming && (
-                <div className="pl-6 text-sm text-emerald-300/90">
+                <div className="pl-6 text-hud-body text-hud-good">
                   +{Math.floor(req.incoming.amount).toLocaleString()} in transit,{" "}
                   {formatIncomingEta(req.incoming.etaSeconds)}
                 </div>
@@ -123,7 +123,7 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
         })}
       </div>
       {step.nextLevel > 0 && (
-        <p className="text-sm text-kit-muted">
+        <p className="text-hud-body text-hud-muted">
           {step.nextLevelName ?? "It"} gives {describeCastleLevel(step.nextLevel)}.
         </p>
       )}
@@ -189,11 +189,11 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         onClick={takeStep}
         disabled={!step.ready}
         className={clsx(
-          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-hud-label uppercase tracking-wide transition",
           // Ready reads as a gold outline, never a filled or pulsing gold: the screen's one gold button is Next up's.
           step.ready
-            ? "border-gold/70 text-gold hover:bg-gold/10"
-            : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
+            ? "border-hud-line-strong text-hud-ink hover:bg-hud-hover"
+            : "border-hud-divider bg-hud-well text-hud-muted cursor-not-allowed",
         )}
         aria-label={step.word}
         title={step.refusal ?? step.word}
@@ -207,7 +207,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
         onFocus={showRequirementsTooltip as never}
         onBlur={hideRequirementsTooltip}
         onClick={(event) => event.stopPropagation()}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-gold/70 hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-hud-line bg-hud-well text-hud-muted hover:text-hud-ink focus:outline-none focus:ring-1 focus:ring-gold/40"
         aria-label="View upgrade requirements"
       >
         <SemanticIcon name="info" className="h-3.5 w-3.5" />
@@ -260,10 +260,10 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-xs transition cursor-pointer",
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-hud-label transition cursor-pointer",
         isSelected
-          ? "border-gold bg-gold/15 text-gold"
-          : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
+          ? "border-hud-line-strong bg-hud-hover text-hud-ink"
+          : "border-hud-line bg-hud-well text-hud-muted hover:border-hud-line-strong hover:bg-hud-well",
       )}
       title={structure.displayName}
       aria-pressed={isSelected}
@@ -274,7 +274,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
           event.stopPropagation();
           onToggleFavorite(structure.entityId);
         }}
-        className="shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
+        className="shrink-0 rounded p-0.5 text-hud-muted hover:text-hud-ink"
         title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
         aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
       >
@@ -294,13 +294,15 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
       <span
         className={clsx(
           "min-w-0 flex-1 truncate font-semibold",
-          structure.groupColor ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold") : undefined,
+          structure.groupColor
+            ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-hud-ink")
+            : undefined,
         )}
       >
         {structure.displayName}
       </span>
       {levelAbbrev && (
-        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/60">
+        <span className="shrink-0 rounded-sm bg-hud-well px-1 text-hud-label uppercase tracking-wide text-hud-muted">
           {levelAbbrev}
         </span>
       )}

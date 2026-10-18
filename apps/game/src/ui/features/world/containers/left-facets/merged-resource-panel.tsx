@@ -214,7 +214,7 @@ export const MergedResourcePanel = memo(
                   "absolute -bottom-1 -left-1 z-20 inline-flex h-4 w-4 items-center justify-center rounded-full border shadow-md transition",
                   buildEnabled
                     ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                    : "border-gold/20 bg-black/70 text-gold/40 cursor-not-allowed opacity-70",
+                    : "border-hud-divider bg-hud-well text-hud-muted cursor-not-allowed opacity-70",
                 )}
                 title={buildEnabled ? `Build ${label}` : (buildReason ?? "Cannot build")}
                 aria-label={`Build ${label}`}
@@ -245,7 +245,7 @@ export const MergedResourcePanel = memo(
     const tokens = useMemo(() => ringOrder.map(renderToken).filter(Boolean), [ringOrder, renderToken]);
 
     if (tokens.length === 0 && !hasRelics) {
-      return <p className="text-xxs italic text-gold/60">No resources yet.</p>;
+      return <p className="text-hud-label italic text-hud-muted">No resources yet.</p>;
     }
 
     // Relics first, on their own dedicated, clickable row. Then the resource +

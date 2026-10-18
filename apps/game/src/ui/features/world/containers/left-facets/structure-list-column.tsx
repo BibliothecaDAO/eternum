@@ -1,4 +1,3 @@
-import { HUD_SECTION_HEIGHT } from "../hud-layout";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -84,7 +83,7 @@ export const StructureListColumn = memo(() => {
   if (allStructures.length === 0) return null;
 
   return (
-    <div className="flex min-w-0 shrink-0 flex-col" style={{ height: HUD_SECTION_HEIGHT }}>
+    <div className="flex h-hud-section min-w-0 shrink-0 flex-col">
       {/* Header: single-line category filter on the left, owned count on the
           right. No label (the active chip is highlighted) and no sort control. */}
       <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto flex h-full min-h-0 flex-col rounded-xl")}>

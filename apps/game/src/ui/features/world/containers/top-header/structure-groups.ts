@@ -15,12 +15,12 @@ const STRUCTURE_GROUPS_STORAGE_KEY = "structureGroups";
 const STRUCTURE_GROUPS_EVENT = "structureGroups:updated";
 
 export const STRUCTURE_GROUP_COLORS = [
-  { value: "red" as const, label: "Red", textClass: "text-red-400", dotClass: "bg-red-400" },
-  { value: "amber" as const, label: "Amber", textClass: "text-amber-400", dotClass: "bg-amber-400" },
-  { value: "green" as const, label: "Green", textClass: "text-green-400", dotClass: "bg-green-400" },
-  { value: "blue" as const, label: "Blue", textClass: "text-blue-400", dotClass: "bg-blue-400" },
-  { value: "indigo" as const, label: "Indigo", textClass: "text-indigo-400", dotClass: "bg-indigo-400" },
-  { value: "violet" as const, label: "Violet", textClass: "text-violet-400", dotClass: "bg-violet-400" },
+  { value: "red" as const, label: "Red", textClass: "text-hud-group-1", dotClass: "bg-hud-group-1" },
+  { value: "amber" as const, label: "Amber", textClass: "text-hud-group-2", dotClass: "bg-hud-group-2" },
+  { value: "green" as const, label: "Green", textClass: "text-hud-group-3", dotClass: "bg-hud-group-3" },
+  { value: "blue" as const, label: "Blue", textClass: "text-hud-group-4", dotClass: "bg-hud-group-4" },
+  { value: "indigo" as const, label: "Indigo", textClass: "text-hud-group-5", dotClass: "bg-hud-group-5" },
+  { value: "violet" as const, label: "Violet", textClass: "text-hud-group-6", dotClass: "bg-hud-group-6" },
 ] as const;
 
 export type StructureGroupColor = (typeof STRUCTURE_GROUP_COLORS)[number]["value"];

@@ -64,8 +64,8 @@ export const FilterChipsRow = memo(({ availableCategories, filterValue, onFilter
             className={cn(
               "inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border transition",
               isActive
-                ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
-                : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
+                ? "border-hud-line-strong bg-hud-hover text-hud-ink shadow-[0_0_6px_rgba(223,170,84,0.22)]"
+                : "border-hud-divider bg-hud-well text-hud-muted hover:border-hud-line-strong hover:text-hud-ink",
             )}
             aria-pressed={isActive}
             aria-label={option.plural}
