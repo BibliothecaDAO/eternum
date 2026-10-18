@@ -1,15 +1,10 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { type FormEvent, type ReactNode, useState } from "react";
 
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudButton, HudChip, HudField, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   ADD_REALM,
@@ -72,16 +67,20 @@ export const RealmsSheet = ({
   onLinkWallet: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={REALMS} onClose={onClose}>
-    <header className="flex items-center gap-2.5">
-      <SemanticIcon name="realm" size={28} />
-      <h2 className="frontier-title flex-1 !text-xl">{REALMS}</h2>
-      {wallet !== null && <Chip icons={["backpack"]} label={REALMS} value={shortAddress(wallet)} />}
-    </header>
+  <HudSheet label={REALMS} onClose={onClose}>
+    {wallet !== null && (
+      <span className="flex justify-end">
+        <HudChip icons={["backpack"]} label={REALMS}>
+          {shortAddress(wallet)}
+        </HudChip>
+      </span>
+    )}
     {wallet === null ? (
       <>
-        <ReasonPlate reason={{ kind: "failed", line: NO_WALLET }} />
-        <Button role="primary" icon="share" word={LINK_WALLET} onClick={onLinkWallet} />
+        <HudNotice tone="warn" line={NO_WALLET} />
+        <HudButton kind="primary" icon="share" onClick={onLinkWallet}>
+          {LINK_WALLET}
+        </HudButton>
       </>
     ) : (
       <>
@@ -90,11 +89,9 @@ export const RealmsSheet = ({
             {state === "ready" && <LaborChip amount={perRealm} />}
           </RealmRow>
         ))}
-        {plan.rows.some((row) => row.state === "locked") && (
-          <ReasonPlate reason={{ kind: "failed", line: realmsADay(cap) }} />
-        )}
+        {plan.rows.some((row) => row.state === "locked") && <HudNotice tone="warn" line={realmsADay(cap)} />}
         {plan.canAdd && <AddRealm adding={adding} onAdd={onAdd} />}
-        {plan.rows.length === 0 && <p className="text-center text-base text-kit-cream">{REALMS_ELSEWHERE}</p>}
+        {plan.rows.length === 0 && <p className="text-center">{REALMS_ELSEWHERE}</p>}
         {plan.rows.length > 0 && (
           <ClaimStep
             plan={plan}
@@ -107,7 +104,7 @@ export const RealmsSheet = ({
         )}
       </>
     )}
-  </Sheet>
+  </HudSheet>
 );
 
 const ClaimStep = ({
@@ -127,41 +124,48 @@ const ClaimStep = ({
 }) => {
   if (plan.total === 0)
     return plan.rows.some((row) => row.state === "claimed") ? (
-      <ReasonPlate
-        reason={{ kind: "failed", line: CLAIMED_TODAY }}
-        step={<Chip icons={["hourglass"]} label={CLAIMED_TODAY} value={formatDuration(secondsLeft)} />}
-      />
+      <span className="flex items-center gap-2">
+        <span className="flex-1">
+          <HudNotice line={CLAIMED_TODAY} />
+        </span>
+        <HudChip icons={["hourglass"]} label={CLAIMED_TODAY}>
+          {formatDuration(secondsLeft)}
+        </HudChip>
+      </span>
     ) : null;
   if (plan.fits < plan.total)
     return (
       <>
-        <ReasonPlate
-          reason={{ kind: "failed", line: fitOf(formatExact(plan.fits), formatExact(plan.total)) }}
-          step={<Chip icons={["labor"]} label={LABOR} value={FULL} ember />}
-        />
-        <div className="flex gap-2">
+        <span className="flex items-center gap-2">
+          <span className="flex-1">
+            <HudNotice tone="warn" line={fitOf(formatExact(plan.fits), formatExact(plan.total))} />
+          </span>
+          <HudChip icons={["labor"]} label={LABOR} tone="bad">
+            {FULL}
+          </HudChip>
+        </span>
+        <div className="grid auto-cols-fr grid-flow-col gap-2">
           {plan.fits > 0 && (
-            <Button
-              role="secondary"
-              word={`${CLAIM} ${formatExact(plan.fits)}`}
-              loading={sending ? CLAIM : undefined}
-              onClick={onClaim}
-            />
+            <HudButton kind="secondary" busy={sending ? CLAIM : undefined} onClick={onClaim}>
+              {`${CLAIM} ${formatExact(plan.fits)}`}
+            </HudButton>
           )}
-          <Button role="primary" icon="realm" word={REALM} onClick={onRealm} className="flex-1" />
+          <HudButton kind="primary" icon="realm" onClick={onRealm}>
+            {REALM}
+          </HudButton>
         </div>
       </>
     );
   return (
     <>
       <div className="flex justify-center">
-        <Chip
-          icons={["labor"]}
-          label={LABOR}
-          value={`${formatExact(labor)} → ${formatExact(labor === undefined ? undefined : labor + plan.total)}`}
-        />
+        <HudChip icons={["labor"]} label={LABOR}>
+          {`${formatExact(labor)} → ${formatExact(labor === undefined ? undefined : labor + plan.total)}`}
+        </HudChip>
       </div>
-      <Button role="primary" word={CLAIM_ALL} loading={sending ? CLAIM : undefined} onClick={onClaim} />
+      <HudButton kind="primary" busy={sending ? CLAIM : undefined} onClick={onClaim}>
+        {CLAIM_ALL}
+      </HudButton>
     </>
   );
 };
@@ -179,30 +183,27 @@ const RealmRow = ({
   state: RealmLaborState;
   children?: ReactNode;
 }) => (
-  <div
-    className={cn(
-      "frontier-card flex min-h-14 items-center gap-2.5 !rounded-xl px-3 py-2",
-      state !== "ready" && "opacity-55",
-    )}
-  >
-    <OrderEmblem order={order} size={28} />
-    <span className="min-w-0 flex-1 truncate text-base text-kit-cream">
-      {name} <span className="text-sm tabular-nums text-kit-muted">#{formatExact(realmId)}</span>
-    </span>
-    {state === "claimed" && <SemanticIcon name="check" size={24} />}
-    {state === "absent" && <span className="shrink-0 text-sm text-kit-muted">{REALM_NOT_IN_WALLET}</span>}
-    {state === "locked" && <SemanticIcon name="lock" size={22} />}
-    {children}
-  </div>
+  <HudRow
+    lead={<SemanticIcon name={orderMeaning(order)} size={28} alt={iconDefinition(orderMeaning(order)).label} />}
+    title={
+      <>
+        {name} <span className="text-hud-label tabular-nums text-hud-muted">#{formatExact(realmId)}</span>
+      </>
+    }
+    disabled={state !== "ready"}
+    trail={
+      <span className="flex items-center gap-1">
+        {state === "claimed" && <SemanticIcon name="check" size={24} />}
+        {state === "absent" && <span className="text-hud-label text-hud-muted">{REALM_NOT_IN_WALLET}</span>}
+        {state === "locked" && <SemanticIcon name="lock" size={22} />}
+        {children}
+      </span>
+    }
+  />
 );
 
 const LaborChip = ({ amount }: { amount: number }) => (
-  <span data-tone="lit" className="frontier-chip h-8 shrink-0 !py-0">
-    <span className="contents">
-      <SemanticIcon name="labor" size={22} />
-      <span className="frontier-chip-number tabular-nums !text-base">+{formatAmount(amount)}</span>
-    </span>
-  </span>
+  <HudChip icons={["labor"]} tone="good">{`+${formatAmount(amount)}`}</HudChip>
 );
 
 /**
@@ -218,28 +219,18 @@ const AddRealm = ({ adding, onAdd }: { adding: boolean; onAdd: (realmId: number)
     if (valid) onAdd(realmId);
   };
   return (
-    <form
-      onSubmit={submit}
-      aria-label={ADD_REALM}
-      className="frontier-card flex min-h-14 items-center gap-2.5 !rounded-xl border-dashed px-3 py-2"
-    >
-      <SemanticIcon name="realm" size={28} className="opacity-60" />
-      <input
+    <form onSubmit={submit} aria-label={ADD_REALM} className="flex items-center gap-2">
+      <SemanticIcon name="realm" size={28} />
+      <HudField
         aria-label={REALM_NUMBER}
         inputMode="numeric"
         placeholder={`${ADD_REALM} #`}
         value={number}
-        onChange={(event) => setNumber(event.target.value.replace(/\D/g, ""))}
-        className="min-w-0 flex-1 bg-transparent text-base tabular-nums text-kit-cream placeholder:text-kit-muted focus:outline-none"
+        onChange={(text) => setNumber(text.replace(/\D/g, ""))}
       />
-      <Button
-        type="submit"
-        role="secondary"
-        word={CLAIM}
-        loading={adding ? CLAIM : undefined}
-        disabled={!valid}
-        className="!h-10"
-      />
+      <HudButton type="submit" kind="secondary" busy={adding ? CLAIM : undefined} disabled={!valid}>
+        {CLAIM}
+      </HudButton>
     </form>
   );
 };

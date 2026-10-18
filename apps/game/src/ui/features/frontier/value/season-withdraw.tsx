@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 
 import { formatMoment } from "@/ui/design-system/kit/time";
 import { WITHDRAW, WITHDRAWALS_CLOSED, withdrawUntil } from "@/ui/design-system/kit/words";
@@ -41,15 +41,17 @@ export const SeasonWithdrawRow = ({
   if (!lords) return null;
   const closed = closesAt !== undefined && now >= closesAt;
   return (
-    <div className="frontier-card flex w-full items-center gap-2.5 !rounded-xl px-3 py-2">
-      <SemanticIcon name="lords" size={30} />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-lg tabular-nums text-kit-cream">{formatExact(lords)}</span>
-        <span className="text-sm text-kit-muted">
-          {closed ? WITHDRAWALS_CLOSED : withdrawUntil(formatMoment(closesAt, now))}
-        </span>
-      </span>
-      {!closed && <Button role="primary" word={WITHDRAW} onClick={onOpen} className="!h-11" />}
-    </div>
+    <HudRow
+      lead={<SemanticIcon name="lords" size={30} />}
+      title={<span className="tabular-nums">{formatExact(lords)}</span>}
+      detail={closed ? WITHDRAWALS_CLOSED : withdrawUntil(formatMoment(closesAt, now))}
+      trail={
+        closed ? undefined : (
+          <HudButton kind="primary" onClick={onOpen}>
+            {WITHDRAW}
+          </HudButton>
+        )
+      }
+    />
   );
 };

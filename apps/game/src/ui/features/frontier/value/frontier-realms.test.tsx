@@ -94,7 +94,7 @@ const openSheet = async () => {
     for (let turn = 0; turn < 3; turn++) await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   };
   const row = (realmId: number) =>
-    [...document.body.querySelectorAll(".frontier-card")].find((card) => card.textContent?.includes(`Realm ${realmId}`))
+    [...document.body.querySelectorAll(".ui-row")].find((row) => row.textContent?.includes(`Realm ${realmId}`))
       ?.textContent ?? "";
   return { press, row, show };
 };

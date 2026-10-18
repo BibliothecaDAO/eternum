@@ -1,12 +1,7 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
-import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudButton, HudChip, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   CONTINUE,
   LINK_WALLET,
@@ -17,6 +12,9 @@ import {
   WITHDRAW,
   paidWhenResumed,
 } from "@/ui/design-system/kit/words";
+
+import { AmountRange } from "../amount-range";
+import { hudPrices } from "../hud-prices";
 
 /**
  * Where a withdrawal stands: choosing the amount, sent (the LORDS have left the game's count), paid on Starknet with its
@@ -56,11 +54,7 @@ export const WithdrawSheet = ({
   onLinkWallet: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={WITHDRAW} onClose={onClose}>
-    <h2 className="frontier-title flex items-center gap-2.5 !text-xl">
-      <SemanticIcon name={step.kind === "paid" ? "check" : "lords"} size={28} />
-      {WITHDRAW}
-    </h2>
+  <HudSheet label={WITHDRAW} onClose={onClose}>
     <WithdrawBody
       held={held}
       wallet={wallet}
@@ -72,7 +66,7 @@ export const WithdrawSheet = ({
       onLinkWallet={onLinkWallet}
       onClose={onClose}
     />
-  </Sheet>
+  </HudSheet>
 );
 
 const WithdrawBody = ({
@@ -110,23 +104,26 @@ const Pick = ({
 }) => (
   <>
     <Hero icon="lords" value={formatExact(amount)} />
-    <AmountSlider label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
+    <AmountRange label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
     <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
-    <Button
-      role="primary"
-      word={WITHDRAW}
-      prices={[{ of: "lords", amount }]}
+    <HudButton
+      kind="primary"
+      prices={hudPrices([{ of: "lords", amount }])}
       disabled={!held || amount < 1 || amount > held}
       onClick={onWithdraw}
-    />
+    >
+      {WITHDRAW}
+    </HudButton>
   </>
 );
 
 const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWallet: () => void }) => (
   <>
     <Hero icon="lords" value={formatExact(held)} />
-    <ReasonPlate reason={{ kind: "failed", line: NO_WALLET }} />
-    <Button role="primary" icon="share" word={LINK_WALLET} onClick={onLinkWallet} />
+    <HudNotice tone="warn" line={NO_WALLET} />
+    <HudButton kind="primary" icon="share" onClick={onLinkWallet}>
+      {LINK_WALLET}
+    </HudButton>
   </>
 );
 
@@ -136,8 +133,10 @@ const Refused = ({ held, address, line }: { held: number | undefined; address: s
     <div className="flex justify-center">
       <WalletChip address={address} />
     </div>
-    <ReasonPlate reason={{ kind: "failed", line }} />
-    <Button role="primary" word={WITHDRAW} disabled />
+    <HudNotice tone="warn" line={line} />
+    <HudButton kind="primary" disabled>
+      {WITHDRAW}
+    </HudButton>
   </>
 );
 
@@ -145,7 +144,9 @@ const Sending = ({ amount, held, wallet }: { amount: number; held: number | unde
   <>
     <Hero icon="lords" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
-    <Button role="primary" word={WITHDRAW} loading={SENDING} />
+    <HudButton kind="primary" busy={SENDING}>
+      {WITHDRAW}
+    </HudButton>
   </>
 );
 
@@ -153,7 +154,7 @@ const Waiting = ({ amount, held, wallet }: { amount: number; held: number | unde
   <>
     <Hero icon="hourglass" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
-    <ReasonPlate reason={{ kind: "failed", line: paidWhenResumed(formatExact(amount)) }} />
+    <HudNotice tone="warn" line={paidWhenResumed(formatExact(amount))} />
   </>
 );
 
@@ -173,17 +174,17 @@ const Paid = ({
         <WalletChip address={wallet} paid />
       </div>
     )}
-    <div className="flex gap-2">
-      <a
-        href={step.transactionUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-kit-line2 px-4 font-body text-base font-semibold text-kit-cream hover:border-kit-gold"
+    <div className="grid auto-cols-fr grid-flow-col gap-2">
+      <HudButton
+        kind="secondary"
+        icon="share"
+        onClick={() => window.open(step.transactionUrl, "_blank", "noopener,noreferrer")}
       >
-        <SemanticIcon name="share" size={22} />
         {TRANSACTION}
-      </a>
-      <Button role="primary" word={CONTINUE} onClick={onClose} className="flex-1" />
+      </HudButton>
+      <HudButton kind="primary" onClick={onClose}>
+        {CONTINUE}
+      </HudButton>
     </div>
   </>
 );
@@ -191,8 +192,10 @@ const Paid = ({
 /** The count left in the game, and the wallet the LORDS are on their way to. */
 const Leaving = ({ held, wallet }: { held: number | undefined; wallet: string | null }) => (
   <div className="flex items-center justify-center gap-1.5">
-    <Chip icons={["lords"]} label={LORDS} value={formatExact(held)} />
-    <span aria-hidden className="text-base text-kit-muted">
+    <HudChip icons={["lords"]} label={LORDS}>
+      {formatExact(held)}
+    </HudChip>
+    <span aria-hidden className="text-hud-muted">
       →
     </span>
     {wallet !== null && <WalletChip address={wallet} />}
@@ -209,9 +212,11 @@ const Flow = ({
   address: string;
 }) => (
   <div className="flex flex-col items-center gap-1.5">
-    <Chip icons={["lords"]} label={LORDS} value={`${formatExact(before)} → ${formatExact(after)}`} />
+    <HudChip icons={["lords"]} label={LORDS}>
+      {`${formatExact(before)} → ${formatExact(after)}`}
+    </HudChip>
     <span className="flex items-center gap-1.5">
-      <span aria-hidden className="text-base text-kit-muted">
+      <span aria-hidden className="text-hud-muted">
         ↓
       </span>
       <WalletChip address={address} />
@@ -220,20 +225,18 @@ const Flow = ({
 );
 
 const WalletChip = ({ address, paid = false }: { address: string; paid?: boolean }) => (
-  <span data-tone={paid ? "gain" : undefined} className="frontier-chip h-7 shrink-0 !py-0">
-    <span className="contents">
-      <SemanticIcon name="backpack" size={18} />
-      <span className="frontier-chip-number tabular-nums !text-base">{shortAddress(address)}</span>
-      {paid && <SemanticIcon name="check" size={18} />}
-    </span>
-  </span>
+  <HudChip icons={["backpack"]} tone={paid ? "good" : undefined}>
+    {shortAddress(address)}
+    {paid && <SemanticIcon name="check" size={16} />}
+  </HudChip>
 );
 
+/** The amount the sheet is about, large, beside what it is. */
 const Hero = ({ icon, value }: { icon: IconMeaning; value: string }) => (
   <div className="flex items-center justify-center gap-3.5">
-    <span className="flex size-16 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground">
+    <span className="flex size-16 items-center justify-center rounded-full border border-hud-line">
       <SemanticIcon name={icon} size={44} />
     </span>
-    <span className="frontier-hero tabular-nums">{value}</span>
+    <span className="text-hud-display tabular-nums">{value}</span>
   </div>
 );
