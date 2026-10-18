@@ -14,19 +14,17 @@ const army: ArmyPlate = {
   relation: "enemy",
   owner: "Tamsin",
   homeName: "Niziz",
-  code: "3·2",
   troops: { type: "knight", tier: 1, count: 1321 },
-  stamina: 0.5,
+  stamina: { current: 60, max: 120 },
 };
 
 const realm: StructurePlate = {
   kind: "structure",
   relation: "enemy",
   owner: "Tamsin",
-  rank: "Kingdom",
   name: "Niziz",
   named: true,
-  code: "3·1",
+  strength: 300 + 600 * 9,
   guards: [
     { type: "knight", tier: 1, count: 300 },
     { type: "paladin", tier: 3, count: 600 },

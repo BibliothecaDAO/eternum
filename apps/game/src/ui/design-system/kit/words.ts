@@ -134,9 +134,11 @@ export const FIND_KINDS = ["Find camps", "Find rifts", "Find stragglers"] as con
 export const CAMP = "Camp";
 export const RIFT = "Rift";
 export const RUIN = "Ruin";
-/** A map plate's words: a thing with no guard, and the troops on their way to one. */
+/** A map plate's words: a thing with no guard, the troops on their way to one, what a realm's two numbers count. */
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
+export const GUARD = "guard";
+export const STRENGTH = "strength";
 /** What taking a camp from the Vanguard scores: "250 points". */
 export const POINTS = "points";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */

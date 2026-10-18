@@ -95,7 +95,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
-import { buildStructurePlate } from "../map-plates/map-plate-model";
+import { buildStructurePlate, type TierStrength } from "../map-plates/map-plate-model";
 import { holdsGrowingEssence, readPlateReward } from "../map-plates/plate-reward";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
@@ -126,6 +126,9 @@ import {
 
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
+
+/** A plate's guard strength reads the game's tier strengths. */
+const plateTierStrength: TierStrength = (tier) => configManager.getTierStrength(`T${tier}`);
 
 type StructureModel = InstancedModel | RewardTileModel;
 
@@ -1736,6 +1739,7 @@ export class StructureManager {
       position,
       plate: buildStructurePlate(
         structure,
+        plateTierStrength,
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),

@@ -17,11 +17,6 @@ export const Plate = ({ plate, open }: { plate: MapPlate; open: boolean }) => (
         ))}
       </div>
     ))}
-    {plate.kind === "army" && plate.stamina !== undefined && (
-      <span className="mp-plate__meter" aria-label="Stamina">
-        <i style={{ width: `${100 * plate.stamina}%` }} />
-      </span>
-    )}
   </div>
 );
 
@@ -40,6 +35,8 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
       return <span className="mp-next">›</span>;
     case "divider":
       return <span className="mp-divider" />;
+    case "stamina":
+      return <Stamina current={segment.current} max={segment.max} />;
     default:
       return <span className={`mp-${segment.kind}`}>{segment.text}</span>;
   }
@@ -51,5 +48,17 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
     <Icon name={`${troops.type}-t${troops.tier}` as IconMeaning} size={20} />
     <TroopTierChip tier={`T${troops.tier}`} size="label" />
     <span className="mp-count">{formatCount(troops.count)}</span>
+  </span>
+);
+
+/** An army's stamina: its bar, then exactly how much of how much ("84/150"). */
+const Stamina = ({ current, max }: { current: number; max: number }) => (
+  <span className="mp-stamina" aria-label={`Stamina ${formatCount(current)} of ${formatCount(max)}`}>
+    <span className="mp-plate__meter">
+      <i style={{ width: `${(100 * current) / max}%` }} />
+    </span>
+    <span className="mp-label">
+      {formatCount(current)}/{formatCount(max)}
+    </span>
   </span>
 );

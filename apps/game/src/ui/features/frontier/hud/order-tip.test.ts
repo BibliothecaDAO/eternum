@@ -63,11 +63,14 @@ describe("what a right-click on a tile does, said before the click", () => {
   });
 
   it("says why the planner gave no order, in its own reason", () => {
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 45 })).toBe(
-      "Needs 21 stamina, ready in under a minute",
+    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 24 })).toBe(
+      "Needs 21 stamina, ready in 24s",
     );
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 61 })).toBe(
-      "Needs 21 stamina, ready in 2 min",
+    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 130 })).toBe(
+      "Needs 21 stamina, ready in 2m 10s",
+    );
+    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 3_600 })).toBe(
+      "Needs 21 stamina, ready in 1h",
     );
     expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina");
     expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");

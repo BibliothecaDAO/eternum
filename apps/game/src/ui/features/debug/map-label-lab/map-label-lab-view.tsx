@@ -240,7 +240,6 @@ const plateOf = (entity: MapLabelEntity): MapPlate => {
       structureName: entity.name,
       structureType: STRUCTURE_TYPES[entity.kind as keyof typeof STRUCTURE_TYPES],
       mineKind: entity.kind === "rift" ? 1 : undefined,
-      level: entity.level,
       isMine,
       isAlly,
       owner,
@@ -261,6 +260,7 @@ const plateOf = (entity: MapLabelEntity): MapPlate => {
         slot: 0n,
       })),
     },
+    (tier) => [1, 3, 9][tier - 1],
     0,
     entity.reward,
   );

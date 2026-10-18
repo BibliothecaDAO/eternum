@@ -18,7 +18,6 @@ import { HudTabStrip } from "@/ui/design-system/molecules/hud-tab-strip";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
-  HudAmountSlider,
   HudBubble,
   HudButton,
   HudCheck,
@@ -45,6 +44,7 @@ import {
   HudTabs,
   HudTierChip,
   HudTip,
+  HudTroopAmount,
   HudTransfer,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
@@ -64,6 +64,9 @@ import { Medallion } from "@/ui/features/world/hud/medallion";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { Pin, Plate } from "@/three/map-plates/map-plates";
 import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
+import { siteName } from "@/three/map-plates/site-name";
+import { orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { ActionType } from "@bibliothecadao/eternum";
 import "@/three/map-plates/map-plates.css";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
@@ -74,7 +77,7 @@ import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
 
-/** Each game as its age of the lore, and the age's painting its colours come from (public/images/landscapes). */
+/** Each game as its age of the lore, and the age's painting (public/images/landscapes). */
 const AGE_NAMES: Record<HudMode, string> = {
   blitz: "Blitz · Age I",
   frontier: "Frontier · Age II",
@@ -372,30 +375,17 @@ const ButtonsSection = () => (
 );
 
 const AmountSection = () => {
-  const [value, setValue] = useState(1_200);
+  const [value, setValue] = useState(1_000);
   const [today, setToday] = useState(200);
   return (
     <Element
       name="Troop amount"
-      rule="How many troops: the amount typed beside its name, a slider between its ends, a stop where the army's room runs out, quick steps for a share."
+      rule="How many troops, for a quick deploy: the count typed, out of how many can (that fit, when the army's room runs out first), +500 per press, and Max."
       sheet={
-        <div className="flex max-w-xl flex-col gap-6">
-          <HudAmountSlider
-            name="Paladins"
-            value={value}
-            max={2_000}
-            stop={1_800}
-            note="1,800 fit in the army"
-            onChange={setValue}
-          />
-          <HudAmountSlider
-            name="Knights"
-            value={0}
-            max={0}
-            disabled
-            onChange={() => undefined}
-            note="No knights on hand"
-          />
+        <div className="flex max-w-xl flex-col gap-3">
+          <HudTroopAmount name="Paladins" value={value} most={1_800} held={2_000} onChange={setValue} />
+          <HudTroopAmount name="Knights" value={500} most={500} held={500} onChange={() => undefined} />
+          <HudTroopAmount name="Crossbowmen" value={0} most={0} held={0} disabled onChange={() => undefined} />
         </div>
       }
       today={
@@ -421,7 +411,7 @@ const TransferSection = () => {
   return (
     <Element
       name="Transfer sliders"
-      rule="What a transfer moves: one row per resource, its painting, name and what is held, a slider and the amount typed (sliders, as the transfer had them)."
+      rule="What a transfer moves: one row per resource, its painting, name and what is held, a slider, quick shares of what is held (25%, 50%, 75%, Max) and the amount typed."
       sheet={
         <div className="max-w-2xl">
           <HudTransfer
@@ -489,8 +479,8 @@ const FieldSection = () => {
 
 const MenuSection = () => (
   <Element
-    name="Select and menu"
-    rule="A choice opened from its trigger, or a right-click on the map: the items, the chosen one checked, a rule between groups."
+    name="Select"
+    rule="A choice opened from its trigger: the items, the chosen one checked, a rule between groups. The map has no menu of orders: a right-click acts at once."
     sheet={
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex flex-col gap-3">
@@ -505,14 +495,6 @@ const MenuSection = () => (
             { label: "Off" },
             { kind: "rule" },
             { label: "Idle", disabled: true, hint: "Level 2" },
-          ]}
-        />
-        <HudMenu
-          items={[
-            { label: "Move here", icon: "map-army", hint: "2 wheat" },
-            { label: "Explore", icon: "search", disabled: true, hint: "30 stamina" },
-            { kind: "rule" },
-            { label: "Attack", icon: "military", tone: "bad" },
           ]}
         />
       </div>
@@ -583,29 +565,17 @@ const MeterSection = () => (
 const ConfirmSection = () => (
   <Element
     name="Confirm"
-    rule="A question that stops the task: what it does and costs, the way back, the verb; red when it cannot be undone."
+    rule="Only in Frontier, and only where an action cannot be undone: the question in red, what is lost, the way back, the verb. Blitz and Eternum have none; time is of the essence, so a verb acts at once."
     sheet={
       <div className="flex flex-wrap gap-4">
         <HudConfirm
-          question="Level up Egonal to City?"
-          verb="Level up"
-          onConfirm={() => undefined}
-          onBack={() => undefined}
-        >
-          <span className="ui-row__detail">Costs 1,200 wheat and 600 wood.</span>
-        </HudConfirm>
-        <HudConfirm
-          question="Attack Moonhand's army?"
-          verb="Attack"
+          question="Disband this army?"
+          verb="Disband"
           tone="bad"
           onConfirm={() => undefined}
           onBack={() => undefined}
         >
-          <HudNotice
-            tone="bad"
-            line="Your army will be lost"
-            why="The forecast: 1,000 Paladins against 2,400 Knights."
-          />
+          <span className="ui-row__detail">Its 300 Paladins are lost; a deployed army never goes home.</span>
         </HudConfirm>
       </div>
     }
@@ -698,7 +668,7 @@ const TopBarSection = () => (
 const AgesSection = () => (
   <Element
     name="Ages"
-    rule="Each game wears its age of the lore: the accent and surface from its painting; the elements never change, the primary stays gold."
+    rule="Each game wears its own accent and surface (Blitz torch amber, Frontier violet, Eternum gold); the elements never change, the primary stays gold."
     sheet={
       <div className="grid grid-cols-3 gap-4">
         {(Object.keys(HUD_MODES) as HudMode[]).map((mode) => (
@@ -751,16 +721,43 @@ const TodayTipAnchor = ({ label, content }: { label: string; content: ReactNode 
   );
 };
 
+/** The map's order line as the game writes it (orderTip): an explore, a move, an attack, a stamina wait. */
+const orderStep = (actionType: ActionType, staminaCost?: number) => ({
+  hex: { col: 0, row: 0 },
+  actionType,
+  staminaCost,
+});
+const ORDER_LINES = [
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 50, fish: 0 } },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Attack, 50)], target: "Camp" },
+  { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24 },
+].flatMap((order) => {
+  const tip = orderTip({
+    target: null,
+    exploreStamina: 30,
+    food: { wheat: 0, fish: 0 },
+    explored: true,
+    refusal: undefined,
+    staminaWait: undefined,
+    points: { exploreTile: 0, openRelicCrate: 0 },
+    clickPreviews: false,
+    ...order,
+  });
+  return tip ? [tip] : [];
+});
+
 const TooltipSection = () => (
   <Element
     name="Tooltip and the map's order line"
-    rule="One tooltip; its words are its own. A line, why not (and when), and how, as a cue."
+    rule="One tooltip; its words are its own. A line, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip), never a word of a queue."
     sheet={
       <div className="flex flex-wrap items-start gap-4">
         <HudTip line="Wheat, 1,200 held" />
         <HudTip line="Deploy an army here" how="Right-click" />
-        <HudTip line="Explore" why="Needs 30 stamina, ready in under a minute" />
-        <HudTip line="Move here · 2 wheat" how="Right-click to move, Shift to queue" />
+        {ORDER_LINES.map((order) => (
+          <HudTip key={order.line} line={order.line} how={order.gestures ?? undefined} />
+        ))}
       </div>
     }
     today={
@@ -990,7 +987,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
         <div className="mt-4 flex flex-col gap-2">
           <HudNotice tone="good" line="Transfer sent" why="Arrives at Egonal in 4m." />
           <HudNotice tone="warn" line="Storage full" why="Wheat stops at 6,000 until some is spent." />
-          <HudNotice tone="bad" line="Not sent" why="The army needs 30 stamina; ready in under a minute." />
+          <HudNotice tone="bad" line="Not sent" why="The army needs 30 stamina; ready in 24s." />
         </div>
       </div>
     }
@@ -1025,7 +1022,7 @@ const WindowSection = () => (
             </>
           }
         >
-          <HudAmountSlider name="Paladins" value={1_200} max={2_000} stop={1_800} onChange={() => undefined} />
+          <HudTroopAmount name="Paladins" value={1_000} most={1_800} held={2_000} onChange={() => undefined} />
         </HudWindow>
       </div>
     }
@@ -1044,18 +1041,16 @@ const ARMY: ArmyPlate = {
   relation: "enemy",
   owner: "Moonhand",
   homeName: "Xeswet",
-  code: "7·12",
   troops: { type: "paladin", tier: 3, count: 300 },
-  stamina: 0.6,
+  stamina: { current: 84, max: 150 },
 };
 const REALM: StructurePlate = {
   kind: "structure",
   relation: "own",
   owner: "djizus",
-  rank: "Kingdom",
   name: "Sangsang",
   named: true,
-  code: "19·1",
+  strength: 516 + 577 * 3 + 638 * 9,
   guards: [
     { type: "crossbowman", tier: 1, count: 516 },
     { type: "knight", tier: 2, count: 577 },
@@ -1070,11 +1065,24 @@ const RIFT: StructurePlate = {
   owner: "The Vanguard",
   name: "Essence Rift",
   named: false,
+  place: siteName(7 * 2 ** 32 + 103),
   reward: "1,200 Essence",
-  code: "0·103",
+  strength: 900,
   guards: [{ type: "knight", tier: 2, count: 300 }],
   arrivals: [],
   icon: "rift",
+};
+const CAMP: StructurePlate = {
+  ...RIFT,
+  name: "Camp",
+  place: siteName(7 * 2 ** 32 + 41),
+  reward: "250 points",
+  strength: 400,
+  guards: [
+    { type: "crossbowman", tier: 1, count: 250 },
+    { type: "knight", tier: 1, count: 150 },
+  ],
+  icon: "camp",
 };
 
 /** A plate as the layer places it, standing in the page instead of over the map. */
@@ -1097,7 +1105,7 @@ const PlateAt = ({
 const PlatesSection = () => (
   <Element
     name="Map plate"
-    rule="Two short rows at rest, three opened (map-labels rounds 1 to 5), every row at one size and height; a name told by weight and the accent, a rank, id or time by colour; the side's colour on its bar and its player."
+    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player, troops and exact stamina. A realm: player | name, guard | strength; opened, its slots and arrivals (time first). A camp or rift: its lore name (from its id) and kind, guard | reward."
     sheet={
       <div className="flex flex-wrap items-end gap-4">
         <PlateAt plate={ARMY} />
@@ -1106,7 +1114,9 @@ const PlatesSection = () => (
         <PlateAt plate={REALM} open selected />
         <PlateAt plate={RIFT} />
         <PlateAt plate={RIFT} open />
-        <PlateAt plate={{ ...REALM, relation: "ally", owner: "Kestrel", rank: "City", name: "Šommun", guards: [] }} />
+        <PlateAt plate={CAMP} />
+        <PlateAt plate={CAMP} open />
+        <PlateAt plate={{ ...REALM, relation: "ally", owner: "Kestrel", name: "Šommun", guards: [], strength: 0 }} />
         <div className="mp !static">
           <div className="mp-at !static" data-relation="enemy">
             <Pin plate={ARMY} />

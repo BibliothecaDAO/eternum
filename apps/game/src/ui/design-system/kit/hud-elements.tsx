@@ -73,90 +73,63 @@ export const HudField = ({
 
 const formatAmount = (amount: number) => Math.round(amount).toLocaleString("en-US");
 
+/** What one press of the quick button adds. */
+const QUICK_ADD = 500;
+
 /**
- * How many troops, by dragging (the kit's amount slider, in the HUD's face): the amount typed exactly beside its name,
- * the track between its ends (each end takes its amount), a stop where what fits runs out, and quick steps taking a
- * share of what fits.
+ * How many troops go, for a quick deploy (the owner's round 3): the count typed, out of how many can (and "that fit"
+ * when the army's room runs out first), +500 per press up to that, and Max.
  */
-export const HudAmountSlider = ({
+export const HudTroopAmount = ({
   name,
   value,
-  max,
-  stop,
-  steps = [0.25, 0.5, 0.75],
-  note,
+  most,
+  held,
   disabled = false,
   onChange,
 }: {
   name: string;
   value: number;
-  max: number;
-  /** Where what can go runs out before the end (the army's room): the thumb stops there. */
-  stop?: number;
-  steps?: readonly number[];
-  note?: ReactNode;
+  /** The most that can go: the troops on hand within the army's room. */
+  most: number;
+  /** How many are on hand; when fewer fit, the count reads "of N that fit". */
+  held: number;
   disabled?: boolean;
   onChange: (amount: number) => void;
 }) => {
-  const most = Math.min(stop ?? max, max);
-  const share = (amount: number) => (max > 0 ? (amount / max) * 100 : 0);
+  const full = disabled || value >= most;
   return (
-    <div className="ui-slider">
-      <div className="ui-slider__head">
-        <span className="ui-slider__name">{name}</span>
-        <label className="ui-field">
-          <span className="sr-only">{name}</span>
-          <input
-            inputMode="numeric"
-            value={formatAmount(value)}
-            disabled={disabled}
-            onChange={(event) => onChange(Math.min(most, Number(event.target.value.replace(/\D/g, "")) || 0))}
-          />
-        </label>
-        <span className="ui-slider__note">of {formatAmount(most)}</span>
-      </div>
-      <div className="ui-slider__track">
-        <button type="button" className="ui-slider__end" disabled={disabled} onClick={() => onChange(0)}>
-          0
-        </button>
-        <span className="ui-slider__rail">
-          <input
-            type="range"
-            aria-label={name}
-            min={0}
-            max={max}
-            value={value}
-            disabled={disabled}
-            style={{ "--fill": `${share(value)}%` } as React.CSSProperties}
-            onChange={(event) => onChange(Math.min(Number(event.target.value), most))}
-          />
-          {stop !== undefined && stop < max && (
-            <u aria-hidden className="ui-slider__stop" style={{ left: `${share(stop)}%` }} />
-          )}
-        </span>
-        <button type="button" className="ui-slider__end" disabled={disabled} onClick={() => onChange(most)}>
-          {formatAmount(most)}
-        </button>
-      </div>
-      <div className="ui-slider__steps">
-        {steps.map((step) => (
-          <HudButton
-            key={step}
-            kind="secondary"
-            size="sm"
-            disabled={disabled}
-            onClick={() => onChange(Math.round(most * step))}
-          >
-            {step * 100}%
-          </HudButton>
-        ))}
-        {note !== undefined && <span className="ui-slider__note ml-auto self-center">{note}</span>}
-      </div>
+    <div className="ui-amount">
+      <label className="ui-field">
+        <span className="sr-only">{name}</span>
+        <input
+          inputMode="numeric"
+          value={formatAmount(value)}
+          disabled={disabled}
+          onChange={(event) => onChange(Math.min(most, Number(event.target.value.replace(/\D/g, "")) || 0))}
+        />
+      </label>
+      <span className="ui-amount__of">
+        of {formatAmount(most)}
+        {held > most && " that fit"}
+      </span>
+      <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
+        +{QUICK_ADD}
+      </HudButton>
+      <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
+        Max
+      </HudButton>
     </div>
   );
 };
 
-/** What a transfer moves: one row per resource, its painting and name, what is held, a slider and the amount typed. */
+/** The shares a transfer row's quick steps take of what is held. */
+const TRANSFER_STEPS = [0.25, 0.5, 0.75, 1] as const;
+
+/**
+ * What a transfer moves: one row per resource, its painting and name, what is held, a slider, quick steps taking a share
+ * of what is held, and the amount typed.
+ */
 export const HudTransfer = ({
   rows,
   onChange,
@@ -184,6 +157,20 @@ export const HudTransfer = ({
             style={{ "--fill": `${row.held > 0 ? (row.value / row.held) * 100 : 0}%` } as React.CSSProperties}
             onChange={(event) => onChange(index, Number(event.target.value))}
           />
+        </span>
+        <span className="ui-transfer__steps">
+          {TRANSFER_STEPS.map((step) => (
+            <HudButton
+              key={step}
+              kind="secondary"
+              size="sm"
+              disabled={row.held === 0}
+              aria-pressed={row.held > 0 && row.value === Math.round(row.held * step)}
+              onClick={() => onChange(index, Math.round(row.held * step))}
+            >
+              {step === 1 ? "Max" : `${step * 100}%`}
+            </HudButton>
+          ))}
         </span>
         <label className="ui-field">
           <span className="sr-only">{row.name}</span>
@@ -443,7 +430,7 @@ export const HudSelect = ({ value, state, onClick }: { value: string; state?: st
   </button>
 );
 
-/** A list of choices opened from a select or a right-click: each item, the chosen one checked, a rule between groups. */
+/** The list a select opens: each choice, the chosen one checked, a rule between groups. The map has no menu: a right-click acts. */
 export const HudMenu = ({
   items,
 }: {
@@ -535,7 +522,11 @@ export const HudCheck = ({
     className="ui-check"
     onClick={() => onChange(!checked)}
   >
-    {checked && <Icon name="check" size={14} />}
+    {checked && (
+      <svg aria-hidden viewBox="0 0 12 12" width="12" height="12">
+        <path d="M2.5 6.5l2.5 2.5 4.5-5.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )}
   </button>
 );
 

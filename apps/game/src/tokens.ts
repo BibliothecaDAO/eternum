@@ -487,14 +487,15 @@ export const HUD_DERIVED = {
  * Each game is an age of the lore ("Realms · The Lost Ages"), and wears its age's colours (owner, 17 October 2026: "a
  * different color for each game, like in the lore each game is one age"), taken from the age's painting
  * (public/images/landscapes): its accent (every line, title, label, tab and focus ring, as channels) and its surface.
- * The elements never change; the primary button stays gold in every age.
+ * The owner swapped Blitz's and Frontier's (18 October 2026: "I would swap frontier & blitz color"). The elements never
+ * change; the primary button stays gold in every age.
  */
 export const HUD_MODES = {
-  /** Age I, Blitz (`blitz-spires`): the storm's violet over an obsidian spire. */
-  blitz: { accent: "180 156 240", "surface-from": "#1e1b28", "surface-to": "#121019" },
-  /** Age II, Frontier (`frontier-mist`): torchlight carried through a slate mist. */
-  frontier: { accent: "232 166 90", "surface-from": "#1b2628", "surface-to": "#101718" },
-  /** Age III, Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
+  /** Blitz: torchlight carried through a slate mist. */
+  blitz: { accent: "232 166 90", "surface-from": "#1b2628", "surface-to": "#101718" },
+  /** Frontier: the storm's violet over an obsidian spire. */
+  frontier: { accent: "180 156 240", "surface-from": "#1e1b28", "surface-to": "#121019" },
+  /** Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
   eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },
 } as const;
 

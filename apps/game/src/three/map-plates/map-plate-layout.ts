@@ -40,7 +40,6 @@ export const stack = (boxes: readonly PlateBox[], maxSteps = 2): Map<string, num
 /** A row's height, the plate's padding and frame, the gap between readings: as map-plates.css draws them. */
 const ROW_HEIGHT = 24;
 const PLATE_PADDING_Y = 6;
-const METER = 5;
 const PLATE_PADDING_X = 6 + 8 + 3 + 1;
 const READING_GAP = 6;
 
@@ -65,6 +64,8 @@ const measure = (() => {
 
 /** A troop stack's painting, and the tier chip's padding around its letters. */
 const TROOP_PAINTING = 20;
+/** An army's stamina bar, before its "x/y". */
+const STAMINA_BAR = 36;
 const CHIP_PADDING = 10;
 
 const segmentWidth = (segment: PlateSegment): number => {
@@ -86,6 +87,8 @@ const segmentWidth = (segment: PlateSegment): number => {
         measure(formatCount(segment.troops.count), "body") +
         2 * 4
       );
+    case "stamina":
+      return STAMINA_BAR + READING_GAP + measure(`${formatCount(segment.current)}/${formatCount(segment.max)}`, "body");
     case "next":
       return measure("›", "body") + 4;
     case "divider":
@@ -99,9 +102,8 @@ export const plateSize = (plate: MapPlate, open: boolean): { width: number; heig
   const width = Math.max(
     ...rows.map((row) => row.reduce((sum, segment) => sum + segmentWidth(segment), 0) + READING_GAP * (row.length - 1)),
   );
-  const meter = plate.kind === "army" && plate.stamina !== undefined ? METER : 0;
   return {
     width: Math.ceil(width + PLATE_PADDING_X),
-    height: rows.length * ROW_HEIGHT + PLATE_PADDING_Y + meter,
+    height: rows.length * ROW_HEIGHT + PLATE_PADDING_Y,
   };
 };

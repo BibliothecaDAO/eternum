@@ -2,14 +2,17 @@ import { StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { stack, type PlateBox } from "./map-plate-layout";
-import { attackOrder, buildArmyPlate, buildStructurePlate, homeCode, restingGuard } from "./map-plate-model";
+import { attackOrder, buildArmyPlate, buildStructurePlate, restingGuard } from "./map-plate-model";
+import { siteName } from "./site-name";
+
+/** Frontier's tier strengths: 1, 3 and 9 a troop. */
+const TIER_STRENGTH = (tier: 1 | 2 | 3) => [1, 3, 9][tier - 1];
 
 const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = {}) => ({
   entityId: 29,
   structureName: "Epakehamamut",
   structureType: StructureType.Realm,
   mineKind: undefined,
-  level: 0,
   isMine: false,
   isAlly: false,
   owner: { address: 7n, ownerName: "Tamsin", guildName: "" },
@@ -18,25 +21,31 @@ const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = 
 });
 
 describe("a map plate's facts", () => {
-  it("names a realm by its own name and its rank in words, with its owner and guards in slot order", () => {
+  it("names a realm by its own name, with its owner, its guards in slot order and their strength by tier", () => {
     const plate = buildStructurePlate(
       structure({
-        level: 2,
         guardArmies: [
           { slot: 2, category: "Paladin", tier: 3, count: 638 },
           { slot: 0, category: "Crossbowman", tier: 1, count: 516 },
           { slot: 1, category: "Knight", tier: 2, count: 0 },
         ],
       }),
+      TIER_STRENGTH,
     );
-    expect(plate).toMatchObject({ name: "Epakehamamut", named: true, owner: "Tamsin", rank: "Kingdom" });
+    expect(plate).toMatchObject({
+      name: "Epakehamamut",
+      named: true,
+      place: undefined,
+      owner: "Tamsin",
+      strength: 516 * 1 + 638 * 9,
+    });
     expect(plate.guards).toEqual([
       { type: "crossbowman", tier: 1, count: 516 },
       { type: "paladin", tier: 3, count: 638 },
     ]);
   });
 
-  it("names a nameless thing by its kind, never its id, nobody's as the Vanguard's, and says what taking it gives", () => {
+  it("names a nameless thing by its lore name and kind, never its id, nobody's as the Vanguard's, with its reward", () => {
     const camp = buildStructurePlate(
       structure({
         entityId: 129,
@@ -44,18 +53,20 @@ describe("a map plate's facts", () => {
         structureType: StructureType.Camp,
         owner: { address: 0n, ownerName: "", guildName: "" },
       }),
+      TIER_STRENGTH,
       0,
       { amount: 250, unit: "points" },
     );
     expect(camp).toMatchObject({
       name: "Camp",
       named: false,
+      place: siteName(129),
       owner: "The Vanguard",
       reward: "250 points",
-      rank: undefined,
     });
     const rift = buildStructurePlate(
       structure({ structureName: "Essence Rift", structureType: StructureType.Mine, mineKind: 1 }),
+      TIER_STRENGTH,
       0,
       { amount: 1200.4, unit: "Essence" },
     );
@@ -75,6 +86,7 @@ describe("a map plate's facts", () => {
     });
     const plate = buildStructurePlate(
       structure({ incomingTroopArrivals: [arrival(300, 1_200n), arrival(150, 1_060n)] as never }),
+      TIER_STRENGTH,
       1_000,
     );
     expect(plate.arrivals).toEqual([
@@ -83,7 +95,7 @@ describe("a map plate's facts", () => {
     ]);
   });
 
-  it("gives an army its owner, the realm it comes from, its short id, troops and stamina", () => {
+  it("gives an army its owner, the realm it comes from, its troops and its exact stamina, and no id", () => {
     const plate = buildArmyPlate(
       {
         entityId: 21 * 2 ** 32 + 11,
@@ -102,14 +114,9 @@ describe("a map plate's facts", () => {
       relation: "own",
       owner: "djizus",
       homeName: "Ununtutu",
-      code: "21·11",
       troops: { type: "knight", tier: 1, count: 1400 },
-      stamina: 0.5,
+      stamina: { current: 60, max: 120 },
     });
-  });
-
-  it("reads a short id off the entity id: home namespace and serial", () => {
-    expect(homeCode(12884901891)).toBe("3·3");
   });
 
   it("rests a guard on one number and lists slots as an attacker meets them, highest slot first", () => {

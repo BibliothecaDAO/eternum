@@ -98,7 +98,8 @@
 .ui-button[data-kind="primary"]:is(:active, [data-state="pressed"]):not(:disabled) {
   background: color-mix(in srgb, rgb(var(--hud-gold)) 82%, black);
 }
-.ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:active, [data-state="pressed"]):not(:disabled) {
+.ui-button:is([data-kind="secondary"], [data-kind="quiet"]):is(:active, [data-state="pressed"]):not(:disabled),
+.ui-button[aria-pressed="true"] {
   background: var(--hud-chosen);
 }
 .ui-button:is(:focus-visible, [data-state="focus"]),
@@ -498,51 +499,26 @@
   font-weight: var(--hud-weight-label);
 }
 
-/* ── Slider: how many, by dragging: its ends take their amount, a stop marks what fits, the field types it exactly,
-   quick steps take a share. ── */
-.ui-slider {
-  display: flex;
-  flex-direction: column;
-  gap: theme(spacing.2);
-}
-.ui-slider__head {
+/* ── Troop amount: the count typed, out of how many can, +500 and Max, for a quick deploy. ── */
+.ui-amount {
   display: flex;
   align-items: center;
   gap: theme(spacing.2);
 }
-.ui-slider__name {
+.ui-amount .ui-field input {
+  width: 6rem;
+}
+.ui-amount__of {
   margin-right: auto;
-  font-size: var(--hud-text-title);
-  line-height: var(--hud-line-title);
-  font-weight: var(--hud-weight-title);
   color: var(--hud-label);
-}
-.ui-slider__track {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: theme(spacing.2);
-}
-.ui-slider__end {
-  min-width: 3.5rem;
-  border: 1px solid var(--hud-line);
-  border-radius: var(--hud-radius-chip);
-  background: var(--hud-well);
-  padding: 2px theme(spacing[1.5]);
-  color: rgb(var(--hud-ink));
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
-  font-weight: var(--hud-weight-strong);
+  font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
-  text-align: center;
-  cursor: pointer;
 }
-.ui-slider__end:is(:hover, [data-state="hover"]) {
-  border-color: var(--hud-line-strong);
-}
-.ui-slider__rail {
-  position: relative;
-  flex: 1;
+
+/* ── Slider: a transfer row's amount, by dragging. ── */
+.ui-slider {
   display: flex;
   align-items: center;
 }
@@ -582,25 +558,7 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
-.ui-slider__stop {
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  width: 2px;
-  background: var(--hud-warn);
-}
-.ui-slider__steps {
-  display: flex;
-  gap: theme(spacing.1);
-}
-.ui-slider__note {
-  color: var(--hud-label);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
-  font-weight: var(--hud-weight-label);
-}
-
-/* ── Transfer: one slider row per resource, its painting and name, the slider, the amount typed. ── */
+/* ── Transfer: one row per resource, its painting and name, the slider, quick shares, the amount typed. ── */
 .ui-transfer {
   display: flex;
   flex-direction: column;
@@ -608,7 +566,7 @@
 }
 .ui-transfer__row {
   display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr) 6.5rem;
+  grid-template-columns: 9rem minmax(0, 1fr) auto 6.5rem;
   align-items: center;
   gap: theme(spacing.3);
   border-radius: var(--hud-radius-chip);
@@ -628,12 +586,16 @@
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
 }
+.ui-transfer__steps {
+  display: flex;
+  gap: theme(spacing.1);
+}
 .ui-transfer .ui-field input {
   width: 100%;
   text-align: right;
 }
 
-/* ── Select and menu: a choice opened from its trigger; a context menu is the same list. ── */
+/* ── Select and its list: a choice opened from its trigger. ── */
 .ui-select {
   display: inline-flex;
   height: var(--hud-control);

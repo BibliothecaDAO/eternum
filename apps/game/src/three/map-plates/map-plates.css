@@ -54,21 +54,21 @@
   font-weight: 600;
   line-height: 1;
 }
-.mp-plate:has(.mp-plate__meter) {
-  padding-bottom: 8px;
-}
 .mp-plate__row {
   display: flex;
   height: 24px;
   align-items: center;
   gap: 6px;
 }
+/* An army's stamina, after its troops: a short bar, then "84/150". */
+.mp-stamina {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .mp-plate__meter {
-  position: absolute;
-  left: 6px;
-  right: 8px;
-  bottom: 4px;
-  height: 3px;
+  width: 36px;
+  height: 4px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.14);
 }

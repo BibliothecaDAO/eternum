@@ -1,6 +1,7 @@
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { pinsOrder } from "@/three/scenes/worldmap-order-request";
 import { formatCharge, formatExact } from "@/ui/design-system/kit/amount";
+import { formatWait } from "@/ui/design-system/kit/time";
 import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
 import {
   type ActionPath,
@@ -100,9 +101,8 @@ const REFUSALS: Record<Exclude<OrderRefusal["reason"], "stamina">, string> = {
 
 const scoring = (points: number): string | null => (points > 0 ? `+${formatExact(points)} points` : null);
 
-/** When the wait ends, in whole minutes rounded up. */
-const readyIn = (seconds: number): string =>
-  seconds < 60 ? "ready in under a minute" : `ready in ${Math.ceil(seconds / 60)} min`;
+/** When the wait ends, to the second while it is short. */
+const readyIn = (seconds: number): string => `ready in ${formatWait(seconds)}`;
 
 /** Where a click looks first (the HUD that carries the order's verb) and the right-click sends. */
 const CLICK_PREVIEWS = "Click previews";

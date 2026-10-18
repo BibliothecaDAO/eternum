@@ -15,6 +15,19 @@ export const formatDuration = (seconds: number | undefined): string => {
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
 };
 
+/**
+ * A short wait read to the second while it is under ten minutes, "24s" or "2m 10s"; longer, as a duration. Stamina comes
+ * back by the second, so the second it is ready is the one a player waits for.
+ */
+export const formatWait = (seconds: number): string => {
+  const left = Math.max(0, Math.ceil(seconds));
+  if (left >= 600) return formatDuration(left);
+  const minutes = Math.floor(left / 60);
+  const rest = left % 60;
+  if (minutes === 0) return `${rest}s`;
+  return rest === 0 ? `${minutes}m` : `${minutes}m ${rest}s`;
+};
+
 const CLOCK = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 /** A moment (unix seconds) as the device's local clock time, "21:40". */

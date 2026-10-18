@@ -11,6 +11,8 @@ const say = (segment: PlateSegment): string => {
   switch (segment.kind) {
     case "troops":
       return `T${segment.troops.tier} ${segment.troops.count.toLocaleString("en-US")}`;
+    case "stamina":
+      return `${segment.current}/${segment.max}`;
     case "next":
       return "›";
     case "divider":
@@ -25,19 +27,17 @@ const army: ArmyPlate = {
   relation: "own",
   owner: "djizus",
   homeName: "Sangsang",
-  code: "19·12",
   troops: { type: "paladin", tier: 3, count: 300 },
-  stamina: 0.5,
+  stamina: { current: 84, max: 150 },
 };
 
 const realm: StructurePlate = {
   kind: "structure",
   relation: "enemy",
   owner: "Moonhand",
-  rank: "Kingdom",
   name: "Xeswet",
   named: true,
-  code: "7·1",
+  strength: 516 + 301 * 3 + 638 * 9,
   guards: [
     { type: "crossbowman", tier: 1, count: 516 },
     { type: "knight", tier: 2, count: 301 },
@@ -53,40 +53,42 @@ const rift: StructurePlate = {
   owner: "The Vanguard",
   name: "Essence Rift",
   named: false,
+  place: "Duskmere",
   reward: "1,200 Essence",
-  code: "0·103",
+  strength: 900,
   guards: [{ type: "knight", tier: 2, count: 300 }],
   arrivals: [],
   icon: "rift",
 };
 
-describe("what a map plate says (the owner's round 5: two short rows at rest, three at most opened)", () => {
-  it("rests an army on its player over its troops, and opens it on the same two rows with its home and id", () => {
-    expect(read(army, false)).toEqual(["djizus", "T3 300"]);
-    expect(read(army, true)).toEqual(["djizus Sangsang 19·12", "T3 300"]);
+describe("what a map plate says (two short rows at rest, three at most opened, never an id)", () => {
+  it("rests an army on its player over its troops and exact stamina, and opens it with its home", () => {
+    expect(read(army, false)).toEqual(["djizus", "T3 300 84/150"]);
+    expect(read(army, true)).toEqual(["djizus Sangsang", "T3 300 84/150"]);
+    expect(read({ ...army, stamina: undefined }, false)).toEqual(["djizus", "T3 300"]);
   });
 
-  it("rests a realm on its player and rank over its name and guard total, never a level number", () => {
-    expect(read(realm, false)).toEqual(["Moonhand Kingdom", "Xeswet | 1,455"]);
+  it("rests a realm on its player and name over its guard total and strength", () => {
+    expect(read(realm, false)).toEqual(["Moonhand | Xeswet", "1,455 guard | 7,161 strength"]);
   });
 
-  it("opens a realm on its guard slots in attack order, and the troops on their way on a third row", () => {
-    expect(read(realm, true)).toEqual(["Moonhand Kingdom", "Xeswet | T3 638 › T2 301 › T1 516"]);
+  it("opens a realm on its guard slots in attack order, and the troops on their way, each time before its troops", () => {
+    expect(read(realm, true)).toEqual(["Moonhand | Xeswet", "T3 638 › T2 301 › T1 516 | 7,161 strength"]);
     const reinforced = { ...realm, arrivals: [{ troops: { type: "paladin", tier: 2, count: 300 }, secondsLeft: 780 }] };
     expect(read(reinforced as StructurePlate, true)).toEqual([
-      "Moonhand Kingdom",
-      "Xeswet | T3 638 › T2 301 › T1 516",
-      "Arriving T2 300 13m",
+      "Moonhand | Xeswet",
+      "T3 638 › T2 301 › T1 516 | 7,161 strength",
+      "Arriving 13m T2 300",
     ]);
   });
 
   it("says Undefended in words where nothing guards it", () => {
-    expect(read({ ...realm, guards: [] }, false)).toEqual(["Moonhand Kingdom", "Xeswet | Undefended"]);
+    expect(read({ ...realm, guards: [], strength: 0 }, false)).toEqual(["Moonhand | Xeswet", "Undefended"]);
   });
 
-  it("rests a rift or a camp on its kind and what taking it gives over its guard, and opens it with its owner and id", () => {
-    expect(read(rift, false)).toEqual(["Essence Rift | 1,200 Essence", "T2 300"]);
-    expect(read(rift, true)).toEqual(["The Vanguard 0·103", "Essence Rift | 1,200 Essence", "T2 300"]);
+  it("rests a rift or a camp on its lore name and kind over its guard and reward, and opens it with its owner", () => {
+    expect(read(rift, false)).toEqual(["Duskmere Essence Rift", "T2 300 | 1,200 Essence"]);
+    expect(read(rift, true)).toEqual(["The Vanguard", "Duskmere Essence Rift", "T2 300 | 1,200 Essence"]);
   });
 
   it("keeps every plate within two rows at rest and three opened", () => {

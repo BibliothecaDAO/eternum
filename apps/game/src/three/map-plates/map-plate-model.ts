@@ -1,10 +1,10 @@
 import { mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { REALM_LEVELS } from "@/ui/design-system/kit/words";
 import { displayPlayerName, getStructureTypeName } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
+import { siteName } from "./site-name";
 
 /** How the viewer stands to a thing's owner: it colours the plate's side bar and a player's name. */
 export type PlateRelation = "own" | "ally" | "enemy" | "neutral";
@@ -16,36 +16,36 @@ export interface PlateTroops {
   count: number;
 }
 
-/** An army's plate: its owner over its troops and stamina; opened, the realm it comes from and its id. */
+/** An army's plate: its owner over its troops and stamina; opened, the realm it comes from. */
 export interface ArmyPlate {
   kind: "army";
   relation: PlateRelation;
   owner: string;
   homeName: string;
-  code: string;
   troops: PlateTroops;
-  /** Filled from 0 to 1; absent when the stamina is not known. */
-  stamina?: number;
+  /** Its stamina now and at most; absent when it is not known. */
+  stamina?: { current: number; max: number };
 }
 
 /**
- * A structure's plate: whose it is (and a realm's rank), its name (a place's own, else its kind's) and its guard; for a
- * camp or a rift, what taking it gives. Opened: its guard slots, the troops on their way to it, and a nameless thing's
- * owner and id.
+ * A structure's plate: whose it is, its name and its guard (with its strength, for a realm or a hyperstructure); for a
+ * camp or a rift, its lore name, its kind and what taking it gives. Opened: its guard slots, the troops on their way to
+ * it, and a nameless place's owner.
  */
 export interface StructurePlate {
   kind: "structure";
   relation: PlateRelation;
   owner: string;
-  /** A realm's rank, said beside its owner: Settlement, City, Kingdom or Empire. */
-  rank?: string;
   /** A realm's or a hyperstructure's own name; else its kind's ("Camp", "Essence Rift"). */
   name: string;
   /** Whether `name` is the place's own, set as a title, rather than its kind's. */
   named: boolean;
+  /** A nameless place's lore name, read off its id (`siteName`); absent for a named one. */
+  place?: string;
   /** What taking it gives, said in words: "1,200 Essence", "250 points". */
   reward?: string;
-  code: string;
+  /** Its guard's strength: each troop by its tier's strength (`ConfigManager.getTierStrength`). */
+  strength: number;
   /** Guard slots in slot order; empty when it stands undefended. */
   guards: PlateTroops[];
   /** Troops on their way to it (the player's own reinforcements), soonest first, at most three. */
@@ -61,11 +61,6 @@ export interface PlateReward {
 }
 
 export type MapPlate = ArmyPlate | StructurePlate;
-
-const LOCAL_RANGE = 2 ** 32;
-
-/** A thing's short id, read off its entity id: its home namespace and serial ("19·21"). */
-export const homeCode = (entityId: number): string => `${Math.floor(entityId / LOCAL_RANGE)}·${entityId % LOCAL_RANGE}`;
 
 /** An owner as every surface names it: the Vanguard for nobody's thing (`displayPlayerName`). */
 const ownerOf = (owner: { address: bigint; ownerName: string }) =>
@@ -93,7 +88,8 @@ const tierOf = (tier: number | string): PlateTroops["tier"] => {
 /** A named structure's kinds: a realm and a hyperstructure carry their own names; the rest are named by their kind. */
 const NAMED: ReadonlySet<StructureType> = new Set([StructureType.Realm, StructureType.Hyperstructure]);
 
-const rankOf = (level: number): string | undefined => REALM_LEVELS[level];
+/** A troop's strength by its tier (Frontier 1 / 3 / 9; `ConfigManager.getTierStrength`). */
+export type TierStrength = (tier: PlateTroops["tier"]) => number;
 
 export const buildStructurePlate = (
   structure: Pick<
@@ -102,36 +98,37 @@ export const buildStructurePlate = (
     | "structureName"
     | "structureType"
     | "mineKind"
-    | "level"
     | "isMine"
     | "isAlly"
     | "owner"
     | "guardArmies"
     | "incomingTroopArrivals"
   >,
+  tierStrength: TierStrength,
   nowSeconds = 0,
   reward?: PlateReward,
 ): StructurePlate => {
   const named = NAMED.has(structure.structureType) && structure.structureName.trim().length > 0;
+  const guards = (structure.guardArmies ?? [])
+    .filter((guard) => guard.count > 0)
+    .toSorted((a, b) => a.slot - b.slot)
+    .map((guard) => ({ type: troopType(guard.category), tier: tierOf(guard.tier), count: guard.count }));
   return {
     kind: "structure",
     relation: relationOf(structure),
     owner: ownerOf(structure.owner),
-    rank: structure.structureType === StructureType.Realm ? rankOf(structure.level) : undefined,
     name: named
       ? structure.structureName.trim()
       : getStructureTypeName(structure.structureType, structure.mineKind ?? undefined),
     named,
+    place: named ? undefined : siteName(Number(structure.entityId)),
     reward: reward && reward.amount > 0 ? `${formatCount(reward.amount)} ${reward.unit}` : undefined,
-    code: homeCode(Number(structure.entityId)),
+    strength: guards.reduce((sum, slot) => sum + slot.count * tierStrength(slot.tier), 0),
     icon:
       structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structureMeaning(structure.structureType),
-    guards: (structure.guardArmies ?? [])
-      .filter((guard) => guard.count > 0)
-      .toSorted((a, b) => a.slot - b.slot)
-      .map((guard) => ({ type: troopType(guard.category), tier: tierOf(guard.tier), count: guard.count })),
+    guards,
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
         troops: { type: troopType(arrival.troopType), tier: tierOf(arrival.troopTier), count: arrival.count },
@@ -153,12 +150,11 @@ export const buildArmyPlate = (
   relation: relationOf(army),
   owner: ownerOf(army.owner),
   homeName,
-  code: homeCode(Number(army.entityId)),
   troops: { type: troopType(army.category), tier: tierOf(army.tier), count: army.troopCount },
   stamina:
     army.currentStamina === undefined || army.maxStamina <= 0
       ? undefined
-      : Math.max(0, Math.min(1, army.currentStamina / army.maxStamina)),
+      : { current: Math.max(0, Math.min(army.maxStamina, army.currentStamina)), max: army.maxStamina },
 });
 
 /**
