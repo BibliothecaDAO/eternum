@@ -20,6 +20,17 @@ const ALLOWLIST = new URL("./allowlist.json", import.meta.url);
  * branch (B, C and D add theirs as they land).
  */
 const AREAS = {
+  "D. Military, rings, leaderboard": [
+    "ui/features/military",
+    "ui/features/social",
+    "ui/features/frontier/board",
+    "ui/features/frontier/chest",
+    "ui/features/frontier/deploy/deploy-ring.tsx",
+    "ui/features/world/containers/spectator-standings.tsx",
+    "ui/features/world/components/actions/chest-tile-details.tsx",
+    "ui/features/world/hud/action-bubbles.tsx",
+    "ui/shared/components/production-status-badge.tsx",
+  ],
   "A. Panels": [
     "ui/features/world/hud/desktop-hud.tsx",
     "ui/features/world/hud/guided-rail.tsx",
