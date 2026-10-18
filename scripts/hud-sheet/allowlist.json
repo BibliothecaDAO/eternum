@@ -48,7 +48,6 @@
   "apps/game/src/ui/features/frontier/board/season-list.tsx": 18,
   "apps/game/src/ui/features/frontier/board/season-over-card.tsx": 22,
   "apps/game/src/ui/features/frontier/board/visit-foot.tsx": 3,
-  "apps/game/src/ui/features/frontier/build/build-view.tsx": 15,
   "apps/game/src/ui/features/frontier/chest/ruin-chest-moment.tsx": 3,
   "apps/game/src/ui/features/frontier/deploy/deploy-ring.tsx": 15,
   "apps/game/src/ui/features/frontier/deploy/deploy-view.tsx": 10,

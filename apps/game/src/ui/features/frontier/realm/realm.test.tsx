@@ -55,12 +55,16 @@ describe("the build sheet", () => {
         />,
       ),
     );
-    const tile = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    const tile = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
+        (card) => card.querySelector(".ui-card__title")?.textContent === name,
+      )!;
     // The head holds what is free of the realm's population, and says so in words on its tooltip.
     const population = host.querySelector('[aria-label="population 2 / 6"]')!;
     expect(population.getAttribute("data-tip")).toBe("population 2 free of 6");
     expect(tile("Workshop").textContent).toBe("Workshop10,000");
-    expect(tile("War hall").className).toContain("opacity-50");
+    // A locked building shows its lock and gate on its foot, no labor price.
+    expect(tile("War hall").textContent).not.toMatch(/\d/);
     expect(tile("Scouts' lodge").querySelector('[aria-label="Rare"]')).not.toBeNull();
     act(() => tile("Workshop").click());
     expect(onChoose).toHaveBeenCalledWith(1);

@@ -48,7 +48,10 @@ describe("the build sheet", () => {
         </GameProvider>,
       ),
     );
-    const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    const card = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
+        (card) => card.querySelector(".ui-card__title")?.textContent === name,
+      )!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
     // The chosen farm makes wheat an hour and takes its population.
@@ -188,7 +191,10 @@ describe("the build sheet", () => {
         </GameProvider>,
       ),
     );
-    const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    const card = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
+        (card) => card.querySelector(".ui-card__title")?.textContent === name,
+      )!;
     const button = (starts: string) =>
       [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.startsWith(starts));
     const close = () => {
@@ -247,11 +253,11 @@ describe("the build sheet", () => {
     const { store, realm } = realmBoard();
     const sheet = open(store, realm);
     const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
-    expect(sheet.card("Farm").getAttribute("data-tip")).toMatch(
+    expect(sheet.card("Farm").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
       new RegExp(`^Farm: \\+[\\d,.K]+ wheat an hour, takes ${farm} population$`),
     );
-    expect(sheet.card("Hut").getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
-    expect(sheet.card("War hall").getAttribute("data-tip")).toMatch(
+    expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
+    expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
       /^War hall: new armies start with Battle at Common(, takes \d+ population)?$/,
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
@@ -289,7 +295,10 @@ describe("the build sheet", () => {
           </GameProvider>,
         ),
       );
-    const card = (name: string) => host.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
+    const card = (name: string) =>
+      [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
+        (card) => card.querySelector(".ui-card__title")?.textContent === name,
+      )!;
     const gold = () => [...host.querySelectorAll("button")].at(-1)!;
     render();
     act(() => card("War hall").click());

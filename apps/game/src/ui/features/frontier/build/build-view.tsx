@@ -1,14 +1,13 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button, type Price } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-
+import { HudButton, HudCard, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { FixButton, type Refusal } from "@/ui/design-system/kit/refused-verb";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import type { Fix, Refusal } from "@/ui/design-system/kit/refused-verb";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
+
+import { hudPrices, type Price } from "../hud-prices";
 
 /**
  * One building on the build sheet: its icon and name, then its labor price (ember when short), a tick when the realm
@@ -64,15 +63,15 @@ export const BuildView = ({
   onBuild: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={BUILD} onClose={onClose}>
-    <header className="flex items-center justify-between gap-2">
-      <h2 className="frontier-title !text-xl">{BUILD}</h2>
-      <Chip
+  <HudSheet label={BUILD} onClose={onClose}>
+    <header className="flex items-center justify-end">
+      <HudChip
         icons={["person"]}
         label={POPULATION}
-        value={`${formatExact(population.free)} / ${formatExact(population.total)}`}
         tip={freeOf(POPULATION, formatExact(population.free), formatExact(population.total))}
-      />
+      >
+        {`${formatExact(population.free)} / ${formatExact(population.total)}`}
+      </HudChip>
     </header>
     <div className="grid grid-cols-3 gap-1.5">
       {tiles.map((tile, index) => (
@@ -81,60 +80,62 @@ export const BuildView = ({
     </div>
     <div className="flex items-center justify-center gap-2">
       {gains.map((gain) => (
-        <Chip key={gain.label} icons={[gain.icon]} label={gain.label} value={gain.value} />
+        <HudChip key={gain.label} icons={[gain.icon]} label={gain.label}>
+          {gain.value}
+        </HudChip>
       ))}
     </div>
     {refusal ? (
       <>
         <ReasonPlate reason={refusal.reason} />
-        {refusal.fix && <FixButton fix={refusal.fix} />}
+        {refusal.fix && <FixVerb fix={refusal.fix} />}
       </>
     ) : (
-      <Button role="primary" word={BUILD} prices={prices} loading={sending ? BUILDING : undefined} onClick={onBuild} />
+      <HudButton kind="primary" prices={hudPrices(prices)} busy={sending ? BUILDING : undefined} onClick={onBuild}>
+        {BUILD}
+      </HudButton>
     )}
-  </Sheet>
+  </HudSheet>
 );
 
-const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => {
-  const dim = tile.foot.kind !== "price";
-  return (
-    <button
-      type="button"
-      aria-pressed={chosen}
-      aria-label={tile.name}
-      data-tip={tile.tip}
+/** The way past a refusal (the Hut that houses it, the map that pays it), as the sheet's one verb. */
+const FixVerb = ({ fix }: { fix: Fix }) => (
+  <HudButton kind="primary" icon={fix.icon} prices={hudPrices(fix.prices ?? [])} onClick={fix.onFix}>
+    {fix.word}
+  </HudButton>
+);
+
+const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
+  <span data-tip={tile.tip} className="min-w-0">
+    <HudCard
+      size="sm"
+      title={tile.name}
+      picture={<SemanticIcon name={tile.icon} size={26} />}
+      detail={<Foot foot={tile.foot} />}
+      selected={chosen}
       onClick={onChoose}
-      className={cn(
-        "frontier-card flex h-[86px] min-w-0 flex-col items-center justify-center gap-[3px] !rounded-xl",
-        chosen && "!border-[3px] !border-kit-hot",
-        dim && "opacity-50",
-      )}
-    >
-      <SemanticIcon name={tile.icon} size={26} />
-      <span className="text-sm font-semibold text-kit-cream">{tile.name}</span>
-      <Foot foot={tile.foot} />
-    </button>
-  );
-};
+    />
+  </span>
+);
 
 const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
   if (foot.kind === "built") return <SemanticIcon name="check" size={18} />;
   if (foot.kind === "locked")
     return (
-      <span className="flex items-center gap-[3px]">
+      <span className="flex items-center gap-1">
         <SemanticIcon name="lock" size={16} />
         <SemanticIcon name="barracks" size={16} />
         <TierChip tier={foot.gate} showWord={false} />
       </span>
     );
   return (
-    <span className="flex items-center gap-[3px]">
+    <span className="flex items-center gap-1">
       <SemanticIcon name="labor" size={14} />
-      <span className={cn("text-sm tabular-nums", foot.short ? "text-light-red" : "text-kit-cream")}>
+      <span className={cn("tabular-nums", foot.short ? "text-hud-bad" : "text-hud-ink")}>
         {formatExact(foot.labor)}
       </span>
       {foot.raised && (
-        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="text-sm leading-none text-kit-hot">
+        <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="leading-none text-hud-warn">
           ↑
         </span>
       )}
