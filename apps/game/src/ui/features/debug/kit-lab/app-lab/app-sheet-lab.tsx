@@ -42,11 +42,12 @@ import { Link, useParams } from "react-router-dom";
 
 import { Element } from "../sheet-element";
 import { AGE_OF, PLAYER } from "./app-lab-data";
+import { ResearchBoard } from "./app-research-board";
 import { APP_PAGES, type AppPage, PAGE_LAYOUTS } from "./app-pages";
 import { APP_SPEC } from "./app-spec";
 
 /**
- * Dev only: the app's style sheet at /lab/kit/app: its spec (one line per page), the app scope of the token file
+ * Dev only: the app's style sheet at /lab/kit/app: the research behind it, its spec (one line per page), the app scope of the token file
  * (src/tokens.ts APP_TYPE, APP_SHEET), every element built from it in every state beside what the app draws today, and
  * the four most-used pages in the desktop directions the owner picked. Each page opens alone at 1920×1080 at
  * /lab/kit/app/<page>, for the owner and the captures.
@@ -57,6 +58,7 @@ export const AppSheetLab = () => (
       <h1 className="text-xl font-bold text-white">App style sheet</h1>
       <span>The app's spec, its scope of src/tokens.ts, every element in every state, and its pages on a desktop.</span>
       <nav className="ml-auto flex gap-3 underline">
+        <a href="#research">Research</a>
         <a href="#pages">Pages</a>
         <Link to="/lab/kit">HUD sheet</Link>
         <Link to="/lab/kit/shell">Shell kit</Link>
@@ -65,6 +67,7 @@ export const AppSheetLab = () => (
       </nav>
     </header>
     <main className="flex flex-col gap-6">
+      <ResearchBoard />
       <SpecSection />
       <TypeSection />
       <ColourSection />

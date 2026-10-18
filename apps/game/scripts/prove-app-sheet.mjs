@@ -115,8 +115,12 @@ const sheetElements = async (b, baseUrl, out) => {
   );
   return names.map((name) => {
     const selector = `[data-sheet-element="${name}"]`;
+    // An element taller than the screen is shot whole on a screen grown to hold it.
+    const height = b.evaluate(`Math.ceil(document.querySelector('${selector}').getBoundingClientRect().height)`);
+    b.run("set", "viewport", VIEWPORT[0], String(Math.max(Number(VIEWPORT[1]), height + 32)));
     b.run("scrollintoview", selector);
     b.run("screenshot", selector, join(out, fileOf(name)));
+    b.run("set", "viewport", ...VIEWPORT);
     return { name: `sheet: ${name}`, ready: true, presses: [], checks: [] };
   });
 };
