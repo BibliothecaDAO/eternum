@@ -177,7 +177,7 @@ const EntryPanel = ({
           onToggle={() => setChoice({ ...choice, shield: !choice.shield })}
         />
       </div>
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <AppChip icon="backpack" tone={state === "short" ? "bad" : undefined}>
           {formatExact(lordsOf(terms.lords))}
         </AppChip>

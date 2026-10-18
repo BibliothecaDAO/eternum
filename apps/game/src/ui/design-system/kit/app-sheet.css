@@ -793,6 +793,19 @@
   top: theme(spacing.2);
   right: theme(spacing.2);
 }
+/* What a choice holds stays inside it: a price or a credit wraps its words in a narrow choice, never shortened. */
+.app-choice > * {
+  max-width: 100%;
+}
+.app-choice .app-chip {
+  height: auto;
+  min-height: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: theme(spacing[0.5]) theme(spacing[1.5]);
+  white-space: normal;
+  text-align: center;
+}
 .app-choice__title {
   font-family: var(--app-face-strong);
   font-size: var(--app-text-strong);

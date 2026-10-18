@@ -36,6 +36,53 @@ const BAR_CASES = [
   { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"] },
 ];
 
+/**
+ * The lobby's entry with every choice taken (the sword and the shield beside the seat), at a desktop, the desktop's
+ * narrowest width and a phone: each choice's price or credit stays inside its choice, and the entry's balance and total
+ * inside its panel.
+ */
+const ENTRY_CASES = [
+  { name: "entry-all-1920", viewport: ["1920", "1080"] },
+  { name: "entry-all-1024", viewport: ["1024", "768"] },
+  { name: "entry-all-390", viewport: ["390", "844"] },
+].map((entry) => ({ ...entry, path: "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1" }));
+
+/** Takes every choice of the entry not yet taken, as a player's clicks would. */
+const takeEveryChoice = async (b) => {
+  const untaken = b.evaluate(`[...document.querySelectorAll('.app-choice[aria-pressed="false"]:enabled')].length`);
+  for (let index = 0; index < untaken; index += 1) {
+    b.run("click", '.app-choice[aria-pressed="false"]:enabled');
+    await sleep(300);
+  }
+};
+
+const entryChecks = (b) => {
+  const entry = b.evaluate(`(() => {
+    const inside = (outer, element) => {
+      const box = outer.getBoundingClientRect();
+      return [...element.querySelectorAll("*")].map((part) => part.getBoundingClientRect()).filter((rect) => rect.width > 0)
+        .every((rect) => rect.left >= box.left - 1 && rect.right <= box.right + 1 && rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1);
+    };
+    const choices = [...document.querySelectorAll(".app-choice")];
+    const panel = choices[0]?.closest(".app-panel");
+    return {
+      taken: choices.map((choice) => choice.getAttribute("aria-pressed")),
+      choicesHold: choices.map((choice) => ({ word: choice.querySelector(".app-choice__title")?.textContent, holds: inside(choice, choice) })),
+      total: panel?.querySelector(".app-figure__value")?.textContent ?? null,
+      panelHolds: panel ? inside(panel, panel) : false,
+    };
+  })()`);
+  return [
+    {
+      check: "every choice taken",
+      ok: entry.taken.length === 3 && entry.taken.every((taken) => taken === "true"),
+      entry,
+    },
+    { check: "each price or credit stays inside its choice", ok: entry.choicesHold.every((choice) => choice.holds) },
+    { check: "the balance and the total stay inside the entry", ok: entry.panelHolds },
+  ];
+};
+
 /** The app's other pages: still drawn with the shell kit inside the sheet's frame. */
 const OTHER_PAGES = {
   "first-visit": "first-visit",
@@ -54,11 +101,12 @@ const pageChecks = (b) => [
   { check: "no horizontal overflow", ok: b.evaluate("document.documentElement.scrollWidth <= innerWidth") },
 ];
 
-const shoot = async (b, baseUrl, out, { name, path, more }) => {
+const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
   b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
   const record = { name, ready: await waitFor(b, DRAWN, READY_MS), presses: [], checks: [] };
   if (!record.ready) return record;
   await sleep(SETTLE_MS);
+  await act?.(b);
   b.run("screenshot", join(out, `${name}.png`));
   record.checks.push(...pageChecks(b), ...(more?.(b) ?? []));
   return record;
@@ -209,6 +257,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         for (const bar of barCases()) {
           b.run("set", "viewport", ...bar.viewport);
           records.push(await shoot(b, baseUrl, out, bar));
+        }
+        for (const entry of ENTRY_CASES) {
+          b.run("set", "viewport", ...entry.viewport);
+          records.push(await shoot(b, baseUrl, out, { ...entry, act: takeEveryChoice, more: entryChecks }));
         }
         b.run("set", "viewport", ...PHONE);
         for (const page of sheetPages(false)) records.push(await shoot(b, baseUrl, out, page));

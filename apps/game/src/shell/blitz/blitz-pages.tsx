@@ -75,9 +75,10 @@ export const BlitzLobbyPage = () => {
       foot={desktop ? undefined : action}
       painting={BLITZ.painting}
     >
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+      {/* The Ledger's three columns from 1280px; narrower, who is in and the entry share the width, the chat under them. */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 xl:grid-cols-12">
         {!desktop && chips}
-        <AppPanel title={BLITZ_WORDS.whoIsIn} icon="people" className="lg:col-span-5">
+        <AppPanel title={BLITZ_WORDS.whoIsIn} icon="people" className="xl:col-span-5">
           {row.kind === "slot" ? (
             <RegisteredCount slot={row.slot} closed={isClosedSlot(row, facts.now)} />
           ) : desktop ? (
@@ -90,9 +91,9 @@ export const BlitzLobbyPage = () => {
             <SeatGrid seats={seatsOf(row.game, player)} total={row.seats.total} preparing={step.kind === "preparing"} />
           )}
         </AppPanel>
-        {desktop && <div className="lg:col-span-4">{row.kind === "game" ? <AppPanel>{action}</AppPanel> : action}</div>}
+        {desktop && <div className="xl:col-span-4">{row.kind === "game" ? <AppPanel>{action}</AppPanel> : action}</div>}
         {row.kind === "slot" && (
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2 xl:col-span-3">
             <SlotChat slot={row.slot} wallet={wallet} />
           </div>
         )}
