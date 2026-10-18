@@ -490,6 +490,9 @@ button.ui-row {
   text-align: left;
   cursor: pointer;
 }
+span.ui-row__choose {
+  cursor: default;
+}
 .ui-row__choose:focus-visible {
   outline: none;
   box-shadow: var(--hud-focus);

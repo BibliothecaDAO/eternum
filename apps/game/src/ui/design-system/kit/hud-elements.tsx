@@ -476,8 +476,9 @@ export const HudRow = ({
   title: ReactNode;
   detail?: ReactNode;
   /**
-   * The row's own controls after its words (Provision, Level up). With them the row is a container: its lead, the
-   * button that chooses it, and its controls side by side, never one inside another.
+   * What follows the row's words: its own controls (Provision, Level up) or a figure (a bonus). With them the row is a
+   * container: its lead, its words (the button that chooses it, when it has `onClick`) and its trail side by side,
+   * never one button inside another.
    */
   trail?: ReactNode;
   selected?: boolean;
@@ -489,10 +490,23 @@ export const HudRow = ({
     return (
       <div className="ui-row" aria-selected={selected} aria-disabled={disabled} data-state={state}>
         {lead}
-        <button type="button" className="ui-row__choose" aria-pressed={selected} disabled={disabled} onClick={onClick}>
-          <span className="ui-row__title">{title}</span>
-          {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
-        </button>
+        {onClick ? (
+          <button
+            type="button"
+            className="ui-row__choose"
+            aria-pressed={selected}
+            disabled={disabled}
+            onClick={onClick}
+          >
+            <span className="ui-row__title">{title}</span>
+            {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
+          </button>
+        ) : (
+          <span className="ui-row__choose">
+            <span className="ui-row__title">{title}</span>
+            {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
+          </span>
+        )}
         <span className="ui-row__controls">{trail}</span>
       </div>
     );
