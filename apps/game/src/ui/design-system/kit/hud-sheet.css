@@ -308,6 +308,9 @@ button.ui-panel__name {
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
+  /* A chip is one tag: it never breaks over two lines, and gives way to the words beside it instead. */
+  flex: none;
+  white-space: nowrap;
 }
 .ui-chip[data-tone="good"] {
   border-color: color-mix(in srgb, var(--hud-good) 45%, transparent);
