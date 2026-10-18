@@ -1,7 +1,6 @@
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
-import { Sheet } from "@/ui/design-system/kit/sheet";
 import {
   CAMP,
   CHESTS,
@@ -17,15 +16,11 @@ import {
   STRAGGLERS,
   VISIT,
 } from "@/ui/design-system/kit/words";
-import type { ReactNode } from "react";
-
-import { FigureChip } from "./figure-chip";
 
 /** A realm's season, as Herald totals it. */
 export type SeasonDetail = {
   rank: number;
   order: number;
-  name: ReactNode;
   sites: { total: number; camps: number; rifts: number; ruins: number; stragglers: number };
   chests: number;
   lords: number;
@@ -47,36 +42,58 @@ export const SeasonDetailSheet = ({
   onClose,
 }: {
   detail: SeasonDetail;
-  /** The realm's name as text, for the sheet's label. */
+  /** The realm's name, the sheet's title. */
   label: string;
   onVisit?: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={label} onClose={onClose}>
+  // The sheet's header names the realm; under it, its Order and its rank.
+  <HudSheet label={label} onClose={onClose}>
     <div className="flex flex-col gap-3">
-      <header className="flex items-center gap-2.5">
+      <header className="flex items-center justify-between gap-2.5">
         <OrderEmblem order={detail.order} size={34} />
-        <span className="min-w-0 flex-1 truncate text-hud-title">{detail.name}</span>
-        <FigureChip icons={["victory"]} label={SEASON} value={`#${detail.rank}`} />
+        <HudChip icons={["victory"]} label={SEASON}>
+          {`#${detail.rank}`}
+        </HudChip>
       </header>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
-        <FigureChip icons={["flag"]} label={CLEARED} value={formatAmount(detail.sites.total)} />
+        <HudChip icons={["flag"]} label={CLEARED}>
+          {formatAmount(detail.sites.total)}
+        </HudChip>
         <span aria-hidden className="text-hud-body text-hud-muted">
           =
         </span>
-        <FigureChip icons={["camp"]} label={CAMP} value={formatAmount(detail.sites.camps)} />
-        <FigureChip icons={["rift"]} label={RIFT} value={formatAmount(detail.sites.rifts)} />
-        <FigureChip icons={["ruin"]} label={RUIN} value={formatAmount(detail.sites.ruins)} />
-        <FigureChip icons={["troops"]} label={STRAGGLERS} value={formatAmount(detail.sites.stragglers)} />
+        <HudChip icons={["camp"]} label={CAMP}>
+          {formatAmount(detail.sites.camps)}
+        </HudChip>
+        <HudChip icons={["rift"]} label={RIFT}>
+          {formatAmount(detail.sites.rifts)}
+        </HudChip>
+        <HudChip icons={["ruin"]} label={RUIN}>
+          {formatAmount(detail.sites.ruins)}
+        </HudChip>
+        <HudChip icons={["troops"]} label={STRAGGLERS}>
+          {formatAmount(detail.sites.stragglers)}
+        </HudChip>
       </div>
       <div className="flex items-center justify-center gap-1.5">
-        <FigureChip icons={["chest"]} label={CHESTS} value={formatAmount(detail.chests)} />
-        <FigureChip icons={["lords"]} label={LORDS} value={formatAmount(detail.lords)} />
-        <FigureChip icons={["portal"]} label={ETHEREAL} value={reachShown(detail.reach)} />
+        <HudChip icons={["chest"]} label={CHESTS}>
+          {formatAmount(detail.chests)}
+        </HudChip>
+        <HudChip icons={["lords"]} label={LORDS}>
+          {formatAmount(detail.lords)}
+        </HudChip>
+        <HudChip icons={["portal"]} label={ETHEREAL}>
+          {reachShown(detail.reach)}
+        </HudChip>
       </div>
       <div className="flex items-center justify-center gap-1.5">
-        <FigureChip icons={["essence"]} label={ESSENCE} value={`+${formatAmount(detail.essence)}`} />
-        <FigureChip icons={["labor"]} label={LABOR} value={`+${formatAmount(detail.labor)}`} />
+        <HudChip icons={["essence"]} label={ESSENCE}>
+          {`+${formatAmount(detail.essence)}`}
+        </HudChip>
+        <HudChip icons={["labor"]} label={LABOR}>
+          {`+${formatAmount(detail.labor)}`}
+        </HudChip>
       </div>
       {onVisit && (
         <HudButton kind="primary" icon="explore" onClick={onVisit}>
@@ -84,7 +101,7 @@ export const SeasonDetailSheet = ({
         </HudButton>
       )}
     </div>
-  </Sheet>
+  </HudSheet>
 );
 
 /** The deepest reach as its numeral; a realm that never went through reads 0, since a dash is kept for unknown. */

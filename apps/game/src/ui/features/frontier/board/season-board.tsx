@@ -152,7 +152,6 @@ const EntryDetail = ({ entry, onVisit, onClose }: { entry: Entry; onVisit?: () =
 const seasonDetail = (entry: Entry): SeasonDetail => ({
   rank: entry.rank,
   order: entry.order,
-  name: <PlayerName account={entry.address} />,
   sites: {
     total: entry.sites_cleared.total,
     camps: entry.sites_cleared.camps,

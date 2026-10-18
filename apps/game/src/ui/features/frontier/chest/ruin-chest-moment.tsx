@@ -1,14 +1,12 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
 
-import { HudRarity } from "@/ui/design-system/kit/hud-elements";
+import { HudRarity, HudChip } from "@/ui/design-system/kit/hud-elements";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { LORDS, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { motion } from "framer-motion";
-
-import { FigureChip } from "../board/figure-chip";
 
 /** The chest's glow grows with its tier: one intensity per step, common to legendary. */
 const GLOW_PX: Record<Tier, number> = { 1: 0, 2: 12, 3: 22, 4: 34, 5: 48 };
@@ -57,8 +55,10 @@ export const RuinChestMoment = ({
         </span>
         <HudRarity tier={tier} word />
         <span className="flex items-center gap-2">
-          {xp !== undefined && <FigureChip icons={[]} label={XP} value={`+${formatExact(xp)}`} unit={XP} />}
-          <FigureChip icons={["skull"]} label={TROOPS} value={`−${formatExact(troopsLost)}`} />
+          {xp !== undefined && <HudChip>{`+${formatExact(xp)} ${XP}`}</HudChip>}
+          <HudChip icons={["skull"]} label={TROOPS}>
+            {`−${formatExact(troopsLost)}`}
+          </HudChip>
         </span>
       </motion.span>
     </button>

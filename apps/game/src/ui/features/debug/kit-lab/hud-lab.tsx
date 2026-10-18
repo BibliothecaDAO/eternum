@@ -993,7 +993,7 @@ export const HudLab = () => {
                   detail={{
                     rank: 2,
                     order: 2,
-                    name: "Aldric",
+
                     sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
                     chests: 9,
                     lords: 640,

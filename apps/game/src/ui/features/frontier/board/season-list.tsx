@@ -30,8 +30,6 @@ import {
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { FigureChip } from "./figure-chip";
-
 /** A realm's row on the list, keyed to open its detail; `label` is its name as text, for assistive technology. */
 export type SeasonListRow = {
   key: string;
@@ -90,7 +88,11 @@ export const SeasonList = ({
       {chest ? (
         <ChestChip tier={chest.tier} lords={chest.lords} rank={rank} />
       ) : (
-        rank !== null && <FigureChip icons={["victory"]} label={SEASON} value={rankShown(rank)} />
+        rank !== null && (
+          <HudChip icons={["victory"]} label={SEASON}>
+            {rankShown(rank)}
+          </HudChip>
+        )
       )}
     </header>
     {pool !== undefined && <PoolLine pool={pool} />}
