@@ -38,7 +38,9 @@ export async function probeServices(network: typeof fetch, now: number, known: T
     probeLedger(network, value, now),
   ]);
   const worlds = await Promise.all(targets.map((target) => probeWorld(target, network, now)));
-  const nodes = await Promise.all(targets.map((target) => probeNodeMemory(target, network, now)));
+  const nodes = (await Promise.all(targets.map((target) => probeNodeMemory(target, network, now)))).filter(
+    (probe) => probe !== null,
+  );
   if (directoryReadable && worlds.some((world) => world.status === "down")) {
     directory.status = "down";
     directory.latency_ms = null;
@@ -187,18 +189,34 @@ const NODE_MEMORY_DOWN = 0.75;
 /** The shard's collector samples every 10 s; a sample older than this means it stopped. */
 const NODE_SAMPLE_STALE_SECONDS = 60;
 
-/** The node's memory as the world's Herald publishes its collector's last sample; unknown is never up. */
-function probeNodeMemory(target: Target, network: typeof fetch, now: number) {
-  return measure(`node:${target.chainId}`, `${new URL(target.url).hostname} node memory`, network, async (read) => {
-    const node = (await body(read, target.url + "/health")).node as Record<string, unknown> | null | undefined;
-    if (!node || !height(node.sampled_at) || !height(node.host_memory_bytes) || node.host_memory_bytes === 0)
-      return "degraded";
-    if (now - node.sampled_at > NODE_SAMPLE_STALE_SECONDS || node.sampled_at > now + 30) return "degraded";
-    if (node.memory_bytes === null) return "down";
-    if (!height(node.memory_bytes)) return "degraded";
-    const share = node.memory_bytes / node.host_memory_bytes;
-    return share >= NODE_MEMORY_DOWN ? "down" : share >= NODE_MEMORY_DEGRADED ? "degraded" : "up";
-  });
+/**
+ * The node's memory as the world's Herald publishes its collector's last sample; unknown is never up. A Herald that
+ * publishes no `node` field at all reports no node memory, so its world has no node row rather than a degraded one;
+ * `node: null` is a collector Herald cannot read, and is degraded.
+ */
+async function probeNodeMemory(target: Target, network: typeof fetch, now: number): Promise<Probe | null> {
+  let published = true;
+  const probe = await measure(
+    `node:${target.chainId}`,
+    `${new URL(target.url).hostname} node memory`,
+    network,
+    async (read) => {
+      const health = await body(read, target.url + "/health");
+      if (!("node" in health)) {
+        published = false;
+        return "degraded";
+      }
+      const node = health.node as Record<string, unknown> | null;
+      if (!node || !height(node.sampled_at) || !height(node.host_memory_bytes) || node.host_memory_bytes === 0)
+        return "degraded";
+      if (now - node.sampled_at > NODE_SAMPLE_STALE_SECONDS || node.sampled_at > now + 30) return "degraded";
+      if (node.memory_bytes === null) return "down";
+      if (!height(node.memory_bytes)) return "degraded";
+      const share = node.memory_bytes / node.host_memory_bytes;
+      return share >= NODE_MEMORY_DOWN ? "down" : share >= NODE_MEMORY_DEGRADED ? "degraded" : "up";
+    },
+  );
+  return published ? probe : null;
 }
 
 async function measure(

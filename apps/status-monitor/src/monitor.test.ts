@@ -704,3 +704,21 @@ it("alerts on a node's memory share, a stopped node, and a sample it cannot trus
     expect(result.probes.find((p) => p.id === "node:0xa")!.status).toBe(status);
   }
 });
+
+it("shows no node row for a Herald that publishes no node memory, while its world is still probed", async () => {
+  const result = await probeServices(
+    network({
+      "https://shard.public.test/health": response({
+        service: "herald",
+        success: true,
+        confirmed_block: 10,
+        undecodable_events: 0,
+      }),
+    }),
+    now,
+    [],
+    valueTargets,
+  );
+  expect(result.probes.find((p) => p.id === "shard:0xa")!.status).toBe("up");
+  expect(result.probes.some((p) => p.id === "node:0xa")).toBe(false);
+});
