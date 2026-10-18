@@ -5,7 +5,7 @@ const BUILD_IMAGES_PREFIX = "/images/buildings/construction/";
 const BUILDING_IMAGES_PATH = {
   [BuildingType.None]: `${BUILD_IMAGES_PREFIX}farm.png`,
   [BuildingType.ResourceEssence]: `${BUILD_IMAGES_PREFIX}essence-rift.png`,
-  [BuildingType.ResourceLabor]: `${BUILD_IMAGES_PREFIX}castle.png`,
+  [BuildingType.ResourceLabor]: `${BUILD_IMAGES_PREFIX}workshop.png`,
   [BuildingType.ResourceAncientFragment]: `${BUILD_IMAGES_PREFIX}mine.png`,
   [BuildingType.ResourceStone]: `${BUILD_IMAGES_PREFIX}mine.png`,
   [BuildingType.ResourceCoal]: `${BUILD_IMAGES_PREFIX}mine.png`,

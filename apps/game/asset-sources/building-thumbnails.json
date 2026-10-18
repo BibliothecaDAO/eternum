@@ -68,5 +68,10 @@
     "model": "/models/new-buildings-opt/stable.glb",
     "modelSha256": "5ae2e013c1c09afb5225c13de794daade9ae164f1cafe995f5dcdfde1b687175",
     "imageSha256": "e5866ab3a3f270eca4b6899c1a71cd1bc21743db9594828cae9a8f85b576280d"
+  },
+  "/images/buildings/construction/workshop.png": {
+    "model": "/models/new-buildings-opt/workshop.glb",
+    "modelSha256": "f9b2864946c7d9122de26ee471447b2aeb042c0cc2a4bb4467bfe997b8298210",
+    "imageSha256": "b679ff9fd38dc39c4258892871e5eb84dd5eaed80c3a127028f214a122434d88"
   }
 }

@@ -1,3 +1,4 @@
+import { WorkshopModelLab } from "./workshop-model-lab";
 import { RealmSeriesLab } from "./realm-series-lab";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -40,6 +41,7 @@ const CLASS_ICONS = { knight: 26, crossbowman: 29, paladin: 32 };
 
 export function ModelLabView() {
   const [params] = useSearchParams();
+  if (params.get("family") === "workshops") return <WorkshopModelLab />;
   return params.get("family") === "realms" ? <RealmSeriesLab /> : <UnitModelLabView />;
 }
 
@@ -157,6 +159,7 @@ function UnitModelLabView() {
       <header className="ml-header">
         <SemanticIcon name="resources" size={25} />
         <Link to="/lab/models?family=realms">Realm ladder</Link>
+        <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
         <div>
           <strong>Models & motion</strong>
           <span>FLEETS · ARMIES · BIOMES</span>

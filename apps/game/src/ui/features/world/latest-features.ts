@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Craft Yard workshop",
+    description:
+      "Workshops now show the Craft Yard with an open work area, a smaller workbench and fitted clay roofs. Construction cards show the same building; central keeps retain their own models.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
     title: "Automation choice fits its card",
     description:
       "The holding card's automation choice (Smart, Custom, Off) is as wide as its word and no longer runs past the card's edge beside population and plots. Every dropdown in the HUD now stays inside its panel.",
@@ -89,6 +96,7 @@ const allLatestFeatures: LatestFeature[] = [
 
     type: "improvement",
   },
+
   {
     date: "2026-10-18",
     title: "Facets relic paintings",

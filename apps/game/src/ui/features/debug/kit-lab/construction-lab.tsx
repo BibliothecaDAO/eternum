@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { BuildingType, BuildingTypeToString, ResourcesIds } from "@bibliothecadao/types";
+import { frontierBuildingName } from "@/ui/features/frontier/build/building-names";
 import { BuildingCard } from "@/ui/features/settlement/construction/select-preview-building";
 
 const buildings = [
   BuildingType.ResourceWheat,
   BuildingType.WorkersHut,
+  BuildingType.ResourceLabor,
   BuildingType.ResourceDonkey,
   BuildingType.Storehouse,
   BuildingType.ResourceFish,
@@ -33,11 +35,12 @@ export function ConstructionLab() {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         {buildings.map((building) => {
           const count = counts[building] ?? 1;
+          const name = frontierBuildingName(building) ?? BuildingTypeToString[building];
           return (
-            <section key={building} aria-label={BuildingTypeToString[building]}>
+            <section key={building} aria-label={name}>
               <BuildingCard
                 buildingId={building}
-                buildingName={BuildingTypeToString[building]}
+                buildingName={name}
                 active={selected === building}
                 onClick={() => setSelected(building)}
                 count={count}

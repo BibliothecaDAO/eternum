@@ -507,3 +507,22 @@ captures the selected-army HUD, HUD menu, app Home and Settings at desktop and p
 reward, profile, Settings, news, legal and sign-in fixtures at desktop and phone sizes. Every rendered utility image
 must decode and match the committed Ivory delivery SHA-256, independently of the served manifest. The incoming app sheet
 uses the same `Icon` / `IconMeaning` contract; its page migration needs no icon migration.
+
+## Workshop — Craft Yard
+
+Open `/lab/models?family=workshops` (Models & motion → Workshop · Craft Yard). The scene shows the production Workshop
+beside the shipped Farm and Workers Hut, at scale one on game terrain through `InstancedModel`. View selects gameplay
+distance 14, closer/farther lineups or Workshop detail; Turn and Light inspect the roofs, clear yard and other faces.
+Drag to orbit and scroll to inspect.
+
+On a realm board, built Workshops use Craft Yard; the center keeps its realm, village or camp model. Hovering a Workshop
+names it Workshop. Construction cards use its model render. `/lab/kit/construction` includes the Workshop card at
+desktop and phone sizes.
+
+`pnpm --dir apps/game prove:workshops https://127.0.0.1:4218 /absolute/evidence/directory` reuses the client proof
+runner, presses all three controls, checks the rendered camera and production asset paths and captures seven views. It
+releases each WebGL page after capture. The exported `proveWorkshops` also accepts a browser connector implementing
+`run` and `evaluate`. `scripts/prove-building-thumbnails.mjs` checks the construction cards and their controls.
+
+To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
+`node apps/game/scripts/render-building-thumbnails.mjs https://127.0.0.1:4218 /absolute/evidence/directory /models/new-buildings-opt/workshop.glb`.

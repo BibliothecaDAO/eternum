@@ -1,0 +1,41 @@
+.workshop-lab {
+  height: var(--lab-viewport-height, 100vh);
+  display: flex;
+  flex-direction: column;
+  background: #172322;
+  color: #eee;
+}
+.workshop-lab header {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+}
+.workshop-lab h1 {
+  font-size: 18px;
+  margin: 0 auto 0 0;
+}
+.workshop-lab select {
+  background: #263b35;
+  color: #fff;
+  padding: 5px;
+}
+.workshop-lab p,
+.workshop-lab footer {
+  margin: 0;
+  padding: 8px 20px;
+  font-size: 14px;
+}
+.workshop-lab-labels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  gap: 8px;
+  padding: 12px 5%;
+  font-size: 14px;
+}
+.workshop-lab-canvas {
+  flex: 1;
+  min-height: 0;
+}
