@@ -1059,7 +1059,7 @@ export const HudRelic = ({
   onPress?: () => void;
   /** The pressable chip's name for assistive technology ("Activate Stamina I"). */
   label?: string;
-  /** The app's tooltip on the pressable chip: what pressing it does and costs. */
+  /** The app's tooltip: what the relic does, and on a pressable chip what pressing it does and costs. */
   tip?: string;
 }) => {
   const words = (
@@ -1087,7 +1087,7 @@ export const HudRelic = ({
       {words}
     </button>
   ) : (
-    <span className="ui-relic" data-kind={kind} data-state={state} title={title}>
+    <span className="ui-relic" data-kind={kind} data-state={state} title={title} data-tip={tip}>
       {words}
     </span>
   );
