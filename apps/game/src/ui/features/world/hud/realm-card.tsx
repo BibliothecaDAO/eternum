@@ -15,7 +15,7 @@ import {
   useStructureProductionSummary,
 } from "@/ui/features/world/components/entities/structure-production-summary";
 import { Icon } from "@/ui/design-system/icon";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   formatPopulationStatusLabel,
   formatUsedBuildingTilesLabel,
@@ -43,7 +43,7 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
   if (detail.isLoadingStructure || !detail.structure || !detail.isMine) return null;
   const isVillage = isVillageLikeStructureCategory(detail.structure.base.category);
   return (
-    <InfoBubble
+    <HudPanel
       label="Selected holding"
       title={detail.structureName ?? detail.typeLabel ?? "Holding"}
       cue={<RenameButton entityId={entityId} />}
@@ -59,7 +59,7 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
         <ResourceRings resources={detail.resources} summary={summary} />
         <HeldRelics entityId={entityId} resources={detail.resources} activeRelicIds={detail.relicEffects} />
       </div>
-    </InfoBubble>
+    </HudPanel>
   );
 };
 

@@ -18,7 +18,7 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "./holdings-model";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { Medallion } from "./medallion";
 
 const hasLevels = (structure: StructureWithMetadata) => structure.realmLevelLabel !== null;
@@ -107,7 +107,7 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
   const { toggleFavorite } = useFavoriteStructures();
   const kind = holdings.kinds.find((entry) => entry.kind === holdings.filter);
   return (
-    <InfoBubble
+    <HudPanel
       title={kind ? `${kind.plural} · ${kind.count}` : "Holdings"}
       className="flex max-h-[40vh] flex-col"
       bodyClassName="flex min-h-0 flex-col gap-1.5"
@@ -143,7 +143,7 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
         ))}
         {holdings.visible.length === 0 && <NoHoldingsMatch />}
       </div>
-    </InfoBubble>
+    </HudPanel>
   );
 };
 

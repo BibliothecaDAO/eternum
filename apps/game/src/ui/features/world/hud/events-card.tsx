@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { QuickFeedRows, UnreadFeedBadge, useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { useRef } from "react";
@@ -22,7 +22,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
           isInsideAnchor={(target) => target instanceof Node && Boolean(button.current?.contains(target))}
         />
       )}
-      <InfoBubble
+      <HudPanel
         label="Events"
         title="Events"
         cue={
@@ -47,7 +47,7 @@ export const EventsCard = ({ logOpen, onLogToggle }: { logOpen: boolean; onLogTo
         bodyClassName="flex flex-col gap-1 empty:hidden"
       >
         <QuickFeedRows />
-      </InfoBubble>
+      </HudPanel>
     </>
   );
 };

@@ -8,7 +8,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { InfoBubble } from "../collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { HyperstructureConstruction } from "@/ui/features/world/components/hyperstructures/hyperstructure-construction";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -174,14 +174,14 @@ const StructureBannerEntityDetailContent = memo(
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
-      <InfoBubble className={cn("min-w-0", className)} bodyClassName="flex flex-col divide-y divide-gold/15 p-0">
+      <HudPanel className={cn("min-w-0", className)} divided bodyClassName="flex flex-col">
         <IncomingCaravans structureId={structureEntityId} isOwner={isMine} />
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}
         {!hideOwner && (
-          <InfoBubble
-            variant="section"
+          <HudPanel
+            kind="section"
             title={coordsLabel ?? ownerDisplayName ?? "Owner"}
             cue={coordsLabel ? headerAction : structureName}
             bodyClassName="pt-0"
@@ -225,7 +225,7 @@ const StructureBannerEntityDetailContent = memo(
                 <HyperstructureVPDisplay rate={hyperstructureRate} className="w-full" />
               </div>
             )}
-          </InfoBubble>
+          </HudPanel>
         )}
 
         {isEternumMode && isHyperstructure && (
@@ -233,13 +233,13 @@ const StructureBannerEntityDetailContent = memo(
         )}
 
         {relicEffects.length > 0 && (
-          <InfoBubble variant="section" title="Active Relics" icon={"relics" as const}>
+          <HudPanel kind="section" title="Active Relics" icon={"relics" as const}>
             <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
-          </InfoBubble>
+          </HudPanel>
         )}
 
         {shouldRenderVillageTimers && (
-          <InfoBubble variant="section" title="Village Intel">
+          <HudPanel kind="section" title="Village Intel">
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
               <VillageTimerChip
@@ -253,11 +253,11 @@ const StructureBannerEntityDetailContent = memo(
                 title="Post-raid resource immunity window"
               />
             </div>
-          </InfoBubble>
+          </HudPanel>
         )}
 
         {/* Guards — always shown for structures that can hold defenders. */}
-        <InfoBubble variant="section" title="Guards" icon={"defend" as const} cue={guardCue}>
+        <HudPanel kind="section" title="Guards" icon={"defend" as const} cue={guardCue}>
           {guards === undefined ? (
             <p className={HUD_BODY_MUTED}>Loading guards…</p>
           ) : guards.length > 0 ? (
@@ -273,13 +273,13 @@ const StructureBannerEntityDetailContent = memo(
           ) : (
             <p className={HUD_BODY_MUTED}>No defenders stationed.</p>
           )}
-        </InfoBubble>
+        </HudPanel>
 
         {/* Merged production + balance — one token panel (like the Empire panel).
             Owners get a Transfer button (this realm as recipient) and the build
             "+" on each token. */}
-        <InfoBubble
-          variant="section"
+        <HudPanel
+          kind="section"
           title="Resources"
           icon={"production" as const}
           cue={
@@ -308,16 +308,16 @@ const StructureBannerEntityDetailContent = memo(
           ) : (
             <p className={HUD_BODY_MUTED}>No resources stored.</p>
           )}
-        </InfoBubble>
+        </HudPanel>
 
         <BitcoinMiningActionPanel structureEntityId={structureEntityId} />
 
         {showFaithTab && (
-          <InfoBubble variant="section" title="Faith" icon={"relics" as const}>
+          <HudPanel kind="section" title="Faith" icon={"relics" as const}>
             <FaithDevotionActionPanel structureEntityId={structureEntityId} />
-          </InfoBubble>
+          </HudPanel>
         )}
-      </InfoBubble>
+      </HudPanel>
     );
   },
 );

@@ -9,7 +9,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -255,9 +255,9 @@ const TileChrome = ({
   headerAction?: ReactNode;
   children: ReactNode;
 }) => (
-  <InfoBubble title={title} cue={headerAction} className="min-w-0" bodyClassName="pt-0">
+  <HudPanel title={title} cue={headerAction} className="min-w-0" bodyClassName="pt-0">
     {children}
-  </InfoBubble>
+  </HudPanel>
 );
 
 const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {

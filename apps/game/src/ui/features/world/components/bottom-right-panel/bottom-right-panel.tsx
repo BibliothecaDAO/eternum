@@ -17,7 +17,7 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import { formatTilePanelTitle } from "./tile-panel-title";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import {
@@ -364,21 +364,21 @@ const LocalTilePanel = () => {
   // resource breakdown.
   if (isCastleTile) {
     return (
-      <InfoBubble title={panelTitle} bodyClassName="pt-0">
+      <HudPanel title={panelTitle} bodyClassName="pt-0">
         <RealmUpgradeCompact />
-      </InfoBubble>
+      </HudPanel>
     );
   }
 
   if (!hasBuilding) {
     return (
-      <InfoBubble title={panelTitle}>
+      <HudPanel title={panelTitle}>
         <p className={HUD_BODY_MUTED}>
           {canManageBuilding
             ? "Open building plot. Choose a building in the plot picker."
             : "Open building plot. Select a completed building to inspect its production."}
         </p>
-      </InfoBubble>
+      </HudPanel>
     );
   }
 
@@ -530,7 +530,7 @@ const LocalTilePanel = () => {
     <>
       {/* One bubble: the building's name and coordinates with its actions, then one line each for what it makes and
           uses, its population, what another costs and its production. */}
-      <InfoBubble title={panelTitle} icon={"production" as const} cue={buildingActions}>
+      <HudPanel title={panelTitle} icon={"production" as const} cue={buildingActions}>
         <div className="flex flex-col gap-1.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-1.5">
           {isPaused && (
             <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
@@ -654,7 +654,7 @@ const LocalTilePanel = () => {
             <InlineProduction entityId={structureEntityId} resource={producedResource} />
           )}
         </div>
-      </InfoBubble>
+      </HudPanel>
     </>
   );
 };

@@ -14,7 +14,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useState } from "react";
@@ -207,7 +207,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
   return (
     <div className="flex flex-col gap-3 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[260px_auto_260px_1fr]">
       {/* Each column uses the shared HUD panel. */}
-      <InfoBubble className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
+      <HudPanel className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
         <HoldingPicker
           title="Send from"
           chosen={ends.sourceId === null ? [] : [ends.sourceId]}
@@ -215,7 +215,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
           onPick={(id) => change({ ends: pickSource(ends, id), edited: null })}
           note={(id) => <DonkeysNote id={id} />}
         />
-      </InfoBubble>
+      </HudPanel>
       {/* Closed until one holding is chosen to send to, and it looks closed and says so. */}
       <button
         type="button"
@@ -227,7 +227,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
       >
         ⇄
       </button>
-      <InfoBubble className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
+      <HudPanel className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col py-2">
         <HoldingPicker
           title="Send to"
           chosen={ends.destinationIds}
@@ -238,8 +238,8 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
             return seconds === undefined ? null : landsText(seconds);
           }}
         />
-      </InfoBubble>
-      <InfoBubble className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col gap-3 py-2">
+      </HudPanel>
+      <HudPanel className="flex min-h-0 flex-col" bodyClassName="flex min-h-0 flex-1 flex-col gap-3 py-2">
         {ends.sourceId !== null && sides && plans && (
           <Goods
             key={ends.sourceId}
@@ -256,7 +256,7 @@ const TransferWindow = ({ initial }: { initial: TransferEnds }) => {
             }
           />
         )}
-      </InfoBubble>
+      </HudPanel>
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography"
 import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
-import { InfoBubble } from "../entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
 /**
@@ -32,14 +32,14 @@ export function ChestTileDetails({
 }) {
   return (
     <div className="flex shrink-0 flex-col gap-2">
-      <InfoBubble className="min-w-0" bodyClassName="flex flex-col divide-y divide-gold/15 p-0">
-        <InfoBubble variant="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
+      <HudPanel className="min-w-0" divided bodyClassName="flex flex-col">
+        <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
           <div className="flex items-center gap-2 text-gold">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
             <p className={cn("truncate", HUD_HEADLINE)}>{opening ? "Crate opened" : "Crate"}</p>
           </div>
-        </InfoBubble>
-        <InfoBubble variant="section" title="Contents" icon={"chest" as const}>
+        </HudPanel>
+        <HudPanel kind="section" title="Contents" icon={"chest" as const}>
           {opening ? <RelicList relics={opening.relics} /> : <CrateContents crateEntityId={crateEntityId} />}
           {!opening && (
             <button
@@ -52,8 +52,8 @@ export function ChestTileDetails({
               {onOpen ? "Open" : "Move next to it"}
             </button>
           )}
-        </InfoBubble>
-      </InfoBubble>
+        </HudPanel>
+      </HudPanel>
     </div>
   );
 }

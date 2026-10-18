@@ -1,6 +1,6 @@
 import { HexMinimap } from "@/ui/features/world/components/bottom-right-panel/hex-minimap";
 import { useMinimapReading } from "@/ui/features/world/components/bottom-right-panel";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudMinimapFrame } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 /**
@@ -11,17 +11,14 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 export const HudMinimap = ({ className }: { className?: string }) => {
   const { tiles, isLoading, cameraTargetHex, selectedHex, navigationTarget } = useMinimapReading();
   return (
-    <InfoBubble label="Minimap" className={cn("aspect-square overflow-hidden", className)} bodyClassName="h-full p-1.5">
-      <div className="relative h-full w-full overflow-hidden rounded-[10px] bg-[#0d0a07]">
-        <HexMinimap
-          look="badges"
-          tiles={tiles}
-          selectedHex={selectedHex}
-          navigationTarget={navigationTarget}
-          cameraTargetHex={cameraTargetHex}
-        />
-        {isLoading && <div className="absolute inset-0 animate-pulse bg-black/30" />}
-      </div>
-    </InfoBubble>
+    <HudMinimapFrame loading={isLoading} className={cn("aspect-square overflow-hidden", className)}>
+      <HexMinimap
+        look="badges"
+        tiles={tiles}
+        selectedHex={selectedHex}
+        navigationTarget={navigationTarget}
+        cameraTargetHex={cameraTargetHex}
+      />
+    </HudMinimapFrame>
   );
 };

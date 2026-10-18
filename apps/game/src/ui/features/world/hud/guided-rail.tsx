@@ -23,7 +23,7 @@ export const GuidedRail = () => {
     <aside
       {...HUD_COLUMN_MARK}
       aria-label="Guided rail"
-      className="pointer-events-none fixed bottom-4 right-3 top-[60px] z-30 flex w-[320px] flex-col gap-2"
+      className="pointer-events-none fixed bottom-4 right-3 top-hud-header z-hud-rail flex w-hud-column flex-col gap-2"
     >
       <NextUp />
       <EventsCard logOpen={focus === "log"} onLogToggle={toggleLog} />

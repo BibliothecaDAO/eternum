@@ -8,7 +8,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
@@ -63,11 +63,11 @@ export const PlayerId = ({
         )}
       </header>
 
-      <InfoBubble variant="section" collapsible={false} title="Points">
+      <HudPanel kind="section" collapsible={false} title="Points">
         <PointsByActivity breakdown={breakdown} />
-      </InfoBubble>
+      </HudPanel>
 
-      <InfoBubble variant="section" collapsible={false} title="Hyperstructures giving points">
+      <HudPanel kind="section" collapsible={false} title="Hyperstructures giving points">
         {holdings.length === 0 ? (
           <p className={HUD_BODY_MUTED}>None now.</p>
         ) : (
@@ -77,7 +77,7 @@ export const PlayerId = ({
             ))}
           </ul>
         )}
-      </InfoBubble>
+      </HudPanel>
     </section>
   );
 };

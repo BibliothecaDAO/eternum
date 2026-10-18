@@ -8,7 +8,7 @@ import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { selectEventStories } from "@/ui/features/event-feed/event-stories";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { PlayerLabel } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
@@ -146,11 +146,11 @@ const LabEvents = ({ store }: { store: NativeFactStore }) => {
   const [filter] = useEventsFilter();
   const told = selectEventStories(labStories(store), filter, PLAYER, () => false).slice(0, 3);
   return (
-    <InfoBubble label="Events" title="Events" cue={<EventsFilterSwitch />} bodyClassName="flex flex-col gap-1">
+    <HudPanel label="Events" title="Events" cue={<EventsFilterSwitch />} bodyClassName="flex flex-col gap-1">
       {told.map((event) => (
         <FeedRowLine key={event.id} event={event} />
       ))}
-    </InfoBubble>
+    </HudPanel>
   );
 };
 

@@ -1,7 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK } from "@/three/utils/labels/hud-clearance";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { SpectatorStandingsBody } from "@/ui/features/world/containers/spectator-standings";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ActionBubbles } from "./action-bubbles";
@@ -37,7 +37,7 @@ export const DesktopHud = () => {
       <GuidedRail />
       <div
         {...HUD_FOOT_MARK}
-        className="pointer-events-none fixed bottom-5 left-[344px] right-[344px] z-[26] flex items-end justify-center gap-4"
+        className="pointer-events-none fixed bottom-5 left-hud-foot right-hud-foot z-hud-foot flex items-end justify-center gap-4"
       >
         <ActionBubbles />
         {ordersAllowed && <IdleArmiesButton idle={idleArmies} className="mb-7" />}
@@ -54,21 +54,21 @@ const LeftColumn = () => {
     <aside
       {...HUD_COLUMN_MARK}
       aria-label="Holdings"
-      className="pointer-events-none fixed bottom-4 left-3 top-[60px] z-20 flex w-[320px] flex-col gap-2"
+      className="pointer-events-none fixed bottom-4 left-3 top-hud-header z-hud-column flex w-hud-column flex-col gap-2"
     >
       {ordersAllowed ? (
         <HoldingsAndCard />
       ) : (
-        <InfoBubble
+        <HudPanel
           label="Spectator standings"
           title="Standings"
-          className="flex max-h-[40vh] flex-col"
+          className="flex max-h-hud-list flex-col"
           bodyClassName="min-h-0 overflow-y-auto p-0"
         >
           <SpectatorStandingsBody />
-        </InfoBubble>
+        </HudPanel>
       )}
-      <HudMinimap className="min-h-[160px] w-full shrink" />
+      <HudMinimap className="min-h-hud-minimap w-full shrink" />
     </aside>
   );
 };

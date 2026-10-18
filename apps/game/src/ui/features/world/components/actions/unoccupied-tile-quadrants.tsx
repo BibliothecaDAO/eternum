@@ -7,7 +7,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import { formatBiomeBonus } from "@/ui/features/military";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
@@ -133,7 +133,7 @@ export const BiomeSummaryCard = ({
     ) : undefined;
 
   return (
-    <InfoBubble
+    <HudPanel
       collapsible={false}
       title={coordsLabel ?? "Biome"}
       icon={"trees" as const}
@@ -187,7 +187,7 @@ export const BiomeSummaryCard = ({
           </div>
         )}
       </div>
-    </InfoBubble>
+    </HudPanel>
   );
 };
 

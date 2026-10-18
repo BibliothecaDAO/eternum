@@ -7,7 +7,7 @@ import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-conf
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { InfoBubble } from "../collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
   isStaminaRecharging,
@@ -122,7 +122,7 @@ const ArmyBannerEntityDetailContent = memo(
     );
 
     return (
-      <InfoBubble
+      <HudPanel
         title={coordsLabel}
         cue={headerAction}
         className={cn("flex h-full min-h-0 flex-col overflow-hidden", hasWarnings && "ring-1 ring-gold/30", className)}
@@ -229,7 +229,7 @@ const ArmyBannerEntityDetailContent = memo(
             />
           )}
         </div>
-      </InfoBubble>
+      </HudPanel>
     );
   },
 );

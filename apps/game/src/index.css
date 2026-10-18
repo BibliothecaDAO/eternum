@@ -374,31 +374,6 @@ html.classic-hud .hud-value {
 html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   font-size: 0.875rem;
 }
-/* Inside its panels (InfoBubble, .hud-panel) every reading is one step larger: its text a pixel up, the panel's title
-   and labels 16 px, in the same padding. A rim badge's 10 px stays, fitted to its ring. */
-html.classic-hud .hud-panel .text-xs {
-  font-size: 0.8125rem;
-}
-html.classic-hud .hud-panel .text-sm {
-  font-size: 0.9375rem;
-}
-html.classic-hud .hud-panel .text-base {
-  font-size: 1.0625rem;
-}
-html.classic-hud .hud-panel .text-\[11px\] {
-  font-size: 12px;
-}
-html.classic-hud .hud-panel .text-\[12px\] {
-  font-size: 13px;
-}
-/* After the plain sizes, so a reading that names its kind (hud-body on a text-xs line) keeps its kind's size. */
-html.classic-hud .hud-panel :is(.hud-caps, .hud-caps-tight, .hud-value) {
-  font-size: 1rem;
-}
-html.classic-hud .hud-panel .hud-body {
-  font-size: 1.0625rem;
-}
-
 /* The kit's shared classes below draw only the token file's values (src/tokens.ts, the finish's `--<group>-<name>`
    variables), so each takes the HUD's look on :root and the shell's under data-surface="shell"; `pnpm shell:check`
    refuses a literal colour or image in them. The overlay surface's gradient is the one warm ink every mode's panels and

@@ -29,7 +29,7 @@ import { ActionTile } from "./left-facets/structure-actions-panel";
 import { StructureListColumn } from "./left-facets/structure-list-column";
 import { useStructureActions } from "./left-facets/use-structure-actions";
 import { resolveLeftViewSurface } from "./left-view-policy";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { SpectatorStandingsBody } from "./spectator-standings";
 
 type CompactTab = "empire" | "map" | "log" | "chat" | "details";
@@ -291,9 +291,9 @@ const SheetContent = ({
     return ordersAllowed ? (
       <EmpireColumn />
     ) : (
-      <InfoBubble variant="section" title="Standings" collapsible={false} bodyClassName="p-0">
+      <HudPanel kind="section" title="Standings" collapsible={false} bodyClassName="p-0">
         <SpectatorStandingsBody />
-      </InfoBubble>
+      </HudPanel>
     );
   return null;
 };

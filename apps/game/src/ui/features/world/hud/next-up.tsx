@@ -6,7 +6,7 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button } from "@/ui/design-system/kit/button";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { useEmpireSuggestions } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
 import {
   isOrderSuggestion,
@@ -62,7 +62,7 @@ export const NextUpView = ({ steps, refusal = null }: { steps: NextStep[]; refus
     setPaged(next === current ? null : { from: current.key, to: next.key });
   };
   return (
-    <InfoBubble
+    <HudPanel
       label="Next up"
       title="Next up"
       cue={
@@ -82,7 +82,7 @@ export const NextUpView = ({ steps, refusal = null }: { steps: NextStep[]; refus
       ) : (
         <StepBody line={step.line} verb={step.verb} busy={step.busy} refusal={refusal} run={step.run} />
       )}
-    </InfoBubble>
+    </HudPanel>
   );
 };
 
