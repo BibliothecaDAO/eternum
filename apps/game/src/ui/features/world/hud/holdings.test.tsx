@@ -51,9 +51,11 @@ let root: Root;
 
 const render = () => act(() => root.render(<Holdings />));
 const searchField = () => host.querySelector<HTMLInputElement>('input[type="search"]');
-/** Each row's name, read off the button that selects it (beside its star and its controls). */
+/** Each row's name, as its ring names the holding, inside the button that selects it (beside its star and controls). */
 const shownNames = () =>
-  [...host.querySelectorAll('[role="tabpanel"] button[aria-pressed]:not([aria-label])')].map((el) => el.textContent);
+  [...host.querySelectorAll('[role="tabpanel"] button[aria-pressed]:not([aria-label]) [role="img"]')].map((el) =>
+    el.getAttribute("aria-label"),
+  );
 
 /** Types into the search field as a player does: the field's value, then its input event. */
 const type = (text: string) =>

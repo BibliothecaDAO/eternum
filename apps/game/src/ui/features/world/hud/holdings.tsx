@@ -16,8 +16,7 @@ import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { holdingIcon, kindsHeld, listHoldings, needsSearch, shownKind } from "./holdings-model";
-import { HudField, HudIconButton, HudPanel, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { Medallion } from "./medallion";
+import { HudField, HudIconButton, HudPanel, HudRing, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
 const hasLevels = (structure: StructureWithMetadata) => structure.realmLevelLabel !== null;
 
@@ -175,10 +174,10 @@ const HoldingRow = memo(
           }
           title={
             <span className="flex min-w-0 items-center gap-2.5">
-              <Medallion
+              <HudRing
                 icon={holdingIcon(structure)}
+                label={structure.displayName}
                 size="sm"
-                tone={selected ? "lit" : "plain"}
                 corner={hasLevels(structure) ? realmLevelNumber(structure.realmLevel) : undefined}
               />
               <span className="min-w-0 truncate text-hud-strong">{structure.displayName}</span>
