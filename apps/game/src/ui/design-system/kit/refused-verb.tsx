@@ -11,7 +11,7 @@ export type Fix = { word: string; icon?: IconMeaning; prices?: readonly Price[];
 export type Refusal = { reason: Reason; fix?: Fix };
 
 /** The fix on the gold button. */
-export const FixButton = ({ fix }: { fix: Fix }) => (
+const FixButton = ({ fix }: { fix: Fix }) => (
   <Button role="primary" icon={fix.icon} word={fix.word} prices={fix.prices} onClick={fix.onFix} />
 );
 
