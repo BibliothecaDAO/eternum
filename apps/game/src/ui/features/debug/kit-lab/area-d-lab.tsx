@@ -91,7 +91,8 @@ export const AreaDLab = () => {
     <GameProvider value={game} account={{ address: "0x111" } as never}>
       <div className="flex min-h-screen flex-wrap items-start bg-[#0b1418]">
         <Surface name="rings">
-          {/* The realm card's grid, its tightest, with the widest rims side by side: two-figure counts beside times. */}
+          {/* The realm card's grid, its tightest, with the widest rims side by side: two-figure counts beside times, and
+              a second row of long times (99 days, the step to weeks, years, past 99 years). */}
           <div className="grid w-[294px] grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
             <ProductionStatusBadge
               resource={ResourcesIds.Wheat}
@@ -127,6 +128,24 @@ export const AreaDLab = () => {
               timeRemainingSeconds={null}
               amount="6.4K"
             />
+            {[99, 100, 699, 1_000, 40_000].map((days, index) => (
+              <ProductionStatusBadge
+                key={days}
+                resource={
+                  [
+                    ResourcesIds.Stone,
+                    ResourcesIds.Copper,
+                    ResourcesIds.Obsidian,
+                    ResourcesIds.Silver,
+                    ResourcesIds.Gold,
+                  ][index]
+                }
+                isProducing
+                timeRemainingSeconds={days * 86_400}
+                buildings={12}
+                amount="9,999"
+              />
+            ))}
           </div>
         </Surface>
         <Surface name="leaderboard">
