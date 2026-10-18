@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { getRelicInfo, type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { HudButton, HudPanel, HudRelic, type RelicKind } from "@/ui/design-system/kit/hud-elements";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
@@ -83,13 +83,21 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   );
 };
 
+/** The relics a crate holds or yielded, each as the sheet's relic chip in its kind's colour, its effect on hover. */
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
-    {relics.map((relicId, index) => (
-      <li key={`${relicId}-${index}`} className="flex items-center gap-2 text-hud-body">
-        <ResourceIcon resource={relicId} size="sm" withTooltip={false} />
-        <span className="truncate">{getRelicInfo(relicId)?.name ?? ResourcesIds[relicId]}</span>
-      </li>
-    ))}
+    {relics.map((relicId, index) => {
+      const info = getRelicInfo(relicId);
+      return (
+        <li key={`${relicId}-${index}`}>
+          <HudRelic
+            icon={resourceMeaning(relicId)}
+            kind={info ? (info.type.toLowerCase().replace(" ", "-") as RelicKind) : "production"}
+            gives={info?.name ?? ResourcesIds[relicId]}
+            title={info?.effect}
+          />
+        </li>
+      );
+    })}
   </ul>
 );
