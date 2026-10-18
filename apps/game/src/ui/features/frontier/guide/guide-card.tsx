@@ -1,4 +1,4 @@
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { NEXT, SHOW_ME, GUIDE } from "@/ui/design-system/kit/words";
 import { forwardRef } from "react";
 
@@ -33,18 +33,21 @@ export const GuideCard = forwardRef<
   { mark: GuideMark; line: string; onShowMe?: () => void; onNext: () => void }
 >(({ mark, line, onShowMe, onNext }, ref) => (
   <div className="relative pt-16 lg:pt-24">
-    <aside
-      ref={ref}
-      aria-label={GUIDE}
-      aria-live="polite"
-      className="frontier-card pointer-events-auto flow-root !rounded-xl p-2.5"
-    >
-      <span aria-hidden className="float-left h-12 w-[100px] lg:h-16 lg:w-[146px]" />
-      <p className="text-base leading-snug text-kit-cream">{line}</p>
-      <div className="clear-both flex gap-2 pt-2">
-        {onShowMe && <Button role="primary" word={SHOW_ME} onClick={onShowMe} className="flex-1" />}
-        <Button role={onShowMe ? "secondary" : "primary"} word={NEXT} onClick={onNext} className="flex-1" />
-      </div>
+    <aside ref={ref} aria-label={GUIDE} aria-live="polite" className="pointer-events-auto">
+      <HudPanel collapsible={false} bodyClassName="flow-root">
+        <span aria-hidden className="float-left h-12 w-24 lg:h-16 lg:w-36" />
+        <p className="text-hud-body">{line}</p>
+        <div className="clear-both grid auto-cols-fr grid-flow-col gap-2 pt-2">
+          {onShowMe && (
+            <HudButton kind="primary" onClick={onShowMe}>
+              {SHOW_ME}
+            </HudButton>
+          )}
+          <HudButton kind={onShowMe ? "secondary" : "primary"} onClick={onNext}>
+            {NEXT}
+          </HudButton>
+        </div>
+      </HudPanel>
     </aside>
     <GuideSpirit mark={mark} />
   </div>

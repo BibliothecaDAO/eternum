@@ -142,8 +142,10 @@ describe("the castle's tree", () => {
       />
     );
     act(() => root.render(sheet(2)));
-    expect(host.querySelector('[aria-label="Granary"]')?.getAttribute("aria-checked")).toBe("true");
-    act(() => host.querySelector<HTMLButtonElement>('[aria-label="Fields"]')!.click());
+    const side = (name: string) => buttons().find((button) => button.textContent?.startsWith(name))!;
+    expect(side("Granary").getAttribute("aria-pressed")).toBe("true");
+    expect(side("Fields").getAttribute("aria-pressed")).toBe("false");
+    act(() => side("Fields").click());
     expect(onLift).toHaveBeenCalledWith(0);
     expect(host.querySelector('img[src="/icons/facets/64/final-seal.webp"]')).not.toBeNull();
     act(() =>

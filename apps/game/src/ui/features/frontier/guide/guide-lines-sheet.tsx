@@ -1,7 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { Switch } from "@/ui/design-system/kit/switch";
-
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudSheet, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 import { GUIDE } from "@/ui/design-system/kit/words";
 
 /**
@@ -19,18 +17,18 @@ export const GuideLinesSheet = ({
   onToggle: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={GUIDE} onClose={onClose}>
-    <header className="flex h-12 shrink-0 items-center gap-2 lg:pr-10">
+  <HudSheet label={GUIDE} onClose={onClose}>
+    <span className="flex items-center gap-2">
       <SemanticIcon name="order-skill" size={22} />
-      <h2 className="frontier-title flex-1 !text-xl">{GUIDE}</h2>
-      <Switch on={on} label={GUIDE} onToggle={onToggle} />
-    </header>
+      <span className="flex-1 text-hud-label">{GUIDE}</span>
+      <HudSwitch on={on} label={GUIDE} onChange={onToggle} />
+    </span>
     <ol className="flex flex-col">
       {lines.map(({ id, line }) => (
-        <li key={id} className="border-t border-kit-line px-1 py-2.5 text-base leading-snug text-kit-cream">
+        <li key={id} className="border-t border-hud-divider px-1 py-2.5 text-hud-body">
           {line}
         </li>
       ))}
     </ol>
-  </Sheet>
+  </HudSheet>
 );

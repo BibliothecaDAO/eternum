@@ -1,13 +1,13 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Button, type Price } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { type Refusal, RefusedVerb } from "@/ui/design-system/kit/refused-verb";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import type { Price } from "../hud-prices";
+import { HudButton, HudCard, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import type { Refusal } from "@/ui/design-system/kit/refused-verb";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { chooseOne, RESEARCH, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
+
+import { hudPrices } from "../hud-prices";
+import { RefusedUpgrade } from "./refused-upgrade";
 
 /** One side of a tier's choice: its art and name, and what it gives every building of the type, before → after. */
 type Side = { icon: IconMeaning; name: string; gain: { icon: IconMeaning; label: string; value: string } };
@@ -19,7 +19,9 @@ export type Figure = { icons: IconMeaning[]; label: string; value: string };
 export const Figures = ({ figures }: { figures: readonly Figure[] }) => (
   <div className="flex flex-wrap items-center justify-center gap-1.5">
     {figures.map((figure) => (
-      <Chip key={figure.label} icons={figure.icons} label={figure.label} value={figure.value} />
+      <HudChip key={figure.label} icons={figure.icons} label={figure.label}>
+        {figure.value}
+      </HudChip>
     ))}
   </div>
 );
@@ -77,26 +79,21 @@ export const TypeUpgradeSheet = ({
       ? { reason: { kind: "failed", line: chooseOne(sides[0].name, sides[1].name) } }
       : refusal;
   return (
-    <Sheet label={name} onClose={onClose}>
-      <header className="flex items-center gap-2.5">
+    <HudSheet label={name} onClose={onClose}>
+      <div className="flex items-center gap-2.5">
         <SemanticIcon name={icon} size={30} />
-        <h2 className="frontier-title flex-1 !text-xl">{name}</h2>
         {onResearch && (
-          <Button
-            role="outline"
-            icon="research"
-            word={RESEARCH}
-            className="!h-10 !px-3 lg:mr-10"
-            onClick={onResearch}
-          />
+          <HudButton kind="secondary" size="sm" icon="research" onClick={onResearch}>
+            {RESEARCH}
+          </HudButton>
         )}
-      </header>
+      </div>
       {now && now.length > 0 && <Figures figures={now} />}
       <div className="flex items-center justify-center gap-2">
         <TierChip tier={tier} showWord />
         {!top && (
           <>
-            <span aria-hidden className="text-lg text-kit-muted">
+            <span aria-hidden className="text-hud-muted">
               →
             </span>
             <TierChip tier={(tier + 1) as Tier} showWord />
@@ -106,7 +103,7 @@ export const TypeUpgradeSheet = ({
       </div>
       {!top && gives}
       {!top && sides && (
-        <div role="radiogroup" className="flex gap-2">
+        <div role="group" aria-label={chooseOne(sides[0].name, sides[1].name)} className="grid grid-cols-2 gap-2">
           {sides.map((side, index) => (
             <SideCard key={side.name} side={side} lifted={lifted === index} onLift={() => onLift?.(index as 0 | 1)} />
           ))}
@@ -114,41 +111,37 @@ export const TypeUpgradeSheet = ({
       )}
       {!top &&
         (waits ? (
-          <RefusedVerb word={UPGRADE} prices={prices} refusal={waits} />
+          <RefusedUpgrade word={UPGRADE} prices={prices} refusal={waits} />
         ) : (
           <div className="flex items-center gap-2">
             {sides && <SemanticIcon name="final-seal" size={26} />}
-            <Button
-              role="primary"
-              word={UPGRADE}
-              prices={prices}
-              loading={sending ? UPGRADING : undefined}
-              onClick={onUpgrade}
-              className="flex-1"
-            />
+            <span className="grid flex-1">
+              <HudButton
+                kind="primary"
+                prices={hudPrices(prices)}
+                busy={sending ? UPGRADING : undefined}
+                onClick={onUpgrade}
+              >
+                {UPGRADE}
+              </HudButton>
+            </span>
           </div>
         ))}
-    </Sheet>
+    </HudSheet>
   );
 };
 
-/** A side of the choice: its art and name, and what it gives every building of the type; lifted when chosen. */
+/** A side of the choice: its art and name, and what it gives every building of the type; pressed when chosen. */
 const SideCard = ({ side, lifted, onLift }: { side: Side; lifted: boolean; onLift: () => void }) => (
-  <button
-    type="button"
-    role="radio"
-    aria-checked={lifted}
-    aria-label={side.name}
+  <HudCard
+    title={side.name}
+    picture={<SemanticIcon name={side.icon} size={30} />}
+    detail={
+      <HudChip icons={[side.gain.icon]} label={side.gain.label}>
+        {side.gain.value}
+      </HudChip>
+    }
+    selected={lifted}
     onClick={onLift}
-    className={cn(
-      "frontier-card flex h-[120px] flex-1 flex-col items-center justify-center gap-1 !rounded-xl transition-transform",
-      lifted && "-translate-y-1 !border-[3px] !border-kit-hot",
-    )}
-  >
-    <span className="flex size-[52px] items-center justify-center rounded-xl bg-kit-ground">
-      <SemanticIcon name={side.icon} size={30} />
-    </span>
-    <span className="text-sm font-semibold text-kit-cream">{side.name}</span>
-    <Chip icons={[side.gain.icon]} label={side.gain.label} value={side.gain.value} />
-  </button>
+  />
 );

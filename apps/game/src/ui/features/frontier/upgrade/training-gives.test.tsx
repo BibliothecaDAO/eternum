@@ -16,7 +16,7 @@ describe("a training building's next tier", () => {
       />,
     );
     expect(markup).toContain('aria-label="Battle +10% → +30%"');
-    expect(markup).toContain('aria-label="XP 300"');
+    expect(markup).toContain(">300 XP<");
     expect(markup).toContain('aria-label="Uncommon"');
     expect(markup).toContain('aria-label="Rare"');
   });

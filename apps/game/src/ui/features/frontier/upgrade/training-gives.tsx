@@ -1,7 +1,6 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Chip } from "@/ui/design-system/kit/chip";
-
+import { HudCard, HudChip } from "@/ui/design-system/kit/hud-elements";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -33,13 +32,15 @@ export const TrainingGives = ({
 }) => (
   <>
     <div className="flex items-center justify-center gap-2">
-      <Chip icons={[mark]} label={attribute} value={effect} />
-      <Chip icons={[]} label={XP} value={formatExact(xpSaved)} unit={XP} />
+      <HudChip icons={[mark]} label={attribute}>
+        {effect}
+      </HudChip>
+      <HudChip>{`${formatExact(xpSaved)} ${XP}`}</HudChip>
     </div>
     {kinds ?? (
       <div className="flex items-center gap-2">
         <NextArmy art={armyArt} mark={mark} tier={tier} />
-        <span aria-hidden className="text-lg text-kit-muted">
+        <span aria-hidden className="text-hud-muted">
           →
         </span>
         <NextArmy art={armyArt} mark={mark} tier={(tier + 1) as Tier} lit />
@@ -48,7 +49,7 @@ export const TrainingGives = ({
   </>
 );
 
-/** The next army as it would deploy: its portrait, the attribute's mark and its starting tier. */
+/** The next army as it would deploy: its portrait, the attribute's mark and its starting tier; the next one lit. */
 const NextArmy = ({
   art,
   mark,
@@ -60,15 +61,16 @@ const NextArmy = ({
   tier: Tier;
   lit?: boolean;
 }) => (
-  <span
-    className={
-      lit
-        ? "frontier-card flex h-14 flex-1 items-center justify-center gap-2 !rounded-xl !border-[3px] !border-kit-hot"
-        : "frontier-card flex h-14 flex-1 items-center justify-center gap-2 !rounded-xl"
-    }
-  >
-    <SemanticIcon name={art} alt="" className="size-8 rounded-full object-cover" />
-    <SemanticIcon name={mark} size={22} />
-    <TierChip tier={tier} showWord={false} />
-  </span>
+  <div className="flex-1">
+    <HudCard
+      title={
+        <span className="flex items-center justify-center gap-2">
+          <SemanticIcon name={mark} size={22} />
+          <TierChip tier={tier} showWord={false} />
+        </span>
+      }
+      picture={<SemanticIcon name={art} alt="" size={32} />}
+      selected={lit}
+    />
+  </div>
 );

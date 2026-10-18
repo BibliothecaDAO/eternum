@@ -23,7 +23,7 @@ export const GuideThread = ({ from, target }: { from: RefObject<HTMLElement | nu
   return (
     <>
       <svg aria-hidden className="pointer-events-none fixed inset-0 z-30 size-full">
-        <line {...ends} className="stroke-kit-gold" strokeWidth={2} strokeDasharray="6 5" strokeLinecap="round" />
+        <line {...ends} className="stroke-hud-accent" strokeWidth={2} strokeDasharray="6 5" strokeLinecap="round" />
       </svg>
       <span
         aria-hidden
