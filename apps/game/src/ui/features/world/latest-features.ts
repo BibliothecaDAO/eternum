@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-18",
     title: "Camps and rifts have names",
     description:
-      'Every camp and rift on the map now carries a short name of its own, the same for every player ("Grimtear Camp"), and no label shows an id. A realm\'s label reads "player | realm" over its guard and strength; an army\'s shows its exact stamina beside the bar; troops on their way show when they arrive first. A stamina wait now counts to the second: "ready in 24s".',
+      "Every camp and rift on the map now carries a short name of its own, the same for every player (\"Grimtear\"), and no label shows an id. At rest a label says only who or what it is and its guard; hover it for the rest: an army's home and exact stamina, a realm's guard slots and the troops on their way (when they arrive first), a camp's or rift's kind and the Labor or Essence it holds. A stamina wait now counts to the second: \"ready in 24s\".",
     type: "improvement",
   },
   {

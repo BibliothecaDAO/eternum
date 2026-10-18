@@ -5,9 +5,6 @@ import { stack, type PlateBox } from "./map-plate-layout";
 import { attackOrder, buildArmyPlate, buildStructurePlate, restingGuard } from "./map-plate-model";
 import { siteName } from "./site-name";
 
-/** Frontier's tier strengths: 1, 3 and 9 a troop. */
-const TIER_STRENGTH = (tier: 1 | 2 | 3) => [1, 3, 9][tier - 1];
-
 const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = {}) => ({
   entityId: 29,
   structureName: "Epakehamamut",
@@ -21,7 +18,7 @@ const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = 
 });
 
 describe("a map plate's facts", () => {
-  it("names a realm by its own name, with its owner, its guards in slot order and their strength by tier", () => {
+  it("names a realm by its own name, with its owner and its guards in slot order", () => {
     const plate = buildStructurePlate(
       structure({
         guardArmies: [
@@ -30,14 +27,12 @@ describe("a map plate's facts", () => {
           { slot: 1, category: "Knight", tier: 2, count: 0 },
         ],
       }),
-      TIER_STRENGTH,
     );
     expect(plate).toMatchObject({
       name: "Epakehamamut",
       named: true,
       place: undefined,
       owner: "Tamsin",
-      strength: 516 * 1 + 638 * 9,
     });
     expect(plate.guards).toEqual([
       { type: "crossbowman", tier: 1, count: 516 },
@@ -53,20 +48,18 @@ describe("a map plate's facts", () => {
         structureType: StructureType.Camp,
         owner: { address: 0n, ownerName: "", guildName: "" },
       }),
-      TIER_STRENGTH,
       0,
-      { amount: 250, unit: "points" },
+      { amount: 640, unit: "Labor" },
     );
     expect(camp).toMatchObject({
       name: "Camp",
       named: false,
       place: siteName(129),
       owner: "The Vanguard",
-      reward: "250 points",
+      reward: "640 Labor",
     });
     const rift = buildStructurePlate(
       structure({ structureName: "Essence Rift", structureType: StructureType.Mine, mineKind: 1 }),
-      TIER_STRENGTH,
       0,
       { amount: 1200.4, unit: "Essence" },
     );
@@ -86,7 +79,6 @@ describe("a map plate's facts", () => {
     });
     const plate = buildStructurePlate(
       structure({ incomingTroopArrivals: [arrival(300, 1_200n), arrival(150, 1_060n)] as never }),
-      TIER_STRENGTH,
       1_000,
     );
     expect(plate.arrivals).toEqual([

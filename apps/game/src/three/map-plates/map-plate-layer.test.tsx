@@ -24,7 +24,6 @@ const realm: StructurePlate = {
   owner: "Tamsin",
   name: "Niziz",
   named: true,
-  strength: 300 + 600 * 9,
   guards: [
     { type: "knight", tier: 1, count: 300 },
     { type: "paladin", tier: 3, count: 600 },

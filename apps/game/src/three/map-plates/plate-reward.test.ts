@@ -1,6 +1,6 @@
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, ResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildStructurePlate } from "./map-plate-model";
@@ -38,10 +38,13 @@ const site = (store: NativeFactStore, cleared: boolean) =>
 
 /** The reward a plate says for this structure in this store, read as the structure manager reads it. */
 const said = (store: NativeFactStore, structure: ReturnType<typeof structureOf>) =>
-  buildStructurePlate(structure, () => 1, 0, readPlateReward(store, structure)).reward;
+  buildStructurePlate(structure, 0, readPlateReward(store, structure)).reward;
 
 describe("what a plate says taking a camp or a rift gives", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    setBlockTimestampSource(null);
+    vi.restoreAllMocks();
+  });
 
   it.each([
     [StructureType.Camp, "50 Labor"],
@@ -57,13 +60,19 @@ describe("what a plate says taking a camp or a rift gives", () => {
     expect(said(store, structureOf(category, 7n))).toBeUndefined();
   });
 
-  it("says the points for taking a Blitz camp from the Vanguard, and nothing for a player's camp", () => {
+  it("says what a Blitz camp or Essence Rift holds: a camp's Labor, a rift's Essence; nothing else holds", () => {
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
-    vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-      claimCampFromBandits: 250,
-    } as ReturnType<typeof configManager.getVictoryPointGrants>);
+    setBlockTimestampSource(() => 1_000);
+    const held = vi
+      .spyOn(ResourceManager.prototype, "balanceWithProduction")
+      .mockImplementation(
+        (_tick, resource) =>
+          ({ balance: (resource === ResourcesIds.Labor ? 640 : 1_200) * RESOURCE_PRECISION }) as never,
+      );
     const store = new NativeFactStore();
-    expect(said(store, structureOf(StructureType.Camp))).toBe("250 points");
-    expect(said(store, structureOf(StructureType.Camp, 7n))).toBeUndefined();
+    expect(said(store, structureOf(StructureType.Camp))).toBe("640 Labor");
+    expect(said(store, { ...structureOf(StructureType.Mine), mineKind: 1 as never })).toBe("1,200 Essence");
+    expect(said(store, structureOf(StructureType.Village))).toBeUndefined();
+    expect(held).toHaveBeenCalledTimes(2);
   });
 });

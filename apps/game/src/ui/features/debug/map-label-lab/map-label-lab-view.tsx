@@ -260,7 +260,6 @@ const plateOf = (entity: MapLabelEntity): MapPlate => {
         slot: 0n,
       })),
     },
-    (tier) => [1, 3, 9][tier - 1],
     0,
     entity.reward,
   );

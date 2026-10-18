@@ -1,4 +1,3 @@
-import { POINTS } from "@/ui/design-system/kit/words";
 import {
   configManager,
   divideByPrecision,
@@ -13,16 +12,23 @@ import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import type { StructureInfo } from "../types";
 import type { PlateReward } from "./map-plate-model";
 
-type RewardSource = Pick<StructureInfo, "entityId" | "structureType" | "mineKind" | "owner">;
+type RewardSource = Pick<StructureInfo, "entityId" | "structureType" | "mineKind">;
 
-/** A Blitz Essence Rift: a mine whose Essence grows every second, so its plate is said again each second. */
-export const holdsGrowingEssence = (structure: Pick<StructureInfo, "structureType" | "mineKind">): boolean =>
-  structure.structureType === StructureType.Mine && structure.mineKind === 1;
+/** What a Blitz Essence Rift (Essence) and a camp (Labor) hold, and change hands with; none for anything else. */
+const heldResource = (structure: Pick<StructureInfo, "structureType" | "mineKind">): ResourcesIds | undefined => {
+  if (structure.structureType === StructureType.Mine && structure.mineKind === 1) return ResourcesIds.Essence;
+  if (structure.structureType === StructureType.Camp) return ResourcesIds.Labor;
+  return undefined;
+};
+
+/** A place whose holding grows by the second, so its plate is said again each second. */
+export const holdsGrowingReward = (structure: Pick<StructureInfo, "structureType" | "mineKind">): boolean =>
+  heldResource(structure) !== undefined;
 
 /**
  * What taking a camp or a rift still gives, as its tile card says, read from the game's facts as they stand: a Frontier
- * site's payout home until it is cleared (it pays once); in Blitz, the Essence a rift holds (it changes hands with it),
- * and for a camp the points for taking it from the Vanguard. Nothing for anything else.
+ * site's payout home until it is cleared (it pays once); in Blitz, what a rift or a camp holds (it changes hands with
+ * it): a rift's Essence, a camp's Labor. Nothing for anything else.
  */
 export const readPlateReward = (store: NativeFactStore, structure: RewardSource): PlateReward | undefined => {
   const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: structure.entityId });
@@ -32,15 +38,11 @@ export const readPlateReward = (store: NativeFactStore, structure: RewardSource)
       ? { amount: divideByPrecision(Number(payout.amount)), unit: ResourcesIds[payout.resourceType] }
       : undefined;
   }
-  if (holdsGrowingEssence(structure)) {
-    const held = readResourceManager(store, structure.entityId).balanceWithProduction(
-      getBlockTimestamp().currentDefaultTick,
-      ResourcesIds.Essence,
-    );
-    return held ? { amount: divideByPrecision(held.balance), unit: ResourcesIds[ResourcesIds.Essence] } : undefined;
-  }
-  if (structure.structureType === StructureType.Camp && structure.owner.address === 0n) {
-    return { amount: configManager.getVictoryPointGrants().claimCampFromBandits, unit: POINTS };
-  }
-  return undefined;
+  const resource = heldResource(structure);
+  if (resource === undefined) return undefined;
+  const held = readResourceManager(store, structure.entityId).balanceWithProduction(
+    getBlockTimestamp().currentDefaultTick,
+    resource,
+  );
+  return held ? { amount: divideByPrecision(held.balance), unit: ResourcesIds[resource] } : undefined;
 };

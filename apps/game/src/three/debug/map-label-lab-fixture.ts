@@ -1,6 +1,5 @@
 import { getHyperstructureName, getRealmNameById } from "@bibliothecadao/eternum";
 import { Box3, Matrix4, type Object3D, type Scene, Vector3 } from "three";
-import { POINTS } from "@/ui/design-system/kit/words";
 
 import { CAMP_MODEL_PATH, RiftModelPath } from "../constants/scene-constants";
 import { HYPERSTRUCTURE_HEIGHT } from "../structures/hyperstructure-design";
@@ -253,13 +252,11 @@ const siteEntity = (
   homeName: home?.name ?? "",
   level: 0,
   guards: [site.guard],
-  // As a Blitz world holds them: 250 points for a camp taken from the Vanguard, a rift's Essence filling over time.
+  // As a Blitz world holds them: a rift's Essence and a camp's Labor, each filling over time.
   reward:
     kind === "rift"
       ? { amount: 1_200 + ((site.slot * 977) % 9_000), unit: "Essence" }
-      : home
-        ? undefined
-        : { amount: 250, unit: POINTS },
+      : { amount: 300 + ((site.slot * 331) % 2_000), unit: "Labor" },
 });
 
 const hyperstructureEntity = (

@@ -1050,7 +1050,6 @@ const REALM: StructurePlate = {
   owner: "djizus",
   name: "Sangsang",
   named: true,
-  strength: 516 + 577 * 3 + 638 * 9,
   guards: [
     { type: "crossbowman", tier: 1, count: 516 },
     { type: "knight", tier: 2, count: 577 },
@@ -1067,7 +1066,6 @@ const RIFT: StructurePlate = {
   named: false,
   place: siteName(7 * 2 ** 32 + 103),
   reward: "1,200 Essence",
-  strength: 900,
   guards: [{ type: "knight", tier: 2, count: 300 }],
   arrivals: [],
   icon: "rift",
@@ -1076,12 +1074,8 @@ const CAMP: StructurePlate = {
   ...RIFT,
   name: "Camp",
   place: siteName(7 * 2 ** 32 + 41),
-  reward: "250 points",
-  strength: 400,
-  guards: [
-    { type: "crossbowman", tier: 1, count: 250 },
-    { type: "knight", tier: 1, count: 150 },
-  ],
+  reward: "640 Labor",
+  guards: [{ type: "crossbowman", tier: 1, count: 250 }],
   icon: "camp",
 };
 
@@ -1105,7 +1099,7 @@ const PlateAt = ({
 const PlatesSection = () => (
   <Element
     name="Map plate"
-    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player, troops and exact stamina. A realm: player | name, guard | strength; opened, its slots and arrivals (time first). A camp or rift: its lore name (from its id) and kind, guard | reward."
+    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player over troops; opened, its home and exact stamina. A realm: player | name over its guard; opened, its slots and arrivals (time first). A camp or rift: its lore name over its guard; opened, its owner, kind and what it holds."
     sheet={
       <div className="flex flex-wrap items-end gap-4">
         <PlateAt plate={ARMY} />
@@ -1116,7 +1110,7 @@ const PlatesSection = () => (
         <PlateAt plate={RIFT} open />
         <PlateAt plate={CAMP} />
         <PlateAt plate={CAMP} open />
-        <PlateAt plate={{ ...REALM, relation: "ally", owner: "Kestrel", name: "Šommun", guards: [], strength: 0 }} />
+        <PlateAt plate={{ ...REALM, relation: "ally", owner: "Kestrel", name: "Šommun", guards: [] }} />
         <div className="mp !static">
           <div className="mp-at !static" data-relation="enemy">
             <Pin plate={ARMY} />

@@ -37,7 +37,6 @@ const realm: StructurePlate = {
   owner: "Moonhand",
   name: "Xeswet",
   named: true,
-  strength: 516 + 301 * 3 + 638 * 9,
   guards: [
     { type: "crossbowman", tier: 1, count: 516 },
     { type: "knight", tier: 2, count: 301 },
@@ -55,40 +54,51 @@ const rift: StructurePlate = {
   named: false,
   place: "Duskmere",
   reward: "1,200 Essence",
-  strength: 900,
   guards: [{ type: "knight", tier: 2, count: 300 }],
   arrivals: [],
   icon: "rift",
 };
 
+const camp: StructurePlate = {
+  ...rift,
+  name: "Camp",
+  place: "Orbroar",
+  reward: "640 Labor",
+  guards: [{ type: "crossbowman", tier: 1, count: 250 }],
+  icon: "camp",
+};
+
 describe("what a map plate says (two short rows at rest, three at most opened, never an id)", () => {
-  it("rests an army on its player over its troops and exact stamina, and opens it with its home", () => {
-    expect(read(army, false)).toEqual(["djizus", "T3 300 84/150"]);
+  it("rests an army on its player over its troops, and opens it with its home and exact stamina", () => {
+    expect(read(army, false)).toEqual(["djizus", "T3 300"]);
     expect(read(army, true)).toEqual(["djizus Sangsang", "T3 300 84/150"]);
-    expect(read({ ...army, stamina: undefined }, false)).toEqual(["djizus", "T3 300"]);
+    expect(read({ ...army, stamina: undefined }, true)).toEqual(["djizus Sangsang", "T3 300"]);
   });
 
-  it("rests a realm on its player and name over its guard total and strength", () => {
-    expect(read(realm, false)).toEqual(["Moonhand | Xeswet", "1,455 guard | 7,161 strength"]);
+  it("rests a realm on its player and name over its guard total, and says no strength", () => {
+    expect(read(realm, false)).toEqual(["Moonhand | Xeswet", "1,455 guard"]);
+    expect(read({ ...realm, guards: [realm.guards[0]] }, false)).toEqual(["Moonhand | Xeswet", "T1 516"]);
   });
 
   it("opens a realm on its guard slots in attack order, and the troops on their way, each time before its troops", () => {
-    expect(read(realm, true)).toEqual(["Moonhand | Xeswet", "T3 638 › T2 301 › T1 516 | 7,161 strength"]);
+    expect(read(realm, true)).toEqual(["Moonhand | Xeswet", "T3 638 › T2 301 › T1 516"]);
     const reinforced = { ...realm, arrivals: [{ troops: { type: "paladin", tier: 2, count: 300 }, secondsLeft: 780 }] };
     expect(read(reinforced as StructurePlate, true)).toEqual([
       "Moonhand | Xeswet",
-      "T3 638 › T2 301 › T1 516 | 7,161 strength",
+      "T3 638 › T2 301 › T1 516",
       "Arriving 13m T2 300",
     ]);
   });
 
   it("says Undefended in words where nothing guards it", () => {
-    expect(read({ ...realm, guards: [], strength: 0 }, false)).toEqual(["Moonhand | Xeswet", "Undefended"]);
+    expect(read({ ...realm, guards: [] }, false)).toEqual(["Moonhand | Xeswet", "Undefended"]);
   });
 
-  it("rests a rift or a camp on its lore name and kind over its guard and reward, and opens it with its owner", () => {
-    expect(read(rift, false)).toEqual(["Duskmere Essence Rift", "T2 300 | 1,200 Essence"]);
+  it("rests a rift or a camp on its lore name over its guard; opened, its owner, kind and what it holds", () => {
+    expect(read(rift, false)).toEqual(["Duskmere", "T2 300"]);
     expect(read(rift, true)).toEqual(["The Vanguard", "Duskmere Essence Rift", "T2 300 | 1,200 Essence"]);
+    expect(read(camp, false)).toEqual(["Orbroar", "T1 250"]);
+    expect(read(camp, true)).toEqual(["The Vanguard", "Orbroar Camp", "T1 250 | 640 Labor"]);
   });
 
   it("keeps every plate within two rows at rest and three opened", () => {
@@ -96,7 +106,7 @@ describe("what a map plate says (two short rows at rest, three at most opened, n
       ...rift,
       arrivals: [{ troops: { type: "knight", tier: 1, count: 100 }, secondsLeft: 60 }],
     } as StructurePlate;
-    for (const plate of [army, realm, rift, busy, { ...realm, arrivals: busy.arrivals }]) {
+    for (const plate of [army, realm, rift, camp, busy, { ...realm, arrivals: busy.arrivals }]) {
       expect(plateRows(plate, false).length).toBeLessThanOrEqual(2);
       expect(plateRows(plate, true).length).toBeLessThanOrEqual(3);
     }

@@ -95,8 +95,8 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
-import { buildStructurePlate, type TierStrength } from "../map-plates/map-plate-model";
-import { holdsGrowingEssence, readPlateReward } from "../map-plates/plate-reward";
+import { buildStructurePlate } from "../map-plates/map-plate-model";
+import { holdsGrowingReward, readPlateReward } from "../map-plates/plate-reward";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
   applyVisibleStructurePresentation,
@@ -126,9 +126,6 @@ import {
 
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
-
-/** A plate's guard strength reads the game's tier strengths. */
-const plateTierStrength: TierStrength = (tier) => configManager.getTierStrength(`T${tier}`);
 
 type StructureModel = InstancedModel | RewardTileModel;
 
@@ -1739,7 +1736,6 @@ export class StructureManager {
       position,
       plate: buildStructurePlate(
         structure,
-        plateTierStrength,
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),
@@ -1748,11 +1744,14 @@ export class StructureManager {
     this.metrics.compactLabelsShown = this.compactLabelIds.size;
   }
 
-  /** Says again the plates whose reward grows with time (a rift's Essence); unchanged words cost no render. */
+  /**
+   * Says again the plates whose holding grows with time (a rift's Essence, a camp's Labor); unchanged words cost no
+   * render.
+   */
   private refreshGrowingRewardPlates(): void {
     for (const entityId of this.compactLabelIds) {
       const structure = this.resolveStructureInfoByEntityId(entityId);
-      if (structure && holdsGrowingEssence(structure)) this.refreshStructurePlate(structure);
+      if (structure && holdsGrowingReward(structure)) this.refreshStructurePlate(structure);
     }
   }
 

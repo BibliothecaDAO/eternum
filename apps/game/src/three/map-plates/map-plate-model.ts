@@ -28,9 +28,8 @@ export interface ArmyPlate {
 }
 
 /**
- * A structure's plate: whose it is, its name and its guard (with its strength, for a realm or a hyperstructure); for a
- * camp or a rift, its lore name, its kind and what taking it gives. Opened: its guard slots, the troops on their way to
- * it, and a nameless place's owner.
+ * A structure's plate: whose it is, its name and its guard; for a camp or a rift, its lore name and guard. Opened: its
+ * guard slots, the troops on their way to it, and for a camp or a rift its owner, its kind and what it holds.
  */
 export interface StructurePlate {
   kind: "structure";
@@ -42,10 +41,8 @@ export interface StructurePlate {
   named: boolean;
   /** A nameless place's lore name, read off its id (`siteName`); absent for a named one. */
   place?: string;
-  /** What taking it gives, said in words: "1,200 Essence", "250 points". */
+  /** What taking it gives, said in words: "1,200 Essence", "50 Labor". */
   reward?: string;
-  /** Its guard's strength: each troop by its tier's strength (`ConfigManager.getTierStrength`). */
-  strength: number;
   /** Guard slots in slot order; empty when it stands undefended. */
   guards: PlateTroops[];
   /** Troops on their way to it (the player's own reinforcements), soonest first, at most three. */
@@ -54,7 +51,7 @@ export interface StructurePlate {
   icon: IconMeaning;
 }
 
-/** What taking a camp or a rift gives: an amount of a unit ("Essence", "points"). */
+/** What taking a camp or a rift gives: an amount of a unit ("Essence", "Labor"). */
 export interface PlateReward {
   amount: number;
   unit: string;
@@ -88,9 +85,6 @@ const tierOf = (tier: number | string): PlateTroops["tier"] => {
 /** A named structure's kinds: a realm and a hyperstructure carry their own names; the rest are named by their kind. */
 const NAMED: ReadonlySet<StructureType> = new Set([StructureType.Realm, StructureType.Hyperstructure]);
 
-/** A troop's strength by its tier (Frontier 1 / 3 / 9; `ConfigManager.getTierStrength`). */
-export type TierStrength = (tier: PlateTroops["tier"]) => number;
-
 export const buildStructurePlate = (
   structure: Pick<
     StructureInfo,
@@ -104,7 +98,6 @@ export const buildStructurePlate = (
     | "guardArmies"
     | "incomingTroopArrivals"
   >,
-  tierStrength: TierStrength,
   nowSeconds = 0,
   reward?: PlateReward,
 ): StructurePlate => {
@@ -123,7 +116,6 @@ export const buildStructurePlate = (
     named,
     place: named ? undefined : siteName(Number(structure.entityId)),
     reward: reward && reward.amount > 0 ? `${formatCount(reward.amount)} ${reward.unit}` : undefined,
-    strength: guards.reduce((sum, slot) => sum + slot.count * tierStrength(slot.tier), 0),
     icon:
       structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)

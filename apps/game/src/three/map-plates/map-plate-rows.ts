@@ -1,5 +1,5 @@
 import { formatDuration } from "@/ui/design-system/kit/time";
-import { ARRIVING, GUARD, STRENGTH, UNDEFENDED } from "@/ui/design-system/kit/words";
+import { ARRIVING, GUARD, UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import {
   attackOrder,
@@ -36,77 +36,70 @@ type PlateRow = readonly PlateSegment[];
  * What a plate says, row by row (the owner's rounds 5 and 6 of the map labels, the sheet's round 3): at rest two short
  * rows, opened (its tile hovered, or selected) at most three, from the most important fact down. No id anywhere.
  *
- * - An army: its player, then its troops and its stamina ("84/150"). Opened: the realm it comes from joins the player.
- * - A realm or a hyperstructure: its player and its name, then its guard total and strength. Opened: the guard slots in
- *   attack order replace the total, and a row of troops on their way follows, each time before its troops.
- * - A camp or a rift: its lore name and kind, then its guard and what taking it gives. Opened: its owner leads.
+ * - An army: its player, then its troops. Opened: the realm it comes from joins the player, its stamina ("84/150") its
+ *   troops.
+ * - A realm or a hyperstructure: its player and its name, then its guard. Opened: the guard slots in attack order, and
+ *   a row of troops on their way, each time before its troops.
+ * - A camp or a rift: its lore name, then its guard. Opened: its owner, its name and kind, and what it holds beside its
+ *   guard.
  */
 export const plateRows = (plate: MapPlate, open: boolean): PlateRow[] =>
   plate.kind === "army" ? armyRows(plate, open) : plate.named ? placeRows(plate, open) : siteRows(plate, open);
 
-const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] => [
+const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
   open
     ? [
-        { kind: "owner", text: plate.owner },
-        { kind: "title", text: plate.homeName },
+        [
+          { kind: "owner", text: plate.owner },
+          { kind: "title", text: plate.homeName },
+        ],
+        [
+          { kind: "troops", troops: plate.troops },
+          ...(plate.stamina ? [{ kind: "stamina", ...plate.stamina } as const] : []),
+        ],
       ]
-    : [{ kind: "owner", text: plate.owner }],
-  [
-    { kind: "troops", troops: plate.troops },
-    ...(plate.stamina ? [{ kind: "stamina", ...plate.stamina } as const] : []),
-  ],
-];
+    : [[{ kind: "owner", text: plate.owner }], [{ kind: "troops", troops: plate.troops }]];
 
 const placeRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
   const rows: PlateRow[] = [
     [{ kind: "owner", text: plate.owner }, { kind: "divider" }, { kind: "title", text: plate.name }],
-    restingGuard(plate.guards).kind === "open"
-      ? [{ kind: "label", text: UNDEFENDED }]
-      : [...(open ? slots(plate.guards) : guardTotal(plate.guards)), { kind: "divider" }, ...strength(plate)],
+    guard(plate.guards, open),
   ];
   if (open && plate.arrivals.length > 0) rows.push(arrivals(plate));
   return rows;
 };
 
 const siteRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
-  const name: PlateRow = [
-    ...(plate.place ? [{ kind: "title", text: plate.place } as const] : []),
-    { kind: "word", text: plate.name },
-  ];
-  const reward = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
-  if (!open) return [name, [...guard(plate.guards, false), ...reward]];
-  // Three rows at most: troops on their way to one of the player's own sites follow its guard on that row.
+  const name: PlateSegment = plate.place ? { kind: "title", text: plate.place } : { kind: "word", text: plate.name };
+  if (!open) return [[name], guard(plate.guards, false)];
+  // Three rows at most: what it holds, and troops on their way to one of the player's own sites, follow its guard.
+  const holds = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
-  return [[{ kind: "owner", text: plate.owner }], name, [...guard(plate.guards, true), ...reward, ...arriving]];
+  return [
+    [{ kind: "owner", text: plate.owner }],
+    plate.place ? [name, { kind: "word", text: plate.name }] : [name],
+    [...guard(plate.guards, true), ...holds, ...arriving],
+  ];
 };
 
 /**
- * A site's guard: none, "Undefended"; at rest one number (a single slot as its troop stack, several as their total);
- * opened, every slot in the order an attacker meets them.
+ * A guard: none, "Undefended"; at rest one number (a single slot as its troop stack, several as their total, "1,731
+ * guard"); opened, every slot in the order an attacker meets them.
  */
 const guard = (guards: readonly PlateTroops[], open: boolean): PlateSegment[] => {
   const resting = restingGuard(guards);
   if (resting.kind === "open") return [{ kind: "label", text: UNDEFENDED }];
   if (resting.kind === "slot") return [{ kind: "troops", troops: resting.slot }];
-  return open ? slots(guards) : [{ kind: "count", text: formatCount(resting.total) }];
-};
-
-const slots = (guards: readonly PlateTroops[]): PlateSegment[] =>
-  attackOrder(guards).flatMap((slot, index) => [
+  if (!open)
+    return [
+      { kind: "count", text: formatCount(resting.total) },
+      { kind: "label", text: GUARD },
+    ];
+  return attackOrder(guards).flatMap((slot, index) => [
     ...(index > 0 ? [{ kind: "next" } as const] : []),
     { kind: "troops", troops: slot } as const,
   ]);
-
-/** A realm's guard at rest: how many troops guard it ("1,731 guard"). */
-const guardTotal = (guards: readonly PlateTroops[]): PlateSegment[] => [
-  { kind: "count", text: formatCount(guards.reduce((sum, slot) => sum + slot.count, 0)) },
-  { kind: "label", text: GUARD },
-];
-
-const strength = (plate: StructurePlate): PlateSegment[] => [
-  { kind: "count", text: formatCount(plate.strength) },
-  { kind: "label", text: STRENGTH },
-];
+};
 
 /** Troops on their way, each when it arrives and then what arrives: "Arriving 13m T2 300". */
 const arrivals = (plate: StructurePlate): PlateSegment[] => [
