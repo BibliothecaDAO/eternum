@@ -351,6 +351,29 @@ describe("actions", () => {
     expect(launchCalls).toEqual([]);
   });
 
+  it("answers what the launch service did when the audit cannot record it, and never logs the action as failed", async () => {
+    const db = await dev.getD1Database("DB");
+    // The audit database refuses the completion, after the launch service has already acted.
+    await db
+      .prepare(
+        "CREATE TRIGGER refuse_done BEFORE UPDATE ON actions WHEN NEW.state = 'done' BEGIN SELECT RAISE(ABORT, 'audit unavailable'); END",
+      )
+      .run();
+    try {
+      const body = JSON.stringify({ name: "test-owner", players: ["0x1"] });
+      expect(await call(dev, "/api/actions/test-blitz", await owner(), { method: "POST", body })).toEqual({
+        status: 202,
+        body: { status: "queued" },
+      });
+      expect(launchCalls).toHaveLength(1);
+    } finally {
+      await db.prepare("DROP TRIGGER refuse_done").run();
+    }
+    expect((await call(dev, "/api/audit", await owner())).body.actions).toMatchObject([
+      { action: "Free test Blitz", state: "sent", status: null, response: null },
+    ]);
+  });
+
   it("keeps a sent action in the log as failed when the launch service answers with a redirect it refuses", async () => {
     launchRedirects = true;
     const body = JSON.stringify({ startsAt: "2026-10-22T20:00:00Z", endsAt: "2026-10-29T20:00:00Z" });
