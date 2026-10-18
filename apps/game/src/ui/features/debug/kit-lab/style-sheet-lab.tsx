@@ -512,6 +512,10 @@ const BubbleSection = () => (
           )}
         />
         <StateRow label="open" render={() => <HudBubble icon="transfer" word="Transfer" pressed />} />
+        <StateRow
+          label="ready"
+          render={() => <HudBubble icon="production" word="Production" count={3} countTone="good" />}
+        />
       </>
     }
     today={<CircleButton size="lg" image="military" label="Military" onClick={() => undefined} variant="hud" />}

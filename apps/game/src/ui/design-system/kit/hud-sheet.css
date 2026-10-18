@@ -1265,6 +1265,12 @@ button.ui-relic:focus-visible {
 .ui-badge[data-tone="bad"] {
   background: var(--hud-bad);
 }
+.ui-badge[data-tone="good"] {
+  background: var(--hud-good);
+}
+.ui-badge[data-tone="warn"] {
+  background: var(--hud-warn);
+}
 
 /* ── Meter: how full (stamina, production, a load): a track and its fill, in a tone. ── */
 .ui-meter {

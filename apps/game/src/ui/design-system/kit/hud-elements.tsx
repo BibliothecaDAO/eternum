@@ -1078,26 +1078,36 @@ export const HudSetting = ({ name, about, children }: { name: string; about?: st
   </div>
 );
 
-/** One of the HUD's round actions: its painting in a disc, its word under it, a count to act on on its rim. */
+/**
+ * One of the HUD's round actions: its painting in a disc, its word under it, a count to act on on its rim, in a tone
+ * when it says more (good: ready to collect). It is a button: its label, tooltip and anchor pass through.
+ */
 export const HudBubble = ({
   icon,
   word,
   count,
+  countTone,
   pressed,
   disabled,
   state,
+  ...rest
 }: {
   icon: IconMeaning;
   word: string;
   count?: number;
+  countTone?: Tone;
   pressed?: boolean;
   disabled?: boolean;
   state?: string;
-}) => (
-  <button type="button" className="ui-bubble" aria-pressed={pressed} disabled={disabled} data-state={state}>
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "children">) => (
+  <button type="button" {...rest} className="ui-bubble" aria-pressed={pressed} disabled={disabled} data-state={state}>
     <span className="ui-bubble__disc">
       <Icon name={icon} size={26} />
-      {count !== undefined && count > 0 && <span className="ui-badge">{count}</span>}
+      {count !== undefined && count > 0 && (
+        <span className="ui-badge" data-tone={countTone}>
+          {count}
+        </span>
+      )}
     </span>
     {word}
   </button>
