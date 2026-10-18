@@ -557,6 +557,13 @@ span.ui-row__choose {
   cursor: default;
   opacity: 0.6;
 }
+/* A row that is only read (a reference table): no cursor and no hover. */
+.ui-table-row[role="row"] {
+  cursor: default;
+}
+.ui-table-row[role="row"]:is(:hover, [data-state="hover"]) {
+  background: transparent;
+}
 .ui-table-row[aria-current="true"] {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);

@@ -2,7 +2,7 @@ import { act, createRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HudButton, HudField, HudRow, HudSelect, HudWindow, HudWindowFoot } from "./hud-elements";
+import { HudButton, HudField, HudRow, HudSelect, HudTableRow, HudWindow, HudWindowFoot } from "./hud-elements";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -120,6 +120,29 @@ describe("a row pressed to choose it", () => {
     act(() => chosen.click());
     act(() => sender.click());
     expect(pick.mock.calls).toEqual([["Hetokamohuti"]]);
+  });
+});
+
+describe("a table row", () => {
+  it("is pressed to choose it when it leads somewhere, and only read in a reference table when it does not", () => {
+    const pick = vi.fn();
+    act(() =>
+      root.render(
+        <div role="table" aria-label="Rewards">
+          <HudTableRow cols="1fr 64px" label="djizus: their points" onClick={pick}>
+            <span>djizus</span>
+          </HudTableRow>
+          <HudTableRow cols="1fr 64px" label="Essence: 30 percent">
+            <span role="cell">Essence</span>
+          </HudTableRow>
+        </div>,
+      ),
+    );
+    const [pressed, read] = [...host.querySelectorAll(".ui-table-row")];
+    act(() => (pressed as HTMLButtonElement).click());
+    expect([pressed.tagName, read.tagName, read.getAttribute("role")]).toEqual(["BUTTON", "DIV", "row"]);
+    expect(read.getAttribute("aria-label")).toBe("Essence: 30 percent");
+    expect(pick).toHaveBeenCalledTimes(1);
   });
 });
 

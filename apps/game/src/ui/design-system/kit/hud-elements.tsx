@@ -543,8 +543,9 @@ export const HudRow = ({
 
 /**
  * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up), with
- * the list row's hover and the chosen one's bar. It is a button, so Enter and Space choose it; `disabled` when it leads
- * nowhere, `title` its hover.
+ * the list row's hover and the chosen one's bar. With `onClick` it is a button, so Enter and Space choose it; `disabled`
+ * when it leads nowhere, `title` its hover. Without it the row is only read (a reference table in a role="table"): no
+ * hover, no cursor.
  */
 export const HudTableRow = ({
   cols,
@@ -564,23 +565,36 @@ export const HudTableRow = ({
   selected?: boolean;
   disabled?: boolean;
   state?: string;
-  onClick: () => void;
+  onClick?: () => void;
   children: ReactNode;
-}) => (
-  <button
-    type="button"
-    className="ui-table-row"
-    aria-label={label}
-    title={title}
-    aria-current={selected || undefined}
-    disabled={disabled}
-    data-state={state}
-    style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
-    onClick={onClick}
-  >
-    {children}
-  </button>
-);
+}) =>
+  onClick ? (
+    <button
+      type="button"
+      className="ui-table-row"
+      aria-label={label}
+      title={title}
+      aria-current={selected || undefined}
+      disabled={disabled}
+      data-state={state}
+      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  ) : (
+    <div
+      className="ui-table-row"
+      role="row"
+      aria-label={label}
+      title={title}
+      aria-current={selected || undefined}
+      data-state={state}
+      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
+    >
+      {children}
+    </div>
+  );
 
 /** A table's header: its column names on the same grid as its rows, staying over them as they scroll. */
 export const HudTableHead = ({
