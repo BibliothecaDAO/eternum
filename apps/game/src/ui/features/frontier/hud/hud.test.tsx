@@ -262,7 +262,8 @@ describe("the Menu", () => {
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
       )!;
-    expect(button("Season").textContent).toBe("Season#12");
+    // The rank sits beside the row's own button, in the row.
+    expect(button("Season").closest(".ui-row")?.textContent).toBe("Season#12");
     for (const [word, handler] of [
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],
@@ -280,7 +281,9 @@ describe("the Menu", () => {
   it("offers a spectator no Production and no guide", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
     act(() => root.render(<MenuSheet rank="—" guide={null} onProduction={null} {...ways} />));
-    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav button")].map((row) => row.textContent);
+    const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
+      (row) => row.textContent,
+    );
     expect(words).toEqual(["Today", "Season—", "Settings"]);
   });
 });
@@ -322,7 +325,7 @@ describe("the order bar", () => {
       ),
     );
     expect(host.querySelector('[aria-label="Essence +500"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("loss");
+    expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("bad");
   });
 
   it("shows what an order leaves and earns, then Cancel and the verb", () => {
@@ -345,8 +348,8 @@ describe("the order bar", () => {
       "stamina 90 → 60",
       "wheat −100",
       "Essence, labor +500",
-      "XP +2",
     ]);
+    expect(host.textContent).toContain("+2 XP");
     const buttons = [...host.querySelectorAll("button")].map((button) => button.textContent);
     expect(buttons).toEqual(["Cancel", "Explore"]);
     act(() => host.querySelectorAll("button")[1].click());
@@ -424,7 +427,7 @@ describe("the order bar", () => {
       ),
     );
     const wheat = host.querySelector('[aria-label="wheat 40 / 300"]');
-    expect(wheat?.getAttribute("data-tone")).toBe("loss");
+    expect(wheat?.getAttribute("data-tone")).toBe("bad");
     expect(host.querySelector('[aria-label="left 4m"]')).not.toBeNull();
     expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Cancel"]);
   });

@@ -90,7 +90,7 @@ describe("the result card", () => {
     expect(card.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="troops 1,100 → 0"]')).not.toBeNull();
     expect(card.textContent).toContain("+550");
-    expect(card.querySelector('[aria-label="XP +82"]')).not.toBeNull();
+    expect(card.textContent).toContain("+82 XP");
     act(() => card.click());
     expect(onClose).toHaveBeenCalled();
   });
@@ -107,7 +107,7 @@ describe("the result card", () => {
     expect(card.textContent).toContain("+550");
     const mark = card.querySelector('[aria-label="Store Full"]')!;
     expect(mark.getAttribute("data-tip")).toBe("The store is full: the rest did not fit");
-    expect(mark.getAttribute("data-tone")).toBe("loss");
+    expect(mark.getAttribute("data-tone")).toBe("bad");
   });
 
   it("carries no Full mark while the store has room", () => {

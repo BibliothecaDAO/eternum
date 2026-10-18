@@ -3,10 +3,9 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
-
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
+import { HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { formatDuration } from "@/ui/design-system/kit/time";
-import { TONE_TEXT, type Tone } from "@/ui/design-system/kit/tone";
+import type { Tone } from "@/ui/design-system/kit/tone";
 import { AN_HOUR, ESSENCE, FULL, FULL_IN, LABOR, OF, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
@@ -33,6 +32,13 @@ export type StoreReading = {
   flyTarget: string;
 };
 
+/** A store's tone on the sheet: calm reads as ink, within the hour as warn, at the limit as bad. */
+const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | undefined }> = {
+  calm: { text: "text-hud-ink", meter: undefined },
+  amber: { text: "text-hud-warn", meter: "warn" },
+  ember: { text: "text-hud-bad", meter: "bad" },
+};
+
 const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
   essence: { icon: "essence", word: ESSENCE },
   labor: { icon: "labor", word: LABOR },
@@ -53,7 +59,7 @@ export const StatusStrip = ({
   stores: StoreReading[];
   onOpenStores?: () => void;
 }) => (
-  <header className="frontier-card pointer-events-auto flex flex-col !rounded-xl px-1.5 pb-1 font-sans">
+  <HudPanel collapsible={false} bodyClassName="flex flex-col">
     <div className="flex h-12 items-center gap-1.5">
       <span className="flex w-11 shrink-0 justify-center">
         <DayDial day={clock.day} shareLeft={clock.shareLeft} tone={clock.tone} />
@@ -66,7 +72,7 @@ export const StatusStrip = ({
       tomorrowSeconds={clock.tomorrowSeconds}
       tone={clock.tone}
     />
-  </header>
+  </HudPanel>
 );
 
 const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => void }) => {
@@ -115,15 +121,27 @@ const StorePlate = ({ store }: { store: StoreReading }) => {
           <span data-fly-target={store.flyTarget} className="inline-flex">
             <SemanticIcon name={icon} size={18} />
           </span>
-          <span className={cn("text-hud-body leading-none tabular-nums", TONE_TEXT[store.tone])}>
+          <span className={cn("text-hud-body leading-none tabular-nums", STORE_TONES[store.tone].text)}>
             {shown === undefined ? "—" : <TickNumber value={shown} format={formatAmount} />}
           </span>
         </span>
-        <StoreBar amount={store.amount} limit={store.limit} tone={store.tone} />
+        <StoreMeter store={store} />
       </span>
     </span>
   );
 };
+
+/** How full a store is against its limit; a store with no limit (Essence) keeps the bar's room so the plates align. */
+const StoreMeter = ({ store }: { store: StoreReading }) =>
+  store.limit === undefined ? (
+    <span aria-hidden className="block h-1 w-full" />
+  ) : (
+    <HudMeter
+      share={store.amount === undefined || store.limit <= 0 ? 0 : store.amount / store.limit}
+      tone={STORE_TONES[store.tone].meter}
+      label={STORES[store.kind].word}
+    />
+  );
 
 /** A landing's "+N" shows this long, and never again when the counter remounts. */
 const DELTA_MS = 1_400;

@@ -44,7 +44,7 @@ describe("a guarded site's card", () => {
     const card = document.querySelector("section[aria-label='Camp']")!;
     expect(card.textContent).toContain("−180");
     expect(card.textContent).toContain("+550");
-    expect(card.querySelector('[aria-label="XP +82"]')).not.toBeNull();
+    expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.textContent).toBe("Attack30");
     act(() => attack.click());
@@ -163,16 +163,20 @@ describe("a guarded site's card with no army chosen", () => {
         />,
       ),
     );
-    const row = (label: string) => document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+    /** An army's row: its button names it and its troops, its forecast sits beside the button. */
+    const row = (label: string) =>
+      [...document.querySelectorAll(".ui-row")].find((candidate) =>
+        candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
+      )!;
     // Two attacks win it: the figures are the first one's, the troops it costs and the guard it leaves standing.
-    expect(row("Army 1").textContent).toBe("5,000−456492");
+    expect(row("Army 1").textContent).toBe("Army 15,000 troops−456492");
     expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
-    expect(row("Army 2").textContent).toBe("154−1541,028");
+    expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");
     expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
     // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
-    expect(row("Army 3").textContent).toBe("600");
+    expect(row("Army 3").textContent).toBe("Army 3600 troops");
     expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
-    act(() => row("Army 1").click());
+    act(() => row("Army 1").querySelector("button")!.click());
     expect(onPick).toHaveBeenCalled();
   });
 });

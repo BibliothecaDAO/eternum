@@ -8,7 +8,7 @@ import { useMemo } from "react";
 
 import { reachMark } from "../depth-art";
 
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
 
 /** The map tile the player tapped, when it holds a spire. */
 export const useSelectedTileObject = (): { kind: "spire"; tile: TileSpatialRenderable } | null => {
@@ -26,19 +26,15 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
   const mapLayer = useUIStore((state) => state.mapLayer);
   const setMapLayer = useUIStore((state) => state.setMapLayer);
   return (
-    <Sheet label="Spire" onClose={onClose}>
-      <header className="flex items-center gap-3">
-        <SemanticIcon name={reachMark(1)} size={96} />
-        <h2 className="frontier-title">Spire</h2>
-      </header>
-      <button
-        type="button"
+    <HudSheet label="Spire" onClose={onClose}>
+      <SemanticIcon name={reachMark(1)} size={96} />
+      <HudButton
+        kind="primary"
         aria-label={mapLayer ? "Look at the surface" : "Look at the depth"}
         onClick={() => setMapLayer(!mapLayer)}
-        className="frontier-primary"
       >
         Look
-      </button>
-    </Sheet>
+      </HudButton>
+    </HudSheet>
   );
 };

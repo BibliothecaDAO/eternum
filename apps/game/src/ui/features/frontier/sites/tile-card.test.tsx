@@ -372,7 +372,7 @@ describe("the result of the player's attack", () => {
     expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
-    expect(result()!.querySelector('[aria-label^="XP +"]')).not.toBeNull();
+    expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
     expect(result()!.querySelector('[aria-label="Store Full"]')).toBeNull();
     unmount();
   });
@@ -393,7 +393,7 @@ describe("the result of the player's attack", () => {
   it("shows a victory's XP alone when no payout record of the clear arrived", async () => {
     const { result, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
     expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
-    expect(result()!.querySelector('[aria-label^="XP +"]')).not.toBeNull();
+    expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
     expect(result()!.textContent).not.toContain("550");
     unmount();
   });
@@ -465,7 +465,9 @@ describe("an army picked from a site's card", () => {
     const asked: unknown[] = [];
     const hear = () => asked.push(takeArmySelectRequest());
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
-    const rows = [...host.querySelectorAll<HTMLButtonElement>("button[aria-label^='Army']")];
+    const rows = [...host.querySelectorAll<HTMLButtonElement>(".ui-row__choose")].filter((row) =>
+      row.textContent?.startsWith("Army"),
+    );
     expect(rows.length).toBeGreaterThan(0);
     act(() => rows[0].click());
     window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, hear);

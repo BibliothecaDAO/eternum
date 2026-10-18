@@ -1,7 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
-
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudButton, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, GUIDE, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -33,8 +31,7 @@ export const MenuSheet = ({
   onExit: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={MENU} onClose={onClose}>
-    <h2 className="frontier-title !text-hud-display">{MENU}</h2>
+  <HudSheet label={MENU} onClose={onClose}>
     <nav className="flex flex-col">
       <MenuRow icon="clock" word={TODAY} onClick={onToday} />
       <MenuRow
@@ -72,7 +69,7 @@ export const MenuSheet = ({
         </HudButton>
       </span>
     </div>
-  </Sheet>
+  </HudSheet>
 );
 
 const MenuRow = ({
@@ -86,14 +83,15 @@ const MenuRow = ({
   badge?: ReactNode;
   onClick: () => void;
 }) => (
-  <button
-    type="button"
+  <HudRow
+    lead={<SemanticIcon name={icon} size={22} />}
+    title={word}
+    trail={
+      <>
+        {badge}
+        <SemanticIcon name="chevron-right" size={20} />
+      </>
+    }
     onClick={onClick}
-    className="flex h-12 items-center gap-2 border-b border-hud-line px-1 text-left text-hud-body text-hud-ink"
-  >
-    <SemanticIcon name={icon} size={22} />
-    <span className="flex-1 text-hud-strong">{word}</span>
-    {badge}
-    <SemanticIcon name="chevron-right" size={20} />
-  </button>
+  />
 );

@@ -1,15 +1,12 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { FullIn } from "../full-in";
 import { hudPrices } from "../hud-prices";
-import { Chip, FullIn } from "@/ui/design-system/kit/chip";
 
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
-import { ATTRIBUTES, FIND_KINDS, STAMINA, TROOPS, UPGRADE, UPGRADING, XP } from "@/ui/design-system/kit/words";
+import { ATTRIBUTES, FIND_KINDS, FULL, STAMINA, TROOPS, UPGRADE, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 export type AttributeKey = "battle" | "logistics" | "scouting" | "homecoming";
@@ -79,11 +76,12 @@ export const ArmySheet = ({
   onUpgrade: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={name} onClose={onClose}>
+  <HudSheet label={name} onClose={onClose}>
     <header className="flex h-11 items-center gap-2">
       <SemanticIcon name={art} alt="" className="size-10 rounded-full border border-hud-line object-cover" />
-      <span className="truncate text-hud-body text-hud-ink">{name}</span>
-      <Chip icons={["troops"]} label={TROOPS} value={formatExact(troops)} />
+      <HudChip icons={["troops"]} label={TROOPS}>
+        {formatExact(troops)}
+      </HudChip>
       <span className="flex-1" />
       <span className="text-hud-display leading-none tabular-nums text-hud-gold">{formatExact(xp)}</span>
       <span className="text-hud-strong text-hud-ink">{XP}</span>
@@ -94,7 +92,7 @@ export const ArmySheet = ({
         <span className="text-hud-body tabular-nums text-hud-ink">
           {formatExact(stamina.current)} / {formatExact(stamina.max)}
         </span>
-        <StoreBar amount={stamina.current} limit={stamina.max} tone="calm" />
+        <HudMeter share={stamina.max > 0 ? stamina.current / stamina.max : 0} label={STAMINA} />
       </span>
       {stamina.secondsToFull !== undefined && stamina.secondsToFull > 0 && <FullIn seconds={stamina.secondsToFull} />}
       {refill}
@@ -125,7 +123,7 @@ export const ArmySheet = ({
       sending={sending}
       onUpgrade={onUpgrade}
     />
-  </Sheet>
+  </HudSheet>
 );
 
 const nextPrice = (tier: Tier, prices: Record<2 | 3 | 4 | 5, number>): number | undefined =>
@@ -148,41 +146,33 @@ const AttributeRow = ({
   chosen: boolean;
   onChoose: () => void;
 }) => (
-  <button
-    type="button"
-    aria-pressed={chosen}
-    aria-label={word}
-    onClick={onChoose}
-    className={cn(
-      "frontier-card flex h-hud-frontier-row shrink-0 items-center gap-2 !rounded-xl px-2 text-left",
-      chosen && "!border-2 !border-hud-line-strong",
-    )}
-  >
-    <SemanticIcon name={mark} size={26} />
-    <span className="text-hud-strong text-hud-ink">{word}</span>
-    <span className="flex gap-0.5">
-      {state.kinds?.map((kind, index) => (
-        <SemanticIcon key={index} name={KIND_ICONS[kind]} size={16} />
-      ))}
-    </span>
-    <span className="flex-1" />
-    <TierChip tier={state.tier} showWord={false} />
-    {price === undefined ? (
-      <SemanticIcon name="check" size={22} />
-    ) : affordable ? (
-      <span data-tone="price" className="frontier-chip h-7 !py-0 !pl-2.5">
-        <span className="contents">
-          <span className="frontier-chip-number tabular-nums !text-hud-body">{formatExact(price)}</span>
-          <span className="text-hud-strong text-hud-dark">{XP}</span>
+  <HudRow
+    lead={<SemanticIcon name={mark} size={26} />}
+    title={word}
+    detail={
+      state.kinds && state.kinds.length > 0 ? (
+        <span className="flex gap-0.5">
+          {state.kinds.map((kind, index) => (
+            <SemanticIcon key={index} name={KIND_ICONS[kind]} size={16} />
+          ))}
         </span>
-      </span>
-    ) : (
-      <span className="flex items-center gap-1 text-hud-bad">
-        <span className="text-hud-body tabular-nums">{formatExact(price)}</span>
-        <span className="text-hud-strong ">{XP}</span>
-      </span>
-    )}
-  </button>
+      ) : undefined
+    }
+    selected={chosen}
+    onClick={onChoose}
+    trail={
+      <>
+        <TierChip tier={state.tier} showWord={false} />
+        {price === undefined ? (
+          <SemanticIcon name="check" size={22} />
+        ) : (
+          <HudChip tone={affordable ? "good" : "bad"}>
+            {formatExact(price)} {XP}
+          </HudChip>
+        )}
+      </>
+    }
+  />
 );
 
 const ChosenTier = ({
@@ -217,7 +207,9 @@ const ChosenTier = ({
     return (
       <div className="flex items-center justify-center gap-2">
         <TierChip tier={5} showWord />
-        <Chip icons={[mark]} label={ATTRIBUTES[ATTRIBUTE_KEYS.indexOf(attribute)]} value={effects[4]} />
+        <HudChip icons={[mark]} label={ATTRIBUTES[ATTRIBUTE_KEYS.indexOf(attribute)]}>
+          {effects[4]}
+        </HudChip>
         <SemanticIcon name="check" size={22} />
       </div>
     );
@@ -237,11 +229,10 @@ const ChosenTier = ({
       )}
       <div className="flex items-center justify-center gap-2">
         {attribute !== "scouting" && (
-          <Chip
+          <HudChip
             icons={[mark]}
             label={ATTRIBUTES[ATTRIBUTE_KEYS.indexOf(attribute)]}
-            value={`${effects[state.tier - 1]} → ${effects[next - 1]}`}
-          />
+          >{`${effects[state.tier - 1]} → ${effects[next - 1]}`}</HudChip>
         )}
         <RefillFits refills={refills} of={refillOnBuy} />
       </div>
@@ -264,13 +255,13 @@ const ChosenTier = ({
 /** What a purchase refills: all of it lit, or what fits large with the full amount small beside a full bar. */
 const RefillFits = ({ refills, of }: { refills: number; of: number }) =>
   refills === of ? (
-    <Chip icons={["stamina"]} label={STAMINA} value={`+${formatExact(refills)}`} />
+    <HudChip icons={["stamina"]} label={STAMINA}>{`+${formatExact(refills)}`}</HudChip>
   ) : (
     <span className="flex items-center gap-1.5">
-      <Chip icons={["stamina"]} label={STAMINA} value={`+${formatExact(refills)}`} />
+      <HudChip icons={["stamina"]} label={STAMINA}>{`+${formatExact(refills)}`}</HudChip>
       <span className="text-hud-body tabular-nums text-hud-bad">{formatExact(of)}</span>
       <span className="w-10">
-        <StoreBar amount={1} limit={1} tone="ember" />
+        <HudMeter share={1} tone="bad" label={FULL} />
       </span>
     </span>
   );
@@ -285,27 +276,16 @@ export const KindChoice = ({
   lifted: ScoutKind;
   onKind: (kind: ScoutKind) => void;
 }) => (
-  <div role="radiogroup" className="flex gap-2">
+  <div role="listbox" aria-label={ATTRIBUTES[2]} className="flex flex-col">
     {KINDS.map((kind, index) => (
-      <button
+      <HudRow
         key={kind}
-        type="button"
-        role="radio"
-        aria-checked={kind === lifted}
-        aria-label={FIND_KINDS[index]}
+        lead={<SemanticIcon name={KIND_ICONS[kind]} size={28} />}
+        title={FIND_KINDS[index]}
+        detail={`${rates[kind][0]} → ${rates[kind][1]}`}
+        selected={kind === lifted}
         onClick={() => onKind(kind)}
-        className={cn(
-          "frontier-card flex h-hud-frontier-kind flex-1 flex-col items-center justify-center gap-1 !rounded-xl",
-          kind === lifted && "!border-2 !border-hud-line-strong",
-        )}
-      >
-        <SemanticIcon name={KIND_ICONS[kind]} size={28} />
-        <span className="flex items-baseline gap-1 tabular-nums text-hud-ink">
-          <span className="text-hud-body">{rates[kind][0]}</span>
-          <span className="text-hud-body">→</span>
-          <span className="text-hud-body text-hud-gold">{rates[kind][1]}</span>
-        </span>
-      </button>
+      />
     ))}
   </div>
 );

@@ -1,6 +1,7 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import { CHAT, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
@@ -41,22 +42,25 @@ export const PlaceNav = ({
     <Slot key={to} to={to} lit={place === to} icon={icon} word={word} badge={badge} onClick={() => onGo(to)} />
   );
   return (
-    <nav
-      aria-label="Places"
-      className="frontier-card pointer-events-auto flex h-14 items-stretch justify-between gap-0.5 !rounded-2xl"
-    >
-      {slot("map", "map", MAP)}
-      {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
-      <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />
-      {researchDot !== undefined &&
-        slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
-      {slot(
-        "chat",
-        "chat",
-        CHAT,
-        unread > 0 && <span className="text-hud-body leading-none tabular-nums">{formatAmount(unread)}</span>,
-      )}
-      {slot("menu", "menu", MENU)}
+    <nav aria-label="Places" className="flex">
+      <HudPanel
+        collapsible={false}
+        className="flex-1"
+        bodyClassName="flex h-14 items-stretch justify-between gap-0.5 p-0"
+      >
+        {slot("map", "map", MAP)}
+        {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
+        <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />
+        {researchDot !== undefined &&
+          slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
+        {slot(
+          "chat",
+          "chat",
+          CHAT,
+          unread > 0 && <span className="text-hud-body leading-none tabular-nums">{formatAmount(unread)}</span>,
+        )}
+        {slot("menu", "menu", MENU)}
+      </HudPanel>
     </nav>
   );
 };

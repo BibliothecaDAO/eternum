@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
@@ -172,9 +172,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
         {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
         {surface === "settings" && (
-          <Sheet label={SETTINGS} onClose={close}>
+          <HudSheet label={SETTINGS} onClose={close}>
             <SettingsPanel />
-          </Sheet>
+          </HudSheet>
         )}
         {surface === "guide" && <HudGuide onClose={close} />}
         {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}

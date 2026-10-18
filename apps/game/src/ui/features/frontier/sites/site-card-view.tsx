@@ -1,19 +1,15 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import type { Price } from "@/ui/design-system/kit/button";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
-import { hudPrices } from "../hud-prices";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
+import { HudButton, HudChip, HudMeter, HudPanel, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { hudPrices, type Price } from "../hud-prices";
 import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
+  FULL,
   LORDS,
   MOVE,
   needsStamina,
@@ -105,28 +101,26 @@ export const SiteCardView = ({
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined && choices.length > 0;
   return (
-    <Sheet label={word} onClose={onClose}>
-      <header className="flex items-center gap-3">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
-          <SemanticIcon name={icon} size={36} />
-        </span>
-        <h2 className="frontier-title flex-1">{word}</h2>
-        {picking && guard !== null && <Chip icons={["troops"]} label={TROOPS} value={formatExact(guard)} />}
+    <HudSheet label={word} onClose={onClose}>
+      <header className="flex items-center justify-between gap-3">
+        <SiteMark icon={icon} />
+        {picking && guard !== null && (
+          <HudChip icons={["troops"]} label={TROOPS}>
+            {formatExact(guard)}
+          </HudChip>
+        )}
       </header>
       {picking && choices ? <Choices choices={choices} /> : <Matchup army={army} beast={beast} guard={guard} />}
       <div className="flex gap-2">
         {!picking && <FightPlate fight={fight} />}
-        <div
-          className={cn(
-            "frontier-card flex h-hud-frontier-card flex-1 flex-col items-center justify-center gap-1 !rounded-xl !border-2 !border-hud-line-strong",
-            lost && "opacity-50",
-          )}
-        >
+        <Plate dimmed={lost}>
           {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
           {xp !== undefined && !(chest && lost) && (
-            <Chip icons={[]} label={XP} value={`+${formatAmount(xp)}`} unit={XP} />
+            <HudChip>
+              {`+${formatAmount(xp)}`} {XP}
+            </HudChip>
           )}
-        </div>
+        </Plate>
       </div>
       {guide}
       <Verb
@@ -135,9 +129,28 @@ export const SiteCardView = ({
         armyLost={lost === true}
         onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined}
       />
-    </Sheet>
+    </HudSheet>
   );
 };
+
+/** A site's painting at the head of its card; `children` marks it (a won fight's flag). */
+export const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode }) => (
+  <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
+    <SemanticIcon name={icon} size={36} />
+    {children}
+  </span>
+);
+
+/** One half of a card's outcome pair, a fight or a pay, on the panel's surface; dimmed when it will not happen. */
+const Plate = ({ dimmed = false, children }: { dimmed?: boolean; children: ReactNode }) => (
+  <HudPanel
+    collapsible={false}
+    className={cn("flex-1", dimmed && "opacity-50")}
+    bodyClassName="flex h-hud-frontier-card flex-col items-center justify-center gap-1.5"
+  >
+    {children}
+  </HudPanel>
+);
 
 const Matchup = ({
   army,
@@ -150,16 +163,17 @@ const Matchup = ({
 }) => (
   <div className="flex items-center justify-center gap-2">
     {army && (
-      <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
-        <span className="contents">
-          <SemanticIcon name={army.art} alt="" className="size-6 rounded-full object-cover" />
-          <span className="frontier-chip-number tabular-nums !text-hud-body">{formatExact(army.troops)}</span>
-        </span>
-      </span>
+      <HudChip icons={[army.art]} label={TROOPS}>
+        {formatExact(army.troops)}
+      </HudChip>
     )}
     <SemanticIcon name="attack" size={22} />
     {beast && <span className="text-hud-strong text-hud-ink">{beast}</span>}
-    {guard !== null && <Chip icons={["troops"]} label={TROOPS} value={formatExact(guard)} />}
+    {guard !== null && (
+      <HudChip icons={["troops"]} label={TROOPS}>
+        {formatExact(guard)}
+      </HudChip>
+    )}
   </div>
 );
 
@@ -167,32 +181,30 @@ const Matchup = ({
 const Choices = ({ choices }: { choices: readonly SiteChoice[] }) => (
   <div className="flex flex-col gap-1.5">
     {choices.map((choice) => (
-      <button
+      <HudRow
         key={choice.label}
-        type="button"
-        aria-label={choice.label}
+        lead={<SemanticIcon name={choice.art} alt="" className="size-8 rounded-full object-cover" />}
+        title={choice.label}
+        detail={`${formatExact(choice.troops)} ${TROOPS}`}
         onClick={choice.onPick}
-        className="frontier-card flex h-14 w-full items-center gap-2 !rounded-xl px-2.5"
-      >
-        <SemanticIcon name={choice.art} alt="" className="size-8 rounded-full object-cover" />
-        <span className="text-hud-body tabular-nums text-hud-ink">{formatExact(choice.troops)}</span>
-        <span className="flex flex-1 items-center justify-end gap-3">
-          <Forecast fight={choice.fight} size="row" />
-        </span>
-        <SemanticIcon name="chevron-right" size={16} />
-      </button>
+        trail={
+          <>
+            <Forecast fight={choice.fight} size="row" />
+            <SemanticIcon name="chevron-right" size={16} />
+          </>
+        }
+      />
     ))}
   </div>
 );
 
 /** The fight: attacks to win as pips beside the flag and what this attack costs; or, a loss, in amber, never greyed. */
 const FightPlate = ({ fight }: { fight: SiteFight | undefined }) => (
-  <div
-    {...guideTarget("forecast")}
-    className="frontier-card flex h-hud-frontier-card flex-1 flex-col items-center justify-center gap-1.5 !rounded-xl"
-  >
-    <Forecast fight={fight} size="plate" />
-  </div>
+  <span {...guideTarget("forecast")} className="flex flex-1">
+    <Plate>
+      <Forecast fight={fight} size="plate" />
+    </Plate>
+  </span>
 );
 
 /**
@@ -271,7 +283,7 @@ const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number 
       {short && (
         <span className="flex w-4/5 items-center gap-1.5">
           <span className="text-hud-body tabular-nums text-hud-muted">{formatExact(pay.amount)}</span>
-          <StoreBar amount={1} limit={1} tone="ember" />
+          <HudMeter share={1} tone="bad" label={FULL} />
         </span>
       )}
     </>

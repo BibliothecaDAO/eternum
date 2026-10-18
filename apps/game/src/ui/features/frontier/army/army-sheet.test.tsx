@@ -61,14 +61,21 @@ const render = (
     ),
   );
 
-const row = (word: string) => host.querySelector<HTMLButtonElement>(`button[aria-label="${word}"]`)!;
+/** An attribute's row: its button names it, its price and tick sit beside the button. */
+const row = (word: string) =>
+  [...host.querySelectorAll(".ui-row")].find((candidate) => candidate.querySelector("button")?.textContent === word)!;
+/** One of Scouting's kinds, chosen by its name. */
+const kind = (word: string) =>
+  [...host.querySelectorAll<HTMLButtonElement>('[role="option"]')].find((option) =>
+    option.textContent?.startsWith(word),
+  )!;
 const upgrade = () => [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Upgrade"));
 
 describe("the army", () => {
   it("prices each attribute's next tier in XP, lit when affordable, ember when not, a tick at legendary", () => {
     render("logistics");
-    expect(row("Logistics").textContent).toBe("Logistics100XP");
-    expect(row("Battle").querySelector(".text-hud-bad")?.textContent).toBe("400XP");
+    expect(row("Logistics").querySelector('[data-tone="good"]')?.textContent).toBe("100 XP");
+    expect(row("Battle").querySelector('[data-tone="bad"]')?.textContent).toBe("400 XP");
     expect(row("Homecoming").querySelector('img[src="/icons/facets/64/check.webp"]')).not.toBeNull();
   });
 
@@ -92,9 +99,9 @@ describe("the army", () => {
   it("chooses Scouting's kind with each kind's find rate before and after", () => {
     const onKind = vi.fn();
     render("scouting", {}, vi.fn(), onKind);
-    const camps = host.querySelector<HTMLButtonElement>('[aria-label="Find camps"]')!;
-    expect(camps.textContent).toBe("4%→4.4%");
-    expect(host.querySelector('[aria-label="Find rifts"]')?.getAttribute("aria-checked")).toBe("true");
+    const camps = kind("Find camps");
+    expect(camps.textContent).toBe("Find camps4% → 4.4%");
+    expect(kind("Find rifts").getAttribute("aria-selected")).toBe("true");
     act(() => camps.click());
     expect(onKind).toHaveBeenCalledWith("camp");
   });

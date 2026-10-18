@@ -1,8 +1,7 @@
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { formatAmount, formatCharge, formatExact } from "@/ui/design-system/kit/amount";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
-import { Chip } from "@/ui/design-system/kit/chip";
+import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import { formatDuration } from "@/ui/design-system/kit/time";
 import {
@@ -62,15 +61,23 @@ export const OrderBar = ({
   const verb = VERBS[kind];
   return (
     <>
-      <div className="frontier-card pointer-events-auto flex min-h-11 flex-wrap items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
+      <HudPanel collapsible={false} bodyClassName="flex min-h-11 flex-wrap items-center justify-center gap-1.5">
         <CostChip icon="stamina" label={STAMINA} cost={stamina} after={(held) => `${held} → ${held - stamina.cost}`} />
         <CostChip icon="wheat" label={WHEAT} cost={wheat} after={() => `−${formatCharge(wheat.cost)}`} />
         {covered && kind === "explore" && revealYield !== null && (
           <RevealYield revealYield={revealYield} laborFits={laborFits} />
         )}
-        {covered && kind === "explore" && <Chip icons={[]} label={XP} value={`+${formatAmount(xp)}`} unit={XP} />}
-        {covered && kind === "move" && <Chip icons={["move"]} label={MOVE} value={formatAmount(tiles)} />}
-      </div>
+        {covered && kind === "explore" && (
+          <HudChip>
+            {`+${formatAmount(xp)}`} {XP}
+          </HudChip>
+        )}
+        {covered && kind === "move" && (
+          <HudChip icons={["move"]} label={MOVE}>
+            {formatAmount(tiles)}
+          </HudChip>
+        )}
+      </HudPanel>
       <div className={cn("pointer-events-auto grid gap-2", (covered || staminaShort) && "grid-cols-3")}>
         <HudButton kind="quiet" onClick={onCancel}>
           {CANCEL}
@@ -94,9 +101,15 @@ export const OrderBar = ({
  */
 export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
   <div className="pointer-events-auto grid grid-cols-3 gap-2">
-    <div className="frontier-card col-span-2 flex min-h-11 items-center justify-center gap-1.5 !rounded-xl px-1 py-1.5">
-      <Chip icons={["hourglass"]} label={NEXT_ORDER} value={QUEUED} />
-    </div>
+    <HudPanel
+      collapsible={false}
+      className="col-span-2"
+      bodyClassName="flex min-h-11 items-center justify-center gap-1.5"
+    >
+      <HudChip icons={["hourglass"]} label={NEXT_ORDER}>
+        {QUEUED}
+      </HudChip>
+    </HudPanel>
     <HudButton kind="quiet" onClick={onCancel}>
       {CANCEL}
     </HudButton>
@@ -115,11 +128,24 @@ const CostChip = ({
   cost: Cost;
   after: (held: number) => string;
 }) => {
-  if (cost.held !== undefined && isCovered(cost)) return <Chip icons={[icon]} label={label} value={after(cost.held)} />;
+  if (cost.held !== undefined && isCovered(cost))
+    return (
+      <HudChip icons={[icon]} label={label}>
+        {after(cost.held)}
+      </HudChip>
+    );
   return (
     <>
-      <Chip icons={[icon]} label={label} value={`${formatHeld(cost.held)} / ${formatCharge(cost.cost)}`} ember />
-      {cost.wait !== undefined && <Chip icons={["hourglass"]} label={LEFT} value={formatDuration(cost.wait)} />}
+      <HudChip
+        icons={[icon]}
+        label={label}
+        tone="bad"
+      >{`${formatHeld(cost.held)} / ${formatCharge(cost.cost)}`}</HudChip>
+      {cost.wait !== undefined && (
+        <HudChip icons={["hourglass"]} label={LEFT}>
+          {formatDuration(cost.wait)}
+        </HudChip>
+      )}
     </>
   );
 };
@@ -131,13 +157,11 @@ const formatHeld = (held: number | undefined): string => formatExact(held === un
 const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>
   revealYield !== undefined && laborFits !== undefined && laborFits < revealYield ? (
     <>
-      <Chip icons={["essence"]} label={ESSENCE} value={`+${formatAmount(revealYield)}`} />
-      <Chip icons={["labor"]} label={LABOR} value={`+${formatAmount(laborFits)}`} ember />
+      <HudChip icons={["essence"]} label={ESSENCE}>{`+${formatAmount(revealYield)}`}</HudChip>
+      <HudChip icons={["labor"]} label={LABOR} tone="bad">{`+${formatAmount(laborFits)}`}</HudChip>
     </>
   ) : (
-    <Chip
-      icons={["essence", "labor"]}
-      label={`${ESSENCE}, ${LABOR}`}
-      value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
-    />
+    <HudChip icons={["essence", "labor"]} label={`${ESSENCE}, ${LABOR}`}>
+      {revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
+    </HudChip>
   );

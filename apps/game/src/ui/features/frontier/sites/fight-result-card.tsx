@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Chip } from "@/ui/design-system/kit/chip";
+import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import {
   ARMY,
@@ -19,6 +19,7 @@ import type { ReactNode } from "react";
 
 import type { TroopsChange } from "./fight-record";
 import type { FightResult, FightVerdict } from "./fight-result";
+import { SiteMark } from "./site-card-view";
 import { TARGET_MARKS } from "./site-marks";
 
 export const VERDICT_WORDS: Record<FightVerdict, string> = {
@@ -50,14 +51,13 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
       className="flex w-full flex-col gap-2 text-left"
     >
       <span className="flex items-center gap-3">
-        <span className="relative flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
-          <SemanticIcon name={icon} size={36} />
+        <SiteMark icon={icon}>
           {result.verdict === "victory" && (
             <SemanticIcon name="flag" size={22} className="absolute bottom-0.5 right-0.5" />
           )}
-        </span>
+        </SiteMark>
         <span className="flex min-w-0 flex-col">
-          <span className={cn("frontier-title", VERDICT_TONES[result.verdict])}>{verdict}</span>
+          <span className={cn("text-hud-title", VERDICT_TONES[result.verdict])}>{verdict}</span>
           <span className="text-hud-body text-hud-muted">{word}</span>
         </span>
       </span>
@@ -70,7 +70,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
         {result.guard && <Side label={TROOPS} mark={<SemanticIcon name="troops" size={24} />} troops={result.guard} />}
       </span>
       {result.gained && (
-        <span className="frontier-card flex h-14 items-center justify-center gap-3 !rounded-xl !border-2 !border-hud-line-strong">
+        <HudPanel collapsible={false} bodyClassName="flex h-14 items-center justify-center gap-3">
           {result.gained.pay && (
             <span className="flex items-center gap-1.5">
               <SemanticIcon name={result.gained.pay.icon} size={26} />
@@ -78,12 +78,16 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
                 +{formatExact(result.gained.pay.amount)}
               </span>
               {result.gained.pay.storeFull && (
-                <Chip icons={[]} label={STORE} value={FULL} ember tip={REST_DID_NOT_FIT} />
+                <HudChip label={STORE} tone="bad" tip={REST_DID_NOT_FIT}>
+                  {FULL}
+                </HudChip>
               )}
             </span>
           )}
-          <Chip icons={[]} label={XP} value={`+${formatExact(result.gained.xp)}`} unit={XP} />
-        </span>
+          <HudChip>
+            {`+${formatExact(result.gained.xp)}`} {XP}
+          </HudChip>
+        </HudPanel>
       )}
     </button>
   );
@@ -94,15 +98,17 @@ const Side = ({ label, mark, troops }: { label: string; mark: ReactNode; troops:
   <span
     role="img"
     aria-label={`${label} ${formatExact(troops.before)} → ${formatExact(troops.after)}`}
-    className="frontier-card flex h-16 min-w-0 flex-1 items-center justify-center gap-2 !rounded-xl"
+    className="flex min-w-0 flex-1"
   >
-    {mark}
-    <span aria-hidden className="flex items-baseline gap-1.5 tabular-nums">
-      <span className="text-hud-body text-hud-muted">{formatExact(troops.before)}</span>
-      <span className="text-hud-body text-hud-muted">→</span>
-      <span className={cn("text-hud-display leading-none", troops.after === 0 ? "text-hud-bad" : "text-hud-ink")}>
-        {formatExact(troops.after)}
+    <HudPanel collapsible={false} className="flex-1" bodyClassName="flex h-16 items-center justify-center gap-2">
+      {mark}
+      <span aria-hidden className="flex items-baseline gap-1.5 tabular-nums">
+        <span className="text-hud-body text-hud-muted">{formatExact(troops.before)}</span>
+        <span className="text-hud-body text-hud-muted">→</span>
+        <span className={cn("text-hud-display leading-none", troops.after === 0 ? "text-hud-bad" : "text-hud-ink")}>
+          {formatExact(troops.after)}
+        </span>
       </span>
-    </span>
+    </HudPanel>
   </span>
 );

@@ -3,7 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { closeFightResult, useFightResult } from "./sites/fight-result";
 import { FightResultCard } from "./sites/fight-result-card";
 import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
@@ -46,9 +46,9 @@ export const FrontierSelectionSheet = ({
   };
   if (fight)
     return (
-      <Sheet label={TARGET_MARKS[fight.site].word} onClose={closeFightResult}>
+      <HudSheet label={TARGET_MARKS[fight.site].word} onClose={closeFightResult}>
         <FightResultCard result={fight} onClose={closeFightResult} />
-      </Sheet>
+      </HudSheet>
     );
   if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />;
   if (target) return <TileCard selected={target} onClose={close} />;

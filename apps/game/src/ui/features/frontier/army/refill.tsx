@@ -1,11 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { hudPrices } from "../hud-prices";
-import { Chip } from "@/ui/design-system/kit/chip";
-
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { CANCEL, LORDS, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
 /**
@@ -25,18 +21,16 @@ export const RefillButton = ({
   onRefill: () => void;
 }) =>
   held !== undefined && held < price ? (
-    <span
-      role="img"
-      aria-label={`${LORDS} ${formatExact(held)} / ${formatExact(price)}`}
-      className="frontier-card flex h-12 shrink-0 items-center gap-1.5 !rounded-xl px-2"
-    >
-      <SemanticIcon name="lords" size={18} />
-      <span className="flex min-w-14 flex-col gap-1">
-        <span className="whitespace-nowrap text-hud-body tabular-nums text-hud-ink">
-          {formatExact(held)} / {formatExact(price)}
+    <span role="img" aria-label={`${LORDS} ${formatExact(held)} / ${formatExact(price)}`} className="flex shrink-0">
+      <HudPanel collapsible={false} bodyClassName="flex items-center gap-1.5">
+        <SemanticIcon name="lords" size={18} />
+        <span className="flex min-w-14 flex-col gap-1">
+          <span className="whitespace-nowrap text-hud-body tabular-nums text-hud-ink">
+            {formatExact(held)} / {formatExact(price)}
+          </span>
+          <HudMeter share={price > 0 ? held / price : 0} label={LORDS} />
         </span>
-        <StoreBar amount={held} limit={price} tone="calm" />
-      </span>
+      </HudPanel>
     </span>
   ) : (
     <HudButton
@@ -69,22 +63,16 @@ export const RefillConfirm = ({
 }) => {
   const price = Math.max(0, stamina.max - stamina.current);
   return (
-    <Sheet label={REFILL} onClose={onCancel}>
-      <header className="flex items-center gap-2.5">
-        <SemanticIcon name="stamina" size={30} />
-        <h2 className="frontier-title flex-1 !text-hud-display">{REFILL}</h2>
-      </header>
+    <HudSheet label={REFILL} onClose={onCancel}>
       <div className="flex items-center justify-center gap-2">
-        <Chip
+        <HudChip
           icons={["stamina"]}
           label={STAMINA}
-          value={`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}
-        />
-        <Chip
+        >{`${formatExact(stamina.current)} → ${formatExact(stamina.max)}`}</HudChip>
+        <HudChip
           icons={["lords"]}
           label={LORDS}
-          value={`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}
-        />
+        >{`${formatExact(held)} → ${held === undefined ? "—" : formatExact(held - price)}`}</HudChip>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <HudButton kind="quiet" onClick={onCancel}>
@@ -101,6 +89,6 @@ export const RefillConfirm = ({
           </HudButton>
         </span>
       </div>
-    </Sheet>
+    </HudSheet>
   );
 };

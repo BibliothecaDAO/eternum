@@ -1,7 +1,8 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Chip, FullIn } from "@/ui/design-system/kit/chip";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
+import { FullIn } from "../full-in";
 
 import { ATTRIBUTES, RETURNED, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
@@ -256,6 +257,6 @@ const WideRows = ({
 }) => (
   <span className="flex w-full flex-wrap items-center justify-center gap-1">
     {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
-    <Chip icons={["order-enlightenment", "troops"]} label={RETURNED} value={`+${formatAmount(returnsHome)}`} />
+    <HudChip icons={["order-enlightenment", "troops"]} label={RETURNED}>{`+${formatAmount(returnsHome)}`}</HudChip>
   </span>
 );

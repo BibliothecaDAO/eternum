@@ -1,8 +1,10 @@
 import { formatCharge } from "@/ui/design-system/kit/amount";
-import type { Price } from "@/ui/design-system/kit/button";
 import type { HudButton } from "@/ui/design-system/kit/hud-elements";
-import { PRICE_FACES } from "@/ui/design-system/kit/price-chip";
+import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-chip";
 import type { ComponentProps } from "react";
+
+/** What a Frontier verb pays: one of the game's stores and how much, unknown until its facts arrive. */
+export type Price = { of: PriceKind; amount: number | undefined };
 
 type HudPrice = NonNullable<ComponentProps<typeof HudButton>["prices"]>[number];
 

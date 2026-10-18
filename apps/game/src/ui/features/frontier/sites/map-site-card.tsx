@@ -8,12 +8,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { hudPrices } from "../hud-prices";
-import { Chip } from "@/ui/design-system/kit/chip";
 
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { MOVE, SHRINE, STAMINA, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
+import { MOVE, SHRINE, STAMINA, TROOPS, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
@@ -27,7 +25,7 @@ import { armyArt, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { type MapSiteKind, mapSiteKind, readMapSite } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
-import { inFlightWord } from "./site-card-view";
+import { inFlightWord, SiteMark } from "./site-card-view";
 import { armWellRefill } from "./well-refill";
 
 const MAP_SITE_MODELS = ["ArmyProgress", "ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
@@ -90,28 +88,22 @@ export const MapSiteCard = ({
 
   const word = plan.kind === "Shrine" ? SHRINE : WELL;
   return (
-    <Sheet label={word} onClose={onClose}>
-      <header className="flex items-center gap-3">
-        <span className="flex size-16 shrink-0 items-center justify-center rounded-xl border border-hud-line bg-hud-surface">
-          <SemanticIcon name={plan.kind === "Shrine" ? "shrine" : "well"} size={40} />
-        </span>
-        <h2 className="frontier-title flex-1">{word}</h2>
-      </header>
+    <HudSheet label={word} onClose={onClose}>
+      <SiteMark icon={plan.kind === "Shrine" ? "shrine" : "well"} />
       <div className="flex items-center justify-center gap-2.5">
         {user && (
-          <span data-tone="lit" className="frontier-chip h-8 !py-0 !pl-1">
-            <span className="contents">
-              <SemanticIcon name={armyArt(user.army.troops)} alt="" className="size-6 rounded-full object-cover" />
-              <span className="frontier-chip-number tabular-nums !text-hud-body">
-                {formatExact(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
-              </span>
-            </span>
-          </span>
+          <HudChip icons={[armyArt(user.army.troops)]} label={TROOPS}>
+            {formatExact(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
+          </HudChip>
         )}
         {plan.kind === "Well" ? (
-          <Chip icons={["stamina"]} label={STAMINA} value={wellGain(plan.gain, stamina)} />
+          <HudChip icons={["stamina"]} label={STAMINA}>
+            {wellGain(plan.gain, stamina)}
+          </HudChip>
         ) : (
-          <Chip icons={[]} label={XP} value={plan.gain === undefined ? "—" : `+${formatAmount(plan.gain)}`} unit={XP} />
+          <HudChip>
+            {plan.gain === undefined ? "—" : `+${formatAmount(plan.gain)}`} {XP}
+          </HudChip>
         )}
       </div>
       {plan.usable ? (
@@ -133,7 +125,7 @@ export const MapSiteCard = ({
           </HudButton>
         )
       )}
-    </Sheet>
+    </HudSheet>
   );
 };
 

@@ -1,11 +1,12 @@
 import { useGame } from "@/hooks/context/game-context";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Chip, FullIn } from "@/ui/design-system/kit/chip";
+import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { ARMY, ESSENCE, LABOR, STAMINA } from "@/ui/design-system/kit/words";
 import { configManager, entityMapPosition, expeditionDepth } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 import { useExpeditionRules } from "../frontier-home";
+import { FullIn } from "../full-in";
 import { useRevealYield } from "../frontier-reveal-yield";
 import type { DockArmy } from "./dock-armies";
 
@@ -24,25 +25,29 @@ export const ArmyStatusBar = ({
   revealYield: number | undefined | null;
   /** A tap opens the army: its tiers and Upgrade. */
   onOpen?: () => void;
-}) => (
-  <button
-    type="button"
-    aria-label={ARMY}
-    disabled={!onOpen}
-    onClick={onOpen}
-    className="frontier-card pointer-events-auto flex h-11 w-full items-center justify-center gap-1.5 !rounded-xl px-1"
-  >
-    <Chip icons={["stamina"]} label={STAMINA} value={formatAmount(stamina)} />
-    {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
-    {revealYield !== null && (
-      <Chip
-        icons={["essence", "labor"]}
-        label={`${ESSENCE}, ${LABOR}`}
-        value={revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
-      />
-    )}
-  </button>
-);
+}) => {
+  const readings = [
+    <HudChip key="stamina" icons={["stamina"]} label={STAMINA}>
+      {formatAmount(stamina)}
+    </HudChip>,
+    secondsToFull !== undefined && secondsToFull > 0 && <FullIn key="full" seconds={secondsToFull} />,
+    revealYield !== null && (
+      <HudChip key="yield" icons={["essence", "labor"]} label={`${ESSENCE}, ${LABOR}`}>
+        {revealYield === undefined ? "—" : `+${formatAmount(revealYield)}`}
+      </HudChip>
+    ),
+  ].filter(Boolean);
+  // A tap opens the army; with no way there the bar is only read, on the panel's surface.
+  return onOpen ? (
+    <HudPill label={ARMY} onPress={onOpen} className="h-11 w-full justify-center">
+      {readings}
+    </HudPill>
+  ) : (
+    <HudPanel collapsible={false} label={ARMY} bodyClassName="flex h-11 items-center justify-center gap-1.5">
+      {readings}
+    </HudPanel>
+  );
+};
 
 /** The selected army's status bar over the game's facts; a tap opens the army. */
 export const SelectedArmyBar = ({ army, onOpen }: { army: DockArmy; onOpen: () => void }) => (
