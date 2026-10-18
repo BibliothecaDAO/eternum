@@ -1326,7 +1326,7 @@ const RowsSection = () => (
 const EventsSection = ({ store }: { store: NativeFactStore }) => (
   <Element
     name="Event row, notice and banner"
-    rule="What happened, said once: its time, a mark in its tone, the words (every toast is a row in Events); a notice says a line about the screen it sits in; a banner is news across the top of the map, its side in its tone."
+    rule="What happened, said once: its time, a mark in its tone or its kind's painting, the words (every toast is a row in Events); pressed, it goes where it happened, with its one action beside it (Retry); a notice says a line about the screen it sits in; a banner is news across the top of the map, its side in its tone."
     sheet={
       <div className="flex w-96 flex-col">
         <HudEventRow time="12:04">
@@ -1340,6 +1340,25 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
         </HudEventRow>
         <HudEventRow time="12:08" tone="warn">
           Not sent: the army needs 30 stamina
+        </HudEventRow>
+        <HudEventRow
+          time="12:09"
+          icon="military"
+          tip="Kestrel's army beat yours at the Moonhand gate"
+          onOpen={() => undefined}
+        >
+          Kestrel's army beat yours at the Moonhand gate
+        </HudEventRow>
+        <HudEventRow
+          tone="bad"
+          icon="network-off"
+          trail={
+            <HudButton kind="quiet" size="sm" icon="refresh">
+              Retry
+            </HudButton>
+          }
+        >
+          Offline
         </HudEventRow>
         <div className="mt-4 flex flex-col gap-2">
           <HudNotice tone="good" line="Transfer sent" why="Arrives at Egonal in 4m." />

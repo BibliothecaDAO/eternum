@@ -841,14 +841,54 @@ export const HudCard = ({
   );
 };
 
-/** What happened, said once: its time, a mark in its tone, the words (a name or a gain in the accent). */
-export const HudEventRow = ({ time, tone, children }: { time: string; tone?: Tone; children: ReactNode }) => (
-  <div className="ui-event" data-tone={tone}>
-    <span className="ui-event__time">{time}</span>
-    <span className="ui-event__mark" aria-hidden="true" />
-    <span className="ui-event__text">{children}</span>
-  </div>
-);
+/**
+ * What happened, said once: its time, a mark in its tone (or the painting of what kind of news it is), the words (a
+ * name or a gain in the accent), whole on hover through `tip`. With `onOpen` the row is the button that goes where it
+ * happened; `trail` is its one action (Retry), beside that button, never inside it. A notice of the moment has no time.
+ */
+export const HudEventRow = ({
+  time,
+  tone,
+  icon,
+  tip,
+  onOpen,
+  trail,
+  children,
+}: {
+  time?: string;
+  tone?: Tone;
+  icon?: IconMeaning;
+  tip?: string;
+  onOpen?: () => void;
+  trail?: ReactNode;
+  children: ReactNode;
+}) => {
+  const words = (
+    <>
+      {time !== undefined && <span className="ui-event__time">{time}</span>}
+      {icon ? (
+        <Icon name={icon} size={16} className="ui-event__icon" />
+      ) : (
+        <span className="ui-event__mark" aria-hidden="true" />
+      )}
+      <span className="ui-event__text" data-tip={tip}>
+        {children}
+      </span>
+    </>
+  );
+  return (
+    <div className="ui-event" data-tone={tone}>
+      {onOpen ? (
+        <button type="button" className="ui-event__open" onClick={onOpen}>
+          {words}
+        </button>
+      ) : (
+        words
+      )}
+      {trail}
+    </div>
+  );
+};
 
 /** A line the game says about the screen it sits in: a refusal, a warning, a success, and why. */
 export const HudNotice = ({ tone, line, why }: { tone?: Tone; line: string; why?: string }) => (

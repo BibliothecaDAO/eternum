@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   HudButton,
   HudCard,
+  HudEventRow,
   HudField,
   HudIconButton,
   HudRow,
@@ -271,6 +272,42 @@ describe("a field", () => {
       ref.current!.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(typed).toHaveBeenCalledWith("Egonal II");
+  });
+});
+
+describe("an event row", () => {
+  it("goes where it happened when pressed, and its action acts alone", () => {
+    const open = vi.fn();
+    const retry = vi.fn();
+    act(() =>
+      root.render(
+        <HudEventRow
+          time="12:09"
+          icon="military"
+          onOpen={open}
+          trail={
+            <HudButton kind="quiet" size="sm" onClick={retry}>
+              Retry
+            </HudButton>
+          }
+        >
+          Kestrel beat you
+        </HudEventRow>,
+      ),
+    );
+    const [row, action] = [...host.querySelectorAll("button")];
+    expect(row.textContent).toBe("12:09Kestrel beat you");
+    act(() => action.click());
+    expect([open.mock.calls.length, retry.mock.calls.length]).toEqual([0, 1]);
+    act(() => row.click());
+    expect(open).toHaveBeenCalledTimes(1);
+  });
+
+  it("is only read without a way to go there", () => {
+    act(() => root.render(<HudEventRow tone="bad">Offline</HudEventRow>));
+    expect(host.querySelector("button")).toBeNull();
+    expect(host.querySelector(".ui-event__time")).toBeNull();
+    expect(host.textContent).toBe("Offline");
   });
 });
 

@@ -636,7 +636,37 @@ span.ui-row__choose {
   background: var(--hud-warn);
 }
 .ui-event__text {
+  min-width: 0;
+  flex: 1 1 auto;
   color: rgb(var(--hud-ink));
+}
+.ui-event__icon {
+  flex: none;
+  align-self: center;
+}
+/* A row pressed to go where it happened: the row's words as one button, its action beside it. */
+.ui-event__open {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: theme(spacing.2);
+  border: 0;
+  border-radius: var(--hud-radius-chip);
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+.ui-event__open:hover {
+  background: var(--hud-hover);
+}
+.ui-event__open:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
 }
 .ui-event__text strong {
   color: rgb(var(--hud-accent));
