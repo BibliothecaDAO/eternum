@@ -1,9 +1,10 @@
 /**
  * The app sheet's captures, one screenshot each at 1920×1080: the app's pages as they are today (the app lab's
  * fixtures, /lab/app/<screen>/<page>), each element of the app sheet (/lab/kit/app, by its `data-sheet-element`), and
- * every desktop direction's page (/lab/kit/app/<direction>/<page>). Run before and after the app moves onto its sheet.
+ * the app's four most-used pages in their picked desktop directions (/lab/kit/app/<page>). Run before and after the app
+ * moves onto its sheet.
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [today|sheet|directions]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [today|sheet|pages]
  */
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,7 +28,6 @@ const TODAY = {
   news: "home/scroll",
 };
 
-const DIRECTIONS = ["launcher", "ages", "ledger"];
 const PAGES = ["play", "lobby", "season", "results"];
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */
@@ -39,13 +39,13 @@ const pageChecks = (b) => [
   { check: "no horizontal overflow", ok: b.evaluate("document.documentElement.scrollWidth <= innerWidth") },
 ];
 
-const shoot = async (b, baseUrl, out, { name, path, drawn }) => {
+const shoot = async (b, baseUrl, out, { name, path, drawn, more }) => {
   b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
   const record = { name, ready: await waitFor(b, drawn, READY_MS), presses: [], checks: [] };
   if (!record.ready) return record;
   await sleep(SETTLE_MS);
   b.run("screenshot", join(out, `${name}.png`));
-  record.checks.push(...pageChecks(b));
+  record.checks.push(...pageChecks(b), ...(more?.(b) ?? []));
   return record;
 };
 
@@ -56,14 +56,47 @@ const todayPages = () =>
     drawn: `document.querySelector("[data-layout]") !== null`,
   }));
 
-const directionPages = () =>
-  DIRECTIONS.flatMap((direction) =>
-    PAGES.map((page) => ({
-      name: `${direction}-${page}`,
-      path: `/lab/kit/app/${direction}/${page}?capture=1`,
-      drawn: `document.querySelector('[data-lab="app-direction"]') !== null`,
-    })),
-  );
+/**
+ * What holds for each of the app's pages on its sheet: it fits the screen, it draws no glyph (owner, 18 October 2026: a
+ * word says what each thing is), it has at most one gold verb, and the player sits at the bar's right end.
+ */
+const appPageChecks = (b) => {
+  const measure = b.evaluate(`(() => {
+    const bottomOf = (element) => element.getBoundingClientRect().bottom;
+    const lowestIn = (element) => Math.max(bottomOf(element), ...[...element.querySelectorAll("*")].map(bottomOf));
+    const screen = document.querySelector("[data-app-page]");
+    const blocks = [...document.querySelector(".app-frame__page").children];
+    const bar = document.querySelector(".app-bar").getBoundingClientRect();
+    const player = document.querySelector(".app-bar__player").getBoundingClientRect();
+    return {
+      overflow: Math.round(
+        Math.max(lowestIn(screen) - bottomOf(screen), ...blocks.map((block) => lowestIn(block) - bottomOf(block))),
+      ),
+      glyphs: document.querySelectorAll("[data-app-page] [data-icon]").length,
+      goldVerbs: document.querySelectorAll('[data-app-page] .app-button[data-kind="primary"]').length,
+      playerRightGap: Math.round(bar.right - player.right),
+      playerInBar: player.top >= bar.top && player.bottom <= bar.bottom,
+    };
+  })()`);
+  return [
+    {
+      check: "fits 1920×1080 (nothing below the screen or spilling out of its block)",
+      ok: measure.overflow <= 0,
+      measure,
+    },
+    { check: "draws no glyph", ok: measure.glyphs === 0 },
+    { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
+    { check: "the player at the bar's right end", ok: measure.playerInBar && measure.playerRightGap <= 48 },
+  ];
+};
+
+const appPages = () =>
+  PAGES.map((page) => ({
+    name: `app-${page}`,
+    path: `/lab/kit/app/${page}?capture=1`,
+    drawn: `document.querySelector('[data-lab="app-page"]') !== null`,
+    more: appPageChecks,
+  }));
 
 /** An element's name as a file name: "Game card" is sheet-game-card.png. */
 const fileOf = (name) =>
@@ -90,7 +123,7 @@ const sheetElements = async (b, baseUrl, out) => {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
-  const parts = process.argv[4]?.split(",") ?? ["today", "sheet", "directions"];
+  const parts = process.argv[4]?.split(",") ?? ["today", "sheet", "pages"];
   await runProof(
     {
       parent: resolve(process.argv[3] ?? ".context/app-sheet"),
@@ -102,8 +135,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       b.run("set", "viewport", ...VIEWPORT);
       if (parts.includes("today")) for (const page of todayPages()) records.push(await shoot(b, baseUrl, out, page));
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
-      if (parts.includes("directions"))
-        for (const page of directionPages()) records.push(await shoot(b, baseUrl, out, page));
+      if (parts.includes("pages")) for (const page of appPages()) records.push(await shoot(b, baseUrl, out, page));
     },
   );
 }

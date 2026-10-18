@@ -9,9 +9,7 @@ import {
   AppField,
   AppFigure,
   AppGameCard,
-  AppIconButton,
   AppKey,
-  AppNav,
   AppNotice,
   AppPageHead,
   AppPanel,
@@ -22,6 +20,7 @@ import {
   AppSkeleton,
   AppSwitch,
   AppTabs,
+  AppTopBar,
 } from "@/ui/design-system/kit/app-elements";
 import { Button } from "@/ui/design-system/kit/button";
 import { Field } from "@/ui/design-system/kit/field";
@@ -42,26 +41,23 @@ import { type ReactNode, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { Element } from "../sheet-element";
-import { PLACES } from "./app-blocks";
-import { DIRECTION_PAGES, DIRECTIONS, type DirectionKey, type DirectionPage, PAGE_NAMES } from "./app-directions";
 import { AGE_OF, PLAYER } from "./app-lab-data";
+import { APP_PAGES, type AppPage, PAGE_LAYOUTS } from "./app-pages";
 import { APP_SPEC } from "./app-spec";
 
 /**
  * Dev only: the app's style sheet at /lab/kit/app: its spec (one line per page), the app scope of the token file
  * (src/tokens.ts APP_TYPE, APP_SHEET), every element built from it in every state beside what the app draws today, and
- * the three desktop directions applied to the four most-used pages. Each direction's page opens alone at 1920×1080 at
- * /lab/kit/app/<direction>/<page>, for the owner and the captures.
+ * the four most-used pages in the desktop directions the owner picked. Each page opens alone at 1920×1080 at
+ * /lab/kit/app/<page>, for the owner and the captures.
  */
 export const AppSheetLab = () => (
   <div data-surface="shell" className="min-h-screen bg-[#0d0a08] p-6 font-body">
     <header data-lab-chrome className="mb-6 flex flex-wrap items-center gap-4 text-sm text-white/80">
       <h1 className="text-xl font-bold text-white">App style sheet</h1>
-      <span>
-        The app's spec, its scope of src/tokens.ts, every element in every state, and three desktop directions.
-      </span>
+      <span>The app's spec, its scope of src/tokens.ts, every element in every state, and its pages on a desktop.</span>
       <nav className="ml-auto flex gap-3 underline">
-        <a href="#directions">Directions</a>
+        <a href="#pages">Pages</a>
         <Link to="/lab/kit">HUD sheet</Link>
         <Link to="/lab/kit/shell">Shell kit</Link>
         <Link to="/lab/kit/tokens">Tokens</Link>
@@ -74,7 +70,7 @@ export const AppSheetLab = () => (
       <ColourSection />
       <ButtonSection />
       <FieldSection />
-      <NavSection />
+      <TopBarSection />
       <TabsSection />
       <PanelSection />
       <GameCardSection />
@@ -87,17 +83,16 @@ export const AppSheetLab = () => (
       <PageHeadSection />
       <EmptySection />
       <DialogSection />
-      <DirectionsSection />
+      <PagesSection />
     </main>
   </div>
 );
 
-/** One direction's page alone, at the desktop's 1920×1080. */
-export const AppDirectionPage = () => {
-  const { direction, page } = useParams();
-  const chosen = DIRECTIONS[direction as DirectionKey];
-  if (!chosen || !DIRECTION_PAGES.includes(page as DirectionPage)) return <p>Unknown direction or page.</p>;
-  return <div data-lab="app-direction">{chosen.pages[page as DirectionPage]()}</div>;
+/** One of the app's pages alone, at the desktop's 1920×1080. */
+export const AppPageAlone = () => {
+  const { page } = useParams();
+  if (!APP_PAGES.includes(page as AppPage)) return <p>Unknown page.</p>;
+  return <div data-lab="app-page">{PAGE_LAYOUTS[page as AppPage].render()}</div>;
 };
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
@@ -299,12 +294,7 @@ const ButtonSection = () => (
             key={kind}
             label={kind}
             render={(state) => (
-              <AppButton
-                kind={kind}
-                icon={kind === "primary" ? "play" : undefined}
-                data-state={forced(state)}
-                disabled={state === "disabled"}
-              >
+              <AppButton kind={kind} data-state={forced(state)} disabled={state === "disabled"}>
                 {kind === "primary" ? "Resume" : kind === "secondary" ? "Join" : "Later"}
               </AppButton>
             )}
@@ -318,14 +308,8 @@ const ButtonSection = () => (
             </AppButton>
           )}
         />
-        <StateRow
-          label="icon"
-          render={(state) => (
-            <AppIconButton icon="share" label="Share" data-state={forced(state)} disabled={state === "disabled"} />
-          )}
-        />
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
+          <AppButton kind="primary" size="lg" keyHint="Enter">
             Pay and join
           </AppButton>
           <AppButton kind="primary" busy="Joining…">
@@ -354,8 +338,8 @@ const FieldSection = () => (
     rule="Its label above, its value in the well, one line under it: a hint, or what is wrong in the bad tone."
     sheet={
       <div className="grid grid-cols-2 gap-4">
-        <AppField label="Email" icon="mail" placeholder="you@mail.com" hint="We send a six-digit code." />
-        <AppField label="Email" icon="mail" defaultValue="maelis@" error="That is not an email address." />
+        <AppField label="Email" placeholder="you@mail.com" hint="We send a six-digit code." />
+        <AppField label="Email" defaultValue="maelis@" error="That is not an email address." />
         <AppField label="Name" defaultValue="Maelis" />
         <AppField label="Name" defaultValue="Maelis" disabled />
       </div>
@@ -369,17 +353,17 @@ const FieldSection = () => (
   />
 );
 
-const NavSection = () => (
+const TopBarSection = () => (
   <Element
-    name="Navigation"
+    name="Top bar"
+    wide
     todayLabel={TODAY}
-    rule="The app's three places with their keys; the current one in the accent. A bar across the top, or a rail down the side (direction A)."
+    rule="The bar across the top of every page: the mark, Play and Season with the current one in the accent, and the player at its right end, who opens You. Words only: no key beside a name, no glyph."
     sheet={
-      <div className="flex flex-col gap-4">
-        <AppNav places={PLACES} current="play" />
-        <div className="w-64">
-          <AppNav places={PLACES} current="season" orientation="rail" />
-        </div>
+      <div className="flex flex-col gap-3">
+        {(["play", "season", "you"] as const).map((current) => (
+          <AppTopBar key={current} current={current} player={PLAYER} />
+        ))}
       </div>
     }
     today={
@@ -445,7 +429,7 @@ const PanelSection = () => (
     todayLabel={TODAY}
     rule="The app's one surface: its name over a rule, a cue at its end, then its body; a list runs to its edges."
     sheet={
-      <AppPanel title="Frontier" icon="victory" cue="Day 12">
+      <AppPanel title="Frontier" cue="Day 12">
         <p className="text-app-body text-app-muted">Twelve rows of the season's board.</p>
       </AppPanel>
     }
@@ -476,11 +460,11 @@ const GameCardSection = () => (
           facts={
             <>
               <AppChip tone="gold">Your realm</AppChip>
-              <AppChip icon="hourglass">Day 12 · 7h 14m left</AppChip>
+              <AppChip>Day 12 · 7h 14m left</AppChip>
             </>
           }
           verb={
-            <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
+            <AppButton kind="primary" size="lg" keyHint="Enter">
               Resume
             </AppButton>
           }
@@ -520,17 +504,10 @@ const RowSection = () => (
   <Element
     name="Row"
     todayLabel={TODAY}
-    rule="One thing of a list: its lead (a painting, a rank, a portrait), its words, then its figures or its own button. The player's own row lit; a row that opens something lights on hover."
+    rule="One thing of a list: its lead (a rank, a portrait), its words, then its figures or its own button. The player's own row lit; a row that opens something lights on hover."
     sheet={
       <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
         <AppRow
-          lead={
-            <img
-              alt=""
-              src="/images/landscapes/blitz-spires-800.webp"
-              className="size-12 rounded-[var(--app-radius-control)] object-cover"
-            />
-          }
           title="Blitz 16:30"
           detail="Entry closes 16:30 · 2h 4m left · 31 registered"
           trail={
@@ -551,9 +528,7 @@ const RowSection = () => (
           trail={
             <>
               <span className="text-app-muted">148 sites</span>
-              <AppChip icon="lords" tone="gold">
-                2,900
-              </AppChip>
+              <AppChip tone="gold">2,900 LORDS</AppChip>
             </>
           }
           onClick={() => undefined}
@@ -570,9 +545,7 @@ const RowSection = () => (
           trail={
             <>
               <span className="text-app-muted">88 sites</span>
-              <AppChip icon="lords" tone="gold">
-                1,500
-              </AppChip>
+              <AppChip tone="gold">1,500 LORDS</AppChip>
             </>
           }
         />
@@ -603,7 +576,7 @@ const ChipFigureSection = () => (
   <Element
     name="Chip and figure"
     todayLabel={TODAY}
-    rule="A chip is a state in its tone, a count or an amount with its painting; a figure is the point of its panel with what it counts under it."
+    rule="A chip is a state in its tone, a count, or an amount with its unit; a figure is the point of its panel with what it counts under it."
     sheet={
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap gap-2">
@@ -612,10 +585,8 @@ const ChipFigureSection = () => (
           </AppChip>
           <AppChip tone="warn">Entry closes in 2h 4m</AppChip>
           <AppChip tone="bad">Entry closed</AppChip>
-          <AppChip tone="gold" icon="lords">
-            2,900
-          </AppChip>
-          <AppChip icon="person">24/24</AppChip>
+          <AppChip tone="gold">2,900 LORDS</AppChip>
+          <AppChip>24/24 seats</AppChip>
           <AppChip>Ended</AppChip>
         </div>
         <div className="flex flex-wrap gap-10">
@@ -673,17 +644,13 @@ const SettingSection = () => {
     <Element
       name="Setting and switch"
       todayLabel={TODAY}
-      rule="A setting: its painting, its name, what it holds, then its control: a switch, or a chevron that opens it."
+      rule="A setting: its name, what it holds, then its control: a switch, or the whole row opens it."
       sheet={
         <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
-          <AppSetting icon="person" name="Name" value="Maelis" onClick={() => undefined} />
-          <AppSetting icon="lords" name="Payout wallet" value="Link a wallet" onClick={() => undefined} />
-          <AppSetting
-            icon="music"
-            name="Music"
-            control={<AppSwitch label="Music" checked={music} onChange={setMusic} />}
-          />
-          <AppSetting icon="monitor" name="This device" control={<AppSwitch label="This device" checked disabled />} />
+          <AppSetting name="Name" value="Maelis" onClick={() => undefined} />
+          <AppSetting name="Payout wallet" value="Link a wallet" onClick={() => undefined} />
+          <AppSetting name="Music" control={<AppSwitch label="Music" checked={music} onChange={setMusic} />} />
+          <AppSetting name="This device" control={<AppSwitch label="This device" checked disabled />} />
         </div>
       }
       today={
@@ -706,12 +673,12 @@ const ChoiceSection = () => (
   <Element
     name="Choice"
     todayLabel={TODAY}
-    rule="A choice among a few, as tiles: its painting, name, what it does and its price; the chosen one in the gold, ticked."
+    rule="A choice among a few, as tiles: its name, what it does and its price; the chosen one ringed in the gold."
     sheet={
       <div className="flex gap-3">
-        <AppChoice icon="flag" title="Seat" detail="Entry" price="500 LORDS" selected />
-        <AppChoice icon="attack" title="Sword" detail="Win ×2" price="+ 50 LORDS" />
-        <AppChoice icon="defend" title="Shield" detail="Lose ½" price="+ 50 LORDS" disabled />
+        <AppChoice title="Seat" detail="Entry" price="500 LORDS" selected />
+        <AppChoice title="Sword" detail="Win ×2" price="+ 50 LORDS" />
+        <AppChoice title="Shield" detail="Lose ½" price="+ 50 LORDS" disabled />
       </div>
     }
     today={
@@ -764,14 +731,10 @@ const EmptySection = () => (
     rule="Nothing here, said once with the one step that would fill it; rows standing in for a list that is coming."
     sheet={
       <div className="grid grid-cols-2 gap-4">
-        <AppPanel title="Recent games" icon="victory">
-          <AppEmpty
-            icon="victory"
-            line="No finished games yet."
-            action={<AppButton kind="secondary">Play</AppButton>}
-          />
+        <AppPanel title="Recent games">
+          <AppEmpty line="No finished games yet." action={<AppButton kind="secondary">Play</AppButton>} />
         </AppPanel>
-        <AppPanel title="Season" icon="victory">
+        <AppPanel title="Season">
           <AppSkeleton rows={4} />
         </AppPanel>
       </div>
@@ -808,35 +771,27 @@ const DialogSection = () => (
   />
 );
 
-/** Each direction's four pages, scaled to fit, each opening alone at 1920×1080. */
-const DirectionsSection = () => (
-  <section id="directions" className="flex flex-col gap-6 rounded-lg border border-white/10 bg-black/20 p-4">
+/** The four most-used pages, each in its picked direction, scaled to fit; each opens alone at 1920×1080. */
+const PagesSection = () => (
+  <section id="pages" className="flex flex-col gap-6 rounded-lg border border-white/10 bg-black/20 p-4">
     <header data-lab-chrome className="flex flex-col gap-1">
-      <h2 className="text-lg font-bold text-white">Desktop directions</h2>
+      <h2 className="text-lg font-bold text-white">The app on a desktop</h2>
       <p className="text-sm text-white/60">
-        Three directions for the whole app at 1920×1080, each on the four most-used pages, built from the same elements.
-        Open a page to see it at full size.
+        The four most-used pages at 1920×1080, each in the direction the owner picked, under one bar across the top with
+        the player at its right end. Open a page to see it at full size.
       </p>
     </header>
-    {(Object.keys(DIRECTIONS) as DirectionKey[]).map((key) => (
-      <div key={key} className="flex flex-col gap-3">
-        <div data-lab-chrome>
-          <h3 className="text-base font-bold text-white">{DIRECTIONS[key].name}</h3>
-          <p className="text-sm text-white/60">{DIRECTIONS[key].idea}</p>
-        </div>
-        <div className="grid grid-cols-4 gap-4">
-          {DIRECTION_PAGES.map((page) => (
-            <Link key={page} to={`/lab/kit/app/${key}/${page}`} className="flex flex-col gap-1">
-              <div className="h-[216px] w-[384px] overflow-hidden rounded border border-white/15">
-                <div className="origin-top-left scale-[0.2]">{DIRECTIONS[key].pages[page]()}</div>
-              </div>
-              <span data-lab-chrome className="text-xs text-white/70">
-                {PAGE_NAMES[page]}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
-    ))}
+    <div className="grid grid-cols-2 gap-6">
+      {APP_PAGES.map((page) => (
+        <Link key={page} to={`/lab/kit/app/${page}`} className="flex flex-col gap-2">
+          <div className="h-[432px] w-[768px] overflow-hidden rounded border border-white/15">
+            <div className="origin-top-left scale-[0.4]">{PAGE_LAYOUTS[page].render()}</div>
+          </div>
+          <span data-lab-chrome className="text-sm text-white/80">
+            <b className="text-white">{PAGE_LAYOUTS[page].name}</b> · {PAGE_LAYOUTS[page].direction}
+          </span>
+        </Link>
+      ))}
+    </div>
   </section>
 );

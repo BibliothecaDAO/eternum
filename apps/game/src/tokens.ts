@@ -721,6 +721,9 @@ export const APP_SHEET = {
   /** A control's height, and a large one's (a page's one verb). */
   control: "44px",
   "control-lg": "56px",
+  /** The bar across the top of every page, and the widest a page's content runs on a desktop. */
+  bar: "72px",
+  page: "1680px",
   /** Corners: a chip's, a control's, a panel's, a round thing's. */
   "radius-chip": "6px",
   "radius-control": "12px",

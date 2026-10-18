@@ -1,5 +1,4 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type ButtonHTMLAttributes, type ReactNode, useId } from "react";
 
 import { paintingSources, type Painting } from "./paintings";
@@ -9,6 +8,8 @@ import { paintingSources, type Painting } from "./paintings";
  * APP_TYPE, APP_SHEET) by its classes (app-sheet.css). A page takes these and gives them words and values, never a look
  * of its own. /lab/kit/app shows each in every state, beside what the app draws today. They render under
  * `data-surface="shell"`, where the `--app-*` values live.
+ *
+ * They draw no glyph (owner, 18 October 2026: the glyphs "just dont work" in the app): a word says what each thing is.
  */
 
 type Tone = "good" | "bad" | "warn";
@@ -18,7 +19,6 @@ type Age = "blitz" | "frontier" | "eternum";
 export const AppButton = ({
   kind,
   size = "md",
-  icon,
   keyHint,
   busy,
   tone,
@@ -29,7 +29,6 @@ export const AppButton = ({
   kind: "primary" | "secondary" | "quiet";
   /** lg: the page's one verb at the size it leads with (Play's Resume, the lobby's Pay and join). */
   size?: "md" | "lg";
-  icon?: IconMeaning;
   /** The key that presses it on a desktop (Enter on a page's one verb). */
   keyHint?: string;
   /** Its step is on its way: this word in place of its own, and no second press. */
@@ -48,25 +47,12 @@ export const AppButton = ({
     data-size={size}
     data-tone={kind === "primary" ? undefined : tone}
   >
-    {icon && <Icon name={icon} size={size === "lg" ? 24 : 20} />}
     <span>{busy ?? children}</span>
     {keyHint && busy === undefined && <AppKey>{keyHint}</AppKey>}
   </button>
 );
 
-/** A button that is only its painting, named for assistive technology. */
-export const AppIconButton = ({
-  icon,
-  label,
-  kind = "secondary",
-  ...rest
-}: { icon: IconMeaning; label: string; kind?: "secondary" | "quiet" } & ButtonHTMLAttributes<HTMLButtonElement>) => (
-  <button type="button" {...rest} aria-label={label} title={label} className="app-icon-button" data-kind={kind}>
-    <Icon name={icon} size={20} />
-  </button>
-);
-
-/** A key that presses something on a desktop: Enter, Esc, 1. */
+/** A key that presses something on a desktop: Enter on a page's one verb, Esc on Back. */
 export const AppKey = ({ children }: { children: ReactNode }) => (
   <kbd aria-hidden className="app-key">
     {children}
@@ -78,20 +64,17 @@ export const AppField = ({
   label,
   hint,
   error,
-  icon,
   ...rest
 }: {
   label: string;
   hint?: string;
   error?: string;
-  icon?: IconMeaning;
 } & React.InputHTMLAttributes<HTMLInputElement>) => {
   const id = useId();
   return (
     <label className="app-field" htmlFor={id} data-invalid={error !== undefined || undefined}>
       <span className="app-field__label">{label}</span>
       <span className="app-field__box">
-        {icon && <Icon name={icon} size={20} />}
         <input id={id} {...rest} aria-invalid={error !== undefined || undefined} />
       </span>
       {(error ?? hint) && <span className="app-field__line">{error ?? hint}</span>}
@@ -99,37 +82,71 @@ export const AppField = ({
   );
 };
 
-/** One place of the app's navigation: its painting, word and key; the current one in the accent. */
-export type AppPlace = { key: string; label: string; icon: IconMeaning; keyHint?: string; badge?: ReactNode };
+/** The app's places: Play and Season in the bar, You behind the player at its end. */
+export type AppPlace = "play" | "season" | "you";
 
-/** The app's places: a bar across the top, or a rail down the side. */
-export const AppNav = ({
-  places,
+const BAR_PLACES = [
+  { key: "play", label: "Play" },
+  { key: "season", label: "Season" },
+] as const;
+
+/**
+ * The bar across the top of every page: the app's mark, its places with the current one in the accent, and the player
+ * at its right end, who opens You.
+ */
+export const AppTopBar = ({
   current,
-  orientation = "bar",
+  player,
   onGo,
 }: {
-  places: readonly AppPlace[];
-  current: string;
-  orientation?: "bar" | "rail";
-  onGo?: (key: string) => void;
+  current: AppPlace;
+  player: { name: string; portrait?: string };
+  onGo?: (place: AppPlace) => void;
 }) => (
-  <nav className="app-nav" data-orientation={orientation} aria-label="Places">
-    {places.map((place) => (
-      <button
-        key={place.key}
-        type="button"
-        className="app-nav__place"
-        aria-current={place.key === current ? "page" : undefined}
-        onClick={() => onGo?.(place.key)}
-      >
-        <Icon name={place.icon} size={22} />
-        <span>{place.label}</span>
-        {place.badge}
-        {place.keyHint && <AppKey>{place.keyHint}</AppKey>}
-      </button>
-    ))}
-  </nav>
+  <header className="app-bar">
+    <img src="/images/logos/realms-lockup.svg" alt="Realms" className="app-bar__mark" />
+    <nav className="app-bar__places" aria-label="Places">
+      {BAR_PLACES.map((place) => (
+        <button
+          key={place.key}
+          type="button"
+          className="app-bar__place"
+          aria-current={place.key === current ? "page" : undefined}
+          onClick={() => onGo?.(place.key)}
+        >
+          {place.label}
+        </button>
+      ))}
+    </nav>
+    <button
+      type="button"
+      className="app-bar__place app-bar__player"
+      aria-label={`You: ${player.name}`}
+      aria-current={current === "you" ? "page" : undefined}
+      onClick={() => onGo?.("you")}
+    >
+      {player.name}
+      <AppPortrait src={player.portrait} name={player.name} size="sm" own />
+    </button>
+  </header>
+);
+
+/** A page under the app's bar: its content, no wider than a page runs on a desktop. */
+export const AppFrame = ({
+  current,
+  player,
+  onGo,
+  children,
+}: {
+  current: AppPlace;
+  player: { name: string; portrait?: string };
+  onGo?: (place: AppPlace) => void;
+  children: ReactNode;
+}) => (
+  <div className="app-frame">
+    <AppTopBar current={current} player={player} onGo={onGo} />
+    <main className="app-frame__page">{children}</main>
+  </div>
 );
 
 /** A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised. */
@@ -162,19 +179,17 @@ export const AppTabs = <K extends string>({
 );
 
 /**
- * The app's one panel: its name (a painting before it, a cue at its end) over a rule, then its body. `flush` lets a list
+ * The app's one panel: its name (a cue at its end) over a rule, then its body. `flush` lets a list
  * run to its edges. `className` places it, never its look.
  */
 export const AppPanel = ({
   title,
-  icon,
   cue,
   flush = false,
   className,
   children,
 }: {
   title?: ReactNode;
-  icon?: IconMeaning;
   cue?: ReactNode;
   flush?: boolean;
   className?: string;
@@ -183,7 +198,6 @@ export const AppPanel = ({
   <section className={cn("app-panel", className)} data-flush={flush || undefined}>
     {title !== undefined && (
       <header className="app-panel__head">
-        {icon && <Icon name={icon} size={22} />}
         <h2>{title}</h2>
         {cue !== undefined && <span className="app-panel__cue">{cue}</span>}
       </header>
@@ -228,7 +242,7 @@ export const AppGameCard = ({
 );
 
 /**
- * One thing of a list: what leads it (a rank, a painting, a portrait), what it is and what it says, then what follows
+ * One thing of a list: what leads it (a rank, a portrait), what it is and what it says, then what follows
  * (figures, its own button). The player's own row is lit. With `onClick` the row's words are the button that opens it.
  */
 export const AppRow = ({
@@ -274,22 +288,19 @@ export const AppRank = ({ rank }: { rank: number }) => (
   </span>
 );
 
-/** A small tag: a state (Live, Joined) in its tone, a count, an amount with its painting. */
+/** A small tag: a state (Live, Joined) in its tone, a count, an amount with its unit. */
 export const AppChip = ({
   tone,
-  icon,
   live = false,
   children,
 }: {
   tone?: Tone | "gold";
-  icon?: IconMeaning;
   /** A game under way: a dot that breathes before the word. */
   live?: boolean;
   children: ReactNode;
 }) => (
   <span className="app-chip" data-tone={tone}>
     {live && <i className="app-chip__live" aria-hidden />}
-    {icon && <Icon name={icon} size={16} />}
     {children}
   </span>
 );
@@ -352,36 +363,32 @@ export const AppSwitch = ({
   </button>
 );
 
-/** A setting: its painting, its name and what it holds now, then its control (a switch, a chevron to open it). */
+/** A setting: its name and what it holds now, then its control (a switch), or the whole row opens it. */
 export const AppSetting = ({
-  icon,
   name,
   value,
   control,
   onClick,
 }: {
-  icon: IconMeaning;
   name: string;
   value?: ReactNode;
   control?: ReactNode;
   onClick?: () => void;
 }) => (
   <AppRow
-    lead={<Icon name={icon} size={22} />}
     title={name}
     trail={
       <>
         {value !== undefined && <span className="app-setting__value">{value}</span>}
-        {control ?? (onClick && <Icon name="arrow-right" size={18} />)}
+        {control}
       </>
     }
     onClick={onClick}
   />
 );
 
-/** A choice among a few, drawn as tiles (the entry's seat, sword and shield): its painting, name, what it does, price. */
+/** A choice among a few, drawn as tiles (the entry's seat, sword and shield): its name, what it does, its price. */
 export const AppChoice = ({
-  icon,
   title,
   detail,
   price,
@@ -389,7 +396,6 @@ export const AppChoice = ({
   disabled,
   onClick,
 }: {
-  icon: IconMeaning;
   title: string;
   detail?: ReactNode;
   price?: ReactNode;
@@ -398,8 +404,6 @@ export const AppChoice = ({
   onClick?: () => void;
 }) => (
   <button type="button" className="app-choice" aria-pressed={selected} disabled={disabled} onClick={onClick}>
-    {selected && <Icon name="check" size={18} className="app-choice__tick" />}
-    <Icon name={icon} size={36} />
     <span className="app-choice__title">{title}</span>
     {detail !== undefined && <span className="app-choice__detail">{detail}</span>}
     {price !== undefined && <span className="app-choice__price">{price}</span>}
@@ -427,8 +431,8 @@ export const AppPortrait = ({
 export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: () => void; aside?: ReactNode }) => (
   <header className="app-page-head">
     {back && (
-      <button type="button" className="app-page-head__back" onClick={back} aria-label="Back">
-        <Icon name="arrow-right" size={20} className="rotate-180" />
+      <button type="button" className="app-page-head__back" onClick={back}>
+        Back
         <AppKey>Esc</AppKey>
       </button>
     )}
@@ -438,9 +442,8 @@ export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: (
 );
 
 /** Nothing here yet, said once, with the one step that would fill it. */
-export const AppEmpty = ({ icon, line, action }: { icon: IconMeaning; line: string; action?: ReactNode }) => (
+export const AppEmpty = ({ line, action }: { line: string; action?: ReactNode }) => (
   <div className="app-empty">
-    <Icon name={icon} size={36} />
     <span>{line}</span>
     {action}
   </div>
