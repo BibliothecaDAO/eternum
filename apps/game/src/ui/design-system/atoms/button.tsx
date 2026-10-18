@@ -1,6 +1,5 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
 import { useUISound } from "@/audio";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import React from "react";
 
 type ButtonProps = {
@@ -26,34 +25,24 @@ type ButtonProps = {
   forceUppercase?: boolean;
 } & React.ComponentPropsWithRef<"button">;
 
-const STYLES = {
-  baseStyle:
-    "inline-flex whitespace-nowrap transition-all duration-300 items-center justify-center p-2 font-medium text-gold btn-bronze ",
-  primary:
-    "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
-  primarySelected:
-    "px-6 py-2 bg-gold from-yellow-600 to-yellow-700 font-semibold text-lg tracking-wider shadow-md focus:outline-none border-2 outline-gold !text-brown border-y border-gold",
-  default: "bg-brown px-6 py-2 text-gold",
-  enabledStyle: "bg-brown/10 hover:bg-brown/30 focus:outline-none",
-  disabledStyle: "cursor-not-allowed !border-gray-gold !text-gray-gold",
-  success: "border border-green !text-brilliance bg-transparent hover:bg-green/10",
-  red: "border border-danger !text-danger bg-transparent hover:bg-danger/10",
-  outline: "border border-gold text-gold bg-transparent hover:bg-gold/10",
-  danger: "border border-red-500 bg-red-700 text-white hover:bg-red-600",
-  secondary: "border border-orange text-orange bg-transparent hover:bg-orange/10",
-  opaque:
-    "px-6 py-2 bg-brown/90 font-semibold text-lg tracking-wider shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2 outline-gold hover:bg-gold border-y hover:border-gold hover:text-black/90",
-  gold: "px-6 py-2 bg-gold  font-semibold text-lg tracking-wider shadow-md focus:outline-none border-2 border-brown button-gold hover:bg-[#d4b61e] !text-brown",
-  loadingStyle: "relative",
+/**
+ * The older variants, read as the HUD sheet's button kinds (hud-sheet.css .ui-button): the gold ones are the one
+ * primary, a red one is a secondary in the bad tone, every other one a secondary.
+ */
+const KIND: Record<NonNullable<ButtonProps["variant"]>, { kind: "primary" | "secondary"; tone?: "bad" }> = {
+  primary: { kind: "primary" },
+  primarySelected: { kind: "primary" },
+  gold: { kind: "primary" },
+  opaque: { kind: "primary" },
+  secondary: { kind: "secondary" },
+  success: { kind: "secondary" },
+  default: { kind: "secondary" },
+  outline: { kind: "secondary" },
+  red: { kind: "secondary", tone: "bad" },
+  danger: { kind: "secondary", tone: "bad" },
 };
 
-// Added responsive classes for different breakpoints (now includes `md:` variants as well)
-const SIZES = {
-  xs: "text-xxs sm:text-xs md:text-sm h-4 sm:h-5 md:h-6 px-2 sm:px-3 md:px-4",
-  md: "text-xs sm:text-sm md:text-base lg:text-base px-3 sm:px-4 md:px-6 lg:px-6 py-1 sm:py-2 md:py-2",
-  lg: "text-sm sm:text-lg md:text-xl px-4 sm:px-6 md:px-8 lg:px-8 py-2 sm:py-1 md:py-2",
-};
-
+/** The HUD's older button, drawn as the sheet's: its click sound, a spinner while it loads, a pulse when asked. */
 const Button: React.FC<ButtonProps> = ({
   onClick,
   children,
@@ -64,13 +53,11 @@ const Button: React.FC<ButtonProps> = ({
   isLoading = false,
   withoutSound = false,
   size = "md",
-  forceUppercase = true,
+  forceUppercase = false,
   ...props
 }) => {
   const playClick = useUISound("ui.click");
-  // hud-caps-button, not "uppercase": a mode that reads in sentence case restyles it in one place (index.css).
-  const casingClass = forceUppercase ? "hud-caps-button" : "normal-case";
-
+  const { kind, tone } = KIND[variant];
   return (
     <button
       type="button"
@@ -80,19 +67,16 @@ const Button: React.FC<ButtonProps> = ({
           !withoutSound && playClick();
         }
       }}
-      className={` ${STYLES.baseStyle} ${STYLES[variant]} ${casingClass} ${
-        isLoading ? STYLES.loadingStyle : ""
-      } ${isPulsing ? "animate-pulse" : ""} ${SIZES[size]} ${disabled ? STYLES.disabledStyle : ""} ${className}`}
+      className={cn("ui-button", forceUppercase && "hud-caps-button", isPulsing && "animate-pulse", className)}
+      data-kind={kind}
+      data-tone={tone}
+      data-size={size === "xs" ? "sm" : "md"}
+      aria-pressed={variant === "primarySelected" ? true : undefined}
+      aria-busy={isLoading || undefined}
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading ? (
-        <div className="w-full inset-0 flex flex-col items-center justify-center h-full">
-          <SemanticIcon name="refresh" className="w-4 h-4 animate-spin" />
-        </div>
-      ) : (
-        children
-      )}
+      {isLoading ? <span className="ui-spinner" aria-hidden="true" /> : children}
     </button>
   );
 };
