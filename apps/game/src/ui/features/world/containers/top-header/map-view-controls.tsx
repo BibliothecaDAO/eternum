@@ -1,8 +1,5 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-
-import { TOP_PILL } from "./top-pill";
+import { HudButton, HudPill, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
 interface MapViewControlsProps {
   compact: boolean;
@@ -48,26 +45,25 @@ const MapViewSwitch = ({
   canOpenLocal: boolean;
   onNavigate: (world: boolean) => void;
 }) => (
-  <div role="group" aria-label="Map view" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
-    <button
-      type="button"
-      aria-pressed={isLocalView}
-      disabled={!canOpenLocal}
-      title={canOpenLocal ? undefined : "Select a structure to open its realm view"}
-      onClick={() => onNavigate(false)}
-      className={cn(viewButtonClasses(isLocalView, compact), "disabled:cursor-not-allowed disabled:opacity-40")}
-    >
-      Realm
-    </button>
-    <button
-      type="button"
-      aria-pressed={!isLocalView}
-      onClick={() => onNavigate(true)}
-      className={viewButtonClasses(!isLocalView, compact)}
-    >
-      World
-    </button>
-  </div>
+  <HudPill label="Map view" role="group" className={cn("pointer-events-auto", compact ? "px-1" : "px-2")}>
+    {[
+      <HudTabs
+        key="view"
+        tabs={[
+          {
+            key: "realm",
+            label: "Realm",
+            disabled: !canOpenLocal,
+            title: canOpenLocal ? undefined : "Select a structure to open its realm view",
+          },
+          { key: "world", label: "World" },
+        ]}
+        size="sm"
+        value={isLocalView ? "realm" : "world"}
+        onChange={(view) => onNavigate(view === "world")}
+      />,
+    ]}
+  </HudPill>
 );
 
 const CompactLayerSwitch = ({
@@ -79,59 +75,38 @@ const CompactLayerSwitch = ({
 }) => {
   const currentLayer = mapLayer ? "Ethereal" : "Surface";
   const nextLayer = mapLayer ? "Surface" : "Ethereal";
-  const Icon = mapLayer ? ("travel" as const) : ("mountain" as const);
-
   return (
-    <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "px-1 max-lg:h-auto")}>
-      <button
-        type="button"
-        aria-label={`Map layer: ${currentLayer}. Switch to ${nextLayer}`}
-        title={`Switch to ${nextLayer}`}
-        onClick={() => onLayerChange(!mapLayer)}
-        className={layerButtonClasses(true, true)}
-      >
-        <SemanticIcon name={Icon} className="h-3.5 w-3.5" aria-hidden />
-        {currentLayer}
-      </button>
-    </div>
+    <HudPill label="Map layer" role="group" className="pointer-events-auto px-1">
+      {[
+        <HudButton
+          key="layer"
+          kind="quiet"
+          size="sm"
+          icon={mapLayer ? "travel" : "mountain"}
+          aria-label={`Map layer: ${currentLayer}. Switch to ${nextLayer}`}
+          title={`Switch to ${nextLayer}`}
+          onClick={() => onLayerChange(!mapLayer)}
+        >
+          {currentLayer}
+        </HudButton>,
+      ]}
+    </HudPill>
   );
 };
 
 const LayerSwitch = ({ mapLayer, onLayerChange }: { mapLayer: boolean; onLayerChange: (alt: boolean) => void }) => (
-  <div role="group" aria-label="Map layer" className={cn(TOP_PILL, "gap-0.5 px-1 max-lg:h-auto")}>
-    <button
-      type="button"
-      aria-pressed={!mapLayer}
-      onClick={() => onLayerChange(false)}
-      className={layerButtonClasses(!mapLayer)}
-    >
-      <SemanticIcon name="mountain" className="h-3.5 w-3.5" aria-hidden />
-      Surface
-    </button>
-    <button
-      type="button"
-      aria-pressed={mapLayer}
-      onClick={() => onLayerChange(true)}
-      className={layerButtonClasses(mapLayer)}
-    >
-      <SemanticIcon name="travel" className="h-3.5 w-3.5" aria-hidden />
-      Ethereal
-    </button>
-  </div>
+  <HudPill label="Map layer" role="group" className="pointer-events-auto px-2">
+    {[
+      <HudTabs
+        key="layer"
+        tabs={[
+          { key: "surface", label: "Surface", icon: "mountain" },
+          { key: "ethereal", label: "Ethereal", icon: "travel" },
+        ]}
+        size="sm"
+        value={mapLayer ? "ethereal" : "surface"}
+        onChange={(layer) => onLayerChange(layer === "ethereal")}
+      />,
+    ]}
+  </HudPill>
 );
-
-const viewButtonClasses = (active: boolean, compact: boolean) =>
-  cn(
-    HUD_LABEL_BRIGHT,
-    "min-h-11 min-w-11 rounded-md px-3 font-sans transition-[color,background-color,transform] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] lg:min-h-7",
-    compact && "px-2 tracking-normal",
-    active ? "bg-gold/20 text-gold" : "text-gold/65",
-  );
-
-const layerButtonClasses = (active: boolean, compact = false) =>
-  cn(
-    HUD_LABEL_BRIGHT,
-    "inline-flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-3 font-sans transition-[color,background-color,transform] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] lg:min-h-7",
-    compact && "px-2 tracking-normal",
-    active ? "bg-cyan-400/15 text-cyan-100" : "text-gold/65",
-  );

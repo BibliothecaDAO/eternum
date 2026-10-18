@@ -1,17 +1,13 @@
 import { skipGameEnd } from "@/three/effects/endgame/state";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { requireActiveGame } from "@/runtime/world/store";
 import { resultsHref } from "@/shell/season-tab/results-link";
-import Button from "@/ui/design-system/atoms/button";
-import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { Popover } from "@/ui/design-system/molecules/popover";
 
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { TOP_PILL } from "./top-pill";
 
 const GAME_FINISHED_POPOVER_ID = "game-finished";
 
@@ -34,30 +30,28 @@ export const GameFinishedPill = () => {
       id={GAME_FINISHED_POPOVER_ID}
       ariaLabel="Game finished"
       trigger={
-        <button
-          type="button"
+        <HudPill
           aria-expanded={isOpen}
-          onClick={() => togglePopover(GAME_FINISHED_POPOVER_ID)}
-          className={cn(
-            TOP_PILL,
-            HUD_LABEL_BRIGHT,
-            "game-finished-pill whitespace-nowrap transition hover:bg-gold/15",
-            isOpen && "border-gold/60 bg-gold/15",
-          )}
+          onPress={() => togglePopover(GAME_FINISHED_POPOVER_ID)}
+          className="game-finished-pill pointer-events-auto whitespace-nowrap"
         >
-          <SemanticIcon name="victory" className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
-          <span>Game finished</span>
-        </button>
+          {[
+            <span key="finished" className="flex items-center gap-1.5">
+              <SemanticIcon name="victory" className="h-3.5 w-3.5" aria-hidden="true" />
+              Game finished
+            </span>,
+          ]}
+        </HudPill>
       }
     >
       <div className="flex flex-col gap-3">
-        <span className={HUD_HEADLINE}>This game has ended</span>
-        <span className={HUD_BODY}>
+        <span className="text-hud-title text-hud-ink">This game has ended</span>
+        <span className="text-hud-body text-hud-ink">
           Your place, the standings and rewards are on its Results page. The map stays open here. Escape skips the mist.
         </span>
-        <Button variant="gold" size="xs" className="w-full justify-center" onClick={goToResults}>
+        <HudButton kind="primary" onClick={goToResults}>
           See the results
-        </Button>
+        </HudButton>
       </div>
     </Popover>
   );

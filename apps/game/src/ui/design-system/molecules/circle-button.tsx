@@ -39,7 +39,7 @@ const sizes = {
   md: "w-8 h-8 md:w-10 md:h-10 rounded-full",
   lg: "w-10 h-10 md:w-12 md:h-12 rounded-full",
   xl: "w-12 h-12 md:w-16 md:h-16 rounded-xl",
-  // Fixed h-9 / w-9 to align with the h-9 pills in the top bar (TOP_PILL).
+  // Fixed h-9 / w-9 to align with the h-9 strips of the top bar.
   topbar: "w-9 h-9 max-lg:w-11 max-lg:h-11 rounded-full",
 };
 

@@ -1,14 +1,13 @@
 import { useFactView } from "@/hooks/use-fact-view";
 import { seasonClockView } from "@/sync/fact-views";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { memo, useEffect } from "react";
 
 import { configManager } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { TOP_PILL } from "./top-pill";
+import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { GameFinishedPill } from "./game-finished-pill";
 import { resolveGameClock } from "./game-clock-policy";
 
@@ -32,35 +31,35 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
   }, [urgency]);
   if (clock.phase === "finished") return <GameFinishedPill />;
   return (
-    <div
-      className={cn(TOP_PILL, "relative overflow-hidden", compact && "px-2")}
-      aria-label="Game clock"
+    <HudPill
+      label="Game clock"
       title={compact ? clock.label : undefined}
+      className={cn("pointer-events-auto relative overflow-hidden", compact && "px-2")}
     >
-      <span className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
-        <SemanticIcon name="hourglass" className="h-3.5 w-3.5 shrink-0" />
-        <span
-          className={cn(HUD_LABEL_BRIGHT, "whitespace-nowrap tabular-nums", compact && "text-[11px] tracking-normal")}
-        >
-          {compact ? clock.compactLabel : clock.label}
-        </span>
-      </span>
-      {clock.remainingRatio !== null && (
-        <div
-          role="progressbar"
-          aria-label="Game spent"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round((1 - clock.remainingRatio) * 100)}
-          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold/20"
-        >
-          <span
-            className="absolute inset-y-0 left-0 bg-gold"
-            style={{ width: `${Math.round((1 - clock.remainingRatio) * 100)}%` }}
-          />
-        </div>
-      )}
-    </div>
+      {[
+        <span key="time" className="flex items-center gap-1.5" aria-label={compact ? clock.label : undefined}>
+          <SemanticIcon name="hourglass" className="h-3.5 w-3.5 shrink-0" />
+          <span className={cn("whitespace-nowrap tabular-nums", compact && "text-hud-label")}>
+            {compact ? clock.compactLabel : clock.label}
+          </span>
+          {clock.remainingRatio !== null && <GameSpent share={1 - clock.remainingRatio} />}
+        </span>,
+      ]}
+    </HudPill>
   );
 });
 GameClock.displayName = "GameClock";
+
+/** The game spent, as a hairline along the clock's foot. */
+const GameSpent = ({ share }: { share: number }) => (
+  <div
+    role="progressbar"
+    aria-label="Game spent"
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={Math.round(share * 100)}
+    className="absolute bottom-0 left-0 right-0 h-0.5 bg-hud-divider"
+  >
+    <span className="absolute inset-y-0 left-0 bg-hud-accent" style={{ width: `${Math.round(share * 100)}%` }} />
+  </div>
+);

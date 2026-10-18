@@ -67,7 +67,7 @@ import { Notice } from "@/ui/design-system/kit/notice";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
+import { usePlayerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { TroopAmount } from "@/ui/features/military/components/unified-army-creation-modal/troop-amount";
@@ -756,6 +756,9 @@ const LoadingSection = () => (
   />
 );
 
+/** The game's player chip as it draws today: name, rank, points and the game's goal. */
+const LabPlayerPill = () => <HudPill>{usePlayerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+
 const TopBarSection = () => (
   <Element
     name="Top bar and portrait"
@@ -778,11 +781,7 @@ const TopBarSection = () => (
         </HudPill>
       </div>
     }
-    today={
-      <div className={cn(TOP_PILL)}>
-        <span className="text-gold">clientlane · #1 · 310 points</span>
-      </div>
-    }
+    today={<LabPlayerPill />}
   />
 );
 

@@ -8,11 +8,9 @@ import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { selectEventStories } from "@/ui/features/event-feed/event-stories";
 import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switch";
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { PlayerLabel } from "@/ui/features/world/containers/top-header/identity-chip";
-import { TOP_PILL } from "@/ui/features/world/containers/top-header/top-pill";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { usePlayerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
@@ -220,6 +218,9 @@ const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[
   },
 ];
 
+/** The top bar's player chip as a player reads it: name, rank, points and the game's goal. */
+const LabPlayerPill = () => <HudPill>{usePlayerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+
 /**
  * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,
  * at /lab/kit/guidance: the top bar's goal beside the points, Next up in each state its coach reads, and Events rows
@@ -231,8 +232,8 @@ export const GuidanceLab = () => {
   return (
     <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
       <div className="flex min-h-screen flex-col items-start gap-6 bg-[#0b1418] p-6 text-gold">
-        <div data-lab="top-bar" className={cn(TOP_PILL, HUD_LABEL_BRIGHT)}>
-          <PlayerLabel name="clientlane" standing={{ rank: 1, points: 310 }} />
+        <div data-lab="top-bar">
+          <LabPlayerPill />
         </div>
         <div data-lab="next-up" className="grid grid-cols-4 gap-4">
           {nextUpStates().map(({ label, steps, refusal }) => (

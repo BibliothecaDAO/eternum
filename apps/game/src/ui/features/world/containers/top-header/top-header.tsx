@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { HudHeaderLayout } from "./hud-header-layout";
 import { MapViewControls } from "./map-view-controls";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -121,15 +121,18 @@ export const TopHeader = memo(() => {
 
       {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
       {isFollowingArmy && (
-        <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
-          <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-black/40 px-4 py-2 text-gold shadow-lg animate-bounce">
-            {followingArmyMessage?.toLowerCase().includes("combat") ? (
-              <SemanticIcon name="military" className="w-4 h-4 animate-pulse text-gold" />
-            ) : (
-              <SemanticIcon name="eye" className="w-4 h-4 animate-pulse text-gold" />
-            )}
-            <span className={HUD_LABEL_BRIGHT}>{followingArmyMessage ?? "Following Army"}</span>
-          </div>
+        <div className="pointer-events-auto fixed left-1/2 top-16 z-50 -translate-x-1/2">
+          <HudPill>
+            {[
+              <span key="following" className="flex items-center gap-2">
+                <SemanticIcon
+                  name={followingArmyMessage?.toLowerCase().includes("combat") ? "military" : "eye"}
+                  className="h-4 w-4 animate-pulse"
+                />
+                {followingArmyMessage ?? "Following Army"}
+              </span>,
+            ]}
+          </HudPill>
         </div>
       )}
     </>
