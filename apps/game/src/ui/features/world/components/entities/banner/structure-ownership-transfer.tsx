@@ -6,7 +6,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { StructureType } from "@bibliothecadao/types";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 
 function recipientAddress(value: string): string | undefined {
@@ -68,18 +68,18 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
     <div className="mt-2 space-y-2 border-t border-hud-divider pt-2">
       {confirming ? (
         <>
-          <label className="block text-hud-label">
-            Recipient gameplay account
-            <input
-              className="mt-1 w-full rounded border border-hud-line bg-hud-well p-2"
+          <div className="flex flex-col gap-1">
+            <span className="text-hud-label text-hud-muted">Recipient gameplay account</span>
+            <HudField
+              aria-label="Recipient gameplay account"
               value={recipient}
-              onChange={(event) => setRecipient(event.target.value)}
+              onChange={setRecipient}
               placeholder="0x…"
               spellCheck={false}
               disabled={pending}
             />
-          </label>
-          <p className="text-hud-label">
+          </div>
+          <p className="text-hud-label text-hud-muted">
             Transfer this structure and its inventory to this gameplay account. This cannot be undone.
           </p>
           {recipient && !validRecipient && (
@@ -88,18 +88,18 @@ export const StructureOwnershipTransfer = ({ structureId }: { structureId: numbe
             </p>
           )}
           <div className="flex gap-2">
-            <Button variant="danger" disabled={!validRecipient || pending} onClick={transfer}>
+            <HudButton kind="secondary" tone="bad" disabled={!validRecipient || pending} onClick={transfer}>
               Confirm transfer
-            </Button>
-            <Button disabled={pending} onClick={close}>
+            </HudButton>
+            <HudButton kind="quiet" disabled={pending} onClick={close}>
               Cancel
-            </Button>
+            </HudButton>
           </div>
         </>
       ) : (
-        <Button variant="outline" onClick={ask}>
+        <HudButton kind="secondary" size="sm" onClick={ask}>
           Transfer ownership
-        </Button>
+        </HudButton>
       )}
     </div>
   );
