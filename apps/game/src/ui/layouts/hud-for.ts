@@ -1,3 +1,4 @@
+import type { HudMode } from "@/tokens";
 import type { GameModeId } from "@/config/game-modes";
 
 /**
@@ -7,3 +8,6 @@ import type { GameModeId } from "@/config/game-modes";
  */
 export const hudFor = (mode: GameModeId, frontierRulesKnown: boolean): "frontier" | "shared" | "none" =>
   mode === "frontier" ? (frontierRulesKnown ? "frontier" : "none") : "shared";
+
+/** The age a game's HUD wears (tokens.ts HUD_MODES): a duel is fought on Blitz's rules, so it wears Blitz's. */
+export const hudModeOf = (mode: GameModeId): HudMode => (mode === "frontier" || mode === "eternum" ? mode : "blitz");

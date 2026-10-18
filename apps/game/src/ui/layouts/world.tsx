@@ -16,6 +16,7 @@ import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { DesktopHud } from "../features/world/hud/desktop-hud";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useDocumentClass } from "@/hooks/use-document-class";
+import { useHudMode } from "@/hooks/use-hud-mode";
 import { GameCycleEffects } from "../shared/components/game-cycle-effects";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ActionRunners } from "../action-runners";
@@ -24,7 +25,7 @@ import { ExpeditionRollover } from "../features/world/components/expeditions/exp
 import { FrontierHud } from "../features/frontier/frontier-hud";
 import { useExpeditionRules } from "../features/frontier/frontier-home";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { hudFor } from "./hud-for";
+import { hudFor, hudModeOf } from "./hud-for";
 import { FLIGHT_TRACE_ENABLED, traceFlightCommit } from "@/three/flight-trace";
 import { Profiler } from "react";
 import { MotionLayer } from "@/ui/motion/motion-layer";
@@ -117,7 +118,9 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
  */
 const HUD = () => {
   const expeditionRules = useExpeditionRules();
-  const hud = hudFor(useGameModeConfig().id, expeditionRules !== null);
+  const mode = useGameModeConfig().id;
+  useHudMode(hudModeOf(mode));
+  const hud = hudFor(mode, expeditionRules !== null);
   return (
     <>
       {/* A Frontier game opens its own surfaces (deploy, build) from its HUD; the other modes share these. */}
