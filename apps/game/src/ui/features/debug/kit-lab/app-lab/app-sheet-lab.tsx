@@ -40,7 +40,10 @@ import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+import { REWARD_WORDS } from "@/ui/design-system/kit/words";
+
 import { Element } from "../sheet-element";
+import { chestArt } from "./app-blocks";
 import { AGE_OF, PLAYER } from "./app-lab-data";
 import { ResearchBoard } from "./app-research-board";
 import { APP_PAGES, type AppPage, PAGE_LAYOUTS } from "./app-pages";
@@ -86,6 +89,7 @@ export const AppSheetLab = () => (
       <PageHeadSection />
       <EmptySection />
       <DialogSection />
+      <ChestSection />
       <PagesSection />
     </main>
   </div>
@@ -288,7 +292,7 @@ const ButtonSection = () => (
   <Element
     name="Button"
     todayLabel={TODAY}
-    rule="Primary is the page's one verb (large where it leads the page, with Enter beside it on a desktop), secondary sits beside it, quiet is a way out; a loss is said in the bad tone."
+    rule="Primary is the page's one verb (large where it leads the page, with Enter beside it on a desktop), secondary sits beside it, quiet is a way out; a loss is said in the bad tone. A verb takes its icon before its word."
     sheet={
       <>
         <StateHeads />
@@ -297,7 +301,12 @@ const ButtonSection = () => (
             key={kind}
             label={kind}
             render={(state) => (
-              <AppButton kind={kind} data-state={forced(state)} disabled={state === "disabled"}>
+              <AppButton
+                kind={kind}
+                icon={kind === "primary" ? "play" : kind === "secondary" ? "plus" : undefined}
+                data-state={forced(state)}
+                disabled={state === "disabled"}
+              >
                 {kind === "primary" ? "Resume" : kind === "secondary" ? "Join" : "Later"}
               </AppButton>
             )}
@@ -312,7 +321,7 @@ const ButtonSection = () => (
           )}
         />
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <AppButton kind="primary" size="lg" keyHint="Enter">
+          <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
             Pay and join
           </AppButton>
           <AppButton kind="primary" busy="Joining…">
@@ -341,8 +350,8 @@ const FieldSection = () => (
     rule="Its label above, its value in the well, one line under it: a hint, or what is wrong in the bad tone."
     sheet={
       <div className="grid grid-cols-2 gap-4">
-        <AppField label="Email" placeholder="you@mail.com" hint="We send a six-digit code." />
-        <AppField label="Email" defaultValue="maelis@" error="That is not an email address." />
+        <AppField label="Email" icon="mail" placeholder="you@mail.com" hint="We send a six-digit code." />
+        <AppField label="Email" icon="mail" defaultValue="maelis@" error="That is not an email address." />
         <AppField label="Name" defaultValue="Maelis" />
         <AppField label="Name" defaultValue="Maelis" disabled />
       </div>
@@ -361,7 +370,7 @@ const TopBarSection = () => (
     name="Top bar"
     wide
     todayLabel={TODAY}
-    rule="The bar across the top of every page: the mark, Play and Season with the current one in the accent, and the player at its right end, who opens You. Words only: no key beside a name, no glyph."
+    rule="The bar across the top of every page, over the page's painting: the mark, Play and Season with their icons and the current one in the accent; at its right end the LORDS the player holds and the player, who opens You. No key beside a name."
     sheet={
       <div className="flex flex-col gap-3">
         {(["play", "season", "you"] as const).map((current) => (
@@ -430,11 +439,16 @@ const PanelSection = () => (
   <Element
     name="Panel"
     todayLabel={TODAY}
-    rule="The app's one surface: its name over a rule, a cue at its end, then its body; a list runs to its edges."
+    rule="The app's one surface, translucent over the page's painting: its icon and name over a rule, a cue at its end, then its body; a list runs to its edges. A panel about one game or mode carries that mode's painting in its head."
     sheet={
-      <AppPanel title="Frontier" cue="Day 12">
-        <p className="text-app-body text-app-muted">Twelve rows of the season's board.</p>
-      </AppPanel>
+      <div className="grid grid-cols-2 gap-4">
+        <AppPanel title="Season" icon="leaderboard" cue="Day 12">
+          <p className="text-app-body text-app-muted">Twelve rows of the season's board.</p>
+        </AppPanel>
+        <AppPanel title="Frontier" icon="leaderboard" painting="frontier-mist" cue="Day 12">
+          <p className="text-app-body text-app-muted">Twelve rows of the season's board.</p>
+        </AppPanel>
+      </div>
     }
     today={
       <div className="w-full">
@@ -463,11 +477,11 @@ const GameCardSection = () => (
           facts={
             <>
               <AppChip tone="gold">Your realm</AppChip>
-              <AppChip>Day 12 · 7h 14m left</AppChip>
+              <AppChip icon="hourglass">Day 12 · 7h 14m left</AppChip>
             </>
           }
           verb={
-            <AppButton kind="primary" size="lg" keyHint="Enter">
+            <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
               Resume
             </AppButton>
           }
@@ -478,7 +492,11 @@ const GameCardSection = () => (
           eyebrow="Age I"
           title="Blitz 16:30"
           facts={<AppChip tone="warn">Entry closes in 2h 4m</AppChip>}
-          verb={<AppButton kind="secondary">Join</AppButton>}
+          verb={
+            <AppButton kind="secondary" icon="plus">
+              Join
+            </AppButton>
+          }
         />
         <AppGameCard
           age="eternum"
@@ -516,7 +534,9 @@ const RowSection = () => (
           trail={
             <>
               <AppChip tone="warn">Entry open</AppChip>
-              <AppButton kind="secondary">Join</AppButton>
+              <AppButton kind="secondary" icon="plus">
+                Join
+              </AppButton>
             </>
           }
         />
@@ -530,8 +550,10 @@ const RowSection = () => (
           title="Ysabeau"
           trail={
             <>
-              <span className="text-app-muted">148 sites</span>
-              <AppChip tone="gold">2,900 LORDS</AppChip>
+              <AppChip icon="explore">148</AppChip>
+              <AppChip icon="lords" tone="gold">
+                2,900
+              </AppChip>
             </>
           }
           onClick={() => undefined}
@@ -547,8 +569,10 @@ const RowSection = () => (
           title="Maelis · You"
           trail={
             <>
-              <span className="text-app-muted">88 sites</span>
-              <AppChip tone="gold">1,500 LORDS</AppChip>
+              <AppChip icon="explore">88</AppChip>
+              <AppChip icon="lords" tone="gold">
+                1,500
+              </AppChip>
             </>
           }
         />
@@ -579,7 +603,7 @@ const ChipFigureSection = () => (
   <Element
     name="Chip and figure"
     todayLabel={TODAY}
-    rule="A chip is a state in its tone, a count, or an amount with its unit; a figure is the point of its panel with what it counts under it."
+    rule="A chip is a state in its tone, a count, or an amount with its icon; a figure is the point of its panel with what it counts under it. Whatever names a resource, a troop or a rank takes its icon: never a bare number."
     sheet={
       <div className="flex flex-col gap-5">
         <div className="flex flex-wrap gap-2">
@@ -588,14 +612,20 @@ const ChipFigureSection = () => (
           </AppChip>
           <AppChip tone="warn">Entry closes in 2h 4m</AppChip>
           <AppChip tone="bad">Entry closed</AppChip>
-          <AppChip tone="gold">2,900 LORDS</AppChip>
-          <AppChip>24/24 seats</AppChip>
+          <AppChip tone="gold" icon="lords">
+            2,900
+          </AppChip>
+          <AppChip icon="people">24/24</AppChip>
+          <AppChip icon="wood">1,200</AppChip>
+          <AppChip icon="knight-t1">300</AppChip>
+          <AppChip icon="rating-conqueror">1,744</AppChip>
           <AppChip>Ended</AppChip>
         </div>
         <div className="flex flex-wrap gap-10">
-          <AppFigure value="2:03:57" label="Entry closes in" />
-          <AppFigure value="#12" label="of 1,240" tone="gold" />
-          <AppFigure value="+36" label="rating" tone="good" />
+          <AppFigure icon="hourglass" value="2:03:57" label="Entry closes in" />
+          <AppFigure icon="leaderboard" value="#12" label="of 1,240" tone="gold" />
+          <AppFigure icon="rating-conqueror" value="+36" label="rating" tone="good" />
+          <AppFigure icon="lords" value="6,878" label="LORDS" tone="gold" />
         </div>
       </div>
     }
@@ -647,13 +677,17 @@ const SettingSection = () => {
     <Element
       name="Setting and switch"
       todayLabel={TODAY}
-      rule="A setting: its name, what it holds, then its control: a switch, or the whole row opens it."
+      rule="A setting: its icon, its name, what it holds, then its control: a switch, or a chevron that opens it."
       sheet={
         <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
-          <AppSetting name="Name" value="Maelis" onClick={() => undefined} />
-          <AppSetting name="Payout wallet" value="Link a wallet" onClick={() => undefined} />
-          <AppSetting name="Music" control={<AppSwitch label="Music" checked={music} onChange={setMusic} />} />
-          <AppSetting name="This device" control={<AppSwitch label="This device" checked disabled />} />
+          <AppSetting icon="person" name="Name" value="Maelis" onClick={() => undefined} />
+          <AppSetting icon="lords" name="Payout wallet" value="Link a wallet" onClick={() => undefined} />
+          <AppSetting
+            icon="music"
+            name="Music"
+            control={<AppSwitch label="Music" checked={music} onChange={setMusic} />}
+          />
+          <AppSetting icon="monitor" name="This device" control={<AppSwitch label="This device" checked disabled />} />
         </div>
       }
       today={
@@ -676,12 +710,12 @@ const ChoiceSection = () => (
   <Element
     name="Choice"
     todayLabel={TODAY}
-    rule="A choice among a few, as tiles: its name, what it does and its price; the chosen one ringed in the gold."
+    rule="A choice among a few, as tiles: its icon, name, what it does and its price; the chosen one ringed in the gold, ticked."
     sheet={
       <div className="flex gap-3">
-        <AppChoice title="Seat" detail="Entry" price="500 LORDS" selected />
-        <AppChoice title="Sword" detail="Win ×2" price="+ 50 LORDS" />
-        <AppChoice title="Shield" detail="Lose ½" price="+ 50 LORDS" disabled />
+        <AppChoice icon="flag" title="Seat" detail="Entry" price="500 LORDS" selected />
+        <AppChoice icon="attack" title="Sword" detail="Win ×2" price="+ 50 LORDS" />
+        <AppChoice icon="defend" title="Shield" detail="Lose ½" price="+ 50 LORDS" disabled />
       </div>
     }
     today={
@@ -734,10 +768,14 @@ const EmptySection = () => (
     rule="Nothing here, said once with the one step that would fill it; rows standing in for a list that is coming."
     sheet={
       <div className="grid grid-cols-2 gap-4">
-        <AppPanel title="Recent games">
-          <AppEmpty line="No finished games yet." action={<AppButton kind="secondary">Play</AppButton>} />
+        <AppPanel title="Recent games" icon="victory">
+          <AppEmpty
+            icon="victory"
+            line="No finished games yet."
+            action={<AppButton kind="secondary">Play</AppButton>}
+          />
         </AppPanel>
-        <AppPanel title="Season">
+        <AppPanel title="Season" icon="leaderboard">
           <AppSkeleton rows={4} />
         </AppPanel>
       </div>
@@ -774,7 +812,35 @@ const DialogSection = () => (
   />
 );
 
-/** The four most-used pages, each in its picked direction, scaled to fit; each opens alone at 1920×1080. */
+const ChestSection = () => (
+  <Element
+    name="Reward chest"
+    wide
+    todayLabel={TODAY}
+    rule="A reward is an object: the chest drawn at its rank band's tier, sealed until it is opened, then opened beside what it paid."
+    sheet={
+      <div className="grid grid-cols-5 gap-4">
+        {REWARD_WORDS.band.map((band, index) => (
+          <div key={band} className="flex flex-col items-center gap-2">
+            <div className="flex">
+              <img src={chestArt(index, false)} alt="" className="size-32 object-contain" />
+              <img src={chestArt(index, true)} alt="" className="size-32 object-contain" />
+            </div>
+            <AppChip icon="victory">{band}</AppChip>
+          </div>
+        ))}
+      </div>
+    }
+    today={
+      <p className="text-sm text-white/70">
+        The reward panel (shell/season-tab/reward-panel.tsx) draws the same files at its band; the icon lane is
+        restoring them as reward-chest icons on art/reward-chests.
+      </p>
+    }
+  />
+);
+
+/** The four most-used pages (Results twice: sealed, opened), each in its picked direction, scaled to fit; each opens alone at 1920×1080. */
 const PagesSection = () => (
   <section id="pages" className="flex flex-col gap-6 rounded-lg border border-white/10 bg-black/20 p-4">
     <header data-lab-chrome className="flex flex-col gap-1">

@@ -1,3 +1,4 @@
+import type { IconMeaning } from "@/ui/design-system/icon";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 
 /**
@@ -14,7 +15,7 @@ export const AGE_OF: Record<LabAge, { name: string; numeral: string; painting: P
   eternum: { name: "Eternum", numeral: "III", painting: "eternum-restoration" },
 };
 
-export const PLAYER = { name: "Maelis", portrait: "/images/avatars/07.png" };
+export const PLAYER = { name: "Maelis", portrait: "/images/avatars/07.png", lords: "2,140" };
 
 /** A game Play lists: its age, its name, what stands, and its one verb. */
 export type LabGame = {
@@ -22,6 +23,8 @@ export type LabGame = {
   title: string;
   line: string;
   verb: string;
+  /** The verb's icon. */
+  icon: IconMeaning;
   state?: { word: string; tone?: "good" | "warn" | "bad" | "gold"; live?: boolean };
   /** The page's one gold verb. */
   lead?: boolean;
@@ -33,6 +36,7 @@ export const GAMES: readonly LabGame[] = [
     title: "Frontier",
     line: "Day 12 · Day ends 21:12 · 7h 14m left",
     verb: "Resume",
+    icon: "play",
     state: { word: "Your realm", tone: "gold" },
     lead: true,
   },
@@ -41,6 +45,7 @@ export const GAMES: readonly LabGame[] = [
     title: "Blitz 13:18",
     line: "Ends 15:22 · 1h 24m left · 24/24",
     verb: "Watch",
+    icon: "eye",
     state: { word: "Live", tone: "good", live: true },
   },
   {
@@ -48,6 +53,7 @@ export const GAMES: readonly LabGame[] = [
     title: "Blitz 16:30",
     line: "Entry closes 16:30 · 2h 4m left · 31 registered",
     verb: "Join",
+    icon: "plus",
     state: { word: "Entry open", tone: "warn" },
   },
   {
@@ -55,6 +61,7 @@ export const GAMES: readonly LabGame[] = [
     title: "Blitz 11:00",
     line: "Ended today · you placed 3rd",
     verb: "Results",
+    icon: "leaderboard",
     state: { word: "Ended" },
   },
   {
@@ -62,6 +69,7 @@ export const GAMES: readonly LabGame[] = [
     title: "Eternum",
     line: "Opens in 6 days · 18 Oct",
     verb: "Remind me",
+    icon: "clock",
     state: { word: "Soon" },
   },
 ];
@@ -98,13 +106,16 @@ export const RESULT_BOARD = [
   { rank: 5, name: "Tybalt", points: 292 },
 ] as const;
 
-export const RESULT_BREAKDOWN = [
-  { what: "Tiles explored", count: "36", points: "72" },
-  { what: "Crates opened", count: "3", points: "30" },
-  { what: "Rifts and camps", count: "2", points: "40" },
-  { what: "Hyperstructures taken", count: "1", points: "100" },
-  { what: "Hyperstructures held", count: "", points: "110" },
-] as const;
+export const RESULT_BREAKDOWN: readonly { what: string; icon: IconMeaning; count: string; points: string }[] = [
+  { what: "Tiles explored", icon: "explore", count: "36", points: "72" },
+  { what: "Crates opened", icon: "chest", count: "3", points: "30" },
+  { what: "Rifts and camps", icon: "rift", count: "2", points: "40" },
+  { what: "Hyperstructures taken", icon: "hyperstructure", count: "1", points: "100" },
+  { what: "Hyperstructures held", icon: "crown", count: "", points: "110" },
+];
+
+/** The player's chest from Blitz 11:00: their rank band (3rd of 24 is the top 25%), what it can pay, what it paid. */
+export const CHEST = { band: 1, shares: 4, until: "9 Dec", paid: "2,000" } as const;
 
 export const CHAT = [
   { who: "Aldric", line: "gl hf" },

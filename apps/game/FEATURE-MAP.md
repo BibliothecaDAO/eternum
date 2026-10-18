@@ -12,19 +12,20 @@ list row, event row and notice, window, confirm (Frontier only), loading and emp
 minimap frame) in every state, beside the versions the game draws today; Mode switches the age, Device a phone.
 `pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel and chip looks.
 `/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/app` the app's style sheet
-(the pages outside a game): its spec, the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every
-state beside today's, and the four most-used pages at 1920×1080 in the owner's picked directions under the top bar (Play
-in Ages, the Blitz lobby and Results in Ledger, Season in Launcher), each alone at
-`/lab/kit/app/<play|lobby|season| results>`; `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures and checks
-them. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
-`/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with outcomes).
-`/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate panel as the game
-draws them, on the deploy fixture's realm; capture them with
-`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
-number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
-text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
-number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
-`node scripts/words/check.mjs` counts them by kind.
+(the pages outside a game): the research behind it (shipped game launchers and menus, desktop then mobile), its spec,
+the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the reward chest at
+each tier, sealed and opened, among them), and the four most-used pages at 1920×1080 in the owner's picked directions
+under the top bar (Play in Ages, the Blitz lobby and Results in Ledger, Season in Launcher), each on its painting with
+icons on places, panels, verbs and figures, each alone at `/lab/kit/app/<page>` (`play`, `lobby`, `season`, `results`,
+`results-opened`); `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures and checks them. `/lab/kit/panels` the
+HUD's holdings and selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/guidance` the points-first
+guidance (the goal in the top bar, Next up's route, Events rows with outcomes). `/lab/kit/area-d` the rings,
+leaderboard, tribes, Military picker and window body, Combat and crate panel as the game draws them, on the deploy
+fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
+`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
+`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
+on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
+on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read

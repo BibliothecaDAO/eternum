@@ -28,7 +28,7 @@ const TODAY = {
   news: "home/scroll",
 };
 
-const PAGES = ["play", "lobby", "season", "results"];
+const PAGES = ["play", "lobby", "season", "results", "results-opened"];
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */
 const pageChecks = (b) => [
@@ -57,8 +57,9 @@ const todayPages = () =>
   }));
 
 /**
- * What holds for each of the app's pages on its sheet: it fits the screen, it draws no glyph (owner, 18 October 2026: a
- * word says what each thing is), it has at most one gold verb, and the player sits at the bar's right end.
+ * What holds for each of the app's pages on its sheet: it fits the screen, it stands on its painting and every picture
+ * on it loaded (the painting, icons, portraits, the chest), it has at most one gold verb, and the player sits at the
+ * bar's right end. The glyphs it draws are counted.
  */
 const appPageChecks = (b) => {
   const measure = b.evaluate(`(() => {
@@ -73,6 +74,10 @@ const appPageChecks = (b) => {
         Math.max(lowestIn(screen) - bottomOf(screen), ...blocks.map((block) => lowestIn(block) - bottomOf(block))),
       ),
       glyphs: document.querySelectorAll("[data-app-page] [data-icon]").length,
+      painting: document.querySelector("[data-app-page] .app-frame__painting")?.naturalWidth > 0,
+      broken: [...document.querySelectorAll("[data-app-page] img")]
+        .filter((image) => !(image.complete && image.naturalWidth > 0))
+        .map((image) => image.currentSrc || image.src),
       goldVerbs: document.querySelectorAll('[data-app-page] .app-button[data-kind="primary"]').length,
       playerRightGap: Math.round(bar.right - player.right),
       playerInBar: player.top >= bar.top && player.bottom <= bar.bottom,
@@ -84,7 +89,8 @@ const appPageChecks = (b) => {
       ok: measure.overflow <= 0,
       measure,
     },
-    { check: "draws no glyph", ok: measure.glyphs === 0 },
+    { check: "stands on its painting", ok: measure.painting },
+    { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
     { check: "the player at the bar's right end", ok: measure.playerInBar && measure.playerRightGap <= 48 },
   ];

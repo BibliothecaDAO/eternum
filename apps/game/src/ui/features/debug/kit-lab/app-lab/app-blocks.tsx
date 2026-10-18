@@ -9,12 +9,15 @@ import {
   AppRank,
   AppRow,
 } from "@/ui/design-system/kit/app-elements";
+import { Icon } from "@/ui/design-system/icon";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
+import { REWARD_WORDS } from "@/ui/design-system/kit/words";
 
 import {
   AGE_OF,
   BLITZ_BOARD,
   CHAT,
+  CHEST,
   FRONTIER_BOARD,
   GAMES,
   type LabAge,
@@ -37,6 +40,10 @@ export const Backdrop = ({ age }: { age: LabAge }) => (
   </div>
 );
 
+/** A player's portrait on a board: the avatars the fixtures hand out by rank; a wallet address has none. */
+const portraitOf = (name: string, rank: number) =>
+  name.startsWith("0x") ? undefined : `/images/avatars/${String((rank % 12) + 1).padStart(2, "0")}.png`;
+
 const gameState = (game: LabGame) =>
   game.state && (
     <AppChip tone={game.state.tone} live={game.state.live}>
@@ -58,12 +65,12 @@ export const LeadCard = ({ className }: { className?: string }) => {
       facts={
         <>
           {gameState(lead)}
-          <AppChip>Day 12 · 7h 14m left</AppChip>
-          <AppChip>Tomorrow lasts 24h</AppChip>
+          <AppChip icon="hourglass">Day 12 · 7h 14m left</AppChip>
+          <AppChip icon="sun">Tomorrow lasts 24h</AppChip>
         </>
       }
       verb={
-        <AppButton kind="primary" size="lg" keyHint="Enter">
+        <AppButton kind="primary" size="lg" icon={lead.icon} keyHint="Enter">
           {lead.verb}
         </AppButton>
       }
@@ -71,7 +78,7 @@ export const LeadCard = ({ className }: { className?: string }) => {
   );
 };
 
-/** One game as a row under its age: its name and line, its state, its verb. */
+/** One game as a row under its age: its name and line, its state, its verb with its icon. */
 export const GameRow = ({ game }: { game: LabGame }) => (
   <AppRow
     title={game.title}
@@ -79,7 +86,9 @@ export const GameRow = ({ game }: { game: LabGame }) => (
     trail={
       <>
         {gameState(game)}
-        <AppButton kind="secondary">{game.verb}</AppButton>
+        <AppButton kind="secondary" icon={game.icon}>
+          {game.verb}
+        </AppButton>
       </>
     }
   />
@@ -88,10 +97,10 @@ export const GameRow = ({ game }: { game: LabGame }) => (
 /** The games of one age, but the lead. */
 export const gamesOf = (age: LabAge) => GAMES.filter((game) => !game.lead && game.age === age);
 
-/** Frontier's season board: rank, player, sites cleared, LORDS; the player's own lit. */
+/** Frontier's season board: the top nine and the player's own row, lit; rank, player, sites cleared, LORDS. */
 export const FrontierBoard = () => (
   <div>
-    {FRONTIER_BOARD.map((row) => (
+    {FRONTIER_BOARD.filter((row) => row.rank <= 9 || "own" in row).map((row) => (
       <AppRow
         key={row.rank}
         own={"own" in row}
@@ -99,7 +108,7 @@ export const FrontierBoard = () => (
           <>
             <AppRank rank={row.rank} />
             <AppPortrait
-              src={`/images/avatars/${String((row.rank % 12) + 1).padStart(2, "0")}.png`}
+              src={"own" in row ? PLAYER.portrait : portraitOf(row.name, row.rank)}
               name={row.name}
               size="sm"
               own={"own" in row}
@@ -109,8 +118,10 @@ export const FrontierBoard = () => (
         title={"own" in row ? `${row.name} · You` : row.name}
         trail={
           <>
-            <span className="text-app-muted">{row.sites} sites</span>
-            <AppChip tone="gold">{row.lords} LORDS</AppChip>
+            <AppChip icon="explore">{row.sites}</AppChip>
+            <AppChip icon="lords" tone="gold">
+              {row.lords}
+            </AppChip>
           </>
         }
         onClick={() => undefined}
@@ -129,14 +140,21 @@ export const BlitzBoard = () => (
         lead={
           <>
             <AppRank rank={row.rank} />
-            <AppPortrait name={row.name} size="sm" own={"own" in row} />
+            <AppPortrait
+              src={"own" in row ? PLAYER.portrait : portraitOf(row.name, row.rank)}
+              name={row.name}
+              size="sm"
+              own={"own" in row}
+            />
           </>
         }
         title={"own" in row ? `${row.name} · You` : row.name}
         trail={
           <>
-            <span>{row.rating}</span>
-            <AppChip tone="gold">{row.prize} LORDS</AppChip>
+            <AppChip icon="rating-conqueror">{row.rating}</AppChip>
+            <AppChip icon="lords" tone="gold">
+              {row.prize}
+            </AppChip>
           </>
         }
       />
@@ -144,12 +162,13 @@ export const BlitzBoard = () => (
   </div>
 );
 
-/** Where the player stands this season, in three figures. */
+/** Where the player stands this season, in three figures, each with its picture. */
 export const Standing = () => (
-  <div className="flex gap-12">
-    <AppFigure value="#12" label="Frontier · of 1,240" tone="gold" />
-    <AppFigure value="1,744" label="Blitz rating · Conqueror" />
-    <AppFigure value="6,878" label="LORDS if the season ended now" tone="gold" />
+  <div className="flex items-center gap-12">
+    <AppPortrait src={PLAYER.portrait} name={PLAYER.name} size="lg" own />
+    <AppFigure icon="leaderboard" value="#12" label="Frontier · of 1,240" tone="gold" />
+    <AppFigure icon="rating-conqueror" value="1,744" label="Blitz rating · Conqueror" />
+    <AppFigure icon="lords" value="6,878" label="LORDS if the season ended now" tone="gold" />
   </div>
 );
 
@@ -180,15 +199,25 @@ export const Seats = () => (
 export const Entry = () => (
   <div className="flex flex-col gap-4">
     <div className="flex gap-3">
-      <AppChoice title="Seat" detail="Entry" price="500 LORDS" selected />
-      <AppChoice title="Sword" detail="Win ×2" price="+ 50 LORDS" />
-      <AppChoice title="Shield" detail="Lose ½" price="+ 50 LORDS" />
+      <AppChoice icon="flag" title="Seat" detail="Entry" price="500 LORDS" selected />
+      <AppChoice icon="attack" title="Sword" detail="Win ×2" price="+ 50 LORDS" />
+      <AppChoice icon="defend" title="Shield" detail="Lose ½" price="+ 50 LORDS" />
     </div>
     <div className="flex flex-col rounded-[var(--app-radius-control)] border border-app-line">
-      <AppRow title="Seat" trail={<span>500</span>} />
-      <AppRow title="Total" detail="Held 2,140 LORDS" trail={<AppChip tone="gold">500 LORDS</AppChip>} own />
+      <AppRow lead={<Icon name="flag" size={24} />} title="Seat" trail={<span>500</span>} />
+      <AppRow
+        lead={<Icon name="lords" size={24} />}
+        title="Total"
+        detail="Held 2,140 LORDS"
+        trail={
+          <AppChip icon="lords" tone="gold">
+            500
+          </AppChip>
+        }
+        own
+      />
     </div>
-    <AppButton kind="primary" keyHint="Enter">
+    <AppButton kind="primary" size="lg" icon="play" keyHint="Enter">
       Pay and join
     </AppButton>
   </div>
@@ -197,43 +226,50 @@ export const Entry = () => (
 /** The registered count of a slot not yet drawn. */
 export const Registered = () => (
   <div className="flex items-center gap-6">
-    <AppFigure value="31" label="registered" tone="gold" />
+    <AppFigure icon="people" value="31" label="registered" tone="gold" />
     <p className="max-w-[22rem] text-app-body text-app-muted">No cap. Games of up to 24 are drawn when entry closes.</p>
   </div>
 );
 
-/** The lobby's chat: the room's lines, then the player's field. */
+/** The lobby's chat: the room's lines, each with its player's portrait, then the player's field. */
 export const Chat = () => (
   <div className="flex flex-col gap-3">
-    <ul className="flex flex-col gap-1.5">
-      {CHAT.map((line) => (
-        <li key={line.who} className="text-app-body text-app-ink">
-          <span className="text-app-strong text-[rgb(var(--app-accent))]">{line.who}</span> {line.line}
+    <ul className="flex flex-col gap-2">
+      {CHAT.map((line, index) => (
+        <li key={line.who} className="flex items-center gap-2 text-app-body text-app-ink">
+          <AppPortrait src={portraitOf(line.who, index + 1)} name={line.who} size="sm" />
+          <span>
+            <span className="text-app-strong text-[rgb(var(--app-accent))]">{line.who}</span> {line.line}
+          </span>
         </li>
       ))}
     </ul>
-    <AppField label="Say something" placeholder="Message the lobby" />
+    <AppField label="Say something" icon="chat" placeholder="Message the lobby" />
   </div>
 );
 
 /** A Blitz's outcome for the player: the place, the points, the rating change. */
 export const Outcome = () => (
-  <div className="flex flex-col gap-4">
-    <span className="text-app-label text-[rgb(var(--app-age))]">Blitz 11:00 · Ended today</span>
-    <span className="text-app-display text-app-ink">3rd of 24</span>
-    <div className="flex gap-10">
-      <AppFigure value="352" label="points" tone="gold" />
-      <AppFigure value="+36" label="rating · 1,744 → 1,780" tone="good" />
+  <div className="flex items-center gap-8">
+    <AppPortrait src={PLAYER.portrait} name={PLAYER.name} size="lg" own />
+    <div className="flex flex-col gap-4">
+      <span className="text-app-label text-[rgb(var(--app-age))]">Blitz 11:00 · Ended today</span>
+      <span className="text-app-display text-app-ink">3rd of 24</span>
+      <div className="flex gap-10">
+        <AppFigure icon="star" value="352" label="points" tone="gold" />
+        <AppFigure icon="rating-conqueror" value="+36" label="rating · 1,744 → 1,780" tone="good" />
+      </div>
     </div>
   </div>
 );
 
-/** How the points were made. */
+/** How the points were made, each kind with its icon. */
 export const Breakdown = () => (
   <div>
     {RESULT_BREAKDOWN.map((row) => (
       <AppRow
         key={row.what}
+        lead={<Icon name={row.icon} size={28} />}
         title={row.what}
         detail={row.count ? `× ${row.count}` : undefined}
         trail={<span>{row.points} pts</span>}
@@ -252,24 +288,52 @@ export const ResultBoard = () => (
         lead={
           <>
             <AppRank rank={row.rank} />
-            <AppPortrait name={row.name} size="sm" own={"own" in row} />
+            <AppPortrait
+              src={"own" in row ? PLAYER.portrait : portraitOf(row.name, row.rank)}
+              name={row.name}
+              size="sm"
+              own={"own" in row}
+            />
           </>
         }
         title={"own" in row ? `${row.name} · You` : row.name}
-        trail={<span>{row.points} pts</span>}
+        trail={<AppChip icon="star">{row.points}</AppChip>}
         onClick={() => undefined}
       />
     ))}
   </div>
 );
 
-/** The chest the game paid: sealed, with Open as the page's one gold step. */
-export const Chest = () => (
-  <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-    <span className="text-app-title text-app-ink">Sealed</span>
-    <span className="text-app-label text-app-muted">Epic or better · opens once</span>
-    <AppButton kind="primary" size="lg" keyHint="Enter">
-      Open
-    </AppButton>
+/** A rank band's chest, sealed or opened: the reward chests' art (public/images/blitz-chests). */
+export const chestArt = (band: number, opened: boolean) =>
+  `/images/blitz-chests/band-${band}-${opened ? "opened" : "sealed"}.webp`;
+
+/** The chest the game paid, drawn at its tier: sealed with Open as the page's one gold step, or opened with its prize. */
+export const Chest = ({ opened }: { opened: boolean }) => (
+  <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
+    <img src={chestArt(CHEST.band, opened)} alt="" className="size-56 object-contain drop-shadow-2xl" />
+    <AppChip icon="victory">{REWARD_WORDS.band[CHEST.band]}</AppChip>
+    {opened ? <ChestPrize /> : <SealedChest />}
   </div>
+);
+
+const SealedChest = () => (
+  <>
+    <AppChip icon="lords" tone="gold">
+      {REWARD_WORDS.entryUntil(CHEST.shares, CHEST.until)}
+    </AppChip>
+    <AppButton kind="primary" size="lg" icon="chest" keyHint="Enter">
+      {REWARD_WORDS.open}
+    </AppButton>
+  </>
+);
+
+const ChestPrize = () => (
+  <>
+    <AppFigure icon="lords" value={`${CHEST.shares}×`} label={REWARD_WORDS.theEntry} tone="gold" />
+    <AppChip icon="lords" tone="gold">{`${CHEST.paid} ${REWARD_WORDS.lords}`}</AppChip>
+    <AppChip icon="check" tone="good">
+      {REWARD_WORDS.lordsSent}
+    </AppChip>
+  </>
 );
