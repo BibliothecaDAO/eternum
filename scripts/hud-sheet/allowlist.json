@@ -256,9 +256,6 @@
   "apps/game/src/ui/motion/motion-scale.ts": 4,
   "apps/game/src/ui/motion/sweep.tsx": 1,
   "apps/game/src/ui/shared/components/alert-banner-shell.tsx": 12,
-  "apps/game/src/ui/shared/components/count-up-number.tsx": 1,
   "apps/game/src/ui/shared/components/production-status-badge.tsx": 40,
-  "apps/game/src/ui/shared/error-boundary.tsx": 8,
-  "apps/game/src/ui/shared/lib/share-image.ts": 1,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }

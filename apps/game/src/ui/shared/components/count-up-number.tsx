@@ -19,7 +19,7 @@ export const CountUpNumber = ({
   value,
   format,
   className = "",
-  highlightClassName = "text-green",
+  highlightClassName = "text-hud-good",
 }: CountUpNumberProps) => {
   const [displayValue, setDisplayValue] = useState(value);
   const [isAnimating, setIsAnimating] = useState(false);

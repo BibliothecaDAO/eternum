@@ -29,12 +29,13 @@ const OUTSIDE = [
   "ui/debug/",
   "ui/features/debug/",
   "ui/features/game-entry/doorway/",
-  // The end-of-game share cards: images exported to PNG on a fixed canvas in their own palette, not HUD.
+  // The end-of-game share cards and their PNG export: images on a fixed canvas in their own palette, not HUD.
   "ui/shared/components/blitz-awards-variant-cards.tsx",
   "ui/shared/components/blitz-highlight-card.tsx",
   "ui/shared/components/blitz-leaderboard-card.tsx",
   "ui/shared/components/blitz-map-fingerprint-card.tsx",
   "ui/shared/lib/blitz-card-shared.ts",
+  "ui/shared/lib/share-image.ts",
 ].map((path) => `${APP}/${path}`);
 const isScanned = (path) =>
   /\.(?:tsx?|css)$/.test(path) && !/\.test\.tsx?$/.test(path) && !OUTSIDE.some((dir) => path.startsWith(dir));
