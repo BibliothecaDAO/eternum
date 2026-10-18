@@ -1,14 +1,18 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatExact } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-import { DayEnds } from "@/ui/design-system/kit/clock-line";
-
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
+import { HudButton, HudChip, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { formatDuration } from "@/ui/design-system/kit/time";
 import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TOMORROW_LASTS, TROOPS } from "@/ui/design-system/kit/words";
 
+import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
 import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
+
+/** The full-screen card stays clear of a phone's notch and home bar. */
+const CLEAR_OF_THE_NOTCH = {
+  paddingTop: "max(env(safe-area-inset-top), 1.5rem)",
+  paddingBottom: "max(env(safe-area-inset-bottom), 1rem)",
+};
 
 /**
  * The day-done card (wireframe 11), once, at the first open after the day ends: the day done and the realm kept, when
@@ -40,31 +44,36 @@ export const DayDoneCard = ({
 }) => (
   <section
     aria-label={`${DAY} ${endedDay} ${DAY_DONE}`}
-    className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2 overflow-y-auto bg-kit-ground px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] font-sans text-kit-cream"
+    className="ui pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2 overflow-y-auto bg-hud-surface px-4"
+    style={CLEAR_OF_THE_NOTCH}
   >
-    <h2 className="frontier-title !text-[26px]">
+    <h2 className="text-hud-display">
       {DAY} {endedDay} {DAY_DONE}
     </h2>
-    <p className="text-sm font-semibold">
+    <p className="text-hud-strong">
       {REALM_KEPT} · {DAY} {endedDay + 1} {DAY_OPEN}
     </p>
     <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
-    <p className="flex items-center justify-center gap-1 text-sm font-semibold">
+    <p className="flex items-center justify-center gap-1 text-hud-strong">
       <SemanticIcon name="hourglass" size={18} />
       <span>{TOMORROW_LASTS}</span>
-      <b className="text-base tabular-nums">{formatDuration(clock.tomorrowSeconds)}</b>
+      <b className="tabular-nums">{formatDuration(clock.tomorrowSeconds)}</b>
     </p>
-    <div className="w-full max-w-[360px]">
+    <div className="w-full max-w-sm">
       <DayTotalsGrid totals={totals} />
     </div>
     {rank && (
-      <p className="flex items-center gap-1.5 text-xl tabular-nums">
+      <p className="flex items-center gap-1.5 text-hud-title tabular-nums">
         <SemanticIcon name="victory" size={24} />#{rank.from} → #{rank.to}
       </p>
     )}
     {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
     <div className="min-h-2 flex-1" />
-    <Button role="primary" word={CONTINUE} onClick={onContinue} className="w-full max-w-[360px]" />
+    <div className="grid w-full max-w-sm">
+      <HudButton kind="primary" onClick={onContinue}>
+        {CONTINUE}
+      </HudButton>
+    </div>
   </section>
 );
 
@@ -80,25 +89,17 @@ const ArmiesLine = ({
 }) => (
   <div className="flex items-center justify-center gap-1.5" aria-label={TROOPS}>
     {Array.from({ length: armies }, (_, index) => (
-      <span key={index} className="size-[30px] rounded-full border border-kit-line2 opacity-40" />
+      <span key={index} className="size-8 rounded-full border border-hud-line" />
     ))}
-    <span className="text-base tabular-nums">−{formatExact(troopsLost)}</span>
+    <span className="tabular-nums">−{formatExact(troopsLost)}</span>
     {returned && (
       <span className="flex items-center gap-1.5 pl-2.5">
-        <span className="frontier-chip h-7 !py-0">
-          <span className="contents">
-            <span className="flex -space-x-1">
-              <SemanticIcon name="order-enlightenment" size={18} />
-              <SemanticIcon name="troops" size={18} />
-            </span>
-            <span className="frontier-chip-number tabular-nums !text-base">+{formatExact(returned.fitted)}</span>
-          </span>
-        </span>
+        <HudChip icons={["order-enlightenment", "troops"]}>{`+${formatExact(returned.fitted)}`}</HudChip>
         {returned.fitted < returned.sent && (
           <>
-            <span className="text-sm tabular-nums text-kit-muted">{formatExact(returned.sent)}</span>
-            <span className="w-[60px]">
-              <StoreBar amount={1} limit={1} tone="ember" />
+            <span className="text-hud-label tabular-nums text-hud-muted">{formatExact(returned.sent)}</span>
+            <span className="w-16">
+              <HudMeter share={1} tone="bad" label={TROOPS} />
             </span>
           </>
         )}

@@ -9,8 +9,6 @@
   "apps/game/src/ui/design-system/molecules/requirement-chips.tsx": 4,
   "apps/game/src/ui/features/frontier/attributes/attribute-marks.tsx": 4,
   "apps/game/src/ui/features/frontier/deploy/deploy-view.tsx": 10,
-  "apps/game/src/ui/features/frontier/rollover/day-done-card.tsx": 20,
-  "apps/game/src/ui/features/frontier/rollover/last-hour.tsx": 7,
   "apps/game/src/ui/features/frontier/value/lords-purse.tsx": 17,
   "apps/game/src/ui/features/frontier/value/realms-sheet.tsx": 13,
   "apps/game/src/ui/features/frontier/value/season-withdraw.tsx": 4,
