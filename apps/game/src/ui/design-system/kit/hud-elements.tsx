@@ -28,6 +28,9 @@ type ButtonKind = "primary" | "secondary" | "quiet";
 type Tone = "good" | "bad" | "warn";
 
 /** A button: primary is a screen's one verb, secondary sits beside it, quiet is a way out. */
+/** A price a button pays: its painting (or, with none, its word, as XP) and how much; named whole for assistive technology. */
+export type HudPrice = { icon?: IconMeaning; word: string; amount: string };
+
 export const HudButton = forwardRef<
   HTMLButtonElement,
   {
@@ -39,9 +42,11 @@ export const HudButton = forwardRef<
     /** A secondary or quiet button that loses something (Delete army): its words and line in the bad tone. A primary
      *  stays gold in every age. */
     tone?: "bad";
+    /** What pressing it pays, after its word (Move: stamina and wheat). */
+    prices?: readonly HudPrice[];
     children?: ReactNode;
   } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ kind, size = "md", icon, busy, tone, children, disabled, ...rest }, ref) => (
+>(({ kind, size = "md", icon, busy, tone, prices = [], children, disabled, ...rest }, ref) => (
   <button
     ref={ref}
     type="button"
@@ -55,6 +60,13 @@ export const HudButton = forwardRef<
   >
     {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
     {busy ?? children}
+    {busy === undefined &&
+      prices.map((price) => (
+        <span key={price.word} className="ui-button__price" role="img" aria-label={`${price.amount} ${price.word}`}>
+          {price.icon ? <Icon name={price.icon} size={18} /> : <span>{price.word}</span>}
+          <span>{price.amount}</span>
+        </span>
+      ))}
   </button>
 ));
 HudButton.displayName = "HudButton";

@@ -362,6 +362,23 @@ const ButtonsSection = () => (
           )}
         />
         <StateRow
+          label="with prices"
+          render={(state) => (
+            <HudButton
+              kind="primary"
+              icon="move"
+              prices={[
+                { icon: "stamina", word: "stamina", amount: "20" },
+                { icon: "wheat", word: "wheat", amount: "2" },
+              ]}
+              data-state={forced(state)}
+              disabled={state === "disabled"}
+            >
+              Move
+            </HudButton>
+          )}
+        />
+        <StateRow
           label="busy"
           render={() => (
             <HudButton kind="primary" busy="Sending…">
