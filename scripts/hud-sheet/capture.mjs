@@ -2,7 +2,8 @@
  * The HUD sheet's captures (`pnpm hud:capture <evidence-dir> <base-url> [--page <path>] [element ...]`): opens a lab
  * page (/lab/kit unless `--page` names another, such as /lab/kit/area-d) in a real browser at 1920 wide and saves each
  * sheet element on it (every one, or those named) as `<name>.png` in a new run directory under the evidence directory,
- * with the run's record beside them. The lab must be served at the base URL; the command
+ * with the run's record beside them. Each element is also checked for ring badges drawn over each other or over a
+ * neighbouring ring, and the run is incomplete when one is. The lab must be served at the base URL; the command
  * starts no server and closes its browser session whatever happens.
  */
 import { join } from "node:path";
@@ -25,6 +26,28 @@ const fileOf = (name) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")}.png`;
 
+/**
+ * Every two things drawn over each other among the rings in `selector`: two badges, or a badge and another ring's well.
+ * A badge sits on its own ring's rim by design, so only its own well is left out.
+ */
+const ringsOverlapping = (selector) => `(() => {
+  const parts = [...document.querySelectorAll(${JSON.stringify(`${selector} .ui-ring`)})].flatMap((ring, at) =>
+    [...ring.querySelectorAll(".ui-ring__badge, .ui-ring__face")].map((part) => ({
+      at,
+      badge: part.classList.contains("ui-ring__badge"),
+      what: part.classList.contains("ui-ring__badge") ? part.textContent : "well " + (ring.getAttribute("aria-label") ?? at),
+      box: part.getBoundingClientRect(),
+    })),
+  );
+  const over = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  return parts.flatMap((a, i) =>
+    parts
+      .slice(i + 1)
+      .filter((b) => (a.badge || b.badge) && (a.at !== b.at || (a.badge && b.badge)) && over(a.box, b.box))
+      .map((b) => [a.what, b.what]),
+  );
+})()`;
+
 await runProof(
   { parent, name: "hud-sheet-capture", baseUrl, where: (record) => ({ element: record.name }) },
   async (b, out, records) => {
@@ -45,6 +68,8 @@ await runProof(
       b.run("scrollintoview", selector);
       record.file = join(out, fileOf(name));
       b.run("screenshot", selector, record.file);
+      const overlapping = b.evaluate(ringsOverlapping(selector));
+      record.checks.push({ check: "ring badges clear", ok: overlapping.length === 0, overlapping });
       record.ready = true;
     }
   },

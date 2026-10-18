@@ -91,20 +91,35 @@ export const AreaDLab = () => {
     <GameProvider value={game} account={{ address: "0x111" } as never}>
       <div className="flex min-h-screen flex-wrap items-start bg-[#0b1418]">
         <Surface name="rings">
-          <div className="flex items-center gap-6">
+          {/* The realm card's grid, its tightest, with the widest rims side by side: two-figure counts beside times. */}
+          <div className="grid w-[294px] grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
             <ProductionStatusBadge
               resource={ResourcesIds.Wheat}
               isProducing
-              timeRemainingSeconds={1_020}
-              buildings={3}
-              amount="1.2K"
+              timeRemainingSeconds={Number.POSITIVE_INFINITY}
+              buildings={1}
+              amount="1,042"
+            />
+            <ProductionStatusBadge
+              resource={ResourcesIds.Fish}
+              isProducing
+              timeRemainingSeconds={Number.POSITIVE_INFINITY}
+              buildings={12}
+              amount="380"
             />
             <ProductionStatusBadge
               resource={ResourcesIds.Wood}
               isProducing
-              timeRemainingSeconds={240}
-              buildings={2}
+              timeRemainingSeconds={86_340}
+              buildings={12}
               amount="840"
+            />
+            <ProductionStatusBadge
+              resource={ResourcesIds.Coal}
+              isProducing
+              timeRemainingSeconds={1_020}
+              buildings={12}
+              amount="1.2K"
             />
             <ProductionStatusBadge
               resource={ResourcesIds.Essence}
