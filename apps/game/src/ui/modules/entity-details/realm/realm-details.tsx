@@ -1,7 +1,8 @@
 import { useNextUpHoldsPrimary } from "@/ui/features/world/hud/next-up-shows";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
+import { HudButton, HudChip } from "@/ui/design-system/kit/hud-elements";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { REQUIREMENT_CHIP, RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
+import { RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { describeCastleLevel } from "./castle-level";
@@ -12,16 +13,10 @@ import { type ID, ResourcesIds } from "@bibliothecadao/types";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-
-// One chip style for every requirement / produces row — matches the
-// building-tile inspector so the castle reads with the same vocabulary.
-const CHIP_BASE = REQUIREMENT_CHIP;
 
 const SectionRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1">
-    <span className={HUD_LABEL}>{label}</span>
+  <div className="flex flex-col gap-1">
+    <span className="text-hud-label text-hud-muted">{label}</span>
     <div className="flex flex-wrap items-center gap-1.5">{children}</div>
   </div>
 );
@@ -40,11 +35,11 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
       : undefined;
   return (
     <SectionRow label="Labor / h">
-      <span className={CHIP_BASE} title="Labor production">
-        <span className="text-emerald-300">
+      <span data-tip="Labor production">
+        <HudChip tone="good">
           {perHour === undefined ? "—" : `+${Math.round(perHour).toLocaleString()}`}
-        </span>
-        <ResourceIcon withTooltip={false} resource={ResourcesIds.Labor} size="xs" />
+          <ResourceIcon withTooltip={false} resource={ResourcesIds.Labor} size="xs" />
+        </HudChip>
       </span>
     </SectionRow>
   );
@@ -52,7 +47,7 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
 
 /** What a castle level gives, from the game's rules. */
 const LevelGains = ({ level }: { level: number }) => (
-  <p className="text-[11px] leading-relaxed text-gold/80">{describeCastleLevel(level)}</p>
+  <p className="text-hud-label text-hud-muted">{describeCastleLevel(level)}</p>
 );
 
 export const RealmUpgradeCompact = () => {
@@ -66,13 +61,11 @@ export const RealmUpgradeCompact = () => {
 
   if (!upgradeInfo.isOwner || !ordersAllowed) {
     return (
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <SectionRow label="Settlement level">
-          <span className={CHIP_BASE}>{upgradeInfo.currentLevelName}</span>
+          <HudChip>{upgradeInfo.currentLevelName}</HudChip>
         </SectionRow>
-        <p className="text-[11px] leading-relaxed text-gold/70">
-          Select a building to inspect this settlement’s economy.
-        </p>
+        <p className="text-hud-label text-hud-muted">Select a building to inspect this settlement’s economy.</p>
       </div>
     );
   }
@@ -82,9 +75,11 @@ export const RealmUpgradeCompact = () => {
       <div className="flex flex-col gap-2.5">
         <LaborRateRow structureId={structureEntityId} />
         <SectionRow label="Upgrade">
-          <span className={CHIP_BASE} title="Max level reached">
-            <SemanticIcon name="crown" className="h-3.5 w-3.5 text-gold" />
-            <span className="text-gold">Max</span>
+          <span data-tip="Max level reached">
+            <HudChip>
+              <Icon name="crown" size={14} />
+              Max
+            </HudChip>
           </span>
         </SectionRow>
         <LevelGains level={upgradeInfo.currentLevel} />
@@ -92,7 +87,6 @@ export const RealmUpgradeCompact = () => {
     );
   }
 
-  const Icon = levelUp.mode === "provision" ? ("pickaxe" as const) : ("chevron-up" as const);
   return (
     <div className="flex flex-col gap-2.5">
       <LaborRateRow structureId={structureEntityId} />
@@ -102,24 +96,17 @@ export const RealmUpgradeCompact = () => {
       </SectionRow>
       {levelUp.nextLevel > 0 && <LevelGains level={levelUp.nextLevel} />}
 
-      <div className="flex items-center justify-center gap-1.5 pt-1">
-        <button
-          type="button"
-          onClick={levelUp.run}
+      <div className="flex justify-center pt-1">
+        {/* While Next up shows a step, its button is the screen's one primary; this one is secondary. */}
+        <HudButton
+          kind={nextUpHoldsPrimary ? "secondary" : "primary"}
+          size="sm"
+          icon={levelUp.mode === "provision" ? "pickaxe" : "chevron-up"}
           disabled={!levelUp.ready}
-          className={cn(
-            "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] shadow transition",
-            // While Next up shows a step, its button is the screen's one filled gold action; this one is outlined.
-            !levelUp.ready
-              ? "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed"
-              : nextUpHoldsPrimary
-                ? "border-gold/70 text-gold hover:bg-gold/10"
-                : "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300",
-          )}
+          onClick={levelUp.run}
         >
-          <SemanticIcon name={Icon} className="h-3.5 w-3.5" />
-          <span>{levelUp.refusal ?? levelUp.word}</span>
-        </button>
+          {levelUp.refusal ?? levelUp.word}
+        </HudButton>
       </div>
     </div>
   );

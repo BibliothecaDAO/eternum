@@ -1,28 +1,23 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { currencyFormat } from "@/ui/utils/utils";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById, ResourcesIds } from "@bibliothecadao/types";
-import clsx from "clsx";
+import { findResourceById } from "@bibliothecadao/types";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useMemo } from "react";
 
 const SIZES = ["xs", "sm", "md", "lg"] as const;
-const TEXT_SIZES = ["xxs", "xs", "sm", "md", "lg"] as const;
 const LAYOUT_TYPES = ["horizontal", "vertical"] as const;
-
-type TextSize = (typeof TEXT_SIZES)[number];
 
 type ResourceCostProps = {
   resourceId: number;
   /** Undefined when the amount is not known here; it shows as "—", never as zero. */
   amount: number | undefined;
   balance?: number;
-  color?: string;
   type?: (typeof LAYOUT_TYPES)[number];
   className?: string;
   withTooltip?: boolean;
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
   size?: (typeof SIZES)[number];
-  textSize?: TextSize;
 };
 
 const formatAmount = (amount: number) => {
@@ -32,63 +27,43 @@ const formatAmount = (amount: number) => {
   }).format(amount);
 };
 
+/**
+ * A cost in the HUD sheet's words: the resource's painting, how much, what is held beside it in good or bad, and the
+ * resource's name under a horizontal one.
+ */
 export const ResourceCost = ({
   resourceId,
   amount,
   balance,
-  color,
   type = "horizontal",
   className,
   withTooltip = false,
   onClick,
   size = "md",
-  textSize = "xs",
 }: ResourceCostProps) => {
   const trait = useMemo(() => findResourceById(resourceId)?.trait, [resourceId]);
-
   const hasSufficientBalance = balance !== undefined && amount !== undefined && divideByPrecision(balance) >= amount;
-  const balanceColor = hasSufficientBalance ? "text-green-400" : "text-red-400";
-
-  const containerClasses = clsx(
-    "relative flex items-center p-2 bg-gold/5 rounded gap-1 border border-gold/5 shadow-inner",
-    type === "horizontal" ? "flex-row" : "flex-col justify-center",
-    className,
-  );
-
-  const contentClasses = clsx(
-    "relative flex flex-col shrink-0 self-center",
-    type === "horizontal" ? "ml-1 text-left" : "items-center",
-  );
-
   const showBalance = balance !== undefined && !isNaN(balance);
 
-  // Determine the text size for the trait name (one step smaller)
-  const getSmallerTextSize = (size: TextSize): TextSize => {
-    const currentIndex = TEXT_SIZES.indexOf(size);
-    return TEXT_SIZES[Math.max(0, currentIndex - 1)];
-  };
-  const traitTextSize = getSmallerTextSize(textSize);
-
   return (
-    <div className={containerClasses}>
-      <ResourceIcon
-        className="self-center justify-center"
-        withTooltip={withTooltip}
-        resource={resourceId}
-        size={size}
-      />
-      <div className={contentClasses}>
-        <div onClick={onClick} className={clsx("relative", `text-${textSize}`, color)}>
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-md border border-hud-line bg-hud-well p-2",
+        type === "horizontal" ? "flex-row" : "flex-col justify-center",
+        className,
+      )}
+    >
+      <ResourceIcon className="self-center" withTooltip={withTooltip} resource={resourceId} size={size} />
+      <div className={cn("flex shrink-0 flex-col self-center", type === "horizontal" ? "text-left" : "items-center")}>
+        <div onClick={onClick} className="text-hud-strong text-hud-ink tabular-nums">
           {amount === undefined ? "—" : formatAmount(amount)}
           {showBalance && (
-            <span className={clsx("font-normal", balanceColor)}>{` (${currencyFormat(balance, 0)})`}</span>
+            <span className={cn("text-hud-body", hasSufficientBalance ? "text-hud-good" : "text-hud-bad")}>
+              {` (${currencyFormat(balance, 0)})`}
+            </span>
           )}
         </div>
-        {type === "horizontal" && trait && (
-          <div className={clsx("relative font-normal self-start uppercase text-opacity-75", `text-${traitTextSize}`)}>
-            {trait}
-          </div>
-        )}
+        {type === "horizontal" && trait && <div className="text-hud-label text-hud-muted">{trait}</div>}
       </div>
     </div>
   );

@@ -67,11 +67,13 @@ import { NextUp } from "./next-up";
 let host: HTMLDivElement;
 let root: Root;
 
-/** The filled gold buttons on screen, by their words: the kit's primary, the Castle's amber fill, Attention's gold. */
+/** The filled gold buttons on screen, by their words: the sheet's primary, the kit's primary, Attention's gold. */
 const filledGold = () =>
   [...host.querySelectorAll("button")]
-    .filter((button) =>
-      ["frontier-primary", "bg-amber-400/90", "bg-gold"].some((name) => button.classList.contains(name)),
+    .filter(
+      (button) =>
+        button.dataset.kind === "primary" ||
+        ["frontier-primary", "bg-gold"].some((name) => button.classList.contains(name)),
     )
     .map((button) => button.textContent?.trim());
 
