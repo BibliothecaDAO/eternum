@@ -22,17 +22,43 @@ export async function renderModel(model: string, pixels = 384) {
   await renderer.init();
   configureGltfTextureSupport(renderer);
   let object: T.Group | undefined;
+  let disposeModel: (() => void) | undefined;
   try {
     if (model === "procedural:hyperstructure") {
-      const { createHyperstructureKit } = await import("@/three/structures/hyperstructure-kit");
-      object = createHyperstructureKit(true).scene;
+      const { HyperstructureModel } = await import("@/three/structures/hyperstructure-model");
+      const built = new HyperstructureModel(1);
+      built.setMatrixAt(0, new T.Matrix4());
+      built.setConstructionAt(0, { entityId: 17, progress: 100, completed: true });
+      built.setCount(1);
+      object = new T.Group();
+      object.add(...built.instancedMeshes);
+      disposeModel = () => built.dispose();
     } else {
       object = (await gltfLoader.loadAsync(model)).scene;
     }
     if (model.endsWith("/chest-c2.glb")) {
       const { ChestPresentation } = await import("@/three/rewards/chest-presentation");
       new ChestPresentation(object).faceCamera(new T.Vector3(-1.8, 1.55, 2.1));
+      const body = object.getObjectByName("ChestBody");
+      if (!body) throw new Error("Chest model must contain ChestBody for its icon.");
+      object.updateMatrixWorld(true);
+      const subject = new T.Group();
+      subject.attach(body);
+      object.traverse((part) => {
+        if (!(part instanceof T.Mesh)) return;
+        part.geometry.dispose();
+        for (const material of Array.isArray(part.material) ? part.material : [part.material]) material.dispose();
+      });
+      object = subject;
     }
+    const terrain: T.Object3D[] = [];
+    object.traverse((part) => {
+      if (!(part instanceof T.Mesh)) return;
+      const materials = Array.isArray(part.material) ? part.material : [part.material];
+      if (materials.every((material) => material.name === "Earth") || part.name.startsWith("OUTCROP"))
+        terrain.push(part);
+    });
+    for (const part of terrain) part.removeFromParent();
     const bounds = new T.Box3().setFromObject(object);
     const size = bounds.getSize(new T.Vector3());
     const center = bounds.getCenter(new T.Vector3());
@@ -51,14 +77,20 @@ export async function renderModel(model: string, pixels = 384) {
     renderer.render(scene, camera);
     return renderer.domElement.toDataURL("image/png");
   } finally {
-    object?.traverse((child) => {
-      if (!(child instanceof T.Mesh)) return;
-      child.geometry?.dispose();
-      for (const material of Array.isArray(child.material) ? child.material : child.material ? [child.material] : []) {
-        for (const value of Object.values(material)) if (value instanceof T.Texture) value.dispose();
-        material.dispose();
-      }
-    });
+    if (disposeModel) disposeModel();
+    else
+      object?.traverse((child) => {
+        if (!(child instanceof T.Mesh)) return;
+        child.geometry?.dispose();
+        for (const material of Array.isArray(child.material)
+          ? child.material
+          : child.material
+            ? [child.material]
+            : []) {
+          for (const value of Object.values(material)) if (value instanceof T.Texture) value.dispose();
+          material.dispose();
+        }
+      });
     renderer.dispose();
     renderer.domElement.getContext("webgl2")?.getExtension("WEBGL_lose_context")?.loseContext();
   }

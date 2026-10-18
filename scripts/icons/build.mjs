@@ -1,7 +1,6 @@
-import { readFile, writeFile, mkdir, access } from "node:fs/promises";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import sharp from "sharp";
-import { normalizeMaster } from "./normalize.mjs";
+import { normalizeMaster, assertIconFill, deliverIcon } from "./normalize.mjs";
 import { validateIconFiles } from "./files.mjs";
 import { validateIcons } from "./validate.mjs";
 const repo = fileURLToPath(new URL("../../", import.meta.url));
@@ -14,7 +13,7 @@ const [{ icons }, meanings, resources, verdicts] = await Promise.all([
   read("verdicts"),
 ]);
 validateIcons({ icons, meanings, resources, verdicts });
-await access(`${repo}/apps/game/public/tokens/lords.svg`);
+await assertIconFill(`${repo}/apps/game/public/tokens/lords.svg`, "official LORDS");
 const output = `${repo}/apps/game/public/icons/facets`;
 await validateIconFiles(icons, source, process.argv.includes("--check") ? output : undefined);
 if (!process.argv.includes("--check")) {
@@ -24,10 +23,7 @@ if (!process.argv.includes("--check")) {
   for (const icon of icons.filter((icon) => !requested.length || requested.includes(icon.id))) {
     const master = await normalizeMaster(`${source}/masters/${icon.id}.png`);
     for (const size of [64, 128, 256])
-      await sharp(master)
-        .resize(size, size)
-        .webp({ quality: 90, alphaQuality: 100, effort: 6 })
-        .toFile(`${output}/${size}/${icon.id}.webp`);
+      await writeFile(`${output}/${size}/${icon.id}.webp`, await deliverIcon(master, size, icon.id));
   }
   await writeFile(`${output}/manifest.json`, JSON.stringify({ meanings, resources }, null, 2));
 }

@@ -1,8 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import sharp from "sharp";
-import { normalizeMaster } from "./normalize.mjs";
+import { normalizeMaster, assertIconFill, deliverIcon } from "./normalize.mjs";
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 export async function validateIconFiles(icons, source, output) {
@@ -22,12 +21,10 @@ export async function validateIconFiles(icons, source, output) {
         const delivery = `${output}/${size}/${id}.webp`;
         await access(delivery);
         if (normalized) {
-          const expected = await sharp(normalized)
-            .resize(size, size)
-            .webp({ quality: 90, alphaQuality: 100, effort: 6 })
-            .toBuffer();
+          const expected = await deliverIcon(normalized, size, id);
           if (!(await readFile(delivery)).equals(expected)) throw new Error(`Stale production delivery: ${delivery}`);
         }
+        await assertIconFill(delivery, `${id}/${size}`);
       }
   }
 }

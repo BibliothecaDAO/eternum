@@ -1,11 +1,11 @@
 {
   "faceted/stone": {
-    "verdict": "beats shipped",
-    "reason": "Pale fractured stone reads as rock at 32 px; lit planes and grain replace the jewel-like old facets."
+    "verdict": "equal",
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/wood": {
-    "verdict": "beats shipped",
-    "reason": "Bark, cut end and end-grain hold at 64 px; a broad warm log silhouette remains at 32 px."
+    "verdict": "equal",
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/wheat": {
     "verdict": "beats shipped",
@@ -20,12 +20,12 @@
     "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
   },
   "faceted/essence": {
-    "verdict": "beats shipped",
-    "reason": "Approved round violet essence vessel; replaces the previous square bottle."
+    "verdict": "equal",
+    "reason": "Owner-selected shipped square violet Essence bottle; rejected round vessel removed."
   },
   "faceted/ironwood": {
     "verdict": "equal",
-    "reason": "Dense bark and red end-grain distinguish it from ordinary wood; the old black log has comparable contrast at 32 px."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/fragment": {
     "verdict": "equal",
@@ -40,12 +40,12 @@
     "reason": "Canvas tents and palisade from the outpost model."
   },
   "faceted/hyperstructure": {
-    "verdict": "beats shipped",
-    "reason": "Actual foundation-only Hyperstructure kit: hex platform and six short columns."
+    "verdict": "equal",
+    "reason": "Completed runtime Hyperstructure, entity 17 at 100% construction, with its built shaft and crown."
   },
   "faceted/chest": {
-    "verdict": "beats shipped",
-    "reason": "Closed reward chest, with its runtime material treatment and scale."
+    "verdict": "equal",
+    "reason": "Actual chest body only, retaining its runtime material; terrain, pedestal, seal rings and orbit gems removed."
   },
   "faceted/move": {
     "verdict": "equal",
@@ -129,7 +129,7 @@
   },
   "faceted/map-village": {
     "verdict": "beats shipped",
-    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12–16 px."
+    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12\u201316 px."
   },
   "faceted/map-mine": {
     "verdict": "beats shipped",
@@ -137,11 +137,11 @@
   },
   "faceted/coal": {
     "verdict": "equal",
-    "reason": "Coal: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/copper": {
     "verdict": "equal",
-    "reason": "Copper: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/donkey": {
     "verdict": "equal",
@@ -153,71 +153,71 @@
   },
   "faceted/obsidian": {
     "verdict": "equal",
-    "reason": "Obsidian: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/gold": {
     "verdict": "equal",
-    "reason": "Gold: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/silver": {
     "verdict": "equal",
-    "reason": "Silver: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/mithral": {
     "verdict": "equal",
-    "reason": "Mithral: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/alchemical-silver": {
     "verdict": "equal",
-    "reason": "Alchemical Silver: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/cold-iron": {
     "verdict": "equal",
-    "reason": "Cold Iron: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/deep-crystal": {
     "verdict": "equal",
-    "reason": "Deep Crystal: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/ruby": {
     "verdict": "equal",
-    "reason": "Ruby: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/diamonds": {
     "verdict": "equal",
-    "reason": "Diamonds: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/hartwood": {
     "verdict": "equal",
-    "reason": "Hartwood: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/ignium": {
     "verdict": "equal",
-    "reason": "Ignium: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/twilight-quartz": {
     "verdict": "equal",
-    "reason": "Twilight Quartz: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/true-ice": {
     "verdict": "equal",
-    "reason": "True Ice: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/adamantine": {
     "verdict": "equal",
-    "reason": "Adamantine: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/sapphire": {
     "verdict": "equal",
-    "reason": "Sapphire: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/ethereal-silica": {
     "verdict": "equal",
-    "reason": "Ethereal Silica: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/dragonhide": {
     "verdict": "equal",
-    "reason": "Dragonhide: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "reason": "Owner-selected live production resource design, restored from the pinned archive; crop only."
   },
   "faceted/stamina-relic-1": {
     "verdict": "beats shipped",
@@ -292,8 +292,8 @@
     "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/research": {
-    "verdict": "beats shipped",
-    "reason": "Approved cyan research flask; replaces the previous book and green flask."
+    "verdict": "equal",
+    "reason": "Shipped book and flask composition retained, with the owner-requested teal interior."
   },
   "faceted/s-a-t": {
     "verdict": "equal",

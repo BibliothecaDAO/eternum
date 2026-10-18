@@ -407,15 +407,19 @@ The proposals preserve each original symbol, composition and tier distinction. O
 production retains the old relics until the owner chooses. Prefer 40 px for larger relic chips, with 32 px the practical
 minimum. No relic size or production mapping changes in this review.
 
-**Resources** retains before/current Essence and Research. **Models** shows before/current icons beside actual renders
-for Farm, Workers Hut, camp, rift, Hyperstructure site, spire and crate. Workshop waits for its model. **Kept** shows
-unchanged Labor, nine troop tiers and UI glyphs. **Inventory** compares all 58 historical and current resources.
-Construction cards retain model thumbnails.
+**Resources** compares 22 live production resource designs, shipped Essence and teal Research with their previous
+paintings. **Models** shows before/current icons beside actual renders for Farm, Workers Hut, camp, rift, the completed
+Hyperstructure, spire and the chest body without its tile. Workshop waits for its model. **Kept** shows the existing
+Labor, nine troop tiers and UI glyph designs with tighter crops. **Inventory** compares all 58 historical and current
+resources. Construction cards retain model thumbnails.
 
 `asset-sources/rss-icons/relics/` holds the 18 review masters, exact prompts, source/style reference hashes and proposal
 verdicts. `pnpm icons:study [--check]` delivers them using the same Facets normalizer and 64/128/256 WebP settings,
-validates source and delivery hashes and rejects missing or unwired assets. `pnpm icons:check` validates production.
-Start `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run
+validates source and delivery hashes and rejects missing or unwired assets. `pnpm icons:check` validates production and
+requires at least 85% visible subject fill for every delivery; the common normalizer targets 90%. Realm badge frames
+accommodate those tighter crops; `icons:prove --catalog` checks painted extent, rim clearance and ownership pips. All
+restore/check commands use pinned committed archives and work without historical Git objects. Start
+`pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run
 `pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` for desktop/phone comparisons, exact URL,
 decode, pixel-size and overflow checks. Regeneration commands are in `asset-sources/rss-icons/README.md`.
 

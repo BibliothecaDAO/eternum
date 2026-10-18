@@ -1,1 +1,1 @@
-One silver ingot beside a small glass vessel of luminous violet alchemical liquid; compact unified material sample.
+Restore the exact master from apps/game/public/lab/rss-icons/history/alchemical-silver.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/10.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

@@ -1,1 +1,1 @@
-Two jagged glossy black volcanic glass shards, violet highlights, clearly sharp fractured glass rather than coal.
+Restore the exact master from apps/game/public/lab/rss-icons/history/obsidian.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/6.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

@@ -1,1 +1,1 @@
-Two slender pale blue mithral ingots, subtle luminous cyan cut edge and cool silver metallic faces.
+Restore the exact master from apps/game/public/lab/rss-icons/history/mithral.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/9.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

@@ -1,1 +1,1 @@
-Restore unchanged from b636c768616959a27e2ef45665e2c317fda9b40c:apps/game/public/images/resources/52.png. Deliver through the standard transparent icon normalizer.
+Restore the exact master from apps/game/public/lab/rss-icons/history/production-relic-2.png, verified against its catalog SHA-256. Historical provenance: b636c768616959a27e2ef45665e2c317fda9b40c:apps/game/public/images/resources/52.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

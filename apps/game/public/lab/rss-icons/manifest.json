@@ -1,10 +1,120 @@
 {
-  "before": "a4d7b4eefd02ca1b9be646cda56aaac70d4afef0",
+  "before": "d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89",
   "changes": [
+    {
+      "meaning": "stone",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "coal",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "wood",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "copper",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ironwood",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "obsidian",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "gold",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "silver",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "mithral",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "alchemical-silver",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "cold-iron",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "deep-crystal",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ruby",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "diamonds",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "hartwood",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ignium",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "twilight-quartz",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "true-ice",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "adamantine",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "sapphire",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "ethereal-silica",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
+    {
+      "meaning": "dragonhide",
+      "group": "Resources",
+      "note": "Live production resource design restored; tighter subject crop."
+    },
     {
       "meaning": "essence",
       "group": "Resources",
-      "note": "Approved round violet essence vessel; replaces the previous square bottle."
+      "note": "Restored shipped square violet Essence bottle."
     },
     {
       "meaning": "camp",
@@ -14,12 +124,12 @@
     {
       "meaning": "hyperstructure",
       "group": "Models",
-      "note": "Actual foundation-only Hyperstructure kit: hex platform and six short columns."
+      "note": "Completed runtime Hyperstructure: full shaft and crown, entity 17 at 100%."
     },
     {
       "meaning": "chest",
       "group": "Models",
-      "note": "Closed reward chest, with its runtime material treatment and scale."
+      "note": "Chest body only, with no tile, pedestal, seals or orbit gems."
     },
     {
       "meaning": "stamina-relic-1",
@@ -114,12 +224,12 @@
     {
       "meaning": "research",
       "group": "Resources",
-      "note": "Approved cyan research flask; replaces the previous book and green flask."
+      "note": "Shipped book and flask, with a teal liquid interior."
     },
     {
       "meaning": "rift",
       "group": "Models",
-      "note": "Stone basin and violet pool from the rift model."
+      "note": "Actual stone basin and violet pool; earth tile removed."
     },
     {
       "meaning": "spire",
@@ -154,6 +264,204 @@
     "production",
     "settings"
   ],
+  "beforeHashes": {
+    "stone": {
+      "64": "3bb34975b9a0cdfe9238638434af3310149040e696892d9dba069ef7e744e271",
+      "128": "b501672aee1ab862129643457d5e2d03ac65ebb4ae8c1fd4bf4bb4e087e7e98d"
+    },
+    "coal": {
+      "64": "0d448dfd01b3ac3f943d2878813ed1f4244adf20d6410d08d067adfb4f1473d7",
+      "128": "b39d1595a697c74562258b450e4e6d74922b99a6ccf1b0bbaeb55882407fd04d"
+    },
+    "wood": {
+      "64": "80b4ccd791e58883e760828442ce5b490c4a2418c023dad188d693448cf1671e",
+      "128": "ad22f92025fddaaafcdd4d88772c4e5b856f5844a27f64307fa161ed8dfe9c57"
+    },
+    "copper": {
+      "64": "e1cfa3dbdfa1832c8b1f9179067536ef985cad6c51106c7fddc1d3ecd85ecd3b",
+      "128": "c810517ee41ffe0e5f313913e337ca8efd15b4b701c72f28d0967864fed90d94"
+    },
+    "ironwood": {
+      "64": "ca386f82d527092489e518a3207babdeb56a18876d7e38d7dbf58ba2f6a40438",
+      "128": "ad5eabf8515e011cf7796cfeef97b528ac952cda7d01ecb216e6120c452b56f9"
+    },
+    "obsidian": {
+      "64": "da7897ca7a3d25a0a97a26f690a1d21904adb5d88d40484c6f708fa26693dc14",
+      "128": "595e5c1d93eac7d94d1dfc24531b41940b3ad4e428692e8721811654129b404f"
+    },
+    "gold": {
+      "64": "e231e0c5f0ed32eca13ba5dcd5753373651837a004bebdeeb8c6602bff81d0c4",
+      "128": "a723599ecec3690d8d1cc8caf3146741b6b53d65d37caf6a1f8761d4805cc516"
+    },
+    "silver": {
+      "64": "d3132e1f98464e55f13dbe86079f329b1fe1a3d05946bf41f3b69e8c45b9b2eb",
+      "128": "c82d26d6cbe9417c2bf3cc7ffaae3c5d16c29956ce459c237d21df651b2cc6d0"
+    },
+    "mithral": {
+      "64": "a525677353fd7605d947d6968e5832b584883ea88a13c993617ab9764aa27d32",
+      "128": "948ba98a3ecd08fe527812a190bb5a8944a094d6cbe1e8859cd1b2ba5a90c085"
+    },
+    "alchemical-silver": {
+      "64": "104542ae5997992eef0ec37482451a5fdd08fe181608de4e21b0907fe53699eb",
+      "128": "fa0737d23a9f99370a77ff2d150250a82ce31a35cb80ae373802a32f2e3e090f"
+    },
+    "cold-iron": {
+      "64": "c9b44cd5a1c731874b5e870ddfcb40e33283effae3b8690f3f8358861ff1764b",
+      "128": "f13571e39fbd2de17ff9d7b5142fad2fd657b31092cdb9f7b42f545276348fd1"
+    },
+    "deep-crystal": {
+      "64": "c62265af8d7dfae847c87fc03c589e32d40bc53669f15038ac2ec785f235a373",
+      "128": "ddcf5abae3174a3bd00903e9c96684cba0aaebd5d56084ed9a972f8dfb02490e"
+    },
+    "ruby": {
+      "64": "f81310398abfe62d504f163f58b082e732e79191c465d5dc9c4002ab67b96020",
+      "128": "6a167ad902395ea1b49b2a095e36a59ccf3209b3f9319556836fa6c559cc82bc"
+    },
+    "diamonds": {
+      "64": "70174eb5ecc6216322a8835e905098bc78c95740084ebea78f988d0973b2025b",
+      "128": "9a2b28197ead8da710b3cd7ffc1faf71463036d9973f87b4ccc70f8a94eea6e8"
+    },
+    "hartwood": {
+      "64": "f80bd1fd1892107bdf2d65361f52972fbafb2d188d86bfbb9f67c44083a5a076",
+      "128": "33c135f8568d3deb070978bb3fb3f3961f5aa845b3e62bd95ff573c23fd9270c"
+    },
+    "ignium": {
+      "64": "9f3dc7244551cb4fcf031f1cfaf20d9020b989da09affa28bf48e4e467803373",
+      "128": "91d221e42a5dc96346bd32f8daed5af41528de47e346b3918e0b5392a93b6b8d"
+    },
+    "twilight-quartz": {
+      "64": "be65a9a90dc2e3f4e08a4d6c7d6f74ff317d0e9accf1a21f9c19015e54ecc7f4",
+      "128": "9c11ce69ae37a921a1d32a1cc4fe10dce1ee6aee9139151d6e9cd2bda12e09b0"
+    },
+    "true-ice": {
+      "64": "19b268d941505e935011e49b48be4fdfaf845f4dcf8c639e4c446d5923cf6570",
+      "128": "bcbdff1168fcab447860297d0a71aa95881af01bbd99323a7b018c79901f1110"
+    },
+    "adamantine": {
+      "64": "96cfe76f9e0d48fe879e6ddee097557a3dc296d03fa311083d657a2f3153ec28",
+      "128": "64ff5a25ef01159446f72ed1a820ef97101d0fd2ba6159de170e62b55b16a4d1"
+    },
+    "sapphire": {
+      "64": "88845d94462efcef975fb7b62f52aaf3ee39917077e98d017fe1637d79a4bd11",
+      "128": "1a81ba64f810efcb58236a93d280fef8b5138f73f7b0f70d58a4af3315411e89"
+    },
+    "ethereal-silica": {
+      "64": "fbb116633f82e66ee2943a305dcb5daba26e832da5ca03bb8fe556a50e3d2396",
+      "128": "224a59e310bd04c70b93e1086adc0da3b8b34a2933f95f3ff6f1039f11b598cf"
+    },
+    "dragonhide": {
+      "64": "4b7fa4b88f133ca69f26a756961329620ec80862758bb3975ac21b3cb3030b2e",
+      "128": "b048c716361f1d9dd4a0b4d0c51fbea3d4f1172f116dc572214194b74eecd124"
+    },
+    "essence": {
+      "64": "4f03d120f632455a4598038683cf174efe45182de8a6c2d3c56bac1db505b45a",
+      "128": "3cb2734eebc3d2bfd06d73fcada1a296ee2702c9b717425b44778b1bfb6c782b"
+    },
+    "camp": {
+      "64": "ddf9a17f26fedd054e8e72edf2e79912c30f35184614f7d2ba38294b57383770",
+      "128": "cec9b21b170160f1fe7f61480373de96d018615977473c2012de0d5d29a63729"
+    },
+    "hyperstructure": {
+      "64": "3e74e633b96d8ca3cd8d08a960cef80709f7006e4210840280b57fc4bf854257",
+      "128": "08d5e5b12d64ac0db9065e1f016fd51cca4d0cea22bf5ba21d24828bc7b96f26"
+    },
+    "chest": {
+      "64": "c0ff2e02f443a404026380ab4776a0e2df79394ab805ccbae95766d0bccd1a32",
+      "128": "e828148428026bbaa6bb17abad6e121adc63c176a9912301470d9d04fb06580a"
+    },
+    "stamina-relic-1": {
+      "64": "99c5229bfff20297029c933e08e91b8a71a8501e30d3ebf258445c1892d31913",
+      "128": "7d1737cbbc5f5be3f8786385ac4ff72bcada2e31340f4d3a4cebe49d4e2d5617"
+    },
+    "stamina-relic-2": {
+      "64": "e364a69f90d518ccd222da02ba54f4a922962654fe48c1566ae6c20ccd187676",
+      "128": "928e628b85bb110554f91a1f224b8da4de94e1b20e2a8789fe553d0a3695dec8"
+    },
+    "damage-relic-1": {
+      "64": "d5b0d59ea199689c1420ce1d2ae49fe6b7604ef9a80ebd83313cc1a81d63b4d6",
+      "128": "1be5a1973893ad2140674aa1bdaf7e44af3d3a23beb07696d0e3130b912a69b9"
+    },
+    "damage-relic-2": {
+      "64": "f7fa0560f137302190ebc50976cf494a0e5a79afd9293c0db3f063803c3319ae",
+      "128": "705ae428f71a315af364d3df3f8684138325b6573a578c12e39e82cde6cce2ab"
+    },
+    "damage-reduction-relic-1": {
+      "64": "63e20055c199df9590e4be7b0f9ff8320e85a1e0cd7c1973831775682ba8f93d",
+      "128": "9a61eb33ce7240202b7d171c1fa5e32f9b6beb10f4a613feca9189d59414bc51"
+    },
+    "damage-reduction-relic-2": {
+      "64": "cf6b57ecca9b82e52859f44f9c5f0c22642fc8ab10a22b6fa618f6250ac3d461",
+      "128": "d7d070492d6cc0b1dcef949954bdec245fa1feb719869c9438b0aeb21326e49c"
+    },
+    "exploration-relic-1": {
+      "64": "4a64e4fb0f0bd1a79a5fdd6689b8588bac5e430f34d1c894ff83021b40979ea6",
+      "128": "b1a32d962644c131a0d4fb4201f8594914e57930ec0ab0fafc0c90e4d9df673c"
+    },
+    "exploration-relic-2": {
+      "64": "81f0413c667b7a46b674c97970c31825006626f0cb62958a79d35d7535b673d9",
+      "128": "93ec8560d4a56c96d5bfae3c437365b9899ced21316b7f1e7a6787db45413119"
+    },
+    "exploration-reward-relic-1": {
+      "64": "d1318e4c269d4c427a80c124f41287bdd6d7ae441dd23c2b1137e07008ec887f",
+      "128": "96a704f9766b10d6108d29c71cd8a8c0f7dbe6f081032811ecac92f6a4481f1c"
+    },
+    "exploration-reward-relic-2": {
+      "64": "89d7c8b86ab47fe025c29309081575680965634feb078d6a81256f9781e43fb8",
+      "128": "11e845aef1b9bf52833fd293e824eaa990049dcb68784a90d663283719bb0b3f"
+    },
+    "structure-damage-reduction-relic-1": {
+      "64": "32572977582916f1c50aca389e4664852790c5a3a1af7283e5eb04cd910d8910",
+      "128": "66a1c88d01f387514fcbd07eceb7bf4264eb395911c14872dde3a24d99a09edd"
+    },
+    "structure-damage-reduction-relic-2": {
+      "64": "e793e30d47a452f211226b6a826b1ef96835b6818f55741337580b6e53f01520",
+      "128": "ed0ec5f4e2c815a005d343513c5a66bd6db1b8083ca25657dc1d325216a813f7"
+    },
+    "production-relic-1": {
+      "64": "0f06002fa10247ee0e890a7e1f50796679de757c2e7f113e677d3f209bab99ba",
+      "128": "47288b0e866a185b0cbebcc3d9a04f5da7621cf1d7808df813fc3c4f6825e2b5"
+    },
+    "production-relic-2": {
+      "64": "cf770bb21d2036f5bc8f85218c2f5a0862203df1998fcf976075809ac7275f91",
+      "128": "574c1a75f381d1f23c0027937b1e0e4ab8d60e0722c74bbc9a3ba72166375a10"
+    },
+    "labor-production-relic-1": {
+      "64": "246cdc4f61eaa05222960348f715035b6a093c10a928236fca1b555c5fa57a69",
+      "128": "f4261ca1cd174600742cc56fcb58f461c4683774c69f33e334788d05c9cedc2c"
+    },
+    "labor-production-relic-2": {
+      "64": "bb50b87b6fdc9f06bbd7ac2bf807761f499d1e06a2e3ee58af7ba8632b0ad433",
+      "128": "b0a132560cba2b9edc2a02fd7e1108282c5ec08700f350c6ad86df910e25588b"
+    },
+    "troop-production-relic-1": {
+      "64": "99d94d79591599117709939d2cbb27b8138457d78ab97f31eb049532d1a5229c",
+      "128": "75814296bbd067f52796b3fdb82cb4bb8c1a7c6ba8aeeffcdb6e685578b51e88"
+    },
+    "troop-production-relic-2": {
+      "64": "d33dc292b5612cb7730956c67c2ea97a98510d0538c6bf922b6248e3ebe5e190",
+      "128": "2814e613c119a1744c826e0555d6448c9d85e52d0007aac6db7f360ca2f85281"
+    },
+    "research": {
+      "64": "4ae07f53163e5130fb11c0224c6a743223682a64afb37289ffe46ee195e50a78",
+      "128": "a97369cce5045bf08eb39291d52632b81b7eab3424fdc61579fcef8f05949f68"
+    },
+    "rift": {
+      "64": "63148a51c6d60a349b477b697d4a867ce64fa7e9fcc6ef1cf2e35697729c01f3",
+      "128": "cbf490a69b6580e3c1e874a7fc58f7917883e4660a68430d3bd25235d81c74bf"
+    },
+    "spire": {
+      "64": "ba1f18d093c4ffddd0f9667a946e539246679c977fc72beffe09a617eabe5249",
+      "128": "133216325784ddf605b2c47841e631dafddb1119f4456c55cce44c2e05e6744a"
+    },
+    "farm": {
+      "64": "5774e0786383c9926aa6e8f140532d2f10ae5d7edfca0fc2a61e2e4e6016d45c",
+      "128": "4c8a5e0e00fcf3d757a1e4274d253ba87053d89e29b74934a55cc89a6c3daa22"
+    },
+    "workers-hut": {
+      "64": "946997056fbb03e5aa4acfc63c8486b2e08cb174f43fc3d7dcaed143dce7b2c8",
+      "128": "d560ced7ccd9d0b08376b0a04eff9578f99a4bfe5718ad45c8596bfe800e8a2a"
+    }
+  },
   "relics": {
     "productionRevision": "7a0ee1cded3fe9a5f6618a55c3bd72dc9def318c",
     "styleReferences": [
@@ -315,94 +623,94 @@
   },
   "deliveries": {
     "stamina-relic-1": {
-      "64": "0d3256213f58adf8c9c83ac0e8189076cf779b94346160c097a9c6db0f342aca",
-      "128": "fa93d9d1344919d80c48886ff8f123eab851caaf262e077db4f096120bf4b212",
-      "256": "695f7641ab815695696ed3ef7f1e9047a11abbddc6f398bb41bdddd268a1ff08"
+      "64": "a55bac9d431c7d2abe50e66a208cc16715865766359dbd90ea292e86e50b1483",
+      "128": "76cbc581d53da6ce8d59196d10e7fe7f7474d7456d4b8f59725f157a5439e452",
+      "256": "711ae8b0045e86520399ef39bd0b48c3b9bdd0551d4456eef674f1f1c17ae744"
     },
     "stamina-relic-2": {
-      "64": "e4144c751545c3295c02379ec1fab2bac2338dcd59c9868c1aa2ab2939558e87",
-      "128": "9e4d910960d37867f83e21674a6da62c018e4c1cc0830e096e1779f7042f5e5b",
-      "256": "133ed4a482a9024ecdc2fa3c8035218b5eea6c9bb8cbc3a31a94929df54d21ec"
+      "64": "acce9cc8467b9b2c84047e9a2e1b7f651f264dc1ca9c5304586f58f5d15ca672",
+      "128": "d522fc42ca6cc07420759e88cecad4c3f54be887c102ece1220838073754db37",
+      "256": "21593c0b736bec7dd97350be1cfcbbe24bb9fe9a92154cc468995bcbf974e5b6"
     },
     "damage-relic-1": {
-      "64": "3bfd67a3d4c10317806caa65ab69cad7f5f17c51c5bbb7c5aa52ef05bbb2ec74",
-      "128": "6343471ba5a8c62973c1cf71d34dbde3e4cab29af918eab48298172f5a10b084",
-      "256": "367e3bfe5638ca768c549cae997614551f6e90e9939ad655e2fea5a6cfc50b83"
+      "64": "622b8581d2da26991886585b167be65b98cc01063f5d9187cd05638b49b0bec9",
+      "128": "664b13cfb987efbadd94fc71b9b51f99b88f980aca64b3e34da92ecb8c5ee82c",
+      "256": "9deeef7b58399ebf73f5f86f0de80352a9088d5694befeb985f9a0eb1d7e2789"
     },
     "damage-relic-2": {
-      "64": "0a63a933558e27a57d27098ad151cc3713bdbf3979e3e2bfd2b6a632004e5722",
-      "128": "e99611aedfe3cc87b8e1602dfe0dd14b9c171aaa45e1d481c7a56b7a42b61aff",
-      "256": "a28501dfe1512e22c75d683d59705ae4ed6ff2a97f3dd4cbf3f47c66d53ff919"
+      "64": "60ec448b46e38738697c879a4488fe0a3638c1165d88e6da7449d2cfeb67f324",
+      "128": "ce34a20537cac1621f4de840ecd9a61e2577eccd4cb53b303c5fb53d69bf9564",
+      "256": "5677c7db7e582e6165c30bac927739925cb256fa2891ab22b5132f15f5ddd4fe"
     },
     "damage-reduction-relic-1": {
-      "64": "c233405163ec527c4e7c7db2f6bfe7d20f693b3c606a25121b8654679a3821cb",
-      "128": "bc5bbb67a863c33ca1bf1038c360ecbc9bf7a671b5778d2bda747e42f6b24589",
-      "256": "8173a9f37e11962bb3e757a9b001d4e98979f4220232aefa7108874420032fbb"
+      "64": "626653c7f8d411495928a27c1e8f05b842e44962588babc0322ea69ac3e09108",
+      "128": "4af025c25a5305f194c578d75009fac15bef678344ec1bac15dc4144994d5eae",
+      "256": "6b7e45379b4fa54162bc73e08fdb42dc03da7a670a8f2998ac658804d4ee768a"
     },
     "damage-reduction-relic-2": {
-      "64": "4730be72ec3b2b269141c89c567c086aaa9af4a85ba0511b011e400f578ebdec",
-      "128": "723843bb3254e2c09c801d0c44b70ab70929cfed38f0e6c449518e9bc1acaabb",
-      "256": "40dc81d2fec16e0fd84f4cc8b28b711ac731a4facd81fb822525edf88e2c6088"
+      "64": "f26547c4226cb8444cb69ec40995f689f05aca1c9bbf18b123c7d71f12d30fb4",
+      "128": "ad635f10d2ff17817faaa6b25ccb07662d861874e722a6488f0713f1b9ae1019",
+      "256": "46060c3a1416273eed9233a0b07adacdeb2d64d76b09e9472aa60faa62aa59c7"
     },
     "exploration-relic-1": {
-      "64": "dd4c9a0b22bfae38991523453961e43faac3bd3502d036eee5d6471afc2c21e6",
-      "128": "94a91a6c1ec03a877fa6d8068602314cf39a3e16107ccb0dfbd4b3f04cb1cc68",
-      "256": "dd5cbf4fa8517e7f6ee4181f8e7edc5b0d2fec84b768d3f721dc7726595f95d3"
+      "64": "a4b43a060dac35dbee11064b9cdff61ff26ec87f874a85f42c8466ec0960bba4",
+      "128": "53550546aea9023ac16865f6449ffd617ef4b61c2ae8a7563c5c0536bc535309",
+      "256": "fd71c2a1223c81bc42a2cda5ab399f7d42607064d16b3c4f20ecc9872b109340"
     },
     "exploration-relic-2": {
-      "64": "b057c5e933662eb3c162e0d077343bf84ea273283579e0692fd7fff1bf70a726",
-      "128": "6d5d757180579996f4017b947826e5d484446666b594987e06a4e26b279be435",
-      "256": "20ce6114b9fa8b3cc0224761ec55e280e557f16f2f3da3b70ac01d3667b6e31c"
+      "64": "97d864271c7673008c0f5fa29ff6dc57076b8cc98717050ee1844e54ffde6ee3",
+      "128": "f7d1ce53e4d6e68ce4bbb86fd43c1d648beb81ce480e55b2e33a0590fdd8eda2",
+      "256": "9575d30137e579f1b05e269370696a7b26ce25e4cea67898e8da907268b22bb0"
     },
     "exploration-reward-relic-1": {
-      "64": "fc453556d75410ee063211d30a08d2d187afe92589b28c4c7d2c98f429820e34",
-      "128": "328fffd98aa1ab348e0bdc25dc97ca506e6f04ddbaed2a06887763bef410970c",
-      "256": "2dd39c171babded11326d5b396ab044beb60dd59571be3777cf7c6fd8d25464d"
+      "64": "cba191068b67d5abba32c7af55555e534c1bb1eba4d919eb10de810566d32391",
+      "128": "37efe696c629d1285d084eaae47ff04dc78ba5fd1e0f3e636ed4fb00258694f7",
+      "256": "4ace0e9c803beac5b8f4dabb73e02895c611692d2b7c68b3ca17206087148f26"
     },
     "exploration-reward-relic-2": {
-      "64": "c61a0dde7f929ae9c4cf03e793dc58a67baa0b6aa9d236d081315beb23ae0078",
-      "128": "b2106dc04322598bfd96dda5001173ae95695d5b8c4277c02e3196f63defa934",
-      "256": "1d09199084b304481466199a3d500a240e328f1e82625d0b756a3ee115ec4e17"
+      "64": "32e657b405f6095b8ed8301b0f0f8e095668f25e8106893a897c9f7c16c26f30",
+      "128": "e45fa383b8a2fc9fa91eb420a2be4eaeb79862759a05a9cfa0d38aeb5269fd05",
+      "256": "28f92a93f262a9afce3d1181cc9d5a49c5ad74111f65c052545be935e0a89f87"
     },
     "structure-damage-reduction-relic-1": {
-      "64": "0083bf7d2b360357794a59be6878ef2ddcebec1d40359b565f4217d87d927a49",
-      "128": "447eea320620731651f6ff66df1547c3b6c99dfe9ec0ca32ba31e225dbc15a09",
-      "256": "bc03cf1044a5d285fc7a6e83d97e8c4da135da27be8f356e6ba024e40863e372"
+      "64": "2aa16ab8d4b37a0641128111d60cceb4f5b8288fc64a16b786666df3d0d70a17",
+      "128": "10e9393dc4eebdf910cc2c7e59ff8a46f5ca41bab53859b76bd44ec415b86534",
+      "256": "d6f110889293c2c10cbb635935d2f54d9c0b10a180c9db4930f445fcb1853de8"
     },
     "structure-damage-reduction-relic-2": {
-      "64": "eefc1225ebfb6be294abf2893fb429c00bf3dce891347121e13afdfcf85d9680",
-      "128": "11338096742bf55a64add1e4843e29a368681d11ac4376d595c5cd3bdcd7dfa8",
-      "256": "b69dc91f7cc79c1afb9d8545cf4d09d9ef018c334eef98a365f56cbe313ce56e"
+      "64": "9a2e9bb852e0d1e98b92dec80044f2c751ef51b16bad3cf40e5741c2a391a73b",
+      "128": "2fa6981bae31e24a3a9d9e7f31bd51885d1a5e577613ae0b66f7ae23d3054099",
+      "256": "1173bcb6769e06f2bd8d469d788bbfe9fe3c0b3ef03b2eb8ccebe032462dae11"
     },
     "production-relic-1": {
-      "64": "6cc9810f162e797cd4106334ccda8d7bb56f591bc04574b23c5a843fb9483093",
-      "128": "8702a9307bd0991799ae28675a5b1353766134e416a1420017bd47780efe5267",
-      "256": "07160370af34d7ed69afd6f6825cedd885c45b20f78ed85a1c951ca211ac22a6"
+      "64": "e53659c5e69649fca1f916c5a8cca2b25d909fbb6f31f65ae818639706814ee3",
+      "128": "eca1e909ac3a11a7cb05b75ce577ef0c049db4e6618d55412a37fef34ad960a7",
+      "256": "74cd8d2ed868d1b6cfaf74a4d62cd7ac006af73bd450d807799e7267fc67e405"
     },
     "production-relic-2": {
-      "64": "bce1b4e66a6f543c3a425cb44dbf50acbbf769f664cf0b0502c0cbbc05b5f703",
-      "128": "283c872c1e183b8b29bfe3eea6e42f2f0fc4633b6dc896d0a8422a16a525581e",
-      "256": "b91f0df104143332c45e2f93af31074a3c0bf1619e171aa4706844eca9e97aaa"
+      "64": "1facce7bc2bbc163c06786076ef40aa14541111d2b04d3dc725ef2090656bc6f",
+      "128": "04cb9eb6696b355855b2adcad1451f8f8b2143c54934f91f8b8ad24ff00ec798",
+      "256": "da4b2bd650b34dfaee275461b60d9196d430fdeb4d06e3b399f314cb92d74a63"
     },
     "labor-production-relic-1": {
-      "64": "dcc82fbbe962d9ee253f6f2990d0c7e7bf9da04ef7b0651516cb964d485b378b",
-      "128": "16a4e7cf3d872433aca63a5f4784ae0dcc4b7f8dbfafd32d44aab0a9d4e8789a",
-      "256": "eb620af7dd778364e75f113f6d826c4bca28658d7e6d4bcd1f8fccfa190adfe4"
+      "64": "9c4ee5d0ff191166dd32a45091ab8dab579e2fd9cc72e579f3021973e52e6e70",
+      "128": "74d27b88db2b31fe67ee7a8643774a631932ba1a598efdaa2bc858090c7a4e01",
+      "256": "b037069a93da070c20a13fe400593559e82b2a3ce33281abd5c7d45ee4adfc4b"
     },
     "labor-production-relic-2": {
-      "64": "37b545eb2d1530883c12ee9d7f99e9727a5632cd48254c37ca4bc8e0545ac661",
-      "128": "714f0757490e93c2114df4c151361664be86ff86005d829ae6decd4afbe86c1e",
-      "256": "7f4539398bd2d575186e28691fdd9fe5afcf3890dd610621c2b86bd6720815d9"
+      "64": "8f98c2bb040ac59146fe1a78c73586f1820da6d79d25cb6d7340036b2af71c73",
+      "128": "b229618ab58a8c72505a89a49d51e8abaae791db09fa2a440632f75dcdabc24a",
+      "256": "f716c50266a5bf92e54ffc90dcf09a9e7063eea439036b7ea9856020d993bc1f"
     },
     "troop-production-relic-1": {
-      "64": "1c7c6b9cd98e0a2244e49d3badc14a3e16d1ec0eae7875c74d807dc349fbab6a",
-      "128": "f3d3755fc78cf156337058e3f35d23f00d3a08dd3a06b7f73b6bf4da5ea00b47",
-      "256": "2f986add6cb736196aff593bb4ed17ec86595965e64b36381ed27cf3c96b346e"
+      "64": "ed23ef354ddb419727f29d1e4cf8ed6c6f1f1bfcdaa8dd31aa3a2cfb06688382",
+      "128": "d9b2bc4916ba026675820615b269fd8051d55028be55c7e40814513c3ca97a86",
+      "256": "9c08700344f61f357b89d6350aed3258066324cc135a9ab23ef0a4c29facafad"
     },
     "troop-production-relic-2": {
-      "64": "19bec5e77a55fc2340e58692c94adfc532426495db0214007224d95dd68a588a",
-      "128": "d3ff5a1a606a63e1dbf2fc37b3d2c1bbb332adeb2b40f7bd08d05785426685a2",
-      "256": "97f75727b37342038f6adcdf777e4239f5c316d3f414274155da6026235b4075"
+      "64": "b3de169ad116f9df8c098ee7d61145ef7b0b5211c9159037474aab8b89ccc9bc",
+      "128": "440103a6123f8e90ead3ae030a09e54f80a4c17e7da3fbebe0f01e85662f9cf2",
+      "256": "b256886b3911c483e4e14495ae3ac2f82e663c681982fa16835516063d33b546"
     }
   }
 }

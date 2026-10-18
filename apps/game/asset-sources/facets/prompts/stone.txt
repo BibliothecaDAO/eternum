@@ -1,2 +1,1 @@
-Subject: A compact pale limestone quarry block with chipped corners, broad cut faces and a few natural mineral seams. Readable stone mass, no crystals.
-Old counterpart: apps/game/public/images/resources/1.png.
+Restore the exact master from apps/game/public/lab/rss-icons/history/stone.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/1.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

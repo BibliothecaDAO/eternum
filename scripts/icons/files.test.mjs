@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import sharp from "sharp";
 import { validateIconFiles } from "./files.mjs";
 
 test("realm icon comparisons show renders of the current level models", async () => {
@@ -35,13 +36,21 @@ test("the build file check rejects missing masters and exports", async () => {
   try {
     await assert.rejects(validateIconFiles(icons, root, root), /masters\/production.png/);
     await mkdir(join(root, "masters"));
-    await writeFile(join(root, "masters/production.png"), "fixture");
+    const artwork = Buffer.from(
+      '<svg width="100" height="100"><rect x="5" y="5" width="90" height="90" fill="red"/></svg>',
+    );
+    await sharp(artwork).png().toFile(join(root, "masters/production.png"));
     for (const size of [64, 128, 256]) {
       await assert.rejects(validateIconFiles(icons, root, root), new RegExp(`${size}/production.webp`));
       await mkdir(join(root, String(size)));
-      await writeFile(join(root, String(size), "production.webp"), "fixture");
+      await sharp(artwork)
+        .resize(size, size)
+        .webp()
+        .toFile(join(root, String(size), "production.webp"));
     }
     await assert.doesNotReject(validateIconFiles(icons, root, root));
+    await writeFile(join(root, "64/production.webp"), "not an image");
+    await assert.rejects(validateIconFiles(icons, root, root), /unsupported image format/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

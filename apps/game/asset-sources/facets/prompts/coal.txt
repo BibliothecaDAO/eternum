@@ -1,1 +1,1 @@
-A compact cluster of three jet-black coal lumps with deep charcoal planes and restrained cool highlights. Read as coal, not grey stone.
+Restore the exact master from apps/game/public/lab/rss-icons/history/coal.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/2.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.

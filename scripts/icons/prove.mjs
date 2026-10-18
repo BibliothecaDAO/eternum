@@ -44,10 +44,20 @@ async function readRealmEmblems(selector) {
       const innerApothem = (radius * Math.sqrt(3)) / 2 - Number(rim.getAttribute("stroke-width")) / 2;
       let clearance = Infinity;
       let paintedPixels = 0;
+      let left = canvas.width,
+        top = canvas.height,
+        right = -1,
+        bottom = -1;
       for (let row = 0; row < canvas.height; row++) {
         for (let col = 0; col < canvas.width; col++) {
           if (data[(row * canvas.width + col) * 4 + 3] <= 8) continue;
           paintedPixels++;
+          if (data[(row * canvas.width + col) * 4 + 3] >= 128) {
+            left = Math.min(left, col);
+            right = Math.max(right, col);
+            top = Math.min(top, row);
+            bottom = Math.max(bottom, row);
+          }
           // Test all four corners of each visible source pixel against the six inner rim edges.
           for (const dx of [0, 1])
             for (const dy of [0, 1]) {
@@ -70,6 +80,7 @@ async function readRealmEmblems(selector) {
         rimColor: rim.getAttribute("stroke"),
         clearance,
         paintedPixels,
+        paintedLongest: (Math.max(right - left + 1, bottom - top + 1) / canvas.width) * size,
         value: pip?.textContent,
         pipAboveArt: overlays.some((overlay) => overlay.contains(pip)),
         ownershipAboveArt: overlays.some((overlay) => overlay.getAttribute("transform") === "translate(-7 8)"),
@@ -96,7 +107,9 @@ export async function proveMinimapEmblems(b, out, records, url) {
     check: "Live realm paintings fill their hex without crossing the inner rim",
     ok:
       record.emblems.length > 0 &&
-      record.emblems.every((emblem) => emblem.size >= 23 && emblem.paintedPixels > 0 && emblem.clearance >= 0),
+      record.emblems.every(
+        (emblem) => emblem.paintedLongest >= 19.7 && emblem.paintedPixels > 0 && emblem.clearance >= 0,
+      ),
   });
   record.checks.push({
     check: "Level pips and ownership cues remain above the paintings",
@@ -223,7 +236,7 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
           record.realmFill.length === 32 &&
           record.realmFill.every(
             (emblem) =>
-              emblem.size >= 23 &&
+              emblem.paintedLongest >= 19.7 &&
               emblem.clearance >= 0 &&
               emblem.value === emblem.meaning.slice(-1) &&
               emblem.pipAboveArt &&
@@ -260,10 +273,12 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
         );
       }
       for (const meaning of ["production", "transfer"]) {
-        await b.run("click", `section[aria-label='Action meanings'] button:has([data-icon='${meaning}'])`);
+        const action = `section[aria-label='Action meanings'] button:has([data-icon='${meaning}'])`;
+        await b.run("scrollintoview", action);
+        await b.run("click", action);
         await check(
           `${meaning} action responds`,
-          `document.querySelector('[role=status]').textContent.toLowerCase()==='${meaning === "transfer" ? "transfer resources" : meaning} selected'`,
+          `document.querySelector('section[aria-label="Action meanings"] [role=status]').textContent.toLowerCase()==='${meaning === "transfer" ? "transfer resources" : meaning} selected'`,
         );
       }
       await b.run("select", "select[aria-label='Icon family']", "Troops");
@@ -305,8 +320,13 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
     await b.run("wait", "[data-change=stamina-relic-1]");
     record.ready = true;
     for (const section of ["Resources", "Relics", "Models", "Kept", "Inventory"]) {
-      record.presses.push({ tab: section });
-      await b.run("click", 'nav[aria-label="Resource review sections"] button:has-text("' + section + '")');
+      const press = { tab: section, status: "failed" };
+      record.presses.push(press);
+      await b.run("click", `[data-resource-section="${section}"]`);
+      const selected = await b.evaluate(
+        `document.querySelector('nav[aria-label="Resource review sections"] button[aria-pressed="true"]')?.textContent === ${JSON.stringify(section)}`,
+      );
+      press.status = selected === true ? "led" : "failed";
       await check(
         section + ": every displayed image decodes",
         `(async()=>{
@@ -320,7 +340,8 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
         `
         document.documentElement.scrollWidth<=innerWidth && [...document.querySelectorAll('.rss-art-slot img')].every(i=>{
           const size=Number(i.closest('[data-size]').dataset.size),r=i.getBoundingClientRect();
-          return [16,24,32,40].includes(size) && r.width===size && r.height===size;
+          const frame=i.closest('[data-size]').getBoundingClientRect();
+          return [16,24,32,40].includes(size) && r.width===size && r.height===size && frame.width===size && frame.height===size;
         })`,
       );
       await check(

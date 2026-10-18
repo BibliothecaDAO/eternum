@@ -43,7 +43,7 @@ function Sizes({ meaning, version }: { meaning: string; version: Version }) {
     <div className="rss-sizes">
       {[16, 24, 32, 40].map((size) => (
         <div key={size}>
-          <span className="rss-art-slot" data-size={size}>
+          <span className="rss-art-slot" data-size={size} style={{ width: size, height: size }}>
             <Artwork meaning={meaning} version={version} size={size} />
           </span>
           <small>{size} px</small>
@@ -90,7 +90,12 @@ export function ResourceIconsLab() {
       </header>
       <nav aria-label="Resource review sections">
         {["Resources", "Relics", "Models", "Kept", "Inventory"].map((name) => (
-          <button key={name} aria-pressed={section === name} onClick={() => setSection(name)}>
+          <button
+            data-resource-section={name}
+            key={name}
+            aria-pressed={section === name}
+            onClick={() => setSection(name)}
+          >
             {name}
           </button>
         ))}

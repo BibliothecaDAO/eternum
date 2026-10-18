@@ -9,55 +9,55 @@
   "icons": [
     {
       "id": "knight-t1",
-      "label": "Knight · T1",
+      "label": "Knight \u00b7 T1",
       "family": "Troops",
       "prompt": "prompts/knight-t1.txt"
     },
     {
       "id": "knight-t2",
-      "label": "Knight · T2",
+      "label": "Knight \u00b7 T2",
       "family": "Troops",
       "prompt": "prompts/knight-t2.txt"
     },
     {
       "id": "knight-t3",
-      "label": "Knight · T3",
+      "label": "Knight \u00b7 T3",
       "family": "Troops",
       "prompt": "prompts/knight-t3.txt"
     },
     {
       "id": "crossbowman-t1",
-      "label": "Crossbowman · T1",
+      "label": "Crossbowman \u00b7 T1",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t1.txt"
     },
     {
       "id": "crossbowman-t2",
-      "label": "Crossbowman · T2",
+      "label": "Crossbowman \u00b7 T2",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t2.txt"
     },
     {
       "id": "crossbowman-t3",
-      "label": "Crossbowman · T3",
+      "label": "Crossbowman \u00b7 T3",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t3.txt"
     },
     {
       "id": "paladin-t1",
-      "label": "Paladin · T1",
+      "label": "Paladin \u00b7 T1",
       "family": "Troops",
       "prompt": "prompts/paladin-t1.txt"
     },
     {
       "id": "paladin-t2",
-      "label": "Paladin · T2",
+      "label": "Paladin \u00b7 T2",
       "family": "Troops",
       "prompt": "prompts/paladin-t2.txt"
     },
     {
       "id": "paladin-t3",
-      "label": "Paladin · T3",
+      "label": "Paladin \u00b7 T3",
       "family": "Troops",
       "prompt": "prompts/paladin-t3.txt"
     },
@@ -65,13 +65,25 @@
       "id": "stone",
       "label": "Stone",
       "family": "Resources",
-      "prompt": "prompts/stone.txt"
+      "prompt": "prompts/stone.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/1.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/stone.png",
+        "sha256": "85ba053423b4c21cd4ae9a59c3462857d2fe2581c1beaacb560e38bd05d35d78"
+      }
     },
     {
       "id": "wood",
       "label": "Wood",
       "family": "Resources",
-      "prompt": "prompts/wood.txt"
+      "prompt": "prompts/wood.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/3.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/wood.png",
+        "sha256": "bfa65db3ebc1a0e682781daffa03a2914027af7b4b4341f70b1bfcc8ed99a87e"
+      }
     },
     {
       "id": "wheat",
@@ -97,16 +109,23 @@
       "family": "Resources",
       "prompt": "prompts/essence.txt",
       "source": {
-        "revision": "a4d7b4eefd02ca1b9be646cda56aaac70d4afef0",
-        "path": "apps/game/asset-sources/rss-icons/masters/template-essence.png",
-        "sha256": "ee24d02da9f9f99a7bbae58be86741630c4990896e543655c6d858373bde754a"
+        "revision": "301ca1d55a2",
+        "path": "apps/game/asset-sources/facets/masters/essence.png",
+        "committedPath": "apps/game/asset-sources/rss-icons/selected/essence-shipped.png",
+        "sha256": "94617d6f15d644acd4ade83200bf7c51f3b13e0c120f3e51a3badbda5efd249f"
       }
     },
     {
       "id": "ironwood",
       "label": "Ironwood",
       "family": "Resources",
-      "prompt": "prompts/ironwood.txt"
+      "prompt": "prompts/ironwood.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/5.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/ironwood.png",
+        "sha256": "4b7a2e467e764ed292ae3317513d57ae2f0024c6c1662d7e6ee860f95bb7390d"
+      }
     },
     {
       "id": "fragment",
@@ -116,7 +135,7 @@
     },
     {
       "id": "realm",
-      "label": "Realm · level 2",
+      "label": "Realm \u00b7 level 2",
       "family": "Structures",
       "prompt": "prompts/realm.txt"
     },
@@ -129,9 +148,9 @@
         "model": "/models/outposts/camp.glb",
         "inputs": {
           "apps/game/public/models/outposts/camp.glb": "4f4b2224ebc747638f7fe7c9e97e850cc09d6981920cab8d618cdc7dcfbca3d1",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
-        "sha256": "c351e4ec7014a85971f5dc0bf64597d5db2c825e74b7e11e6c54922e6205ae03"
+        "sha256": "be4c06dc03496566f9c532f5c966b95e68e4fc1263b377c2627314f9245899f4"
       }
     },
     {
@@ -144,9 +163,11 @@
         "inputs": {
           "apps/game/src/three/structures/hyperstructure-kit.ts": "c07bccfb3db16bfc3ee3d61103b92e619f38db2fef8cf9489202e214d3da07dd",
           "apps/game/src/three/structures/hyperstructure-design.ts": "e53ce5fea22c1f3da01fb87f7bde315df27efefc4639f3116702d2b1f1e656a6",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca",
+          "apps/game/src/three/structures/hyperstructure-model.ts": "1ec99bfd8918f1a4bd247fe334f5f2902cbdcc30c3a3c55c4c97c6abc840e5ad",
+          "apps/game/src/three/structures/hyperstructure-power.ts": "676b2984ac5ab209f6d483181ff2294f1d8f951d9be916c23ddc2a9409cb8057"
         },
-        "sha256": "d499450e805a2aa08ba609bfa38bfb30243593dfdbb93d53f00efbffd7f5041a"
+        "sha256": "5a821ec79eeb77d98b9f5bd9248a2ff5acfcd29caaccd9ffcadfa5642c370a2c"
       }
     },
     {
@@ -159,9 +180,9 @@
         "inputs": {
           "apps/game/public/models/reward-tiles/chest-c2.glb": "e65db3a9a319316b0f485bf9feeb426b74b970a17a619ce758991d91cf2fd438",
           "apps/game/src/three/rewards/chest-presentation.ts": "b882fbd99cd2b3a486b50ec65473f7a185db57953e2fc0808e1a045940d3cce8",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
-        "sha256": "8591eaed0ffd1ffa13997877f8de64903f471c6c683ba7e74994b0c304bff599"
+        "sha256": "dbb342171232be10ede039516ec4893e54fe93ec9b2293e2ad8fb21645794d9f"
       }
     },
     {
@@ -246,13 +267,25 @@
       "id": "coal",
       "label": "Coal",
       "family": "Resources",
-      "prompt": "prompts/coal.txt"
+      "prompt": "prompts/coal.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/2.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/coal.png",
+        "sha256": "e63f09d99239ed05f07d597cfc711f845b7866564f4d92163f0541cc65866f2e"
+      }
     },
     {
       "id": "copper",
       "label": "Copper",
       "family": "Resources",
-      "prompt": "prompts/copper.txt"
+      "prompt": "prompts/copper.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/4.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/copper.png",
+        "sha256": "03fdedec6cadb4c7d93a1332be00e9571e5052991637ad7b721f56647553a00d"
+      }
     },
     {
       "id": "donkey",
@@ -270,103 +303,205 @@
       "id": "obsidian",
       "label": "Obsidian",
       "family": "Resources",
-      "prompt": "prompts/obsidian.txt"
+      "prompt": "prompts/obsidian.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/6.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/obsidian.png",
+        "sha256": "1557b9e3f62813a24271c845daeab9a7f443b37e0bd751a8b02c69c4991c0dfb"
+      }
     },
     {
       "id": "gold",
       "label": "Gold",
       "family": "Resources",
-      "prompt": "prompts/gold.txt"
+      "prompt": "prompts/gold.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/7.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/gold.png",
+        "sha256": "e68ead6472307fed4dacfa3f9cdfd3f3521fa734a8de99ea018f55e978f5a7ff"
+      }
     },
     {
       "id": "silver",
       "label": "Silver",
       "family": "Resources",
-      "prompt": "prompts/silver.txt"
+      "prompt": "prompts/silver.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/8.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/silver.png",
+        "sha256": "3c9cdd596e22c4faa43af7b59be06a4c420460ed89a6c3a29d3d8994862ff031"
+      }
     },
     {
       "id": "mithral",
       "label": "Mithral",
       "family": "Resources",
-      "prompt": "prompts/mithral.txt"
+      "prompt": "prompts/mithral.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/9.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/mithral.png",
+        "sha256": "ac24774bce4ddf19e3d6570be2bf5223ca852ac18b813d5eb2f990b825519f03"
+      }
     },
     {
       "id": "alchemical-silver",
       "label": "Alchemical Silver",
       "family": "Resources",
-      "prompt": "prompts/alchemical-silver.txt"
+      "prompt": "prompts/alchemical-silver.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/10.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/alchemical-silver.png",
+        "sha256": "fdda73e3735e42374f34d03b575865efc217deccd2660a80eae510d1c5d6292e"
+      }
     },
     {
       "id": "cold-iron",
       "label": "Cold Iron",
       "family": "Resources",
-      "prompt": "prompts/cold-iron.txt"
+      "prompt": "prompts/cold-iron.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/11.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/cold-iron.png",
+        "sha256": "50dec308fd3846b22fb85c65d0395aa0627e752a149fea5ba424fbb84b450efc"
+      }
     },
     {
       "id": "deep-crystal",
       "label": "Deep Crystal",
       "family": "Resources",
-      "prompt": "prompts/deep-crystal.txt"
+      "prompt": "prompts/deep-crystal.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/12.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/deep-crystal.png",
+        "sha256": "c13b1492805e75c9f985405a1bf99fb8150a7ff2a953caa7fb0406374aa1e32c"
+      }
     },
     {
       "id": "ruby",
       "label": "Ruby",
       "family": "Resources",
-      "prompt": "prompts/ruby.txt"
+      "prompt": "prompts/ruby.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/13.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/ruby.png",
+        "sha256": "11fb249d86a21869d7863671ccf3f1d614a8f0d6cf155897c3c4d38ed5a71fcb"
+      }
     },
     {
       "id": "diamonds",
       "label": "Diamonds",
       "family": "Resources",
-      "prompt": "prompts/diamonds.txt"
+      "prompt": "prompts/diamonds.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/14.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/diamonds.png",
+        "sha256": "31078efdaa85dd0d12b20c3593bab0a2d8476f7d0f3cc6924aff7ac03cdcd7cd"
+      }
     },
     {
       "id": "hartwood",
       "label": "Hartwood",
       "family": "Resources",
-      "prompt": "prompts/hartwood.txt"
+      "prompt": "prompts/hartwood.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/15.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/hartwood.png",
+        "sha256": "5c6c8bb596476767f7daa99713e66eb00ed9b005ec23976af4f1fecc83fb8e42"
+      }
     },
     {
       "id": "ignium",
       "label": "Ignium",
       "family": "Resources",
-      "prompt": "prompts/ignium.txt"
+      "prompt": "prompts/ignium.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/16.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/ignium.png",
+        "sha256": "4e0cd37e69ec4f57e1d9f597bd2c94ef17391760b0a153947a9355b9bacc0684"
+      }
     },
     {
       "id": "twilight-quartz",
       "label": "Twilight Quartz",
       "family": "Resources",
-      "prompt": "prompts/twilight-quartz.txt"
+      "prompt": "prompts/twilight-quartz.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/17.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/twilight-quartz.png",
+        "sha256": "bedcd1de691236a526c498e9613ed14fc99e33c60a425185b57f0b650b5fe009"
+      }
     },
     {
       "id": "true-ice",
       "label": "True Ice",
       "family": "Resources",
-      "prompt": "prompts/true-ice.txt"
+      "prompt": "prompts/true-ice.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/18.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/true-ice.png",
+        "sha256": "864a4306745056621e28ddd6b016e090e942c8abc167157a7bbf6d1d43fc4e4b"
+      }
     },
     {
       "id": "adamantine",
       "label": "Adamantine",
       "family": "Resources",
-      "prompt": "prompts/adamantine.txt"
+      "prompt": "prompts/adamantine.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/19.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/adamantine.png",
+        "sha256": "52a2903cdf0eb5da31b805be8de083f45db91eb4b6911c6b1411aa3f331a0550"
+      }
     },
     {
       "id": "sapphire",
       "label": "Sapphire",
       "family": "Resources",
-      "prompt": "prompts/sapphire.txt"
+      "prompt": "prompts/sapphire.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/20.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/sapphire.png",
+        "sha256": "a7443ec78d358af153fa609434659ffd171d0f684edaeaeb2b4c93c1a030c5cd"
+      }
     },
     {
       "id": "ethereal-silica",
       "label": "Ethereal Silica",
       "family": "Resources",
-      "prompt": "prompts/ethereal-silica.txt"
+      "prompt": "prompts/ethereal-silica.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/21.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/ethereal-silica.png",
+        "sha256": "e46d6a5a1182ad2999713e34e9a823f98f321328e0b820683ce579da4657259c"
+      }
     },
     {
       "id": "dragonhide",
       "label": "Dragonhide",
       "family": "Resources",
-      "prompt": "prompts/dragonhide.txt"
+      "prompt": "prompts/dragonhide.txt",
+      "source": {
+        "revision": "638fd7fb410",
+        "path": "apps/game/public/images/resources/22.png",
+        "committedPath": "apps/game/public/lab/rss-icons/history/dragonhide.png",
+        "sha256": "9a8557eff93575b06198ef01d9baab56947743521be8ebe53ea6d9de599dd8c5"
+      }
     },
     {
       "id": "stamina-relic-1",
@@ -376,7 +511,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/39.png",
-        "sha256": "7ea1812f98bc5f3d681b4059c70d3905ebecc2debfa29e3aed1589b47f318168"
+        "sha256": "7ea1812f98bc5f3d681b4059c70d3905ebecc2debfa29e3aed1589b47f318168",
+        "committedPath": "apps/game/public/lab/rss-icons/history/stamina-relic-1.png"
       }
     },
     {
@@ -387,7 +523,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/40.png",
-        "sha256": "5135d4f55ef92b7c1be06e194a6c475db50ff5989597a74441985c1d74c25205"
+        "sha256": "5135d4f55ef92b7c1be06e194a6c475db50ff5989597a74441985c1d74c25205",
+        "committedPath": "apps/game/public/lab/rss-icons/history/stamina-relic-2.png"
       }
     },
     {
@@ -398,7 +535,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/41.png",
-        "sha256": "529c35e361c3c24593e8e44123f46984cd801ded8a3f1996beb7cf2c1503bcb1"
+        "sha256": "529c35e361c3c24593e8e44123f46984cd801ded8a3f1996beb7cf2c1503bcb1",
+        "committedPath": "apps/game/public/lab/rss-icons/history/damage-relic-1.png"
       }
     },
     {
@@ -409,7 +547,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/42.png",
-        "sha256": "66617ff07bf0f6eea5a784bea8c61e4ddf75cdadc6cbe98f239e18e0d2bc9a37"
+        "sha256": "66617ff07bf0f6eea5a784bea8c61e4ddf75cdadc6cbe98f239e18e0d2bc9a37",
+        "committedPath": "apps/game/public/lab/rss-icons/history/damage-relic-2.png"
       }
     },
     {
@@ -420,7 +559,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/43.png",
-        "sha256": "f59f1657d4d20cbd9c987c9a1d6248f5111ba5fec43ea0888ec8a9504853c7ac"
+        "sha256": "f59f1657d4d20cbd9c987c9a1d6248f5111ba5fec43ea0888ec8a9504853c7ac",
+        "committedPath": "apps/game/public/lab/rss-icons/history/damage-reduction-relic-1.png"
       }
     },
     {
@@ -431,7 +571,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/44.png",
-        "sha256": "d102caf6e1a76a6b10a8db5bd59b190159c431f4e7f5f0750e15f12327eca8aa"
+        "sha256": "d102caf6e1a76a6b10a8db5bd59b190159c431f4e7f5f0750e15f12327eca8aa",
+        "committedPath": "apps/game/public/lab/rss-icons/history/damage-reduction-relic-2.png"
       }
     },
     {
@@ -442,7 +583,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/45.png",
-        "sha256": "92990f3d248bb7f7a01cfe490ee7a0afce66ee1569d6d3c295bf22331ec1efca"
+        "sha256": "92990f3d248bb7f7a01cfe490ee7a0afce66ee1569d6d3c295bf22331ec1efca",
+        "committedPath": "apps/game/public/lab/rss-icons/history/exploration-relic-1.png"
       }
     },
     {
@@ -453,7 +595,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/46.png",
-        "sha256": "b812057399798b654d17ee5081f1d5992e585779ab97022577bee7433896e495"
+        "sha256": "b812057399798b654d17ee5081f1d5992e585779ab97022577bee7433896e495",
+        "committedPath": "apps/game/public/lab/rss-icons/history/exploration-relic-2.png"
       }
     },
     {
@@ -464,7 +607,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/47.png",
-        "sha256": "7bd13cca6a120299188b0276e81813ec2e8eb2ea787f58bccafecc860e288bab"
+        "sha256": "7bd13cca6a120299188b0276e81813ec2e8eb2ea787f58bccafecc860e288bab",
+        "committedPath": "apps/game/public/lab/rss-icons/history/exploration-reward-relic-1.png"
       }
     },
     {
@@ -475,7 +619,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/48.png",
-        "sha256": "46e18e015da781fd27a503d1410308882f8a0c517328c9f30a1be8f4f3af7cac"
+        "sha256": "46e18e015da781fd27a503d1410308882f8a0c517328c9f30a1be8f4f3af7cac",
+        "committedPath": "apps/game/public/lab/rss-icons/history/exploration-reward-relic-2.png"
       }
     },
     {
@@ -486,7 +631,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/49.png",
-        "sha256": "a57f1093f959f34d7d7755a32e132d2a360cf9eadaeda250b08b95d8dd353643"
+        "sha256": "a57f1093f959f34d7d7755a32e132d2a360cf9eadaeda250b08b95d8dd353643",
+        "committedPath": "apps/game/public/lab/rss-icons/history/structure-damage-reduction-relic-1.png"
       }
     },
     {
@@ -497,7 +643,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/50.png",
-        "sha256": "41851ef5f3dae3ae043e3a0680428c013baf71bc8088a53c3bce1784d86bd981"
+        "sha256": "41851ef5f3dae3ae043e3a0680428c013baf71bc8088a53c3bce1784d86bd981",
+        "committedPath": "apps/game/public/lab/rss-icons/history/structure-damage-reduction-relic-2.png"
       }
     },
     {
@@ -508,7 +655,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/51.png",
-        "sha256": "27698138dd83d7dd8d88a82cda32cd4a290e4e5583dd1fd2c402b27da6083b2f"
+        "sha256": "27698138dd83d7dd8d88a82cda32cd4a290e4e5583dd1fd2c402b27da6083b2f",
+        "committedPath": "apps/game/public/lab/rss-icons/history/production-relic-1.png"
       }
     },
     {
@@ -519,7 +667,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/52.png",
-        "sha256": "d5b6114256e164823bcf955bac01225b9e49176262495626082a1b085cc8aab7"
+        "sha256": "d5b6114256e164823bcf955bac01225b9e49176262495626082a1b085cc8aab7",
+        "committedPath": "apps/game/public/lab/rss-icons/history/production-relic-2.png"
       }
     },
     {
@@ -530,7 +679,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/53.png",
-        "sha256": "22dbb31fb1c62fd81ece2c933b21272a2cb10bd0009b4e4b59f94f2d188e297c"
+        "sha256": "22dbb31fb1c62fd81ece2c933b21272a2cb10bd0009b4e4b59f94f2d188e297c",
+        "committedPath": "apps/game/public/lab/rss-icons/history/labor-production-relic-1.png"
       }
     },
     {
@@ -541,7 +691,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/54.png",
-        "sha256": "369b1ff53998a47cf19915496f2583f2ec595c6974030bf166b17f98eda2d460"
+        "sha256": "369b1ff53998a47cf19915496f2583f2ec595c6974030bf166b17f98eda2d460",
+        "committedPath": "apps/game/public/lab/rss-icons/history/labor-production-relic-2.png"
       }
     },
     {
@@ -552,7 +703,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/55.png",
-        "sha256": "3484c1c00b2fda5fc092ebd385197962d155ce6f077afc8b2f33abe883630507"
+        "sha256": "3484c1c00b2fda5fc092ebd385197962d155ce6f077afc8b2f33abe883630507",
+        "committedPath": "apps/game/public/lab/rss-icons/history/troop-production-relic-1.png"
       }
     },
     {
@@ -563,7 +715,8 @@
       "source": {
         "revision": "b636c768616959a27e2ef45665e2c317fda9b40c",
         "path": "apps/game/public/images/resources/56.png",
-        "sha256": "bcbb23d24243e8a295ce0f0f29638ce1f29cb1d796262ae6547789754176a4e1"
+        "sha256": "bcbb23d24243e8a295ce0f0f29638ce1f29cb1d796262ae6547789754176a4e1",
+        "committedPath": "apps/game/public/lab/rss-icons/history/troop-production-relic-2.png"
       }
     },
     {
@@ -572,9 +725,10 @@
       "family": "Resources",
       "prompt": "prompts/research.txt",
       "source": {
-        "revision": "a4d7b4eefd02ca1b9be646cda56aaac70d4afef0",
-        "path": "apps/game/asset-sources/rss-icons/masters/template-research.png",
-        "sha256": "9c6c68cce7bcab6a07ab88080ef68819019aa81341dcc034fbdc653c395a1965"
+        "inputs": {
+          "apps/game/asset-sources/rss-icons/selected/research-shipped.png": "db588a91ffca6098edd9dbbd60ac970fdaf358780442148abdf296ef1f262757"
+        },
+        "sha256": "e3b101ff5456bd82246ab7650984f55db7804504673566c26782210dfd647b60"
       }
     },
     {
@@ -1162,9 +1316,9 @@
         "model": "/models/reward-tiles/rift.glb",
         "inputs": {
           "apps/game/public/models/reward-tiles/rift.glb": "134730f681899c93287d6167946d58c3f9cfdca7b443f8131e495638135ed2d9",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
-        "sha256": "cacfa61c23b1da602e67fe311225a61d02ff71bd83de95ef5882496bd3011afb"
+        "sha256": "45d92b72f0a877456444727a386e433d174b1ed285e4917029102a54fdd08ff3"
       }
     },
     {
@@ -1176,9 +1330,9 @@
         "model": "/models/ethereal/spire.glb",
         "inputs": {
           "apps/game/public/models/ethereal/spire.glb": "3f53c5bf3892be2e577a7e5ff26e67bf6a9d6fec7df3751a912766874ac04b06",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
-        "sha256": "93046878920bbbd7a81a58991123d37f59e23db733c1a19d34e1adfd1bec3dea"
+        "sha256": "83ade5ae2e7820676f9a869cdbaf535ba8a424b7eef363209e9232a6e38cf853"
       }
     },
     {
@@ -1214,9 +1368,9 @@
         "model": "/models/new-buildings-opt/farm.glb",
         "inputs": {
           "apps/game/public/models/new-buildings-opt/farm.glb": "29bdee8dc0e9db8e45afc730b7092cfc794d9fef07dc145d67afcf1d197c4187",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
-        "sha256": "6c9349682a3121b599caaa7f5e523a627e0fa302555136482d8d89a6a6b335dc"
+        "sha256": "b5dae52cc40030b7bdf9788defb0070ae9e6630740bd5e3edcfc34e092ef3568"
       }
     },
     {
@@ -1240,9 +1394,9 @@
         "model": "/models/new-buildings-opt/workers_hut.glb",
         "inputs": {
           "apps/game/public/models/new-buildings-opt/workers_hut.glb": "1b158f385d0c420e0cb0516a097c905bb9f621da01a665d43713162b8018d353",
-          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "cc18a97f8b6c32c6da5d9ee31e80dc4ae98ae8567771a3166ca325b81351841b"
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
-        "sha256": "89877c30b7d0ab98fdd0afa5a78236063536f234a8dae64e4f876559e92e42e8"
+        "sha256": "9495de6067634afad03bd5239def44324332cf708d4e8d846bafe2cf92d01dca"
       }
     },
     {

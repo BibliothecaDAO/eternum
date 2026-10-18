@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Clearer resource and landmark icons",
+    description:
+      "Icons fill their frames. Production resources return to their familiar designs, Research has teal liquid, and landmarks show the built Hyperstructure and chest without its tile.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Relic artwork comparison",
     description:
       "The resource icon lab compares the original relic designs with painted Facets versions at four sizes. The game keeps the original relics during review.",
@@ -59,7 +66,6 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Military, rings and the leaderboard in the new style",
     description:
       "The resource rings, the leaderboard and tribes, the Military form and deploy picker, Combat, the attack preview, troop and relic transfers, chat, the crate panel and Frontier's season screens (the season's end, the standings, a realm's detail and a visit) now wear your game's colours and the one set of buttons, tabs, fields and chips. A ring's rim shows whether it is producing. Disbanding an army or dismissing a guard acts at once in Blitz and Eternum, and asks first only in Frontier, where it cannot be undone.",
-
     type: "improvement",
   },
   {

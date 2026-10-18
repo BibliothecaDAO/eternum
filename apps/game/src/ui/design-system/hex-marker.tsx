@@ -9,10 +9,10 @@ const markerColors: Record<MarkerOwner, string> = {
   neutral: "var(--hud-neutral)",
 };
 const realmEmblemLayout: Partial<Record<IconMeaning, { size: number; y: number }>> = {
-  "map-realm-0": { size: 26, y: -13 },
-  "map-realm-1": { size: 25, y: -13 },
-  "map-realm-2": { size: 23, y: -11.5 },
-  "map-realm-3": { size: 26, y: -14 },
+  "map-realm-0": { size: 25, y: -12.5 },
+  "map-realm-1": { size: 24.5, y: -12.75 },
+  "map-realm-2": { size: 22, y: -11 },
+  "map-realm-3": { size: 25.5, y: -13.75 },
 };
 const hexMarkerPoints = (radius: number, x = 0, y = 0) =>
   Array.from({ length: 6 }, (_, index) => {

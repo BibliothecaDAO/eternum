@@ -1,1 +1,1 @@
-Two translucent quartz points, purple lower half blending to soft amber upper facets, no particles.
+Restore the exact master from apps/game/public/lab/rss-icons/history/twilight-quartz.png, verified against its catalog SHA-256. Historical provenance: 638fd7fb410:apps/game/public/images/resources/17.png. Deliver through normalizeMaster and deliverIcon; the visible subject fills about 90% of each final canvas.
