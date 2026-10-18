@@ -51,23 +51,16 @@ export const EntityDetailStatList = ({
 interface EntityDetailStatProps {
   label: ReactNode;
   value: ReactNode;
-  emphasizeValue?: boolean;
   className?: string;
   compact?: boolean;
 }
 
-export const EntityDetailStat = ({
-  label,
-  value,
-  emphasizeValue = false,
-  className,
-  compact = false,
-}: EntityDetailStatProps) => {
+export const EntityDetailStat = ({ label, value, className, compact = false }: EntityDetailStatProps) => {
   const scale = getScale(compact);
   return (
     <div className={cn("flex flex-col", spacingGap[scale], className)}>
       <span className="text-hud-label text-hud-muted">{label}</span>
-      <span className={cn(emphasizeValue ? "text-hud-ink" : "text-hud-ink", bodyText[scale])}>{value}</span>
+      <span className={cn("text-hud-ink", bodyText[scale])}>{value}</span>
     </div>
   );
 };
