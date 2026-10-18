@@ -46,7 +46,7 @@ function StandingsRows() {
 
   return (
     <>
-      <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-[10px] text-gold/50">
+      <div className="grid grid-cols-[2rem_1fr_4rem_3rem] px-3 py-1 text-hud-label text-hud-cue">
         <span>#</span>
         <span>Player</span>
         <span className="text-right">Points</span>
@@ -70,21 +70,21 @@ function StandingsRows() {
             }}
             title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
             className={cn(
-              "grid w-full grid-cols-[2rem_1fr_4rem_3rem] items-center px-3 py-2 font-sans text-xs normal-case tracking-normal text-gold enabled:hover:bg-gold/10 disabled:opacity-60",
-              row.pinned && "bg-gold/15 border-t border-gold/30",
+              "grid w-full grid-cols-[2rem_1fr_4rem_3rem] items-center px-3 py-2 font-sans text-hud-label normal-case tracking-normal text-hud-accent enabled:hover:bg-hud-hover disabled:opacity-60",
+              row.pinned && "bg-hud-chosen border-t border-hud-line",
             )}
           >
             <span>{row.rank}</span>
             <span className="truncate text-left">{name}</span>
             <span className="text-right tabular-nums">{Math.floor(row.totalPoints).toLocaleString()}</span>
-            <span className="text-right tabular-nums text-gold/60">
+            <span className="text-right tabular-nums text-hud-muted">
               {row.delta > 0 ? "+" : ""}
               {Math.floor(row.delta)}
             </span>
           </button>
         );
       })}
-      {!rows.length && <p className="px-3 py-4 text-xs text-gold/60">No points scored yet</p>}
+      {!rows.length && <p className="px-3 py-4 text-hud-label text-hud-muted">No points scored yet</p>}
     </>
   );
 }

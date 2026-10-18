@@ -1,15 +1,14 @@
-import { HUD_CUE, HUD_LABEL, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { DROPDOWN_TRIGGER, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SelectRelic } from "@/ui/design-system/molecules/select-relic";
 import { SelectTier } from "@/ui/design-system/molecules/select-tier";
 import { SelectTroop } from "@/ui/design-system/molecules/select-troop";
-import { getTierStyle } from "@/ui/utils/tier-styles";
 import { StaminaManager } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
+import { TierChip } from "../../utils/tier-chip";
 
 const MAX_TROOPS_PER_ARMY = 500_000;
 
@@ -28,9 +27,9 @@ interface ArmyColumnProps {
 
 const Field = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => (
   <label className="flex flex-col gap-1">
-    <span className={cn("flex items-center gap-1.5", HUD_LABEL)}>
+    <span className={cn("flex items-center gap-1.5", "text-hud-label text-hud-muted")}>
       {label}
-      {hint && <span className={HUD_CUE}>{hint}</span>}
+      {hint && <span className="text-hud-label text-hud-cue">{hint}</span>}
     </span>
     {children}
   </label>
@@ -54,15 +53,8 @@ export const ArmyColumn = ({
     <div className={cn("flex flex-col gap-3 rounded-xl p-4", OVERLAY_SURFACE_BASE)}>
       <div className="flex items-center gap-2">
         <span className={cn("h-2.5 w-2.5 rounded-full", accent)} />
-        <span className={HUD_LABEL_BRIGHT}>{label}</span>
-        <span
-          className={cn(
-            "ml-auto shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
-            getTierStyle(String(army.tier)),
-          )}
-        >
-          {army.tier}
-        </span>
+        <span className="text-hud-label text-hud-accent">{label}</span>
+        <TierChip tier={String(army.tier)} />
       </div>
 
       {guards && guards.length > 1 && (
@@ -75,10 +67,10 @@ export const ArmyColumn = ({
                 type="button"
                 onClick={() => onSelectGuard?.(guard.slot)}
                 className={cn(
-                  "rounded border px-2 py-1 text-[11px] font-semibold transition-colors",
+                  "rounded border px-2 py-1 text-hud-label transition-colors",
                   active
-                    ? "border-gold bg-gold/20 text-gold"
-                    : "border-gold/30 bg-black/30 text-gold/70 hover:border-gold/60",
+                    ? "border-hud-line-strong bg-hud-chosen text-hud-accent"
+                    : "border-hud-line bg-hud-well text-hud-muted hover:border-hud-line-strong",
                 )}
                 aria-pressed={active}
               >

@@ -31,11 +31,11 @@ export const TabBar: React.FC<TabBarProps> = ({
   showWindowControls = true,
 }) => {
   return (
-    <div className={`flex items-center justify-between border-b border-gold/30 px-2 py-1 ${className}`}>
+    <div className={`flex items-center justify-between border-b border-hud-line px-2 py-1 ${className}`}>
       <div className="flex items-center gap-1 flex-1 overflow-x-auto">
         <button
           onClick={onAddDM}
-          className="flex-shrink-0 px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all duration-200 h-[26px] max-lg:h-11 flex items-center"
+          className="flex-shrink-0 px-2 py-1 text-hud-label text-hud-muted hover:text-hud-accent hover:bg-hud-hover rounded transition-all duration-200 h-[26px] max-lg:h-11 flex items-center"
           title="New DM"
         >
           + DM
@@ -47,14 +47,14 @@ export const TabBar: React.FC<TabBarProps> = ({
             return (
               <div
                 key={tab.id}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-all duration-200 flex-shrink-0 h-[26px] max-lg:h-11 ${
-                  isActive ? "bg-gold/20 text-gold" : "text-gold/70 hover:text-gold hover:bg-gold/10"
+                className={`flex items-center gap-1 px-2 py-1 rounded text-hud-label transition-all duration-200 flex-shrink-0 h-[26px] max-lg:h-11 ${
+                  isActive ? "bg-hud-chosen text-hud-accent" : "text-hud-muted hover:text-hud-accent hover:bg-hud-hover"
                 }`}
               >
                 <button onClick={() => onTabClick(tab.id)} className="flex items-center gap-1 max-lg:h-11">
                   <span>{tab.label}</span>
                   {tab.unreadCount > 0 && (
-                    <span className="animate-pulse bg-red-500 text-white text-xxs px-1.5 py-0.5 bg-red/30 rounded-full">
+                    <span className="animate-pulse bg-red-500 text-hud-ink text-hud-label px-1.5 py-0.5 bg-red/30 rounded-full">
                       {tab.unreadCount}
                     </span>
                   )}
@@ -62,7 +62,7 @@ export const TabBar: React.FC<TabBarProps> = ({
                 {tab.closeable !== false && (
                   <button
                     onClick={() => onTabClose(tab.id)}
-                    className="ml-1 text-gold/50 hover:text-gold transition-colors text-2xl leading-none max-lg:flex max-lg:h-11 max-lg:w-8 max-lg:items-center max-lg:justify-center"
+                    className="ml-1 text-hud-cue hover:text-hud-accent transition-colors text-hud-display leading-none max-lg:flex max-lg:h-11 max-lg:w-8 max-lg:items-center max-lg:justify-center"
                     title="Close tab"
                   >
                     <SemanticIcon name="close" className="h-4 w-4" />
@@ -74,10 +74,10 @@ export const TabBar: React.FC<TabBarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-1 flex-shrink-0 border-l border-gold/30 pl-2">
+      <div className="flex items-center gap-1 flex-shrink-0 border-l border-hud-line pl-2">
         <button
           onClick={onSave}
-          className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all max-lg:min-h-11 max-lg:min-w-11"
+          className="px-2 py-1 text-hud-label text-hud-muted hover:text-hud-accent hover:bg-hud-hover rounded transition-all max-lg:min-h-11 max-lg:min-w-11"
           title="Save chat to file"
         >
           💾
@@ -86,7 +86,7 @@ export const TabBar: React.FC<TabBarProps> = ({
           <>
             <button
               onClick={onToggleExpand}
-              className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
+              className="px-2 py-1 text-hud-label text-hud-muted hover:text-hud-accent hover:bg-hud-hover rounded transition-all"
               title={isExpanded ? "Collapse" : "Expand"}
             >
               {isExpanded ? (
@@ -97,7 +97,7 @@ export const TabBar: React.FC<TabBarProps> = ({
             </button>
             <button
               onClick={onMinimize}
-              className="px-2 py-1 text-xs text-gold/70 hover:text-gold hover:bg-gold/10 rounded transition-all"
+              className="px-2 py-1 text-hud-label text-hud-muted hover:text-hud-accent hover:bg-hud-hover rounded transition-all"
               title="Minimize chat"
             >
               <SemanticIcon name="minus" className="w-4 h-4" />

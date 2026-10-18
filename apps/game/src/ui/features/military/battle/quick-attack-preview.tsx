@@ -9,12 +9,10 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
-import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   activeCombatRules,
   configManager,
@@ -46,6 +44,7 @@ import {
   type ID,
   type Troops,
 } from "@bibliothecadao/types";
+import { TierChip } from "../utils/tier-chip";
 
 interface ActorSummary {
   type: ActorType;
@@ -432,7 +431,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       size="md"
       onClick={handleShowDetails}
       forceUppercase={false}
-      className={cn("px-3 py-1 text-xs tracking-wide", extraClassName)}
+      className={cn("px-3 py-1 text-hud-label tracking-wide", extraClassName)}
     >
       Details
     </Button>
@@ -441,17 +440,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const casualtyLine = (label: string, side: SideRange) => {
     const survival = survivalOf(side);
     return (
-      <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+      <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
         <div className="flex items-center justify-between">
-          <span className={HUD_LABEL}>{label}</span>
+          <span className="text-hud-label text-hud-muted">{label}</span>
           <span
             className={cn(
-              HUD_CUE,
-              survival === "Eliminated"
-                ? "text-red-300"
-                : survival === "Survives"
-                  ? "text-emerald-300"
-                  : "text-amber-300",
+              "text-hud-label text-hud-cue",
+              survival === "Eliminated" ? "text-hud-bad" : survival === "Survives" ? "text-hud-good" : "text-hud-warn",
             )}
           >
             {survival}
@@ -459,12 +454,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         </div>
         <div className="mt-1 flex items-center justify-between gap-3">
           <span className="flex items-center gap-1">
-            <span className={HUD_CUE}>Losses</span>
-            <span className={HUD_VALUE}>{formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}</span>
+            <span className="text-hud-label text-hud-cue">Losses</span>
+            <span className="text-hud-strong">
+              {formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}
+            </span>
           </span>
           <span className="flex items-center gap-1">
-            <span className={HUD_CUE}>Remaining</span>
-            <span className={HUD_VALUE}>
+            <span className="text-hud-label text-hud-cue">Remaining</span>
+            <span className="text-hud-strong">
               {formatAcross(side.worst.remaining, side.best.remaining, formatTroopValue)}
             </span>
           </span>
@@ -476,13 +473,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
-    <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-gold">
+    <div className="w-[280px] max-w-[85vw] px-3 py-2.5 text-hud-accent">
       <div className="mb-1.5 flex items-start justify-between gap-2">
-        <span className={cn("min-w-0 break-words", HUD_LABEL)}>{title}</span>
+        <span className={cn("min-w-0 break-words", "text-hud-label text-hud-muted")}>{title}</span>
         <button
           type="button"
           aria-label="Close attack preview"
-          className="shrink-0 rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
+          className="shrink-0 rounded-full border border-hud-line bg-transparent p-1 text-hud-accent transition hover:bg-hud-hover"
           onClick={closeSurface}
         >
           <SemanticIcon name="close" className="h-3 w-3" />
@@ -490,13 +487,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       </div>
 
       {isLoading ? (
-        <div className="py-6 text-center text-sm text-gold/70">Loading enemy intel...</div>
+        <div className="py-6 text-center text-hud-body text-hud-muted">Loading enemy intel...</div>
       ) : !targetData ? (
-        <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
+        <div className="py-6 text-center text-hud-body text-hud-muted">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
           {rollsDice && (
-            <p className="text-xs text-gold/70">
+            <p className="text-hud-label text-hud-muted">
               Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
             </p>
           )}
@@ -506,11 +503,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               <>
                 {casualtyLine("Your forces", attackerSide)}
                 {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
-                {fightCost && <p className={HUD_CUE}>{fightCost}</p>}
+                {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
               </>
             )
           ) : (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
+            <div className="rounded-md border border-hud-good bg-emerald-900/20 px-3 py-2 text-hud-body text-hud-good">
               {rangedClaimBlocked
                 ? "No defending troops. Move adjacent to claim this structure."
                 : "No defending troops. You can claim without resistance."}
@@ -518,33 +515,26 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           )}
 
           {isStructureTarget && totalGuardCount >= 1 && (
-            <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+            <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
               <div className="flex items-center justify-between">
-                <span className={HUD_LABEL}>Defenders</span>
-                <span className={HUD_CUE}>Post Fight</span>
+                <span className="text-hud-label text-hud-muted">Defenders</span>
+                <span className="text-hud-label text-hud-cue">Post Fight</span>
               </div>
               <ul className="mt-1.5 space-y-1">
                 {defenderSlots.map((slot, index) => (
                   <li key={index} className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
-                        getTierStyle(slot.tier),
-                      )}
-                    >
-                      {slot.tier}
-                    </span>
+                    <TierChip tier={slot.tier} />
                     <ResourceIcon withTooltip={false} resource={slot.resourceId} size="sm" className="shrink-0" />
                     <span
                       className={cn(
                         "tabular-nums",
-                        HUD_VALUE,
-                        slot.eliminated && "text-red-300 line-through decoration-red-300/60",
+                        "text-hud-strong",
+                        slot.eliminated && "text-hud-bad line-through decoration-red-300/60",
                       )}
                     >
                       {formatTroopValue(slot.remaining)}
                     </span>
-                    {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
+                    {slot.isActive && <span className={cn("ml-auto", "text-hud-label text-hud-cue")}>Active</span>}
                   </li>
                 ))}
               </ul>
@@ -552,13 +542,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           )}
 
           {attackDisabled && (
-            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
+            <div className="rounded-md border border-hud-bad bg-red-900/20 px-3 py-2 text-hud-label text-hud-bad">
               <span>{attackButtonLabel}</span>
               {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
+                <div className="mt-1 text-hud-label text-hud-muted">
+                  {formatTime(attackerCooldownRemaining)} remaining
+                </div>
               )}
               {isLowStamina && (
-                <div className="mt-1 text-[11px] text-gold/70">
+                <div className="mt-1 text-hud-label text-hud-muted">
                   <div>
                     Current: {attackerStaminaValue ?? "—"} / Required: {requiredAttackStamina}
                   </div>
@@ -571,20 +563,20 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       )}
 
       {canGarrison && (
-        <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+        <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-hud-line bg-hud-well px-3 py-2">
           <Checkbox
             enabled={garrisonEnabled}
             onClick={() => setGarrisonEnabled((enabled) => !enabled)}
             text="Garrison survivors"
           />
-          <span className={cn("tabular-nums", HUD_VALUE)}>{formatTroopValue(garrisonTroopCount)}</span>
+          <span className={cn("tabular-nums", "text-hud-strong")}>{formatTroopValue(garrisonTroopCount)}</span>
         </div>
       )}
 
       {certainLoss && (
         <p
           role="status"
-          className="modal-no-drag mt-2 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-sm text-red-200"
+          className="modal-no-drag mt-2 rounded-md border border-hud-bad bg-red-500/10 px-3 py-1.5 text-hud-body text-hud-bad"
         >
           Certain loss: your army is wiped out at any roll
           {survivalAdvice ? ` · ${survivalAdvice}` : ""}.
@@ -599,7 +591,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           isLoading={isSubmitting}
           onClick={handlePrimaryAction}
           forceUppercase={false}
-          className="px-3 py-1 text-xs tracking-wide"
+          className="px-3 py-1 text-hud-label tracking-wide"
         >
           {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
         </Button>

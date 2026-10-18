@@ -60,17 +60,18 @@ export const DeployRing = ({
           }}
           className={cn(
             "absolute flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center",
+            // Chosen in the primary's gold; open in good, brighter under the pointer; taken in the well; fog faint.
             selected
-              ? "bg-[linear-gradient(180deg,#ffc24a,#e39001)]"
+              ? "bg-hud-gold"
               : tile.open
-                ? "bg-[#5a7a34] hover:bg-[#6f9442]"
+                ? "bg-hud-good opacity-80 hover:opacity-100"
                 : tile.explored
-                  ? "bg-[#2a2013] opacity-60"
-                  : "bg-[#3a4148]",
+                  ? "bg-hud-well"
+                  : "bg-hud-divider",
           )}
         >
           {!tile.explored && (
-            <span aria-hidden className="text-base font-extrabold text-[#a8b0b8]">
+            <span aria-hidden className="text-hud-strong text-hud-cue">
               ?
             </span>
           )}

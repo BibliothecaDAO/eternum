@@ -6,7 +6,7 @@ import { formatTime } from "@bibliothecadao/eternum";
 export const GuardCooldownBadge = ({ seconds, className }: { seconds: number; className?: string }) => (
   <span
     className={cn(
-      "inline-flex items-center gap-1 rounded border border-danger/60 bg-danger/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-danger",
+      "inline-flex items-center gap-1 rounded border border-hud-bad bg-danger/15 px-1.5 py-0.5 text-hud-label uppercase tracking-wide text-hud-bad",
       className,
     )}
     title="This slot was wiped out and is still rebuilding"

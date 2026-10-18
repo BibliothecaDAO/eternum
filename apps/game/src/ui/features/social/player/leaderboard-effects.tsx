@@ -6,14 +6,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EffectIntensity, PlayerEffect, PointDeltas } from "./use-leaderboard-effects";
 
-const CATEGORY_COLORS: Record<keyof PointDeltas, string> = {
-  tilesExploredPoints: "#60a5fa",
-  cratesOpenedPoints: "#c084fc",
-  riftsTakenPoints: "#4ade80",
-  hyperstructuresTakenPoints: "#f97316",
-  hyperstructuresHeldPoints: "#facc15",
-  totalPoints: "#dfaa54",
-};
+/** Points gained float up in the sheet's good, whatever earned them. */
+const GAIN_COLOR = "var(--hud-good)";
 
 interface EffectPosition {
   x: number;
@@ -65,7 +59,7 @@ const PointDeltaEffect = ({ value, color, intensity, position }: PointDeltaEffec
   return (
     <div
       ref={ref}
-      className="absolute text-sm font-bold whitespace-nowrap pointer-events-none"
+      className="absolute text-hud-strong whitespace-nowrap pointer-events-none"
       style={{
         left: position.x,
         top: position.y,
@@ -166,14 +160,14 @@ const RankChangeEffect = ({ change, intensity, position }: RankChangeEffectProps
     };
   }, [isUp, intensity]);
 
-  const baseColor = isUp ? "#4ade80" : "#f87171";
+  const baseColor = isUp ? "var(--hud-good)" : "var(--hud-bad)";
 
   return (
     <div
       ref={ref}
-      className={clsx("absolute flex items-center gap-0.5 font-bold text-sm pointer-events-none", {
-        "text-green-400": isUp,
-        "text-red-400": !isUp,
+      className={clsx("absolute flex items-center gap-0.5 text-hud-strong pointer-events-none", {
+        "text-hud-good": isUp,
+        "text-hud-bad": !isUp,
       })}
       style={{
         left: position.x,
@@ -239,7 +233,7 @@ const EffectRenderer = ({ effect, rect, showTribeDetails }: EffectRendererProps)
         <PointDeltaEffect
           key={key}
           value={pointDeltas[key]}
-          color={CATEGORY_COLORS[key]}
+          color={GAIN_COLOR}
           intensity={pointIntensity}
           position={positions[key]}
         />
@@ -287,7 +281,8 @@ export const LeaderboardEffectsOverlay = ({ effects, rowRefs, showTribeDetails }
   }
 
   return createPortal(
-    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+    // Above every window, so a rank change shows over the leaderboard that caused it.
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 100 }}>
       {Array.from(effects.entries()).map(([address, effect]) => {
         const rect = positions.get(address);
         if (!rect) return null;

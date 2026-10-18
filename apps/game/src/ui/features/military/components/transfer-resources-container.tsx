@@ -401,18 +401,18 @@ export const TransferResourcesContainer = ({
     const displayAvailableCapacityKg = Math.max(0, availableCapacityKg);
 
     return (
-      <div className="p-3 border border-gold/30 rounded-md bg-dark-brown/50">
-        <h4 className="text-lg text-gold font-bold mb-3 text-center">Explorer Capacity</h4>
+      <div className="p-3 border border-hud-line rounded-md bg-hud-well">
+        <h4 className="text-hud-title text-hud-accent mb-3 text-center">Explorer Capacity</h4>
 
         <div className="space-y-2">
           {/* Max Capacity Info */}
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gold/80">Max Capacity:</span>
-            <span className="font-semibold text-gold">{maxCapacityKg.toLocaleString()} kg</span>
+          <div className="flex justify-between items-center text-hud-body">
+            <span className="text-hud-accent">Max Capacity:</span>
+            <span className="text-hud-strong text-hud-accent">{maxCapacityKg.toLocaleString()} kg</span>
           </div>
 
           {/* Capacity Bar */}
-          <div className="relative w-full h-6 bg-dark-brown border border-gold/20 rounded-md overflow-hidden my-1">
+          <div className="relative w-full h-6 bg-hud-well border border-hud-line rounded-md overflow-hidden my-1">
             {/* Current load */}
             <div
               className="absolute top-0 left-0 h-full bg-blue-500/70 flex items-center justify-center"
@@ -420,7 +420,7 @@ export const TransferResourcesContainer = ({
               title={`Current Load: ${currentLoadKg.toLocaleString()} kg`}
             >
               {capacityPercentageForBar > 15 && (
-                <span className="text-xs text-white/90 truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
+                <span className="text-hud-label text-hud-ink truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
               )}
             </div>
             {/* Weight that will be added with the current selection */}
@@ -430,7 +430,7 @@ export const TransferResourcesContainer = ({
               title={`Selected: ${selectedResourcesWeightKg.toLocaleString()} kg`}
             >
               {selectedPercentageForBar > 15 && (
-                <span className="text-xs text-white/90 truncate px-1">
+                <span className="text-hud-label text-hud-ink truncate px-1">
                   {selectedResourcesWeightKg.toLocaleString()} kg
                 </span>
               )}
@@ -441,36 +441,32 @@ export const TransferResourcesContainer = ({
                 className="absolute top-0 right-0 h-full flex items-center justify-end px-2 "
                 style={{ width: `${100 - totalAfterSelectionPercentage}%`, left: `${totalAfterSelectionPercentage}%` }}
               >
-                <span className="text-xs text-gold/70">Empty</span>
+                <span className="text-hud-label text-hud-muted">Empty</span>
               </div>
             )}
           </div>
 
           {/* Detailed Breakdown */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-hud-body">
             <div>
               <span className="text-blue-400/90">Current Load:</span>
-              <span className="font-medium float-right text-white/90">{currentLoadKg.toLocaleString()} kg</span>
+              <span className="float-right text-hud-ink">{currentLoadKg.toLocaleString()} kg</span>
             </div>
             <div>
-              <span className="text-orange-400/90">Selected:</span>
-              <span className="font-medium float-right text-white/90">
-                {selectedResourcesWeightKg.toLocaleString()} kg
-              </span>
+              <span className="text-hud-warn">Selected:</span>
+              <span className="float-right text-hud-ink">{selectedResourcesWeightKg.toLocaleString()} kg</span>
             </div>
             <div>
-              <span className="text-gold/80">After Transfer:</span>
+              <span className="text-hud-accent">After Transfer:</span>
               <span
-                className={`font-medium float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-red-500" : "text-white/90"}`}
+                className={`float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-hud-bad" : "text-hud-ink"}`}
               >
                 {(currentLoadKg + selectedResourcesWeightKg).toLocaleString()} kg
               </span>
             </div>
             <div>
-              <span className="text-green-400/90">Remaining:</span>
-              <span className="font-medium float-right text-white/90">
-                {displayAvailableCapacityKg.toLocaleString()} kg
-              </span>
+              <span className="text-hud-good">Remaining:</span>
+              <span className="float-right text-hud-ink">{displayAvailableCapacityKg.toLocaleString()} kg</span>
             </div>
           </div>
         </div>
@@ -486,16 +482,16 @@ export const TransferResourcesContainer = ({
     return (
       <div
         key={resource.resourceId}
-        className={`p-3 rounded-md border ${isSelected ? "bg-gold/20 border-gold" : "bg-dark-brown border-gold/30"}`}
+        className={`p-3 rounded-md border ${isSelected ? "bg-hud-chosen border-hud-line-strong" : "bg-hud-well border-hud-line"}`}
       >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
-            <span className="ml-2 font-medium">{ResourcesIds[resource.resourceId]}</span>
+            <span className="ml-2">{ResourcesIds[resource.resourceId]}</span>
           </div>
           <button
-            className={`px-3 py-1 rounded-md text-sm ${
-              isSelected ? "bg-red/50 hover:bg-red/70 text-red-300" : "bg-gold/10 hover:bg-gold/20 text-gold"
+            className={`px-3 py-1 rounded-md text-hud-body ${
+              isSelected ? "bg-red/50 hover:bg-red/70 text-hud-bad" : "bg-hud-hover hover:bg-hud-chosen text-hud-accent"
             }`}
             onClick={() => toggleResourceSelection(resource)}
           >
@@ -503,9 +499,9 @@ export const TransferResourcesContainer = ({
           </button>
         </div>
 
-        <div className="flex items-center text-sm text-gold/80 mb-2 gap-2">
+        <div className="flex items-center text-hud-body text-hud-accent mb-2 gap-2">
           <span>{resourceWeight} kg per unit</span>
-          <span className="text-gold/50">•</span>
+          <span className="text-hud-cue">•</span>
           <span>{displayAmount.toLocaleString()} available</span>
         </div>
 
@@ -516,11 +512,11 @@ export const TransferResourcesContainer = ({
                 max={() => 0}
                 label="None"
                 onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
+                className="px-2 py-1 text-hud-label bg-hud-hover hover:bg-hud-chosen rounded-md text-hud-accent border border-hud-line"
                 size="xs"
               />
               <button
-                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
+                className="px-2 py-1 text-hud-label bg-hud-hover hover:bg-hud-chosen rounded-md"
                 onClick={() =>
                   handleResourceAmountChange(
                     resource.resourceId,
@@ -536,10 +532,10 @@ export const TransferResourcesContainer = ({
                 max={displayAmount}
                 value={resourceAmounts[resource.resourceId] || 0}
                 onChange={(e) => handleResourceAmountChange(resource.resourceId, parseInt(e.target.value))}
-                className="w-24 px-2 py-1 bg-dark-brown border border-gold/30 rounded-md text-gold text-center"
+                className="w-24 px-2 py-1 bg-hud-well border border-hud-line rounded-md text-hud-accent text-center"
               />
               <button
-                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md"
+                className="px-2 py-1 text-hud-label bg-hud-hover hover:bg-hud-chosen rounded-md"
                 onClick={() =>
                   handleResourceAmountChange(
                     resource.resourceId,
@@ -552,7 +548,7 @@ export const TransferResourcesContainer = ({
               <MaxButton
                 max={() => displayAmount}
                 onChange={(value) => handleResourceAmountChange(resource.resourceId, parseInt(value))}
-                className="px-2 py-1 text-xs bg-gold/10 hover:bg-gold/20 rounded-md text-gold border border-gold/30"
+                className="px-2 py-1 text-hud-label bg-hud-hover hover:bg-hud-chosen rounded-md text-hud-accent border border-hud-line"
                 size="xs"
               />
             </div>
@@ -605,13 +601,13 @@ export const TransferResourcesContainer = ({
             Unselect All
           </Button>
         </div>
-        <div className="text-xs text-gold/70 font-semibold whitespace-nowrap">
+        <div className="text-hud-label text-hud-muted whitespace-nowrap">
           {fromLabel} → {toLabel}
         </div>
       </div>
 
       {availableResources.length === 0 ? (
-        <p className="text-gold/60">No relics available to transfer.</p>
+        <p className="text-hud-muted">No relics available to transfer.</p>
       ) : showExplorerCapacity ? (
         <div className="h-full grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="sticky top-0 z-10 sm:col-span-1">{renderExplorerCapacity()}</div>

@@ -92,14 +92,14 @@ export const HelpContainer = ({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-gold/25 bg-dark-brown/60 shadow-lg overflow-hidden">
-        <div className="flex border-b border-gold/20 bg-dark-brown/70">
+      <div className="rounded-xl border border-hud-line bg-hud-well shadow-lg overflow-hidden">
+        <div className="flex border-b border-hud-line bg-hud-well">
           {transfers.includes("troops") && (
             <button
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-hud-strong uppercase tracking-wide border-b-2 transition-all duration-200 ${
                 transferType === TransferType.Troops
-                  ? "text-gold border-gold bg-gold/10"
-                  : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+                  ? "text-hud-accent border-hud-line-strong bg-hud-hover"
+                  : "text-hud-muted border-transparent hover:text-hud-accent hover:bg-hud-hover"
               }`}
               onClick={() => setTransferType(TransferType.Troops)}
             >
@@ -109,10 +109,10 @@ export const HelpContainer = ({
           )}
           {transfers.includes("relics") && (
             <button
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-hud-strong uppercase tracking-wide border-b-2 transition-all duration-200 ${
                 transferType === TransferType.Relics
-                  ? "text-gold border-gold bg-gold/10"
-                  : "text-gold/60 border-transparent hover:text-gold/90 hover:bg-gold/5"
+                  ? "text-hud-accent border-hud-line-strong bg-hud-hover"
+                  : "text-hud-muted border-transparent hover:text-hud-accent hover:bg-hud-hover"
               }`}
               onClick={() => setTransferType(TransferType.Relics)}
             >
@@ -122,7 +122,7 @@ export const HelpContainer = ({
           )}
         </div>
 
-        <div className="bg-dark-brown/40 p-4">
+        <div className="bg-hud-well p-4">
           {transferType === TransferType.Relics ? (
             <TransferResourcesContainer
               selectedEntityId={currentSelected.id}

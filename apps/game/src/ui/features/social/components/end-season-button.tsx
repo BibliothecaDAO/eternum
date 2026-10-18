@@ -116,8 +116,8 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
             className="w-[500px] max-h-[calc(100vh-7rem)]"
           >
             <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-              <div className="text-6xl">🏆</div>
-              <h2 className="text-2xl font-bold text-gold">You have conquered Eternum Season 1!</h2>
+              <div className="text-hud-display">🏆</div>
+              <h2 className="text-hud-display text-hud-accent">You have conquered Eternum Season 1!</h2>
               <Button variant="primary" onClick={() => setShowCongratsPopup(false)} className="mt-4">
                 Close
               </Button>

@@ -125,8 +125,8 @@ export const CompactDefenseDisplay = ({
   const hasSlotInfo = slotCapForDisplay !== undefined;
   const showHeaderRow = hasSlotInfo || totalTroopCount > 0;
 
-  const labelTextClass = isBanner ? "text-[9px]" : "text-[10px]";
-  const valueTextClass = isBanner ? "text-[10px]" : "text-[11px]";
+  const labelTextClass = isBanner ? "text-hud-label" : "text-hud-label";
+  const valueTextClass = isBanner ? "text-hud-label" : "text-hud-label";
   const slotWidthClass = "w-full";
   const slotGapClass = isBanner ? "gap-0" : "gap-1.5";
   const slotHeightClass = isBanner ? "min-h-[36px]" : "min-h-[48px]";
@@ -171,7 +171,7 @@ export const CompactDefenseDisplay = ({
       ? canOpenPicker && hasAvailableDefenseSlot && cooldownSeconds === 0
       : canOpenPicker;
     const interactiveClasses = isSlotInteractive
-      ? "cursor-pointer hover:border-gold/50 hover:bg-gold/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+      ? "cursor-pointer hover:border-hud-line-strong hover:bg-hud-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hud-line-strong"
       : "cursor-default";
     const onSlotClick = (event: { currentTarget: HTMLDivElement }) => {
       if (!isSlotInteractive) return;
@@ -190,8 +190,8 @@ export const CompactDefenseDisplay = ({
         className={cn(
           baseSlotClasses,
           isEmptySlot
-            ? "justify-center border border-dashed border-gold/30 bg-brown-900/20"
-            : "border border-gold/20 bg-brown-900/90 whitespace-nowrap",
+            ? "justify-center border border-dashed border-hud-line bg-hud-well"
+            : "border border-hud-line bg-hud-well whitespace-nowrap",
           interactiveClasses,
           "w-full",
           highlightedSlot === guardSlotKey && OVERLAY_SURFACE_ACTIVE,
@@ -213,12 +213,12 @@ export const CompactDefenseDisplay = ({
           <GuardCooldownBadge seconds={cooldownSeconds} />
         ) : isEmptySlot ? (
           <>
-            {isSlotInteractive && <SemanticIcon name="plus" className="h-3.5 w-3.5 text-gold" />}
+            {isSlotInteractive && <SemanticIcon name="plus" className="h-3.5 w-3.5 text-hud-accent" />}
             <span
               className={cn(
                 labelTextClass,
-                isSlotInteractive ? "text-gold" : "text-gold/60",
-                "font-semibold uppercase tracking-wide",
+                isSlotInteractive ? "text-hud-accent" : "text-hud-muted",
+                "text-hud-strong uppercase tracking-wide",
               )}
             >
               {isSlotInteractive ? "Add" : isBanner ? "Empty" : "Empty Slot"}
@@ -234,9 +234,7 @@ export const CompactDefenseDisplay = ({
                 size={isBanner ? "xs" : "sm"}
                 className="shrink-0"
               />
-              <span className={cn(valueTextClass, "text-gold/90 font-medium truncate")}>
-                {currencyFormat(troopCount, 0)}
-              </span>
+              <span className={cn(valueTextClass, "text-hud-accent truncate")}>{currencyFormat(troopCount, 0)}</span>
             </div>
             <GuardStaminaBar current={staminaCurrent} max={staminaMax} />
           </div>
@@ -250,7 +248,7 @@ export const CompactDefenseDisplay = ({
         {!isBanner && (
           <div className="flex items-center gap-1">
             <SemanticIcon name="defend" size={32} />
-            <span className={cn(labelTextClass, "font-semibold text-gold/80")}>{slotDisplayNumber}</span>
+            <span className={cn(labelTextClass, "text-hud-strong text-hud-accent")}>{slotDisplayNumber}</span>
           </div>
         )}
       </div>
@@ -267,12 +265,14 @@ export const CompactDefenseDisplay = ({
             {hasSlotInfo && (
               <div
                 className={cn(
-                  "flex items-center justify-between bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1",
+                  "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
                   slotWidthClass,
                 )}
               >
-                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Slots</span>
-                <span className={cn(valueTextClass, "text-gold font-bold")}>
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
+                  Slots
+                </span>
+                <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
                   {effectiveSlotsUsed}/{slotCapForDisplay}
                 </span>
               </div>
@@ -280,12 +280,16 @@ export const CompactDefenseDisplay = ({
             {totalTroopCount > 0 && (
               <div
                 className={cn(
-                  "flex items-center justify-between bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1",
+                  "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
                   slotWidthClass,
                 )}
               >
-                <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>Total</span>
-                <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
+                <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
+                  Total
+                </span>
+                <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
+                  {currencyFormat(totalTroopCount, 0)}
+                </span>
               </div>
             )}
           </div>
@@ -304,14 +308,14 @@ export const CompactDefenseDisplay = ({
           {hasSlotInfo && (
             <div
               className={cn(
-                "flex items-center justify-between bg-brown-900/80 border border-gold/25 rounded-md px-2 py-0.5 gap-1",
+                "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
                 slotWidthClass,
               )}
             >
-              <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
+              <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
                 {isBanner ? "Slots" : "Defense Slots"}
               </span>
-              <span className={cn(valueTextClass, "text-gold font-bold")}>
+              <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
                 {effectiveSlotsUsed}/{slotCapForDisplay}
               </span>
             </div>
@@ -319,14 +323,16 @@ export const CompactDefenseDisplay = ({
           {totalTroopCount > 0 && (
             <div
               className={cn(
-                "flex items-center justify-between bg-brown-900/90 border border-gold/30 rounded-md px-2 py-0.5 gap-1",
+                "flex items-center justify-between bg-hud-well border border-hud-line rounded-md px-2 py-0.5 gap-1",
                 slotWidthClass,
               )}
             >
-              <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70 font-semibold")}>
+              <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted text-hud-strong")}>
                 {isBanner ? "Total" : "Total Troops"}
               </span>
-              <span className={cn(valueTextClass, "text-gold font-bold")}>{currencyFormat(totalTroopCount, 0)}</span>
+              <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
+                {currencyFormat(totalTroopCount, 0)}
+              </span>
             </div>
           )}
         </div>
@@ -341,17 +347,17 @@ export const CompactDefenseDisplay = ({
               slotWidthClass,
             )}
           >
-            <span className={cn(labelTextClass, "uppercase tracking-wide text-gold/70")}>Incoming</span>
+            <span className={cn(labelTextClass, "uppercase tracking-wide text-hud-muted")}>Incoming</span>
             <div
-              className="rounded-full border border-gold/40 flex items-center justify-center bg-brown-900/50"
+              className="rounded-full border border-hud-line-strong flex items-center justify-center bg-hud-well"
               style={{
                 width: isBanner ? "36px" : "40px",
                 height: isBanner ? "36px" : "40px",
               }}
             >
-              <SemanticIcon name="arrow-left" className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-gold/80")} />
+              <SemanticIcon name="arrow-left" className={cn(isBanner ? "w-4 h-4" : "w-5 h-5", "text-hud-accent")} />
             </div>
-            <span className={cn(isBanner ? "text-[9px]" : "text-[10px]", "text-gold/60")}>Enemy</span>
+            <span className={cn(isBanner ? "text-hud-label" : "text-hud-label", "text-hud-muted")}>Enemy</span>
           </div>
         )}
       </div>

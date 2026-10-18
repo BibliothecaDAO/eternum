@@ -1,6 +1,4 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import Button from "@/ui/design-system/atoms/button";
-import clsx from "clsx";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
 interface ActionFooterProps {
   armyType: boolean;
@@ -24,36 +22,26 @@ export const ActionFooter = ({
   embedded = false,
 }: ActionFooterProps) => {
   const reason = isDisabled ? blockedReason : null;
+  // A grid stretches the sheet's one primary to the form's width.
   const button = (
-    <Button
-      variant="gold"
-      onClick={onSubmit}
-      disabled={isDisabled}
-      isLoading={isLoading}
-      className={clsx(
-        "w-full py-3 text-sm font-extrabold transition-all duration-200 rounded-lg",
-        "bg-gradient-to-br from-gold to-gold/80 hover:from-gold/90 hover:to-gold/70",
-        "shadow-xl hover:shadow-xl hover:shadow-gold/50",
-        "border-2 border-gold/60 hover:border-gold/80",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-md",
-      )}
-    >
-      <div className="flex items-center justify-center gap-2">
-        {armyType ? (
-          <SemanticIcon name="people" className="w-5 h-5" />
-        ) : (
-          <SemanticIcon name="defend" className="w-5 h-5" />
-        )}
-        <span className="drop-shadow-sm">{label}</span>
-      </div>
-    </Button>
+    <div className="grid">
+      <HudButton
+        kind="primary"
+        icon={armyType ? "people" : "defend"}
+        onClick={onSubmit}
+        disabled={isDisabled || isLoading}
+        aria-busy={isLoading}
+      >
+        {label}
+      </HudButton>
+    </div>
   );
 
   const action = (
     <>
       {button}
       {/* Always one line tall, empty when the button can go: the button never moves as its reason comes and goes. */}
-      <p className="mt-1 h-5 truncate px-1 text-xs leading-5 text-gold/70" role="status" title={reason ?? undefined}>
+      <p className="mt-1 h-5 truncate px-1 text-hud-label text-hud-muted" role="status" title={reason ?? undefined}>
         {reason}
       </p>
     </>
@@ -61,7 +49,5 @@ export const ActionFooter = ({
 
   if (embedded) return action;
 
-  return (
-    <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">{action}</div>
-  );
+  return <div className="p-1.5 rounded-xl border border-hud-line">{action}</div>;
 };

@@ -1,4 +1,3 @@
-import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAcross, survivalOf, type SideRange } from "../battle-range";
 
@@ -21,28 +20,31 @@ export const OutcomeStrip = ({ side, total, staminaBefore, staminaAfter }: Outco
   const barTone = eliminated ? "bg-red-500" : ratio < 0.5 ? "bg-amber-400" : "bg-emerald-500";
 
   return (
-    <div className="mt-3 flex flex-col gap-2 border-t border-gold/15 pt-3">
+    <div className="mt-3 flex flex-col gap-2 border-t border-hud-divider pt-3">
       <div className="flex items-center justify-between">
-        <span className={HUD_LABEL}>Losses</span>
-        <span className={cn(HUD_VALUE, "text-red-300")}>
+        <span className="text-hud-label text-hud-muted">Losses</span>
+        <span className={cn("text-hud-strong", "text-hud-bad")}>
           −{formatAcross(side.worst.losses, side.best.losses, formatInt)}{" "}
-          <span className={HUD_CUE}>({formatAcross(side.worst.losses, side.best.losses, percentOf(total))}%)</span>
+          <span className="text-hud-label text-hud-cue">
+            ({formatAcross(side.worst.losses, side.best.losses, percentOf(total))}%)
+          </span>
         </span>
       </div>
       <div className="flex items-center justify-between">
-        <span className={HUD_LABEL}>After</span>
-        <span className={cn(HUD_VALUE, eliminated && "text-red-300")}>
+        <span className="text-hud-label text-hud-muted">After</span>
+        <span className={cn("text-hud-strong", eliminated && "text-hud-bad")}>
           {formatAcross(side.worst.remaining, side.best.remaining, formatInt)}{" "}
-          <span className={HUD_CUE}>/ {formatInt(total)}</span>
+          <span className="text-hud-label text-hud-cue">/ {formatInt(total)}</span>
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-sm bg-black/40">
+      <div className="h-2 overflow-hidden rounded-sm bg-hud-well">
         <div className={cn("h-full transition-all", barTone)} style={{ width: `${ratio * 100}%` }} />
       </div>
       <div className="flex items-center justify-between">
-        <span className={HUD_LABEL}>Stamina</span>
-        <span className={HUD_VALUE}>
-          {Math.round(staminaBefore)} <span className={HUD_CUE}>→</span> {Math.round(Math.max(0, staminaAfter))}
+        <span className="text-hud-label text-hud-muted">Stamina</span>
+        <span className="text-hud-strong">
+          {Math.round(staminaBefore)} <span className="text-hud-label text-hud-cue">→</span>{" "}
+          {Math.round(Math.max(0, staminaAfter))}
         </span>
       </div>
     </div>

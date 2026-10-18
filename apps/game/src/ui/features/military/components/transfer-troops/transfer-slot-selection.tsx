@@ -69,8 +69,8 @@ export const TransferSlotSelection = ({
     if (!troop) {
       return (
         <div className="flex flex-col gap-1">
-          <div className="text-sm font-bold text-gold/70 leading-none">Empty</div>
-          <div className="text-xxs uppercase tracking-wide text-gold/50">No troops</div>
+          <div className="text-hud-strong text-hud-muted leading-none">Empty</div>
+          <div className="text-hud-label uppercase tracking-wide text-hud-cue">No troops</div>
         </div>
       );
     }
@@ -82,16 +82,18 @@ export const TransferSlotSelection = ({
       <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-2">
           <TroopBadge category={troop.category} tier={troop.tier} emphasize />
-          <span className="text-sm font-bold text-gold leading-none">{countLabel}</span>
+          <span className="text-hud-strong text-hud-accent leading-none">{countLabel}</span>
         </div>
-        <div className="text-xxs uppercase tracking-wide text-gold/70">{String(troop.category)}</div>
-        <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} className="mt-1" />
+        <div className="text-hud-label uppercase tracking-wide text-hud-muted">{String(troop.category)}</div>
+        <span className="mt-1 block">
+          <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} />
+        </span>
       </div>
     );
   };
 
   return (
-    <div className="rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20 p-2">
+    <div className="rounded-xl border border-hud-line p-2">
       <div className="grid grid-cols-2 gap-1.5">
         {balanceOption?.visible && balanceOption.troop && (
           <button
@@ -101,16 +103,18 @@ export const TransferSlotSelection = ({
             className={clsx(
               "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
               selectedSlot === balanceOption.key
-                ? "border-gold bg-gold/10"
-                : "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50",
-              balanceOption.disabled && "opacity-60 cursor-not-allowed bg-brown/5 border-brown/30",
+                ? "border-hud-line-strong bg-hud-hover"
+                : "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong",
+              balanceOption.disabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
             )}
           >
-            <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">0</div>
-            <div className="text-xs font-bold truncate text-gold/80">Balance</div>
+            <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
+              0
+            </div>
+            <div className="text-hud-label truncate text-hud-accent">Balance</div>
             {renderTroopPill(balanceOption.troop)}
             {balanceOption.disabledReason && (
-              <span className="self-start border border-danger/60 bg-danger/10 text-danger px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide font-semibold flex items-center gap-1.5">
+              <span className="self-start border border-hud-bad bg-danger/10 text-hud-bad px-1.5 py-0.5 rounded text-hud-label uppercase tracking-wide flex items-center gap-1.5">
                 <SemanticIcon name="warning" className="w-3 h-3" />
                 Explorer not owned by this structure
               </span>
@@ -146,12 +150,12 @@ export const TransferSlotSelection = ({
           const isFrontline = frontlineSlot === slotId;
           const isFinalLine = lastGuardSlot === slotId;
           const orderBadgeClass = clsx(
-            "border rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wide font-semibold",
+            "border rounded px-1.5 py-0.5 text-hud-label uppercase tracking-wide",
             isFrontline
-              ? "border-danger/50 bg-danger/10 text-danger/80"
+              ? "border-hud-bad bg-danger/10 text-hud-bad"
               : isFinalLine
-                ? "border-gold/40 bg-gold/10 text-gold/80"
-                : "border-gold/20 bg-dark-brown/60 text-gold/60",
+                ? "border-hud-line-strong bg-hud-hover text-hud-accent"
+                : "border-hud-line bg-hud-well text-hud-muted",
           );
           const orderBadgeText = (() => {
             if (isFrontline) return "Hit first";
@@ -163,13 +167,13 @@ export const TransferSlotSelection = ({
 
           const cardClasses = clsx(
             "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
-            isActive && !isMismatch && !isSlotDisabled && "border-gold bg-gold/10",
+            isActive && !isMismatch && !isSlotDisabled && "border-hud-line-strong bg-hud-hover",
             !isActive &&
               !isMismatch &&
               !isSlotDisabled &&
-              "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50",
-            isSlotDisabled && "opacity-60 cursor-not-allowed bg-brown/5 border-brown/30",
-            isMismatch && "border-danger/50 hover:border-danger/60",
+              "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong",
+            isSlotDisabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
+            isMismatch && "border-hud-bad hover:border-hud-bad",
           );
 
           return (
@@ -185,11 +189,11 @@ export const TransferSlotSelection = ({
               aria-pressed={isActive}
               className={cardClasses}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">
+              <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
                 {displayedSlotNumber}
               </div>
 
-              <div className="text-xs font-bold truncate text-gold/80">{slotLabel}</div>
+              <div className="text-hud-label truncate text-hud-accent">{slotLabel}</div>
 
               {renderTroopPill(troopInfo)}
 

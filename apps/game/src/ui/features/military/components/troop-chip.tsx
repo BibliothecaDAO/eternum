@@ -23,22 +23,22 @@ export const TroopChip = ({
     xs: {
       padding: "px-1.5 py-0.5",
       gap: "gap-1",
-      text: "text-[10px]",
+      text: "text-hud-label",
     },
     sm: {
       padding: "px-2 py-1",
       gap: "gap-2",
-      text: "text-xs",
+      text: "text-hud-label",
     },
     md: {
       padding: "px-2.5 py-1.5",
       gap: "gap-2",
-      text: "text-sm",
+      text: "text-hud-body",
     },
     lg: {
       padding: "px-3 py-2",
       gap: "gap-3",
-      text: "text-base",
+      text: "text-hud-body",
     },
   };
 
@@ -47,9 +47,9 @@ export const TroopChip = ({
   return (
     <div className={`relative w-full ${className}`}>
       <div
-        className={`${currentSize.padding} bg-gold/10 h-full flex items-center ${
+        className={`${currentSize.padding} bg-hud-hover h-full flex items-center ${
           direction === "row" ? "flex-row" : "flex-col"
-        } ${currentSize.gap} border border-gold/10`}
+        } ${currentSize.gap} border border-hud-divider`}
       >
         <TroopTierChip tier={troops.tier} size={size} />
         <ResourceIcon
@@ -59,7 +59,7 @@ export const TroopChip = ({
         />
         <div
           className={`${
-            Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"
+            Number(troops.count || 0) === 0 ? "text-hud-accent" : negative ? "text-hud-bad" : "text-hud-good"
           } ${currentSize.text} self-center`}
         >
           {Number(troops.count || 0) === 0 ? "" : negative ? "-" : ""}

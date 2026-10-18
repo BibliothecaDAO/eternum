@@ -186,11 +186,11 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       {thread && recipientId && (
-        <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-4 py-2 text-xs">
-          <span className="text-gold/70">{recipientLabel}</span>
+        <header className="flex items-center justify-between gap-2 border-b border-hud-line px-4 py-2 text-hud-label">
+          <span className="text-hud-muted">{recipientLabel}</span>
           <button
             type="button"
-            className="rounded border border-gold/30 px-2 py-0.5 text-gold/80 hover:bg-gold/10"
+            className="rounded border border-hud-line px-2 py-0.5 text-hud-accent hover:bg-hud-hover"
             onClick={() =>
               (isRecipientBlocked
                 ? chatActions.unblockPlayer(recipientId)
@@ -203,7 +203,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
         </header>
       )}
       <div className="flex-1 min-h-0 px-4 py-3">
-        {!thread && <p className="text-sm text-gold/50">Select a conversation to get started.</p>}
+        {!thread && <p className="text-hud-body text-hud-cue">Select a conversation to get started.</p>}
         {thread && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth">
@@ -212,7 +212,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
 
               {thread.isFetchingHistory && (
                 <div className="flex justify-center py-2">
-                  <span className="text-xs text-gold/50">Loading older messages...</span>
+                  <span className="text-hud-label text-hud-cue">Loading older messages...</span>
                 </div>
               )}
 
@@ -226,12 +226,12 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
                         <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
-                          <div className="flex-1 border-t border-gold/20" />
-                          <span className="text-xs text-gold/40">{dateSeparators.get(index)}</span>
-                          <div className="flex-1 border-t border-gold/20" />
+                          <div className="flex-1 border-t border-hud-line" />
+                          <span className="text-hud-label text-hud-cue">{dateSeparators.get(index)}</span>
+                          <div className="flex-1 border-t border-hud-line" />
                         </li>
                       )}
-                      <li className="flex items-start gap-2 text-[13px] leading-snug text-white/90">
+                      <li className="flex items-start gap-2 text-hud-body leading-snug text-hud-ink">
                         <UserAvatar
                           name={displayLabel}
                           address={message.senderId}
@@ -239,20 +239,20 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                           className="mt-0.5 shrink-0"
                         />
                         <p className="min-w-0 flex-1 break-words">
-                          <span className="text-white/30">[{toDisplayTime(message)}]</span>{" "}
-                          <span className="text-gold/90">&lt;{displayLabel}&gt;</span> {message.content}
+                          <span className="text-hud-cue">[{toDisplayTime(message)}]</span>{" "}
+                          <span className="text-hud-accent">&lt;{displayLabel}&gt;</span> {message.content}
                         </p>
                       </li>
                     </Fragment>
                   );
                 })}
                 {thread.messages.length === 0 && (
-                  <li className="text-sm text-gold/50">No messages yet. Say hi to start the conversation!</li>
+                  <li className="text-hud-body text-hud-cue">No messages yet. Say hi to start the conversation!</li>
                 )}
               </ul>
             </div>
             {typing.length > 0 && (
-              <div className="px-4 py-1 text-xs text-gold/50 italic">
+              <div className="px-4 py-1 text-hud-label text-hud-cue italic">
                 {typing.length === 1 ? "Someone is" : `${typing.length} people are`} typing
                 <span className="animate-pulse">...</span>
               </div>

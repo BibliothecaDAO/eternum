@@ -195,7 +195,7 @@ export const MergedResourcePanel = memo(
               resource={resourceId}
               isProducing={Boolean(item?.isProducing)}
               timeRemainingSeconds={effectiveRemaining}
-              size="sm"
+              size="md"
               showTooltip
               buildings={item?.totalBuildings ?? 0}
               amount={balanceLabel}

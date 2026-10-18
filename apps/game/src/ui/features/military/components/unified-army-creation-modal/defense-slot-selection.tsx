@@ -1,6 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ResourceIcon } from "@/ui/design-system/molecules";
-import { getTierStyle } from "@/ui/utils/tier-styles";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -9,7 +8,9 @@ import { useMemo } from "react";
 
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
 import { GuardStaminaBar } from "../guard-stamina-bar";
+import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 import type { GuardSummary, SelectedTroopCombo } from "./types";
+import { TierChip } from "../../utils/tier-chip";
 
 interface DefenseSlotSelectionProps {
   guardSlot: number;
@@ -56,7 +57,7 @@ export const DefenseSlotSelection = ({
   const unlockedCapacity = Math.min(sortedSlots.length, maxDefenseSlots);
 
   return (
-    <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
+    <div className="p-1.5 rounded-xl border border-hud-line">
       <div className="grid grid-cols-2 gap-1.5">
         {sortedSlots.map((slot) => {
           const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
@@ -85,14 +86,14 @@ export const DefenseSlotSelection = ({
               className={clsx(
                 "p-2 flex items-center gap-2 text-left transition-all duration-150 rounded border-2 relative",
                 isSelected
-                  ? "border-gold bg-gold/10"
+                  ? "border-hud-line-strong bg-hud-hover"
                   : isSlotSelectable
-                    ? "border-gold/30 bg-brown/5 hover:bg-gold/5 hover:border-gold/50"
-                    : "border-brown/20 bg-brown/5 opacity-40 cursor-not-allowed",
-                hasGuard && !isSlotCompatible && "border-danger/50 hover:border-danger/60",
+                    ? "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong"
+                    : "border-hud-divider bg-hud-well opacity-40 cursor-not-allowed",
+                hasGuard && !isSlotCompatible && "border-hud-bad hover:border-hud-bad",
               )}
             >
-              <div className="absolute top-0.5 right-0.5 bg-gold/30 text-gold text-xxs px-1 rounded font-bold">
+              <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
                 {displayedSlotNumber}
               </div>
 
@@ -103,23 +104,14 @@ export const DefenseSlotSelection = ({
               )}
 
               <div className="flex-1 min-w-0">
-                <div className={clsx("text-xs font-bold truncate", isSelected ? "text-gold" : "text-gold/80")}>
+                <div className={clsx("text-hud-label truncate", isSelected ? "text-hud-accent" : "text-hud-accent")}>
                   {slotName}
                 </div>
                 {hasGuard ? (
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-1.5">
-                      {guardTier && (
-                        <span
-                          className={clsx(
-                            "flex-shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
-                            getTierStyle(guardTier),
-                          )}
-                        >
-                          {guardTier}
-                        </span>
-                      )}
-                      <span className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
+                      {guardTier && <TierChip tier={guardTier} />}
+                      <span className={clsx("text-hud-label", isSelected ? "text-hud-accent" : "text-hud-accent")}>
                         {guardCountLabel}
                       </span>
                     </div>
@@ -128,7 +120,7 @@ export const DefenseSlotSelection = ({
                 ) : cooldownSeconds > 0 ? (
                   <GuardCooldownBadge seconds={cooldownSeconds} />
                 ) : (
-                  <div className={clsx("text-xxs", isSelected ? "text-gold" : "text-gold/60")}>Empty</div>
+                  <div className={clsx("text-hud-label", isSelected ? "text-hud-accent" : "text-hud-muted")}>Empty</div>
                 )}
               </div>
             </button>
@@ -136,17 +128,16 @@ export const DefenseSlotSelection = ({
         })}
       </div>
       {sortedSlots.length === 0 && (
-        <div className="mt-1 text-xxs text-center text-gold/60 uppercase">Upgrade to unlock slots</div>
+        <div className="mt-1 text-hud-label text-center text-hud-muted uppercase">Upgrade to unlock slots</div>
       )}
       {defenseSlotInfoMessage && (
-        <div className="mt-1 bg-brown/15 border-l-2 border-gold rounded px-2 py-0.5 text-xxs text-gold/80 font-medium">
-          {defenseSlotInfoMessage}
+        <div className="mt-1">
+          <HudNotice line={defenseSlotInfoMessage} />
         </div>
       )}
       {defenseSlotErrorMessage && (
-        <div className="mt-1 bg-danger/10 border-l-2 border-danger rounded px-2 py-0.5 flex items-center gap-1.5">
-          <SemanticIcon name="warning" className="w-3 h-3 text-danger flex-shrink-0" />
-          <span className="text-xxs text-danger font-semibold">{defenseSlotErrorMessage}</span>
+        <div className="mt-1">
+          <HudNotice tone="bad" line={defenseSlotErrorMessage} />
         </div>
       )}
     </div>

@@ -1,10 +1,10 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { getTierStyle } from "@/ui/utils/tier-styles";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
+import { TierChip } from "../../utils/tier-chip";
 
 interface TroopSelectionGridProps {
   options: TroopSelectionOption[];
@@ -47,7 +47,7 @@ export const TroopSelectionGrid = ({
       // A column per kind under its name, as the Military window lays them out, its tiers going down.
       <div className="grid grid-cols-3 gap-2 p-1" role="group" aria-label="Available troops">
         {options.map((option) => (
-          <span key={option.type} className="text-center text-xs font-semibold text-gold/80">
+          <span key={option.type} className="text-center text-hud-label text-hud-accent">
             {option.label}
           </span>
         ))}
@@ -70,14 +70,14 @@ export const TroopSelectionGrid = ({
                 disabled={Boolean(reason)}
                 title={reason ?? `${option.label} ${tier.tier}`}
                 className={clsx(
-                  "relative flex min-w-0 flex-col items-center rounded border px-1 pt-3 pb-1 text-xs tabular-nums disabled:grayscale disabled:opacity-40",
-                  isSelected ? "border-gold bg-gold/15" : "border-gold/25",
+                  "relative flex min-w-0 flex-col items-center rounded border px-1 pt-3 pb-1 text-hud-label tabular-nums disabled:grayscale disabled:opacity-40",
+                  isSelected ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line",
                 )}
                 onClick={() => onSelect(option.type, tier.tier)}
               >
-                <span className="absolute top-0.5 right-1 text-[10px]">{tier.tier}</span>
+                <span className="absolute top-0.5 right-1 text-hud-label">{tier.tier}</span>
                 <ResourceIcon resource={tier.resourceId} size="lg" className="!h-10 !w-10" withTooltip={false} />
-                <span className="max-w-full truncate rounded bg-black/40 px-1 text-[10px]">
+                <span className="max-w-full truncate rounded bg-hud-well px-1 text-hud-label">
                   {tier.available.toLocaleString()}
                 </span>
               </button>
@@ -89,13 +89,13 @@ export const TroopSelectionGrid = ({
   }
 
   return (
-    <div className={bare ? "p-1" : "rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm"}>
+    <div className={bare ? "p-1" : "rounded-lg bg-hud-well border border-hud-line p-2.5 shadow-sm"}>
       <div className="grid grid-cols-3 gap-3">
         {options.map((option) => (
           <div key={option.type} className="flex flex-col gap-2">
             {/* Header */}
-            <div className="text-center py-1 border-b border-gold/30">
-              <span className="text-gold text-xs font-bold uppercase tracking-wider">{option.label}</span>
+            <div className="text-center py-1 border-b border-hud-line">
+              <span className="text-hud-accent text-hud-label uppercase tracking-wider">{option.label}</span>
             </div>
 
             {/* Tier Cards */}
@@ -115,21 +115,14 @@ export const TroopSelectionGrid = ({
                       key={`${option.type}-${tierOption.tier}`}
                       className={clsx(
                         "flex items-center gap-2 px-2 py-1.5 rounded-md border transition-all duration-200",
-                        "bg-brown/10 border-brown/30 opacity-50",
+                        "bg-hud-well border-hud-divider opacity-50",
                         !isLockedOption && "cursor-pointer hover:opacity-70",
                       )}
                       onClick={() => !isLockedOption && onSelect(option.type, tierOption.tier)}
                     >
-                      <div
-                        className={clsx(
-                          "flex items-center justify-center px-1 py-0.5 rounded border text-xxs font-bold",
-                          getTierStyle(tierOption.tier),
-                        )}
-                      >
-                        {tierOption.tier}
-                      </div>
+                      <TierChip tier={tierOption.tier} />
                       <ResourceIcon resource={tierOption.resourceId} size="xs" withTooltip={false} />
-                      <span className="text-xs text-gray-600 font-semibold ml-auto">0</span>
+                      <span className="text-hud-label text-hud-cue ml-auto">0</span>
                     </div>
                   );
                 }
@@ -142,10 +135,10 @@ export const TroopSelectionGrid = ({
                       "relative flex flex-col gap-1 p-2 rounded-lg border-2 transition-all duration-200",
                       "cursor-pointer select-none",
                       isSelected
-                        ? "border-gold bg-gradient-to-br from-gold/20 to-gold/10 shadow-lg shadow-gold/30 scale-105"
+                        ? "border-hud-line-strong bg-hud-chosen"
                         : canSelect
-                          ? "border-brown/40 bg-gradient-to-br from-brown/10 to-brown/5 hover:border-gold/50 hover:shadow-md"
-                          : "border-brown/20 bg-brown/5 opacity-60 cursor-not-allowed",
+                          ? "border-hud-divider hover:border-hud-line-strong hover:bg-hud-hover"
+                          : "border-hud-divider bg-hud-well opacity-60 cursor-not-allowed",
                       isLockedOption && "pointer-events-none",
                     )}
                     onClick={() => canSelect && onSelect(option.type, tierOption.tier)}
@@ -153,15 +146,9 @@ export const TroopSelectionGrid = ({
                     {/* Top Row: Badge + Icon + Count */}
                     <div className="flex items-center justify-between gap-1.5 min-w-0">
                       {/* Tier Badge */}
-                      <div
-                        className={clsx(
-                          "flex items-center justify-center px-1 py-0.5 rounded border text-xs font-bold shadow-sm flex-shrink-0",
-                          getTierStyle(tierOption.tier),
-                          isSelected && "shadow-md",
-                        )}
-                      >
-                        {tierOption.tier}
-                      </div>
+                      <span className="flex-shrink-0">
+                        <TierChip tier={tierOption.tier} />
+                      </span>
 
                       {/* Resource Icon */}
                       <div className="flex-shrink-0">
@@ -172,8 +159,8 @@ export const TroopSelectionGrid = ({
                           overflow the narrow card. */}
                       <div
                         className={clsx(
-                          "min-w-0 flex-1 truncate text-right text-sm font-bold tabular-nums",
-                          isSelected ? "text-gold" : "text-gold/90",
+                          "min-w-0 flex-1 truncate text-right text-hud-strong tabular-nums",
+                          "text-hud-ink",
                         )}
                       >
                         {tierOption.available.toLocaleString()}
@@ -182,13 +169,13 @@ export const TroopSelectionGrid = ({
 
                     {/* Selected Pulse Effect */}
                     {isSelected && (
-                      <div className="absolute inset-0 rounded-lg bg-gold/5 animate-pulse pointer-events-none" />
+                      <div className="absolute inset-0 rounded-lg bg-hud-hover animate-pulse pointer-events-none" />
                     )}
 
                     {/* Locked Overlay */}
                     {isLockedOption && (
-                      <div className="absolute inset-0 rounded-lg bg-brown/80 backdrop-blur-sm flex items-center justify-center">
-                        <span className="text-xxs font-bold text-gold/80 uppercase tracking-wide">Locked</span>
+                      <div className="absolute inset-0 rounded-lg bg-hud-well backdrop-blur-sm flex items-center justify-center">
+                        <span className="text-hud-label text-hud-accent uppercase tracking-wide">Locked</span>
                       </div>
                     )}
                   </div>

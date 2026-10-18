@@ -65,7 +65,7 @@ export const GuildListHeader = ({
   return (
     <SortPanel
       className={clsx(
-        "grid gap-x-4 items-center pb-3 border-b border-gold/25 sticky top-0 z-10 bg-brown/80 backdrop-blur-sm px-4",
+        "grid gap-x-4 items-center pb-3 border-b border-hud-line sticky top-0 z-10 bg-hud-well backdrop-blur-sm px-4",
         GUILD_GRID_TEMPLATE,
       )}
     >
@@ -76,12 +76,12 @@ export const GuildListHeader = ({
           sortKey={sortKey}
           activeSort={activeSort}
           className={clsx(
-            "w-full gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] transition-colors hover:text-amber-200",
+            "w-full gap-2 text-hud-label uppercase tracking-[0.16em] transition-colors hover:text-hud-warn",
             align,
           )}
           classNameCaret="w-2.5 h-2.5"
-          activeClassName="text-amber-200"
-          inactiveClassName="text-gold/70"
+          activeClassName="text-hud-warn"
+          inactiveClassName="text-hud-muted"
           onChange={(_sortKey, _sort) => {
             setActiveSort({
               sortKey: _sortKey,
@@ -98,40 +98,43 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
   return (
     <div
       className={clsx("flex w-full transition-colors duration-200 mb-1 rounded-md overflow-hidden group", {
-        "border border-gold/40 bg-gold/15 hover:bg-gold/20": guild.isMember,
-        "border border-transparent bg-dark/40 hover:border-gold/20 hover:bg-brown/40": !guild.isMember,
+        "border border-hud-line-strong bg-hud-chosen hover:bg-hud-chosen": guild.isMember,
+        "border border-transparent bg-hud-well hover:border-hud-line hover:bg-hud-well": !guild.isMember,
       })}
     >
       <div
-        className={clsx("grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-xs", GUILD_GRID_TEMPLATE)}
+        className={clsx(
+          "grid w-full cursor-pointer items-center gap-x-4 px-4 py-2 text-hud-label",
+          GUILD_GRID_TEMPLATE,
+        )}
         onClick={onClick}
       >
-        <p className="text-center font-medium italic text-gold/90">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
+        <p className="text-center italic text-hud-accent">{guild.rank === null ? "—" : `#${guild.rank}`}</p>
         <div className="flex min-w-0 items-center gap-2">
           {guild.isPublic ? (
-            <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-emerald-300/90" />
+            <SemanticIcon name="map" className="h-4 w-4 shrink-0 text-hud-good" />
           ) : (
-            <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-amber-300/90" />
+            <SemanticIcon name="lock" className="h-4 w-4 shrink-0 text-hud-warn" />
           )}
-          <p className="truncate text-sm font-semibold text-gold">{guild.name}</p>
+          <p className="truncate text-hud-strong text-hud-accent">{guild.name}</p>
           {guild.isMember && (
-            <span className="shrink-0 rounded-full border border-amber-200/50 bg-amber-200/20 px-2 py-0.5 text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-amber-200">
+            <span className="shrink-0 rounded-full border border-hud-warn bg-amber-200/20 px-2 py-0.5 text-hud-label uppercase tracking-[0.16em] text-hud-warn">
               Your Tribe
             </span>
           )}
         </div>
-        <p className="text-center text-sm font-medium text-gold/90">{guild.memberCount}</p>
-        <p className="text-center text-sm font-medium text-gold/90">
+        <p className="text-center text-hud-body text-hud-accent">{guild.memberCount}</p>
+        <p className="text-center text-hud-body text-hud-accent">
           {(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}
         </p>
-        <p className="text-center text-sm font-semibold text-amber-200/90">
+        <p className="text-center text-hud-strong text-hud-warn">
           {guild.points === null ? "—" : currencyIntlFormat(guild.points)}
         </p>
-        <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
+        <div className="flex items-center justify-center gap-1 text-hud-body text-hud-accent">
           {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
           <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" withTooltip={false} />
         </div>
-        <div className="flex items-center justify-center gap-1 text-sm font-medium text-gold/90">
+        <div className="flex items-center justify-center gap-1 text-hud-body text-hud-accent">
           {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
           <SemanticIcon name="strk" size={16} className="h-4 w-4" />
         </div>

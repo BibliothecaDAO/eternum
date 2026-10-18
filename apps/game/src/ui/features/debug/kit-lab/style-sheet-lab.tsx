@@ -69,7 +69,6 @@ import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation
 import { usePlayerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
-import { TroopAmount } from "@/ui/features/military/components/unified-army-creation-modal/troop-amount";
 import { HoldingsList, useHoldings } from "@/ui/features/world/hud/holdings";
 import { Medallion } from "@/ui/features/world/hud/medallion";
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -468,8 +467,8 @@ const AmountSection = () => {
       }
       today={
         <div className="flex w-full flex-col gap-3">
-          <TroopAmount troopCount={today} maxAffordable={500} held={500} onChange={setToday} disabled={false} />
-          <TroopAmount troopCount={500} maxAffordable={500} held={500} onChange={() => undefined} disabled={false} />
+          <HudTroopAmount name="Troops" value={today} most={500} held={500} onChange={setToday} />
+          <HudTroopAmount name="Troops" value={500} most={500} held={500} onChange={() => undefined} />
           <span data-lab-chrome className="text-xs text-white/50">
             The kit's slider (shell, Frontier):
           </span>
@@ -1492,7 +1491,7 @@ const WindowSection = () => (
     today={
       <div className={cn(OVERLAY_SURFACE_BASE, "w-[30rem] rounded-xl")}>
         <SurfaceFrame title="Military" icon="military" onClose={() => undefined} bodyClassName="p-4">
-          <TroopAmount troopCount={200} maxAffordable={500} held={500} onChange={() => undefined} disabled={false} />
+          <HudTroopAmount name="Troops" value={200} most={500} held={500} onChange={() => undefined} />
         </SurfaceFrame>
       </div>
     }

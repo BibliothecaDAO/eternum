@@ -61,7 +61,7 @@ export function MessageComposer({
   if (isRecipientOffline) {
     return (
       <div className="p-1.5 flex-shrink-0">
-        <div className="flex items-center justify-center p-2 bg-black/20 rounded text-gold/50 text-sm">
+        <div className="flex items-center justify-center p-2 bg-hud-well rounded text-hud-cue text-hud-body">
           <SemanticIcon name="warning" className="h-4 w-4 mr-2" />
           {recipientName || "User"} is offline. You will be able to send messages when they come back online.
         </div>
@@ -82,20 +82,20 @@ export function MessageComposer({
             setDraft(event.target.value);
           }}
           onKeyDown={(e) => e.stopPropagation()}
-          className="w-full px-2 py-1.5 bg-black/20 focus:bg-black/40 focus:outline-none text-gold placeholder-gold/30 rounded transition-all duration-300 text-sm max-lg:min-h-11"
+          className="w-full px-2 py-1.5 bg-hud-well focus:bg-hud-well focus:outline-none text-hud-accent placeholder-gold/30 rounded transition-all duration-300 text-hud-body max-lg:min-h-11"
           maxLength={maxLength}
         />
         <button
           type="button"
           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold max-lg:min-h-11 max-lg:min-w-11"
+          className="px-2 py-1.5 bg-hud-well hover:bg-hud-well rounded transition-all duration-300 text-hud-body text-hud-muted hover:text-hud-accent max-lg:min-h-11 max-lg:min-w-11"
           disabled={disabled || isSending}
         >
           😀
         </button>
         <button
           type="submit"
-          className="px-2 py-1.5 bg-black/20 hover:bg-black/40 rounded transition-all duration-300 text-sm text-gold/70 hover:text-gold max-lg:min-h-11"
+          className="px-2 py-1.5 bg-hud-well hover:bg-hud-well rounded transition-all duration-300 text-hud-body text-hud-muted hover:text-hud-accent max-lg:min-h-11"
           disabled={disabled || isSending}
         >
           {isSending ? "Sending…" : "Send"}

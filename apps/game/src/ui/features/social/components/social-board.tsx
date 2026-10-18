@@ -1,5 +1,4 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
@@ -68,7 +67,7 @@ const LEADERBOARD_FRAME_CLASS =
 /** The leaderboard hangs from the top centre as a framed, draggable surface, titled as the HUD's panels are. */
 export const LeaderboardSurface = () => (
   <SurfaceFrame
-    title={<span className={HUD_LABEL}>Leaderboard</span>}
+    title={<span className="text-hud-label text-hud-muted">Leaderboard</span>}
     icon={"victory" as const}
     onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
     className={LEADERBOARD_FRAME_CLASS}
@@ -268,7 +267,7 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
         )}
       </div>
       {isExpanded && (
-        <div className="w-[360px] shrink-0 border-l border-gold/15">
+        <div className="w-[360px] shrink-0 border-l border-hud-divider">
           {tabs[activeTabIndex]?.expandedContent ?? null}
         </div>
       )}

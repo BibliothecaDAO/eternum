@@ -37,7 +37,7 @@ export const CreateGuildButton = ({
       <div className="flex items-center gap-2 sm:shrink-0">
         <button
           type="button"
-          className="grid h-9 w-9 place-items-center rounded-md border border-gold/30 bg-black/20 transition-colors hover:bg-gold/10"
+          className="grid h-9 w-9 place-items-center rounded-md border border-hud-line bg-hud-well transition-colors hover:bg-hud-hover"
           onClick={() => setIsPublic(!isPublic)}
         >
           {isPublic ? (

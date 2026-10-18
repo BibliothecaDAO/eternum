@@ -23,9 +23,9 @@ const isDeploymentLevel = (level: number | null | undefined): level is number =>
   typeof level === "number" && LEVEL_LABELS[level] !== undefined;
 
 const Metric = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded border border-gold/15 bg-black/20 px-2 py-1">
-    <div className="text-[10px] uppercase tracking-[0.12em] text-gold/60">{label}</div>
-    <div className="mt-1 text-xs font-semibold text-gold">{value}</div>
+  <div className="rounded border border-hud-divider bg-hud-well px-2 py-1">
+    <div className="text-hud-label uppercase tracking-[0.12em] text-hud-muted">{label}</div>
+    <div className="mt-1 text-hud-label text-hud-accent">{value}</div>
   </div>
 );
 
@@ -71,35 +71,35 @@ export const DeploymentStrengthSummary = ({
 
   if (!collapsible) {
     return (
-      <div className={cn("rounded border border-gold/20 bg-black/35 px-2 py-2", className)}>
-        <div className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</div>
+      <div className={cn("rounded border border-hud-line bg-hud-well px-2 py-2", className)}>
+        <div className="text-hud-label uppercase tracking-[0.16em] text-hud-muted">Deployment & Strength</div>
         <div className="mt-2">{metrics}</div>
       </div>
     );
   }
 
   return (
-    <div className={cn("rounded border border-gold/20 bg-black/35", className)}>
+    <div className={cn("rounded border border-hud-line bg-hud-well", className)}>
       <button
         type="button"
-        className="flex w-full items-center justify-between gap-3 px-2 py-2 text-left transition hover:bg-black/25"
+        className="flex w-full items-center justify-between gap-3 px-2 py-2 text-left transition hover:bg-hud-well"
         onClick={() => setIsExpanded((current) => !current)}
         aria-expanded={isExpanded}
         aria-controls={metricsId}
       >
         <span className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</span>
-          <span className="text-[10px] uppercase tracking-[0.12em] text-gold/45">
+          <span className="text-hud-label uppercase tracking-[0.16em] text-hud-muted">Deployment & Strength</span>
+          <span className="text-hud-label uppercase tracking-[0.12em] text-hud-cue">
             {isExpanded ? "Hide details" : "Show details"}
           </span>
         </span>
         <SemanticIcon
           name="chevron-down"
-          className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")}
+          className={cn("h-4 w-4 text-hud-muted transition-transform", isExpanded && "rotate-180")}
         />
       </button>
       {isExpanded ? (
-        <div id={metricsId} className="border-t border-gold/15 px-2 py-2">
+        <div id={metricsId} className="border-t border-hud-divider px-2 py-2">
           {metrics}
         </div>
       ) : null}

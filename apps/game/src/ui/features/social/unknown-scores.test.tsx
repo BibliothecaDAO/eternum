@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GuildRow } from "./guilds/guild-list";
@@ -12,6 +13,9 @@ vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () 
 vi.mock("./player/use-leaderboard-effects", () => ({
   useLeaderboardEffects: () => ({ effects: new Map(), rowRefs: { current: new Map() } }),
 }));
+
+/** The rendered markup as a document, to read what a player sees. */
+const dom = (html: string) => new DOMParser().parseFromString(html, "text/html");
 
 const player: PlayerCustom = {
   entity: "0x1",
@@ -55,19 +59,20 @@ describe("the leaderboard's columns", () => {
         isLoading={false}
       />,
     );
-    const header = html.slice(0, html.indexOf("Unseen player"));
-    for (const [column, grant] of [
+    // Each column's lines, as its header cell reads them: its title, then the points it grants.
+    const columns = [...dom(html).querySelectorAll(".ui-table-head > div")].map((cell) =>
+      [...cell.children].map((line) => line.textContent),
+    );
+    expect(columns).toEqual([
+      ["Rank"],
+      ["Name"],
       ["Tiles", "5 each"],
       ["Crates", "250 each"],
-      ["Camps &amp; Rifts", "300 each"],
+      ["Camps & Rifts", "300 each"],
       ["HS taken", "1.5K each"],
       ["HS held", "x/s"],
-    ]) {
-      // One line for the title and one for the grant: neither wraps.
-      expect(header).toContain(
-        `<span class="whitespace-nowrap">${column}</span><span class="whitespace-nowrap text-xs font-normal text-gold/55">${grant}</span>`,
-      );
-    }
+      ["Points"],
+    ]);
   });
 });
 
@@ -83,8 +88,8 @@ describe("the scoring rules on a phone", () => {
         isLoading={false}
       />,
     );
-    expect(html).toContain(
-      '<p aria-label="Scoring rules" class="px-3 pb-2 text-xs text-gold/60 md:hidden">Tiles 5 each · Crates 250 each · Camps &amp; Rifts 300 each · HS taken 1.5K each · HS held x/s</p>',
+    expect(dom(html).querySelector('[aria-label="Scoring rules"]')?.textContent).toBe(
+      "Tiles 5 each · Crates 250 each · Camps & Rifts 300 each · HS taken 1.5K each · HS held x/s",
     );
   });
 });
@@ -110,9 +115,10 @@ describe("the MMR column", () => {
       { ...player, address: 4n, name: "Unanswered", points: 0, rank: 4, mmrDelta: null },
     ];
     const rated = rows("ready", players);
-    expect(rated).toContain('<span class="whitespace-nowrap">MMR</span>');
-    expect(rated).toContain("if it ended now");
-    const cells = [...rated.matchAll(/tabular-nums[^"]*">([^<]*)</g)].map(([, text]) => text);
+    const head = [...dom(rated).querySelectorAll(".ui-table-head > div")].at(-1);
+    expect([...head!.children].map((line) => line.textContent)).toEqual(["MMR", "if it ended now"]);
+    // Each row's last cell is its MMR.
+    const cells = [...dom(rated).querySelectorAll(".ui-table-row")].map((row) => row.lastElementChild?.textContent);
     expect(cells).toEqual(["+26", "±0", "−11", "—"]);
 
     expect(rows("off", players)).not.toContain("MMR");

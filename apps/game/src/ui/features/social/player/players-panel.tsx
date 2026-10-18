@@ -119,7 +119,7 @@ export const PlayersPanel = ({
   return (
     <div className="flex flex-col p-2">
       {activityError && (
-        <p role="alert" className="mb-2 text-sm text-danger">
+        <p role="alert" className="mb-2 text-hud-body text-hud-bad">
           Points breakdown is unavailable. It is read again when points change.
         </p>
       )}

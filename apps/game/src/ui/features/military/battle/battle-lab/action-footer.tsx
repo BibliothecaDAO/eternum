@@ -1,6 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import Button from "@/ui/design-system/atoms/button";
-import { HUD_CUE } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 
@@ -41,15 +40,17 @@ export const ActionFooter = ({
   return (
     <div className="flex flex-col items-center gap-3">
       {showRaidToggle && (
-        <div className="flex overflow-hidden rounded-md border border-gold/30">
+        <div className="flex overflow-hidden rounded-md border border-hud-line">
           {(["attack", "raid"] as const).map((option) => (
             <button
               key={option}
               type="button"
               onClick={() => onSetAttackType(option)}
               className={cn(
-                "px-6 py-1.5 text-sm font-semibold uppercase tracking-wide transition-colors",
-                attackType === option ? "bg-gold/20 text-gold" : "bg-black/30 text-gold/60 hover:text-gold",
+                "px-6 py-1.5 text-hud-strong uppercase tracking-wide transition-colors",
+                attackType === option
+                  ? "bg-hud-chosen text-hud-accent"
+                  : "bg-hud-well text-hud-muted hover:text-hud-accent",
               )}
               aria-pressed={attackType === option}
             >
@@ -63,7 +64,7 @@ export const ActionFooter = ({
         <button
           type="button"
           onClick={onResetToLive}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-black/30 px-3 py-1 text-xs font-semibold text-gold/80 transition hover:border-gold hover:text-gold"
+          className="inline-flex items-center gap-1.5 rounded-full border border-hud-line-strong bg-hud-well px-3 py-1 text-hud-label text-hud-accent transition hover:border-hud-line-strong hover:text-hud-accent"
         >
           <SemanticIcon name="refresh" className="h-3 w-3" />
           Reset to live
@@ -77,7 +78,7 @@ export const ActionFooter = ({
       {mode === "live" && (
         <Button
           variant="primary"
-          className="min-w-[200px] px-6 py-3 text-base font-bold"
+          className="min-w-[200px] px-6 py-3 text-hud-strong"
           isLoading={loading}
           disabled={actionDisabled}
           onClick={onAction}
@@ -87,7 +88,7 @@ export const ActionFooter = ({
       )}
 
       {warning && (
-        <div className={cn("text-center text-red-300", HUD_CUE)} role="alert">
+        <div className={cn("text-center text-hud-bad", "text-hud-label text-hud-cue")} role="alert">
           {warning}
         </div>
       )}

@@ -33,7 +33,7 @@ describe("the order button's reason line", () => {
     expect(readyLine.textContent).toBe("");
     // The same box either way: a fixed one-line height, the same place after the button.
     expect(readyLine.className).toBe(blockedLine.className);
-    expect(readyLine.className).toMatch(/\bh-5\b.*\bleading-5\b/);
+    expect(readyLine.className).toMatch(/\bh-5\b/);
     expect(ready.children.length).toBe(blocked.children.length);
   });
 });

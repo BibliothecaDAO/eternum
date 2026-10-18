@@ -8,7 +8,7 @@ import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
 import { DefenseSlotSelection } from "./defense-slot-selection";
 import { RealmHexDeployMap } from "./realm-hex-deploy-map";
-import { TroopAmount } from "./troop-amount";
+import { HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import { useArmyCreation } from "./use-army-creation";
 
@@ -118,7 +118,7 @@ export const UnifiedArmyCreationBody = ({
     <div className="flex min-h-full flex-col p-3">
       <div className="flex flex-1 flex-col items-stretch gap-3 lg:flex-row">
         <div className={leftColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-3">
+          <div className="flex flex-1 flex-col rounded-xl border border-hud-line bg-hud-well p-2 gap-3">
             <TroopSelectionGrid
               options={form.troopOptions}
               selected={form.selectedTroopCombo}
@@ -128,33 +128,34 @@ export const UnifiedArmyCreationBody = ({
               onSelect={form.handleTroopSelect}
               bare
             />
-            <div className="border-t border-gold/15" />
-            <TroopAmount
-              troopCount={form.troopCount}
-              maxAffordable={form.maxAffordable}
+            <div className="border-t border-hud-divider" />
+            <HudTroopAmount
+              name="Troop count"
+              value={form.troopCount}
+              most={form.maxAffordable}
               held={form.selectedAvailable}
               onChange={form.handleTroopCountChange}
               disabled={form.troopAvailabilityReason !== null}
             />
-            <p className="px-1 text-sm tabular-nums text-gold/75">{form.troopLimitLine}</p>
-            {form.troopSourceLine && <p className="px-1 text-sm text-gold/75">{form.troopSourceLine}</p>}
+            <p className="px-1 text-hud-body tabular-nums text-hud-muted">{form.troopLimitLine}</p>
+            {form.troopSourceLine && <p className="px-1 text-hud-body text-hud-muted">{form.troopSourceLine}</p>}
             {form.troopTrainingLine && (
               <>
-                <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-[11px] text-gold/70">{form.troopTrainingLine}</p>
+                <div className="border-t border-hud-divider" />
+                <p className="px-1 py-1 text-hud-label text-hud-muted">{form.troopTrainingLine}</p>
               </>
             )}
             {form.raiseCost && (
               <>
-                <div className="border-t border-gold/15" />
-                <p className="px-1 py-1 text-[11px] text-gold/70">Deploying costs {form.raiseCost}.</p>
+                <div className="border-t border-hud-divider" />
+                <p className="px-1 py-1 text-hud-label text-hud-muted">Deploying costs {form.raiseCost}.</p>
               </>
             )}
           </div>
         </div>
 
         <div className={rightColumnClass}>
-          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-2">
+          <div className="flex flex-1 flex-col rounded-xl border border-hud-line bg-hud-well p-2 gap-2">
             <ArmyTypeToggle
               armyType={form.armyType}
               canCreateAttackArmy={form.canCreateAttackArmy}
@@ -166,8 +167,8 @@ export const UnifiedArmyCreationBody = ({
               maxGuards={form.resolvedMaxDefenseSlots}
               onSelect={form.handleArmyTypeSelect}
             />
-            <div className="border-t border-gold/15" />
-            <div className="flex-1 min-h-[140px] flex flex-col">
+            <div className="border-t border-hud-divider" />
+            <div className="flex-1 min-h-36 flex flex-col">
               {!form.armyType && (
                 <DefenseSlotSelection
                   guardSlot={form.guardSlot}

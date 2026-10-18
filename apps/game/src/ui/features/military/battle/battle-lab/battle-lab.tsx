@@ -345,11 +345,11 @@ export const BattleLab = ({
       ) : (
         <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
           {configManager.rollsCombatDice(state.defenderAlt) && (
-            <p className="text-sm text-gold/70">
+            <p className="text-hud-body text-hud-muted">
               Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
             </p>
           )}
-          <label className="flex items-center gap-2 text-sm text-gold/70">
+          <label className="flex items-center gap-2 text-hud-body text-hud-muted">
             <input
               type="checkbox"
               checked={state.defenderAlt}
@@ -405,14 +405,14 @@ export const BattleLab = ({
             />
 
             <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
-              <span className="rounded-full border border-gold/30 bg-black/70 px-3 py-2 text-sm font-bold text-gold">
+              <span className="rounded-full border border-hud-line bg-hud-well px-3 py-2 text-hud-strong text-hud-accent">
                 VS
               </span>
             </div>
           </div>
 
           {!state.hasDefender ? (
-            <div className="rounded-lg border border-emerald-400/40 bg-emerald-900/20 px-4 py-3 text-center text-sm font-semibold text-emerald-200">
+            <div className="rounded-lg border border-hud-good bg-emerald-900/20 px-4 py-3 text-center text-hud-strong text-hud-good">
               {rangedClaimBlocked
                 ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
                 : "No defending troops — this target can be claimed without a battle."}

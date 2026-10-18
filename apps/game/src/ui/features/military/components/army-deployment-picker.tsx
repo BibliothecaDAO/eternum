@@ -1,12 +1,11 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 
 import { useEffect } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { ActionFooter } from "./unified-army-creation-modal/action-footer";
-import { TroopAmount } from "./unified-army-creation-modal/troop-amount";
+import { HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
 import { TroopSelectionGrid } from "./unified-army-creation-modal/troop-selection-grid";
 import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation";
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
@@ -31,9 +30,9 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
   });
 
   return (
-    <div className="w-[360px] max-w-full space-y-3 p-3">
+    <div className="w-96 max-w-full space-y-3 p-3">
       <div className="flex items-center justify-between">
-        <h2 className={HUD_LABEL}>{describeDeploymentTarget(target)}</h2>
+        <h2 className="text-hud-label text-hud-muted">{describeDeploymentTarget(target)}</h2>
         <button
           type="button"
           aria-label="Close deployment picker"
@@ -52,9 +51,10 @@ const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
         bare
         compact
       />
-      <TroopAmount
-        troopCount={form.troopCount}
-        maxAffordable={form.maxAffordable}
+      <HudTroopAmount
+        name="Troop count"
+        value={form.troopCount}
+        most={form.maxAffordable}
         held={form.selectedAvailable}
         onChange={form.handleTroopCountChange}
         disabled={form.troopAvailabilityReason !== null}

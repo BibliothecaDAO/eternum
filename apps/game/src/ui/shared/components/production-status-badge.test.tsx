@@ -18,27 +18,36 @@ const ring = (props: { isProducing: boolean; timeRemainingSeconds: number | null
   );
   return host;
 };
-/** The rim's chips, by where they sit: top-left buildings, right the time left, bottom the amount. */
-const chip = (host: HTMLElement, place: "-left-1" | "-right-2" | "-bottom-1.5") =>
-  [...host.querySelectorAll("span")].find((span) => span.classList.contains(place))?.textContent ?? null;
+/** The rim's badges, by where they sit: top-left buildings, top-right the time left, the foot the amount. */
+const chip = (host: HTMLElement, place: "corner" | "timer" | "foot") =>
+  host.querySelector(`[data-at="${place}"]`)?.textContent ?? null;
 
 describe("the resource ring", () => {
-  it("shows the production time left on its right while it produces, in whole minutes, beside buildings and amount", () => {
+  it("shows the production time left top right while it produces, in whole minutes, beside buildings and amount", () => {
     const host = ring({ isProducing: true, timeRemainingSeconds: 17 * 60 + 5 });
-    expect(chip(host, "-left-1")).toBe("3");
-    expect(chip(host, "-right-2")).toBe("18m");
-    expect(chip(host, "-bottom-1.5")).toBe("1.3K");
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 3600 }), "-right-2")).toBe("3h");
+    expect(chip(host, "corner")).toBe("3");
+    expect(chip(host, "timer")).toBe("18m");
+    expect(chip(host, "foot")).toBe("1.3K");
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 3 * 3600 }), "timer")).toBe("3h");
     // Production with no inputs to run out of (a farm's wheat) never stops: the badge says so.
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: Number.POSITIVE_INFINITY }), "-right-2")).toBe(
-      "no end",
-    );
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: Number.POSITIVE_INFINITY }), "timer")).toBe("no end");
   });
 
   it("shows no time while idle, without a known time, or under a minute", () => {
-    expect(chip(ring({ isProducing: false, timeRemainingSeconds: 600 }), "-right-2")).toBeNull();
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: null }), "-right-2")).toBeNull();
-    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 45 }), "-right-2")).toBeNull();
+    expect(chip(ring({ isProducing: false, timeRemainingSeconds: 600 }), "timer")).toBeNull();
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: null }), "timer")).toBeNull();
+    expect(chip(ring({ isProducing: true, timeRemainingSeconds: 45 }), "timer")).toBeNull();
+  });
+
+  it("tells producing from idle by its rim", () => {
+    expect(
+      ring({ isProducing: true, timeRemainingSeconds: 600 }).querySelector(".ui-ring")?.getAttribute("data-production"),
+    ).toBe("producing");
+    expect(
+      ring({ isProducing: false, timeRemainingSeconds: null })
+        .querySelector(".ui-ring")
+        ?.getAttribute("data-production"),
+    ).toBe("idle");
   });
 
   it("names the resource only on hover; the chips say the rest", () => {

@@ -91,7 +91,7 @@ const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
 const LEADERBOARD_FITS = `(() => {
   const frame = document.querySelector('[data-popover-panel="leaderboard"] [data-surface-frame]');
   const body = frame?.children[1];
-  const header = body?.querySelector(".sticky");
+  const header = body?.querySelector(".ui-table-head");
   if (!body || !header) return false;
   const content = body.firstElementChild.getBoundingClientRect();
   const room = body.getBoundingClientRect();
@@ -102,7 +102,7 @@ const LEADERBOARD_FITS = `(() => {
  * The leaderboard's column headers in two rows: each title on one line and each rule under it on one line, none cut
  * off by its column.
  */
-const LEADERBOARD_HEADERS_FIT = `[...document.querySelectorAll('[data-popover-panel="leaderboard"] .sticky > div')]
+const LEADERBOARD_HEADERS_FIT = `[...document.querySelectorAll('[data-popover-panel="leaderboard"] .ui-table-head > div')]
   .filter((cell) => cell.offsetParent !== null)
   .every((cell) => cell.children.length <= 2 && cell.scrollWidth <= cell.clientWidth + 1 &&
     [...cell.children].every((line) => line.getBoundingClientRect().height <= parseFloat(getComputedStyle(line).lineHeight) + 1))`;
@@ -114,7 +114,7 @@ const LEADERBOARD_HEADERS_FIT = `[...document.querySelectorAll('[data-popover-pa
 const LEADERBOARD_DETAIL_FITS = `(() => {
   const frame = document.querySelector('[data-popover-panel="leaderboard"] [data-surface-frame]');
   const body = frame?.children[1];
-  const header = body?.querySelector(".sticky");
+  const header = body?.querySelector(".ui-table-head");
   const detail = body?.querySelector('[aria-label="Player details"]');
   if (!body || !header || !detail) return false;
   const content = body.firstElementChild.getBoundingClientRect();

@@ -4,6 +4,7 @@ import { latticeToWorld } from "@/three/utils/hex-lattice";
 import { requireBiomeColor, resolveBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { Direction, getDirectionBetweenAdjacentHexes, getNeighborHexes } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
@@ -34,13 +35,10 @@ const hexCorners = (cx: number, cy: number) => {
   return corners.map(([x, y]) => `${x},${y}`).join(" ");
 };
 
-const UNEXPLORED_FILL = "#1f2933";
-const REALM_FILL = "rgba(223, 170, 84, 0.35)";
-
+/** A tile's biome colour, as the map paints it; none for an unexplored tile, which takes the sheet's well. */
 const getBiomeFill = (biomeId?: number) => {
   const biomeType = resolveBiomeTypeFromId(biomeId);
-  if (!biomeType) return UNEXPLORED_FILL;
-  return requireBiomeColor(biomeType).getStyle();
+  return biomeType ? requireBiomeColor(biomeType).getStyle() : undefined;
 };
 
 type HexEntry = {
@@ -155,21 +153,16 @@ export const RealmHexDeployMap = ({
   const noAdjacentAvailable = !isLoading && availableDirections.length === 0;
 
   return (
-    <div className="flex-1 p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
+    <div className="flex-1 p-1.5 rounded-xl border border-hud-line">
       {isLoading ? (
         <div className="flex justify-center py-2">
           <SemanticIcon name="refresh" className="w-5 h-5 animate-spin" />
         </div>
       ) : noAdjacentAvailable ? (
-        <div className="text-center p-2 bg-danger/10 border-l-2 border-danger rounded">
-          <div className="p-1 rounded-full bg-danger/20 w-fit mx-auto mb-1">
-            <SemanticIcon name="warning" className="w-4 h-4 text-danger" />
-          </div>
-          <p className="text-danger font-bold text-xxs">No adjacent tiles</p>
-        </div>
+        <HudNotice tone="bad" line="No adjacent tiles" />
       ) : (
         <>
-          <svg viewBox={layout.viewBox} className="mx-auto block h-auto w-full max-w-[260px]">
+          <svg viewBox={layout.viewBox} className="mx-auto block h-auto w-full max-w-64">
             {layout.positioned.map((entry) => {
               const tile = tiles.get(`${entry.col},${entry.row}`);
               const isCenter = entry.ringIndex === 0;
@@ -178,7 +171,7 @@ export const RealmHexDeployMap = ({
               const isSelected = isAdjacent && entry.direction === selectedDirection;
               const isOccupied = (tile?.occupierId ?? 0n) !== 0n;
               const isUnexplored = !tile || (tile.biome ?? 0) === 0;
-              const fill = isCenter ? REALM_FILL : getBiomeFill(tile?.biome);
+              const fill = isCenter ? undefined : getBiomeFill(tile?.biome);
               const opacity = isCenter ? 1 : isAdjacent ? (isAvailable ? 1 : 0.55) : 0.85;
 
               return (
@@ -198,27 +191,25 @@ export const RealmHexDeployMap = ({
                     points={entry.points}
                     fill={fill}
                     opacity={opacity}
-                    stroke={
+                    className={cn(
+                      isCenter ? "fill-hud-chosen" : fill === undefined && "fill-hud-well",
                       isSelected
-                        ? "rgb(34, 211, 238)"
+                        ? "stroke-hud-accent"
                         : isCenter
-                          ? "rgba(223, 170, 84, 0.85)"
+                          ? "stroke-hud-gold"
                           : isAvailable
-                            ? "rgba(223, 170, 84, 0.55)"
-                            : "rgba(255, 255, 255, 0.08)"
-                    }
+                            ? "stroke-hud-line-strong"
+                            : "stroke-hud-divider",
+                    )}
                     strokeWidth={isSelected ? 2.4 : isCenter ? 1.6 : isAvailable ? 1.2 : 0.7}
                   />
-                  {/* Pulsing cyan halo on top of the selected hex so it pops
-                      against any biome tone (especially beige). */}
+                  {/* A pulsing halo in the age's accent over the chosen hex, so it reads against any biome. */}
                   {isSelected && (
                     <polygon
                       points={entry.points}
                       fill="none"
-                      stroke="rgb(34, 211, 238)"
                       strokeWidth={3}
-                      className="animate-pulse"
-                      style={{ filter: "drop-shadow(0 0 4px rgb(34, 211, 238))" }}
+                      className="animate-pulse stroke-hud-accent"
                     />
                   )}
                   {isCenter && (
@@ -237,8 +228,7 @@ export const RealmHexDeployMap = ({
                       cx={entry.pixel.x}
                       cy={entry.pixel.y}
                       r={2.2}
-                      fill="rgb(244, 114, 114)"
-                      stroke="black"
+                      className="fill-hud-bad stroke-hud-dark"
                       strokeWidth={0.4}
                     />
                   )}
@@ -249,7 +239,7 @@ export const RealmHexDeployMap = ({
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={HEX_SIZE * 0.7}
-                      fill="rgba(255, 255, 255, 0.45)"
+                      className="fill-hud-cue"
                     >
                       ?
                     </text>
@@ -258,17 +248,17 @@ export const RealmHexDeployMap = ({
               );
             })}
           </svg>
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[9px] uppercase tracking-wider text-gold/55">
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-hud-label uppercase tracking-wider text-hud-cue">
             <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/70" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-hud-gold" />
               free
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-400/80" />
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-hud-bad" />
               occupied
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/30" />? unexplored
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-hud-chosen" />? unexplored
             </span>
           </div>
         </>

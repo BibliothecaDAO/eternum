@@ -79,10 +79,10 @@ const CoordinateNavButton = ({
 }) => {
   return (
     <button
-      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-gold hover:text-gold/50 transition-colors duration-200 rounded bg-gold/15 hover:bg-gold/25"
+      className="inline-flex items-center gap-1 px-1.5 py-0.5 text-hud-accent hover:text-hud-cue transition-colors duration-200 rounded bg-hud-chosen hover:bg-hud-chosen"
       onClick={() => onNavigate?.(coordinates)}
     >
-      <span className="text-xs">{`${coordinates.x}, ${coordinates.y}`}</span>
+      <span className="text-hud-label">{`${coordinates.x}, ${coordinates.y}`}</span>
       <SemanticIcon name="location" className="w-3 h-3" />
     </button>
   );
@@ -272,7 +272,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       <div className="flex-1 min-h-0 px-4 py-3">
         {!hasChannelAccess && (
-          <p className="text-sm text-gold/50">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
+          <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
         {hasChannelAccess && zone && (
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -281,11 +281,11 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               <div ref={topSentinelRef} className="h-1" />
 
               {zone.historyError && (
-                <div role="status" className="mb-2 text-xs text-gold/70">
+                <div role="status" className="mb-2 text-hud-label text-hud-muted">
                   {zone.historyError}{" "}
                   <button
                     type="button"
-                    className="text-gold underline"
+                    className="text-hud-accent underline"
                     onClick={() => void loadHistory(zone.lastFetchedCursor ?? undefined)}
                   >
                     Retry
@@ -294,7 +294,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               )}
               {zone.isFetchingHistory && (
                 <div className="flex justify-center py-2">
-                  <span className="text-xs text-gold/50">Loading older messages...</span>
+                  <span className="text-hud-label text-hud-cue">Loading older messages...</span>
                 </div>
               )}
 
@@ -307,13 +307,13 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
                         <li key={`sep-${index}`} className="flex items-center gap-2 py-2 px-4">
-                          <div className="flex-1 border-t border-gold/20" />
-                          <span className="text-xs text-gold/40">{dateSeparators.get(index)}</span>
-                          <div className="flex-1 border-t border-gold/20" />
+                          <div className="flex-1 border-t border-hud-line" />
+                          <span className="text-hud-label text-hud-cue">{dateSeparators.get(index)}</span>
+                          <div className="flex-1 border-t border-hud-line" />
                         </li>
                       )}
                       {/* Every message carries its author: avatar, time and name, then the text. */}
-                      <li className="flex items-start gap-2 text-[13px] leading-snug text-white/90">
+                      <li className="flex items-start gap-2 text-hud-body leading-snug text-hud-ink">
                         <UserAvatar
                           name={senderName}
                           address={message.sender.playerId}
@@ -322,10 +322,10 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                           className="mt-0.5 shrink-0"
                         />
                         <p className="min-w-0 flex-1 break-words">
-                          <span className="text-white/30">[{formatWorldMessageTime(message)}]</span>{" "}
+                          <span className="text-hud-cue">[{formatWorldMessageTime(message)}]</span>{" "}
                           <span
                             onClick={() => handleUserClick(message.sender.playerId)}
-                            className="cursor-pointer text-gold/90 transition-colors hover:text-gold"
+                            className="cursor-pointer text-hud-accent transition-colors hover:text-hud-accent"
                             title={`Click to send DM to ${senderName}`}
                           >
                             &lt;{senderName}&gt;
@@ -348,7 +348,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
                   );
                 })}
                 {messages.length === 0 && !zone.isFetchingHistory && !zone.historyError && (
-                  <li className="text-sm text-gold/50">No messages yet. Be the first to say hello!</li>
+                  <li className="text-hud-body text-hud-cue">No messages yet. Be the first to say hello!</li>
                 )}
               </ul>
             </div>

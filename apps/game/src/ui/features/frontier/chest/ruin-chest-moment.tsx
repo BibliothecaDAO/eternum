@@ -35,7 +35,7 @@ export const RuinChestMoment = ({
       type="button"
       aria-label={RUIN}
       onClick={onClose}
-      className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/80"
+      className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-hud-well"
     >
       <motion.span
         initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.6, y: 24 }}
@@ -51,7 +51,7 @@ export const RuinChestMoment = ({
         </span>
         <span className="flex items-center gap-2" aria-label={`${formatExact(lords)} ${LORDS}`}>
           <SemanticIcon name="lords" size={34} />
-          <span className="text-[44px] leading-none tabular-nums text-kit-gold2">+{formatExact(lords)}</span>
+          <span className="text-hud-display tabular-nums text-hud-gold">+{formatExact(lords)}</span>
         </span>
         <TierChip tier={tier} showWord />
         <span className="flex items-center gap-2">

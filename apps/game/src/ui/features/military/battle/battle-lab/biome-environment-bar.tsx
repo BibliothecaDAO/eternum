@@ -1,5 +1,4 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { DROPDOWN_TRIGGER, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -36,13 +35,15 @@ export const BiomeEnvironmentBar = ({
   return (
     <div className={cn("flex flex-col gap-3 rounded-xl px-4 py-3.5", OVERLAY_SURFACE_BASE)}>
       <div className="flex items-center gap-2">
-        <SemanticIcon name="map" className="h-4 w-4 text-gold" />
-        <span className={HUD_LABEL}>Battle Environment</span>
+        <SemanticIcon name="map" className="h-4 w-4 text-hud-accent" />
+        <span className="text-hud-label text-hud-muted">Battle Environment</span>
       </div>
 
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
         {neutral ? (
-          <span className="text-sm text-gold/70">{ethereal ? "Ethereal — neutral terrain" : "Neutral terrain"}</span>
+          <span className="text-hud-body text-hud-muted">
+            {ethereal ? "Ethereal — neutral terrain" : "Neutral terrain"}
+          </span>
         ) : (
           <SelectBiome
             combatSimulator={combatSimulator}
@@ -53,16 +54,16 @@ export const BiomeEnvironmentBar = ({
           />
         )}
 
-        <div className="flex flex-1 items-center justify-around gap-2 rounded-lg border border-gold/15 bg-black/25 px-3 py-2">
+        <div className="flex flex-1 items-center justify-around gap-2 rounded-lg border border-hud-divider bg-hud-well px-3 py-2">
           {TROOPS.map(({ type, resourceId, label }) => {
             const bonus = neutral ? 1 : configManager.getBiomeCombatBonus(type, biome);
-            const tone = bonus > 1 ? "text-order-brilliance" : bonus < 1 ? "text-order-giants" : "text-gold/45";
+            const tone = bonus > 1 ? "text-hud-good" : bonus < 1 ? "text-hud-bad" : "text-hud-cue";
             return (
               <div key={type} className="flex items-center gap-2">
                 <ResourceIcon withTooltip={false} resource={resourceId} size="sm" />
                 <div className="flex flex-col leading-none">
-                  <span className={cn(HUD_CUE, "text-gold/55")}>{label}</span>
-                  <span className={cn("text-sm font-bold tabular-nums", tone)}>{formatBonus(bonus)}</span>
+                  <span className={cn("text-hud-label text-hud-cue", "text-hud-cue")}>{label}</span>
+                  <span className={cn("text-hud-strong tabular-nums", tone)}>{formatBonus(bonus)}</span>
                 </div>
               </div>
             );

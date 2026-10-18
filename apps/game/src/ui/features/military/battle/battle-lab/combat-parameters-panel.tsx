@@ -1,4 +1,3 @@
-import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { CombatParameters, CombatSimulator } from "@bibliothecadao/eternum";
@@ -26,13 +25,13 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
       onMouseDown={(event) => event.stopPropagation()}
     >
       <div className="mb-3 flex items-center gap-2">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-gold" />
-        <span className={HUD_LABEL_BRIGHT}>Combat Parameters</span>
+        <span className="h-2 w-2 animate-pulse rounded-full bg-hud-gold" />
+        <span className="text-hud-label text-hud-accent">Combat Parameters</span>
       </div>
       <div className="space-y-2">
         {Object.entries(parameters).map(([key, value]) => (
           <label key={key} className="flex flex-col gap-1">
-            <span className="text-[10px] uppercase tracking-[0.12em] text-gold/60">
+            <span className="text-hud-label uppercase tracking-[0.12em] text-hud-muted">
               {key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())}
             </span>
             <input
@@ -47,13 +46,13 @@ export const CombatParametersPanel = ({ parameters, onParametersChange, show }: 
               min={0}
               max={1000}
               step={0.01}
-              className="rounded border border-gold/20 bg-black/40 px-2 py-1 text-gold focus:border-gold/40 focus:outline-none"
+              className="rounded border border-hud-line bg-hud-well px-2 py-1 text-hud-accent focus:border-hud-line-strong focus:outline-none"
             />
           </label>
         ))}
         <button
           type="button"
-          className="mt-3 w-full rounded-lg border border-gold/20 bg-gold/20 px-4 py-2 text-sm font-semibold text-gold transition hover:bg-gold/30"
+          className="mt-3 w-full rounded-lg border border-hud-line bg-hud-chosen px-4 py-2 text-hud-strong text-hud-accent transition hover:bg-hud-chosen"
           onClick={() => onParametersChange(CombatSimulator.getDefaultParameters())}
         >
           Reset to defaults

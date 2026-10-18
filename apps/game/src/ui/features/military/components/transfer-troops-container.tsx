@@ -2,7 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import Button from "@/ui/design-system/atoms/button";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { TroopAmount } from "./unified-army-creation-modal/troop-amount";
+import { HudTroopAmount } from "@/ui/design-system/kit/hud-elements";
 import { formatNumber } from "@/ui/utils/utils";
 
 import {
@@ -1015,7 +1015,7 @@ export const TransferTroopsContainer = ({
         troopCount={projectedTargetTroopCount}
         maxTroopSize={troopCapacityLimit}
         capacityRemaining={capacityRemainingAfterTransfer ?? capacityRemainingTarget}
-        className="bg-dark-brown/60"
+        className="bg-hud-well"
         collapsible
         defaultExpanded={false}
       />
@@ -1030,7 +1030,7 @@ export const TransferTroopsContainer = ({
           <div className="space-y-4">
             <div className="flex items-start justify-center gap-4">
               <div className="flex-1 min-w-0 space-y-4">
-                <div className="space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4">
+                <div className="space-y-4 rounded-md border border-hud-line bg-hud-well p-4">
                   {guardSelectionRequired && (
                     <div className="space-y-3">
                       <TransferSlotSelection
@@ -1068,15 +1068,16 @@ export const TransferTroopsContainer = ({
                   )}
 
                   <div className="flex flex-col space-y-2">
-                    <TroopAmount
-                      troopCount={troopAmount}
-                      maxAffordable={maxTroops}
+                    <HudTroopAmount
+                      name="Troop count"
+                      value={troopAmount}
+                      most={maxTroops}
                       held={held}
                       onChange={(value) => setTroopAmount(Math.min(value, maxTroops))}
                       disabled={!guardFactsKnown || maxTroops <= 0}
                     />
                     {capacityNotice && (
-                      <div className="rounded-md border border-gold/30 px-3 py-2 text-xs text-gold/60">
+                      <div className="rounded-md border border-hud-line px-3 py-2 text-hud-label text-hud-muted">
                         {capacityNotice}
                       </div>
                     )}
@@ -1085,11 +1086,11 @@ export const TransferTroopsContainer = ({
                 {deploymentStrengthSummary}
               </div>
 
-              <div className="flex-1 min-w-0 space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4">
-                <div className="rounded-md border border-gold/40 bg-dark-brown/50 p-3">
-                  <div className="text-[10px] uppercase tracking-wide text-gold/60">Transfer direction</div>
+              <div className="flex-1 min-w-0 space-y-4 rounded-md border border-hud-line bg-hud-well p-4">
+                <div className="rounded-md border border-hud-line-strong bg-hud-well p-3">
+                  <div className="text-hud-label uppercase tracking-wide text-hud-muted">Transfer direction</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
-                    <span className="text-base font-semibold text-gold">{directionLabel}</span>
+                    <span className="text-hud-strong text-hud-accent">{directionLabel}</span>
                     {onToggleDirection ? (
                       <Button
                         onClick={onToggleDirection}
@@ -1110,7 +1111,7 @@ export const TransferTroopsContainer = ({
                 {blockReason && (
                   <p
                     role="status"
-                    className="rounded-md border border-gold/30 bg-dark-brown/50 p-3 text-sm text-gold/70"
+                    className="rounded-md border border-hud-line bg-hud-well p-3 text-hud-body text-hud-muted"
                   >
                     {blockReason}
                   </p>

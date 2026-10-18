@@ -159,7 +159,7 @@ const SidebarRealm = ({
                 isProducing={summary.isProducing}
                 timeRemainingSeconds={summary.timeRemainingSeconds}
                 buildings={summary.totalBuildings}
-                size="xs"
+                size="sm"
                 onClick={() => onSelectResource(realm.entityId, summary.resourceId)}
               />
             ))

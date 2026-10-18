@@ -69,7 +69,7 @@ export const WonderFaithDetailPanel = ({
 
   if (!wonderDetail) {
     return (
-      <div className={cn("rounded-lg border border-gold/20 bg-black/25 p-3 text-xs text-gold/70", className)}>
+      <div className={cn("rounded-lg border border-hud-line bg-hud-well p-3 text-hud-label text-hud-muted", className)}>
         No wonder faith details found.
       </div>
     );
@@ -80,7 +80,7 @@ export const WonderFaithDetailPanel = ({
 
   if (compact) {
     return (
-      <div className={cn("grid grid-cols-2 gap-2 text-xs", className)}>
+      <div className={cn("grid grid-cols-2 gap-2 text-hud-label", className)}>
         <StatCard
           label="Total FP"
           value={formatBigInt(wonderDetail.totalFaithPoints)}
@@ -96,11 +96,11 @@ export const WonderFaithDetailPanel = ({
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
-      <div className="rounded-lg border border-gold/25 bg-black/30 p-3">
+      <div className="rounded-lg border border-hud-line bg-hud-well p-3">
         <div className="flex flex-col gap-1">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Wonder</span>
-          <span className="text-sm font-semibold text-gold">{wonderName}</span>
-          <span className="text-xxs text-gold/70">Owner: {getOwnerLabel(wonderDetail)}</span>
+          <span className="text-hud-label uppercase tracking-[0.25em] text-hud-muted">Wonder</span>
+          <span className="text-hud-strong text-hud-accent">{wonderName}</span>
+          <span className="text-hud-label text-hud-muted">Owner: {getOwnerLabel(wonderDetail)}</span>
         </div>
       </div>
 
@@ -114,63 +114,69 @@ export const WonderFaithDetailPanel = ({
           </Button>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-2 gap-2 text-hud-label">
         <StatCard label="Total FP" value={formatBigInt(wonderDetail.totalFaithPoints)} mono />
         <StatCard label="Total FP/sec" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono />
         <StatCard label="Own Baseline" value={formatInt(wonderDetail.ownBaselinePerSec)} mono />
         <StatCard label="Followers FP/sec" value={formatInt(wonderDetail.followersContributionPerSec)} mono />
       </div>
 
-      <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
-        <div className="flex items-center justify-between text-xxs uppercase tracking-[0.22em] text-gold/70">
+      <div className="rounded-lg border border-hud-line bg-hud-hover p-3">
+        <div className="flex items-center justify-between text-hud-label uppercase tracking-[0.22em] text-hud-muted">
           <span>Per-Pledge Split</span>
           <span>
             {wonderDetail.ownerSharePercent}% / {wonderDetail.followerSharePercent}%
           </span>
         </div>
-        <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gold/85">
-          <div className="rounded border border-gold/20 bg-black/20 px-2 py-1">
+        <div className="mt-2 grid grid-cols-2 gap-2 text-hud-label text-hud-accent">
+          <div className="rounded border border-hud-line bg-hud-well px-2 py-1">
             Wonder owner share
-            <div className="font-mono text-sm text-gold">
+            <div className="font-mono text-hud-body text-hud-accent">
               {formatInt(wonderDetail.ownerSharePerSecFromFollowers)}/sec
             </div>
           </div>
-          <div className="rounded border border-gold/20 bg-black/20 px-2 py-1">
+          <div className="rounded border border-hud-line bg-hud-well px-2 py-1">
             Followers share
-            <div className="font-mono text-sm text-gold">{formatInt(wonderDetail.followersSharePerSec)}/sec</div>
+            <div className="font-mono text-hud-body text-hud-accent">
+              {formatInt(wonderDetail.followersSharePerSec)}/sec
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gold/20 bg-black/20">
-        <div className="flex items-center justify-between border-b border-gold/15 px-3 py-2">
-          <span className="text-xxs uppercase tracking-[0.24em] text-gold/70">Faithful Followers</span>
-          <span className="text-xxs text-gold/70">{wonderDetail.followerCount}</span>
+      <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-hud-line bg-hud-well">
+        <div className="flex items-center justify-between border-b border-hud-divider px-3 py-2">
+          <span className="text-hud-label uppercase tracking-[0.24em] text-hud-muted">Faithful Followers</span>
+          <span className="text-hud-label text-hud-muted">{wonderDetail.followerCount}</span>
         </div>
         {followers.length === 0 ? (
-          <div className="px-3 py-4 text-xs text-gold/65">No faithful Realms or Villages yet.</div>
+          <div className="px-3 py-4 text-hud-label text-hud-muted">No faithful Realms or Villages yet.</div>
         ) : (
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="flex flex-col">
               {followers.map((follower) => (
                 <div
                   key={follower.structureId.toString()}
-                  className="grid grid-cols-[minmax(0,1fr)_96px_96px] gap-2 border-b border-gold/10 px-3 py-2"
+                  className="grid grid-cols-[minmax(0,1fr)_96px_96px] gap-2 border-b border-hud-divider px-3 py-2"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-xs font-semibold text-gold">{follower.structureLabel}</div>
-                    <div className="truncate text-xxs text-gold/65">
+                    <div className="truncate text-hud-label text-hud-accent">{follower.structureLabel}</div>
+                    <div className="truncate text-hud-label text-hud-muted">
                       {follower.structureTypeLabel} ·{" "}
                       {follower.ownerName?.trim() || displayAddress(follower.ownerAddress)}
                     </div>
                   </div>
-                  <div className="text-right text-xxs text-gold/70">
+                  <div className="text-right text-hud-label text-hud-muted">
                     30% owner
-                    <div className="font-mono text-xs text-gold">{formatInt(follower.fpToWonderOwnerPerSec)}</div>
+                    <div className="font-mono text-hud-label text-hud-accent">
+                      {formatInt(follower.fpToWonderOwnerPerSec)}
+                    </div>
                   </div>
-                  <div className="text-right text-xxs text-gold/70">
+                  <div className="text-right text-hud-label text-hud-muted">
                     70% follower
-                    <div className="font-mono text-xs text-gold">{formatInt(follower.fpToFollowerOwnerPerSec)}</div>
+                    <div className="font-mono text-hud-label text-hud-accent">
+                      {formatInt(follower.fpToFollowerOwnerPerSec)}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -196,21 +202,21 @@ const StatCard = ({
   className?: string;
 }) => (
   <div
-    className={cn("min-w-0 rounded-md border border-gold/20 bg-black/25", compact ? "px-1 py-1.5" : "p-2", className)}
+    className={cn("min-w-0 rounded-md border border-hud-line bg-hud-well", compact ? "px-1 py-1.5" : "p-2", className)}
   >
     <div
       className={cn(
         compact
-          ? "text-[10px] font-medium leading-tight tracking-[0.02em] text-gold/70"
-          : "text-xxs uppercase tracking-[0.22em] text-gold/60",
+          ? "text-hud-label leading-tight tracking-[0.02em] text-hud-muted"
+          : "text-hud-label uppercase tracking-[0.22em] text-hud-muted",
       )}
     >
       {label}
     </div>
     <div
       className={cn(
-        "mt-1 font-semibold text-gold",
-        compact ? "text-sm leading-tight" : "text-sm",
+        "mt-1 text-hud-strong text-hud-accent",
+        compact ? "text-hud-body leading-tight" : "text-hud-body",
         mono && "font-mono tabular-nums",
       )}
     >
