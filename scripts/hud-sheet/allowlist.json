@@ -265,15 +265,10 @@
   "apps/game/src/ui/motion/motion-scale.ts": 4,
   "apps/game/src/ui/motion/sweep.tsx": 1,
   "apps/game/src/ui/shared/components/alert-banner-shell.tsx": 12,
-  "apps/game/src/ui/shared/components/blitz-awards-variant-cards.tsx": 113,
-  "apps/game/src/ui/shared/components/blitz-highlight-card.tsx": 18,
-  "apps/game/src/ui/shared/components/blitz-leaderboard-card.tsx": 27,
-  "apps/game/src/ui/shared/components/blitz-map-fingerprint-card.tsx": 16,
   "apps/game/src/ui/shared/components/count-up-number.tsx": 1,
   "apps/game/src/ui/shared/components/production-status-badge.tsx": 40,
   "apps/game/src/ui/shared/components/world-loading.tsx": 4,
   "apps/game/src/ui/shared/error-boundary.tsx": 8,
-  "apps/game/src/ui/shared/lib/blitz-card-shared.ts": 75,
   "apps/game/src/ui/shared/lib/share-image.ts": 1,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }

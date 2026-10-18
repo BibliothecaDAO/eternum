@@ -18,14 +18,24 @@ const ALLOWLIST = new URL("./allowlist.json", import.meta.url);
 
 /**
  * The HUD's code: the interface over the map and its shared atoms, the plates and the order line. Not the sheet itself
- * (the kit), the labs (debug) or the shell's doorway, which `shell:check` guards.
+ * (the kit), the labs (debug), the shell's doorway, which `shell:check` guards, or the end-of-game share cards, which
+ * are exported images.
  */
 const SCOPE = ["ui", "three/map-plates", "three/scenes/context-menu", "three/scenes/worldmap-order-tip.tsx"].map(
   (path) => `${APP}/${path}`,
 );
-const OUTSIDE = ["ui/design-system/kit/", "ui/debug/", "ui/features/debug/", "ui/features/game-entry/doorway/"].map(
-  (dir) => `${APP}/${dir}`,
-);
+const OUTSIDE = [
+  "ui/design-system/kit/",
+  "ui/debug/",
+  "ui/features/debug/",
+  "ui/features/game-entry/doorway/",
+  // The end-of-game share cards: images exported to PNG on a fixed canvas in their own palette, not HUD.
+  "ui/shared/components/blitz-awards-variant-cards.tsx",
+  "ui/shared/components/blitz-highlight-card.tsx",
+  "ui/shared/components/blitz-leaderboard-card.tsx",
+  "ui/shared/components/blitz-map-fingerprint-card.tsx",
+  "ui/shared/lib/blitz-card-shared.ts",
+].map((path) => `${APP}/${path}`);
 const isScanned = (path) =>
   /\.(?:tsx?|css)$/.test(path) && !/\.test\.tsx?$/.test(path) && !OUTSIDE.some((dir) => path.startsWith(dir));
 
