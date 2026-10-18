@@ -170,3 +170,85 @@ describe("placing an order", () => {
     expect(world.calls.create_order).toHaveBeenCalledTimes(1);
   });
 });
+
+/** The game's answer to a send, held until the test gives it: accepted, or refused. */
+const held = (call: ReturnType<typeof vi.fn>) => {
+  let answer!: (refused: boolean) => void;
+  call.mockImplementation(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        answer = (refused) => (refused ? reject(new Error("refused")) : resolve());
+      }),
+  );
+  return (refused = false) =>
+    act(async () => {
+      answer(refused);
+    });
+};
+const pressIn = async (scope: ParentNode, text: string) => {
+  await act(async () => [...scope.querySelectorAll("button")].find((each) => each.textContent === text)!.click());
+};
+const confirmDialog = () => host.querySelector('[role="alertdialog"]')!;
+
+describe("a market send in flight", () => {
+  it.each(["accepted", "refused"] as const)(
+    "places one order while Frontier's confirm waits, and again after the first was %s",
+    async (answered) => {
+      world.mode = "frontier";
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      render(<OrderCreation entityId={STRUCTURE} resourceId={ResourcesIds.Wheat} isBuy />);
+      const answer = held(world.calls.create_order);
+      await press("Buy 100 Wheat");
+      await pressIn(confirmDialog(), "Buy 100 Wheat");
+      await pressIn(confirmDialog(), "Buy 100 Wheat");
+      expect(world.calls.create_order).toHaveBeenCalledTimes(1);
+      await answer(answered === "refused");
+      await press("Buy 100 Wheat");
+      await pressIn(confirmDialog(), "Buy 100 Wheat");
+      expect(world.calls.create_order).toHaveBeenCalledTimes(2);
+      await answer();
+    },
+  );
+
+  it("places one order in Blitz while it waits, and again once answered", async () => {
+    world.mode = "blitz";
+    render(<OrderCreation entityId={STRUCTURE} resourceId={ResourcesIds.Wheat} isBuy />);
+    const answer = held(world.calls.create_order);
+    const verb = button("Buy 100 Wheat");
+    await act(async () => verb.click());
+    await act(async () => verb.click());
+    expect(world.calls.create_order).toHaveBeenCalledTimes(1);
+    await answer();
+    await press("Buy 100 Wheat");
+    expect(world.calls.create_order).toHaveBeenCalledTimes(2);
+    await answer();
+  });
+
+  it("cancels one order while Frontier's confirm waits, and closes it once answered", async () => {
+    world.mode = "frontier";
+    ownOrder();
+    const answer = held(world.calls.cancel_order);
+    await press("Cancel");
+    await pressIn(confirmDialog(), "Cancel order");
+    await pressIn(confirmDialog(), "Cancel order");
+    expect(world.calls.cancel_order).toHaveBeenCalledTimes(1);
+    await answer();
+    expect(host.querySelector('[role="alertdialog"]')).toBeNull();
+  });
+
+  it("takes an offer once while its send waits", async () => {
+    world.mode = "blitz";
+    render(
+      <OrderRow offer={ask(3)} entityId={STRUCTURE} isBuy={false} updateBalance={false} setUpdateBalance={() => {}} />,
+    );
+    const answer = held(world.calls.accept_order);
+    await press("Buy");
+    const take = [...host.querySelector('[role="dialog"]')!.querySelectorAll("button")].find(
+      (each) => each.textContent === "Buy",
+    )!;
+    await act(async () => take.click());
+    await act(async () => take.click());
+    expect(world.calls.accept_order).toHaveBeenCalledTimes(1);
+    await answer();
+  });
+});

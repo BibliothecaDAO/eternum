@@ -86,7 +86,7 @@ const ResourceBurn = ({
         tone="bad"
         busy={busy ? "Burning…" : undefined}
         disabled={amount === 0}
-        onClick={() => void burn()}
+        onClick={burn}
       >
         Burn {label}
       </HudButton>

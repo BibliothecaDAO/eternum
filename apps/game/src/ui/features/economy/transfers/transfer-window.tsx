@@ -359,7 +359,7 @@ const Goods = ({
       <HudButton
         kind="primary"
         disabled={chosen === 0 || destinationIds.length === 0 || short || send.busy}
-        onClick={() => void sendNow()}
+        onClick={sendNow}
       >
         {sendWords({
           goods: chosen,

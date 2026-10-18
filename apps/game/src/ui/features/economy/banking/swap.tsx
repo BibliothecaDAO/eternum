@@ -95,12 +95,10 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const onInvert = useCallback(() => setIsBuyResource((prev) => !prev), []);
 
   const onSwap = useCallback(async () => {
-    setIsLoading(true);
     const operation = isBuyResource ? systemCalls.buy_resources : systemCalls.sell_resources;
-
     const closestBank = getClosestBank(entityId, store);
-
     if (!closestBank) return;
+    setIsLoading(true);
     const performSwap = () => {
       return operation({
         signer: account,
@@ -111,12 +109,13 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       });
     };
 
-    // If no bank protector, just perform swap
-    await performSwap().finally(() => {
-      playTradeExecuteSound();
-      setIsLoading(false);
-      setOpenConfirmation(false);
-    });
+    await performSwap()
+      .catch((error) => console.error("Failed to swap", error))
+      .finally(() => {
+        playTradeExecuteSound();
+        setIsLoading(false);
+        setOpenConfirmation(false);
+      });
   }, [
     isBuyResource,
     account,
@@ -226,7 +225,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       StructureType.Village && isMilitaryResource(resourceId);
   const swapLabel = `Swap ${isBuyResource ? "Lords" : chosenResourceName} for ${isBuyResource ? chosenResourceName : "Lords"}`;
   // The swap acts at once; in Frontier it asks first, with what it takes and gives.
-  const pressSwap = () => (confirmsLoss ? setOpenConfirmation(true) : void onSwap());
+  const pressSwap = () => (confirmsLoss ? setOpenConfirmation(true) : onSwap());
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-3">
@@ -315,7 +314,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           <HudConfirm
             question="Confirm Swap"
             verb={swapLabel}
-            onConfirm={() => void onSwap()}
+            onConfirm={onSwap}
             onBack={() => setOpenConfirmation(false)}
           >
             <SwapSummary

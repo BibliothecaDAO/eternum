@@ -93,7 +93,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     if (!closestBank) return;
 
     setIsLoading(true);
-    systemCalls
+    return systemCalls
       .add_liquidity({
         signer: account,
         bank_entity_id: closestBank.bankId,
@@ -106,6 +106,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
           },
         ],
       })
+      .catch((error) => console.error("Failed to add liquidity", error))
       .finally(() => {
         setIsLoading(false);
         setOpenConfirmation(false);

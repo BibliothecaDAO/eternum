@@ -156,3 +156,81 @@ describe("a deposit", () => {
     expect(world.calls.add_liquidity).toHaveBeenCalledTimes(1);
   });
 });
+
+/** The game's answer to a send, held until the test gives it: accepted, or refused. */
+const held = (call: ReturnType<typeof vi.fn>) => {
+  let answer!: (refused: boolean) => void;
+  call.mockImplementation(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        answer = (refused) => (refused ? reject(new Error("refused")) : resolve());
+      }),
+  );
+  return (refused = false) =>
+    act(async () => {
+      answer(refused);
+    });
+};
+
+describe("a bank send in flight", () => {
+  const forms = {
+    swap: {
+      call: () => world.calls.buy_resources,
+      verb: "Swap Lords for Wood",
+      draw: () => act(() => root.render(<ResourceSwap entityId={STRUCTURE} listResourceId={ResourcesIds.Wood} />)),
+      fill: () => typeInto("Lords amount", "2.5"),
+    },
+    deposit: {
+      call: () => world.calls.add_liquidity,
+      verb: "Add Liquidity",
+      draw: () => act(() => root.render(<AddLiquidity entityId={STRUCTURE} listResourceId={ResourcesIds.Wood} />)),
+      fill: () => {
+        typeInto("Lords amount", "10");
+        typeInto("Wood amount", "20");
+      },
+    },
+  };
+  const confirm = () => host.querySelector('[role="alertdialog"]');
+
+  it.each(
+    Object.entries(forms).flatMap(([name, form]) =>
+      (["accepted", "refused"] as const).map((answered) => [name, answered, form] as const),
+    ),
+  )("Frontier %s sends once while its confirm waits, and again after the first was %s", async (_, answered, form) => {
+    const refused = answered === "refused";
+    world.mode = "frontier";
+    form.draw();
+    form.fill();
+    const answer = held(form.call());
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await press(form.verb);
+    await press(form.verb, confirm()!);
+    await press(form.verb, confirm()!);
+    expect(form.call()).toHaveBeenCalledTimes(1);
+    await answer(refused);
+    expect(confirm()).toBeNull();
+    form.fill();
+    await press(form.verb);
+    await press(form.verb, confirm()!);
+    expect(form.call()).toHaveBeenCalledTimes(2);
+    await answer();
+  });
+
+  it.each(Object.entries(forms))("Blitz %s sends once while it waits, and again once answered", async (_, form) => {
+    world.mode = "blitz";
+    form.draw();
+    form.fill();
+    const answer = held(form.call());
+    // The same button twice: once sending, it says so in its own words.
+    const verb = buttonIn(host, form.verb);
+    await act(async () => verb.click());
+    expect(verb.disabled).toBe(true);
+    await act(async () => verb.click());
+    expect(form.call()).toHaveBeenCalledTimes(1);
+    await answer();
+    form.fill();
+    await press(form.verb);
+    expect(form.call()).toHaveBeenCalledTimes(2);
+    await answer();
+  });
+});

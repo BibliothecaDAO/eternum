@@ -63,7 +63,7 @@ type RelicActivationHolderCardProps = {
   holder: EnrichedHolder;
   relicInfo: RelicInfoType;
   essenceCost: number;
-  onActivate: (request: ActivationRequest) => void;
+  onActivate: (request: ActivationRequest) => Promise<void>;
   isActivating: boolean;
   activationError?: string | null;
 };

@@ -79,12 +79,10 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
 
   const onWithdraw = useCallback(
     (percentage: number) => {
-      setIsLoading(true);
       const { withdrawShares } = calculateWithdrawAmounts(percentage);
-
       const closestBank = getClosestBank(entityId, gameContext.setup.store);
-
       if (!closestBank) return;
+      setIsLoading(true);
 
       const calldata = {
         bank_entity_id: closestBank.bankId,
@@ -94,10 +92,13 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
         signer: gameContext.account.account,
       };
 
-      gameContext.setup.systemCalls.remove_liquidity(calldata).finally(() => {
-        setIsLoading(false);
-        setOpenConfirmation(false);
-      });
+      return gameContext.setup.systemCalls
+        .remove_liquidity(calldata)
+        .catch((error) => console.error("Failed to withdraw liquidity", error))
+        .finally(() => {
+          setIsLoading(false);
+          setOpenConfirmation(false);
+        });
     },
     [gameContext, entityId, resourceId, marketManager],
   );

@@ -412,7 +412,7 @@ export const OrderRow = memo(
 
     const actionLabel = isSelf ? "Cancel" : isBuy ? "Sell" : "Buy";
     // Taking an offer asks how much; cancelling your own acts at once, but in Frontier, where a loss asks first.
-    const pressAction = () => (isSelf && !confirmsLoss ? void onCancel() : setConfirmOrderModal(true));
+    const pressAction = () => (isSelf && !confirmsLoss ? onCancel() : setConfirmOrderModal(true));
 
     return (
       <HudTableRow
@@ -447,10 +447,7 @@ export const OrderRow = memo(
                 verb="Cancel order"
                 back="Keep it"
                 tone="bad"
-                onConfirm={() => {
-                  setConfirmOrderModal(false);
-                  void onCancel();
-                }}
+                onConfirm={() => onCancel().finally(() => setConfirmOrderModal(false))}
                 onBack={() => setConfirmOrderModal(false)}
               />
             </OrderDialog>
@@ -749,14 +746,14 @@ export const OrderCreation = memo(
     const confirmsLoss = useConfirmsLoss();
     const trait = findResourceById(resourceId)?.trait ?? "";
     // Placing an order acts at once; in Frontier it asks first, with the order spelled out.
-    const placeOrder = () => (confirmsLoss ? setShowConfirmation(true) : void createOrder());
+    const placeOrder = () => (confirmsLoss ? setShowConfirmation(true) : createOrder());
 
     const confirmPlaceOrder = (
       <OrderDialog title={`Place this ${isBuy ? "buy" : "sell"} order?`} onCancel={() => setShowConfirmation(false)}>
         <HudConfirm
           question={`Place this ${isBuy ? "buy" : "sell"} order?`}
           verb={`${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
-          onConfirm={() => void createOrder()}
+          onConfirm={createOrder}
           onBack={() => setShowConfirmation(false)}
         >
           <span>

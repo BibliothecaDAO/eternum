@@ -172,7 +172,7 @@ function OfflineRow() {
           size="sm"
           icon="refresh"
           busy={reconnecting ? "Retrying…" : undefined}
-          onClick={() => void triggerConnectionForceReconnect()}
+          onClick={() => triggerConnectionForceReconnect()}
         >
           Retry
         </HudButton>
