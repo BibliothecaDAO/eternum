@@ -29,8 +29,6 @@
   "apps/game/src/ui/features/frontier/value/withdraw-sheet.tsx": 13,
   "apps/game/src/ui/features/game-review/game-review-modal.tsx": 104,
   "apps/game/src/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx": 2,
-  "apps/game/src/ui/features/social/faith/faith-leaderboard-panel.tsx": 3,
-  "apps/game/src/ui/features/social/realtime-chat/ui/realtime-chat-shell.tsx": 3,
   "apps/game/src/ui/features/world/components/actions/spire-travel-modal.tsx": 24,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 9,
   "apps/game/src/ui/features/world/containers/compact-hud.tsx": 35,
