@@ -323,6 +323,7 @@ export const HudTabs = <K extends string | number>({
   tabs,
   value,
   onChange,
+  size = "md",
   states = {},
 }: {
   /**
@@ -340,10 +341,12 @@ export const HudTabs = <K extends string | number>({
   }[];
   value: K;
   onChange: (key: K) => void;
+  /** A strip in a line of body text (the top bar's): its words at the body's size. */
+  size?: "md" | "sm";
   /** The lab's forced state per tab. */
   states?: Partial<Record<K, string>>;
 }) => (
-  <div className="ui-tabs" role="tablist">
+  <div className="ui-tabs" role="tablist" data-size={size}>
     {tabs.map((tab) => (
       <button
         key={tab.key}
@@ -1006,17 +1009,40 @@ export const HudEmpty = ({ icon, line, action }: { icon: IconMeaning; line: stri
   </div>
 );
 
-/** The HUD's top line: its readings in one rounded strip, a rule between them. */
-export const HudPill = ({ children }: { children: readonly ReactNode[] }) => (
-  <div className="ui ui-pill">
-    {children.map((child, index) => (
-      <span key={index} className="contents">
-        {index > 0 && <span className="ui-pill__rule" aria-hidden="true" />}
-        {child}
-      </span>
-    ))}
-  </div>
-);
+/**
+ * The HUD's top line: its readings in one rounded strip, a rule between them. With `onPress` the whole strip is one
+ * button (the player's chip opens the standings). `label` names it for assistive technology, `className` places it
+ * (never its look), and the rest are the strip's own attributes (a group's role, a title, whether what it opens is
+ * open).
+ */
+export const HudPill = ({
+  children,
+  label,
+  className,
+  onPress,
+  ...rest
+}: {
+  children: readonly ReactNode[];
+  label?: string;
+  className?: string;
+  onPress?: () => void;
+} & Omit<HTMLAttributes<HTMLElement>, "children" | "className" | "onClick">) => {
+  const readings = children.map((child, index) => (
+    <span key={index} className="contents">
+      {index > 0 && <span className="ui-pill__rule" aria-hidden="true" />}
+      {child}
+    </span>
+  ));
+  return onPress ? (
+    <button {...rest} type="button" aria-label={label} className={cn("ui ui-pill", className)} onClick={onPress}>
+      {readings}
+    </button>
+  ) : (
+    <div {...rest} aria-label={label} className={cn("ui ui-pill", className)}>
+      {readings}
+    </div>
+  );
+};
 
 /** A player's or an army's painting, centred in its disc: a painting, a player's own image, or their initial. */
 export const HudPortrait = ({

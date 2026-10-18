@@ -905,6 +905,20 @@ const TabsSection = () => {
             onChange={() => undefined}
             states={{ camps: "hover", rifts: "focus" }}
           />
+          <HudPill>
+            {[
+              <HudTabs
+                key="view"
+                size="sm"
+                tabs={[
+                  { key: "realms", label: "Realm" },
+                  { key: "camps", label: "World" },
+                ]}
+                value={tab === "realms" ? "realms" : "camps"}
+                onChange={setTab}
+              />,
+            ]}
+          </HudPill>
           <HudTabs
             tabs={[
               { key: "realms", icon: "realm", count: 3, ariaLabel: "Realms, 3" },

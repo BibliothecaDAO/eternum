@@ -275,6 +275,12 @@ button.ui-panel__name {
     color var(--hud-fast) var(--hud-ease),
     background-color var(--hud-fast) var(--hud-ease);
 }
+.ui-tabs[data-size="sm"] .ui-tab {
+  height: calc(var(--hud-control) - 8px);
+  padding: 0 theme(spacing.2);
+  font-size: var(--hud-text-body);
+  line-height: var(--hud-line-body);
+}
 .ui-tab:is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
   color: var(--hud-muted);
@@ -1279,6 +1285,23 @@ button.ui-row {
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   box-shadow: var(--hud-shadow-panel);
   padding: 0 theme(spacing.4);
+}
+/* A strip that is one button: it lights under the pointer and while what it opens is open. */
+button.ui-pill {
+  cursor: pointer;
+  transition:
+    border-color var(--hud-fast) var(--hud-ease),
+    background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-pill:is(:hover, [data-state="hover"], [aria-expanded="true"]) {
+  border-color: var(--hud-line-strong);
+  background:
+    linear-gradient(var(--hud-hover), var(--hud-hover)),
+    linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+}
+button.ui-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
 }
 .ui-pill__rule {
   width: 1px;
