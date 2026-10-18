@@ -1,13 +1,10 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
-import { FullIn } from "@/ui/design-system/kit/chip";
-
-import { Sheet } from "@/ui/design-system/kit/sheet";
-import { StoreBar } from "@/ui/design-system/kit/store-bar";
-import type { Tone } from "@/ui/design-system/kit/tone";
+import { HudButton, HudChip, HudMeter, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
 import { BUILD, DEPLOY, FULL, LABOR, PRODUCTION, REALM, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
+
+import { FullIn } from "../full-in";
 
 /** The three stores by their icons, each with the word written beside it: a store without a word does not compile. */
 const STORE_WORDS = { wheat: WHEAT, labor: LABOR, troops: TROOPS } as const satisfies Partial<
@@ -48,12 +45,11 @@ export const ProductionSheet = ({
   onBuild: () => void;
   onClose: () => void;
 }) => (
-  <Sheet label={PRODUCTION} onClose={onClose}>
-    <h2 className="frontier-title !text-xl">{PRODUCTION}</h2>
+  <HudSheet label={PRODUCTION} onClose={onClose}>
     {lines.map((line) => (
       <Row key={line.icon} line={line} onSpend={onSpend} onBuild={onBuild} />
     ))}
-  </Sheet>
+  </HudSheet>
 );
 
 const Row = ({
@@ -66,47 +62,49 @@ const Row = ({
   onBuild: () => void;
 }) => {
   const full = line.limit !== undefined && line.held !== undefined && line.held >= line.limit;
+  const word = STORE_WORDS[line.icon];
   return (
-    <div className="flex h-14 items-center gap-2 border-b border-kit-line">
-      <SemanticIcon name={line.icon} size={28} />
-      <span className="flex w-[92px] shrink-0 flex-col">
-        <span className="text-sm font-semibold capitalize leading-tight text-kit-muted">{STORE_WORDS[line.icon]}</span>
-        <span
-          className={cn(
-            "flex items-center gap-[3px] text-base tabular-nums",
-            full ? "text-light-red" : "text-kit-cream",
-          )}
-        >
+    <div className="flex items-center gap-2 border-b border-hud-divider py-1.5">
+      <Icon name={line.icon} size={28} />
+      <span className="flex w-24 shrink-0 flex-col">
+        <span className="text-hud-label capitalize text-hud-muted">{word}</span>
+        <span className={`flex items-center gap-1 tabular-nums ${full ? "text-hud-bad" : ""}`}>
           {full ? "+0/h" : line.perHour === undefined ? "—" : `+${formatAmount(line.perHour)}/h`}
           {line.sides?.map((side, index) => (
-            <SemanticIcon key={index} name={side} size={18} />
+            <Icon key={index} name={side} size={18} />
           ))}
         </span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         {/* The kit's amount rule, as on the strip: a phone's row has no room for two exact five-digit amounts. A full
             store holds its limit, so its row says the one number beside Full. */}
-        <span className="whitespace-nowrap text-sm tabular-nums text-kit-cream">
+        <span className="whitespace-nowrap text-hud-label tabular-nums">
           {formatAmount(line.held)}
           {line.limit !== undefined && !full && ` / ${formatAmount(line.limit)}`}
         </span>
-        <StoreBar amount={line.held} limit={line.limit} tone={line.tone} />
+        {line.limit !== undefined && (
+          <HudMeter
+            share={line.held === undefined || line.limit <= 0 ? 0 : line.held / line.limit}
+            tone={HUD_TONE[line.tone]}
+            label={word}
+          />
+        )}
       </span>
       {full ? (
         <>
-          <span className="frontier-chip h-7 !border-light-red !px-2.5 !py-0 text-sm font-semibold text-light-red">
-            {FULL}
-          </span>
-          <Button
-            role="secondary"
+          <HudChip tone="bad">{FULL}</HudChip>
+          <HudButton
+            kind="secondary"
             icon={line.spentAt === "realm" ? "realm" : undefined}
-            word={line.spentAt === "realm" ? REALM : DEPLOY}
-            className="!h-12 w-24 !px-2 !text-base"
             onClick={() => onSpend(line.spentAt)}
-          />
+          >
+            {line.spentAt === "realm" ? REALM : DEPLOY}
+          </HudButton>
         </>
       ) : line.noBuilding ? (
-        <Button role="secondary" word={BUILD} className="!h-12 w-[84px] !text-base" onClick={onBuild} />
+        <HudButton kind="secondary" onClick={onBuild}>
+          {BUILD}
+        </HudButton>
       ) : (
         line.fullIn !== undefined && <FullIn seconds={line.fullIn} />
       )}
