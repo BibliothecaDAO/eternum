@@ -89,9 +89,10 @@ test("only what the sheet is made of passes in the kit: its elements, the sheet'
       "ui/design-system/kit/named-tips.tsx",
       "ui/design-system/kit/time.ts",
       "ui/design-system/kit/failure-lines.ts",
+      "ui/design-system/kit/price-faces.ts",
       "ui/design-system/atoms/button-group.tsx",
     ].map(isRetired),
-    [false, false, false, false, false, false],
+    [false, false, false, false, false, false, false],
   ));
 
 test("an area that renders a kit control through another area's child fails, the way there named", () => {

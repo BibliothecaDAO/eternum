@@ -2,7 +2,8 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { type To, useNavigate } from "react-router-dom";
 
-import { type PriceKind, PriceChip } from "./price-chip";
+import { PriceChip } from "./price-chip";
+import type { PriceKind } from "./price-faces";
 
 /**
  * Primary is the one verb a screen asks for; secondary sits beside it; outline is the quiet way out (Cancel, Try again).

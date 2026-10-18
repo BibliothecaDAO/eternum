@@ -7,7 +7,7 @@ import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliotheca
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
-import type { PriceKind } from "@/ui/design-system/kit/price-chip";
+import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import { BUILDING_FIGURES, LABOR } from "@/ui/design-system/kit/words";
 import { knownBalance } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";

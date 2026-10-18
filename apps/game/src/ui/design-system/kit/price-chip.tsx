@@ -1,20 +1,7 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { formatCharge } from "./amount";
 
-import { ESSENCE, LABOR, LORDS, STAMINA, TROOPS, WHEAT, XP } from "./words";
-
-/** What a price is paid in: a resource, LORDS, stamina, or XP (drawn as its word, the XP badge being a number alone). */
-export type PriceKind = "essence" | "labor" | "wheat" | "troops" | "lords" | "stamina" | "xp";
-
-export const PRICE_FACES: Record<PriceKind, { word: string; icon?: IconMeaning }> = {
-  essence: { word: ESSENCE, icon: "essence" },
-  labor: { word: LABOR, icon: "labor" },
-  wheat: { word: WHEAT, icon: "wheat" },
-  troops: { word: TROOPS, icon: "troops" },
-  lords: { word: LORDS, icon: "lords" },
-  stamina: { word: STAMINA, icon: "stamina" },
-  xp: { word: XP },
-};
+import { PRICE_FACES, type PriceKind } from "./price-faces";
 
 /** A price: its resource (or XP) and the amount it charges, on the price chip a button carries. Unknown is a dash. */
 export const PriceChip = ({ of, amount }: { of: PriceKind; amount: number | undefined }) => {

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { formatExact } from "./amount";
 
-import { PRICE_FACES, type PriceKind } from "./price-chip";
+import { PRICE_FACES, type PriceKind } from "./price-faces";
 import { formatDuration } from "./time";
 import { inTime, needsFree, needsHave, needsOverLimit, POPULATION } from "./words";
 
