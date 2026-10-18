@@ -156,7 +156,7 @@ afterEach(async () => {
 
 it("shows the pool, and on each paid rating place what it would take if the season ended now", async () => {
   const panel = await mountPrize(prize({}));
-  expect(panel.querySelector("h2")!.textContent).toContain("7,000");
+  expect(panel.querySelector("header")!.textContent).toContain("7,000");
   expect(panel.textContent).toContain("3 places paid");
   // Places 1 to 3 of the rating take 4,000, 2,000 and 1,000 of the pool: ceil(25 × 10%) places, each half the last.
   expect([...panel.querySelectorAll("li")].map((row) => row.textContent)).toEqual([
@@ -319,8 +319,9 @@ it.each([
   const claim = await mountPrize(
     prize({ posted: true, end: NOW - 7200, reviewUntil: NOW - 60 }, { share: 4_000n * WEI, position: 0 }),
   );
-  expect(claim.querySelector("h2")!.textContent).toContain("7,000");
-  expect(claim.textContent).toContain("Your share4,000");
+  expect(claim.querySelector("header")!.textContent).toContain("7,000");
+  // The share is a figure: its value over its label.
+  expect(claim.textContent).toContain("4,000Your share");
   // The rating's rows are its own: absent, with their one wait or failure in their place.
   expect(claim.querySelectorAll("li")).toHaveLength(0);
   expect([...claim.querySelectorAll('[role="status"]')].map((status) => status.textContent)).toEqual([line]);

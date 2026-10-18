@@ -434,6 +434,8 @@ export const SEASON_WORDS = {
   of: "of",
   /** Blitz's own unit, one word wherever a player reads it. */
   vp: "points",
+  /** Under the LORDS the player's realm has earned this season. */
+  lordsEarned: "LORDS earned",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */

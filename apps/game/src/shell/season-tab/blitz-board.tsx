@@ -1,22 +1,18 @@
-import { RATING_WORDS } from "@/ui/design-system/kit/words";
 import { formatExact } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { AppChip, AppFigure, AppPanel, AppRank, AppRow } from "@/ui/design-system/kit/app-elements";
+import { RATING_WORDS } from "@/ui/design-system/kit/words";
 
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { Loading } from "../loading";
-import { Panel } from "@/ui/design-system/kit/panel";
-import { Figure } from "@/ui/design-system/kit/figure";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { ageOf } from "../play/ages";
-import { RatingFigure, TierMark } from "../rating-mark";
 import { type RatingProfile, ratingPoints, tierOf, useRatingTop } from "../ratings";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { ListRow } from "@/ui/design-system/kit/list-row";
 import { useNowSeconds } from "../use-now";
 import { lordsOf } from "../value/ledger";
 import { PrizeHead, PrizeLines, useBoardPrize } from "./season-prize";
@@ -28,8 +24,8 @@ type RatingTop = NonNullable<ReturnType<typeof useRatingTop>["data"]>;
 type Self = RatingTop["self"];
 
 /**
- * Blitz's board on Season (spec 09): the season's pool at its title, the reader's tier and rating, then the rating's
- * top rows with the reader's own under them when it ranks below. The season prize is paid by rating place, so while it
+ * Blitz's board on Season, under Blitz's painting: the season's pool at its title, the reader's rating with its tier's
+ * mark, then the rating's top rows with the reader's own under them when it ranks below. The season prize is paid by rating place, so while it
  * runs each paid row carries what it would take if the season ended now; once over, the reader's share and its claim
  * stand above the rows. The prize and the rating are two reads, each waiting and failing on its own: a share to claim
  * stays claimable while the rating is down.
@@ -39,16 +35,23 @@ export const BlitzBoard = () => {
   const top = useRatingTop(TOP_ROWS, session ? payoutAddressOf(session.user) : null);
   const now = useNowSeconds();
   const prize = useBoardPrize(now);
+  const blitz = ageOf("blitz");
   return (
-    <Panel
-      icon="play"
-      title={ageOf("blitz").name}
-      aside={prize.prize && <PrizeHead prize={prize.prize} state={prize.state} />}
-    >
-      {top.isSuccess && <OwnRating self={top.data.self} signedIn={session !== null} />}
-      <PrizeLines prize={prize} now={now} onClaimed={() => void prize.query.refetch()} />
-      <Ratings top={top} shares={prize.shares} />
-    </Panel>
+    <div data-age="blitz">
+      <AppPanel
+        icon="leaderboard"
+        title={blitz.name}
+        painting={blitz.painting}
+        cue={prize.prize && <PrizeHead prize={prize.prize} state={prize.state} />}
+        flush
+      >
+        <div className="flex flex-col px-4 empty:hidden">
+          {top.isSuccess && <OwnRating self={top.data.self} signedIn={session !== null} />}
+          <PrizeLines prize={prize} now={now} onClaimed={() => void prize.query.refetch()} />
+        </div>
+        <Ratings top={top} shares={prize.shares} />
+      </AppPanel>
+    </div>
   );
 };
 
@@ -59,20 +62,18 @@ const Ratings = ({ top, shares }: { top: ReturnType<typeof useRatingTop>; shares
   return <TopRows top={top.data} shares={shares} />;
 };
 
-/** The reader's tier and rating, large; a reader with no wallet is told how to carry one. Signed out, nothing. */
+/** The reader's rating with its tier's mark; a reader with no wallet is told how to carry one. Signed out, nothing. */
 const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
   if (self === null)
-    return signedIn ? <p className="px-1 py-2 text-base text-kit-muted">{RATING_WORDS.unlinked}</p> : null;
+    return signedIn ? <p className="py-3 text-app-body text-app-muted">{RATING_WORDS.unlinked}</p> : null;
+  const tier = tierOf(ratingPoints(self.rating));
   return (
-    <div className="flex items-center gap-3 px-1 py-2">
-      <TierMark rating={self.rating} size={40} />
-      <span className="flex flex-col">
-        <b className="font-body text-base text-kit-cream">{tierOf(ratingPoints(self.rating)).name}</b>
-        <span className="text-sm text-kit-muted">{RATING_WORDS.blitzRating}</span>
-      </span>
-      <Figure as="span" size="title" tone="cream" className="ml-auto">
-        {formatExact(ratingPoints(self.rating))}
-      </Figure>
+    <div className="py-3">
+      <AppFigure
+        icon={tier.mark}
+        value={formatExact(ratingPoints(self.rating))}
+        label={`${tier.name} · ${RATING_WORDS.blitzRating}`}
+      />
     </div>
   );
 };
@@ -115,21 +116,25 @@ const RatingRow = ({
   share: bigint | undefined;
   own: boolean;
 }) => (
-  <ListRow as="li" height={12} gap={3} own={own ? "lit" : undefined} className="px-1">
-    <span className="w-8 text-right font-body text-base font-bold tabular-nums text-kit-cream">
-      {rank === null ? "—" : rank}
-    </span>
-    <span className="min-w-0 flex-1">
-      <RatedOwner player={player} profile={profile} own={own} />
-    </span>
-    <RatingFigure rating={rating} />
-    {share !== undefined && (
-      <span className="inline-flex w-24 items-center justify-end gap-1 font-body text-base font-bold tabular-nums text-kit-gold2">
-        <SemanticIcon name="lords" size={16} />
-        {formatExact(lordsOf(share))}
-      </span>
-    )}
-  </ListRow>
+  <li>
+    <AppRow
+      own={own}
+      lead={rank === null ? <span className="app-rank">—</span> : <AppRank rank={rank} />}
+      title={<RatedOwner player={player} profile={profile} own={own} />}
+      trail={
+        <>
+          <AppChip icon={tierOf(ratingPoints(rating)).mark}>
+            <span aria-label={tierOf(ratingPoints(rating)).name}>{formatExact(ratingPoints(rating))}</span>
+          </AppChip>
+          {share !== undefined && (
+            <AppChip icon="lords" tone="gold">
+              {formatExact(lordsOf(share))}
+            </AppChip>
+          )}
+        </>
+      }
+    />
+  </li>
 );
 
 /**
@@ -142,6 +147,6 @@ const RatedOwner = ({ player, profile, own }: { player: string; profile: RatingP
   ) : (
     <span className="inline-flex min-w-0 items-center gap-2">
       <Portrait account={player} portrait={profile?.portrait} size={28} weight={1.5} className="shrink-0" />
-      <span className="truncate text-kit-muted">{shortAddress(player)}</span>
+      <span className="truncate text-app-muted">{shortAddress(player)}</span>
     </span>
   );

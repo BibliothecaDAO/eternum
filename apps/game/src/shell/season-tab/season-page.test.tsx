@@ -31,9 +31,9 @@ it("says Season did not answer in the glossary's words, with Try again, and the 
     const body = container.querySelector('[data-band="body"]')!;
     expect(body.textContent).toContain("Season did not answer.");
     expect(body.textContent).not.toContain("502");
-    const blitz = [...body.querySelectorAll('[role="radio"]')].find((radio) => radio.textContent === "Blitz")!;
+    const blitz = [...body.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Blitz")!;
     await act(async () => (blitz as HTMLButtonElement).click());
-    expect(blitz.getAttribute("aria-checked")).toBe("true");
+    expect(blitz.getAttribute("aria-selected")).toBe("true");
     expect(body.textContent).toContain("Blitz board");
     expect(body.textContent).not.toContain("Season did not answer.");
   } finally {

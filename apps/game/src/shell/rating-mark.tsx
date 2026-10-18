@@ -4,7 +4,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ratingPoints, tierOf } from "./ratings";
 
 /** A tier's mark: its gilded shield, labelled with the tier's name so it reads without the picture. */
-export const TierMark = ({ rating, size = 18 }: { rating: string; size?: number }) => {
+const TierMark = ({ rating, size = 18 }: { rating: string; size?: number }) => {
   const tier = tierOf(ratingPoints(rating));
   return (
     <span role="img" aria-label={tier.name} className="inline-flex shrink-0">
