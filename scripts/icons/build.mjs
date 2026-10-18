@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { normalizeMaster, assertIconFill, deliverIcon } from "./normalize.mjs";
 import { validateIconFiles } from "./files.mjs";
+import { buildRewardChests } from "./reward-chests.mjs";
 import { validateIcons } from "./validate.mjs";
 const repo = fileURLToPath(new URL("../../", import.meta.url));
 const source = `${repo}/apps/game/asset-sources/facets`;
@@ -14,12 +15,17 @@ const [{ icons }, meanings, resources, verdicts] = await Promise.all([
 ]);
 validateIcons({ icons, meanings, resources, verdicts });
 await assertIconFill(`${repo}/apps/game/public/tokens/lords.svg`, "official LORDS");
+const rewardIds = [
+  ...new Set(Object.values(meanings).flatMap((entry) => (entry.rewardChest ? [entry.rewardChest] : []))),
+];
+const requested = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
+for (const id of requested)
+  if (!icons.some((icon) => icon.id === id) && !rewardIds.includes(id)) throw new Error(`Unknown painting: ${id}`);
+await buildRewardChests(`${repo}/apps/game`, meanings, { check: process.argv.includes("--check"), requested });
 const output = `${repo}/apps/game/public/icons/facets`;
 await validateIconFiles(icons, source, process.argv.includes("--check") ? output : undefined);
 if (!process.argv.includes("--check")) {
   for (const size of [64, 128, 256]) await mkdir(`${output}/${size}`, { recursive: true });
-  const requested = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
-  for (const id of requested) if (!icons.some((icon) => icon.id === id)) throw new Error(`Unknown painting: ${id}`);
   for (const icon of icons.filter((icon) => !requested.length || requested.includes(icon.id))) {
     const master = await normalizeMaster(`${source}/masters/${icon.id}.png`);
     for (const size of [64, 128, 256])

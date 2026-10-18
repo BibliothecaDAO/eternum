@@ -37,7 +37,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-18",
     title: "Reward chests keep their tiers",
     description:
-      "Blitz rewards show their own rank-band chest artwork in panel titles, entry details and Open buttons. Map crates keep their in-game model.",
+      "Blitz rewards show their own rank-band chest artwork in panel titles, entry details and Open buttons. The approved paintings fill their frames. Map crates keep their in-game model.",
     type: "fix",
   },
   {

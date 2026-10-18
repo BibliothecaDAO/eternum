@@ -1,6 +1,6 @@
 {
   "revision": "84b6dd86b80",
-  "reason": "Owner-approved five reward rank bands, sealed and opened. Preserve separately from the world-map crate.",
+  "reason": "Owner-approved five reward rank bands, sealed and opened. Hashes pin the original sources; production deliveries use normalizeMaster and deliverIcon at 384 px.",
   "files": {
     "band-0-opened.webp": {
       "sha256": "6dfdd754627f5a353956add56bec8dcb7ec6c3f17d111709a58c9160e5b04f22"
@@ -32,5 +32,6 @@
     "band-4-sealed.webp": {
       "sha256": "54ea39b1196f65eebcac93ba338fbb3adb876701081d341b52502b743fed615d"
     }
-  }
+  },
+  "size": 384
 }
