@@ -29,14 +29,14 @@ export function ChestTileDetails({
 }) {
   return (
     <div className="flex shrink-0 flex-col gap-2">
-      <HudPanel className="min-w-0" divided bodyClassName="flex flex-col">
+      <HudPanel className="min-w-0" divided collapsible={false}>
         <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
           <div className="flex items-center gap-2 text-hud-accent">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
             <p className="truncate text-hud-title">{opening ? "Crate opened" : "Crate"}</p>
           </div>
         </HudPanel>
-        <HudPanel kind="section" title="Contents" icon={"chest" as const}>
+        <HudPanel kind="section" title="Contents" icon="chest">
           {opening ? <RelicList relics={opening.relics} /> : <CrateContents crateEntityId={crateEntityId} />}
           {!opening && (
             <div className="mt-2">

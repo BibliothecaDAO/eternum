@@ -7,7 +7,6 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
@@ -23,6 +22,7 @@ import { useMemo } from "react";
 
 import { normalizeLeaderboardAddress } from "../player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
+import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 /**
  * A player's detail beside the leaderboard: only what earns them points. Their points by activity, and the

@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatAmount } from "@/ui/design-system/kit/amount";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import {
   CHESTS,
@@ -65,23 +65,24 @@ export const SeasonOverCard = ({
 }) => (
   <section
     aria-label={SEASON_OVER}
-    className="pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2.5 overflow-y-auto bg-kit-ground px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] font-sans text-kit-cream"
+    className="ui pointer-events-auto fixed inset-0 z-50 flex flex-col items-center gap-2.5 overflow-y-auto bg-hud-surface px-4 text-hud-ink"
+    style={SAFE_AREA}
   >
     <header className="flex flex-col items-center gap-1">
-      <h2 className="frontier-title !text-[26px]">{SEASON_OVER}</h2>
-      <p className="text-base font-semibold">{SEASON_ENDINGS[ending]}</p>
-      {place !== undefined && <p className="text-sm text-kit-muted">{YOU_PLACED}</p>}
+      <h2 className="text-hud-display text-hud-accent">{SEASON_OVER}</h2>
+      <p className="text-hud-strong">{SEASON_ENDINGS[ending]}</p>
+      {place !== undefined && <p className="text-hud-body text-hud-muted">{YOU_PLACED}</p>}
     </header>
     {place !== undefined && (
       <p className="flex items-center gap-2.5 tabular-nums">
         <SemanticIcon name="victory" size={34} />
-        <span className="text-[44px] font-bold leading-none">#{formatAmount(place)}</span>
-        <span className="text-base text-kit-muted">/ {formatAmount(field)}</span>
+        <span className="text-hud-display text-hud-gold">#{formatAmount(place)}</span>
+        <span className="text-hud-body text-hud-muted">/ {formatAmount(field)}</span>
       </p>
     )}
     <Podium podium={podium} />
     {totals && (
-      <div className="w-full max-w-[360px]">
+      <div className="w-full max-w-sm">
         <TotalsGrid
           cells={[
             { icon: "flag", name: SITES_CLEARED, value: formatAmount(totals.sitesCleared) },
@@ -95,35 +96,50 @@ export const SeasonOverCard = ({
       </div>
     )}
     <div className="min-h-2 flex-1" />
-    <div className="w-full max-w-[360px]">{withdraw}</div>
-    <div className="w-full max-w-[360px]">{guide}</div>
-    <div className="flex w-full max-w-[360px] gap-2">
-      <Button role="secondary" icon="victory" word={SEASON} onClick={onSeason} className="w-[130px]" />
-      <Button role="primary" icon="exit" word={EXIT} onClick={onExit} className="flex-1" />
+    <div className="w-full max-w-sm">{withdraw}</div>
+    <div className="w-full max-w-sm">{guide}</div>
+    {/* Season beside, Exit the one verb, last and widest. */}
+    <div className="grid w-full max-w-sm grid-cols-3 gap-2">
+      <HudButton kind="secondary" icon="victory" onClick={onSeason}>
+        {SEASON}
+      </HudButton>
+      <span className="col-span-2 grid">
+        <HudButton kind="primary" icon="exit" onClick={onExit}>
+          {EXIT}
+        </HudButton>
+      </span>
     </div>
   </section>
 );
+
+/** The card covers the screen: its edges keep clear of a phone's notch and home bar. */
+const SAFE_AREA = {
+  paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+  paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
+} as const;
 
 /** Second, first and third, the first raised. */
 const PODIUM_ORDER = [1, 0, 2] as const;
 
 const Podium = ({ podium }: { podium: readonly PodiumPlace[] }) => (
-  <ol className="frontier-card flex w-full max-w-[360px] items-end gap-1.5 !rounded-xl p-2">
-    {PODIUM_ORDER.map((index) => podium[index]).map(
-      (place) =>
-        place && (
-          <li
-            key={place.key}
-            className={cn("flex min-w-0 flex-1 flex-col items-center gap-1", place.rank === 1 && "pb-3")}
-          >
-            <span className="text-base tabular-nums">{place.rank}</span>
-            <span className="max-w-full text-sm">{place.name}</span>
-            <span className="flex items-center gap-1 text-sm tabular-nums">
-              <SemanticIcon name="flag" size={16} />
-              {formatAmount(place.sitesCleared)}
-            </span>
-          </li>
-        ),
-    )}
-  </ol>
+  <HudPanel collapsible={false} className="w-full max-w-sm">
+    <ol className="flex items-end gap-1.5">
+      {PODIUM_ORDER.map((index) => podium[index]).map(
+        (place) =>
+          place && (
+            <li
+              key={place.key}
+              className={cn("flex min-w-0 flex-1 flex-col items-center gap-1", place.rank === 1 && "pb-3")}
+            >
+              <span className="text-hud-strong tabular-nums">{place.rank}</span>
+              <span className="max-w-full text-hud-body">{place.name}</span>
+              <span className="flex items-center gap-1 text-hud-body tabular-nums">
+                <SemanticIcon name="flag" size={16} />
+                {formatAmount(place.sitesCleared)}
+              </span>
+            </li>
+          ),
+      )}
+    </ol>
+  </HudPanel>
 );

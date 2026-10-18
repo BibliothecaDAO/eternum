@@ -147,3 +147,9 @@ describe("the hyperstructures giving a player points", () => {
     expect(useUIStore.getState().mapSelection).toEqual({ kind: "structure", entityId: 7 });
   });
 });
+
+it("player details render no retired InfoBubble panel", () => {
+  draw();
+  expect(host.textContent).toContain("Tower 7");
+  expect(host.querySelectorAll(".hud-panel")).toHaveLength(0);
+});
