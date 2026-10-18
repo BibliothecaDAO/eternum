@@ -32,6 +32,7 @@ import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import { ConstructionLab } from "./construction-lab";
+import { AreaDLab } from "./area-d-lab";
 import { DeployLab } from "./deploy-lab";
 import { IconLab } from "./icon-lab";
 import { TokensLab } from "./tokens-lab";
@@ -58,6 +59,7 @@ export const KitLabView = () => {
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
       <Route path="deploy" element={<DeployLab />} />
+      <Route path="area-d" element={<AreaDLab />} />
       <Route path="panels" element={<PanelsLab />} />
       <Route path="windows/:surface?" element={<WindowsLab />} />
       <Route path="guidance" element={<GuidanceLab />} />

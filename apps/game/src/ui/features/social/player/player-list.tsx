@@ -417,7 +417,10 @@ const PlayerRow = ({
   const hasRankUp = effect && effect.rankChange < 0;
   const hasRankDown = effect && effect.rankChange > 0;
 
-  const activityCell = (label: string) => <div className={clsx(WIDE_ONLY, "justify-center tabular-nums")}>{label}</div>;
+  // One line per cell, as the header's: a count and its points never break.
+  const activityCell = (label: string) => (
+    <div className={clsx(WIDE_ONLY, "justify-center whitespace-nowrap")}>{label}</div>
+  );
 
   return (
     // The row's frame carries what the table row does not: the player's own row lit, and a rank change's glow.
