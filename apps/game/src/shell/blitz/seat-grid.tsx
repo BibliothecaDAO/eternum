@@ -3,8 +3,8 @@ import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 
+import { AppFigure } from "@/ui/design-system/kit/app-elements";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { Figure } from "@/ui/design-system/kit/figure";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 
 import { RatingFigure } from "../rating-mark";
@@ -33,7 +33,7 @@ export const SeatGrid = ({
         {seats[index] ? (
           <TakenSocket seat={seats[index]} preparing={preparing} />
         ) : (
-          <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
+          <span className="block size-full rounded-full border-2 border-dashed border-app-line" />
         )}
       </li>
     ))}
@@ -67,7 +67,7 @@ const PreparedMark = ({ prepared }: { prepared: boolean | undefined }) => {
   return (
     <span
       aria-hidden
-      className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border border-kit-line2 bg-kit-ground text-sm text-kit-muted"
+      className="absolute -bottom-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full border border-app-line-strong bg-app-ground text-sm text-app-muted"
     >
       {prepared ? <SemanticIcon name="check" size={16} /> : "—"}
     </span>
@@ -100,15 +100,15 @@ export const RosterGrid = ({
               {seat ? (
                 <TakenSocket seat={seat} preparing={preparing} />
               ) : (
-                <span className="block size-full rounded-full border-2 border-dashed border-kit-line" />
+                <span className="block size-full rounded-full border-2 border-dashed border-app-line" />
               )}
             </span>
             {seat && (
               <>
-                <span className="max-w-full font-body text-sm text-kit-cream">
+                <span className="max-w-full font-body text-sm text-app-ink">
                   {seat.account ? <PlayerName account={seat.account} you={seat.own} /> : "—"}
                 </span>
-                {answer ? <RatingFigure rating={answer.rating} /> : <span className="text-sm text-kit-muted">—</span>}
+                {answer ? <RatingFigure rating={answer.rating} /> : <span className="text-sm text-app-muted">—</span>}
               </>
             )}
           </li>
@@ -119,23 +119,20 @@ export const RosterGrid = ({
 };
 
 /**
- * Where a slot's lobby would draw seats: the one number the ledger keeps for it, its registrations, large on the
- * desktop, and until its close why there are no seats yet. A dash until the ledger answers.
+ * Where a slot's lobby would draw seats: the one number the ledger keeps for it, its registrations, and until its close
+ * why there are no seats yet. A dash until the ledger answers.
  */
-export const RegisteredCount = ({ slot, large, closed }: { slot: PlaytestSlot; large: boolean; closed: boolean }) => {
+export const RegisteredCount = ({ slot, closed }: { slot: PlaytestSlot; closed: boolean }) => {
   const registered = useSlotRegistered(slot);
   return (
-    <div className="flex items-center gap-4">
-      <SemanticIcon name="person" size={large ? 56 : 40} />
-      <span className="flex flex-col gap-1">
-        <span className="flex items-baseline gap-2">
-          <Figure size={large ? "figure" : "title-lg"} tone="cream" className="leading-none">
-            {registered === undefined ? "—" : formatAmount(registered)}
-          </Figure>
-          <span className="font-body text-base text-kit-muted">{BLITZ_WORDS.registeredUnit}</span>
-        </span>
-        {!closed && <span className="text-sm text-kit-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</span>}
-      </span>
+    <div className="flex flex-wrap items-center gap-6">
+      <AppFigure
+        icon="people"
+        tone="gold"
+        value={registered === undefined ? "—" : formatAmount(registered)}
+        label={BLITZ_WORDS.registeredUnit}
+      />
+      {!closed && <p className="max-w-[22rem] text-app-body text-app-muted">{BLITZ_WORDS.drawnAtClose(BLITZ_SEATS)}</p>}
     </div>
   );
 };

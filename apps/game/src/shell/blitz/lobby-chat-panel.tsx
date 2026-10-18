@@ -7,9 +7,7 @@ import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { Field } from "@/ui/design-system/kit/field";
-import { Kbd } from "@/ui/design-system/kit/kbd";
-import { Panel } from "@/ui/design-system/kit/panel";
+import { AppField, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { type ChatHold, useLobbyChat } from "./lobby-chat";
 
@@ -35,19 +33,21 @@ export const LobbyChatPanel = ({
 }) => {
   const chat = useLobbyChat(slot, membership);
   return (
-    <Panel icon="chat" title={CHAT_WORDS.chat}>
+    <AppPanel icon="chat" title={CHAT_WORDS.chat}>
       {chat.hold === "signed-out" ? (
-        <p className="px-1 py-2 text-base text-kit-muted">{CHAT_WORDS.signInToRead}</p>
+        <p className="py-2 text-app-body text-app-muted">{CHAT_WORDS.signInToRead}</p>
       ) : chat.hold === "unanswered" ? (
         <ServiceFailure service="chat" error={new Error("lobby chat closed")} />
       ) : (
         <>
           <Messages messages={chat.messages} />
-          {chat.hold && HOLD_LINES[chat.hold] && <p className="px-1 text-sm text-kit-amber">{HOLD_LINES[chat.hold]}</p>}
+          {chat.hold && HOLD_LINES[chat.hold] && (
+            <p className="text-app-label text-app-warn">{HOLD_LINES[chat.hold]}</p>
+          )}
           {chat.canWrite && <Composer send={chat.send} />}
         </>
       )}
-    </Panel>
+    </AppPanel>
   );
 };
 
@@ -59,15 +59,15 @@ const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [messages.length]);
   return (
-    <ol ref={list} className="flex h-64 flex-col gap-1.5 overflow-y-auto px-1 py-2 text-base">
+    <ol ref={list} className="flex h-64 flex-col gap-1.5 overflow-y-auto py-2 text-app-body text-app-ink">
       {messages.map((message) => (
         <li key={message.id} className="break-words">
-          <b className="mr-2 font-body text-kit-gold2">
+          <b className="mr-2 text-app-accent">
             {isOwn(message, session?.user.realmsId)
               ? YOU
               : displayPlayerName(message.sender.playerId, message.sender.displayName ?? null)}
           </b>
-          <span className="text-kit-cream">{message.content}</span>
+          <span>{message.content}</span>
         </li>
       ))}
     </ol>
@@ -89,15 +89,14 @@ const Composer = ({ send }: { send: (content: string) => void }) => {
   };
   return (
     <form onSubmit={submit}>
-      <Field
-        size="md"
-        aria-label={CHAT_WORDS.message}
+      <AppField
+        label={CHAT_WORDS.message}
+        icon="chat"
         placeholder={CHAT_WORDS.message}
         enterKeyHint="send"
         maxLength={MESSAGE_LIMIT}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
-        trailing={<Kbd keyName="Enter" className="pointer-events-none max-lg:hidden" />}
       />
     </form>
   );

@@ -388,7 +388,9 @@ export const BLITZ_WORDS = {
   join: "Join",
   /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
   lobby: "Lobby",
-  /** Above the lobby's countdown. */
+  /** The lobby's players: a slot's registrations, a game's seats. */
+  whoIsIn: "Who is in",
+  /** Before the lobby's countdown. */
   closesIn: "Entry closes in",
   startsIn: "Starts in",
   endsIn: "Ends in",

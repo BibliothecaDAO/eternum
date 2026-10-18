@@ -784,6 +784,10 @@
 .app-choice:disabled {
   opacity: 0.45;
 }
+/* A choice that is always taken (the entry's seat) stays lit: fixed, not unavailable. */
+.app-choice[aria-pressed="true"]:disabled {
+  opacity: 1;
+}
 .app-choice__tick {
   position: absolute;
   top: theme(spacing.2);
