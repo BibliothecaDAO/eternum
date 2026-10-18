@@ -58,6 +58,8 @@ own PNG in a new run directory, with the proof record beside them:
 pnpm hud:capture <evidence-dir> https://127.0.0.1:4179 "Button" "Ring badge"
 ```
 
+`--page <path>` captures another lab page's sheet elements the same way (`/lab/kit` by default).
+
 Art keeps `verify:terrain:gallery` and `capture:character-animation`. Performance keeps `benchmark:terrain` and
 `benchmark:procedural-characters`. The runner sources document their capture, output and scenario options. Use one
 rendering page at a time and close it after collecting evidence.
