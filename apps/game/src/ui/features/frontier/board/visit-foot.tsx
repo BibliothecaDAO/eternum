@@ -2,7 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { OrderMark } from "./realm-marks";
 import { LEAVE, VISIT } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -28,7 +28,7 @@ export const VisitFoot = ({
   <div role="status" aria-label={`${VISIT} ${label}`} className="pointer-events-auto">
     <HudPanel collapsible={false} bodyClassName="flex items-center gap-2">
       <SemanticIcon name="explore" size={24} />
-      {order !== undefined && <OrderEmblem order={order} />}
+      {order !== undefined && <OrderMark order={order} />}
       <span className={cn("min-w-0 flex-1 truncate text-hud-body", arriving && "animate-pulse")}>{name}</span>
       {onLeave && (
         <HudButton kind="primary" icon="arrow-left" onClick={onLeave}>

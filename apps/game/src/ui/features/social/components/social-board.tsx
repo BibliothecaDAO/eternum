@@ -6,7 +6,6 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudTabs, HudWindow } from "@/ui/design-system/kit/hud-elements";
-import "@/ui/features/world/hud/hud.css";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, StructureType } from "@bibliothecadao/types";

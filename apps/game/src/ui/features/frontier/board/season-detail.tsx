@@ -1,6 +1,6 @@
 import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { OrderMark } from "./realm-marks";
 import {
   CAMP,
   CHESTS,
@@ -51,7 +51,7 @@ export const SeasonDetailSheet = ({
   <HudSheet label={label} onClose={onClose}>
     <div className="flex flex-col gap-3">
       <header className="flex items-center justify-between gap-2.5">
-        <OrderEmblem order={detail.order} size={34} />
+        <OrderMark order={detail.order} size={34} />
         <HudChip icons={["victory"]} label={SEASON}>
           {`#${detail.rank}`}
         </HudChip>

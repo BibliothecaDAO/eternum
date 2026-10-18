@@ -12,7 +12,7 @@ import {
   HudTableRow,
 } from "@/ui/design-system/kit/hud-elements";
 
-import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { OrderMark } from "./realm-marks";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
@@ -163,7 +163,7 @@ const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
   <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
     <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
-    <OrderEmblem order={row.order} />
+    <OrderMark order={row.order} />
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
     <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>

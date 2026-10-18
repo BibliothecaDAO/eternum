@@ -3,7 +3,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { leaveRealmVisit, type RealmVisit, useRealmVisit } from "@/sync/active-game-client";
-import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { LordName } from "./realm-marks";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -69,7 +69,7 @@ export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null 
     <VisitFoot
       label={name}
       order={visited && visited.metadata.order > 0 ? visited.metadata.order : undefined}
-      name={<PlayerName account={visit.player} />}
+      name={<LordName account={visit.player} />}
       arriving={!visited}
       onLeave={home ? leaveRealmVisit : undefined}
     />

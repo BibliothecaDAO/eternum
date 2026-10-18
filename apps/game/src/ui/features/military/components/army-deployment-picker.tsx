@@ -11,7 +11,6 @@ import { useArmyCreation } from "./unified-army-creation-modal/use-army-creation
 import { DISPLAYED_SLOT_NUMBER_MAP, type GuardSlot } from "@bibliothecadao/types";
 import type { ArmyDeploymentTarget } from "../utils/open-army-deployment";
 import { GuardDismissal } from "./guard-dismissal";
-import "@/ui/features/world/hud/hud.css";
 
 export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {
   const ordersAllowed = useUIStore(canIssueOrders);

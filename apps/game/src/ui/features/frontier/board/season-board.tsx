@@ -5,7 +5,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
-import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { LordName } from "./realm-marks";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
@@ -137,7 +137,7 @@ const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  name: <PlayerName account={entry.address} you={own} portrait />,
+  name: <LordName account={entry.address} you={own} />,
   label: getPlayerDisplayName(entry.address),
   sitesCleared: entry.sites_cleared.total,
   lords: wholeLords(entry.rewards.lords),
@@ -196,7 +196,7 @@ export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSea
 const podiumPlace = (entry: Entry, own: boolean): PodiumPlace => ({
   key: entry.address,
   rank: entry.rank,
-  name: <PlayerName account={entry.address} you={own} portrait />,
+  name: <LordName account={entry.address} you={own} portrait />,
   sitesCleared: entry.sites_cleared.total,
 });
 
