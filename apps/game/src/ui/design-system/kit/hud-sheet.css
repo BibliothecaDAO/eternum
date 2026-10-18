@@ -1659,3 +1659,30 @@ button.ui-card__choose:disabled {
   border-left: 1px solid var(--hud-divider);
   padding-left: theme(spacing.3);
 }
+
+/* ── Loading backdrop: the contour lines behind the loading panel, in the age's accent on the dark ground. ── */
+.ui-contours__line {
+  fill: none;
+  stroke: rgb(var(--hud-accent) / 0.85);
+  stroke-dasharray: 8 14 64 20 32 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ui-contours__line[data-short] {
+  stroke-dasharray: 4 8 20 10;
+}
+.ui-contours__glow {
+  stop-color: rgb(var(--hud-accent) / 0.06);
+}
+.ui-contours__vignette {
+  stop-color: rgb(0 0 0 / 0.72);
+}
+.ui-contours__grid {
+  background-image:
+    linear-gradient(rgb(var(--hud-accent) / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--hud-accent) / 0.06) 1px, transparent 1px);
+  background-position: center center;
+  background-size: 96px 96px;
+  mask-image: radial-gradient(circle at center, rgb(0 0 0 / 0.5) 24%, transparent 82%);
+  opacity: 0.24;
+}

@@ -14,7 +14,6 @@ export const LoadingScreen = ({
 }: LoadingScreenProps) => {
   return (
     <BootLoaderShell
-      mode={typeof progress === "number" && progress > 0 ? "determinate" : "indeterminate"}
       progress={progress}
       title={title}
       subtitle={subtitle}
