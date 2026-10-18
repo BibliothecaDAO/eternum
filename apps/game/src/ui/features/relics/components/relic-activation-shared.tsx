@@ -2,19 +2,22 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudNotice, HudRelic, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { relicKind, relicLine, relicShortName } from "../relic-words";
-import { RelicInfoResult } from "../hooks/use-relic-activation";
+import { RelicInfoResult, useRelicMetadata } from "../hooks/use-relic-activation";
 
-/** A held relic: its chip, how many are held, and what it does on hover. */
-export const HeldRelic = ({ relicId, held }: { relicId: ResourcesIds; held: string }) => (
-  <HudRelic
-    icon={resourceMeaning(relicId)}
-    kind={relicKind(relicId)}
-    gives={relicShortName(relicId)}
-    trail={`×${held}`}
-    state="held"
-    tip={relicLine(relicId)}
-  />
-);
+/** A held relic: its chip, how many are held, and what it does on hover once the game's relic rules have arrived. */
+export const HeldRelic = ({ relicId, held }: { relicId: ResourcesIds; held: string }) => {
+  const { relicInfo } = useRelicMetadata(relicId);
+  return (
+    <HudRelic
+      icon={resourceMeaning(relicId)}
+      kind={relicKind(relicId)}
+      gives={relicShortName(relicId)}
+      trail={`×${held}`}
+      state="held"
+      tip={relicInfo ? relicLine(relicId) : undefined}
+    />
+  );
+};
 
 /** What activating costs in Essence against what its payer holds, and what is missing. */
 export const RelicEssenceRequirement = ({
