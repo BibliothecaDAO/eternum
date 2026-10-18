@@ -1,2 +1,1 @@
-Subject: A monumental ancient dark-stone structure with three rising tapered pylons surrounding one contained pale blue crystal core. Grand architectural silhouette, carved basalt and restrained cool inner light, no gold trim, no terrain or particles.
-Old counterpart: apps/game/public/image-icons/hyperstructure.png.
+Render procedural:hyperstructure with scripts/icons/render-models.mjs using the client loader and building-thumbnail camera. Preserve the actual geometry and materials, transparent background, 1024 px master. Actual foundation-only Hyperstructure kit: hex platform and six short columns.

@@ -1,1 +1,1 @@
-A compact timber farm barn beside three neat wheat rows, warm straw roof.
+Render /models/new-buildings-opt/farm.glb with scripts/icons/render-models.mjs using the client loader and building-thumbnail camera. Preserve the actual geometry and materials, transparent background, 1024 px master. Windmill, wheat field and fence from the current farm model.

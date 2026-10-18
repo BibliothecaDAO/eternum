@@ -113,7 +113,9 @@
     "icons:review": "node scripts/icons/review.mjs",
     "icons:prove": "node scripts/icons/prove.mjs",
     "icons:measure": "node scripts/icons/measure.mjs",
-    "icons:study": "node scripts/icons/build-resource-study.mjs"
+    "icons:study": "node scripts/icons/build-resource-study.mjs",
+    "icons:import": "node scripts/icons/import-resource-selection.mjs",
+    "icons:render-models": "node scripts/icons/render-models.mjs"
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",

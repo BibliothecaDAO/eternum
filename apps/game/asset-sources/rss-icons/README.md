@@ -1,52 +1,45 @@
-# Icon style sheet
+# Approved resource and model icons
 
-This lab lets the owner choose category templates before the remaining resources are reskinned. Production artwork,
-semantic mappings and icon sizes are unchanged. The previous per-icon A/B candidates are removed from this branch.
+The production set keeps every shipped icon except Essence, Research, all 18 relics, Farm, Workers Hut and five map
+landmarks. Troops retain all nine original poses, palettes and tier designs unchanged. Labor and UI glyphs stay.
+Workshop keeps its existing icon until its dedicated model is available. No category templates or unwired proposals
+remain.
 
-Nine resource templates cover 55 meanings: provisions, timber, rock and ore, metals, crystals, rare fragments, reagents,
-people and troops, and relics. Donkey, LORDS and SAT retain their shipped marks, bringing the inventory to 58. Each
-template records silhouette, framing, light, outline, value, palette slots, a 16 px detail budget and ring/chip fit. The
-catalog assigns every resource once. Its 21 paintings are two or three samples per template, not a completed set.
+Essence and Research are the approved violet vessel and cyan research flask. The relic masters restore the exact
+original bytes from revision `b636c768616959a27e2ef45665e2c317fda9b40c`, before the Facets replacement. Farm, Workers
+Hut, camp, rift, spire and chest use their actual GLBs. The Hyperstructure site uses the runtime foundation-only model
+kit. The chest uses its runtime material treatment and body scale. No replacement geometry is invented for these icons.
 
-The eight material/portrait anchors use shipped Facets artwork as style references. Their reskins use the category
-anchor as the edit target, preserving framing, pose, light and large value shapes while changing hue, material and one
-feature. Exact prompts accompany the masters. The three relic samples use one bolt, sword or shield shared between
-tiers, with a separate consistent I/II mark. Compare 16/24/32/40 px; 40 px is recommended for the larger relic sheet, 32
-px the proposed minimum. Old and Shipped retain their actual tier paintings.
+Production masters, source paths and SHA-256 hashes are in `../facets/catalog.json`; reviews are in its `verdicts.json`.
+The common transparent normalizer fits the visible artwork to 880 of 1024 px and delivers quality-90 WebP at 64/128/256.
+The semantic map and production renderers keep their existing paths. Construction cards retain their model thumbnails.
 
-**Other families** records template rules and shipped examples for structures/buildings, map landmarks and the liked UI
-glyphs. These examples reuse production Icon, with no duplicated deliveries. Troop portrait samples are in **Templates →
-People and troops**. Construction cards continue to use actual model thumbnails. Map ownership rims, shape cues and
-value/level badges remain the existing production behavior.
-
-## Review and proof
-
-Open `/lab/kit/resource-icons`. Templates is the default; the category selector focuses one template. Inventory compares
-the complete historical and shipped sets. Findings retains 17 confusion groups. Hide names, Greyscale and Silhouette
-expose dependence on labels or colour. The four display sizes are actual pixels, not magnified previews.
+## Rebuild and verify
 
 From the repository root:
 
-- `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`
-- `pnpm icons:study`
-- `pnpm icons:study --check`
-- `pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources`
+- `node scripts/icons/import-resource-selection.mjs` restores the 20 approved historical masters from their pinned git
+  sources.
+- Start the client: `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`.
+- `node scripts/icons/render-models.mjs https://127.0.0.1:4193 <new-evidence-directory>` rerenders seven model masters
+  with the shared building-thumbnail renderer and refreshes their source hashes. It uses the client's loader and module
+  graph so compressed textures and node materials render together correctly. It releases each graphics context after
+  capture.
+- `pnpm icons:build` delivers production masters. Pass icon IDs to rebuild only selected art.
+- `pnpm icons:study` refreshes lab comparisons; `pnpm icons:study --check` verifies them.
+- `pnpm icons:check` verifies meanings, original relic bytes, model sources, master hashes and exact source-driven
+  deliveries. Negative controls corrupt a model, master and delivery and require each check to fail.
+- `pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` drives the comparison on desktop and phone,
+  verifies exact historical/before/current URLs, image decoding, pixel sizes and overflow, and saves screenshots.
 
-The existing Facets normalizer fits transparent art to 880 of 1024 px, then delivers quality-90 WebP at 64/128/256. The
-build verifies unique assignment, two or three samples per category, reviews and exact master/delivery hashes. It
-rejects unwired masters, prompts or deliveries. The public manifest carries the review catalog for browser proof. The
-browser proof drives the real controls on desktop and phone, checks exact old/shipped/proposal URLs, decodes every
-displayed image, checks dimensions, tier marks and overflow, and captures each category.
+## Lab
 
-## Historical set
+`/lab/kit/resource-icons` has Resources, Relics, Models, Kept and Inventory. It compares actual 16/24/32/40 px images;
+Current uses the game's production `Icon`. Model rows show the uncropped source render next to the delivered icon.
+Relics show original, previous Facets and restored art. Prefer 40 px for the larger sheet, with 32 px the practical
+minimum. The lab does not change the HUD's chosen sizes.
 
-`history.json` pins revision `b636c768616959a27e2ef45665e2c317fda9b40c`, before the full replacement in
-`301ca1d55a2a95ac6899a445cc4ea33db7d15b88` on 15 October 2026. It records the source path, git blob, SHA-256 and
-dimensions of each image. The archived ResourceIcon renderer determines the mapping: 56 numeric PNGs, the trade
-thumbnail for Donkey, and an orange text glyph for SAT. LORDS remains the official SVG in the shipped column.
-
-`scripts/icons/resource-history.mjs`, called by the build/check command, restores the 57 files byte for byte. The
-archive requires the pinned commit in local git history and costs about 9.6 MiB of lab assets.
-
-The change replaces 34 per-icon A/B candidates with 21 template samples. Its costs are the existing lab route, 21
-masters and their three deliveries, prompts, catalog, reviews and proof steps. No production system is added.
+`catalog.json` pins the before snapshot at `a4d7b4eefd02ca1b9be646cda56aaac70d4afef0`. `history.json` retains all 58
+historical resource mappings: 57 exact PNGs plus the old SAT text glyph. LORDS stays the official SVG in production. The
+archive costs about 9.6 MiB. Before snapshots and seven model reference images replace the rejected template masters,
+prompts and deliveries. There is one production asset path and no additional gameplay state or settings.

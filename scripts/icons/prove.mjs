@@ -300,161 +300,64 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
     records.push(record);
     const check = async (name, expression) =>
       record.checks.push({ check: name, ok: (await b.evaluate(expression)) === true });
-    const decode = async (name) =>
-      check(
-        name + ": all art decodes at exact size",
-        `(async () => {
-      const images = [...document.querySelectorAll('.rss-art-slot img')];
-      try { await Promise.all(images.map(image => image.decode())); } catch { return false; }
-      return images.length > 0 && images.every(image => image.naturalWidth > 0 &&
-        image.getBoundingClientRect().width === Number(image.closest('[data-size]').dataset.size) &&
-        image.getBoundingClientRect().height === Number(image.closest('[data-size]').dataset.size));
-    })()`,
-      );
-    const fit = async (name) =>
-      check(name + ": no horizontal overflow", "document.documentElement.scrollWidth <= innerWidth");
-    const sheet = async (name) => {
-      const fullHeight = await b.evaluate("Math.ceil(document.querySelector('.rss-lab').scrollHeight + 80)");
-      await b.run("set", "viewport", String(width), String(fullHeight));
-      await b.run("scrollintoview", ".rss-lab > header");
-      await b.run("screenshot", join(out, layout + "-" + name + ".png"));
-      await b.run("set", "viewport", String(width), String(height));
-    };
-    const select = async (label, value) => {
-      record.presses.push({ select: label, value });
-      await b.run("select", '[aria-label="' + label + '"]', value);
-    };
-    const tab = async (name) => {
-      record.presses.push({ tab: name });
-      await b.run("click", 'nav[aria-label="Resource review sections"] button:has-text("' + name + '")');
-    };
     await b.run("set", "viewport", String(width), String(height));
     await b.run("open", baseUrl + "/lab/kit/resource-icons", "--ignore-https-errors");
-    await b.run("wait", '[data-template="retained"]');
+    await b.run("wait", "[data-change=essence]");
     record.ready = true;
-    await check(
-      "All 58 resources assigned once; nine templates and 21 samples",
-      `(() => {
-      const assigned = [...document.querySelectorAll('[data-template-member]')].map(n=>n.dataset.templateMember)
-        .concat([...document.querySelectorAll('[data-retained]')].map(n=>n.dataset.retained));
-      return assigned.length === 58 && new Set(assigned).size === 58 &&
-        document.querySelectorAll('[data-template]').length === 10 &&
-        document.querySelectorAll('[data-template-sample]').length === 21;
-    })()`,
-    );
-    const categories = await b.evaluate(
-      "(async()=> (await (await fetch('/lab/rss-icons/manifest.json')).json()).categories.map(c=>c.id))()",
-    );
-    for (const category of categories) {
-      await select("Template category", category);
-      await decode(category);
-      await fit(category);
+    for (const section of ["Resources", "Relics", "Models", "Kept", "Inventory"]) {
+      record.presses.push({ tab: section });
+      await b.run("click", 'nav[aria-label="Resource review sections"] button:has-text("' + section + '")');
       await check(
-        category + ": exact old, shipped and template URLs at four sizes",
-        `(async () => {
-        const manifest = await (await fetch('/lab/rss-icons/manifest.json')).json();
-        const { meanings } = await (await fetch('/icons/facets/manifest.json')).json();
-        const category = manifest.categories.find(c=>c.id===${JSON.stringify(category)});
-        const rows = [...document.querySelectorAll('[data-resource-comparison]')];
-        return rows.length === category.samples.reduce((n,s)=>n+s.meanings.length,0) && category.samples.every(sample =>
-          sample.meanings.every(meaning => {
-            const row = rows.find(r=>r.dataset.resourceComparison===meaning);
-            return row && ['old','shipped','proposal'].every(version => {
-              const group = row.querySelector('[data-version='+version+']');
-              const images = [...group.querySelectorAll('img')];
-              const tier = meaning.match(/-relic-([12])$/)?.[1];
-              if (tier && (group.querySelectorAll('[data-tier]').length !== 4 ||
-                [...group.querySelectorAll('[data-tier]')].some(n=>n.textContent !== (tier==='1'?'I':'II')))) return false;
-              return images.length === 4 && images.every((image,i)=>{
-                const size = [16,24,32,40][i], pixels = size>32?128:64;
-                const expected = version==='old' ? '/lab/rss-icons/history/'+meaning+'.png'
-                  : version==='proposal' ? '/lab/rss-icons/'+pixels+'/'+sample.art+'.webp'
-                  : '/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
-                return image.width===size && image.getAttribute('src')===expected;
-              });
+        section + ": every displayed image decodes",
+        `(async()=>{
+        const images=[...document.querySelectorAll('.rss-lab img')];
+        try { await Promise.all(images.map(i=>i.decode())); } catch { return false; }
+        return images.length>0 && images.every(i=>i.naturalWidth>0);
+      })()`,
+      );
+      await check(
+        section + ": exact 16/24/32/40 pixel art, no overflow",
+        `
+        document.documentElement.scrollWidth<=innerWidth && [...document.querySelectorAll('.rss-art-slot img')].every(i=>{
+          const size=Number(i.closest('[data-size]').dataset.size),r=i.getBoundingClientRect();
+          return [16,24,32,40].includes(size) && r.width===size && r.height===size;
+        })`,
+      );
+      await check(
+        section + ": exact source, before and production mappings",
+        `(async()=>{
+        const study=await(await fetch('/lab/rss-icons/manifest.json')).json();
+        const {meanings,resources}=await(await fetch('/icons/facets/manifest.json')).json();
+        const section=${JSON.stringify(section)};
+        const expected=section==='Kept'?study.kept:section==='Inventory'?Object.values(resources).map(r=>r.meaning):study.changes.filter(e=>e.group===section).map(e=>e.meaning);
+        const rows=[...document.querySelectorAll('[data-resource-comparison]')];
+        return rows.length===expected.length && expected.every(meaning=>{
+          const row=rows.find(r=>r.dataset.resourceComparison===meaning);
+          const versions=section==='Kept'?['current']:section==='Inventory'?['old','current']:section==='Relics'?['old','before','current']:['before','current'];
+          return row && versions.every(version=>{
+            const group=row.querySelector('[data-version='+version+']');
+            if(!group)return false;
+            if(version==='old'&&meaning==='s-a-t')return group.querySelectorAll('.rss-history-glyph').length===4;
+            const images=[...group.querySelectorAll('img')];
+            return images.length===4 && images.every((i,n)=>{
+              const size=[16,24,32,40][n],pixels=size>32?128:64;
+              const url=version==='old'?'/lab/rss-icons/history/'+meaning+'.png':version==='before'?'/lab/rss-icons/before/'+pixels+'/'+meaning+'.webp':meanings[meaning].token?'/tokens/lords.svg':'/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
+              return i.width===size && i.getAttribute('src')===url;
             });
-          }));
-      })()`,
-      );
-      await sheet(category);
-    }
-    await b.run("click", 'button:has-text("Hide names")');
-    await check(
-      "Hide names conceals labels",
-      "[...document.querySelectorAll('.rss-name')].every(n=>getComputedStyle(n).visibility==='hidden')",
-    );
-    for (const view of ["greyscale", "silhouette", "colour"]) {
-      await select("Resource view", view);
-      await check(
-        view + " changes rendering",
-        `(() => {
-        const f = getComputedStyle(document.querySelector('.rss-art-slot img')).filter;
-        return ${view === "greyscale" ? "f.includes('grayscale(1)')" : view === "silhouette" ? "f.includes('brightness(0)') && f.includes('invert(1)')" : "f==='none'"};
-      })()`,
-      );
-      if (view !== "colour") await sheet("relics-" + view);
-    }
-    await b.run("click", 'button:has-text("Show names")');
-    await select("Template category", "retained");
-    await decode("Retained");
-    await fit("Retained");
-    await check(
-      "LORDS is official SVG; historical SAT stays a glyph",
-      `document.querySelectorAll('[data-version=shipped] [data-icon=lords][src="/tokens/lords.svg"]').length===4 &&
-      document.querySelectorAll('[data-history-glyph=s-a-t]').length===4 && document.querySelectorAll('[data-proposal-art]').length===0`,
-    );
-    await sheet("retained");
-    await tab("Inventory");
-    for (const art of ["old", "shipped"]) {
-      await select("Inventory artwork", art);
-      await decode("Inventory " + art);
-      await fit("Inventory " + art);
-      await check(
-        "Inventory " + art + ": all 58 exact resource mappings",
-        `(async () => {
-        const {resources,meanings}=await (await fetch('/icons/facets/manifest.json')).json();
-        const rows=[...document.querySelectorAll('[data-resource-id]')];
-        return rows.length===58 && rows.every((row,i)=>{
-          if(Number(row.dataset.resourceId)!==i+1) return false;
-          const meaning=resources[i+1].meaning;
-          if(${JSON.stringify(art)}==='old' && meaning==='s-a-t') return row.querySelectorAll('[data-history-glyph]').length===4;
-          const images=[...row.querySelectorAll('img')];
-          return images.length===4 && images.every(image=>{
-            const pixels=image.width>32?128:64;
-            const expected=${JSON.stringify(art)}==='old'?'/lab/rss-icons/history/'+meaning+'.png'
-              :meanings[meaning].token?'/tokens/lords.svg':'/icons/facets/'+pixels+'/'+meanings[meaning].art+'.webp';
-            return image.getAttribute('src')===expected;
           });
-        });
+        }) && (section!=='Models'||document.querySelectorAll('.rss-model img').length===7);
       })()`,
       );
-      await sheet("inventory-" + art);
+      const fullHeight = await b.evaluate("Math.ceil(document.querySelector('.rss-lab').scrollHeight + 80)");
+      await b.run("set", "viewport", String(width), String(Math.min(fullHeight, 12000)));
+      await b.run("scrollintoview", ".rss-lab > header");
+      await b.run("screenshot", join(out, layout + "-" + section.toLowerCase() + ".png"));
+      if (fullHeight > 12000) {
+        await b.run("scrollintoview", "[data-resource-id]:last-child");
+        await b.run("screenshot", join(out, layout + "-" + section.toLowerCase() + "-end.png"));
+      }
+      await b.run("set", "viewport", String(width), String(height));
     }
-    await tab("Other families");
-    await decode("Other families");
-    await fit("Other families");
-    await check(
-      "Three shipped families retain their exact artwork",
-      `(async()=>{
-      const m=await (await fetch('/lab/rss-icons/manifest.json')).json();
-      const {meanings}=await (await fetch('/icons/facets/manifest.json')).json();
-      return document.querySelectorAll('[data-shipped-family]').length===3 && m.shippedFamilies.every(f=>
-        f.members.every(meaning=>{
-          const images=[...document.querySelectorAll('[data-shipped-family='+f.id+'] [data-meaning='+meaning+'] img')];
-          return images.length===4 && images.every(image=>image.getAttribute('src')==='/icons/facets/'+(image.width>32?128:64)+'/'+meanings[meaning].art+'.webp');
-        }));
-    })()`,
-    );
-    await sheet("other-families");
-    await tab("Findings");
-    await decode("Findings");
-    await fit("Findings");
-    await check(
-      "17 shipped confusion findings retained",
-      "document.querySelectorAll('[data-confusion]').length===17 && document.querySelectorAll('[data-proposal-art]').length===0",
-    );
-    await b.run("scrollintoview", ".rss-lab > header");
-    await b.run("screenshot", join(out, layout + "-findings.png"));
   }
 }
 

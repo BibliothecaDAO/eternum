@@ -189,7 +189,11 @@
         "@bibliothecadao/eternum/expeditions": [
           "../../packages/core/src/utils/expeditions.ts"
         ]
-      }
+      },
+      "entry": [
+        "src/main.tsx",
+        "src/ui/features/debug/kit-lab/render-model.ts"
+      ]
     },
     "apps/herald": {
       "paths": {

@@ -1,822 +1,157 @@
 {
-  "categories": [
+  "before": "a4d7b4eefd02ca1b9be646cda56aaac70d4afef0",
+  "changes": [
     {
-      "id": "provisions",
-      "name": "Provisions",
-      "template": {
-        "silhouette": "One upright tied bundle, broad oval head and narrow tied waist; wheat and fish keep the same bundle envelope.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "wheat",
-          "color": "#d9a94b",
-          "feature": "three broad grain heads"
-        },
-        {
-          "meaning": "fish",
-          "color": "#4fa6a9",
-          "feature": "one silver belly band"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-wheat",
-          "meanings": [
-            "wheat"
-          ]
-        },
-        {
-          "art": "template-fish",
-          "meanings": [
-            "fish"
-          ]
-        }
-      ]
+      "meaning": "essence",
+      "group": "Resources",
+      "note": "Approved round violet essence vessel; replaces the previous square bottle."
     },
     {
-      "id": "timber",
-      "name": "Timber",
-      "template": {
-        "silhouette": "One short horizontal cut log tilted 20 degrees upward to the right; large circular cut face on the lower left.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "wood",
-          "color": "#b97a3d",
-          "feature": "two broad growth rings"
-        },
-        {
-          "meaning": "ironwood",
-          "color": "#614646",
-          "feature": "one metallic grain seam"
-        },
-        {
-          "meaning": "hartwood",
-          "color": "#aa404b",
-          "feature": "a large red sap heart"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-wood",
-          "meanings": [
-            "wood"
-          ]
-        },
-        {
-          "art": "template-hartwood",
-          "meanings": [
-            "hartwood"
-          ]
-        }
-      ]
+      "meaning": "camp",
+      "group": "Models",
+      "note": "Canvas tents and palisade from the outpost model."
     },
     {
-      "id": "ore",
-      "name": "Rock and ore",
-      "template": {
-        "silhouette": "One squat angular chunk with a low roof, one broad fractured face and no separate chips; roughly square envelope.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses; stone mid-light, coal very dark with one broad readable highlight.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "stone",
-          "color": "#b4aca0",
-          "feature": "a pale cleft face"
-        },
-        {
-          "meaning": "coal",
-          "color": "#323a43",
-          "feature": "one broken silver-grey glint"
-        },
-        {
-          "meaning": "obsidian",
-          "color": "#33223d",
-          "feature": "a sharp glassy fracture"
-        },
-        {
-          "meaning": "ignium",
-          "color": "#d76632",
-          "feature": "one broad orange heat seam"
-        },
-        {
-          "meaning": "cold-iron",
-          "color": "#7b9fae",
-          "feature": "a frosted blue fissure"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-stone",
-          "meanings": [
-            "stone"
-          ]
-        },
-        {
-          "art": "template-coal",
-          "meanings": [
-            "coal"
-          ]
-        }
-      ]
+      "meaning": "hyperstructure",
+      "group": "Models",
+      "note": "Actual foundation-only Hyperstructure kit: hex platform and six short columns."
     },
     {
-      "id": "metals",
-      "name": "Metals",
-      "template": {
-        "silhouette": "One wide trapezoid ingot, upper face visible, long axis horizontal and near edge down-left; no stack.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "copper",
-          "color": "#c47748",
-          "feature": "one green oxide notch"
-        },
-        {
-          "meaning": "gold",
-          "color": "#d8ac46",
-          "feature": "a broad warm reflection"
-        },
-        {
-          "meaning": "silver",
-          "color": "#c4d3df",
-          "feature": "one clean pale bevel"
-        },
-        {
-          "meaning": "mithral",
-          "color": "#81bddd",
-          "feature": "a suspended core in the centre"
-        },
-        {
-          "meaning": "adamantine",
-          "color": "#345b62",
-          "feature": "one dark containment seam"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-copper",
-          "meanings": [
-            "copper"
-          ]
-        },
-        {
-          "art": "template-silver",
-          "meanings": [
-            "silver"
-          ]
-        }
-      ]
+      "meaning": "chest",
+      "group": "Models",
+      "note": "Closed reward chest, with its runtime material treatment and scale."
     },
     {
-      "id": "crystals",
-      "name": "Crystals",
-      "template": {
-        "silhouette": "One upright hexagonal prism, blunt pointed top, three broad vertical planes and a flat lower end; no cluster.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "ruby",
-          "color": "#b92d43",
-          "feature": "a deep red core"
-        },
-        {
-          "meaning": "diamonds",
-          "color": "#d1dcf5",
-          "feature": "one white clear window"
-        },
-        {
-          "meaning": "sapphire",
-          "color": "#3260b5",
-          "feature": "a deep blue core"
-        },
-        {
-          "meaning": "deep-crystal",
-          "color": "#8755ad",
-          "feature": "one dark hollow centre"
-        },
-        {
-          "meaning": "twilight-quartz",
-          "color": "#632c83",
-          "feature": "a broad purple growth seam"
-        },
-        {
-          "meaning": "true-ice",
-          "color": "#91d4dd",
-          "feature": "one opaque frost band"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-ruby",
-          "meanings": [
-            "ruby"
-          ]
-        },
-        {
-          "art": "template-true-ice",
-          "meanings": [
-            "true-ice"
-          ]
-        }
-      ]
+      "meaning": "stamina-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
     },
     {
-      "id": "fragments",
-      "name": "Rare fragments",
-      "template": {
-        "silhouette": "One broad curved teardrop shard, pointed upper-right and rounded lower-left; convex face with one central ridge.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "ethereal-silica",
-          "color": "#54af97",
-          "feature": "one open light-bending slit"
-        },
-        {
-          "meaning": "dragonhide",
-          "color": "#b74956",
-          "feature": "one raised scale ridge"
-        },
-        {
-          "meaning": "fragment",
-          "color": "#d09340",
-          "feature": "one chipped dark corner"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-ethereal-silica",
-          "meanings": [
-            "ethereal-silica"
-          ]
-        },
-        {
-          "art": "template-dragonhide",
-          "meanings": [
-            "dragonhide"
-          ]
-        },
-        {
-          "art": "template-fragment",
-          "meanings": [
-            "fragment"
-          ]
-        }
-      ]
+      "meaning": "stamina-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
     },
     {
-      "id": "reagents",
-      "name": "Reagents",
-      "template": {
-        "silhouette": "One squat round glass vial with short narrow neck and a plain stopper; liquid fills the lower two thirds.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: silhouette, three value masses, one defining feature. No speckles, lettering, hairline veins or detached particles.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "alchemical-silver",
-          "color": "#b9cbd0",
-          "feature": "a bright pooled metal swirl"
-        },
-        {
-          "meaning": "essence",
-          "color": "#a353b3",
-          "feature": "one large magenta drop"
-        },
-        {
-          "meaning": "research",
-          "color": "#4bafba",
-          "feature": "one suspended pale crystal"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-essence",
-          "meanings": [
-            "essence"
-          ]
-        },
-        {
-          "art": "template-research",
-          "meanings": [
-            "research"
-          ]
-        }
-      ]
+      "meaning": "damage-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
     },
     {
-      "id": "people",
-      "name": "People and troops",
-      "template": {
-        "silhouette": "One near-frontal shoulder bust cropped at mid-chest; head centred above broad shoulders, one role tool at the right.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16 px: head, shoulder mass, one role tool. Facial features and trim are expendable.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "labor",
-          "color": "#b78d54",
-          "feature": "worker cap and wooden mallet"
-        },
-        {
-          "meaning": "knight-t1",
-          "color": "#955343",
-          "feature": "leather and plain iron helmet"
-        },
-        {
-          "meaning": "knight-t2",
-          "color": "#884a50",
-          "feature": "steel plate and closed visor"
-        },
-        {
-          "meaning": "knight-t3",
-          "color": "#c76b5e",
-          "feature": "rich plate and broad crest"
-        },
-        {
-          "meaning": "crossbowman-t1",
-          "color": "#747a42",
-          "feature": "leather cap and crossbow"
-        },
-        {
-          "meaning": "crossbowman-t2",
-          "color": "#467e65",
-          "feature": "steel kettle helmet and crossbow"
-        },
-        {
-          "meaning": "crossbowman-t3",
-          "color": "#6aaf8c",
-          "feature": "rich steel and reinforced crossbow"
-        },
-        {
-          "meaning": "paladin-t1",
-          "color": "#b3a784",
-          "feature": "chainmail and plain holy crest"
-        },
-        {
-          "meaning": "paladin-t2",
-          "color": "#d4ccb0",
-          "feature": "ivory plate and broad holy crest"
-        },
-        {
-          "meaning": "paladin-t3",
-          "color": "#eee5cb",
-          "feature": "rich ivory plate and tall holy crest"
-        }
-      ],
-      "samples": [
-        {
-          "art": "template-labor",
-          "meanings": [
-            "labor"
-          ]
-        },
-        {
-          "art": "template-knight-t2",
-          "meanings": [
-            "knight-t2"
-          ]
-        },
-        {
-          "art": "template-crossbowman-t2",
-          "meanings": [
-            "crossbowman-t2"
-          ]
-        }
-      ]
+      "meaning": "damage-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
     },
     {
-      "id": "relics",
-      "name": "Relics",
-      "template": {
-        "silhouette": "One freestanding chunky effect symbol. No tablet, medallion or aura. All tiers use the same symbol with an external I / II mark.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "One dominant material hue per resource, plus neutral shadows and highlights. One defining feature survives the small size.",
-        "detail": "At 16/24 px stress-test only. At 32 px: one unmistakable symbol, at most three internal shapes. Tier mark remains outside.",
-        "fit": "Same 86% painted extent in the ring and chip. Never shrink a busy image to make it fit."
-      },
-      "members": [
-        {
-          "meaning": "stamina-relic-1",
-          "color": "#e9aa32",
-          "feature": "lightning bolt; tier I"
-        },
-        {
-          "meaning": "stamina-relic-2",
-          "color": "#e9aa32",
-          "feature": "lightning bolt; tier II"
-        },
-        {
-          "meaning": "damage-relic-1",
-          "color": "#c34e43",
-          "feature": "sword; tier I"
-        },
-        {
-          "meaning": "damage-relic-2",
-          "color": "#c34e43",
-          "feature": "sword; tier II"
-        },
-        {
-          "meaning": "damage-reduction-relic-1",
-          "color": "#397dcc",
-          "feature": "shield; tier I"
-        },
-        {
-          "meaning": "damage-reduction-relic-2",
-          "color": "#397dcc",
-          "feature": "shield; tier II"
-        },
-        {
-          "meaning": "exploration-relic-1",
-          "color": "#6caf5a",
-          "feature": "eye; tier I"
-        },
-        {
-          "meaning": "exploration-relic-2",
-          "color": "#6caf5a",
-          "feature": "eye; tier II"
-        },
-        {
-          "meaning": "exploration-reward-relic-1",
-          "color": "#a467a5",
-          "feature": "treasure chest; tier I"
-        },
-        {
-          "meaning": "exploration-reward-relic-2",
-          "color": "#a467a5",
-          "feature": "treasure chest; tier II"
-        },
-        {
-          "meaning": "structure-damage-reduction-relic-1",
-          "color": "#abc4dd",
-          "feature": "tower; tier I"
-        },
-        {
-          "meaning": "structure-damage-reduction-relic-2",
-          "color": "#abc4dd",
-          "feature": "tower; tier II"
-        },
-        {
-          "meaning": "production-relic-1",
-          "color": "#c88436",
-          "feature": "anvil; tier I"
-        },
-        {
-          "meaning": "production-relic-2",
-          "color": "#c88436",
-          "feature": "anvil; tier II"
-        },
-        {
-          "meaning": "labor-production-relic-1",
-          "color": "#b88a4a",
-          "feature": "mallet; tier I"
-        },
-        {
-          "meaning": "labor-production-relic-2",
-          "color": "#b88a4a",
-          "feature": "mallet; tier II"
-        },
-        {
-          "meaning": "troop-production-relic-1",
-          "color": "#ce6155",
-          "feature": "helmet; tier I"
-        },
-        {
-          "meaning": "troop-production-relic-2",
-          "color": "#ce6155",
-          "feature": "helmet; tier II"
-        }
-      ],
-      "samples": [
-        {
-          "art": "simple-stamina",
-          "meanings": [
-            "stamina-relic-1",
-            "stamina-relic-2"
-          ]
-        },
-        {
-          "art": "simple-damage",
-          "meanings": [
-            "damage-relic-1",
-            "damage-relic-2"
-          ]
-        },
-        {
-          "art": "simple-defense",
-          "meanings": [
-            "damage-reduction-relic-1",
-            "damage-reduction-relic-2"
-          ]
-        }
-      ]
+      "meaning": "damage-reduction-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "damage-reduction-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "exploration-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "exploration-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "exploration-reward-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "exploration-reward-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "structure-damage-reduction-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "production-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "production-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "labor-production-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "labor-production-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "troop-production-relic-1",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "troop-production-relic-2",
+      "group": "Relics",
+      "note": "Restored original pre-Facets artwork, including its original tier design."
+    },
+    {
+      "meaning": "research",
+      "group": "Resources",
+      "note": "Approved cyan research flask; replaces the previous book and green flask."
+    },
+    {
+      "meaning": "rift",
+      "group": "Models",
+      "note": "Stone basin and violet pool from the rift model."
+    },
+    {
+      "meaning": "spire",
+      "group": "Models",
+      "note": "Dark suspended spire and portal orb from the shipped spire model."
+    },
+    {
+      "meaning": "farm",
+      "group": "Models",
+      "note": "Windmill, wheat field and fence from the current farm model."
+    },
+    {
+      "meaning": "workers-hut",
+      "group": "Models",
+      "note": "Tiled timber hut and yard from the current workers hut model."
     }
   ],
-  "retained": [
-    {
-      "meaning": "donkey",
-      "reason": "Single pack animal: retain the approved pack donkey; no other carrier resource needs a reskin."
-    },
-    {
-      "meaning": "lords",
-      "reason": "Official token mark. Keep the vendored official SVG unchanged."
-    },
-    {
-      "meaning": "s-a-t",
-      "reason": "Keep the shipped currency mark; it is not a material-category painting."
-    }
-  ],
-  "shippedFamilies": [
-    {
-      "id": "structures",
-      "name": "Structures and buildings",
-      "template": {
-        "silhouette": "One miniature building, three-quarter view, clear roofline and one main entrance. Realm levels follow their actual model silhouette.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "Ochre timber, pale stone, muted roof colour; one role accent per building.",
-        "detail": "At 16 px preserve roof, wall and entrance. No individual bricks or window grids.",
-        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
-      },
-      "members": [
-        "realm-0",
-        "realm-1",
-        "realm-2",
-        "realm-3",
-        "farm",
-        "workers-hut",
-        "workshop"
-      ]
-    },
-    {
-      "id": "markers",
-      "name": "Map markers",
-      "template": {
-        "silhouette": "One isolated landmark: tent, split stone, tower or crate. Hex minimap versions keep a full interior emblem, ownership rim and level pip.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "Camp amber; rift violet; Hyperstructure ivory; spire cyan; crate warm wood. Ownership stays on the rim.",
-        "detail": "One recognizable landmark contour and one central feature. No scattered scenery or decorative effects.",
-        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
-      },
-      "members": [
-        "camp",
-        "rift",
-        "hyperstructure",
-        "spire",
-        "chest"
-      ]
-    },
-    {
-      "id": "glyphs",
-      "name": "UI glyphs · keep shipped",
-      "template": {
-        "silhouette": "One familiar object or sign. Retain the shipped Facets paintings and their semantic meaning.",
-        "framing": "Centred in a square. Painted bounds fit 86% of the longest dimension; equal 7% minimum padding.",
-        "light": "Warm upper-left key, cool lower-right shade. No glow or shadow outside the object.",
-        "outline": "One dark outer edge, about one screen pixel at 16 px. Use edge contrast rather than fine strokes.",
-        "value": "Three large value masses: dark 15–25%, body 40–65%, highlight 80–95%. These are painting targets.",
-        "palette": "Keep the existing material palette; no new tint system. Transfer stays donkey, Move stays boots, Production stays forge.",
-        "detail": "One clear gesture or object at 16 px. Settings alone uses the wheel.",
-        "fit": "Same 86% art envelope at 16/24/32 px in chips and 40 px in rings. Construction cards keep model thumbnails."
-      },
-      "members": [
-        "transfer",
-        "move",
-        "production",
-        "settings",
-        "attack",
-        "explore"
-      ]
-    }
-  ],
-  "artworks": {
-    "template-wheat": {
-      "master": "801155be6d1f7f242ba1d8a8862b011018aa74baada1bc1d2c6361e07fff5e80",
-      "deliveries": {
-        "64": "a9cdbf3bdcd0bcb88c1f98571e84a6d75d2d45aaac41b465536f19525590228c",
-        "128": "8ecebe256efc7118dd69e974e1fc39b5ea245db7b3c59f03027d056c5841cd5d",
-        "256": "c42889473d388e5a720257c0b316025a8076cb22d4f76d1ed7797c5de0df0fc1"
-      }
-    },
-    "template-fish": {
-      "master": "9f2fc425fd51f6b18e83a369daf86c61c084ee9c9516d0079f3193ab1bdf4dd3",
-      "deliveries": {
-        "64": "3460d798821f25a43220e9718f2258642001f18e182c0c680e4d10d60c1a304a",
-        "128": "5accabcd74780fabe0e93b57b981fea4315306cdc2287c10009cbc9fda663908",
-        "256": "52e43494414405ba7457ae07b298d6acd6d2c9bb4caa7891d5b9d13e5301ac29"
-      }
-    },
-    "template-wood": {
-      "master": "b9254e43a1b4c388e869c08d822f2f06f31c94726ef96c0d0ded96438b6f81fd",
-      "deliveries": {
-        "64": "d1a2a4f8d5e66d1eb19dde161c5a4d3be0603311e5526f257447b1a918de177e",
-        "128": "2d0481c4977e1820a1f26017cb370cf83825d92c6d6b46609f0f3328073f34ac",
-        "256": "ef01c0bc46e9e86197f900f4d6cac2c30b228366e7aeb942761dbf91ff113455"
-      }
-    },
-    "template-hartwood": {
-      "master": "8bfcae67b5ce37acd02333714b23408c580d3b5f235badac943b6e4fd459428e",
-      "deliveries": {
-        "64": "6e20fc484e0b121ac54c294a9c98cad7b2bd8b4e93c833c66f3682cbff270c68",
-        "128": "a7407262e88308ee277dcbbdae07178eafcc1487e301138df649733a3799589f",
-        "256": "a66844c5e2ff3a4c49e6b814de4195829709d11fe39cbe803f220437a0646be7"
-      }
-    },
-    "template-stone": {
-      "master": "f81d40c52849ac09eea44e0fae99167c71e86cdd1b1c7297b5d722116bdebc94",
-      "deliveries": {
-        "64": "efe3d00030db2c0ee27d6ea8bafa8055456479c659b29f0f6b5fc1518234a26b",
-        "128": "645e1c615f07254fea10a3961634750526a1b2c6ac1a4accc1cf192cd046ddda",
-        "256": "4b924ff3a16c79cf9072b023a7c783777ea2464c04176d5f747983589173a0af"
-      }
-    },
-    "template-coal": {
-      "master": "b9de1f51d450284929e2e9325e87ffff4e47a8f7c6f7e065a0be3ef885b44cc6",
-      "deliveries": {
-        "64": "a7c837f493cb9ba2b01749bfa9f6ea7928146dfd1e3c1a3110c7f996887048bc",
-        "128": "49c36f2ad9bb04ed173f782130812a33c1bdfea6cf18ad3f882f599bcfe577c0",
-        "256": "650fe5fea560061a3287d3b23e8d0ed15200eca8af0dba2663d0111083539201"
-      }
-    },
-    "template-copper": {
-      "master": "bccd474f71ac99f67bc87eccce2519bd6a5939a334b5e840365c17d7e4107553",
-      "deliveries": {
-        "64": "03ea645c59625c15fb924a9a1c01efd508a7b3d3ec4d2e78c22ee7e2df0ae6e6",
-        "128": "5b3a21232b4a03c8170b90631233b2f784a235dee92506fe4dca40638c2b4a81",
-        "256": "385cf52ba6610c085c2c84fab7843b042ba389e1800aa250ff77dc3ce4744a70"
-      }
-    },
-    "template-silver": {
-      "master": "40e022e34dab29783732b57ff4b5e8c49f3d5d2b887da457674959ed859c4302",
-      "deliveries": {
-        "64": "ce8ced75970367decad47f7d20b678cdab83caae8dd4dad560d2126156583b07",
-        "128": "a514d16bf3d6a0f916301bb2c676d2cd6c16d9acd7adf660de063c2559713794",
-        "256": "a74ae8223cc2a52ceabdef14af232ab851cf152b288daee973711a1a20da56be"
-      }
-    },
-    "template-ruby": {
-      "master": "179167ce3cb3fac543c3feb0aa8a44840ab2977e83489ba177cd40e4b68f4a9f",
-      "deliveries": {
-        "64": "5f04121288a1e1b3d897e0246d68e6aea5756dd46a650ee133b3225304f09594",
-        "128": "d6e113dc6d4c945c196e9a15e0016738a029745ed9f5ba79f92aaa35cb6d603a",
-        "256": "da1fb37f47e651903c727350399e4ceaf0fbf553ade0556a252bf089d0dc9b6a"
-      }
-    },
-    "template-true-ice": {
-      "master": "8b9bd6688ec7dbcda37fd3edf70e5a76e8e2c3639bdf995ee174b8b1c5462b00",
-      "deliveries": {
-        "64": "e1505b8d7c41ff309c367b7c93d9cde382c53aa53481a6e8d2d96c17c8622bbf",
-        "128": "8ceaf24d27109d569e2cdf5f9114f3adf8cb0a14c55a8fc21a422b2e88f198ca",
-        "256": "aaf528c6bb2d9d1b0acf256618387b8b0b12bc9cd4c532b568a3d76d798e7d16"
-      }
-    },
-    "template-ethereal-silica": {
-      "master": "fbba8fee348f25a2a0cafda967803dc9e63af1ae0d9c6638573cbf6d21e7f927",
-      "deliveries": {
-        "64": "d93d748600159ea23186021ba6d1ee83d5cee1f65e9e130838d5939c95cbae7e",
-        "128": "a11a10f1bfeca3d85db448e35a7ddd74d42b0ac4cb901c2c761a5252b43fdcbc",
-        "256": "e090d21be2c89dc92048f156d3dad2424aa052421e2b3dd5f8ea612b49d817b1"
-      }
-    },
-    "template-dragonhide": {
-      "master": "2e49cd42983f7eff39bc4d7f38f26cbcdf4cd0c4db9b7bb29236f3fa36759964",
-      "deliveries": {
-        "64": "334cec06393839021f120f08ecc1c7b9ac620edffb1ae187ea432dd222ef60c0",
-        "128": "bb175cfb91c800dd353c7386a2db4fe579d440c1b32a588904303ac0728f6830",
-        "256": "2c6381e3494419ab1292e29992a7830331f5d3221b6e8c546023bd7667b01116"
-      }
-    },
-    "template-fragment": {
-      "master": "9603439041cc25ab1b2a15e43552a7340065002c7dc842f639a0e06f6b614d64",
-      "deliveries": {
-        "64": "e627726ead5213eefda5c3c2c6bed842fae0bd507042ebe1219bc9a59b18cbf1",
-        "128": "840bcd6447412246e558bfdc97544374ae296342ce522534ef9e6d29656ad883",
-        "256": "95778bc4ed1792eab810caee19e714cb2f980066b3d282b23fef221a4abe79bf"
-      }
-    },
-    "template-essence": {
-      "master": "ee24d02da9f9f99a7bbae58be86741630c4990896e543655c6d858373bde754a",
-      "deliveries": {
-        "64": "4f03d120f632455a4598038683cf174efe45182de8a6c2d3c56bac1db505b45a",
-        "128": "3cb2734eebc3d2bfd06d73fcada1a296ee2702c9b717425b44778b1bfb6c782b",
-        "256": "a4d42ba9f53685b512e77bbb6b51f750e8ba561795e3d442057bfebcf53122c9"
-      }
-    },
-    "template-research": {
-      "master": "9c6c68cce7bcab6a07ab88080ef68819019aa81341dcc034fbdc653c395a1965",
-      "deliveries": {
-        "64": "4ae07f53163e5130fb11c0224c6a743223682a64afb37289ffe46ee195e50a78",
-        "128": "a97369cce5045bf08eb39291d52632b81b7eab3424fdc61579fcef8f05949f68",
-        "256": "66011bf5e9898ad14d2605f4bd3308c8a39b33834ac4749855cea65169d78ecb"
-      }
-    },
-    "template-labor": {
-      "master": "7a394e7386ae97f4cf46d639c3d614c07e180cf84d4b86b70977cddd72e6abc0",
-      "deliveries": {
-        "64": "63a30235c6ef457e57b24aaba12e8a5fc5b7a50a2a34e6dfae942af3a35762fb",
-        "128": "bb508b83704d4aa6cbe6de844f0045877f1d02f8ff21aa72efdf0154ff86910e",
-        "256": "0b96b899d8b9cd36c83eea5ea94d546b2ddf20bccfa6db668fdc6ec57df5a724"
-      }
-    },
-    "template-knight-t2": {
-      "master": "9cc9bc085baa03a5e78aac62336faf520074e4bf907df7a4dc34390dfb8cd7a3",
-      "deliveries": {
-        "64": "40ab59e1cf8cac5af82c1ff0fc60181bdeeb29c435a30eb9f7a56a9c9e08d811",
-        "128": "a29274bf54ae4a754cd546d05ebbd73730d3317e57018a26f851dd0e61664431",
-        "256": "8426da2507de659f3e1bfd04ae89eec3e2913b4782a733ef0428c164b4cdfb73"
-      }
-    },
-    "template-crossbowman-t2": {
-      "master": "ff91ba5243c07c61c7ab6b4225c36bd524deedd6aca08fc7549025864f1271d7",
-      "deliveries": {
-        "64": "f7bcb89b9c2b46aa77be2ce3a0b401d77db7806730f015789bbc30046b01dcda",
-        "128": "da6ef347a687e937095407b30a82cb9b1157ea060590d1d05aaba88e1f7267f4",
-        "256": "c61c470658252b7d32a700cfe679927dc16578ef4f3bb1c9b06676a37c59b634"
-      }
-    },
-    "simple-stamina": {
-      "master": "b9960036e2d846124919f5aa1480d8251fae03fa20744c6ed95056f446862f1c",
-      "deliveries": {
-        "64": "25396731255bbb1176a748a15d2283ebc9f0d41792731cb78639390b18239be4",
-        "128": "9ee473b7cc9cca59680d8f076f6a5b7c15ef8c4223b871af5ce6808aa104548c",
-        "256": "24b27883a10bff137e50e5c319b1626690e424b1200b5ecb610df14084d1497d"
-      }
-    },
-    "simple-damage": {
-      "master": "3f9cd0b5a6845f2ee74ed5505b3f3a27d21f54049217b001bd1290df14cc7ddd",
-      "deliveries": {
-        "64": "9f770f935274060c457bed7c709634e4e3e3e2f33df173a85e088bdd2cc529f7",
-        "128": "2e059ee8a0df2170e9af4c6df1ef4aff8c207e9ba120393360fa00e69b6812e2",
-        "256": "50811ef8714b43d51bf163bfe383813b7f59b365e514b9d84987184eef7155d8"
-      }
-    },
-    "simple-defense": {
-      "master": "1c9b5b024f4545f87d9ab6aa5a50d043b02679425ebd5900af036fad8e5fd0bf",
-      "deliveries": {
-        "64": "280568ea298ba1db063ac7a78d622a28abb6e5e9ab7777e66792fb84ad4c2022",
-        "128": "49726043e0ae48b5b805be361bfde3c0b8a0dd5dacb7248d84461bfadb7269a2",
-        "256": "9194c9b997fb1385808d3e1a33b357bd7e0ea22a196d5dbc10b87c51833d8a84"
-      }
-    }
-  }
+  "kept": [
+    "labor",
+    "knight-t1",
+    "knight-t2",
+    "knight-t3",
+    "crossbowman-t1",
+    "crossbowman-t2",
+    "crossbowman-t3",
+    "paladin-t1",
+    "paladin-t2",
+    "paladin-t3",
+    "workshop",
+    "move",
+    "transfer",
+    "production",
+    "settings"
+  ]
 }

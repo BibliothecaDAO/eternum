@@ -1,1 +1,1 @@
-One tall slender dark stone spire with cool blue crystal tip and stepped base.
+Render /models/ethereal/spire.glb with scripts/icons/render-models.mjs using the client loader and building-thumbnail camera. Preserve the actual geometry and materials, transparent background, 1024 px master. Dark suspended spire and portal orb from the shipped spire model. Use exposure 3.5 to keep dark stone legible against the HUD ground.

@@ -1,4 +1,0 @@
-Use case: precise-object-edit. Asset type: transparent painted game resource icon, category template reskin.
-Input image: edit target and category composition master.
-Reskin the exact curved teardrop shard as ONE fallen dragon scale in dark sanguine red with a bright red central raised ridge. Fill the glass opening with solid scale material. Keep the same outer silhouette, tilt and large planes. No roll, no collection of scales.
-Preserve the reference's framing, scale, camera angle, warm upper-left light and cool lower-right shadow. Painted Facets planes, three large value bands, dark continuous outer edge. This is the SAME category template with a new material, hue and one distinguishing feature. Avoid extra ornaments, backgrounds, framing, fine texture, text or tiny marks. Keep transparent background. Designed to read at 16 px with one main feature; no gilded kit.

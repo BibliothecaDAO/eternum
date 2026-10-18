@@ -20,8 +20,8 @@
     "reason": "A gripping hand and working hammer fill the square better than the distant full-body worker."
   },
   "faceted/essence": {
-    "verdict": "equal",
-    "reason": "The bottle remains clear at both sizes. Glass and violet volume improve at 64 px; the old magenta bottle is equally distinct at 32 px."
+    "verdict": "beats shipped",
+    "reason": "Approved round violet essence vessel; replaces the previous square bottle."
   },
   "faceted/ironwood": {
     "verdict": "equal",
@@ -36,16 +36,16 @@
     "reason": "Stone gate and slate roofs establish a material building instead of a monochrome gold token. Level remains an external badge."
   },
   "faceted/camp": {
-    "verdict": "equal",
-    "reason": "Both tents read at 32 px. The new canvas has stronger folds at 64 px without adding another visual object."
+    "verdict": "beats shipped",
+    "reason": "Canvas tents and palisade from the outpost model."
   },
   "faceted/hyperstructure": {
     "verdict": "beats shipped",
-    "reason": "Stone spires and the lit core give the site material depth missing from the flat old emblem."
+    "reason": "Actual foundation-only Hyperstructure kit: hex platform and six short columns."
   },
   "faceted/chest": {
     "verdict": "beats shipped",
-    "reason": "Wood and iron separate clearly at both sizes, replacing the all-gold chest with a readable object."
+    "reason": "Closed reward chest, with its runtime material treatment and scale."
   },
   "faceted/move": {
     "verdict": "equal",
@@ -129,7 +129,7 @@
   },
   "faceted/map-village": {
     "verdict": "beats shipped",
-    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12\u201316 px."
+    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12–16 px."
   },
   "faceted/map-mine": {
     "verdict": "beats shipped",
@@ -220,80 +220,80 @@
     "reason": "Dragonhide: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
   },
   "faceted/stamina-relic-1": {
-    "verdict": "equal",
-    "reason": "Stamina Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/stamina-relic-2": {
-    "verdict": "equal",
-    "reason": "Stamina Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/damage-relic-1": {
-    "verdict": "equal",
-    "reason": "Damage Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/damage-relic-2": {
-    "verdict": "equal",
-    "reason": "Damage Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/damage-reduction-relic-1": {
-    "verdict": "equal",
-    "reason": "Damage Reduction Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/damage-reduction-relic-2": {
-    "verdict": "equal",
-    "reason": "Damage Reduction Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/exploration-relic-1": {
-    "verdict": "equal",
-    "reason": "Exploration Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/exploration-relic-2": {
-    "verdict": "equal",
-    "reason": "Exploration Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/exploration-reward-relic-1": {
-    "verdict": "equal",
-    "reason": "Exploration Reward Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/exploration-reward-relic-2": {
-    "verdict": "equal",
-    "reason": "Exploration Reward Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/structure-damage-reduction-relic-1": {
-    "verdict": "equal",
-    "reason": "Structure Damage Reduction Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/structure-damage-reduction-relic-2": {
-    "verdict": "equal",
-    "reason": "Structure Damage Reduction Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/production-relic-1": {
-    "verdict": "equal",
-    "reason": "Production Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/production-relic-2": {
-    "verdict": "equal",
-    "reason": "Production Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/labor-production-relic-1": {
-    "verdict": "equal",
-    "reason": "Labor Production Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/labor-production-relic-2": {
-    "verdict": "equal",
-    "reason": "Labor Production Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/troop-production-relic-1": {
-    "verdict": "equal",
-    "reason": "Troop Production Relic1: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/troop-production-relic-2": {
-    "verdict": "equal",
-    "reason": "Troop Production Relic2: coloured effect motif stays readable at 24 and 32 px; notch and horn differences separate the two ranks."
+    "verdict": "beats shipped",
+    "reason": "Restored original pre-Facets artwork, including its original tier design."
   },
   "faceted/research": {
-    "verdict": "equal",
-    "reason": "Research: silhouette remains identifiable at 24 and 32 px; broad highlights separate the material planes on the dark HUD. Compared at the same size in round-4/review-01."
+    "verdict": "beats shipped",
+    "reason": "Approved cyan research flask; replaces the previous book and green flask."
   },
   "faceted/s-a-t": {
     "verdict": "equal",
@@ -740,12 +740,12 @@
     "reason": "Ruin: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
   "faceted/rift": {
-    "verdict": "equal",
-    "reason": "Rift: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Stone basin and violet pool from the rift model."
   },
   "faceted/spire": {
-    "verdict": "equal",
-    "reason": "Spire: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Dark suspended spire and portal orb from the shipped spire model."
   },
   "faceted/bitcoin-mine": {
     "verdict": "equal",
@@ -764,8 +764,8 @@
     "reason": "The narrow central cone and rounded tower match Empire and distinguish it from the paired Kingdom peaks. At 24 px the side turrets merge; the tall single peak remains clear."
   },
   "faceted/farm": {
-    "verdict": "equal",
-    "reason": "Farm: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Windmill, wheat field and fence from the current farm model."
   },
   "faceted/workshop": {
     "verdict": "equal",
@@ -776,8 +776,8 @@
     "reason": "Barracks: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
   "faceted/workers-hut": {
-    "verdict": "equal",
-    "reason": "Workers hut: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Tiled timber hut and yard from the current workers hut model."
   },
   "faceted/war-hall": {
     "verdict": "equal",

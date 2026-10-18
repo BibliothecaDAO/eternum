@@ -1,1 +1,1 @@
-A compact ancient relic talisman for StructureDamageReduction: blue stone tower carved in relief into a dark stone tablet with silver fastenings. Rank 1: one broad silver notch across the bottom, plain top silhouette. No gold, no text. The effect subject must dominate the face and read at 24px.
+Restore unchanged from b636c768616959a27e2ef45665e2c317fda9b40c:apps/game/public/images/resources/49.png. Deliver through the standard transparent icon normalizer.

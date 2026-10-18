@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Recognizable resources and landmarks",
+    description:
+      "Essence and Research have distinct icons, the original relic symbols return, and Farm, Workers Hut and map landmarks match their game models.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Deploy an army by troop column",
     description:
       "The map's deploy picker and the Military window now lay out troops the same way: a column per troop with its three tiers always in the same place, an empty one dimmed, then the amount with +500 and Max. Deploy carries its cost, and says in one line why it cannot go. Reinforcing a guard offers only the troop already in it. The Military window keeps its map for where a field army steps out.",
@@ -45,6 +52,7 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Military, rings and the leaderboard in the new style",
     description:
       "The resource rings, the leaderboard and tribes, the Military form and deploy picker, Combat, the attack preview, troop and relic transfers, chat, the crate panel and Frontier's season screens (the season's end, the standings, a realm's detail and a visit) now wear your game's colours and the one set of buttons, tabs, fields and chips. A ring's rim shows whether it is producing. Disbanding an army or dismissing a guard acts at once in Blitz and Eternum, and asks first only in Frontier, where it cannot be undone.",
+
     type: "improvement",
   },
   {

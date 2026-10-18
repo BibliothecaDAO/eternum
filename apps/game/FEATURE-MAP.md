@@ -400,24 +400,20 @@ components. `pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --lords`
 fixtures at desktop and phone widths, requiring every LORDS image to decode from the official token path. It includes
 the 96 px token prize at `/lab/app/reward-lords/results/0x5245414c4d53-7?capture=1`.
 
-### Icon style sheet review
+### Resource icon comparison
 
-`/lab/kit/resource-icons` opens **Templates**. Choose a category to compare its rules and two or three sample reskins
-beside Old and Shipped at 16/24/32/40 px. Nine templates assign 55 resource meanings; retained Donkey, LORDS and SAT
-complete the 58. Relics share one family symbol with an external I/II mark: 40 px is recommended, 32 px the minimum.
-**Other families** shows template rules and shipped structures/buildings, map landmarks and UI glyphs. Troop portraits
-are in **Templates → People and troops**. Model thumbnails stay on construction cards.
+`/lab/kit/resource-icons` opens **Resources**: before/current Essence and Research. **Relics** compares all 18 original,
+previous Facets and restored production icons. **Models** shows before/current icons beside the actual renders for Farm,
+Workers Hut, camp, rift, Hyperstructure site, spire and crate. Workshop waits for its model. **Kept** shows unchanged
+Labor, nine troop tiers and UI glyphs. **Inventory** compares all 58 historical and current resources.
 
-**Inventory → Old / Shipped** shows the full sets. **Findings** preserves 17 confusion comparisons. Hide names,
-Greyscale and Silhouette expose reliance on labels or hue. The historical set is pinned in
-`asset-sources/rss-icons/history.json`, including the old Donkey trade thumbnail and SAT text glyph.
-
-Lab only: 21 template samples replace the 34 per-icon A/B candidates. Production semantics, paintings and sizes stay
-unchanged. The owner selects templates before the remaining reskins. Sources, exact prompts, palette slots and reviews
-live in `asset-sources/rss-icons/`. `pnpm icons:study [--check]` uses the existing Facets delivery pipeline and verifies
-all sources and historical bytes. Start with `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`;
-`pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` drives every lab section at desktop/phone,
-checks exact images, decoding, sizes, marks and switches, and saves the comparisons.
+Every comparison uses 16/24/32/40 px. Current is the production `Icon` renderer; no proposal assets or templates remain.
+Prefer 40 px for larger relic chips, with 32 px the practical minimum. Construction cards retain model thumbnails.
+`asset-sources/facets/catalog.json` pins each replacement's source and hashes. `pnpm icons:check` verifies sources and
+exact normalized deliveries. `pnpm icons:study [--check]` builds/verifies before snapshots and model references. Start
+`pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run
+`pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` for desktop/phone comparisons, exact URL,
+decode, pixel-size and overflow checks. Regeneration commands are in `asset-sources/rss-icons/README.md`.
 
 ## End of game: Fractured veil
 

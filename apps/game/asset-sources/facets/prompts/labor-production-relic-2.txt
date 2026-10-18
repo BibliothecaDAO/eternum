@@ -1,1 +1,1 @@
-A compact ancient relic talisman for LaborProduction: brown worker glove and mallet carved in relief into a dark stone tablet with silver fastenings. Rank 2: two broad silver notches across the bottom, two prominent silver upper horns and richer inset material. No gold, no text. The effect subject must dominate the face and read at 24px.
+Restore unchanged from b636c768616959a27e2ef45665e2c317fda9b40c:apps/game/public/images/resources/54.png. Deliver through the standard transparent icon normalizer.
