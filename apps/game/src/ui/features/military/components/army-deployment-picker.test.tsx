@@ -111,3 +111,40 @@ describe("the shared deployment picker", () => {
     host.remove();
   });
 });
+
+/** Types into a mounted field as a player does, the field's own input event included. */
+const typeInto = (input: HTMLInputElement, text: string) =>
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, text);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+
+describe("the picker's typed troop count", () => {
+  it("keeps the number the player typed, as the old count did: its sign, its whole part, at most what is on hand", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store } = frontierDay();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDeploymentPicker structureId={7} isExplorer />
+        </GameProvider>,
+      ),
+    );
+    const count = () => host.querySelector<HTMLInputElement>('input[aria-label="Troop count"]')!;
+    // The fixture realm holds 420 knights.
+    for (const [text, shown] of [
+      ["-500", "0"],
+      ["1.5", "1"],
+      ["1,200", "420"],
+      ["250", "250"],
+    ] as const) {
+      typeInto(count(), text);
+      expect(count().value, text).toBe(shown);
+    }
+    act(() => root.unmount());
+    host.remove();
+  });
+});

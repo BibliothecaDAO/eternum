@@ -103,6 +103,15 @@ const reinforce = (guards: Record<number, ReturnType<typeof troops>> = {}, armyB
     transfer: () => button("Transfer Troops"),
     choose: (slotName: string) => act(() => button(slotName)!.click()),
     sendMax: () => act(() => button("Max")!.click()),
+    /** The troop count as it reads, after typing `text` into it as a player does. */
+    typeCount: (text: string) => {
+      const input = host.querySelector<HTMLInputElement>('input[aria-label="Troop count"]')!;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, text);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      return host.querySelector<HTMLInputElement>('input[aria-label="Troop count"]')!.value;
+    },
     unmount: () => {
       act(() => root.unmount());
       host.remove();
@@ -120,6 +129,15 @@ describe("reinforcing a structure from an adjacent army", () => {
     view.sendMax();
     expect(view.send().textContent).toBe("Transfer Troops");
     expect(view.send().disabled).toBe(false);
+    view.unmount();
+  });
+
+  it("keeps the troop count the player typed, as the old count did: its sign and its whole part", () => {
+    const view = reinforce();
+    expect(view.typeCount("-500")).toBe("0");
+    expect(view.typeCount("1.5")).toBe("1");
+    expect(view.typeCount("250")).toBe("250");
+    expect(view.send().textContent).toBe("Transfer Troops");
     view.unmount();
   });
 
