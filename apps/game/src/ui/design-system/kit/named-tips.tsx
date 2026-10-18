@@ -21,6 +21,9 @@ type Named = { anchor: HTMLElement; line: string };
 /** A name on the tooltip, in the HUD sheet's tip line (the tooltip wraps it inside a phone's width). */
 export const TipLine = ({ line }: { line: string }) => <span className="ui-tip__line">{line}</span>;
 
+/** What the named thing costs, one compact line under its name ("30 stamina · 100 wheat"). */
+export const TipCost = ({ cost }: { cost: string }) => <span className="ui-tip__cost">{cost}</span>;
+
 const squeezed = (words: string) => words.replace(/\s+/g, "").toLowerCase();
 
 /** A meter says its reading with its name: "stamina 81 / 150". */

@@ -255,6 +255,14 @@ button.ui-panel__name {
   line-height: var(--hud-line-body);
   font-weight: var(--hud-weight-body);
 }
+/* What it costs, exactly as charged, one compact line under its name. */
+.ui-tip__cost {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+  font-variant-numeric: tabular-nums;
+}
 /* Why a thing cannot be done, and when it can: a refusal reads in the warning colour. */
 .ui-tip__why {
   color: var(--hud-warn);

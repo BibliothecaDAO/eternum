@@ -495,12 +495,13 @@ export const HudTransfer = ({
 );
 
 /**
- * The app's one tooltip: a line, and when the thing cannot be done, why and when it can; how to do it as a cue. The map's
- * order line is one ("Deploy an army here" / "Right-click").
+ * The app's one tooltip: a line; what it costs, one compact line under it; when the thing cannot be done, why and when
+ * it can; how to do it as a cue. The map's order line is one ("Explore" / "30 stamina · 100 wheat").
  */
-export const HudTip = ({ line, why, how }: { line: string; why?: string; how?: string }) => (
+export const HudTip = ({ line, cost, why, how }: { line: string; cost?: string; why?: string; how?: string }) => (
   <span className="ui-tip" role="tooltip">
     <span className="ui-tip__line">{line}</span>
+    {cost && <span className="ui-tip__cost">{cost}</span>}
     {why && <span className="ui-tip__why">{why}</span>}
     {how && <span className="ui-tip__how">{how}</span>}
   </span>

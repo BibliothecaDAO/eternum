@@ -1,5 +1,6 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { TipLine } from "@/ui/design-system/kit/named-tips";
+import { TipCost, TipLine } from "@/ui/design-system/kit/named-tips";
+import type { OrderTip } from "@/ui/features/frontier/hud/order-tip";
 import type { HexPosition } from "@bibliothecadao/types";
 
 /**
@@ -10,7 +11,7 @@ const TIP_OFFSET = { x: 12, y: 26 };
 const TIP_ROOM = { width: 280, height: 56, top: 56, edge: 8 };
 
 /** A tile's line and where the tile sits on screen. */
-export type PlacedOrderTip = { line: string; at: { x: number; y: number } };
+export type PlacedOrderTip = OrderTip & { at: { x: number; y: number } };
 
 /**
  * The line for the tile under the pointer, kept true while the pointer rests: the scene says it again whenever what it
@@ -68,7 +69,12 @@ function showOrderTip(tip: PlacedOrderTip | null): void {
     return;
   }
   shown = {
-    content: <TipLine line={tip.line} />,
+    content: (
+      <>
+        <TipLine line={tip.line} />
+        {tip.cost && <TipCost cost={tip.cost} />}
+      </>
+    ),
     fixed: {
       x: Math.max(TIP_ROOM.edge, Math.min(tip.at.x + TIP_OFFSET.x, window.innerWidth - TIP_ROOM.width)),
       y: Math.max(TIP_ROOM.top, Math.min(tip.at.y + TIP_OFFSET.y, window.innerHeight - TIP_ROOM.height)),

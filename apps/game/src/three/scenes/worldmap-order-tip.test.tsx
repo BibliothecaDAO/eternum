@@ -21,13 +21,25 @@ const tile = {
 };
 
 const pointer = new PointerOrderTip(() => {
-  const line = orderTip({ path: tile.path, explored: true, refusal: tile.refusal, staminaWait: undefined });
-  return line === null ? null : { line, at: tile.at };
+  const tip = orderTip({
+    path: tile.path,
+    exploreStamina: 21,
+    food: { wheat: 0, fish: 0 },
+    explored: true,
+    refusal: tile.refusal,
+    staminaWait: undefined,
+  });
+  return tip && { ...tip, at: tile.at };
 });
 
 const shownLine = (): string | null => {
   const tooltip = useTooltipStore.getState().tooltip;
-  return tooltip ? renderToStaticMarkup(<>{tooltip.content}</>).replace(/<[^>]+>/g, "") : null;
+  // Each line of the tip as the player reads it, the order over its cost: "Move / 2 stamina".
+  return tooltip
+    ? renderToStaticMarkup(<>{tooltip.content}</>)
+        .replace(/<\/span><span/g, "</span> / <span")
+        .replace(/<[^>]+>/g, "")
+    : null;
 };
 
 const crate = (): ActionPath[] => [
@@ -62,7 +74,7 @@ describe("the line under a still pointer", () => {
 
     Object.assign(tile, { refusal: undefined, path: move(2) });
     pointer.refresh();
-    expect(shownLine()).toBe("Move");
+    expect(shownLine()).toBe("Move / 2 stamina");
 
     tile.path = undefined;
     pointer.refresh();
@@ -164,7 +176,7 @@ describe("the line when the pointer leaves the map for the HUD", () => {
 
   it("gives the tooltip to the HUD control and keeps it there through a refresh", () => {
     restOnTile();
-    expect(shownLine()).toBe("Move");
+    expect(shownLine()).toBe("Move / 2 stamina");
 
     leaveCanvas();
     overHudButton();

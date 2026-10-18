@@ -5,19 +5,55 @@ import { orderFood, orderTip } from "./order-tip";
 
 const step = (actionType: ActionType, staminaCost?: number) => ({ hex: { col: 0, row: 0 }, actionType, staminaCost });
 type Path = ReturnType<typeof step>[];
-const line = (
+const tip = (
   path: Path | undefined,
-  more: Partial<{ explored: boolean; refusal: OrderRefusal; staminaWait: number }> = {},
-) => orderTip({ path, explored: true, refusal: undefined, staminaWait: undefined, ...more });
+  more: Partial<{
+    explored: boolean;
+    refusal: OrderRefusal;
+    staminaWait: number;
+    food: { wheat: number; fish: number };
+  }> = {},
+) =>
+  orderTip({
+    path,
+    exploreStamina: 21,
+    food: { wheat: 0, fish: 0 },
+    explored: true,
+    refusal: undefined,
+    staminaWait: undefined,
+    ...more,
+  });
+const line = (...args: Parameters<typeof tip>) => tip(...args)?.line ?? null;
+const cost = (...args: Parameters<typeof tip>) => tip(...args)?.cost ?? null;
 
 describe("what a right-click on a tile does, said before the click", () => {
-  it("names the order alone: no gesture, no cost, no payoff", () => {
+  it("names the order alone: no gesture, no description, no payoff", () => {
     expect(line([step(ActionType.Move), step(ActionType.Explore)])).toBe("Explore");
     expect(line([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("Move");
     expect(line([step(ActionType.Move), step(ActionType.Chest)])).toBe("Open crate");
     expect(line([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("Attack");
     expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
     expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
+  });
+
+  it("puts what the order costs on one compact line under it, exactly as the chain charges it", () => {
+    const explore = [step(ActionType.Move), step(ActionType.Explore)];
+    expect(cost(explore, { food: { wheat: 100, fish: 0 } })).toBe("21 stamina · 100 wheat");
+    expect(cost(explore, { food: { wheat: 0.05, fish: 0 } })).toBe("21 stamina · 0.05 wheat");
+    expect(cost(explore, { food: { wheat: 30, fish: 30 } })).toBe("21 stamina · 30 wheat · 30 fish");
+    expect(cost([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("2 stamina");
+    expect(cost([step(ActionType.Move), step(ActionType.Move, 1)], { food: { wheat: 0, fish: 0.03 } })).toBe(
+      "1 stamina · 0.03 fish",
+    );
+    expect(cost([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("30 stamina");
+  });
+
+  it("says a crate as its action alone, and an order that costs nothing with no cost line", () => {
+    expect(tip([step(ActionType.Move), step(ActionType.Chest, 5)], { food: { wheat: 10, fish: 0 } })).toEqual({
+      line: "Open crate",
+      cost: null,
+    });
+    expect(cost([step(ActionType.Move), step(ActionType.Help)])).toBeNull();
   });
 
   it("says why the planner gave no order, in its own reason", () => {
@@ -40,8 +76,9 @@ describe("what a right-click on a tile does, said before the click", () => {
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {
     expect(line(undefined, { explored: false })).toBe("Unexplored");
-    expect(line(undefined)).toBeNull();
-    expect(line([step(ActionType.Move)])).toBeNull();
+    expect(tip(undefined)).toBeNull();
+    expect(tip([step(ActionType.Move)])).toBeNull();
+    expect(cost(undefined, { refusal: { reason: "food" } })).toBeNull();
   });
 });
 

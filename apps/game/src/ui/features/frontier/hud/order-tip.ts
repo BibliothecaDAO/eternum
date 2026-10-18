@@ -1,4 +1,5 @@
-import { formatExact } from "@/ui/design-system/kit/amount";
+import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
+import { formatCharge, formatExact } from "@/ui/design-system/kit/amount";
 import { formatWait } from "@/ui/design-system/kit/time";
 import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
 import {
@@ -13,6 +14,10 @@ import type { Troops } from "@bibliothecadao/types";
 
 type TileOrder = {
   path: ActionPath[] | undefined;
+  /** What an explore costs in stamina where its path names none (the game's explore cost). */
+  exploreStamina: number;
+  /** The food the order burns from the army's realm (orderFood). */
+  food: OrderFood;
   /** Whether the tile has been revealed. */
   explored: boolean;
   /** Why the planner gave the selected army no order here (ActionPaths.getRefusals). */
@@ -21,12 +26,25 @@ type TileOrder = {
   staminaWait: number | undefined;
 };
 
+export type OrderTip = {
+  /** The right-click's order ("Explore"), or why there is none. */
+  line: string;
+  /** What the order costs, exactly as it is charged ("30 stamina · 100 wheat"); none for a refusal or a crate. */
+  cost: string | null;
+};
+
 /**
- * What a right-click on a tile does for the selected army, before any click: the order alone ("Open crate"), with no
- * description and no payoff (owner, sheet round 5); or, where the rules give no order, the reason the planner
- * recorded. The map's highlight colours mean the army's orders and nothing else; this line is their legend.
+ * What a right-click on a tile does for the selected army, before any click: the order, and under it one compact line
+ * of what it costs from the order's own cost rules (owner, sheet round 5: no gesture, no description, no payoff; a
+ * crate is its action alone); or, where the rules give no order, the reason the planner recorded. The map's highlight
+ * colours mean the army's orders and nothing else; this line is their legend.
  */
-export const orderTip = (order: TileOrder): string | null => orderLine(order) ?? refusalLine(order);
+export const orderTip = (order: TileOrder): OrderTip | null => {
+  const ordered = orderOf(order);
+  if (ordered) return ordered;
+  const refused = refusalLine(order);
+  return refused === null ? null : { line: refused, cost: null };
+};
 
 const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Explore]: EXPLORE,
@@ -37,9 +55,18 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.SpireTravel]: "Travel through the spire",
 };
 
-const orderLine = ({ path }: TileOrder): string | null => {
+const orderOf = ({ path, exploreStamina, food }: TileOrder): OrderTip | null => {
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
-  return actionType === undefined ? null : (ORDERS[actionType] ?? null);
+  const line = actionType === undefined ? undefined : ORDERS[actionType];
+  if (!path || line === undefined) return null;
+  if (actionType === ActionType.Chest) return { line, cost: null };
+  const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
+  const pieces = [
+    ...(stamina > 0 ? [`${formatExact(stamina)} ${STAMINA}`] : []),
+    ...(food.wheat > 0 ? [`${formatCharge(food.wheat)} wheat`] : []),
+    ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),
+  ];
+  return { line, cost: pieces.length > 0 ? pieces.join(" · ") : null };
 };
 
 /**

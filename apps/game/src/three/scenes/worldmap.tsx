@@ -271,7 +271,7 @@ import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-or
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
-import { orderTip } from "@/ui/features/frontier/hud/order-tip";
+import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
@@ -2388,8 +2388,8 @@ export default class WorldmapScene extends WarpTravel {
   /** The tile's line where it sits on screen now; with an army selected in every mode, and always where the HUD names tiles. */
   private placeOrderTip(hexCoords: HexPosition): PlacedOrderTip | null {
     if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return null;
-    const line = this.nameOrderAt(hexCoords);
-    return line === null ? null : { line, at: projectHexToScreen(hexCoords, this.camera) };
+    const tip = this.nameOrderAt(hexCoords);
+    return tip && { ...tip, at: projectHexToScreen(hexCoords, this.camera) };
   }
 
   /** The army whose orders the map shows, or null when the selection is no army. */
@@ -2399,11 +2399,15 @@ export default class WorldmapScene extends WarpTravel {
     return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
-  private nameOrderAt(hexCoords: HexPosition): string | null {
+  private nameOrderAt(hexCoords: HexPosition): OrderTip | null {
     const key = ActionPaths.posKey(hexCoords, true);
     const refusal = this.orderRefusals.get(key);
+    const path = getLiveWorldmapEntityActions().actionPaths.get(key);
+    const armyTroops = this.selectedArmyRow()?.troops;
     return orderTip({
-      path: getLiveWorldmapEntityActions().actionPaths.get(key),
+      path,
+      exploreStamina: configManager.getExploreStaminaCost(),
+      food: armyTroops ? orderFood(path, armyTroops) : { wheat: 0, fish: 0 },
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
       refusal,
       staminaWait: refusal?.reason === "stamina" ? this.secondsUntilSelectedArmyHolds(refusal.need) : undefined,

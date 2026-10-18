@@ -850,25 +850,32 @@ const orderStep = (actionType: ActionType, staminaCost?: number) => ({
   staminaCost,
 });
 const ORDER_LINES = [
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)] },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Explore)], food: { wheat: 100, fish: 0 } },
+  { path: [orderStep(ActionType.Move), orderStep(ActionType.Move, 10), orderStep(ActionType.Move, 10)] },
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
-  { path: [orderStep(ActionType.Move), orderStep(ActionType.Attack, 50)] },
   { path: undefined, refusal: { reason: "stamina", need: 30 } as const, staminaWait: 24 },
 ].flatMap((order) => {
-  const tip = orderTip({ explored: true, refusal: undefined, staminaWait: undefined, ...order });
+  const tip = orderTip({
+    exploreStamina: 30,
+    food: { wheat: 0, fish: 0 },
+    explored: true,
+    refusal: undefined,
+    staminaWait: undefined,
+    ...order,
+  });
   return tip ? [tip] : [];
 });
 
 const TooltipSection = () => (
   <Element
     name="Tooltip and the map's order line"
-    rule="One tooltip; its words are its own. A line, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip), never a word of a queue."
+    rule="One tooltip; its words are its own. A line, what it costs on one compact line under it, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip): the action, then its exact cost; a crate is its action alone."
     sheet={
       <div className="flex flex-wrap items-start gap-4">
         <HudTip line="Wheat, 1,200 held" />
         <HudTip line="Deploy an army here" how="Right-click" />
         {ORDER_LINES.map((order) => (
-          <HudTip key={order} line={order} />
+          <HudTip key={order.line} line={order.line} cost={order.cost ?? undefined} />
         ))}
       </div>
     }
