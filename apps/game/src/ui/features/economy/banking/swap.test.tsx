@@ -30,7 +30,9 @@ vi.mock("@/ui/design-system/molecules/resource-cost", () => ({ ResourceCost: () 
 /** The donkeys can carry whatever the trade brings back. */
 vi.mock("@/ui/features/economy/resources", () => ({
   TravelInfo: ({ setCanCarry }: { setCanCarry: (canCarry: boolean) => void }) => {
-    useEffect(() => setCanCarry(true), [setCanCarry]);
+    useEffect(() => {
+      setCanCarry(true);
+    }, [setCanCarry]);
     return null;
   },
 }));
