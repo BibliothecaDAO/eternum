@@ -1,3 +1,4 @@
+import { VALUE_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
@@ -11,7 +12,6 @@ import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
 import { Loading } from "@/shell/loading";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
-import { VALUE_WORDS, WALLET_WORDS } from "@/shell/words";
 
 import { failureSentence, WrongNetworkError } from "@/ui/modules/identity/identity-failures";
 import { assertWalletOnL2 } from "@/ui/modules/identity/l2-wallet";

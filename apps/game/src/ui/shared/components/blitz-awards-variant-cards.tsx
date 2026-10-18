@@ -1,3 +1,4 @@
+import { formatExact, formatWait } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { FONTS } from "@/tokens";
 
@@ -9,12 +10,7 @@ import { useProfiles } from "@/shell/profiles";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import type { IdentityProfile } from "@realms-world/identity";
 import { BLITZ_CARD_DIMENSIONS } from "../lib/blitz-highlight";
-import {
-  BLITZ_CARD_BASE_STYLES,
-  BLITZ_CARD_FONT_FACES,
-  BLITZ_CARD_GOLD_THEME,
-  formatBlitzValue as formatValue,
-} from "../lib/blitz-card-shared";
+import { BLITZ_CARD_BASE_STYLES, BLITZ_CARD_FONT_FACES, BLITZ_CARD_GOLD_THEME } from "../lib/blitz-card-shared";
 import { APP_HOST } from "@/config/app-address";
 
 type MetricValue = {
@@ -83,45 +79,13 @@ const normalizeAddress = (value: string | null | undefined): string | null => {
   }
 };
 
-const formatDuration = (seconds: number): string => {
-  if (!Number.isFinite(seconds) || seconds < 0) return "None";
-
-  const total = Math.floor(seconds);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const remaining = total % 60;
-
-  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
-  if (minutes > 0) return `${minutes}m ${remaining}s`;
-  return `${remaining}s`;
-};
-
-const formatOptionSixDuration = (seconds: number): string => {
-  if (!Number.isFinite(seconds) || seconds < 0) return "None";
-
-  const total = Math.floor(seconds);
-  if (total < 60) return `${total}s`;
-
-  if (total < 3600) {
-    const minutes = Math.floor(total / 60);
-    const remainingSeconds = total % 60;
-    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
-  }
-
-  if (total < 86400) {
-    const hours = Math.floor(total / 3600);
-    const minutes = Math.floor((total % 3600) / 60);
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-
-  const days = Math.floor(total / 86400);
-  const hours = Math.floor((total % 86400) / 3600);
-  return `${days}d ${String(hours).padStart(2, "0")}h`;
-};
+/** How long an award took, by the wait rule; none when it was never reached. */
+const awardWait = (seconds: number): string =>
+  Number.isFinite(seconds) && seconds >= 0 ? formatWait(seconds) : "None";
 
 const formatAwardValue = (metric: MetricValue, kind: AwardKind): string => {
   if (!metric) return "None";
-  return kind === "time" ? formatDuration(metric.value) : formatValue(metric.value);
+  return kind === "time" ? awardWait(metric.value) : formatExact(Math.max(0, metric.value));
 };
 
 const getHeroValueSizeClass = (value: string): string => {
@@ -1211,7 +1175,7 @@ const BlitzAwardsVariantCard = forwardRef<SVGSVGElement, BlitzAwardsVariantCardP
               const rawDisplayValue = isNoT3
                 ? "None"
                 : variant === "option-six" && award.kind === "time"
-                  ? formatOptionSixDuration(award.metric?.value ?? Number.NaN)
+                  ? awardWait(award.metric?.value ?? Number.NaN)
                   : formatAwardValue(award.metric, award.kind);
               const displayValue = rawDisplayValue;
               const heroValueSizeClass = isHero ? getHeroValueSizeClass(displayValue) : "";

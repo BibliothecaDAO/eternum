@@ -1,3 +1,4 @@
+import { formatExact, formatPercent, formatRate } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { HudButton, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -8,15 +9,6 @@ import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useMemo, useState } from "react";
-
-const formatInt = (value: number): string => value.toLocaleString("en-US");
-
-const formatBigInt = (value: bigint): string => {
-  const sign = value < 0n ? "-" : "";
-  const digits = (value < 0n ? -value : value).toString();
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${sign}${grouped}`;
-};
 
 const isZeroAddress = (address: string): boolean => /^0x0+$/i.test(address.trim());
 
@@ -82,13 +74,13 @@ export const WonderFaithDetailPanel = ({
       <div className={cn("grid grid-cols-2 gap-2 text-hud-label", className)}>
         <StatCard
           label="Total FP"
-          value={formatBigInt(wonderDetail.totalFaithPoints)}
+          value={formatExact(wonderDetail.totalFaithPoints)}
           mono
           compact
           className="col-span-2"
         />
-        <StatCard label="FP/s" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono compact />
-        <StatCard label="Followers" value={formatInt(wonderDetail.followerCount)} mono compact />
+        <StatCard label="FP/s" value={formatExact(wonderDetail.totalFaithPointsPerSec)} mono compact />
+        <StatCard label="Followers" value={formatExact(wonderDetail.followerCount)} mono compact />
       </div>
     );
   }
@@ -114,30 +106,31 @@ export const WonderFaithDetailPanel = ({
         </div>
       )}
       <div className="grid grid-cols-2 gap-2 text-hud-label">
-        <StatCard label="Total FP" value={formatBigInt(wonderDetail.totalFaithPoints)} mono />
-        <StatCard label="Total FP/sec" value={formatInt(wonderDetail.totalFaithPointsPerSec)} mono />
-        <StatCard label="Own Baseline" value={formatInt(wonderDetail.ownBaselinePerSec)} mono />
-        <StatCard label="Followers FP/sec" value={formatInt(wonderDetail.followersContributionPerSec)} mono />
+        <StatCard label="Total FP" value={formatExact(wonderDetail.totalFaithPoints)} mono />
+        <StatCard label="Total FP/sec" value={formatExact(wonderDetail.totalFaithPointsPerSec)} mono />
+        <StatCard label="Own Baseline" value={formatExact(wonderDetail.ownBaselinePerSec)} mono />
+        <StatCard label="Followers FP/sec" value={formatExact(wonderDetail.followersContributionPerSec)} mono />
       </div>
 
       <div className="rounded-lg border border-hud-line bg-hud-hover p-3">
         <div className="flex items-center justify-between text-hud-label uppercase text-hud-muted">
           <span>Per-Pledge Split</span>
           <span>
-            {wonderDetail.ownerSharePercent}% / {wonderDetail.followerSharePercent}%
+            {formatPercent(wonderDetail.ownerSharePercent / 100)} /{" "}
+            {formatPercent(wonderDetail.followerSharePercent / 100)}
           </span>
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2 text-hud-label text-hud-accent">
           <div className="rounded border border-hud-line bg-hud-well px-2 py-1">
             Wonder owner share
             <div className="font-mono text-hud-body text-hud-accent">
-              {formatInt(wonderDetail.ownerSharePerSecFromFollowers)}/sec
+              {formatRate(wonderDetail.ownerSharePerSecFromFollowers)}
             </div>
           </div>
           <div className="rounded border border-hud-line bg-hud-well px-2 py-1">
             Followers share
             <div className="font-mono text-hud-body text-hud-accent">
-              {formatInt(wonderDetail.followersSharePerSec)}/sec
+              {formatRate(wonderDetail.followersSharePerSec)}
             </div>
           </div>
         </div>
@@ -165,13 +158,13 @@ export const WonderFaithDetailPanel = ({
                   <div className="w-24 text-right text-hud-label text-hud-muted">
                     30% owner
                     <div className="font-mono text-hud-label text-hud-accent">
-                      {formatInt(follower.fpToWonderOwnerPerSec)}
+                      {formatExact(follower.fpToWonderOwnerPerSec)}
                     </div>
                   </div>
                   <div className="w-24 text-right text-hud-label text-hud-muted">
                     70% follower
                     <div className="font-mono text-hud-label text-hud-accent">
-                      {formatInt(follower.fpToFollowerOwnerPerSec)}
+                      {formatExact(follower.fpToFollowerOwnerPerSec)}
                     </div>
                   </div>
                 </div>

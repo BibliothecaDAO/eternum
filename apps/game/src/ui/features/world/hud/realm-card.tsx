@@ -1,14 +1,11 @@
+import { automationRefusal, presetLine } from "@/ui/design-system/kit/words";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { automationRefusal, presetLine } from "@/ui/features/settlement/production/automation-words";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
-import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
-import {
-  CompactEntityInventory,
-  formatInventoryAmount,
-} from "@/ui/features/world/components/entities/compact-entity-inventory";
+import { productionTimeLeft } from "@/ui/features/economy/resources/entity-resource-table/utils";
+import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import {
   type StructureProductionSummary,
@@ -26,7 +23,17 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { divideByPrecision, type ResourceManager } from "@bibliothecadao/eternum";
 import { inferRealmPreset, REALM_PRESETS, type RealmPresetId } from "@bibliothecadao/eternum/automation";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
-import { EntityType, type ID, isRelic, RelicRecipientType, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  EntityType,
+  type ID,
+  isRelic,
+  RelicRecipientType,
+  ResourcesIds,
+  StructureType,
+  formatExact,
+  formatAmount,
+  resourceName,
+} from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
@@ -99,7 +106,7 @@ const HoldingStats = ({ holding }: { holding: StructureWithMetadata }) => {
     <>
       <span
         className="flex items-center gap-1.5"
-        data-tip={`Population ${holding.population.toLocaleString()} of ${holding.populationCapacity.toLocaleString()}`}
+        data-tip={`Population ${formatExact(holding.population)} of ${formatExact(holding.populationCapacity)}`}
       >
         <Icon name="people" size={16} />
         {formatPopulationStatusLabel(holding.population, holding.populationCapacity)}
@@ -136,7 +143,7 @@ const AutomationSelect = ({ entityId, entityType }: { entityId: ID; entityType: 
       aria-label="Production automation"
       className="hud-select shrink-0"
       value={current}
-      data-tip={refusal ?? presetLine(current)}
+      data-tip={refusal ?? presetLine(REALM_PRESETS.find((preset) => preset.id === current)!)}
       disabled={refusal !== null}
       onKeyDown={(event) => event.stopPropagation()}
       onChange={(event) => choose(event.target.value as RealmPresetId)}
@@ -204,7 +211,7 @@ const ResourceRings = ({
             isProducing={reading.producing}
             timeRemainingSeconds={reading.secondsLeft}
             buildings={reading.buildings}
-            amount={formatInventoryAmount(reading.held)}
+            amount={formatAmount(Math.floor(reading.held))}
           />
         </li>
       ))}
@@ -214,11 +221,11 @@ const ResourceRings = ({
 
 /** "Wheat · 12,400 held · 3 buildings · 4h of production left": the ring's tooltip. */
 const describeResource = ({ resourceId, held, buildings, producing, secondsLeft }: ResourceReading): string => {
-  const parts = [`${ResourcesIds[resourceId]} · ${Math.floor(held).toLocaleString()} held`];
+  const parts = [`${resourceName(resourceId)} · ${formatExact(Math.floor(held))} held`];
   if (buildings > 0) parts.push(`${buildings} building${buildings === 1 ? "" : "s"}`);
   if (producing && secondsLeft === Number.POSITIVE_INFINITY) parts.push("production never runs out");
   else if (producing && secondsLeft !== null && secondsLeft >= 60)
-    parts.push(`${formatTimeRemaining(Math.ceil(secondsLeft / 60) * 60)} of production left`);
+    parts.push(`${productionTimeLeft(Math.ceil(secondsLeft / 60) * 60)} of production left`);
   return parts.join(" · ");
 };
 

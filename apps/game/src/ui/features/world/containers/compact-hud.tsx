@@ -1,3 +1,4 @@
+import { EMPIRE } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
@@ -116,7 +117,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const tabs: TabSpec[] = [
     {
       id: "empire",
-      label: ordersAllowed ? "Empire" : "Standings",
+      label: ordersAllowed ? EMPIRE : "Standings",
       image: ordersAllowed ? COMPACT_TAB_IMAGES.empire : COMPACT_TAB_IMAGES.standings,
     },
     { id: "map", label: "Map", image: COMPACT_TAB_IMAGES.map },

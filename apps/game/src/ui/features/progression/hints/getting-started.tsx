@@ -1,6 +1,6 @@
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { configManager } from "@bibliothecadao/eternum";
-import { NEUTRAL_OWNER_NAME, TickIds } from "@bibliothecadao/types";
+import { NEUTRAL_OWNER_NAME, TickIds, formatExact, formatDuration } from "@bibliothecadao/types";
 import { describeHyperstructureHold } from "@/ui/shared/lib/victory-point-grants";
 import { tableOfContents } from "./utils";
 
@@ -15,13 +15,13 @@ export const GettingStarted = () => {
     },
     {
       title: "Points Breakdown",
-      content: `Points are earned through various actions: Explore a tile - ${grants.exploreTile} points, Claim a World Structure from ${NEUTRAL_OWNER_NAME} - ${grants.claimCampFromBandits} points, Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME} - ${grants.claimHyperstructureFromBandits} points, Open a Relic Crate - ${grants.openRelicCrate} points, ${describeHyperstructureHold(grants).rule}. The first player to reach ${pointsForWin.toLocaleString()} points gains the power to end the season and claim victory.`,
+      content: `Points are earned through various actions: Explore a tile - ${grants.exploreTile} points, Claim a World Structure from ${NEUTRAL_OWNER_NAME} - ${grants.claimCampFromBandits} points, Claim a Hyperstructure from ${NEUTRAL_OWNER_NAME} - ${grants.claimHyperstructureFromBandits} points, Open a Relic Crate - ${grants.openRelicCrate} points, ${describeHyperstructureHold(grants).rule}. The first player to reach ${formatExact(pointsForWin)} points gains the power to end the season and claim victory.`,
     },
     {
       title: "The Realms Day",
-      content: `Time in Realms is measured in Realms Days. An Realms Day is exactly ${
-        configManager.getTick(TickIds.Armies) / 60
-      } minute(s) in the real world. Many game mechanics, like resource production and stamina regeneration, are tied to this cycle.`,
+      content: `Time in Realms is measured in Realms Days. A Realms Day is exactly ${formatDuration(
+        configManager.getTick(TickIds.Armies),
+      )} in the real world. Many game mechanics, like resource production and stamina regeneration, are tied to this cycle.`,
     },
     {
       title: "Realms & Villages",

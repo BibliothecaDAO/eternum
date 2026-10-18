@@ -44,6 +44,9 @@ jobs:
       - name: Check the HUD adds no look of its own beside the sheet
         run: pnpm hud:check
 
+      - name: Check every word, number, time and name goes through the words module
+        run: pnpm words:check
+
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 

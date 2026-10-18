@@ -7,7 +7,6 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
-import { currencyIntlFormat } from "@/ui/utils/utils";
 import {
   configManager,
   getEntityName,
@@ -17,7 +16,7 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { PlayerActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, formatExact, formatPercent, formatRate, formatPoints } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { normalizeLeaderboardAddress } from "../player/finalized-blitz-leaderboard";
@@ -57,7 +56,7 @@ export const PlayerId = ({
         <span className={`min-w-0 flex-1 truncate text-hud-title`}>{name || "Unknown player"}</span>
         {standing && (
           <span className="text-hud-strong">
-            #{standing.rank} · {currencyIntlFormat(standing.points)} points
+            #{standing.rank} · {formatPoints(standing.points)}
           </span>
         )}
       </header>
@@ -98,9 +97,9 @@ export const PointsByActivity = ({ breakdown }: { breakdown: PlayerActivityBreak
         <div key={label} className="flex items-baseline justify-between gap-2">
           <dt className="text-hud-body">
             {label}
-            {stat.count > 0 && <span className="text-hud-muted"> · {stat.count.toLocaleString()}</span>}
+            {stat.count > 0 && <span className="text-hud-muted"> · {formatExact(stat.count)}</span>}
           </dt>
-          <dd className="text-hud-strong">{currencyIntlFormat(stat.points)} points</dd>
+          <dd className="text-hud-strong">{formatPoints(stat.points)}</dd>
         </div>
       ))}
     </dl>
@@ -123,8 +122,8 @@ const HyperstructureRow = ({ holding }: { holding: HyperstructurePaying }) => {
   return (
     <li className="flex items-center gap-2">
       <span className={`min-w-0 flex-1 truncate text-hud-body`}>{holding.name}</span>
-      <span className="text-hud-body tabular-nums text-hud-muted">{Math.round(holding.share * 100)}%</span>
-      <span className="text-hud-strong">{currencyIntlFormat(holding.perSecond)} points/s</span>
+      <span className="text-hud-body tabular-nums text-hud-muted">{formatPercent(holding.share)}</span>
+      <span className="text-hud-strong">points {formatRate(holding.perSecond)}</span>
       {at && (
         <button
           type="button"

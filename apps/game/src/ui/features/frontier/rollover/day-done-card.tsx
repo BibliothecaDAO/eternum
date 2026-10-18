@@ -1,7 +1,6 @@
+import { formatExact, formatDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudMeter } from "@/ui/design-system/kit/hud-elements";
-import { formatDuration } from "@/ui/design-system/kit/time";
 import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TOMORROW_LASTS, TROOPS } from "@/ui/design-system/kit/words";
 
 import { DayEnds } from "../day-ends";

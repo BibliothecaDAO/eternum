@@ -1,4 +1,4 @@
-import { WORDS } from "../words";
+import { WORDS } from "@/ui/design-system/kit/words";
 import { IS_DEV_ENVIRONMENT } from "./environment";
 
 /**

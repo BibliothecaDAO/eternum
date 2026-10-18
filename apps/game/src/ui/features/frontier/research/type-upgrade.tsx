@@ -2,7 +2,6 @@ import { type IconMeaning } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { Reason } from "@/ui/design-system/kit/reasons";
@@ -36,7 +35,7 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, RESOURCE_PRECISION, ResourcesIds, formatAmount, formatRate } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { KindChoice } from "../army/army-sheet";
@@ -186,7 +185,7 @@ const makeGain = (store: NativeFactStore, realm: NativeRows["Structure"], catego
   const label = resource === "troops" ? TROOPS : resource === "wheat" ? WHEAT : LABOR;
   const now = buildingOutputPerSecond(store, realm, category, makes) * 3600;
   const next = buildingOutputPerSecond(store, realm, category, makes + 1) * 3600;
-  return { icon: resource as IconMeaning, label, value: `${formatAmount(now)} → ${formatAmount(next)}/h` };
+  return { icon: resource as IconMeaning, label, value: `${formatRate(now / 3600)} → ${formatRate(next / 3600)}` };
 };
 
 /** Granary or Storeroom: the store's limit now and with one more pick; Rations: the wheat a troop deploys for. */
@@ -325,7 +324,7 @@ const standingFigures = (
   const made = PRODUCTS[effect.resource];
   const held = stores?.[made.store];
   return [
-    { icons: [made.icon], label: BUILDING_FIGURES.eachMakes(made.word), value: `+${formatAmount(effect.perHour)}/h` },
+    { icons: [made.icon], label: BUILDING_FIGURES.eachMakes(made.word), value: formatRate(effect.perHour / 3600) },
     count,
     {
       icons: [made.icon, "resources"],

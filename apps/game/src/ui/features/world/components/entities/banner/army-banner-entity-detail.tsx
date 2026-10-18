@@ -1,3 +1,4 @@
+import { formatFoodBlock, formatTravelBlockedSummary, getArmyFoodRequirementLabel } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { configManager } from "@bibliothecadao/eternum";
@@ -11,16 +12,10 @@ import { HudChip, HudIconButton, HudMeter, HudPanel, HudPortrait } from "@/ui/de
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isStaminaRecharging } from "@/ui/shared/lib/stamina-visuals";
 import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
-import { formatNumber } from "@/ui/utils/utils";
-import { EntityType, ID, RelicRecipientType } from "@bibliothecadao/types";
+import { EntityType, ID, RelicRecipientType, formatCharge, formatExact } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { useArmyMovementReadiness } from "../../armies/army-movement-readiness";
 import { ArmyWarning } from "../../armies/army-warning";
-import {
-  formatFoodBlock,
-  formatTravelBlockedSummary,
-  getArmyFoodRequirementLabel,
-} from "../../armies/army-warning-copy";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
@@ -102,7 +97,7 @@ const ArmyBannerEntityDetailContent = memo(
           missingWheat: movementReadiness.foodWarnings.travel.missingWheat,
           missingFish: movementReadiness.foodWarnings.travel.missingFish,
           wheatLabel: getArmyFoodRequirementLabel(resolvedWorldMode),
-          formatAmount: (amount) => formatNumber(amount, 0),
+          formatAmount: (amount) => formatCharge(amount),
         })
       : null;
     const showResourceInventoryInline = shouldShowArmyResourceInventoryTab(
@@ -158,7 +153,7 @@ const ArmyBannerEntityDetailContent = memo(
           ) : null}
           {movementReadiness?.foodBlock ? (
             <p className="text-hud-label leading-snug text-hud-warn" role="status">
-              {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatNumber(amount, 0))}
+              {formatFoodBlock(movementReadiness.foodBlock, (amount) => formatExact(amount))}
             </p>
           ) : null}
           {derivedData.staminaDisplay?.isRecharging && derivedData.staminaDisplay ? (

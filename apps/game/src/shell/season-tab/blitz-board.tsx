@@ -1,7 +1,8 @@
+import { RATING_WORDS } from "@/ui/design-system/kit/words";
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { shortAddress } from "@/ui/design-system/kit/address";
 
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -18,7 +19,6 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { ListRow } from "@/ui/design-system/kit/list-row";
 import { useNowSeconds } from "../use-now";
 import { lordsOf } from "../value/ledger";
-import { RATING_WORDS } from "../words";
 import { PrizeHead, PrizeLines, useBoardPrize } from "./season-prize";
 
 /** How many of the rating's top rows Season shows before the reader's own row. */

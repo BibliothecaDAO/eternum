@@ -1,7 +1,8 @@
+import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
+import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
 
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { Figure } from "@/ui/design-system/kit/figure";
 import { Portrait } from "@/ui/design-system/kit/portrait";
@@ -9,7 +10,6 @@ import { Portrait } from "@/ui/design-system/kit/portrait";
 import { RatingFigure } from "../rating-mark";
 import { useRatings } from "../ratings";
 import { BLITZ_SEATS, type PlaytestSlot } from "../blitz-slot";
-import { BLITZ_WORDS } from "../words";
 import { useSlotRegistered } from "./entry";
 import type { Seat } from "./lobby";
 

@@ -1,3 +1,4 @@
+import { StructureType, structureName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPill, HudTabs } from "@/ui/design-system/kit/hud-elements";
 
@@ -52,7 +53,7 @@ const MapViewSwitch = ({
         tabs={[
           {
             key: "realm",
-            label: "Realm",
+            label: structureName(StructureType.Realm),
             disabled: !canOpenLocal,
             title: canOpenLocal ? undefined : "Select a structure to open its realm view",
           },

@@ -1,3 +1,4 @@
+import { WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { Fragment, type ReactNode } from "react";
@@ -9,7 +10,6 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { WORDS } from "../words";
 import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { Lockup } from "./lockup";

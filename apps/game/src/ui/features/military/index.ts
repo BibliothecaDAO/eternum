@@ -8,4 +8,4 @@ export { CompactDefenseDisplay } from "./components/compact-defense-display";
 export { HelpModal } from "./components/help-modal";
 
 // Utils - Used by other features
-export { formatBiomeBonus } from "./battle/combat-utils";
+export { biomeBonusText, formatBiomeBonus } from "./battle/combat-utils";

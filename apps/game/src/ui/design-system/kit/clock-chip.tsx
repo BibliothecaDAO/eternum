@@ -1,5 +1,5 @@
+import { formatClockTime, formatDate, formatDuration } from "@bibliothecadao/types";
 import { Pill } from "./pill";
-import { formatClockTime, formatDate, formatDuration } from "./time";
 import { CLOCK_WORDS, LEFT } from "./words";
 
 type ClockPrefix = "starts" | "opens" | "ends" | "expires" | "closes";

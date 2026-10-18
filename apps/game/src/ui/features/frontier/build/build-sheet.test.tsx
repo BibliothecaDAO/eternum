@@ -54,7 +54,7 @@ describe("the build sheet", () => {
       )!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
-    // The chosen farm makes wheat an hour and takes its population.
+    // The chosen farm makes wheat at its rate and takes its population.
     expect(host.querySelector('[aria-label^="produces +"]')).not.toBeNull();
 
     act(() => card("Barracks").click());
@@ -254,7 +254,7 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
     expect(sheet.card("Farm").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      new RegExp(`^Farm: \\+[\\d,.K]+ wheat an hour, takes ${farm} population$`),
+      new RegExp(`^Farm: wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(

@@ -1,9 +1,9 @@
+import { knownAmount } from "@/ui/utils/utils";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
 import { configManager, multiplyByPrecision } from "@bibliothecadao/eternum";
-import { CapacityConfig, findResourceById, ResourcesIds } from "@bibliothecadao/types";
+import { CapacityConfig, findResourceById, ResourcesIds, formatAmount, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { ReferenceTable } from "./article";
@@ -78,18 +78,18 @@ const ResourceTable = () => {
       ]}
       rows={resourceTable.map((resource) => ({
         key: resource.resource_type,
-        label: resource.resource?.trait ?? String(resource.resource_type),
+        label: resourceName(resource.resource_type),
         cells: [
           <ResourceIcon key="icon" size="xl" resource={resource.resource_type} />,
           <span key="amount" className="block text-center text-hud-display">
-            {currencyFormat(resource.amount, 2)}
+            {formatAmount(knownAmount(resource.amount))}
           </span>,
           <span key="cost" className="flex flex-col gap-3">
             {resource.cost.map((cost, index) => (
               <ResourceCost
                 key={index}
                 resourceId={cost.resource}
-                amount={Number(currencyFormat(Number(cost.amount), 2))}
+                amount={knownAmount(Number(cost.amount))}
                 size="lg"
               />
             ))}

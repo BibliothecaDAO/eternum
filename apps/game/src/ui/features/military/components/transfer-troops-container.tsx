@@ -2,12 +2,10 @@ import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { HudButton, HudTroopAmount, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { formatNumber } from "@/ui/utils/utils";
 
 import {
   configManager,
   divideByPrecision,
-  formatTime,
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
@@ -20,13 +18,17 @@ import {
   ActorType,
   DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
-  GUARD_SLOT_NAMES,
   ID,
   RELICS,
   ResourcesIds,
   StructureType,
   TroopTier,
   TroopType,
+  formatWait,
+  formatCharge,
+  formatExact,
+  guardSlotName,
+  GuardSlot,
 } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -528,7 +530,7 @@ export const TransferTroopsContainer = ({
       return null;
     }
 
-    const limitText = troopCapacityLimit.toLocaleString();
+    const limitText = formatExact(troopCapacityLimit);
 
     if (capacityBlocked.type === "guard" && typeof capacityBlocked.slotIndex === "number") {
       return `Deployment cap reached for guard slot ${DISPLAYED_SLOT_NUMBER_MAP[capacityBlocked.slotIndex as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${limitText} troops for this tier).`;
@@ -547,7 +549,7 @@ export const TransferTroopsContainer = ({
       return null;
     }
 
-    const limitText = troopCapacityLimit.toLocaleString();
+    const limitText = formatExact(troopCapacityLimit);
     const remainingAfter =
       capacityRemainingAfterTransfer !== null ? capacityRemainingAfterTransfer : capacityRemainingDisplay;
 
@@ -560,9 +562,7 @@ export const TransferTroopsContainer = ({
     }
 
     if (transferDirection === TransferDirection.ExplorerToStructure && typeof guardSlot === "number") {
-      const guardName =
-        GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES] ??
-        `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`;
+      const guardName = guardSlotName(guardSlot as GuardSlot);
       if (remainingAfter === 0 && effectiveTroopAmount > 0) {
         return `${guardName} will hit its deployment cap (${limitText} troops for this tier).`;
       }
@@ -873,7 +873,7 @@ export const TransferTroopsContainer = ({
     capacityBlockedMessage ??
     troopMismatchMessage ??
     (receivingGuard && receivingGuard.cooldownRemaining > 0
-      ? `This slot is rebuilding (${formatTime(receivingGuard.cooldownRemaining)} remaining).`
+      ? `This slot is rebuilding (${formatWait(receivingGuard.cooldownRemaining)} remaining).`
       : null);
 
   const transferBalanceCards = useMemo<TransferBalanceCardData[]>(() => {
@@ -896,10 +896,10 @@ export const TransferTroopsContainer = ({
 
       if (delta > 0) {
         tone = "positive";
-        changeLabel = `+${formatNumber(delta, 0)} ${gainText}`;
+        changeLabel = `+${formatCharge(delta)} ${gainText}`;
       } else if (delta < 0) {
         tone = "negative";
-        changeLabel = `-${formatNumber(Math.abs(delta), 0)} ${lossText}`;
+        changeLabel = `-${formatCharge(Math.abs(delta))} ${lossText}`;
       }
 
       cards.push({ label, before, after, tone, changeLabel, troop });
@@ -915,7 +915,7 @@ export const TransferTroopsContainer = ({
         const guardInfo = selectedGuards.find((guard) => guard.slot === guardSlot);
         if (guardInfo) {
           pushCard(
-            `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})`,
+            guardSlotName(guardSlot as GuardSlot),
             guardInfo.troops?.count ?? 0,
             (guardInfo.troops?.count ?? 0) - troopAmount,
             "remaining",
@@ -943,7 +943,7 @@ export const TransferTroopsContainer = ({
         const targetGuard = targetGuards.find((guard) => guard.slot === guardSlot);
         if (targetGuard) {
           pushCard(
-            `Guard slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} (${GUARD_SLOT_NAMES[guardSlot as keyof typeof GUARD_SLOT_NAMES]})`,
+            guardSlotName(guardSlot as GuardSlot),
             targetGuard.troops?.count ?? 0,
             (targetGuard.troops?.count ?? 0) + troopAmount,
             "arriving",

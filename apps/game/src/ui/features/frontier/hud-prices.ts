@@ -1,4 +1,4 @@
-import { formatCharge } from "@/ui/design-system/kit/amount";
+import { formatCharge } from "@bibliothecadao/types";
 import type { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { PRICE_FACES, type PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { ComponentProps } from "react";

@@ -7,7 +7,7 @@ import { configManager, getRealmInfo, getStructureRelicEffects } from "@biblioth
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { Building, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { Building, RealmInfo, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { getPlayerName } from "@/services/identity/player-profiles";
 
@@ -76,7 +76,7 @@ export const BuildingsList = ({
     return (
       <HudRow
         lead={<ResourceIcon resource={selectedProduction.resource} size="md" />}
-        title={ResourcesIds[selectedProduction.resource]}
+        title={resourceName(selectedProduction.resource)}
         detail={`${buildingsLine(selectedProduction.buildings.length)} producing`}
         trail={
           <HudButton kind="secondary" size="sm" onClick={() => onSelectProduction(null)}>
@@ -96,7 +96,7 @@ export const BuildingsList = ({
           <HudRow
             key={production.resource}
             lead={<ResourceIcon resource={production.resource} size="md" />}
-            title={ResourcesIds[production.resource]}
+            title={resourceName(production.resource)}
             detail={buildingsLine(production.buildings.length)}
             onClick={() => onSelectProduction(production.resource)}
             trail={

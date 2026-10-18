@@ -1,6 +1,6 @@
+import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { FullIn } from "../full-in";
 

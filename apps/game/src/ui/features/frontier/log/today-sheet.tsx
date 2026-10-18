@@ -1,6 +1,5 @@
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatAmount, formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { formatClockTime } from "@/ui/design-system/kit/time";
 import { DAY, TODAY, TODAY_ERROR } from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
 

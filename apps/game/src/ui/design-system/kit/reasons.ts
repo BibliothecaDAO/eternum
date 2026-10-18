@@ -1,8 +1,7 @@
+import { formatExact, formatDuration } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 
-import { formatExact } from "./amount";
 import { PRICE_FACES, type PriceKind } from "./price-faces";
-import { formatDuration } from "./time";
 import { inTime, needsFree, needsHave, needsOverLimit, POPULATION } from "./words";
 
 /** What a shortfall counts: anything a price is paid in, or the realm's population. */
@@ -41,5 +40,5 @@ export const shortfallLine = ({ of, held, need, counted, wait }: Extract<Reason,
       : counted === "limit"
         ? needsOverLimit(formatExact(need), noun, formatExact(held))
         : needsHave(formatExact(need), noun, formatExact(held));
-  return wait === undefined ? line : `${line} · ${inTime(formatDuration(wait))}`;
+  return wait === undefined ? line : `${line} · ${inTime(formatDuration(wait, { days: false }))}`;
 };

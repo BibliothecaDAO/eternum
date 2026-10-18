@@ -17,7 +17,7 @@ import { Popover } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, formatExact, formatPoints } from "@bibliothecadao/types";
 
 import { type ReactNode, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -31,8 +31,6 @@ import {
 import { LEADERBOARD_POPOVER_ID, LeaderboardSurface } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
 import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
-
-const formatPoints = (points: number): string => Math.round(points).toLocaleString();
 
 const useIdentityChipState = (): IdentityChipState => {
   const { status, session } = useIdentitySession();

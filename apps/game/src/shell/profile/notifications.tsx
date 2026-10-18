@@ -1,3 +1,4 @@
+import { LEVEL_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
@@ -9,7 +10,6 @@ import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import type { NotificationLevel } from "@bibliothecadao/notifications";
 
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { LEVEL_WORDS, PROFILE_WORDS } from "../words";
 import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 

@@ -114,7 +114,7 @@ describe("the hyperstructures giving a player points", () => {
     draw();
     expect(host.textContent).toContain("Tower 7");
     expect(host.textContent).toContain("25%");
-    expect(host.textContent).toContain("0.5 points/s");
+    expect(host.textContent).toContain("points +30/min");
   });
 
   it("keeps a still-paying hyperstructure listed through a checkpoint", () => {

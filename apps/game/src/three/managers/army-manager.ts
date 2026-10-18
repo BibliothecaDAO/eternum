@@ -671,7 +671,7 @@ export class ArmyManager {
         },
         "spawnArmies",
       )
-      .name("Spawn Armies");
+      .name("Place armies");
 
     debugFolder
       .add(

@@ -1,5 +1,5 @@
+import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import {
   HudButton,
   HudChip,
@@ -16,7 +16,6 @@ import { OrderMark } from "./realm-marks";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import {
   BACK,
-  LORDS,
   LORDS_EARNED,
   PER_SHARE,
   POOL_NOT_PUBLISHED,

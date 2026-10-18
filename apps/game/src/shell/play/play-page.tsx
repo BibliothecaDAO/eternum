@@ -1,3 +1,4 @@
+import { LORE_LINE, PLAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useState } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
@@ -8,7 +9,6 @@ import { Title } from "@/ui/design-system/kit/title";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { LORE_LINE, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
 import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, usePlayFacts } from "./play-facts";

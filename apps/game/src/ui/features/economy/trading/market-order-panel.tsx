@@ -20,7 +20,7 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat, formatNumber, knownBalance } from "@/ui/utils/utils";
+import { knownBalance, knownAmount } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
@@ -30,7 +30,18 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
+import {
+  ResourcesIds,
+  StructureType,
+  type ID,
+  type MarketInterface,
+  formatAmount,
+  formatCharge,
+  formatExact,
+  formatMoment,
+  LORDS,
+  resourceName,
+} from "@bibliothecadao/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveBestPrice } from "./best-prices";
@@ -226,7 +237,7 @@ export const OrderBookSide = ({
       icon={resourceMeaning(resourceId)}
       title={
         <span>
-          {isBuy ? "Sell to" : "Buy from"} <span className={sideTone(!isBuy)}>{formatNumber(bestPrice, 4)}</span> Lords
+          {isBuy ? "Sell to" : "Buy from"} <span className={sideTone(!isBuy)}>{formatCharge(bestPrice)}</span> {LORDS}
           each
         </span>
       }
@@ -304,7 +315,9 @@ export const OrderRow = memo(
     }, [entityId, offer.makerId]);
 
     const getsDisplay = useMemo(() => {
-      return isBuy ? currencyFormat(offer.makerGets[0].amount, 3) : currencyFormat(offer.takerGets[0].amount, 3);
+      return isBuy
+        ? formatCharge(knownAmount(offer.makerGets[0].amount))
+        : formatCharge(knownAmount(offer.takerGets[0].amount));
     }, [isBuy, offer.makerGets[0].amount, offer.takerGets[0].amount]);
 
     const getsDisplayNumber = useMemo(() => {
@@ -347,13 +360,13 @@ export const OrderRow = memo(
       );
     }, [resourceBalanceRatio, lordsBalanceRatio]);
 
-    const calculatedResourceAmount = useMemo(() => {
-      return multiplyByPrecision(inputValue);
-    }, [inputValue, getsDisplay, getTotalLords]);
+    const calculatedResourceAmount = useMemo(() => multiplyByPrecision(inputValue), [inputValue]);
 
-    const calculatedLords = useMemo(() => {
-      return Math.ceil((inputValue / parseFloat(getsDisplay.replace(/,/g, ""))) * getTotalLords);
-    }, [inputValue, getsDisplay, getTotalLords]);
+    // The Lords this fill takes: its share of the offer's total.
+    const calculatedLords = useMemo(
+      () => Math.ceil((inputValue / divideByPrecision(getsDisplayNumber, false)) * getTotalLords),
+      [inputValue, getsDisplayNumber, getTotalLords],
+    );
 
     const orderWeightKg = useMemo(() => {
       // divide by precision because getTotalResourceWeightKg is without precision
@@ -417,18 +430,18 @@ export const OrderRow = memo(
     return (
       <HudTableRow
         cols={ORDER_COLS}
-        label={`${actionLabel} ${getsDisplay} at ${formatNumber(offer.perLords, 4)} Lords each`}
-        title={`Expires ${new Date(offer.expiresAt * 1000).toLocaleString()}`}
+        label={`${actionLabel} ${getsDisplay} at ${formatCharge(offer.perLords)} ${LORDS} each`}
+        title={`Expires ${formatMoment(offer.expiresAt)}`}
         selected={isSelf}
       >
         <span className={`flex items-center gap-1 tabular-nums ${sideTone(!isBuy)}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={getDisplayResource} />
           {getsDisplay}
         </span>
-        <span className="text-center tabular-nums">{formatNumber(offer.perLords, 4)}</span>
+        <span className="text-center tabular-nums">{formatCharge(offer.perLords)}</span>
         <span className={`flex items-center justify-center gap-1 tabular-nums ${sideTone(isBuy)}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
-          {currencyFormat(getTotalLords, 0)}
+          {formatCharge(knownAmount(getTotalLords))}
         </span>
         <HudButton
           kind={isSelf ? "danger" : "secondary"}
@@ -512,11 +525,11 @@ const TakeOfferForm = memo(
     isVillageAndMilitaryResource: boolean;
   }) => {
     const verb = isBuy ? "Sell" : "Buy";
-    const trait = findResourceById(getDisplayResource)?.trait ?? "";
+    const name = resourceName(getDisplayResource);
     const shortOfDonkeys = donkeyBalance === undefined || donkeysNeeded > donkeyBalance;
     return (
-      <OrderDialog title={`${verb} ${trait}`} onCancel={onCancel}>
-        <HudWindow title={`${verb} ${trait}`} icon={resourceMeaning(getDisplayResource)} size="task" onClose={onCancel}>
+      <OrderDialog title={`${verb} ${name}`} onCancel={onCancel}>
+        <HudWindow title={`${verb} ${name}`} icon={resourceMeaning(getDisplayResource)} size="task" onClose={onCancel}>
           <HudWindowFoot>
             <HudButton kind="quiet" onClick={onCancel}>
               Cancel
@@ -533,7 +546,7 @@ const TakeOfferForm = memo(
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2">
               <HudNumberField
-                label={`${trait} to ${verb.toLowerCase()}`}
+                label={`${name} to ${verb.toLowerCase()}`}
                 value={inputValue}
                 max={maxInputValue}
                 onChange={setInputValue}
@@ -543,14 +556,14 @@ const TakeOfferForm = memo(
               </HudButton>
             </div>
             <p>
-              <span className={sideTone(!isBuy)}>{verb}</span> {inputValue} {trait} for{" "}
-              {currencyFormat(calculatedLords, 2)} Lords
+              <span className={sideTone(!isBuy)}>{verb}</span> {formatCharge(inputValue)} {name} for{" "}
+              {formatCharge(knownAmount(calculatedLords))} {LORDS}
             </p>
             <HudRow
               title="Donkeys Required"
               trail={
                 <span className={`tabular-nums ${sideTone(!shortOfDonkeys)}`}>
-                  {donkeysNeeded} [{donkeyBalance ?? "—"}]
+                  {formatExact(donkeysNeeded)} [{formatAmount(donkeyBalance)}]
                 </span>
               }
             />
@@ -743,7 +756,7 @@ export const OrderCreation = memo(
       store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
         StructureType.Village && isMilitaryResource(resourceId);
     const confirmsLoss = useConfirmsLoss();
-    const trait = findResourceById(resourceId)?.trait ?? "";
+    const name = resourceName(resourceId);
     // Placing an order acts at once; in Frontier it asks first, with the order spelled out.
     const placeOrder = () => (confirmsLoss ? setShowConfirmation(true) : createOrder());
 
@@ -751,12 +764,12 @@ export const OrderCreation = memo(
       <OrderDialog title={`Place this ${isBuy ? "buy" : "sell"} order?`} onCancel={() => setShowConfirmation(false)}>
         <HudConfirm
           question={`Place this ${isBuy ? "buy" : "sell"} order?`}
-          verb={`${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
+          verb={`${isBuy ? "Buy" : "Sell"} ${formatCharge(resource)} ${name}`}
           onConfirm={createOrder}
           onBack={() => setShowConfirmation(false)}
         >
           <span>
-            {resource.toLocaleString()} {trait} for {lords.toLocaleString()} Lords, at {Number(bid).toFixed(4)} Lords
+            {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}, at {formatCharge(Number(bid))} {LORDS}{" "}
             each.
           </span>
         </HudConfirm>
@@ -764,9 +777,13 @@ export const OrderCreation = memo(
     );
 
     const amountField = (
-      <OrderField label={isBuy ? "Buy" : "Sell"} icon={resourceId} available={currencyFormat(resourceBalance, 0)}>
+      <OrderField
+        label={isBuy ? "Buy" : "Sell"}
+        icon={resourceId}
+        available={formatAmount(knownAmount(resourceBalance))}
+      >
         <HudNumberField
-          label={`${trait} to ${isBuy ? "buy" : "sell"}`}
+          label={`${name} to ${isBuy ? "buy" : "sell"}`}
           value={resource}
           onChange={setResource}
           max={!isBuy ? (knownBalance(resourceBalance) ?? 0) : Infinity}
@@ -774,14 +791,24 @@ export const OrderCreation = memo(
       </OrderField>
     );
     const priceField = (
-      <OrderField label={`Lords / ${trait}`} icon={ResourcesIds.Lords}>
-        <HudNumberField label={`Lords per ${trait}`} value={Number(bid)} onChange={typePrice} max={Infinity} decimals />
+      <OrderField label={`${LORDS} / ${name}`} icon={ResourcesIds.Lords}>
+        <HudNumberField
+          label={`${LORDS} per ${name}`}
+          value={Number(bid)}
+          onChange={typePrice}
+          max={Infinity}
+          decimals
+        />
       </OrderField>
     );
     const lordsField = (
-      <OrderField label={isBuy ? "Cost" : "Gain"} icon={ResourcesIds.Lords} available={currencyFormat(lordsBalance, 0)}>
+      <OrderField
+        label={isBuy ? "Cost" : "Gain"}
+        icon={ResourcesIds.Lords}
+        available={formatAmount(knownAmount(lordsBalance))}
+      >
         <HudNumberField
-          label={`Lords to ${isBuy ? "pay" : "gain"}`}
+          label={`${LORDS} to ${isBuy ? "pay" : "gain"}`}
           value={lords}
           onChange={setLords}
           max={isBuy ? (knownBalance(lordsBalance) ?? 0) : Infinity}
@@ -793,11 +820,11 @@ export const OrderCreation = memo(
         <span title="Donkeys needed / available">
           <HudChip tone={enoughDonkeys ? undefined : "bad"}>
             <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
-            {donkeysNeeded.toLocaleString()} / {currencyFormat(donkeyBalance, 0)}
+            {formatExact(donkeysNeeded)} / {formatAmount(knownAmount(donkeyBalance))}
           </HudChip>
         </span>
         <span title="Weight">
-          <HudChip>{orderWeightKg.toLocaleString()} kg</HudChip>
+          <HudChip>{formatExact(orderWeightKg)} kg</HudChip>
         </span>
       </div>
     );
@@ -808,7 +835,7 @@ export const OrderCreation = memo(
         disabled={!enoughDonkeys || !canBuy || isVillageAndMilitaryResource}
         onClick={placeOrder}
       >
-        {`${isBuy ? "Buy" : "Sell"} ${resource.toLocaleString()} ${trait}`}
+        {`${isBuy ? "Buy" : "Sell"} ${formatCharge(resource)} ${name}`}
       </HudButton>
     );
 
@@ -821,7 +848,7 @@ export const OrderCreation = memo(
               {priceField}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <LordsTotal isBuy={isBuy} lords={lords} available={currencyFormat(lordsBalance, 0)} />
+              <LordsTotal isBuy={isBuy} lords={lords} available={formatAmount(knownAmount(lordsBalance))} />
               {logisticsChips}
             </div>
             {submitButton}
@@ -851,7 +878,7 @@ const LordsTotal = ({ isBuy, lords, available }: { isBuy: boolean; lords: number
   <span className="flex items-center gap-1 text-hud-label" title={`${isBuy ? "Cost" : "Gain"} / Lords available`}>
     <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
     <span className="text-hud-muted">{isBuy ? "Cost" : "Gain"}</span>
-    <span className="text-hud-strong">{lords.toLocaleString()}</span>
+    <span className="text-hud-strong">{formatCharge(lords)}</span>
     <span className="text-hud-muted">/ {available}</span>
   </span>
 );

@@ -1,9 +1,10 @@
+import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { type ComponentProps, lazy, type ReactNode, Suspense, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Panel } from "@/ui/design-system/kit/panel";
 import { Pill } from "@/ui/design-system/kit/pill";
@@ -26,7 +27,6 @@ import {
 import { gameRowKey } from "../blitz-rows";
 import { linkWalletHref } from "../profile/settings-route";
 import { returnPathOf, useRequestSignIn } from "../sign-in/sign-in-route";
-import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "../words";
 import {
   entryCalls,
   entryCost,

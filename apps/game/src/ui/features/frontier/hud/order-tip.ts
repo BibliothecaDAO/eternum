@@ -1,6 +1,5 @@
+import { formatCharge, formatExact, formatWait } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
-import { formatCharge, formatExact } from "@/ui/design-system/kit/amount";
-import { formatWait } from "@/ui/design-system/kit/time";
 import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
 import {
   type ActionPath,

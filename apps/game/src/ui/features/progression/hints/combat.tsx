@@ -1,6 +1,6 @@
 import { Headline } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
-import { TroopTier } from "@bibliothecadao/types";
+import { TroopTier, formatExact, formatPercent } from "@bibliothecadao/types";
 
 import { ReferenceTable } from "./article";
 
@@ -57,7 +57,7 @@ export const Combat = () => {
                 name,
                 ...TIERS.map((tier) => (
                   <span key={tier} className="block text-right">
-                    {configManager.getMaxArmySize(level - 1, tier).toLocaleString()}
+                    {formatExact(configManager.getMaxArmySize(level - 1, tier))}
                   </span>
                 )),
               ],
@@ -99,7 +99,7 @@ export const Combat = () => {
             <li>0% if raiding army's damage &lt; 50% of combined guard armies' damage.</li>
             <li>100% if raiding army's damage &gt; 200% of combined guard armies' damage.</li>
             <li>Scales proportionally between 50% and 200%.</li>
-            <li>100% (automatic success) if no guard armies are present.</li>
+            <li>100% (automatic success) against an Undefended target.</li>
           </ul>
           <h5>Outcomes</h5>
           <p className="leading-relaxed">

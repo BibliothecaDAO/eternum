@@ -1,13 +1,17 @@
+import {
+  formatArmyFoodRequirement,
+  getArmyFoodRequirementLabel,
+  getArmyReadinessTitle,
+} from "@/ui/design-system/kit/words";
+import { formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import type { ReactNode } from "react";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
-import { formatNumber } from "@/ui/utils/utils";
 
 import type { ArmyMovementReadiness } from "./army-movement-readiness";
-import { formatArmyFoodRequirement, getArmyFoodRequirementLabel, getArmyReadinessTitle } from "./army-warning-copy";
 
 interface ArmyWarningProps {
   readiness: ArmyMovementReadiness;
@@ -83,7 +87,7 @@ const getMissingFoodText = (foodWarning: { missingWheat: number; missingFish: nu
     missingWheat: foodWarning.missingWheat,
     missingFish: foodWarning.missingFish,
     wheatLabel: foodRequirementLabel,
-    formatAmount: (amount) => formatNumber(Number(amount), 0),
+    formatAmount: (amount) => formatCharge(Number(amount)),
   });
 
 const formatRequirementTitle = ({

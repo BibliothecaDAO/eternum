@@ -25,7 +25,6 @@ vi.mock("@/sync/active-game-client", () => ({
 }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({ id: fixture.mode }) }));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
-vi.mock("@/ui/utils/utils", () => ({ currencyFormat: () => "10" }));
 
 afterEach(() => {
   setBlockTimestampSource(null);

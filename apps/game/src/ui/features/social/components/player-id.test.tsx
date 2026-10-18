@@ -27,8 +27,8 @@ describe("a player's points, beside the leaderboard", () => {
     expect(lines(html)).toEqual([
       "Tiles explored · 123 = 615 points",
       "Rifts and camps taken · 3 = 750 points",
-      "Hyperstructures taken · 2 = 2K points",
-      "Hyperstructures held = 2K points",
+      "Hyperstructures taken · 2 = 2,000 points",
+      "Hyperstructures held = 2,000 points",
     ]);
   });
 

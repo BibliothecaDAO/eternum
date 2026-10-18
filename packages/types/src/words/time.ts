@@ -1,17 +1,29 @@
 /**
- * The kit's one way to write time. Days run 8 to 24 hours, so a duration is hours and minutes and never days; a moment is
- * the device's local clock time. Unknown is a dash.
+ * The one way to write a time a player reads: a duration, a wait, a countdown, a moment on the device's local clock, a
+ * day, and how long ago something was. Unknown is a dash.
  */
-import { AGO, JUST_NOW } from "./words";
 
 const DASH = "—";
+/** A moment just gone, and how long ago one was: "just now", "5m ago" (formatAgo). */
+const JUST_NOW = "just now";
+const AGO = "ago";
 
-/** A duration as "7h 14m", "12h" or "42m", counted up to the next whole minute so time still left never reads 0m. */
-export const formatDuration = (seconds: number | undefined): string => {
+/**
+ * A duration as "3d 4h", "7h 14m", "12h" or "42m", counted up to the next whole minute so time still left never reads
+ * 0m. Frontier passes `{ days: false }`: its days run 8 to 24 hours, so a count of 24-hour days would misread there, and
+ * its durations stay in hours ("30h").
+ */
+export const formatDuration = (seconds: number | undefined, { days = true } = {}): string => {
   if (seconds === undefined) return DASH;
   const minutes = Math.max(0, Math.ceil(seconds / 60));
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
+  if (days && hours >= 24) {
+    // Past a day the minutes go, rounded into the hour, as they are rounded into the minute below.
+    const wholeHours = Math.ceil(minutes / 60);
+    const left = wholeHours % 24;
+    return left === 0 ? `${wholeHours / 24}d` : `${Math.floor(wholeHours / 24)}d ${left}h`;
+  }
   if (hours === 0) return `${rest}m`;
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
 };
@@ -57,6 +69,22 @@ export const formatMoment = (unixSeconds: number | undefined, nowSeconds = Date.
 export const formatContentDay = (day: string): string => {
   const [year, month, date] = day.split("-").map(Number);
   return formatDate(new Date(year, month - 1, date).getTime() / 1000);
+};
+
+/**
+ * The top bar's game clock, read to the second: "1h 12m 08s", "1m 08s", "1d 01h 0m 00s"; compact on a phone, without the
+ * seconds past an hour ("1h 12m", "1d 1h"). Never below zero.
+ */
+export const formatGameClock = (seconds: number, { compact = false } = {}): string => {
+  const total = Math.max(0, Math.floor(seconds));
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3_600);
+  const minutes = Math.floor((total % 3_600) / 60);
+  const minuteSecond = `${minutes}m ${String(total % 60).padStart(2, "0")}s`;
+  if (compact && days > 0) return `${days}d ${hours}h`;
+  if (compact && hours > 0) return `${hours}h ${minutes}m`;
+  if (days > 0) return `${days}d ${String(hours).padStart(2, "0")}h ${minuteSecond}`;
+  return hours > 0 ? `${hours}h ${minuteSecond}` : minuteSecond;
 };
 
 /** A countdown read to the second, hours, minutes and seconds: "2:04:12"; never below zero. */

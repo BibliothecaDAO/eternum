@@ -1,8 +1,8 @@
+import { formatWait } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useFactView } from "@/hooks/use-fact-view";
 import { resourceArrivalsView } from "@/sync/fact-views";
 import type { ResourceArrivalInfo } from "@bibliothecadao/types";
-import { formatTime } from "@bibliothecadao/eternum";
 
 function summarizeIncomingCaravans(arrivals: readonly ResourceArrivalInfo[], structureId: number, now: number) {
   const incoming = arrivals.filter(
@@ -23,7 +23,7 @@ export function IncomingCaravans({ structureId, isOwner }: { structureId: number
   return (
     <p className="px-3 py-2 text-hud-label text-hud-ink" aria-label="Incoming caravans">
       Incoming · {incoming.count} {incoming.count === 1 ? "caravan" : "caravans"} · next in{" "}
-      {formatTime(incoming.nextInSeconds)}
+      {formatWait(incoming.nextInSeconds)}
     </p>
   );
 }

@@ -1,3 +1,4 @@
+import { formatExact } from "@bibliothecadao/types";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { displayAddress } from "@/ui/utils/utils";
 import { buildFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
@@ -8,15 +9,6 @@ import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 
 /** Rank, wonder, owner, total faith, faith a second and followers. */
 const FAITH_COLS = "48px minmax(180px, 1.4fr) minmax(180px, 1.4fr) 120px 100px 100px";
-
-const formatIntegerWithCommas = (value: number): string => value.toLocaleString("en-US");
-
-const formatBigIntWithCommas = (value: bigint): string => {
-  const sign = value < 0n ? "-" : "";
-  const digits = (value < 0n ? -value : value).toString();
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${sign}${grouped}`;
-};
 
 const isZeroAddress = (address: string): boolean => {
   return /^0x0+$/i.test(address.trim());
@@ -97,9 +89,9 @@ export const FaithLeaderboardPanel = () => {
                     {isZeroAddress(entry.ownerAddress) ? "No owner recorded" : displayAddress(entry.ownerAddress)}
                   </span>
                 </span>
-                <span className="text-right font-mono">{formatBigIntWithCommas(entry.totalFaithPoints)}</span>
-                <span className="text-right font-mono">{formatIntegerWithCommas(entry.faithPointsPerSecond)}</span>
-                <span className="text-right font-mono">{formatIntegerWithCommas(entry.followerCount)}</span>
+                <span className="text-right font-mono">{formatExact(entry.totalFaithPoints)}</span>
+                <span className="text-right font-mono">{formatExact(entry.faithPointsPerSecond)}</span>
+                <span className="text-right font-mono">{formatExact(entry.followerCount)}</span>
               </HudTableRow>
             ))}
           </div>

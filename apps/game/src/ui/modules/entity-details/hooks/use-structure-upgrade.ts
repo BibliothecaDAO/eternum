@@ -1,3 +1,4 @@
+import { inTime } from "@/ui/design-system/kit/words";
 import { knownBalance } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
@@ -5,7 +6,7 @@ import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
 import { useGame } from "@/hooks/context/game-context";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { getLevelName } from "@bibliothecadao/types";
+import { formatWait, rankName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
@@ -45,11 +46,8 @@ interface StructureUpgradeResult {
   isUpgradeLocked: boolean;
 }
 
-export const formatIncomingEta = (etaSeconds: number): string => {
-  if (etaSeconds <= 0) return "landing";
-  if (etaSeconds < 90) return `in ${Math.ceil(etaSeconds)}s`;
-  return `in ${Math.ceil(etaSeconds / 60)}m`;
-};
+export const formatIncomingEta = (etaSeconds: number): string =>
+  etaSeconds <= 0 ? "landing" : inTime(formatWait(etaSeconds));
 
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
   const { setup } = useGame();
@@ -143,9 +141,9 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
 
   return {
     currentLevel: structureInfo.level,
-    currentLevelName: getLevelName(structureInfo.level),
+    currentLevelName: rankName(structureInfo.level),
     nextLevel,
-    nextLevelName: nextLevel ? getLevelName(nextLevel) : null,
+    nextLevelName: nextLevel ? rankName(nextLevel) : null,
     hasRecipe: rawCosts !== undefined,
     canUpgrade,
     requirements,

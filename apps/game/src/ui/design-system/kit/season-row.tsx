@@ -1,6 +1,6 @@
+import { formatAmount } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
 
-import { formatAmount } from "./amount";
 import { ListRow } from "./list-row";
 import { OrderEmblem } from "./order-emblem";
 

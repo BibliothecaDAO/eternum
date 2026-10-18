@@ -1,7 +1,7 @@
+import { LEVEL_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { useThisDevice, type ThisDeviceState } from "@/shell/profile/this-device";
-import { LEVEL_WORDS, PROFILE_WORDS } from "@/shell/words";
 import { failureLine } from "@/ui/design-system/kit/failure-lines";
 import { HudChip, HudLoading, HudNotice, HudSelect, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 import type { NotificationLevel } from "@bibliothecadao/notifications";

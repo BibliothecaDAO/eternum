@@ -9,14 +9,7 @@ import {
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { configManager, getBuildingCount, getGuardsByStructure, liveHomeArmies } from "@bibliothecadao/eternum";
-import {
-  BuildingType,
-  ContractAddress,
-  getLevelName,
-  RealmLevels,
-  type Structure,
-  StructureType,
-} from "@bibliothecadao/types";
+import { BuildingType, RealmLevels, type Structure, StructureType, rankName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -86,7 +79,7 @@ export const useStructuresWithMetadata = ({
       const normalizedLevel =
         typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
       const realmLevelLabel = structureCapabilities.hasPopulationDetails
-        ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
+        ? rankName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire))
         : null;
       const structureBuildings = store.get("StructureBuildings", {
         game_id: configManager.getActiveGameId(),

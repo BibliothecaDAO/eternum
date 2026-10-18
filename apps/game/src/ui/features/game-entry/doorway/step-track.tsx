@@ -1,7 +1,6 @@
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-
-import { DOORWAY_WORDS } from "@/shell/words";
 
 import type { DoorwayStep, DoorwayView } from "./doorway-view";
 

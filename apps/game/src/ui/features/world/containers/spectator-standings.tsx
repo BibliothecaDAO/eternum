@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, formatExact } from "@bibliothecadao/types";
 import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -65,7 +65,7 @@ function StandingsRows() {
           <HudTableRow
             key={row.address}
             cols={STANDINGS_COLS}
-            label={`${name}: ${Math.floor(row.totalPoints).toLocaleString()} points`}
+            label={`${name}: ${formatExact(Math.floor(row.totalPoints))} points`}
             title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
             selected={row.pinned}
             disabled={!capital}
@@ -76,7 +76,7 @@ function StandingsRows() {
           >
             <span>{row.rank}</span>
             <span className="truncate text-left">{name}</span>
-            <span className="text-right tabular-nums">{Math.floor(row.totalPoints).toLocaleString()}</span>
+            <span className="text-right tabular-nums">{formatExact(Math.floor(row.totalPoints))}</span>
             <span className="text-right tabular-nums text-hud-muted">
               {row.delta > 0 ? "+" : ""}
               {Math.floor(row.delta)}

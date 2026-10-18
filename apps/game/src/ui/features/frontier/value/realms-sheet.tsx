@@ -1,11 +1,10 @@
+import { formatAmount, formatExact, formatDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { type FormEvent, type ReactNode, useState } from "react";
 
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudField, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   ADD_REALM,
   CLAIM,

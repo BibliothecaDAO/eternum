@@ -6,10 +6,9 @@ import { PageFrame } from "@/shell/frame/page-frame";
 import { StepVerb } from "@/shell/frame/step-verb";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
-import { DOORWAY_WORDS, WORDS } from "@/shell/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { TRY_AGAIN, DOORWAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { Title } from "@/ui/design-system/kit/title";
 
 import type { DoorwayView } from "./doorway-view";

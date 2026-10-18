@@ -1,10 +1,9 @@
 import { mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { displayPlayerName, getStructureTypeName } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
+import { displayPlayerName } from "@bibliothecadao/eternum";
+import { StructureType, siteName, structureName, formatExact } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
-import { siteName } from "./site-name";
 
 /** How the viewer stands to a thing's owner: it colours the plate's side bar and a player's name. */
 export type PlateRelation = "own" | "ally" | "enemy" | "neutral";
@@ -112,10 +111,10 @@ export const buildStructurePlate = (
     owner: ownerOf(structure.owner),
     name: named
       ? structure.structureName.trim()
-      : getStructureTypeName(structure.structureType, structure.mineKind ?? undefined),
+      : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
     place: named ? undefined : siteName(Number(structure.entityId)),
-    reward: reward && reward.amount > 0 ? `${formatCount(reward.amount)} ${reward.unit}` : undefined,
+    reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
     icon:
       structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
@@ -166,5 +165,3 @@ export const restingGuard = (
  * (`GuardState::next`, contracts/l3/world-native/src/logic/guards.cairo). Slots come in slot order, empty ones left out.
  */
 export const attackOrder = (guards: readonly PlateTroops[]): PlateTroops[] => [...guards].reverse();
-
-export const formatCount = (count: number) => Math.round(count).toLocaleString("en-US");

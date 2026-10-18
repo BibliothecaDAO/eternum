@@ -12,7 +12,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, formatExact } from "@bibliothecadao/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface EndSeasonButtonProps {
@@ -85,8 +85,7 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
               content: (
                 <span className="flex flex-col whitespace-nowrap pointer-events-none">
                   <span className="flex justify-center">
-                    {registeredPoints === null ? "—" : registeredPoints.toLocaleString()} /{" "}
-                    {pointsForWin.toLocaleString()}
+                    {registeredPoints === null ? "—" : formatExact(registeredPoints)} / {formatExact(pointsForWin)}
                   </span>
                   {!hasReachedFinalPoints && <span>Not enough registered points to end the season</span>}
                   {isSeasonOver && <span>Season is already over</span>}

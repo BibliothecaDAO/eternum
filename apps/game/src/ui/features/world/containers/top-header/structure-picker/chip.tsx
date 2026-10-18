@@ -14,7 +14,17 @@ import {
   type StructureGroupColor,
 } from "@/ui/features/world/containers/top-header/structure-groups";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { getLevelName, ID, RealmLevels, ResourcesIds, type Structure, StructureType } from "@bibliothecadao/types";
+import {
+  ID,
+  RealmLevels,
+  type Structure,
+  StructureType,
+  formatExact,
+  resourceName,
+  rankName,
+  formatCharge,
+  ResourcesIds,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { memo, useCallback, type KeyboardEvent, type MouseEvent } from "react";
@@ -104,15 +114,14 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
             >
               <div className="flex items-center gap-2">
                 <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
-                <span className="flex-1 text-hud-body text-hud-ink">{ResourcesIds[req.resource]}</span>
+                <span className="flex-1 text-hud-body text-hud-ink">{resourceName(req.resource)}</span>
                 <span className={clsx("text-hud-strong ", isMet ? "text-hud-ink" : "text-hud-bad")}>
-                  {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} /{" "}
-                  {req.amount.toLocaleString()}
+                  {req.current === undefined ? "—" : formatExact(Math.floor(req.current))} / {formatCharge(req.amount)}
                 </span>
               </div>
               {req.incoming && (
                 <div className="pl-6 text-hud-body text-hud-good">
-                  +{Math.floor(req.incoming.amount).toLocaleString()} in transit,{" "}
+                  +{formatExact(Math.floor(req.incoming.amount))} in transit,{" "}
                   {formatIncomingEta(req.incoming.etaSeconds)}
                 </div>
               )}
@@ -219,9 +228,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
   const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
   const hasPopulationDetails = structureCapabilities.hasPopulationDetails;
   const levelAbbrev = hasPopulationDetails
-    ? getLevelName(
-        Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
-      ).charAt(0)
+    ? rankName(Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire)).charAt(0)
     : null;
 
   const populationStatusLabel = hasPopulationDetails

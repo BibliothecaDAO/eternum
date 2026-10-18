@@ -7,7 +7,6 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { hudPrices } from "../hud-prices";
 
@@ -17,7 +16,7 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, formatAmount, formatExact } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { useOrderAt } from "../hud/army-order";

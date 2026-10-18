@@ -1,7 +1,7 @@
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
-import { BiomeType, ResourcesIds, TroopType } from "@bibliothecadao/types";
+import { BiomeType, ResourcesIds, TroopType, resourceName } from "@bibliothecadao/types";
 
 import { ReferenceTable } from "./article";
 
@@ -36,7 +36,7 @@ const troopHeads = TROOPS.map(({ resource }) => <ResourceIcon key={resource} siz
 /** What each troop burns of one food per hex, as a row of the food table. */
 const foodRow = (food: ResourcesIds.Fish | ResourcesIds.Wheat, burn: (troop: ResourcesIds) => number) => ({
   key: food,
-  label: food === ResourcesIds.Fish ? "Fish" : "Wheat",
+  label: resourceName(food),
   cells: [...TROOPS.map(({ resource }) => burn(resource)), <ResourceIcon key="food" size="sm" resource={food} />],
 });
 

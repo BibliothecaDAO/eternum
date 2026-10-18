@@ -1,10 +1,9 @@
+import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { IDENTITY_PORTRAITS, SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Field } from "@/ui/design-system/kit/field";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-
-import { SIGN_IN_WORDS } from "../words";
 
 /**
  * Six boxes over one real one-time-code input, so a pasted or autofilled code, a phone's code suggestion and backspace

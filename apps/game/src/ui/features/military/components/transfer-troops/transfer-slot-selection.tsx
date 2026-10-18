@@ -1,4 +1,12 @@
-import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  DISPLAYED_SLOT_NUMBER_MAP,
+  GUARD_SLOT_NAMES,
+  TroopTier,
+  TroopType,
+  GuardSlot,
+  formatExact,
+  guardSlotName,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { GuardCooldownBadge } from "../guard-cooldown-badge";
@@ -76,7 +84,7 @@ export const TransferSlotSelection = ({
     }
 
     const rawCount = Number(troop.count);
-    const countLabel = rawCount.toLocaleString();
+    const countLabel = formatExact(rawCount);
 
     return (
       <div className="flex flex-col gap-1 min-w-0">
@@ -125,7 +133,7 @@ export const TransferSlotSelection = ({
           const guardData = guards.find((guard) => guard.slot === slotId);
           const troopInfo = guardData?.troops;
           const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slotId as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
-          const slotLabel = GUARD_SLOT_NAMES[slotId as keyof typeof GUARD_SLOT_NAMES] ?? `Slot ${displayedSlotNumber}`;
+          const slotLabel = guardSlotName(slotId as GuardSlot);
           const cooldownSeconds = guardData?.cooldownRemaining ?? 0;
           const isCooldownActive = cooldownSeconds > 0;
           const isActive = selectedSlot === slotId;

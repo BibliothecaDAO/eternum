@@ -23,7 +23,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { BalancesView } from "./balances-view";
@@ -70,7 +70,6 @@ export const openTransfer = (ends: TransferEnds) => {
 };
 
 const resourceName = (resource: number) => iconDefinition(resourceMeaning(resource)).label;
-const amountText = (value: number) => value.toLocaleString("en-US");
 /** When goods land, in whole minutes rounded up: never sooner than the chain lands them. */
 const landsText = (seconds: number) =>
   seconds < 60 ? "lands in under a minute" : `lands in ${Math.ceil(seconds / 60)} min`;
@@ -266,7 +265,7 @@ const DonkeysNote = ({ id }: { id: number }) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
   const donkeys = new ResourceManager(setup.store, id).balanceWithProduction(tick, ResourcesIds.Donkey)?.balance ?? 0;
-  return <>{amountText(Math.floor(Number(donkeys) / RESOURCE_PRECISION))} donkeys</>;
+  return <>{formatExact(Math.floor(Number(donkeys) / RESOURCE_PRECISION))} donkeys</>;
 };
 
 /** The owner's prefill for the ends chosen now: realm to rifts, rift to realms, camp to realms. */
@@ -345,8 +344,8 @@ const Goods = ({
     <>
       <p className="text-hud-muted">
         {destinationIds.length === 0
-          ? `${amountText(sides.donkeysHave)} donkeys at ${sides.sourceName} · pick where to send`
-          : `${landsText(landsIn)} · ${amountText(donkeys)} of ${amountText(sides.donkeysHave)} donkeys`}
+          ? `${formatExact(sides.donkeysHave)} donkeys at ${sides.sourceName} · pick where to send`
+          : `${landsText(landsIn)} · ${formatExact(donkeys)} of ${formatExact(sides.donkeysHave)} donkeys`}
       </p>
       <GoodsGrid
         goods={sides.goods}
@@ -427,7 +426,7 @@ const sendWords = ({
   if (destinations === 0) return "Choose where to send";
   if (goods === 0) return "Choose what to send";
   if (donkeys.needed > donkeys.held)
-    return `Not enough donkeys: these loads need ${amountText(donkeys.needed)}, ${amountText(donkeys.held)} here`;
+    return `Not enough donkeys: these loads need ${formatExact(donkeys.needed)}, ${formatExact(donkeys.held)} here`;
   const to = destinations > 1 ? ` to ${destinations} holdings` : "";
   const repeat = every === null ? "" : ` · every ${every} min`;
   return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · ${landsText(landsIn)}${repeat}`;

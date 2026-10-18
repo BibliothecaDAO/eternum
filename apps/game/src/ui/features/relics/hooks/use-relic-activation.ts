@@ -1,11 +1,11 @@
+import { relicEffectLine } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
-import { relicEffectLine } from "@/ui/features/relics/relic-words";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useMemo } from "react";
 
 import { knownBalance } from "@/ui/utils/utils";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { findResourceById, getRelicInfo, ID, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
+import { getRelicInfo, ID, RelicRecipientType, ResourcesIds, resourceName, formatCharge } from "@bibliothecadao/types";
 
 export type RelicInfoResult = ReturnType<typeof getRelicInfo> | undefined;
 
@@ -18,9 +18,8 @@ export const useRelicMetadata = (relicId: ID) => {
   const relicInfo = useMemo(() => {
     const info = getRelicInfo(relicId as ResourcesIds);
     if (!info || !rules) return undefined;
-    return { ...info, effectLine: relicEffectLine(relicId as ResourcesIds) };
+    return { ...info, effectLine: relicEffectLine(relicId as ResourcesIds, configManager.getRelicActivation(relicId)) };
   }, [relicId, rules]);
-  const resourceName = useMemo(() => findResourceById(relicId)?.trait ?? "Unknown Relic", [relicId]);
   const essenceCost = useMemo(
     () => (relicInfo ? configManager.getRelicActivation(relicId).essenceCost : 0),
     [relicId, relicInfo],
@@ -28,7 +27,7 @@ export const useRelicMetadata = (relicId: ID) => {
 
   return {
     relicInfo,
-    resourceName,
+    resourceName: resourceName(relicId),
     resourceId: Number(relicId) as ResourcesIds,
     essenceCost,
   } as const;
@@ -44,7 +43,7 @@ export const useRelicEssenceStatus = (entityOwnerId: ID, essenceCost: number) =>
   const shortfall =
     essenceBalance === undefined
       ? "Essence balance unknown."
-      : `Need ${Math.max(0, essenceCost - essenceBalance).toLocaleString()} more essence.`;
+      : `Need ${formatCharge(Math.max(0, essenceCost - essenceBalance))} more essence.`;
 
   return {
     essenceBalance,

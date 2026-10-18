@@ -1,3 +1,4 @@
+import { formatCountdown } from "@bibliothecadao/types";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { Confirm } from "@/ui/design-system/kit/confirm";
@@ -25,7 +26,6 @@ import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { Title } from "@/ui/design-system/kit/title";
-import { formatCountdown } from "@/ui/design-system/kit/time";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";

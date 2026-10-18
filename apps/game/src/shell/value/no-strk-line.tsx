@@ -1,6 +1,5 @@
+import { VALUE_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-
-import { VALUE_WORDS } from "../words";
 
 /** AVNU's swap page: LORDS swap to STRK there (owner, 9 Oct); its address keys for a filled pair are not confirmed. */
 const AVNU_SWAP = "https://app.avnu.fi/en";

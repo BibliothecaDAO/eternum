@@ -8,7 +8,7 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { StateCard } from "@/ui/design-system/kit/state-card";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
-import { DAY } from "@/ui/design-system/kit/words";
+import { DAY, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { boardRows, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { useLayout } from "../frame/layout";
@@ -22,7 +22,6 @@ import { ageOf } from "../play/ages";
 import { chooseSeason, directoryDay, seasonTitle } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
-import { SEASON_WORDS, WORDS } from "../words";
 import { BlitzBoard } from "./blitz-board";
 
 type SeasonView = "frontier" | "blitz";

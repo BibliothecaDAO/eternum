@@ -4,8 +4,8 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudRelic } from "@/ui/design-system/kit/hud-elements";
 import { RELIC_KIND } from "./relic-kind";
 import { formatRelicBonusText } from "@/ui/utils/relic-utils";
-import { bonusActive, formatTime } from "@bibliothecadao/eternum";
-import { getRelicInfo, ID, RelicEffect, ResourcesIds } from "@bibliothecadao/types";
+import { bonusActive } from "@bibliothecadao/eternum";
+import { getRelicInfo, ID, RelicEffect, ResourcesIds, formatWait } from "@bibliothecadao/types";
 
 import { useMemo } from "react";
 
@@ -66,7 +66,7 @@ export const ActiveRelicEffects = ({ relicEffects, entityId }: ActiveRelicEffect
             icon={resourceMeaning(effect.resourceId)}
             kind={RELIC_KIND[effect.relicInfo.type]}
             gives={`${effect.relicInfo.name} · ${effect.bonusText}`}
-            trail={`${formatTime(effect.remainingSeconds)} left`}
+            trail={`${formatWait(effect.remainingSeconds)} left`}
             trailTone={timeLeftTone(effect.remainingSeconds)}
             title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
           />

@@ -1,3 +1,4 @@
+import { formatClockTime } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
@@ -92,11 +93,7 @@ const CoordinateNavButton = ({
 const formatWorldMessageTime = (message: WorldChatMessage) => {
   const created = message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
   if (created instanceof Date && !Number.isNaN(created.getTime())) {
-    return created.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return formatClockTime(created.getTime() / 1000);
   }
   return "Now";
 };

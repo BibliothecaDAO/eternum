@@ -1,3 +1,4 @@
+import { formatDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 
 /**

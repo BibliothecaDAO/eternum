@@ -2,7 +2,7 @@ import { knownBalance } from "@/ui/utils/utils";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { getMinePresentation } from "@bibliothecadao/types";
+import { getMinePresentation, resourceName, structureName, formatAmount } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -47,7 +47,6 @@ import {
   ResourcesIds,
   StructureType,
   TileOccupier,
-  findResourceById,
 } from "@bibliothecadao/types";
 import { memo, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -60,19 +59,6 @@ import { DestroyBuildingButton } from "./destroy-building-button";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-
-const compactResourceFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-const formatResourceAmount = (value: number): string => {
-  const flooredValue = Math.floor(value);
-  if (flooredValue >= 1000) {
-    return compactResourceFormatter.format(flooredValue);
-  }
-  return flooredValue.toLocaleString();
-};
 
 interface ResourceAmountEntry {
   resource: number;
@@ -182,7 +168,7 @@ const LocalTilePanel = () => {
       if (selectedStructureCategory === StructureType.Realm) return "Castle";
       if (isVillageLikeStructureCategory(selectedStructureCategory)) return mode.labels.village;
       if (selectedStructureCategory === StructureType.Mine)
-        return getMinePresentation(presentedMineKind(liveStructure!)!).name;
+        return structureName(StructureType.Mine, presentedMineKind(liveStructure!));
       if (selectedStructureCategory === StructureType.Hyperstructure) return "Hyperstructure";
       if (selectedStructureCategory === StructureType.Bank) return "Bank";
       return "Structure";
@@ -205,7 +191,7 @@ const LocalTilePanel = () => {
   }, [producedResource]);
 
   const producedResourceName = useMemo(() => {
-    return producedResource !== undefined ? (findResourceById(producedResource)?.trait ?? null) : null;
+    return producedResource !== undefined ? resourceName(producedResource) : null;
   }, [producedResource]);
 
   // Undefined when the recipe is unknown here: shown as "—", never as a free cost.
@@ -475,7 +461,7 @@ const LocalTilePanel = () => {
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {
-                              const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                              const name = resourceName(Number(resourceId));
                               return (
                                 <HudChip key={resourceId}>
                                   <ResourceIcon withTooltip={false} resource={Number(resourceId)} size="xs" />
@@ -508,7 +494,7 @@ const LocalTilePanel = () => {
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
             <SectionRow label="Consumes / sec">
               {ongoingCost.map((entry, index) => {
-                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                const name = resourceName(Number(entry.resource));
                 return (
                   <span key={`${entry.resource}-${index}`} title={name}>
                     <HudChip tone="bad">
@@ -537,7 +523,7 @@ const LocalTilePanel = () => {
               {buildCost.length > 0 && (
                 <SectionRow label="Build cost">
                   {buildCost.map((entry, index) => {
-                    const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                    const name = resourceName(Number(entry.resource));
                     const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
                     const balance = knownBalance(balanceInfo.balance);
                     const hasEnough = balance !== undefined && balance >= entry.amount;
@@ -545,7 +531,7 @@ const LocalTilePanel = () => {
                       <span key={`build-cost-${entry.resource}-${index}`} title={name}>
                         <HudChip tone={hasEnough ? undefined : "bad"}>
                           <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
-                          {balance === undefined ? "—" : formatResourceAmount(balance)} / {entry.amount}
+                          {formatAmount(balance === undefined ? undefined : Math.floor(balance))} / {entry.amount}
                         </HudChip>
                       </span>
                     );

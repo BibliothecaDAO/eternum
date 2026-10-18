@@ -1,5 +1,5 @@
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 
 import { ratingPoints, tierOf } from "./ratings";
 

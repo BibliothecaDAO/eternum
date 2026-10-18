@@ -1,3 +1,11 @@
+import {
+  formatCharge,
+  formatExact,
+  formatPercent,
+  readTypedNumber,
+  typedNumberText,
+  formatAmount,
+} from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import {
@@ -146,39 +154,24 @@ export const HudField = forwardRef<
 ));
 HudField.displayName = "HudField";
 
-const formatAmount = (amount: number) => Math.round(amount).toLocaleString("en-US");
-
 /**
  * Whole units typed into an amount field, read as the game has always read them: a sign, digits and thousands commas,
  * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null: the field
  * stays blank until it loses focus, and nothing is reported.
  */
-const parseWholeAmount = (text: string, min: number, max: number): number | null => {
-  if (text.trim() === "") return null;
-  const match = text.match(/[+-]?[0-9,]+/);
-  const parsed = match ? Math.floor(Number.parseFloat(match[0].replace(/,/g, ""))) : Number.NaN;
-  return Math.min(Math.max(Number.isNaN(parsed) ? min : parsed, min), max);
-};
-
-const DECIMAL = /[+-]?(?:[0-9,]+(?:[.][0-9]*)?|[.][0-9]+)/;
+const parseWholeAmount = (text: string, min: number, max: number): number | null =>
+  heldBetween(readTypedNumber(text, { whole: true }), min, max);
 
 /**
  * A number with its fraction typed into a decimal field (a price, a swap), read as the game has always read it: a
  * sign, digits, thousands commas and a fraction, at most `max`, and below `min` only as `min` ("-2" is 0). Nothing
  * typed yet is null; anything else that holds no number is `min`.
  */
-const parseDecimalAmount = (text: string, min: number, max: number): number | null => {
-  if (text.trim() === "") return null;
-  const match = text.match(DECIMAL);
-  const parsed = match ? Number.parseFloat(match[0].replace(/,/g, "")) : Number.NaN;
-  return Math.min(Math.max(Number.isNaN(parsed) ? min : parsed, min), max);
-};
+const parseDecimalAmount = (text: string, min: number, max: number): number | null =>
+  heldBetween(readTypedNumber(text), min, max);
 
-/**
- * The number an amount field holds, as the game's fields have always shown it: thousands commas from 1,000, and a
- * fraction the form computed (a share of a balance, Lords at a price) as it is, never rounded to a number it is not.
- */
-const formatHeld = (amount: number) => (amount >= 1000 ? amount.toLocaleString("en-US") : String(amount));
+const heldBetween = (typed: number | null, min: number, max: number): number | null =>
+  typed === null ? null : Math.min(Math.max(Number.isNaN(typed) ? min : typed, min), max);
 
 /**
  * The one amount input every amount element types into: whole units, formatted, blank while cleared. A decimal one keeps
@@ -210,14 +203,14 @@ const AmountInput = ({
       <input
         aria-label={label}
         inputMode={decimals ? "decimal" : "numeric"}
-        value={draft ?? formatHeld(value)}
+        value={draft ?? formatCharge(value)}
         disabled={disabled}
         autoFocus={autoFocus}
         onChange={(event) => {
           const text = event.target.value;
           const amount = decimals ? parseDecimalAmount(text, min, max) : parseWholeAmount(text, min, max);
           if (amount === null) setDraft("");
-          else setDraft(decimals ? (text.match(DECIMAL)?.[0] ?? formatHeld(amount)) : null);
+          else setDraft(decimals ? (typedNumberText(text) ?? formatCharge(amount)) : null);
           if (amount !== null) onChange(amount);
         }}
         onBlur={() => setDraft(null)}
@@ -315,7 +308,7 @@ export const HudTroopAmount = ({
         Max
       </HudButton>
       <span className="ui-amount__of">
-        of {formatAmount(most)}
+        of {formatExact(most)}
         {held > most && " that fit"}
       </span>
     </div>
@@ -459,7 +452,7 @@ export const HudTransfer = ({
           <Icon name={row.icon} size={24} />
           <span className="flex flex-col">
             <span>{row.name}</span>
-            <span className="ui-transfer__held">{formatAmount(row.held)} held</span>
+            <span className="ui-transfer__held">{formatExact(row.held)} held</span>
           </span>
         </span>
         <HudSlider
@@ -478,7 +471,7 @@ export const HudTransfer = ({
               aria-pressed={row.held > 0 && row.value === Math.round(row.held * step)}
               onClick={() => onChange(index, Math.round(row.held * step))}
             >
-              {step === 1 ? "Max" : `${step * 100}%`}
+              {step === 1 ? "Max" : formatPercent(step)}
             </HudButton>
           ))}
         </span>

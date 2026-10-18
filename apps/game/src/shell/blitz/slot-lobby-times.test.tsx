@@ -1,10 +1,9 @@
+import { formatClockTime } from "@bibliothecadao/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
-
-import { formatClockTime } from "@/ui/design-system/kit/time";
 
 /** The one listed slot, closing at `closes` (Unix seconds); its games start 300 seconds later. */
 const listed = vi.hoisted(() => ({ closes: 0, closed: false }));

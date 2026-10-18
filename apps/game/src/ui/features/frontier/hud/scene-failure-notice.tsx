@@ -1,5 +1,5 @@
+import { DOORWAY_WORDS } from "@/ui/design-system/kit/words";
 import { usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
-import { DOORWAY_WORDS } from "@/shell/words";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
 /**

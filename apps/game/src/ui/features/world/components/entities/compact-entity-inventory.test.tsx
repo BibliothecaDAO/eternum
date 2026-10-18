@@ -8,13 +8,16 @@ vi.mock("@/config/game-modes/use-game-mode-config", () => ({
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1 }));
 vi.mock("@/ui/features/relics/components/relic-activation-selector", () => ({ RelicActivationSelector: () => null }));
-// A relic's hover line reads the game's relic rules; relic-words is the one place that words it.
-vi.mock("@/ui/features/relics/relic-words", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/ui/features/relics/relic-words")>()),
-  relicLine: (relicId: number, essenceHeld?: number) =>
-    essenceHeld === undefined ? `relic ${relicId}` : `relic ${relicId}; you have ${essenceHeld}`,
-  coversRelicCost: (_relicId: number, essenceHeld?: number) => essenceHeld !== undefined && essenceHeld >= 500,
-}));
+// A relic's activation, as the game's relic rules set it: Damage II costs 500 Essence and works for 30m.
+vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
+  const eternum = await importOriginal<typeof import("@bibliothecadao/eternum")>();
+  return {
+    ...eternum,
+    configManager: Object.assign(Object.create(eternum.configManager), {
+      getRelicActivation: () => ({ essenceCost: 500, durationSeconds: 1_800 }),
+    }),
+  };
+});
 // The Essence the holder's home realm can pay an activation with.
 const payer = vi.hoisted(() => ({ essence: undefined as number | undefined }));
 vi.mock("@/ui/features/relics/hooks/use-relic-activation", () => ({ useRelicPayerEssence: () => payer.essence }));
@@ -59,7 +62,9 @@ it("dims a relic its holder cannot pay to activate, and says what it lacks; one 
   };
   const short = chip(200);
   expect(short.dataset.state).toBe("held");
-  expect(short.getAttribute("data-tip")).toBe(`Activate · relic ${ResourcesIds.DamageRelic2}; you have 200`);
+  expect(short.getAttribute("data-tip")).toBe(
+    "Activate · Damage II: Increases damage by 40% for 30m. Costs 500 Essence to activate; you have 200.",
+  );
   const ready = chip(500);
   expect(ready.dataset.state).toBe("ready");
 });

@@ -1,6 +1,6 @@
 import ResourceIcon from "@/components/ResourceIcon";
 import { ETERNUM_CONFIG } from "@/utils/config";
-import { getLevelName } from "@bibliothecadao/types";
+import { rankName } from "@bibliothecadao/types";
 import { colors, formatAmount, section, table } from "@/components/styles";
 
 export const BlitzRealmLeveling = () => {
@@ -35,8 +35,8 @@ export const BlitzRealmLeveling = () => {
   const levelData = Object.entries(upgradeCosts)
     .filter(([, costs]) => costs.length > 0)
     .map(([level, costs]) => ({
-      currentLevel: getLevelName(Number(level) - 1),
-      nextLevel: getLevelName(Number(level)),
+      currentLevel: rankName(Number(level) - 1),
+      nextLevel: rankName(Number(level)),
       resources: costs.map(({ resource, amount }) => ({ id: resource, amount })),
     }));
 

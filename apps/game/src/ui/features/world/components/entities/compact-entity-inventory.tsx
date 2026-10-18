@@ -1,5 +1,5 @@
+import { relicLine, relicShortName } from "@/ui/design-system/kit/words";
 import { useRelicPayerEssence } from "@/ui/features/relics/hooks/use-relic-activation";
-import { coversRelicCost, relicLine, relicShortName } from "@/ui/features/relics/relic-words";
 
 import { memo, useCallback, useMemo } from "react";
 
@@ -13,7 +13,7 @@ import { RELIC_KIND } from "./relic-kind";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/relic-activation-selector";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { divideByPrecision, ResourceManager } from "@bibliothecadao/eternum";
+import { divideByPrecision, ResourceManager, configManager } from "@bibliothecadao/eternum";
 import {
   EntityType,
   getRelicInfo,
@@ -22,6 +22,8 @@ import {
   RelicRecipientType,
   resources as resourceDefs,
   ResourcesIds,
+  formatAmount,
+  resourceName,
 } from "@bibliothecadao/types";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -48,30 +50,6 @@ interface DisplayItem {
   isActive: boolean;
   canActivate: boolean;
 }
-
-const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-// Above 100K the decimal is just noise (345.2K → 345K).
-const compactInventoryFormatterWhole = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 0,
-});
-
-const formatFullInventoryAmount = (value: number): string => Math.floor(value).toLocaleString();
-
-export const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
-  const flooredValue = Math.floor(value);
-  if (options?.compact === false) {
-    return formatFullInventoryAmount(flooredValue);
-  }
-  if (flooredValue >= 1000) {
-    return (flooredValue >= 100_000 ? compactInventoryFormatterWhole : compactInventoryFormatter).format(flooredValue);
-  }
-  return formatFullInventoryAmount(flooredValue);
-};
 
 export const buildDisplayItems = (
   resourceComponent?: ResourceManager | null,
@@ -225,7 +203,7 @@ export const CompactEntityInventory = memo(
           content: (
             <RelicActivationSelector
               resourceId={item.resourceId}
-              displayAmount={formatInventoryAmount(item.amount)}
+              displayAmount={formatAmount(Math.floor(item.amount))}
               holders={[holder]}
               onClose={closeSurface}
             />
@@ -283,7 +261,9 @@ const InventoryRelic = ({
   const pressable = onActivate !== null && item.canActivate && !item.isActive;
   const state = item.isActive
     ? "active"
-    : pressable && coversRelicCost(item.resourceId, payerEssence)
+    : pressable &&
+        payerEssence !== undefined &&
+        payerEssence >= configManager.getRelicActivation(item.resourceId).essenceCost
       ? "ready"
       : pressable || !item.canActivate
         ? "held"
@@ -293,16 +273,16 @@ const InventoryRelic = ({
       icon={resourceMeaning(item.resourceId as ResourcesIds)}
       kind={relicInfo ? RELIC_KIND[relicInfo.type] : "stamina"}
       gives={relicShortName(item.resourceId)}
-      trail={formatInventoryAmount(item.amount, { compact: true })}
+      trail={formatAmount(Math.floor(item.amount))}
       state={state}
       onPress={pressable ? () => onActivate(item) : undefined}
       label={pressable ? `Activate ${name}` : undefined}
       tip={
         pressable
-          ? `Activate · ${relicLine(item.resourceId, payerEssence)}`
+          ? `Activate · ${relicLine(item.resourceId, configManager.getRelicActivation(item.resourceId), payerEssence)}`
           : item.canActivate
-            ? relicLine(item.resourceId)
-            : `${relicLine(item.resourceId)} It cannot be used by this holder.`
+            ? relicLine(item.resourceId, configManager.getRelicActivation(item.resourceId))
+            : `${relicLine(item.resourceId, configManager.getRelicActivation(item.resourceId))} It cannot be used by this holder.`
       }
     />
   );
@@ -310,15 +290,12 @@ const InventoryRelic = ({
 
 /** A carried resource: its painting and how much, named on hover. */
 const InventoryResource = ({ item }: { item: DisplayItem }) => {
-  const name =
-    resourceDefs.find((resource) => resource.id === item.resourceId)?.trait ??
-    ResourcesIds[item.resourceId] ??
-    "resource";
+  const name = resourceName(item.resourceId) ?? ResourcesIds[item.resourceId] ?? "resource";
   return (
     <span data-tip={name}>
       <HudChip>
         <ResourceIcon resource={item.resourceId} size="xs" withTooltip={false} />
-        {formatInventoryAmount(item.amount, { compact: true })}
+        {formatAmount(Math.floor(item.amount))}
       </HudChip>
     </span>
   );

@@ -3,7 +3,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { HudButton, HudEmpty, HudLoading, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { TradeHistoryEvent, TradeHistoryRowHeader, type TradeEvent } from "./trade-history-event";
 import { useGame } from "@/hooks/context/game-context";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -155,7 +155,7 @@ const useResourceFilterOptions = () => {
       ...Object.values(mode.resources.getTiers())
         .flat()
         .filter((resourceId) => resourceId !== ResourcesIds.Lords)
-        .map((resourceId) => ({ value: resourceId as number, label: ResourcesIds[resourceId] })),
+        .map((resourceId) => ({ value: resourceId as number, label: resourceName(resourceId) })),
     ],
     [mode],
   );

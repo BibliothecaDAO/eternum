@@ -1,9 +1,8 @@
-import { formatDuration } from "@/ui/design-system/kit/time";
+import { formatDuration, formatExact } from "@bibliothecadao/types";
 import { ARRIVING, GUARD, UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import {
   attackOrder,
-  formatCount,
   restingGuard,
   type ArmyPlate,
   type MapPlate,
@@ -99,7 +98,7 @@ const guard = (guards: readonly PlateTroops[], open: boolean): PlateSegment[] =>
   if (resting.kind === "slot") return [{ kind: "troops", troops: resting.slot }];
   if (!open)
     return [
-      { kind: "count", text: formatCount(resting.total) },
+      { kind: "count", text: formatExact(resting.total) },
       { kind: "label", text: GUARD },
     ];
   return attackOrder(guards).flatMap((slot, index) => [

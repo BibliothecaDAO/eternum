@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ReactNode, useEffect, useState } from "react";
-import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import { GLOBAL_CHAT_CHANNEL_ID, formatClockTime, formatMoment } from "@bibliothecadao/types";
 
 import {
   useRealtimeChatActions,
@@ -106,7 +106,7 @@ export function RealtimeChatShell({
     if (!activeTab) return;
 
     let content = `Chat Export - ${activeTab.label}\n`;
-    content += `Exported at: ${new Date().toLocaleString()}\n\n`;
+    content += `Exported at: ${formatMoment(Date.now() / 1000)}\n\n`;
 
     // Get messages based on tab type
     const state = useRealtimeChatStore.getState();
@@ -115,7 +115,7 @@ export function RealtimeChatShell({
       if (zone) {
         zone.messages.forEach((msg) => {
           const time = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
-          const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          const timeStr = formatClockTime(time.getTime() / 1000);
           const senderName = msg.sender.displayName?.trim() || msg.sender.playerId || "Unknown";
           content += `[${timeStr}] <${senderName}> ${msg.content}\n`;
         });
@@ -125,7 +125,7 @@ export function RealtimeChatShell({
       if (thread) {
         thread.messages.forEach((msg) => {
           const time = msg.createdAt instanceof Date ? msg.createdAt : new Date(msg.createdAt);
-          const timeStr = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+          const timeStr = formatClockTime(time.getTime() / 1000);
           content += `[${timeStr}] <${msg.senderId}> ${msg.content}\n`;
         });
       }

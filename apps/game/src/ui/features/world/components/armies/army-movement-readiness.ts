@@ -1,3 +1,7 @@
+import {
+  getArmyMovementFoodRequirementWarnings,
+  getArmyStaminaRequirementWarnings,
+} from "@/ui/design-system/kit/words";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useMemo } from "react";
@@ -16,7 +20,6 @@ import {
 } from "@bibliothecadao/eternum";
 import { getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getArmyMovementFoodRequirementWarnings, getArmyStaminaRequirementWarnings } from "./army-warning-copy";
 
 type ExplorerTroopsValue = NativeRows["ExplorerTroops"];
 type ResourceValue = ResourceManager;

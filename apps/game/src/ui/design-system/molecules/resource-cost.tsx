@@ -1,9 +1,8 @@
+import { knownAmount } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
 import { divideByPrecision } from "@bibliothecadao/eternum";
-import { findResourceById } from "@bibliothecadao/types";
+import { formatAmount, formatCharge, resourceName } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useMemo } from "react";
 
 const SIZES = ["xs", "sm", "md", "lg"] as const;
 const LAYOUT_TYPES = ["horizontal", "vertical"] as const;
@@ -20,13 +19,6 @@ type ResourceCostProps = {
   size?: (typeof SIZES)[number];
 };
 
-const formatAmount = (amount: number) => {
-  return Intl.NumberFormat("en-US", {
-    notation: amount < 0.01 ? "standard" : "compact",
-    maximumFractionDigits: amount < 0.01 ? 6 : 2,
-  }).format(amount);
-};
-
 /**
  * A cost in the HUD sheet's words: the resource's painting, how much, what is held beside it in good or bad, and the
  * resource's name under a horizontal one.
@@ -41,7 +33,7 @@ export const ResourceCost = ({
   onClick,
   size = "md",
 }: ResourceCostProps) => {
-  const trait = useMemo(() => findResourceById(resourceId)?.trait, [resourceId]);
+  const name = resourceName(resourceId);
   const hasSufficientBalance = balance !== undefined && amount !== undefined && divideByPrecision(balance) >= amount;
   const showBalance = balance !== undefined && !isNaN(balance);
 
@@ -56,14 +48,14 @@ export const ResourceCost = ({
       <ResourceIcon className="self-center" withTooltip={withTooltip} resource={resourceId} size={size} />
       <div className={cn("flex shrink-0 flex-col self-center", type === "horizontal" ? "text-left" : "items-center")}>
         <div onClick={onClick} className="text-hud-strong text-hud-ink tabular-nums">
-          {amount === undefined ? "—" : formatAmount(amount)}
+          {formatCharge(amount)}
           {showBalance && (
             <span className={cn("text-hud-body", hasSufficientBalance ? "text-hud-good" : "text-hud-bad")}>
-              {` (${currencyFormat(balance, 0)})`}
+              {` (${formatAmount(knownAmount(balance))})`}
             </span>
           )}
         </div>
-        {type === "horizontal" && trait && <div className="text-hud-label text-hud-muted">{trait}</div>}
+        {type === "horizontal" && <div className="text-hud-label text-hud-muted">{name}</div>}
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { formatArrivalTime } from "@/ui/utils/utils";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGame } from "@/hooks/context/game-context";
 
@@ -13,7 +12,7 @@ import {
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
+import { ResourcesIds, type ID, type Resource, formatClockTime, formatExact } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 /**
@@ -57,9 +56,7 @@ export const TravelInfo = ({
     setup.store,
     resources.some((resource) => isMilitaryResource(resource.resourceId)),
   );
-  const formattedArrivalTime = formatArrivalTime(
-    road === undefined ? null : new Date(deliveryLandsAt(now, road) * 1000),
-  );
+  const formattedArrivalTime = road === undefined ? "" : formatClockTime(deliveryLandsAt(now, road));
 
   useEffect(() => {
     setCanCarry?.(canCarry);
@@ -78,7 +75,7 @@ export const TravelInfo = ({
         <dd className="text-hud-strong">{`${resourceWeightKg} kg`}</dd>
         <dt className="text-right text-hud-label text-hud-muted">Donkeys Burnt for Transfer</dt>
         <dd className={canCarry ? "text-hud-strong text-hud-good" : "text-hud-strong text-hud-bad"}>
-          {neededDonkeys.toLocaleString()} 🔥🫏 [{donkeyBalance === undefined ? "—" : donkeyBalance.toLocaleString()}]
+          {formatExact(neededDonkeys)} 🔥🫏 [{donkeyBalance === undefined ? "—" : formatExact(donkeyBalance)}]
         </dd>
       </dl>
       <ResourceWeight />

@@ -1,7 +1,15 @@
 import { safeInteger } from "./safe-integer";
 import { entityMapPosition } from "./tile";
 import { structureMapPosition } from "./expeditions";
-import { CapacityConfig, ContractAddress, ID, NEUTRAL_OWNER_NAME, StructureType } from "@bibliothecadao/types";
+import {
+  armyName,
+  CapacityConfig,
+  ContractAddress,
+  ID,
+  NEUTRAL_OWNER_NAME,
+  StructureType,
+  structureName,
+} from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { shortString } from "starknet";
@@ -9,7 +17,7 @@ import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
-import { getStructureTypeName, presentedMineKind } from "./structure";
+import { presentedMineKind } from "./structure";
 import { isViewerOwner } from "./viewer";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
@@ -78,7 +86,7 @@ export const getEntityInfo = (
 
 export const getArmyName = (armyEntityId: ID, store: NativeFactStore) => {
   const named = store.get("EntityName", { game_id: configManager.getActiveGameId(), entity_id: armyEntityId });
-  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : unnamedEntityName("Army");
+  return named && named.name !== 0n ? shortString.decodeShortString(named.name.toString()) : armyName(armyEntityId);
 };
 
 const getRealmName = (structure: NativeRows["Structure"]) => {
@@ -95,23 +103,16 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
   } else if (structure.base.category === StructureType.Hyperstructure) {
     originalName = getHyperstructureName(structure);
   } else {
-    const structureTypeName =
-      getStructureTypeName(structure.base.category as StructureType, presentedMineKind(structure)) || "Structure";
-    originalName = unnamedEntityName(structureTypeName);
+    originalName = structureName(structure.base.category as StructureType, presentedMineKind(structure));
   }
 
   return { name: cachedName || originalName, originalName };
 };
 
 /**
- * What an army or a structure without a given name is called, wherever a player reads it (its map label, event text):
- * its kind. Never its entity id, which is a storage key, not a name.
- */
-const unnamedEntityName = (kind: string): string => kind;
-
-/**
- * The one name a player reads for an army or a structure, on the map and in event text: its given name, else what
- * `unnamedEntityName` calls it. Undefined when the store holds neither (an army already gone): the caller words that.
+ * The one name a player reads for an army or a structure, on the map and in event text: its given name; else an army's
+ * generated name (armyName, "Iron Wardens") and a structure's kind ("Camp"), never its entity id, which is a storage
+ * key, not a name. Undefined when the store holds neither (an army already gone): the caller words that.
  */
 export const getEntityName = (entityId: ID, store: NativeFactStore, isBlitz: boolean): string | undefined => {
   const game_id = configManager.getActiveGameId();

@@ -20,7 +20,7 @@ import {
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { getLevelName, RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { useArmyCreation } from "../components/unified-army-creation-modal/use-army-creation";
 import { readSurvivalAdvice } from "./survival-advice";
@@ -161,9 +161,7 @@ describe("the realm a certain loss's advice sends the player to", () => {
 
   it("is left out when its field army slots are full, as the Military window refuses it there", () => {
     const { store, advice, home } = twoRealms({ held: { [KNIGHT]: 3_000n }, slots: 1, armyThere: true });
-    expect(advice).toBe(
-      `it needs about 2,400 troops, and ${home}'s army cap is 1,500: level it to ${getLevelName(1)} (cap 15,000)`,
-    );
+    expect(advice).toBe(`it needs about 2,400 troops, and ${home}'s army cap is 1,500: level it to City (cap 15,000)`);
     expect(militaryOnSecondRealm(store)).toEqual({ canRaise: false, most: 0 });
   });
 

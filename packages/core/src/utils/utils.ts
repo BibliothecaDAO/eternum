@@ -10,20 +10,6 @@ export const toHexString = (num: bigint) => {
   return `0x${num.toString(16)}`;
 };
 
-export const formatTime = (seconds: number) => {
-  const days = Math.floor(seconds / (24 * 60 * 60));
-  const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
-  const minutes = Math.floor((seconds % (60 * 60)) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-
-  return [
-    days > 0 ? `${days}d ` : "",
-    hours > 0 ? `${hours}h ` : "",
-    minutes > 0 ? `${minutes}m ` : "",
-    remainingSeconds > 0 ? `${remainingSeconds}s` : "",
-  ].join("");
-};
-
 export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMiningTypes>> = {
   [ResourcesIds.Copper]: ResourceMiningTypes.Forge,
   [ResourcesIds.ColdIron]: ResourceMiningTypes.Forge,

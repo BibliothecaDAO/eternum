@@ -1,3 +1,4 @@
+import { PROFILE_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
@@ -20,7 +21,6 @@ import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { useRequestSignIn } from "../sign-in/sign-in-route";
-import { PROFILE_WORDS, SIGN_IN_WORDS, WORDS } from "../words";
 import { AccountCard, SignOut } from "./account-card";
 import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";

@@ -1,6 +1,6 @@
+import { siteName } from "@bibliothecadao/types";
 import { Pin, Plate } from "@/three/map-plates/map-plates";
 import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
-import { siteName } from "@/three/map-plates/site-name";
 import { Icon, SvgIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { HudBubble, HudMenu, HudMinimapFrame, HudTierChip, HudTip } from "@/ui/design-system/kit/hud-elements";

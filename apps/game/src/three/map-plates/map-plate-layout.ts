@@ -1,6 +1,7 @@
+import { formatExact } from "@bibliothecadao/types";
 import { CLASSIC_HUD_FONTS, HUD_TYPE } from "@/tokens";
 
-import { formatCount, type MapPlate } from "./map-plate-model";
+import { type MapPlate } from "./map-plate-model";
 import { plateRows, restingStamina, type PlateSegment } from "./map-plate-rows";
 
 /** A plate's box on screen, in CSS pixels from the map's top left. */
@@ -91,11 +92,11 @@ const segmentWidth = (segment: PlateSegment): number => {
         TROOP_PAINTING +
         measure(`T${segment.troops.tier}`, "chip") +
         CHIP_PADDING +
-        measure(formatCount(segment.troops.count), "count") +
+        measure(formatExact(segment.troops.count), "count") +
         2 * 4
       );
     case "stamina":
-      return STAMINA_BAR + READING_GAP + measure(`${formatCount(segment.current)}/${formatCount(segment.max)}`, "body");
+      return STAMINA_BAR + READING_GAP + measure(`${formatExact(segment.current)}/${formatExact(segment.max)}`, "body");
     case "next":
       return measure("›", "count") + 4;
     case "divider":

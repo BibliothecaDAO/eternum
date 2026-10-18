@@ -1,15 +1,6 @@
-import { formatExact } from "@/ui/design-system/kit/amount";
-import {
-  builtLine,
-  deployedLine,
-  disbandedLine,
-  ESSENCE,
-  LABOR,
-  LORDS,
-  revealLine,
-} from "@/ui/design-system/kit/words";
+import { builtLine, deployedLine, disbandedLine, ESSENCE, LABOR, revealLine } from "@/ui/design-system/kit/words";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, formatExact, LORDS } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";

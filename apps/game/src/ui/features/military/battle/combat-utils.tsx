@@ -1,25 +1,21 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { TroopTier, TroopType, formatPercent } from "@bibliothecadao/types";
 
-const formatStaminaModifier = (modifier: number, isAttacker: boolean) => {
-  const percentage = ((modifier - 1) * 100).toFixed(0);
-  if (percentage === "0") return isAttacker ? "No Bonus" : "No Penalty";
-  return percentage.startsWith("-") ? (
-    <span className="text-hud-bad text-hud-strong">{percentage}%</span>
-  ) : (
-    <span className="text-hud-good text-hud-strong">+{percentage}%</span>
-  );
+/** A modifier's bonus or malus as a signed percent ("+10%", "-5%"), or the word for none. */
+export const biomeBonusText = (bonus: number, none = "No Bonus"): string =>
+  Math.round((bonus - 1) * 100) === 0 ? none : formatPercent(bonus - 1, { signed: true });
+
+const ModifierChip = ({ modifier, none }: { modifier: number; none: string }) => {
+  const text = biomeBonusText(modifier, none);
+  if (text === none) return text;
+  return <span className={`${modifier < 1 ? "text-hud-bad" : "text-hud-good"} text-hud-strong`}>{text}</span>;
 };
 
-export const formatBiomeBonus = (bonus: number) => {
-  const percentage = ((bonus - 1) * 100).toFixed(0);
-  if (percentage === "0") return "No Bonus";
-  return percentage.startsWith("-") ? (
-    <span className="text-hud-bad text-hud-strong">{percentage}%</span>
-  ) : (
-    <span className="text-hud-good text-hud-strong">+{percentage}%</span>
-  );
-};
+const formatStaminaModifier = (modifier: number, isAttacker: boolean) => (
+  <ModifierChip modifier={modifier} none={isAttacker ? "No Bonus" : "No Penalty"} />
+);
+
+export const formatBiomeBonus = (bonus: number) => <ModifierChip modifier={bonus} none="No Bonus" />;
 
 // Compact version of formatTypeAndBonuses for tight layouts (multi-guard view)
 const formatTypeAndBonusesCompact = (

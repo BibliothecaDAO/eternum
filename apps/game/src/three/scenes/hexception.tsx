@@ -128,9 +128,9 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
-  findResourceById,
   getHexDistance,
   getProducedResource,
+  resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -1085,14 +1085,13 @@ export default class HexceptionScene extends HexagonScene {
       const currentTick = getBlockTimestamp().currentDefaultTick;
       const isActive =
         (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
-      const resourceInfo = findResourceById(producedResource as ResourcesIds);
-      const resourceName = resourceInfo?.trait ?? "Unknown resource";
+      const producedName = resourceName(producedResource as ResourcesIds);
 
       this.hoverLabelManager.update(position, {
         kind: "resource",
         buildingName,
         resourceId: producedResource as ResourcesIds,
-        resourceName,
+        resourceName: producedName,
         isActive: !!isActive,
       });
       return;

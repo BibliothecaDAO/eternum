@@ -1,7 +1,7 @@
+import { FOOTER_WORDS } from "@/ui/design-system/kit/words";
 import { Link } from "react-router-dom";
 
 import { COMMUNITY } from "../community";
-import { FOOTER_WORDS } from "../words";
 
 type FooterLink = { word: string; to: string };
 

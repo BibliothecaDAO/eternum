@@ -1,3 +1,4 @@
+import { FOOTER_WORDS, NEWS_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -7,7 +8,6 @@ import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
 import { WHATS_NEW_PATH } from "./news/posts";
 import { Panel } from "@/ui/design-system/kit/panel";
-import { FOOTER_WORDS, NEWS_WORDS } from "./words";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
 

@@ -1,6 +1,7 @@
+import { PROFILE_WORDS, SEASON_WORDS } from "@/ui/design-system/kit/words";
+import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -21,7 +22,6 @@ import { HistoryRow } from "../season-tab/history-row";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { useNowSeconds } from "../use-now";
-import { PROFILE_WORDS, SEASON_WORDS } from "../words";
 
 /** How many finished games a player's page lists. */
 const HISTORY = 8;

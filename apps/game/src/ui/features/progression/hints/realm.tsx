@@ -1,7 +1,8 @@
+import { REALM } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { Headline, ResourceCost } from "@/ui/design-system/molecules";
 import { configManager } from "@bibliothecadao/eternum";
-import { RealmLevelNames, RealmLevels } from "@bibliothecadao/types";
+import { RealmLevelNames, RealmLevels, rankName } from "@bibliothecadao/types";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useMemo } from "react";
 
@@ -16,7 +17,7 @@ const CASTLE_IMAGES: Partial<Record<RealmLevelNames, IconMeaning>> = {
 export const Realm = () => {
   return (
     <div className="space-y-8">
-      <Headline>Realm</Headline>
+      <Headline>{REALM}</Headline>
 
       <section className="space-y-4">
         <h4>Your Realm</h4>
@@ -56,7 +57,7 @@ export const Realm = () => {
 const LevelTable = () => {
   const levelTable = useMemo(() => {
     return configManager.realmUpgradeRecipes().map(({ level, costs }) => ({
-      level: RealmLevels[level],
+      level: rankName(level),
       cost: costs.map((cost) => ({
         ...cost,
         amount: cost.amount,
@@ -77,12 +78,7 @@ const LevelTable = () => {
           cells: [
             <span key="level" className="flex flex-col items-center gap-4 py-4">
               {castle ? (
-                <SemanticIcon
-                  size={144}
-                  name={castle}
-                  alt={`Level ${resource.level} Castle`}
-                  className="object-contain"
-                />
+                <SemanticIcon size={144} name={castle} alt={`${resource.level} castle`} className="object-contain" />
               ) : (
                 <span className="text-hud-muted">No preview available</span>
               )}

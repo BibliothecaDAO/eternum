@@ -9,7 +9,7 @@ import {
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, formatFigure, formatPercent } from "@bibliothecadao/types";
 import {
   HudButton,
   HudEmpty,
@@ -51,22 +51,8 @@ const ARMY_T2_T3_RESOURCES = new Set<ResourcesIds>([
   ResourcesIds.PaladinT3,
 ]);
 
-const formatPerCycle = (value: number): string => {
-  if (!Number.isFinite(value) || Math.abs(value) < 0.0001) return "0/c";
-  const abs = Math.abs(value);
-  const label =
-    abs >= 1000
-      ? Math.round(abs).toLocaleString()
-      : abs >= 100
-        ? abs.toFixed(0)
-        : abs >= 10
-          ? abs.toFixed(1)
-          : abs >= 1
-            ? abs.toFixed(2)
-            : abs.toFixed(3);
-  const sign = value > 0 ? "+" : "-";
-  return `${sign}${label}/c`;
-};
+const formatPerCycle = (value: number): string =>
+  !Number.isFinite(value) || Math.abs(value) < 0.0001 ? "0/c" : `${formatFigure(value, { signed: true })}/c`;
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -583,7 +569,7 @@ export const RealmAutomationPanel = ({
                       detail={formatPerCycle(perCycle)}
                       trail={
                         <span className={isOverBudget ? "text-hud-strong text-hud-bad" : "text-hud-strong"}>
-                          {Math.round(percent)}%
+                          {formatPercent(percent / 100)}
                         </span>
                       }
                     />
@@ -647,7 +633,7 @@ export const RealmAutomationPanel = ({
                         </div>
                         {impactedTotals.length > 0 && (
                           <span className="text-right text-hud-label text-hud-cue">
-                            Peak usage {Math.round(Math.max(...impactedTotals))}%
+                            Peak usage {formatPercent(Math.max(...impactedTotals) / 100)}
                           </span>
                         )}
                       </div>
@@ -678,7 +664,9 @@ export const RealmAutomationPanel = ({
                   }
                   cue={
                     resourceOverBudget ? (
-                      <span className="text-hud-label text-hud-bad">{Math.round(resourceUsage)}% allocated</span>
+                      <span className="text-hud-label text-hud-bad">
+                        {formatPercent(resourceUsage / 100)} allocated
+                      </span>
                     ) : undefined
                   }
                 >

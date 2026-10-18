@@ -1,9 +1,9 @@
+import { RATING_WORDS } from "@/ui/design-system/kit/words";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 
 import { RatingFigure } from "./rating-mark";
 import { ratingPoints, tierOf, useRatings } from "./ratings";
-import { RATING_WORDS } from "./words";
 
 /**
  * A player's Blitz rating now, on one line: its mark and points with the tier, read by the wallet that played. A reader

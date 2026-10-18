@@ -1,6 +1,6 @@
+import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudNotice, HudPortrait, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import { BUILD, DEPLOY, DEPLOY_FIGURES, DEPLOYING, TROOPS } from "@/ui/design-system/kit/words";

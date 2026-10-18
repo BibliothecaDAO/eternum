@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudNumberField, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { StaminaManager } from "@bibliothecadao/eternum";
-import { RELICS, TroopTier, TroopType } from "@bibliothecadao/types";
+import { RELICS, TroopTier, TroopType, formatExact } from "@bibliothecadao/types";
 
 import type { GuardOption, WorkingArmy } from "./battle-lab.types";
 import { RelicChip } from "../../utils/relic-chip";
@@ -15,9 +15,9 @@ const COMBAT_RELICS = RELICS.filter((relic) => ["Damage", "Damage Reduction", "S
   .map((relic) => relic.id);
 
 const TROOP_TYPES = [
-  { value: TroopType.Knight, label: "Knight" },
-  { value: TroopType.Crossbowman, label: "Crossbow" },
-  { value: TroopType.Paladin, label: "Paladin" },
+  { value: TroopType.Knight, label: TroopType.Knight },
+  { value: TroopType.Crossbowman, label: TroopType.Crossbowman },
+  { value: TroopType.Paladin, label: TroopType.Paladin },
 ] as const;
 
 const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3].map((tier) => ({ value: tier, label: tier }));
@@ -84,7 +84,7 @@ export const ArmyColumn = ({
                   onClick={() => onSelectGuard?.(guard.slot)}
                   aria-pressed={active}
                 >
-                  {guard.label} · {guard.army.troopCount.toLocaleString()}
+                  {guard.label} · {formatExact(guard.army.troopCount)}
                 </HudButton>
               );
             })}
@@ -102,7 +102,7 @@ export const ArmyColumn = ({
               step={1}
             />
           </Field>
-          <Field label="Troops" hint={army.troopCount.toLocaleString()}>
+          <Field label="Troops" hint={formatExact(army.troopCount)}>
             <HudNumberField
               label="Troops"
               value={army.troopCount}

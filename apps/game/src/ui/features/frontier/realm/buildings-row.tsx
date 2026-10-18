@@ -3,13 +3,12 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
 import { BARRACKS, BUILDINGS, FARM, HUT, WORKSHOP } from "@/ui/design-system/kit/words";
 import { buildableRadius } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BuildingType } from "@bibliothecadao/types";
+import { BuildingType, formatAmount } from "@bibliothecadao/types";
 
 /** The four common building types the row counts, in the wireframe's order. */
 const TYPES: { category: BuildingType; icon: IconMeaning; word: string }[] = [

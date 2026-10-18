@@ -1,11 +1,10 @@
+import { formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   CONTINUE,
   LINK_WALLET,
-  LORDS,
   NO_WALLET,
   SENDING,
   TRANSACTION,

@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
+import { DISPLAYED_SLOT_NUMBER_MAP, TroopTier, formatExact, guardSlotName, GuardSlot } from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { useMemo } from "react";
@@ -61,14 +61,14 @@ export const DefenseSlotSelection = ({
       <div className="grid grid-cols-2 gap-1.5">
         {sortedSlots.map((slot) => {
           const displayedSlotNumber = DISPLAYED_SLOT_NUMBER_MAP[slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP];
-          const slotName = GUARD_SLOT_NAMES[slot as keyof typeof GUARD_SLOT_NAMES];
+          const slotName = guardSlotName(slot as GuardSlot);
           const guardInfo = guardsBySlot.get(slot);
           const guardCategory = guardInfo?.troops?.category;
           const guardTier = guardInfo?.troops?.tier;
           const guardCount = guardInfo?.troops?.count;
           const guardStaminaCurrent = guardInfo?.troops?.staminaCurrent;
           const guardStaminaMax = guardInfo?.troops?.staminaMax;
-          const guardCountLabel = guardCount !== undefined ? guardCount.toLocaleString() : null;
+          const guardCountLabel = guardCount !== undefined ? formatExact(guardCount) : null;
           const troopResource = guardCategory ? getTroopResourceId(guardCategory, guardTier ?? TroopTier.T1) : null;
           // A wiped slot keeps its troop row at count 0 on chain; it reads as empty here, or as rebuilding.
           const hasGuard = (guardCount ?? 0) > 0;

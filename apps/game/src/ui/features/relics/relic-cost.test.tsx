@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
+import { relicLine } from "@/ui/design-system/kit/words";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it } from "vitest";
 import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { nativePresetForId, nativePresetIdFor } from "../../../../../../config/source/native";
 import { useRelicEssenceStatus, useRelicMetadata } from "./hooks/use-relic-activation";
-import { relicLine } from "./relic-words";
 
 /** The deploy fixture's realm 7 under the Blitz preset's relic rules, holding the Essence given (and producing none). */
 const realmWithEssence = (essence: number) => {
@@ -78,10 +78,18 @@ it("prices a relic in whole Essence as the preset sets it, and refuses an activa
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
   const short = realmWithEssence(249);
-  expect(relicLine(ResourcesIds.DamageRelic1)).toMatch(/Costs 250 Essence to activate\.$/);
-  expect(relicLine(ResourcesIds.DamageRelic2)).toMatch(/Costs 500 Essence to activate\.$/);
-  expect(relicLine(ResourcesIds.DamageRelic2, 200)).toMatch(/Costs 500 Essence to activate; you have 200\.$/);
-  expect(relicLine(ResourcesIds.DamageRelic2, 500)).toMatch(/Costs 500 Essence to activate\.$/);
+  expect(relicLine(ResourcesIds.DamageRelic1, configManager.getRelicActivation(ResourcesIds.DamageRelic1))).toMatch(
+    /Costs 250 Essence to activate\.$/,
+  );
+  expect(relicLine(ResourcesIds.DamageRelic2, configManager.getRelicActivation(ResourcesIds.DamageRelic2))).toMatch(
+    /Costs 500 Essence to activate\.$/,
+  );
+  expect(
+    relicLine(ResourcesIds.DamageRelic2, configManager.getRelicActivation(ResourcesIds.DamageRelic2), 200),
+  ).toMatch(/Costs 500 Essence to activate; you have 200\.$/);
+  expect(
+    relicLine(ResourcesIds.DamageRelic2, configManager.getRelicActivation(ResourcesIds.DamageRelic2), 500),
+  ).toMatch(/Costs 500 Essence to activate\.$/);
   expect(activationFor(short)).toEqual({
     essenceCost: 250,
     hasEnoughEssence: false,

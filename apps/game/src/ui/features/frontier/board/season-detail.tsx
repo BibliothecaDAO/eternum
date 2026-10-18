@@ -1,4 +1,4 @@
-import { formatAmount } from "@/ui/design-system/kit/amount";
+import { formatAmount, LORDS } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OrderMark } from "./realm-marks";
 import {
@@ -8,7 +8,6 @@ import {
   ESSENCE,
   ETHEREAL,
   LABOR,
-  LORDS,
   REACH_NUMERALS,
   RIFT,
   RUIN,

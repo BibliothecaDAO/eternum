@@ -14,7 +14,7 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { LIQUIDITY_COLS } from "./liquidity-table";
 import { TravelInfo } from "@/ui/features/economy/resources";
-import { formatNumber, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { getEntityIdFromKeys, knownAmount } from "@/ui/utils/utils";
 import {
   MarketManager,
   configManager,
@@ -24,7 +24,18 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, ID, ResourcesIds, StructureType, resources } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  ID,
+  ResourcesIds,
+  StructureType,
+  resources,
+  formatAmount,
+  formatCharge,
+  formatPercent,
+  LORDS,
+  resourceName,
+} from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import React, { useCallback, useMemo, useState } from "react";
 import { storyPayloadId } from "@/utils/native-id";
@@ -200,7 +211,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
   ]);
 
   return (
-    <HudTableRow cols={LIQUIDITY_COLS} label={`Lords / ${resource?.trait ?? ""} pool`}>
+    <HudTableRow cols={LIQUIDITY_COLS} label={`${LORDS} / ${resourceName(resourceId)} pool`}>
       {pair}
       <span
         className="flex items-center"
@@ -209,7 +220,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {formatNumber(marketManager.getMarketPrice(), 4)} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
+        {formatCharge(marketManager.getMarketPrice())} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
       </span>
       <TotalLiquidity totalLords={totalLords} totalResource={totalResource} resourceId={resourceId} />
       <MyLiquidity
@@ -240,12 +251,12 @@ const TotalLiquidity = ({
   return (
     <div className="flex flex-col justify-center tabular-nums">
       <div className="flex">
-        <div>{divideByPrecision(totalLords).toLocaleString()}</div>
+        <div>{formatAmount(knownAmount(totalLords))}</div>
         <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
       </div>
 
       <div className="flex">
-        <div>{divideByPrecision(totalResource).toLocaleString()}</div>
+        <div>{formatAmount(knownAmount(totalResource))}</div>
         <ResourceIcon resource={resourceId} size="sm" />
       </div>
     </div>
@@ -301,25 +312,23 @@ const MyLiquidity = ({
   return (
     <div className="flex flex-col tabular-nums">
       <div className="flex">
-        <div>{divideByPrecision(lordsAmount).toLocaleString()}</div>
+        <div>{formatAmount(knownAmount(lordsAmount))}</div>
         <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
         {playerLiquidityInfo && lordsAmount > 0 && (
           <span className={`ml-1 text-hud-label ${lordsDifferencePercentage >= 0 ? "text-hud-good" : "text-hud-bad"}`}>
-            ({lordsDifferencePercentage > 0 ? "+" : ""}
-            {formatNumber(lordsDifferencePercentage, 4)}%)
+            ({formatPercent(lordsDifferencePercentage / 100, { signed: true })})
           </span>
         )}
       </div>
 
       <div className="flex">
-        <div>{divideByPrecision(resourceAmount).toLocaleString()}</div>
+        <div>{formatAmount(knownAmount(resourceAmount))}</div>
         <ResourceIcon resource={resourceId} size="sm" />
         {playerLiquidityInfo && resourceAmount > 0 && (
           <span
             className={`ml-1 text-hud-label ${resourceDifferencePercentage >= 0 ? "text-hud-good" : "text-hud-bad"}`}
           >
-            ({resourceDifferencePercentage > 0 ? "+" : ""}
-            {formatNumber(resourceDifferencePercentage, 4)}%)
+            ({formatPercent(resourceDifferencePercentage / 100, { signed: true })})
           </span>
         )}
       </div>
@@ -328,7 +337,7 @@ const MyLiquidity = ({
         <div className="flex mt-1">
           <span className={`text-hud-label ${totalValueDifferenceInLords >= 0 ? "text-hud-good" : "text-hud-bad"}`}>
             {totalValueDifferenceInLords >= 0 ? "+" : "-"}
-            {formatNumber(Math.abs(totalValueDifferenceInLords), 4)} Lords (uPNL)
+            {formatCharge(Math.abs(totalValueDifferenceInLords))} Lords (uPNL)
           </span>
         </div>
       )}
@@ -363,7 +372,7 @@ const InputResourcesPrice = ({ marketManager }: { marketManager: MarketManager }
       <div className="flex w-full items-center justify-between gap-1 text-hud-label">
         <span className="whitespace-nowrap">production cost:</span>
         <div className="flex items-center gap-1">
-          <span className="text-hud-strong">{formatNumber(totalPrice, 4)}</span>
+          <span className="text-hud-strong">{formatCharge(totalPrice)}</span>
           <ResourceIcon resource={ResourcesIds.Lords} size="xs" />
         </div>
       </div>

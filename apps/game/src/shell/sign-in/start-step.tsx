@@ -1,9 +1,9 @@
+import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/ui/design-system/kit/button";
 import { Field } from "@/ui/design-system/kit/field";
 
-import { SIGN_IN_WORDS } from "../words";
 import { FailureLine } from "./failure-line";
 
 /**

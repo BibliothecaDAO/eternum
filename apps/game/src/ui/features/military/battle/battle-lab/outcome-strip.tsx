@@ -1,3 +1,4 @@
+import { formatPercent, formatExact } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { formatAcross, survivalOf, type SideRange } from "../battle-range";
@@ -9,9 +10,7 @@ interface OutcomeStripProps {
   staminaAfter: number;
 }
 
-const formatInt = (value: number) => Math.round(Math.max(0, value)).toLocaleString();
-
-const percentOf = (total: number) => (value: number) => `${Math.round(total > 0 ? (value / total) * 100 : 0)}`;
+const percentOf = (total: number) => (value: number) => formatPercent(total > 0 ? value / total : 0);
 
 /** Per-side post-fight readout across the dice: casualties, remaining bar (at the lower count), stamina change. */
 export const OutcomeStrip = ({ side, total, staminaBefore, staminaAfter }: OutcomeStripProps) => {
@@ -25,17 +24,17 @@ export const OutcomeStrip = ({ side, total, staminaBefore, staminaAfter }: Outco
       <div className="flex items-center justify-between">
         <span className="text-hud-label text-hud-muted">Losses</span>
         <span className="text-hud-strong text-hud-bad">
-          −{formatAcross(side.worst.losses, side.best.losses, formatInt)}{" "}
+          −{formatAcross(side.worst.losses, side.best.losses, formatExact)}{" "}
           <span className="text-hud-label text-hud-cue">
-            ({formatAcross(side.worst.losses, side.best.losses, percentOf(total))}%)
+            ({formatAcross(side.worst.losses, side.best.losses, percentOf(total))})
           </span>
         </span>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-hud-label text-hud-muted">After</span>
         <span className={cn("text-hud-strong", eliminated && "text-hud-bad")}>
-          {formatAcross(side.worst.remaining, side.best.remaining, formatInt)}{" "}
-          <span className="text-hud-label text-hud-cue">/ {formatInt(total)}</span>
+          {formatAcross(side.worst.remaining, side.best.remaining, formatExact)}{" "}
+          <span className="text-hud-label text-hud-cue">/ {formatExact(Math.max(0, total))}</span>
         </span>
       </div>
       <HudMeter share={ratio} tone={barTone} label="Troops after the fight" />

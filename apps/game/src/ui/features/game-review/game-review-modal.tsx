@@ -1,3 +1,4 @@
+import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type GameReviewData } from "@/services/review/game-review-service";
 import { Button } from "@/ui/design-system/atoms";
@@ -37,7 +38,6 @@ interface GameReviewModalProps {
   onClose: () => void;
 }
 
-const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const SHARE_CARD_DIMENSIONS = BLITZ_CARD_DIMENSIONS;
 const SHARE_PREVIEW_MAX_WIDTH = SHARE_CARD_DIMENSIONS.width;
 const EXPORT_STAGE_PADDING_X = 36;
@@ -49,8 +49,6 @@ const MAP_FINGERPRINT_ZOOM_LEVELS = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.25, 1.5] as c
 const MAP_FINGERPRINT_DEFAULT_ZOOM = MAP_FINGERPRINT_ZOOM_LEVELS[3];
 const MAP_FINGERPRINT_GOLD_LEVELS = [0.4, 0.65, 0.8, 1] as const;
 const MAP_FINGERPRINT_DEFAULT_GOLD_LEVEL = MAP_FINGERPRINT_GOLD_LEVELS[0];
-
-const formatValue = (value: number): string => numberFormatter.format(Math.max(0, Math.round(value)));
 
 const STEP_LABELS: Record<ReviewStepId, string> = {
   finished: "Game Finished",
@@ -88,7 +86,7 @@ const GameFinishedStep = ({ data }: { data: GameReviewData }) => {
         </div>
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-3">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Registered Players</p>
-          <p className="mt-1 text-sm text-white">{formatValue(data.stats.numberOfPlayers)}</p>
+          <p className="mt-1 text-sm text-white">{formatExact(Math.max(0, data.stats.numberOfPlayers))}</p>
         </div>
       </div>
     </div>
@@ -131,7 +129,7 @@ const ResultOutcomeStep = ({
         <div className="rounded-xl border border-gold/20 bg-dark/80 p-4">
           <p className="text-[11px] uppercase tracking-wider text-gold/60">Victory points</p>
           <p className="mt-1 text-2xl text-white">
-            {finalized ? (data.personalScore?.points.toLocaleString() ?? "—") : "—"}
+            {finalized ? (formatExact(data.personalScore?.points) ?? "—") : "—"}
           </p>
         </div>
       </div>
@@ -533,7 +531,7 @@ export const GameReviewModal = ({ isOpen, world, nextGame, onClose }: GameReview
                             }}
                             className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold transition-colors enabled:hover:bg-gold/10 sm:px-3"
                             aria-label={`Gold level ${Math.round(mapFingerprintGoldLevel * 100)} percent`}
-                            title={`Gold ${Math.round(mapFingerprintGoldLevel * 100)}% (click to cycle)`}
+                            title={`Gold ${formatPercent(mapFingerprintGoldLevel)} (click to cycle)`}
                           >
                             G
                           </button>

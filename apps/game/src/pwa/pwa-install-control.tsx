@@ -1,7 +1,6 @@
+import { APP_STATE_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { useEffect } from "react";
-
-import { APP_STATE_WORDS } from "@/shell/words";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
 

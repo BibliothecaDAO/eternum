@@ -1,4 +1,4 @@
-import { formatExact } from "@/ui/design-system/kit/amount";
+import { formatExact } from "@bibliothecadao/types";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { TROOPS, UPGRADE } from "@/ui/design-system/kit/words";
 

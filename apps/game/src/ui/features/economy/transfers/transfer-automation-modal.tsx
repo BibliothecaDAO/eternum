@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useState } from "react";
 import { useTransferAutomationStore, type TransferAutomationEntry } from "@/hooks/store/use-transfer-automation-store";
 import { HudButton, HudEmpty, HudField, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { ResourcesIds, RESOURCE_PRECISION, formatCharge, resourceName, formatAgo } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -11,23 +11,11 @@ const formatResourceSummary = (entry: TransferAutomationEntry): string => {
     return entry.resourceConfigs
       .map((cfg) => {
         const amount = Math.max(0, Math.floor(cfg.amount ?? 0));
-        return `${ResourcesIds[cfg.resourceId] ?? cfg.resourceId} ${amount.toLocaleString()}`;
+        return `${resourceName(cfg.resourceId)} ${formatCharge(amount)}`;
       })
       .join(", ");
   }
-  return entry.resourceIds.map((rid) => ResourcesIds[rid] ?? `Resource ${rid}`).join(", ");
-};
-
-const formatLastRun = (timestamp: number) => {
-  const now = Date.now();
-  const diffMs = Math.max(0, now - timestamp);
-  if (diffMs < 60_000) return "just now";
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days === 1 ? "" : "s"} ago`;
+  return entry.resourceIds.map((rid) => resourceName(rid)).join(", ");
 };
 
 export const TransferAutomationAdvancedModal = () => {
@@ -215,7 +203,7 @@ export const TransferAutomationAdvancedModal = () => {
                 <>
                   {formatResourceSummary(e)}
                   {e.active ? ` • every ${e.intervalMinutes}m` : " • paused"}
-                  {typeof e.lastRunAt === "number" && ` • last run ${formatLastRun(e.lastRunAt)}`}
+                  {typeof e.lastRunAt === "number" && ` • last run ${formatAgo(e.lastRunAt / 1000)}`}
                 </>
               }
               trail={

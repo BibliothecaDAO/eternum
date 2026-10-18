@@ -1,9 +1,8 @@
+import { formatAmount, formatCharge, formatExact, formatDuration } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
-import { formatAmount, formatCharge, formatExact } from "@/ui/design-system/kit/amount";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   CANCEL,
   ESSENCE,
@@ -12,7 +11,7 @@ import {
   LEFT,
   MOVE,
   NEXT_ORDER,
-  QUEUED,
+  AFTER_THIS_ONE,
   STAMINA,
   WHEAT,
   XP,
@@ -107,7 +106,7 @@ export const NextOrderBar = ({ onCancel }: { onCancel: () => void }) => (
       bodyClassName="flex min-h-11 items-center justify-center gap-1.5"
     >
       <HudChip icons={["hourglass"]} label={NEXT_ORDER}>
-        {QUEUED}
+        {AFTER_THIS_ONE}
       </HudChip>
     </HudPanel>
     <HudButton kind="quiet" onClick={onCancel}>
@@ -140,7 +139,7 @@ const CostChip = ({
         icons={[icon]}
         label={label}
         tone="bad"
-      >{`${formatHeld(cost.held)} / ${formatCharge(cost.cost)}`}</HudChip>
+      >{`${formatExact(cost.held === undefined ? undefined : Math.floor(cost.held))} / ${formatCharge(cost.cost)}`}</HudChip>
       {cost.wait !== undefined && (
         <HudChip icons={["hourglass"]} label={LEFT}>
           {formatDuration(cost.wait)}
@@ -149,9 +148,6 @@ const CostChip = ({
     </>
   );
 };
-
-/** What is held against a short cost, in whole units counted down: a shortfall never reads as enough. */
-const formatHeld = (held: number | undefined): string => formatExact(held === undefined ? undefined : Math.floor(held));
 
 /** What a reveal sends home: Essence or labor, one amount; when labor no longer fits, its half reads apart in ember. */
 const RevealYield = ({ revealYield, laborFits }: { revealYield: number | undefined; laborFits: number | undefined }) =>

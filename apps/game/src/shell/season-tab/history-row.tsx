@@ -1,15 +1,12 @@
+import { formatAmount, formatClockTime, formatOrdinal } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useLocation } from "react-router-dom";
 
-import { formatAmount } from "@/ui/design-system/kit/amount";
-
-import { formatClockTime } from "@/ui/design-system/kit/time";
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { openedFrom } from "../frame/opened-from";
-import { ordinal } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { type DirectoryGame, useLeaderboard } from "../herald";
 import { ageOf, type AgeMode } from "../play/ages";
@@ -58,7 +55,7 @@ export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player:
         </span>
       )}
       <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">
-        {rank === undefined ? "—" : ordinal(rank)}
+        {rank === undefined ? "—" : formatOrdinal(rank)}
       </span>
     </ListRow>
   );

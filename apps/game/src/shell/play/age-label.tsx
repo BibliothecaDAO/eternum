@@ -1,4 +1,4 @@
-import { WORDS } from "../words";
+import { WORDS } from "@/ui/design-system/kit/words";
 
 /** "Age II" with the numeral on its own: the mode name stays the title. */
 export const AgeLabel = ({ numeral }: { numeral: string }) => (

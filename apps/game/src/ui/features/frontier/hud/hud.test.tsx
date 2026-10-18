@@ -63,10 +63,10 @@ describe("the day clock", () => {
 });
 
 describe("the status strip", () => {
-  it("says a store in one line: what it holds of its limit, its rate an hour and when it is full", () => {
+  it("says a store in one line: what it holds of its limit, its rate and when it is full", () => {
     const wheat: StoreReading = { kind: "wheat", amount: 1_771, limit: 6_000, tone: "calm", flyTarget: "wheat" };
     expect(storeLine({ ...wheat, perHour: 302, fullIn: 14 * 3_600 })).toBe(
-      "wheat 1,771 of 6,000 · +302 an hour · Full in 14h",
+      "wheat 1,771 of 6,000 · +5/min · Full in 14h",
     );
     expect(storeLine({ ...wheat, amount: 6_000, perHour: 302, fullIn: 0 })).toBe("wheat 6,000 of 6,000 · Full");
     // No building makes it: no rate to say, and no moment it fills.

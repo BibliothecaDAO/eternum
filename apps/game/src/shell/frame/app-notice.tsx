@@ -5,9 +5,7 @@ import { useInstall } from "@/pwa/install-state";
 import { usePwaUpdate } from "@/pwa/pwa-update-prompt";
 import { appQueryClient } from "@/runtime/query-client";
 import { Notice } from "@/ui/design-system/kit/notice";
-import { OFFLINE, TRY_AGAIN } from "@/ui/design-system/kit/words";
-
-import { APP_STATE_WORDS } from "../words";
+import { OFFLINE, TRY_AGAIN, APP_STATE_WORDS } from "@/ui/design-system/kit/words";
 
 /** Later on the install notice puts it off for a week, on this browser only. */
 const INSTALL_LATER_KEY = "realms.install-later-until";

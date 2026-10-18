@@ -4,10 +4,10 @@ import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { useNowMs } from "@/hooks/helpers/use-block-timestamp";
 import { RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import { divideByPrecision, formatTime } from "@bibliothecadao/eternum";
+import { divideByPrecision } from "@bibliothecadao/eternum";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
-import { ResourcesIds, Structure } from "@bibliothecadao/types";
+import { ResourcesIds, Structure, formatWait } from "@bibliothecadao/types";
 
 import { memo, useMemo } from "react";
 
@@ -103,7 +103,7 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
               ) : (
                 <span className="flex w-24 items-center gap-1.5 text-hud-label tabular-nums text-hud-muted">
                   <SemanticIcon name="hourglass" size={12} />
-                  {formatTime(summary.secondsUntilArrival)}
+                  {formatWait(summary.secondsUntilArrival)}
                 </span>
               )
             }

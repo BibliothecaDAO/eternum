@@ -1,6 +1,6 @@
+import { formatClockTime, formatDuration } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { formatClockTime, formatDuration } from "./time";
 import { TONE_TEXT, type Tone } from "./tone";
 import { DAY_ENDS, LEFT, TOMORROW_LASTS } from "./words";
 
@@ -28,13 +28,13 @@ export const ClockLine = ({
     <span>{DAY_ENDS}</span>
     <Numeral>{formatClockTime(endsAt)}</Numeral>
     <span aria-hidden>·</span>
-    <Numeral>{formatDuration(secondsLeft)}</Numeral>
+    <Numeral>{formatDuration(secondsLeft, { days: false })}</Numeral>
     <span>{LEFT}</span>
     <span aria-hidden className="px-1">
       ·
     </span>
     <span>{TOMORROW_LASTS}</span>
-    <Numeral>{formatDuration(tomorrowSeconds)}</Numeral>
+    <Numeral>{formatDuration(tomorrowSeconds, { days: false })}</Numeral>
   </p>
 );
 

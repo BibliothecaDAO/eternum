@@ -43,7 +43,7 @@ export function resolveRendererEnvironmentPolicy(
   return {
     degradations: [
       {
-        detail: `Using scene key/fill fallback lighting policy at target environment intensity ${input.intensity.toFixed(2)}`,
+        detail: `Using scene key/fill fallback lighting policy at target environment intensity ${input.intensity}`,
         feature: "environmentIbl",
         reason: "unsupported-backend",
       },

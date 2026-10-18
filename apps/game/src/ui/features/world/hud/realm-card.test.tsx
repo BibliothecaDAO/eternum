@@ -33,7 +33,6 @@ vi.mock("@/ui/features/world/components/entities/structure-production-summary", 
 }));
 vi.mock("@/ui/features/world/components/entities/compact-entity-inventory", () => ({
   CompactEntityInventory: () => null,
-  formatInventoryAmount: (amount: number) => String(amount),
 }));
 vi.mock("@/ui/design-system/icon", () => ({ Icon: () => null }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
@@ -71,7 +70,7 @@ describe("the realm card's resources, as the deploy proof reads them", () => {
 
     expect(
       [...host.querySelectorAll('ul[aria-label="Resources"] li')].map((el) => el.getAttribute("aria-label")),
-    ).toEqual(["Wheat · 6,900 held", "Crossbowman · 1,000 held"]);
+    ).toEqual(["Wheat · 6,900 held", "Crossbowman T1 · 1,000 held"]);
     expect(troopsHeld()).toBe(1000);
   });
 
@@ -83,11 +82,11 @@ describe("the realm card's resources, as the deploy proof reads them", () => {
     act(() => root.render(<RealmCard holding={null} />));
     const rings = () =>
       [...host.querySelectorAll('ul[aria-label="Resources"] li')].map((el) => el.getAttribute("aria-label"));
-    expect(rings()).toEqual(["Wheat · 6,900 held", "Crossbowman · 1,000 held"]);
+    expect(rings()).toEqual(["Wheat · 6,900 held", "Crossbowman T1 · 1,000 held"]);
 
     card.balances = [...card.balances, { resourceId: ResourcesIds.Essence, amount: 50 * 1e9 }];
     act(() => root.render(<RealmCard holding={null} />));
-    expect(rings()).toEqual(["Wheat · 6,900 held", "Crossbowman · 1,000 held", "Essence · 50 held"]);
+    expect(rings()).toEqual(["Wheat · 6,900 held", "Crossbowman T1 · 1,000 held", "Essence · 50 held"]);
   });
 
   it("reads 0 troops for a realm whose named rings hold none", () => {

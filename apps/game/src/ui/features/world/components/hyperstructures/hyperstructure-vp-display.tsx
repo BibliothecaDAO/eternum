@@ -1,3 +1,4 @@
+import { formatCharge } from "@bibliothecadao/types";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { hyperstructureRateUnit, type HyperstructureRate } from "@bibliothecadao/eternum";
 
@@ -16,7 +17,7 @@ export const HyperstructureVPDisplay = ({
 }: HyperstructureVPDisplayProps) => (
   <span className={className}>
     <HudChip tone={taken ? "good" : undefined}>
-      {taken ? "⚡" : "💤"} {pointsPerSecond.toLocaleString()} {hyperstructureRateUnit(taken)}
+      {taken ? "⚡" : "💤"} {formatCharge(pointsPerSecond)} {hyperstructureRateUnit(taken)}
     </HudChip>
   </span>
 );

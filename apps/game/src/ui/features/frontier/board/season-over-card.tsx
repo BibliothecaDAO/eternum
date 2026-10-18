@@ -1,6 +1,6 @@
+import { formatAmount, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import {
@@ -8,7 +8,6 @@ import {
   ESSENCE,
   EXIT,
   LABOR,
-  LORDS,
   REACH,
   REACH_NUMERALS,
   SEASON,

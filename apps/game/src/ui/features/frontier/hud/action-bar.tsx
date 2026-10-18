@@ -1,9 +1,8 @@
 import { useGame } from "@/hooks/context/game-context";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { ARMY, ESSENCE, LABOR, STAMINA } from "@/ui/design-system/kit/words";
 import { configManager, entityMapPosition, expeditionDepth } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, formatAmount } from "@bibliothecadao/types";
 
 import { useExpeditionRules } from "../frontier-home";
 import { FullIn } from "../full-in";

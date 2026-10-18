@@ -1,28 +1,21 @@
-import { RelicInfo } from "@bibliothecadao/types";
-
-const formatPercentLabel = (value: number) => {
-  const rounded = Math.round(value * 10) / 10;
-  const isInteger = Number.isInteger(rounded);
-  const displayValue = isInteger ? rounded.toFixed(0) : rounded.toFixed(1);
-  return `${displayValue}%`;
-};
+import { RelicInfo, formatPercent } from "@bibliothecadao/types";
 
 export const formatRelicBonusText = (relic: RelicInfo): string => {
   switch (relic.type) {
     case "Damage": {
-      const percent = formatPercentLabel((relic.bonus - 1) * 100);
+      const percent = formatPercent(relic.bonus - 1);
       return `+${percent} damage dealt`;
     }
     case "Damage Reduction": {
-      const percent = formatPercentLabel((1 - relic.bonus) * 100);
+      const percent = formatPercent(1 - relic.bonus);
       return `-${percent} damage taken`;
     }
     case "Stamina": {
-      const percent = formatPercentLabel((relic.bonus - 1) * 100);
+      const percent = formatPercent(relic.bonus - 1);
       return `+${percent} stamina regeneration`;
     }
     case "Production": {
-      const percent = formatPercentLabel((relic.bonus - 1) * 100);
+      const percent = formatPercent(relic.bonus - 1);
       return `+${percent} production speed`;
     }
     default:

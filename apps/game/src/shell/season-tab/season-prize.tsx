@@ -1,11 +1,11 @@
+import { SEASON_PRIZE_WORDS } from "@/ui/design-system/kit/words";
+import { formatExact, formatDate, formatDuration } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
 
-import { formatDate, formatDuration } from "@/ui/design-system/kit/time";
 import { Figure } from "@/ui/design-system/kit/figure";
 
 import { usePlayerHistory, useRealmsPlayer } from "../herald";
@@ -14,7 +14,6 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { claimSeasonCall, environmentLedger, lordsOf } from "../value/ledger";
 import { useLedgerPaused } from "../value/use-ledger-paused";
 import { FailureLine } from "../sign-in/failure-line";
-import { SEASON_PRIZE_WORDS } from "../words";
 import { placeShares, type SeasonPrize, seasonSourcesOf, seasonState, useSeasonPrize } from "./blitz-season";
 
 const WalletSign = lazy(() =>
@@ -127,7 +126,7 @@ const Share = ({ prize, state, now }: { prize: SeasonPrize; state: NonNullable<B
   const line: Record<string, ReactNode> = {
     review: (
       <IconLine tone="cream" iconSize={22} icon="hourglass">
-        {SEASON_PRIZE_WORDS.review} <b>{formatDuration(prize.season.reviewUntil - now)}</b>
+        {SEASON_PRIZE_WORDS.review} <b>{formatDuration(prize.season.reviewUntil - now, { days: false })}</b>
       </IconLine>
     ),
     held: (

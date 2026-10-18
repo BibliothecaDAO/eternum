@@ -1,7 +1,7 @@
-import { ResourcesIds } from "@bibliothecadao/types";
+import { knownAmount } from "@/ui/utils/utils";
+import { ResourcesIds, formatAmount } from "@bibliothecadao/types";
 import { filterPendingOrders } from "@/hooks/helpers/use-pending-orders";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat } from "@/ui/utils/utils";
 import { ID, MarketInterface } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 
@@ -28,7 +28,7 @@ export const TradeSummaryBar = memo(({ bidOffers, askOffers, entityId }: TradeSu
       </span>
       <span className="flex items-center gap-1">
         <span className="text-hud-muted">Locked</span>
-        <span className="text-hud-strong">{currencyFormat(totalLordsLocked, 0)}</span>
+        <span className="text-hud-strong">{formatAmount(knownAmount(totalLordsLocked))}</span>
         <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
       </span>
     </div>

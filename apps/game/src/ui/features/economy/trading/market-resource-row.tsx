@@ -1,9 +1,9 @@
+import { knownAmount } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { findResourceById, ID, ResourcesIds } from "@bibliothecadao/types";
+import { ID, ResourcesIds, formatAmount, formatCharge, resourceName } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 import { MARKET_RESOURCE_COLS } from "./market-resource-sidebar";
 
@@ -22,7 +22,7 @@ interface MarketResourceRowProps {
 /** A price in its side's tone (buying green, selling red), muted while no one offers it. */
 const Price = ({ price, tone }: { price: number; tone?: "text-hud-good" | "text-hud-bad" }) => (
   <span className={`text-right tabular-nums ${price > 0 ? (tone ?? "") : "text-hud-muted"}`}>
-    {formatNumber(price, 4)}
+    {formatCharge(price)}
   </span>
 );
 
@@ -34,14 +34,14 @@ export const MarketResourceRow = memo(
       () => resourceManager.balanceWithProduction(currentDefaultTick, resourceId)?.balance,
       [resourceManager, currentDefaultTick, resourceId],
     );
-    const trait = findResourceById(resourceId)?.trait ?? "";
+    const name = resourceName(resourceId);
 
     return (
-      <HudTableRow cols={MARKET_RESOURCE_COLS} label={trait} selected={active} onClick={() => onClick(resourceId)}>
+      <HudTableRow cols={MARKET_RESOURCE_COLS} label={name} selected={active} onClick={() => onClick(resourceId)}>
         <span className="flex min-w-0 items-center gap-1.5">
           <ResourceIcon size="xs" resource={resourceId} withTooltip={false} />
-          <span className="truncate">{trait}</span>
-          <span className="shrink-0 text-hud-label text-hud-muted">{currencyFormat(balance, 0)}</span>
+          <span className="truncate">{name}</span>
+          <span className="shrink-0 text-hud-label text-hud-muted">{formatAmount(knownAmount(balance))}</span>
         </span>
         <Price price={buyPrice} tone="text-hud-good" />
         <Price price={sellPrice} tone="text-hud-bad" />

@@ -1,7 +1,8 @@
+import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 
-import { formatCount, type MapPlate, type PlateTroops } from "./map-plate-model";
+import { type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, restingStamina, type PlateSegment } from "./map-plate-rows";
 
 /**
@@ -20,7 +21,7 @@ export const Plate = ({ plate, open }: { plate: MapPlate; open: boolean }) => {
         </div>
       ))}
       {stamina !== null && (
-        <span className="mp-plate__stamina" role="img" aria-label={`Stamina ${Math.round(stamina * 100)}%`}>
+        <span className="mp-plate__stamina" role="img" aria-label={`Stamina ${formatPercent(stamina)}`}>
           <i style={{ width: `${stamina * 100}%` }} />
         </span>
       )}
@@ -55,18 +56,18 @@ const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
     <Icon name={`${troops.type}-t${troops.tier}` as IconMeaning} size={20} />
     <HudTierChip tier={troops.tier} />
-    <span className="mp-count">{formatCount(troops.count)}</span>
+    <span className="mp-count">{formatExact(troops.count)}</span>
   </span>
 );
 
 /** An army's stamina: its bar, then exactly how much of how much ("84/150"). */
 const Stamina = ({ current, max }: { current: number; max: number }) => (
-  <span className="mp-stamina" aria-label={`Stamina ${formatCount(current)} of ${formatCount(max)}`}>
+  <span className="mp-stamina" aria-label={`Stamina ${formatExact(current)} of ${formatExact(max)}`}>
     <span className="mp-plate__meter">
       <i style={{ width: `${(100 * current) / max}%` }} />
     </span>
     <span className="mp-label">
-      {formatCount(current)}/{formatCount(max)}
+      {formatExact(current)}/{formatExact(max)}
     </span>
   </span>
 );

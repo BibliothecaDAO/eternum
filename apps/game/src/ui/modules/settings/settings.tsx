@@ -1,3 +1,4 @@
+import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -34,10 +35,9 @@ import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress } from "@bibliothecadao/types";
+import { ContractAddress, formatExact } from "@bibliothecadao/types";
 
 import { type ReactNode, useState } from "react";
-import { PROFILE_WORDS } from "@/shell/words";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { InstallSetting } from "./install-setting";
 import { NotificationSettings } from "./notification-settings";
@@ -81,7 +81,7 @@ function ProfileHeader() {
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [
-    standing && `#${standing.rank} · ${Math.round(standing.points).toLocaleString()} points`,
+    standing && `#${standing.rank} · ${formatExact(Math.round(standing.points))} points`,
     guild,
     spectating && name && `as ${name}`,
   ].filter(Boolean);

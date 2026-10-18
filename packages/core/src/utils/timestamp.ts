@@ -47,7 +47,3 @@ export const getBlockTimestamp = () => {
     },
   };
 };
-
-/** A moment as every feed row shows it: the viewer's wall-clock hour and minute, 24-hour. */
-export const formatClockTime = (atMs: number): string =>
-  new Date(atMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });

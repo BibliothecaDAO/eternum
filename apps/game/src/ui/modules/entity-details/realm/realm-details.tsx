@@ -9,7 +9,7 @@ import { describeCastleLevel } from "./castle-level";
 import { ResourceManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { type ID, ResourcesIds } from "@bibliothecadao/types";
+import { type ID, ResourcesIds, formatRate, resourceName } from "@bibliothecadao/types";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
@@ -29,15 +29,15 @@ const LaborRateRow = ({ structureId }: { structureId: ID }) => {
   useNativeRevision(PRODUCTION_MODELS);
   const labor = new ResourceManager(setup.store, structureId).current(ResourcesIds.Labor);
   const timestamp = useCurrentDefaultTick();
-  const perHour =
+  const perSecond =
     labor && timestamp > 0
-      ? ResourceManager.calculateResourceProductionData(ResourcesIds.Labor, labor, timestamp).productionPerSecond * 3600
+      ? ResourceManager.calculateResourceProductionData(ResourcesIds.Labor, labor, timestamp).productionPerSecond
       : undefined;
   return (
-    <SectionRow label="Labor / h">
+    <SectionRow label={resourceName(ResourcesIds.Labor)}>
       <span data-tip="Labor production">
         <HudChip tone="good">
-          {perHour === undefined ? "—" : `+${Math.round(perHour).toLocaleString()}`}
+          {formatRate(perSecond)}
           <ResourceIcon withTooltip={false} resource={ResourcesIds.Labor} size="xs" />
         </HudChip>
       </span>

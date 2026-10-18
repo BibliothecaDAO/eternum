@@ -1,5 +1,5 @@
+import { formatExact } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { MAXIMUM, MINIMUM } from "@/ui/design-system/kit/words";
 

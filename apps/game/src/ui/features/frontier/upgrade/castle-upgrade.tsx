@@ -6,12 +6,18 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import { BUILDING_FIGURES, LABOR } from "@/ui/design-system/kit/words";
 import { knownBalance } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
-import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  TroopTier,
+  formatExact,
+  formatRate,
+} from "@bibliothecadao/types";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
@@ -114,7 +120,7 @@ const castleFigures = (
     {
       icons: ["labor"],
       label: BUILDING_FIGURES.castleMakes(LABOR),
-      value: `+${formatAmount((Number(perSecond) / RESOURCE_PRECISION) * 3_600)}/h`,
+      value: formatRate(Number(perSecond) / RESOURCE_PRECISION),
     },
     {
       icons: ["labor", "resources"],

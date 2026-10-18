@@ -1,3 +1,4 @@
+import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
@@ -15,7 +16,6 @@ import {
 import { useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { PROFILE_WORDS } from "../words";
 import { Confirm } from "@/ui/design-system/kit/confirm";
 import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 

@@ -1,7 +1,6 @@
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-
-import { formatExact } from "./amount";
 
 import { MAXIMUM, MINIMUM } from "./words";
 

@@ -8,7 +8,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
-import { formatInventoryAmount } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import type { StructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import {
@@ -32,6 +31,7 @@ import {
   isRelic,
   RelicRecipientType,
   ResourcesIds,
+  formatAmount,
 } from "@bibliothecadao/types";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -171,7 +171,7 @@ export const MergedResourcePanel = memo(
 
         const label = ResourcesIds[resourceId];
         const effectiveRemaining = item?.timeRemainingSeconds ?? null;
-        const balanceLabel = balance > 0 ? formatInventoryAmount(balance) : undefined;
+        const balanceLabel = balance > 0 ? formatAmount(Math.floor(balance)) : undefined;
 
         let buildEnabled = false;
         let buildReason: string | undefined;

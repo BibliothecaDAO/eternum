@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, resourceName, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -196,7 +196,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
           {requirements.map((row) => (
             <label key={row.resource} className="flex justify-between gap-2">
               <span>
-                {ResourcesIds[row.resource]}: {row.remaining === undefined ? "—" : displayAmount(row.remaining)} needed
+                {resourceName(row.resource)}: {row.remaining === undefined ? "—" : displayAmount(row.remaining)} needed
                 {canContribute && source && (
                   <small className="block">
                     {row.available === undefined
@@ -208,7 +208,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
               {canContribute && source && (
                 <span className="w-20">
                   <HudField
-                    aria-label={`${ResourcesIds[row.resource]} contribution`}
+                    aria-label={`${resourceName(row.resource)} contribution`}
                     inputMode="decimal"
                     value={amounts[row.resource] ?? ""}
                     disabled={

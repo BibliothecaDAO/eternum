@@ -1,3 +1,4 @@
+import { formatExact, formatPoints } from "@bibliothecadao/types";
 import { FONTS } from "@/tokens";
 import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
@@ -18,17 +19,11 @@ import {
   BLITZ_CARD_BRONZE_THEME,
   BLITZ_CARD_EMERALD_THEME,
   BLITZ_CARD_NEUTRAL_THEME,
-  blitzNumberFormatter,
   formatBlitzRankParts,
 } from "../lib/blitz-card-shared";
 import { APP_HOST } from "@/config/app-address";
 
 type BlitzCardTheme = "gold" | "silver" | "bronze" | "neutral" | "emerald";
-
-const compactFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
 
 const HIGHLIGHT_CARD_STYLES = `
   ${BLITZ_CARD_FONT_FACES}
@@ -342,16 +337,15 @@ const formatPointsValue = (value: number | null | undefined): string => {
     return "--";
   }
 
-  return blitzNumberFormatter.format(Math.max(0, value));
+  return formatExact(Math.max(0, value));
 };
 
 const formatStatLine = (count: number | null | undefined, points: number | null | undefined): string => {
   const hasCount = count !== null && count !== undefined;
   const hasPoints = points !== null && points !== undefined;
 
-  const countLabel = hasCount ? blitzNumberFormatter.format(count ?? 0) : null;
-  const compactPoints = hasPoints ? compactFormatter.format(points ?? 0).toLowerCase() : null;
-  const pointsLabel = compactPoints ? `${compactPoints} Pts` : null;
+  const countLabel = hasCount ? formatExact(count ?? 0) : null;
+  const pointsLabel = hasPoints ? formatPoints(points ?? 0) : null;
 
   if (countLabel && pointsLabel) {
     return `${countLabel} - ${pointsLabel}`;

@@ -1,7 +1,7 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
-import { TroopTier } from "@bibliothecadao/types";
+import { TroopTier, formatExact } from "@bibliothecadao/types";
 
 import { useId, useState } from "react";
 
@@ -55,16 +55,16 @@ export const DeploymentStrengthSummary = ({
     <div className="grid grid-cols-2 gap-2">
       <Metric
         label={hasDeploymentLevel ? `${LEVEL_LABELS[structureLevel]} cap` : "Deployment cap"}
-        value={deploymentCap === undefined ? "—" : `${deploymentCap.toLocaleString()} strength`}
+        value={deploymentCap === undefined ? "—" : `${formatExact(deploymentCap)} strength`}
       />
       <Metric label="Tier strength" value={`${troopTier} = ${tierStrength}`} />
-      <Metric label="Projected strength" value={projectedArmyStrength.toLocaleString()} />
+      <Metric label="Projected strength" value={formatExact(projectedArmyStrength)} />
       <Metric
         label="Max troops (tier)"
-        value={resolvedMaxTroopSize !== null ? resolvedMaxTroopSize.toLocaleString() : "—"}
+        value={resolvedMaxTroopSize !== null ? formatExact(resolvedMaxTroopSize) : "—"}
       />
       {resolvedCapacityRemaining !== null && (
-        <Metric label="Cap remaining" value={resolvedCapacityRemaining.toLocaleString()} />
+        <Metric label="Cap remaining" value={formatExact(resolvedCapacityRemaining)} />
       )}
     </div>
   );

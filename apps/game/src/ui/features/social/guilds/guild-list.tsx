@@ -2,8 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { SortInterface } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HudButton, HudChip, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { GuildInfo, ResourcesIds } from "@bibliothecadao/types";
+import { GuildInfo, ResourcesIds, formatAmount, formatExact } from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { ReactElement, useMemo } from "react";
@@ -120,14 +119,14 @@ export const GuildRow = ({ guild, onClick }: { guild: GuildCustom; onClick: () =
       <span className="text-center">{guild.memberCount}</span>
       <span className="text-center">{(guild.realms || 0) + (guild.mines || 0) + (guild.hyperstructures || 0)}</span>
       <span className="text-center text-hud-strong text-hud-gold">
-        {guild.points === null ? "—" : currencyIntlFormat(guild.points)}
+        {guild.points === null ? "—" : formatExact(guild.points)}
       </span>
       <span className="flex items-center justify-center gap-1">
-        {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.lords)}
+        {guild.prize === null ? "—" : formatAmount(guild.prize.lords)}
         <ResourceIcon size="md" resource={ResourcesIds.Lords} className="h-4 w-4" withTooltip={false} />
       </span>
       <span className="flex items-center justify-center gap-1">
-        {guild.prize === null ? "—" : currencyIntlFormat(guild.prize.strk)}
+        {guild.prize === null ? "—" : formatAmount(guild.prize.strk)}
         <SemanticIcon name="strk" size={16} className="h-4 w-4" />
       </span>
     </HudTableRow>

@@ -1,4 +1,4 @@
-import { formatClockTime, formatDuration } from "./time";
+import { formatClockTime, formatDuration } from "@bibliothecadao/types";
 import { DAY_ENDS, LEFT, TOMORROW_LASTS } from "./words";
 
 /**
@@ -14,4 +14,4 @@ export const clockLineText = ({
   secondsLeft: number | undefined;
   tomorrowSeconds: number | undefined;
 }): string =>
-  `${DAY_ENDS} ${formatClockTime(endsAt)} · ${formatDuration(secondsLeft)} ${LEFT} · ${TOMORROW_LASTS} ${formatDuration(tomorrowSeconds)}`;
+  `${DAY_ENDS} ${formatClockTime(endsAt)} · ${formatDuration(secondsLeft, { days: false })} ${LEFT} · ${TOMORROW_LASTS} ${formatDuration(tomorrowSeconds, { days: false })}`;

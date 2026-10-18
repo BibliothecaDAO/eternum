@@ -1,7 +1,7 @@
+import { formatFoodBlock, formatTravelBlockedSummary } from "@/ui/design-system/kit/words";
 import { describe, expect, it } from "vitest";
 
 import { deriveArmyMovementReadiness } from "./army-movement-readiness";
-import { formatFoodBlock, formatTravelBlockedSummary } from "./army-warning-copy";
 
 const READY_INPUTS = {
   currentStamina: 90,

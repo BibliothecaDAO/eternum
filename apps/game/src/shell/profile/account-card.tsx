@@ -1,3 +1,4 @@
+import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { nameRuleViolation, type Session } from "@realms-world/identity";
 import { type ReactNode, useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -18,7 +19,6 @@ import { shortAddress } from "@/ui/design-system/kit/address";
 import { useLayout } from "../frame/layout";
 import { FailureLine } from "../sign-in/failure-line";
 import { NameField, PortraitGrid } from "../sign-in/fields";
-import { PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "../words";
 import { Confirm } from "@/ui/design-system/kit/confirm";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { walletReturnOf } from "./settings-route";

@@ -19,7 +19,7 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     instead: "points, never VP or pts",
     bad: "+250 VP",
     good: "+250 points",
-    forbidden: /\b(?:VP|pts)\b/,
+    forbidden: /\b(?:VP|[Pp]ts)\b/,
   },
   {
     rule: "No internal names",
@@ -34,6 +34,13 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     bad: "Queued",
     good: "On its way…",
     forbidden: /\b(?:[Qq]ueued?|[Qq]ueue)\b/,
+  },
+  {
+    rule: "Rates per second or minute",
+    instead: "a second from one a second, a minute below (formatRate), never an hour",
+    bad: "+302 an hour · 44.6K/h",
+    good: "+5/min · +12/s",
+    forbidden: /\/\s?hr?\b|\bper hour\b|\d an hour\b/,
   },
   {
     rule: "A rank by its name",

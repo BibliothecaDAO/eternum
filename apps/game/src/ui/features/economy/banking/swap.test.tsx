@@ -100,7 +100,7 @@ describe("a swap", () => {
     swap();
     typeInto("Lords amount", "2.5");
     expect(host.querySelector<HTMLInputElement>('input[aria-label="Wood amount"]')!.value).toBe("5");
-    await press("Swap Lords for Wood");
+    await press("Swap LORDS for Wood");
     expect(world.calls.buy_resources).toHaveBeenCalledTimes(1);
     expect(world.calls.buy_resources.mock.calls[0][0]).toMatchObject({
       bank_entity_id: 5,
@@ -115,12 +115,12 @@ describe("a swap", () => {
     world.mode = "frontier";
     swap();
     typeInto("Lords amount", "2.5");
-    await press("Swap Lords for Wood");
+    await press("Swap LORDS for Wood");
     expect(world.calls.buy_resources).not.toHaveBeenCalled();
     await press("Cancel", host.querySelector('[role="alertdialog"]')!);
     expect(world.calls.buy_resources).not.toHaveBeenCalled();
-    await press("Swap Lords for Wood");
-    await press("Swap Lords for Wood", host.querySelector('[role="alertdialog"]')!);
+    await press("Swap LORDS for Wood");
+    await press("Swap LORDS for Wood", host.querySelector('[role="alertdialog"]')!);
     expect(world.calls.buy_resources).toHaveBeenCalledTimes(1);
   });
 });
@@ -176,7 +176,7 @@ describe("a bank send in flight", () => {
   const forms = {
     swap: {
       call: () => world.calls.buy_resources,
-      verb: "Swap Lords for Wood",
+      verb: "Swap LORDS for Wood",
       draw: () => act(() => root.render(<ResourceSwap entityId={STRUCTURE} listResourceId={ResourcesIds.Wood} />)),
       fill: () => typeInto("Lords amount", "2.5"),
     },

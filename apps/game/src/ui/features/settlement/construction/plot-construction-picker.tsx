@@ -1,7 +1,7 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { BuildingThumbnail } from "./building-thumbnail";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { resourceName, formatCharge, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -14,9 +14,9 @@ const PaintedCost = ({ requirements }: { requirements: { resource: ResourcesIds;
   <span className="flex flex-wrap gap-x-2 gap-y-1 tabular-nums">
     {requirements === undefined && "—"}
     {requirements?.map((cost) => (
-      <span key={cost.resource} className="inline-flex items-center gap-0.5" title={ResourcesIds[cost.resource]}>
-        <SemanticIcon name={resourceMeaning(cost.resource)} alt={ResourcesIds[cost.resource]} className="h-4 w-4" />
-        {cost.amount.toLocaleString()}
+      <span key={cost.resource} className="inline-flex items-center gap-0.5" title={resourceName(cost.resource)}>
+        <SemanticIcon name={resourceMeaning(cost.resource)} alt={resourceName(cost.resource)} className="h-4 w-4" />
+        {formatCharge(cost.amount)}
       </span>
     ))}
   </span>

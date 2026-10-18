@@ -1,3 +1,4 @@
+import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError } from "@realms-world/identity";
 import { Title } from "@/ui/design-system/kit/title";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
@@ -16,7 +17,6 @@ import { failureSentence, type IdentityAction } from "@/ui/modules/identity/iden
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
-import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "../words";
 import { CodeStep } from "./code-step";
 import { ProfileStep } from "./profile-step";
 import { nextOf, signInHref } from "./sign-in-route";

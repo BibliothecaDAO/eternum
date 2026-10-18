@@ -1,10 +1,10 @@
+import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
+import { formatAmount } from "@bibliothecadao/types";
 import { Chip } from "@/ui/design-system/kit/chip";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 
 import type { PlaytestSlot } from "../blitz-slot";
 
 import type { BlitzRow } from "../blitz-rows";
-import { BLITZ_WORDS } from "../words";
 import { useSlotRegistered } from "./entry";
 
 /**

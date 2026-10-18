@@ -4,9 +4,15 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
-import { currencyIntlFormat } from "@/ui/utils/utils";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
-import { NEUTRAL_OWNER_NAME, ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
+import {
+  NEUTRAL_OWNER_NAME,
+  ContractAddress,
+  GuildInfo,
+  PlayerInfo,
+  formatExact,
+  formatPoints,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -16,7 +22,6 @@ import { describeHyperstructureHold, type VictoryPointGrants } from "@/ui/shared
 import { HudIconButton, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
-const COUNT_FORMATTER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const ROW_HEIGHT = 44; // Approximate row height in pixels
 
 export interface PlayerCustom extends PlayerInfo {
@@ -55,11 +60,11 @@ interface PlayerWithActivityStats extends PlayerCustom {
 
 const formatActivityValue = (count: number, points: number): string => {
   if (count > 0 && points > 0) {
-    return `${COUNT_FORMATTER.format(count)} · ${currencyIntlFormat(points)} points`;
+    return `${formatExact(count)} · ${formatPoints(points)}`;
   }
 
-  if (count > 0) return COUNT_FORMATTER.format(count);
-  if (points > 0) return `${currencyIntlFormat(points)} points`;
+  if (count > 0) return formatExact(count);
+  if (points > 0) return formatPoints(points);
   return "—";
 };
 
@@ -102,7 +107,7 @@ const summarizeActivity = (player: PlayerWithActivityStats): string =>
     [player.hyperstructuresHeld, "hyperstructure held", "hyperstructures held"],
   ]
     .filter(([count]) => (count as number) > 0)
-    .map(([count, one, many]) => `${COUNT_FORMATTER.format(count as number)} ${count === 1 ? one : many}`)
+    .map(([count, one, many]) => `${formatExact(count as number)} ${count === 1 ? one : many}`)
     .join(", ");
 
 const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivityStats => {
@@ -290,7 +295,7 @@ const resolveColumns = (
   grants: VictoryPointGrants,
   mmr: MmrForecast["status"],
 ): PlayerListColumn[] => {
-  const each = (points: number) => `${currencyIntlFormat(points)} each`;
+  const each = (points: number) => `${formatExact(points)} each`;
   const activity = `${WIDE_ONLY} flex-col justify-center text-center`;
   return [
     { label: "Rank", align: "justify-center text-center" },
@@ -475,7 +480,7 @@ const PlayerRow = ({
         {activityCell(hyperstructuresTakenLabel)}
         {activityCell(hyperstructuresHeldLabel)}
         <div className="flex items-center justify-end gap-2 text-hud-strong text-hud-gold md:justify-center">
-          <span>{player.points === null ? "—" : currencyIntlFormat(player.points)}</span>
+          <span>{player.points === null ? "—" : formatExact(player.points)}</span>
           {hasShareholderPoints && (
             <span
               className="text-hud-label text-hud-good"

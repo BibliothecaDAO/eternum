@@ -1,3 +1,4 @@
+import { formatExact, formatWait, formatOrdinal, formatPoints } from "@bibliothecadao/types";
 import type { GameReviewData } from "@/services/review/game-review-service";
 import { AssetRarity } from "@/ui/features/cosmetics/chest-opening/utils/cosmetics";
 import { getPlayerDisplayName } from "@/services/identity/player-profiles";
@@ -85,11 +86,9 @@ type GameReviewShareStep =
   | "result-outcome"
   | "next-game";
 
-const reviewNumberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-
-const formatReviewValue = (value: number): string => {
-  return reviewNumberFormatter.format(Math.max(0, Math.round(value)));
-};
+/** How long a review's first took, by the wait rule; none when it was never reached. */
+const formatDuration = (seconds: number): string =>
+  Number.isFinite(seconds) && seconds >= 0 ? formatWait(seconds) : "None";
 
 const isAwardsShareStep = (step: GameReviewShareStep): boolean => step === "awards";
 
@@ -108,17 +107,6 @@ const normalizeAddress = (value: string | null | undefined): string | null => {
   } catch {
     return null;
   }
-};
-
-const formatDuration = (seconds: number): string => {
-  if (!Number.isFinite(seconds) || seconds < 0) return "None";
-  const total = Math.floor(seconds);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const remaining = total % 60;
-  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
-  if (minutes > 0) return `${minutes}m ${remaining}s`;
-  return `${remaining}s`;
 };
 
 /** A player's identity name as the review cards already requested it, else the stock fallback. */
@@ -154,9 +142,9 @@ export const buildGameReviewStepShareMessage = ({
       ...(includeOnlyTimeMetrics
         ? []
         : [
-            `Most Troops Killed: ${resolveWinnerName(data.stats.mostTroopsKilled, formatReviewValue)}`,
-            `Highest Explored Tiles: ${resolveWinnerName(data.stats.highestExploredTiles, formatReviewValue)}`,
-            `Most Structures Owned: ${resolveWinnerName(data.stats.biggestStructuresOwned, formatReviewValue)}`,
+            `Most Troops Killed: ${resolveWinnerName(data.stats.mostTroopsKilled, formatExact)}`,
+            `Highest Explored Tiles: ${resolveWinnerName(data.stats.highestExploredTiles, formatExact)}`,
+            `Most Structures Owned: ${resolveWinnerName(data.stats.biggestStructuresOwned, formatExact)}`,
           ]),
       "",
       ...tweetFooterLines,
@@ -165,7 +153,7 @@ export const buildGameReviewStepShareMessage = ({
 
   if (step === "leaderboard") {
     const podiumLines = data.topPlayers.map((entry) => {
-      return `#${entry.rank} ${getPlayerDisplayName(entry.address)} - ${formatReviewValue(entry.points)} points`;
+      return `${formatOrdinal(entry.rank)} ${getPlayerDisplayName(entry.address)} - ${formatPoints(entry.points)}`;
     });
     return [
       `Final standings for ${worldLabel} on Realms Blitz`,
@@ -195,7 +183,7 @@ export const buildGameReviewStepShareMessage = ({
   if (step === "personal" && data.personalScore) {
     return [
       `${worldLabel} personal result:`,
-      `Rank #${data.personalScore.rank} with ${formatReviewValue(data.personalScore.points)} points.`,
+      `${formatOrdinal(data.personalScore.rank)} with ${formatPoints(data.personalScore.points)}.`,
       "",
       ...tweetFooterLines,
     ].join("\n");
@@ -212,7 +200,7 @@ export const buildGameReviewStepShareMessage = ({
     return [
       `${worldLabel} result on Realms Blitz:`,
       `Final rank: ${finalRank}`,
-      `Victory points: ${formatReviewValue(data.personalScore.points)}`,
+      `Victory points: ${formatExact(Math.max(0, data.personalScore.points))}`,
       "",
       ...tweetFooterLines,
     ].join("\n");

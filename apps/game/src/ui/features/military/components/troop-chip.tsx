@@ -1,8 +1,8 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { TierChip } from "../utils/tier-chip";
-import { currencyFormat } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { resources, Troops, TroopTier, TroopType } from "@bibliothecadao/types";
+import { resources, Troops, TroopTier, TroopType, formatAmount } from "@bibliothecadao/types";
 
 export const TroopChip = ({
   troops,
@@ -63,7 +63,7 @@ export const TroopChip = ({
           } ${currentSize.text} self-center`}
         >
           {Number(troops.count || 0) === 0 ? "" : negative ? "-" : ""}
-          {currencyFormat(Number(troops.count || 0), 0)}
+          {formatAmount(knownAmount(Number(troops.count || 0)))}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { useParams } from "react-router-dom";
 
 import { gamePainting } from "@/shell/game-links";
@@ -11,7 +12,6 @@ import { ProfileStep } from "../sign-in/profile-step";
 import { SignInFrame } from "../sign-in/sign-in-page";
 import { StartStep } from "../sign-in/start-step";
 import { useNowSeconds } from "../use-now";
-import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "../words";
 import { LAB_DOORWAYS, LAB_NEW_ACCOUNTS, LAB_SIGN_IN_EMAIL, LAB_SEASON_WAIT, labCodeExpiry } from "./app-lab-fixtures";
 
 const noop = () => undefined;

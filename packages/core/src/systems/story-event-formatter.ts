@@ -1,13 +1,18 @@
 import {
   BuildingType,
   BuildingTypeToString,
-  GUARD_SLOT_NAMES,
+  formatCharge,
+  formatClockTime,
+  formatExact,
+  formatPoints,
   GuardSlot,
-  getLevelName,
+  guardSlotName,
+  LORDS,
   RESOURCE_PRECISION,
   RealmLevels,
+  rankName,
   relicChestDelivery,
-  resources,
+  resourceName,
   type ResourcesIds,
   wholePoints,
 } from "@bibliothecadao/types";
@@ -21,7 +26,6 @@ import { configManager } from "../managers/config-manager";
 import { feltEquals } from "../client/herald-http";
 import { divideByPrecision } from "../utils/utils";
 import { deliveryLandsAt } from "../utils/resource-arrivals";
-import { formatClockTime } from "../utils/timestamp";
 import type { NativeStoryVariant } from "../../../../contracts/l3/world-native/schema/client.gen";
 
 type StoryEventIcon =
@@ -53,11 +57,6 @@ type StoryFormatter = (
   resolvePlayerName?: PlayerNameResolver,
 ) => StoryEventPresentation;
 
-const resourceNameMap = resources.reduce<Record<number, string>>((acc, resource) => {
-  acc[resource.id] = resource.trait;
-  return acc;
-}, {});
-
 const ATTRIBUTE_TIER_LABELS = ["", "common", "uncommon", "rare", "epic", "legendary"];
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
@@ -68,25 +67,25 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
   ExplorationReward: (_event, payload, components) => ({
-    title: `${exploredAt(payload.coord)}: +${configManager.getVictoryPointGrants().exploreTile.toLocaleString()} points, +${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
+    title: `${exploredAt(payload.coord)}: +${formatPoints(configManager.getVictoryPointGrants().exploreTile)}, +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`,
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "resource",
   }),
   SpireDiscovered: (_event, payload, components) => ({
-    title: `Dormant spire found: +${formatResourceAmount(payload.amount) ?? "—"} ${getResourceName(Number(payload.resource_type))}`,
+    title: `Dormant spire found: +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`,
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "prize",
   }),
   RelicChestOpened: (_event, payload, components) => ({
     title: withPoints(describeRelicChestOpening(payload, components), payload.points),
     description: chestRelics(payload)
-      .map((relic) => getResourceName(relic))
+      .map((relic) => resourceName(relic))
       .join(", "),
     icon: "prize",
   }),
   RelicCrafted: (_event, payload) => ({
     title: "Relic crafted",
-    description: getResourceName(Number(payload.value)),
+    description: resourceName(Number(payload.value)),
     icon: "prize",
   }),
   // Who took what from whom; from a player, what went with it; from The Vanguard, the points it paid.
@@ -110,13 +109,13 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const order = payload.order as Record<string, unknown>;
     return {
       title: "Trade listed",
-      description: `${getResourceName(Number(order.offered_resource))} for ${getResourceName(Number(order.requested_resource))}`,
+      description: `${resourceName(Number(order.offered_resource))} for ${resourceName(Number(order.requested_resource))}`,
       icon: "resource",
     };
   },
   TradeAccepted: (_event, payload) => ({
     title: "Trade filled",
-    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${getResourceName(Number(payload.offered_resource))} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${getResourceName(Number(payload.requested_resource))}`,
+    description: `${formatResourceAmount(payload.offered_amount) ?? "—"} ${resourceName(Number(payload.offered_resource))} for ${formatResourceAmount(payload.requested_amount) ?? "—"} ${resourceName(Number(payload.requested_resource))}`,
     icon: "resource",
   }),
   TradeCancelled: (_event, payload) => ({
@@ -126,7 +125,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   BankSwap: (_event, payload) => ({
     title: payload.buy ? "Bought at the bank" : "Sold at the bank",
-    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${getResourceName(Number(payload.resource_type))} for ${formatResourceAmount(payload.lords_amount) ?? "—"} Lords`,
+    description: `${formatResourceAmount(payload.resource_amount) ?? "—"} ${resourceName(Number(payload.resource_type))} for ${formatResourceAmount(payload.lords_amount) ?? "—"} ${LORDS}`,
     icon: "resource",
   }),
   HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
@@ -226,10 +225,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const receivedId = toNumber(payload.received_resource_type);
     const amount = formatResourceAmount(payload.received_amount);
     const cost = formatResourceList(payload.cost);
-    const resourceName = receivedId !== null ? getResourceName(receivedId) : "Resource";
+    const made = receivedId !== null ? resourceName(receivedId) : "Resource";
     return {
-      title: `${resourceName} production started at ${subjectOf(event.entityId, components)}`,
-      description: joinPieces([amount ? `${amount} ${resourceName}` : undefined, cost ? `for ${cost}` : undefined]),
+      title: `${made} production started at ${subjectOf(event.entityId, components)}`,
+      description: joinPieces([amount ? `${amount} ${made}` : undefined, cost ? `for ${cost}` : undefined]),
       icon: "production",
     };
   },
@@ -277,7 +276,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   BankLiquidity: (_, payload) => ({
     title: payload.add ? "Liquidity added" : "Liquidity withdrawn",
-    description: `${getResourceName(Number(payload.resource_type))} / Lords`,
+    description: `${resourceName(Number(payload.resource_type))} / Lords`,
     icon: "resource",
   }),
   // Either end may be a structure or an army; one no longer in the store is left unsaid rather than guessed.
@@ -382,7 +381,7 @@ function subjectOf(structureId: unknown, components?: NativeFactStore): string {
 
 /** A realm's level by its name ("a City"); a level past the realm ladder by its number. */
 function describeLevel(level: number): string {
-  return level in RealmLevels ? `a ${getLevelName(level as RealmLevels)}` : `level ${level.toLocaleString()}`;
+  return level in RealmLevels ? `a ${rankName(level)}` : `level ${formatExact(level)}`;
 }
 
 /** Troops a story moved, as a player reads them: "+500 Knight T1". */
@@ -493,7 +492,7 @@ function formatResourceList(value: unknown): string | undefined {
   return entries
     .map(({ id, amount }) => {
       const formatted = formatResourceAmount(amount);
-      return formatted ? `${getResourceName(id)} ×${formatted}` : getResourceName(id);
+      return formatted ? `${resourceName(id)} ×${formatted}` : resourceName(id);
     })
     .join(", ");
 }
@@ -524,10 +523,6 @@ function normalizeResourceEntries(value: unknown): Array<{ id: number; amount: u
       return null;
     })
     .filter((value): value is { id: number; amount: unknown } => value !== null);
-}
-
-function getResourceName(id: number): string {
-  return resourceNameMap[id] ?? `Resource ${id}`;
 }
 
 function formatTroopDescriptor(type: unknown, tier: unknown): string | undefined {
@@ -570,10 +565,10 @@ function formatCoord(value: unknown): string | undefined {
 function formatNumber(value: unknown): string | null {
   if (value === undefined || value === null) return null;
   if (typeof value === "number" && Number.isFinite(value)) {
-    return value.toLocaleString();
+    return formatCharge(value);
   }
   if (typeof value === "bigint") {
-    return value.toString();
+    return formatCharge(Number(value));
   }
   if (typeof value === "string") {
     if (value.startsWith("0x")) {
@@ -585,7 +580,7 @@ function formatNumber(value: unknown): string | null {
     }
     const numeric = Number(value);
     if (!Number.isNaN(numeric)) {
-      return numeric.toLocaleString();
+      return formatCharge(numeric);
     }
     try {
       return BigInt(value).toString();
@@ -634,24 +629,12 @@ function amountToBigInt(value: unknown): bigint | null {
   return null;
 }
 
+/** An amount at contract precision as the chain moved it, to its last unit: a charge ("1,000", "0.001"). */
 function formatAmountWithPrecision(amount: unknown, precision: number): string {
   const bigIntAmount = amountToBigInt(amount);
   if (bigIntAmount === null) return "0";
-
   const divisor = BigInt(precision);
-  const whole = bigIntAmount / divisor;
-  const remainder = bigIntAmount % divisor;
-
-  if (remainder === 0n) {
-    return whole.toString();
-  }
-
-  // Format with decimal places, removing trailing zeros
-  const decimals = remainder
-    .toString()
-    .padStart(precision.toString().length - 1, "0")
-    .replace(/0+$/, "");
-  return decimals.length > 0 ? `${whole.toString()}.${decimals}` : whole.toString();
+  return formatCharge(Number(bigIntAmount / divisor) + Number(bigIntAmount % divisor) / precision);
 }
 
 function joinPieces(parts: Array<string | undefined>): string | undefined {
@@ -702,8 +685,8 @@ function formatSlotLabel(value: unknown): string | undefined {
   const label = formatEnum(value);
   const slot = numeric ?? (label ? GuardSlot[label as keyof typeof GuardSlot] : undefined);
   if (slot === undefined) return undefined;
-  const name = GUARD_SLOT_NAMES[slot as GuardSlot];
-  if (name === undefined) throw new Error(`Invalid guard slot: ${String(value)}`);
+  if (!(slot in GuardSlot)) throw new Error(`Invalid guard slot: ${String(value)}`);
+  const name = guardSlotName(slot as GuardSlot);
   return name;
 }
 
@@ -715,7 +698,7 @@ function formatSlotLabel(value: unknown): string | undefined {
 function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undefined {
   const road = toNumber(travelSeconds);
   if (road === null || road === 0) return undefined;
-  return `lands at ${formatClockTime(deliveryLandsAt(Math.floor(sentAtMs / 1000), road) * 1000)}`;
+  return `lands at ${formatClockTime(deliveryLandsAt(Math.floor(sentAtMs / 1000), road))}`;
 }
 
 /**
@@ -727,7 +710,7 @@ function formatLanding(sentAtMs: number, travelSeconds: unknown): string | undef
 /** A line and the points it scored, when it scored any: "… · +250 points". Story points are at contract precision. */
 const withPoints = (line: string, points: unknown): string => {
   const whole = points === undefined || points === null ? 0 : wholePoints(BigInt(String(points)));
-  return whole > 0 ? `${line} · +${whole.toLocaleString()} points` : line;
+  return whole > 0 ? `${line} · +${formatPoints(whole)}` : line;
 };
 
 /** Where an explore revealed its find: "Explored · (4, 6)", in the map's own coordinates. */
@@ -747,7 +730,7 @@ export const lostArmyLine = (payload: Record<string, unknown>, viewer: string | 
       typeof entry === "object" && entry !== null && feltEquals((entry as Record<string, unknown>).player, viewer),
   );
   if (!side || BigInt(String(side.after ?? 1)) !== 0n) return null;
-  const troops = divideByPrecision(Number(side.before ?? 0)).toLocaleString();
+  const troops = formatExact(divideByPrecision(Number(side.before ?? 0)));
   return `Army lost: ${troops} ${TROOP_PLURALS[String(side.category ?? "")] ?? "troops"}`;
 };
 

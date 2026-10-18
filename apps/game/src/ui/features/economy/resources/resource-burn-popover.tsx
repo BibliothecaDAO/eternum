@@ -5,7 +5,7 @@ import { HudButton, HudSlider } from "@/ui/design-system/kit/hud-elements";
 import { Popover } from "@/ui/design-system/molecules/popover";
 import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceManager } from "@bibliothecadao/eternum";
-import { findResourceById, RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type ResourcesIds, resourceName, formatCharge } from "@bibliothecadao/types";
 import { type ReactNode, useCallback, useId, useState } from "react";
 
 /**
@@ -23,7 +23,7 @@ export const ResourceBurnPopover = ({
 }) => {
   const popoverId = `burn:${resourceId}:${useId()}`;
   const toggle = usePopoverStore((state) => state.toggle);
-  const label = (findResourceById(resourceId)?.trait as string) ?? "resource";
+  const label = resourceName(resourceId);
   return (
     <Popover id={popoverId} ariaLabel={`Burn ${label}`} className="w-80" trigger={trigger(() => toggle(popoverId))}>
       <ResourceBurn structureId={structureId} resourceId={resourceId} label={label} />
@@ -78,7 +78,7 @@ const ResourceBurn = ({
       <div className="flex items-center justify-between">
         <span className="text-hud-label text-hud-muted">Burn amount</span>
         <span className="text-hud-strong">
-          {amount.toLocaleString()} {label}
+          {formatCharge(amount)} {label}
         </span>
       </div>
       <HudButton kind="danger" busy={busy ? "Burning…" : undefined} disabled={amount === 0} onClick={burn}>

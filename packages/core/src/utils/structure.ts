@@ -1,12 +1,5 @@
 import { structureMapPosition } from "./expeditions";
-import {
-  StructureTypeToNameMapping,
-  getMinePresentation,
-  ContractAddress,
-  ID,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
+import { ContractAddress, ID, Structure, StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { displayPlayerName, type PlayerNameResolver } from "./entities";
@@ -38,8 +31,3 @@ export const getStructure = (
 /** The mine kind a structure is drawn as; a Frontier rift has its own category and no mine kind. */
 export const presentedMineKind = (structure: Pick<NativeRows["Structure"], "base" | "metadata">): number | undefined =>
   structure.base.category === StructureType.Mine ? Number(structure.metadata.mine_kind) : undefined;
-
-export const getStructureTypeName = (structureType: StructureType, mineKind?: number) => {
-  if (structureType === StructureType.Mine && mineKind !== undefined) return getMinePresentation(mineKind).name;
-  return StructureTypeToNameMapping[structureType] ?? "Structure";
-};

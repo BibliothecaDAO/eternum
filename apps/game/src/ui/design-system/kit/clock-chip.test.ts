@@ -1,7 +1,7 @@
+import { formatContentDay, formatCountdown } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { clockLine } from "./clock-chip";
-import { formatContentDay, formatCountdown } from "./time";
 
 /** A local moment, so the expectations read the same in every time zone. */
 const at = (month: number, day: number, hours: number, minutes: number, year = 2026) =>

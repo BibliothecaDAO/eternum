@@ -1,9 +1,9 @@
+import { formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 
 import { HudRarity, HudChip } from "@/ui/design-system/kit/hud-elements";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { LORDS, RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
+import { RUIN, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
 import { motion } from "framer-motion";

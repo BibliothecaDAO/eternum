@@ -1,5 +1,5 @@
+import { formatAmount, formatRate } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudMeter, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
 import { BUILD, DEPLOY, FULL, LABOR, PRODUCTION, REALM, TROOPS, WHEAT } from "@/ui/design-system/kit/words";
@@ -69,7 +69,7 @@ const Row = ({
       <span className="flex w-24 shrink-0 flex-col">
         <span className="text-hud-label capitalize text-hud-muted">{word}</span>
         <span className={`flex items-center gap-1 tabular-nums ${full ? "text-hud-bad" : ""}`}>
-          {full ? "+0/h" : line.perHour === undefined ? "—" : `+${formatAmount(line.perHour)}/h`}
+          {full ? formatRate(0) : formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
           {line.sides?.map((side, index) => (
             <Icon key={index} name={side} size={18} />
           ))}

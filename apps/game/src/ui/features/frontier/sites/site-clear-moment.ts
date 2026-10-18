@@ -3,9 +3,8 @@ import { getResourceSoundId } from "@/three/sound/utils";
 import { toast } from "@/ui/features/event-feed/notify";
 import { findBankedCounter, flyToBankedCounter } from "@/ui/motion/moments/banked-flight";
 import { playHaptic } from "@/ui/motion/motion-settings";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { formatAmount, resourceName } from "@bibliothecadao/types";
 import { create } from "zustand";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { payoutSprites, type SiteClear } from "./site-outcome";
 
 /**
@@ -56,7 +55,7 @@ export const playSiteClear = ({
 
 const payHome = ({ resourceId, amount: paid }: NonNullable<SiteClear["reward"]>, from: { x: number; y: number }) => {
   const counter = findBankedCounter(resourceId);
-  const label = `+${formatAmount(paid)} ${ResourcesIds[resourceId]}`;
+  const label = `+${formatAmount(paid)} ${resourceName(resourceId)}`;
   if (!counter) {
     setTimeout(() => toast.success(label), GUARD_FALLS_MS);
     return;

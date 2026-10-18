@@ -15,9 +15,9 @@ const realm = { game_id: 1, base: { category: StructureType.Realm } } as never;
 const village = { game_id: 1, base: { category: StructureType.Village } } as never;
 
 describe("what a building gives, on its Build card", () => {
-  it("names a producer's output per minute, from its structure's rate", () => {
-    expect(describeBuildingGives(store, realm, BuildingType.ResourceWheat, 0)).toBe("+360 Wheat / min");
-    expect(describeBuildingGives(store, village, BuildingType.ResourceWheat, 0)).toBe("+180 Wheat / min");
+  it("names a producer's output by the rate rule, from its structure's rate", () => {
+    expect(describeBuildingGives(store, realm, BuildingType.ResourceWheat, 0)).toBe("Wheat +6/s");
+    expect(describeBuildingGives(store, village, BuildingType.ResourceWheat, 0)).toBe("Wheat +3/s");
   });
 
   it("names a hut's population cap, and nothing for a building that gives neither", () => {

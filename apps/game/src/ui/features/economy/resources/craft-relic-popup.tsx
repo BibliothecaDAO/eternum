@@ -1,3 +1,4 @@
+import { knownAmount } from "@/ui/utils/utils";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -12,14 +13,13 @@ import {
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { currencyFormat } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager, getEntityName, getIsBlitz } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { ID, ResourcesIds, StructureType, formatCharge, formatAmount } from "@bibliothecadao/types";
 import { hash } from "starknet";
 import { useEffect, useMemo, useState } from "react";
 import { HeldRelic } from "@/ui/features/relics/components/relic-activation-shared";
@@ -179,7 +179,7 @@ const resolveCraftingRequirements = ({
       failureMessage:
         missingResearch === undefined
           ? "Research balance unknown."
-          : `Need ${currencyFormat(missingResearch, 0)} more research.`,
+          : `Need ${formatCharge(knownAmount(missingResearch))} more research.`,
     },
   ];
 };
@@ -254,7 +254,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
   const canCraft = preflightErrors.length === 0;
   const actionHint = canCraft
-    ? `Burn ${currencyFormat(configuredResearchCost, 0)} research to mint one random relic.`
+    ? `Burn ${formatCharge(knownAmount(configuredResearchCost))} research to mint one random relic.`
     : (preflightErrors[0] ?? "Cannot craft relic right now.");
 
   const craftButtonLabel = craftedRelicId || craftedWithoutReveal ? "Craft Again" : "Craft Relic";
@@ -314,7 +314,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
             {
               icon: resourceMeaning(ResourcesIds.Research),
               word: "Research",
-              amount: currencyFormat(configuredResearchCost, 0),
+              amount: formatCharge(knownAmount(configuredResearchCost)),
             },
           ]}
           busy={isCrafting ? "Forging relic…" : undefined}
@@ -334,7 +334,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
                   title="Research ready"
                   trail={
                     <span className="tabular-nums">
-                      {currencyFormat(researchBalance, 0)} / {currencyFormat(configuredResearchCost, 0)}
+                      {formatAmount(knownAmount(researchBalance))} / {formatCharge(knownAmount(configuredResearchCost))}
                     </span>
                   }
                 />
@@ -345,7 +345,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
                     line={
                       missingResearch === undefined
                         ? "Research balance unknown."
-                        : `Need ${currencyFormat(missingResearch, 0)} more research.`
+                        : `Need ${formatCharge(knownAmount(missingResearch))} more research.`
                     }
                   />
                 )}
@@ -355,9 +355,9 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
         </HudPanel>
 
         <HudPanel kind="section" title={structureName} collapsible={false}>
-          <HudRow title="Research Balance" trail={currencyFormat(researchBalance, 0)} />
-          <HudRow title="Research Cost per Relic" trail={currencyFormat(configuredResearchCost, 0)} />
-          <HudRow title="Balance After Craft" trail={currencyFormat(researchAfterCraft, 0)} />
+          <HudRow title="Research Balance" trail={formatAmount(knownAmount(researchBalance))} />
+          <HudRow title="Research Cost per Relic" trail={formatCharge(knownAmount(configuredResearchCost))} />
+          <HudRow title="Balance After Craft" trail={formatAmount(knownAmount(researchAfterCraft))} />
         </HudPanel>
 
         <HudPanel kind="section" title="Crafting Requirements" collapsible={false}>

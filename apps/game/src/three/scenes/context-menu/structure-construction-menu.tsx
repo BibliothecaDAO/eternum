@@ -14,6 +14,7 @@ import {
   ResourcesIds,
   findResourceById,
   getBuildingFromResource,
+  resourceName,
 } from "@bibliothecadao/types";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -38,27 +39,63 @@ const militaryTierConfig: Array<{
     suffix: "tier-1",
     label: "Tier I",
     units: [
-      { label: "Crossbowman", building: BuildingType.ResourceCrossbowmanT1, resource: ResourcesIds.Crossbowman },
-      { label: "Paladin", building: BuildingType.ResourcePaladinT1, resource: ResourcesIds.Paladin },
-      { label: "Knight", building: BuildingType.ResourceKnightT1, resource: ResourcesIds.Knight },
+      {
+        label: resourceName(ResourcesIds.Crossbowman),
+        building: BuildingType.ResourceCrossbowmanT1,
+        resource: ResourcesIds.Crossbowman,
+      },
+      {
+        label: resourceName(ResourcesIds.Paladin),
+        building: BuildingType.ResourcePaladinT1,
+        resource: ResourcesIds.Paladin,
+      },
+      {
+        label: resourceName(ResourcesIds.Knight),
+        building: BuildingType.ResourceKnightT1,
+        resource: ResourcesIds.Knight,
+      },
     ],
   },
   {
     suffix: "tier-2",
     label: "Tier II",
     units: [
-      { label: "Crossbowman", building: BuildingType.ResourceCrossbowmanT2, resource: ResourcesIds.CrossbowmanT2 },
-      { label: "Paladin", building: BuildingType.ResourcePaladinT2, resource: ResourcesIds.PaladinT2 },
-      { label: "Knight", building: BuildingType.ResourceKnightT2, resource: ResourcesIds.KnightT2 },
+      {
+        label: resourceName(ResourcesIds.CrossbowmanT2),
+        building: BuildingType.ResourceCrossbowmanT2,
+        resource: ResourcesIds.CrossbowmanT2,
+      },
+      {
+        label: resourceName(ResourcesIds.PaladinT2),
+        building: BuildingType.ResourcePaladinT2,
+        resource: ResourcesIds.PaladinT2,
+      },
+      {
+        label: resourceName(ResourcesIds.KnightT2),
+        building: BuildingType.ResourceKnightT2,
+        resource: ResourcesIds.KnightT2,
+      },
     ],
   },
   {
     suffix: "tier-3",
     label: "Tier III",
     units: [
-      { label: "Crossbowman", building: BuildingType.ResourceCrossbowmanT3, resource: ResourcesIds.CrossbowmanT3 },
-      { label: "Paladin", building: BuildingType.ResourcePaladinT3, resource: ResourcesIds.PaladinT3 },
-      { label: "Knight", building: BuildingType.ResourceKnightT3, resource: ResourcesIds.KnightT3 },
+      {
+        label: resourceName(ResourcesIds.CrossbowmanT3),
+        building: BuildingType.ResourceCrossbowmanT3,
+        resource: ResourcesIds.CrossbowmanT3,
+      },
+      {
+        label: resourceName(ResourcesIds.PaladinT3),
+        building: BuildingType.ResourcePaladinT3,
+        resource: ResourcesIds.PaladinT3,
+      },
+      {
+        label: resourceName(ResourcesIds.KnightT3),
+        building: BuildingType.ResourceKnightT3,
+        resource: ResourcesIds.KnightT3,
+      },
     ],
   },
 ];
@@ -172,7 +209,7 @@ export const createConstructionMenu = ({
 
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
-        label: resource.trait,
+        label: resourceName(typedResourceId),
         icon,
         building,
         resource: typedResourceId,

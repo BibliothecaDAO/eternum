@@ -2,7 +2,8 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
-import { formatClockTime, Position } from "@bibliothecadao/eternum";
+import { Position } from "@bibliothecadao/eternum";
+import { formatClockTime } from "@bibliothecadao/types";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useStoryOpener } from "./story-feed-row";
 
@@ -28,7 +29,7 @@ export const FeedRowLine = ({ event }: { event: ProcessedStoryEvent }) => {
   const text = event.presentation.title;
   return (
     <HudEventRow
-      time={formatClockTime(event.timestampMs)}
+      time={formatClockTime(event.timestampMs / 1000)}
       icon={storyIcon(event.story)}
       tip={text}
       onOpen={open ?? undefined}

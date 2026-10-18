@@ -1,5 +1,5 @@
+import { formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatCharge } from "./amount";
 
 import { PRICE_FACES, type PriceKind } from "./price-faces";
 

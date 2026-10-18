@@ -4,11 +4,11 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { currencyFormat } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
-import { type ArmyInfo, type ID, type TroopTier, type TroopType } from "@bibliothecadao/types";
+import { type ArmyInfo, type ID, type TroopTier, type TroopType, formatAmount } from "@bibliothecadao/types";
 
 import { memo, useMemo, useState } from "react";
 import { useConfirmFor, useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
@@ -61,7 +61,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const [deleting, setDeleting] = useState(false);
   const confirmsDisband = useConfirmsLoss();
 
-  // troops.count is the raw precision value; currencyFormat divides internally.
+  // troops.count is the raw precision value; knownBalance divides it.
   const rawCount = Number(army.troops?.count ?? 0);
 
   const stamina = useMemo(() => {
@@ -116,7 +116,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {troopResource !== null && (
         <ResourceIcon withTooltip={false} resource={troopResource} size="sm" className="shrink-0" />
       )}
-      <span className="text-hud-label tabular-nums text-hud-accent">{currencyFormat(rawCount, 0)}</span>
+      <span className="text-hud-label tabular-nums text-hud-accent">{formatAmount(knownAmount(rawCount))}</span>
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"

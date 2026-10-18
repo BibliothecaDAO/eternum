@@ -5,7 +5,7 @@ import { MarketResourceRow } from "./market-resource-row";
 import { MarketManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
+import { ID, MarketInterface, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 /** The list's columns: the resource and its balance, then its best buy, best sell and AMM prices. */
@@ -54,9 +54,7 @@ export const MarketResourceSidebar = ({
   const visibleResources = useMemo(() => {
     const needle = search.trim().toLowerCase();
     if (!needle) return tradableResources;
-    return tradableResources.filter((resourceId) =>
-      (findResourceById(resourceId)?.trait ?? "").toLowerCase().includes(needle),
-    );
+    return tradableResources.filter((resourceId) => resourceName(resourceId).toLowerCase().includes(needle));
   }, [tradableResources, search]);
 
   return (

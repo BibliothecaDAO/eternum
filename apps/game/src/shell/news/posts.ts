@@ -1,7 +1,7 @@
+import { NEWS_WORDS } from "@/ui/design-system/kit/words";
 import { type ScrollPost, scrollPosts } from "../generated/scroll-posts";
 import type { Painting } from "@/ui/design-system/kit/paintings";
 import { AGES } from "../play/ages";
-import { NEWS_WORDS } from "../words";
 
 /** The Scroll's published posts, newest first. */
 export const publishedPosts: ScrollPost[] = scrollPosts.filter((post) => post.published);

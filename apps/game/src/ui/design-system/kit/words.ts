@@ -1,19 +1,16 @@
 /**
- * The glossary's words the kit draws (frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026), each spelled
- * once, and the game's nouns (resources, troops, structures, ranks, guard walls, the three ages), read from the game's
- * own tables. A screen that needs one of these words imports it from here; nothing else spells it. Numbers are written
- * by amount.ts, times by time.ts, a nameless place's name by three/map-plates/site-name.ts, and how all of it is worded
- * by voice.ts.
+ * The client's phrases (the glossary, frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026, and every
+ * screen's words), each spelled once. A screen that needs one imports it from here; nothing else spells it. The rules
+ * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
+import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
-  getMinePresentation,
-  GUARD_SLOT_NAMES,
-  RealmLevelNames,
-  resources,
-  ResourcesIds,
-  StructureType,
-  StructureTypeToNameMapping,
-  type GuardSlot,
+  formatAmount,
+  formatDuration,
+  getRelicInfo,
+  relicEffect,
+  type ResourcesIds,
+  formatCharge,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
@@ -42,9 +39,10 @@ export const REALM_KEPT = "Realm kept";
 export const DAY_OPEN = "is open";
 export const CONTINUE = "Continue";
 export const FULL_IN = "Full in";
-/** A store's line on its tooltip: "Wheat 1,771 of 6,000 · +302 an hour · Full in 14h". */
+/** A production that never runs out, where its time left would stand. */
+export const NO_END = "no end";
+/** A store's line on its tooltip: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". */
 export const OF = "of";
-export const AN_HOUR = "an hour";
 
 export const OFFLINE = "Offline";
 export const TRY_AGAIN = "Try again";
@@ -54,13 +52,14 @@ export const CLOSE = "Close";
 export const KEEP = "Keep";
 
 export const XP = "XP";
-export const LORDS = "LORDS";
 export const ESSENCE = "Essence";
 export const LABOR = "labor";
 export const WHEAT = "wheat";
 export const TROOPS = "troops";
 export const STAMINA = "stamina";
 
+/** The HUD's tab for everything the player holds. */
+export const EMPIRE = "Empire";
 /** The places: the nav's five words. */
 export const MAP = "Map";
 export const REALM = "Realm";
@@ -123,8 +122,8 @@ export const PRICE_UP = "price raised";
 /** Why a price is above its base, on the arrow beside it: "Base 400 labor, ×5 with 2 standing". */
 export const priceRaised = (base: string, noun: string, times: string, standing: string) =>
   `Base ${base} ${noun}, ×${times} with ${standing} standing`;
-/** What a building does, in one line on its card's tooltip. */
-export const makesAnHour = (amount: string, noun: string) => `+${amount} ${noun} ${AN_HOUR}`;
+/** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
+export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
 export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
 /** A store on its tooltip: what is free of it, "Population 2 free of 6". */
@@ -151,9 +150,6 @@ export const RUIN = "Ruin";
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
 export const GUARD = "guard";
-/** What taking a camp from the Vanguard scores: "250 points", "1 point" (formatPoints). */
-export const POINTS = "points";
-export const POINT = "point";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
@@ -166,7 +162,7 @@ export const ATTACKING = "Attacking…";
 export const ON_ITS_WAY = "On its way…";
 /** The order bar while an army's order is in flight and a tile is tapped for it: that tile is its next order. */
 export const NEXT_ORDER = "Next order";
-export const QUEUED = "Queued";
+export const AFTER_THIS_ONE = "After this one";
 /** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
@@ -188,12 +184,6 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const REALM_LEVELS = [
-  RealmLevelNames.Settlement,
-  RealmLevelNames.City,
-  RealmLevelNames.Kingdom,
-  RealmLevelNames.Empire,
-] as const;
 export const FARM = "Farm";
 export const WORKSHOP = "Workshop";
 export const BARRACKS = "Barracks";
@@ -209,8 +199,8 @@ export const UPGRADING = "Upgrading…";
 
 /** A standing building's figures on its panel, each named on its tooltip (the screen shows icons and numbers). */
 export const BUILDING_FIGURES = {
-  eachMakes: (noun: string) => `${noun} each makes an hour`,
-  castleMakes: (noun: string) => `${noun} the castle makes an hour`,
+  eachMakes: (noun: string) => `${noun} each makes`,
+  castleMakes: (noun: string) => `${noun} the castle makes`,
   standing: "standing",
   held: (noun: string) => `${noun} held of its store's limit`,
   eachAdds: `${POPULATION} each adds`,
@@ -313,48 +303,576 @@ export const REALM_NOT_IN_WALLET = "Not in this wallet";
 export const REALM_NOT_CLAIMED = "That Realm is not in your wallet, or it gave its labor today.";
 export const realmsADay = (cap: number) => `${cap} a day`;
 
-/** A moment just gone, and how long ago one was: "just now", "5m ago" (formatAgo). */
-export const JUST_NOW = "just now";
-export const AGO = "ago";
-
-const UNKNOWN = "—";
-
-/** A realm's rank by its level: "City", never "Level 2". */
-export const rankName = (level: number | undefined): string =>
-  (level === undefined ? undefined : REALM_LEVELS[level]) ?? UNKNOWN;
-
-/** The three troops, and a troop with its tier: "Knight T2". */
-export const TROOP_NAMES = ["Knight", "Crossbowman", "Paladin"] as const;
-const troopName = (troop: string, tier: string): string => `${troop} ${tier}`;
-
-const TROOP_RESOURCE = /^(Knight|Crossbowman|Paladin)(T[23])?$/;
+// The app's words outside a match (the shell's pages).
 
 /**
- * A resource by its id, as a player reads it: its name in the game's table, a troop with its tier ("Knight T2", where
- * the table says "KnightT2"), LORDS in capitals. Never the id's enum key ("AncientFragment"); unknown is a dash.
+ * The app's words outside a match, each spelled once (words.html; the Frontier glossary stays the authority for game
+ * words). A screen never types one of these itself: it names the constant.
  */
-export const resourceName = (id: ResourcesIds | number | undefined): string => {
-  if (id === undefined) return UNKNOWN;
-  if (id === ResourcesIds.Lords) return LORDS;
-  const name = resources.find((resource) => resource.id === id)?.trait;
-  if (!name) return UNKNOWN;
-  const troop = TROOP_RESOURCE.exec(name);
-  return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
+export const WORDS = {
+  play: "Play",
+  season: SEASON,
+  /** The player's own place: their card, their finished games, Settings. */
+  you: "You",
+  signIn: SIGN_IN,
+  dev: "Dev",
+  /** Start Frontier on a first visit; entry is free. */
+  playFree: "Play free",
+  resume: RESUME,
+  /** Go into a Blitz game the player is on. */
+  enter: "Enter",
+  /** Look at a Blitz game the player is not on. */
+  watch: "Watch",
+  /** Take a Blitz seat. */
+  joined: "Joined",
+  results: "Results",
+  /** A game under way. */
+  live: "Live",
+  /** Play's lead when no mode has a game live or scheduled. */
+  noSeason: "No season running",
+  /** Before an age's numeral: "Age II". */
+  age: "Age",
+} as const;
+
+/** The desktop footer on the pages that scroll: its columns and their links. */
+export const FOOTER_WORDS = {
+  community: "Community",
+  realms: "Realms",
+  legal: "Legal",
+  marketplace: "Marketplace",
+  terms: "Terms of Service",
+  privacy: "Privacy Policy",
+  credits: "Credits and licences",
+  owner: "© 2026 BibliothecaDAO",
+} as const;
+
+/** Play: what is under way now, and each mode's next and finished games behind its switch. */
+export const PLAY_WORDS = {
+  now: "Now",
+  later: "Next and done",
+  /** The modes' switch, named for assistive technology. */
+  modes: "Modes",
+  /** A switch's dot, named for assistive technology: the mode holds something of the player's. */
+  yours: "Something of yours",
+  ended: "Ended",
+  players: "Players",
+} as const;
+
+/** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
+export const LORE_LINE = "The mist forgets. Your realm remembers.";
+/** Frontier's pitch on the first visit's card. */
+export const PITCH = "A new land every day. Your realm keeps what it earns.";
+
+/** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
+export const SIGN_IN_WORDS = {
+  discord: "Discord",
+  or: "or",
+  email: "Email",
+  sendCode: "Send code",
+  sending: "Sending…",
+  codeSent: "Code sent",
+  code: "Sign-in code",
+  checking: "Checking…",
+  newCode: "New code",
+  yourName: "Your name",
+  claimName: "Claim name",
+  saving: "Saving…",
+  portrait: "Portrait",
+} as const;
+
+/** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
+export const BLITZ_WORDS = {
+  preparing: "Preparing…",
+  /** Shown only to assistive technology; the seats are drawn. */
+  seats: "Seats",
+  registered: "Registered",
+  registeredUnit: "registered",
+  /** Under a slot's registered count: why it has no seats yet. */
+  drawnAtClose: (seats: number) => `No cap. Games of up to ${seats} are drawn when entry closes.`,
+  /** A slot taking players: its lobby holds the paid entry. */
+  join: "Join",
+  /** A seated game still being prepared: its lobby shows the roster and Preparing until it opens. */
+  lobby: "Lobby",
+  /** Above the lobby's countdown. */
+  closesIn: "Entry closes in",
+  startsIn: "Starts in",
+  endsIn: "Ends in",
+} as const;
+
+/** A Blitz lobby's chat: its panel, its field and the lines that stand where a message cannot go. */
+export const CHAT_WORDS = {
+  chat: "Chat",
+  message: "Message",
+  signInToRead: "Sign in to read the lobby's chat.",
+  rateLimited: "A few messages a second at most. Wait a moment.",
+  refused: "That message was not sent.",
+} as const;
+
+/** The doorway into a match: its four steps and what holds it until the player acts. */
+export const DOORWAY_WORDS = {
+  account: "Account",
+  realm: REALM,
+  map: MAP,
+  play: "Play",
+  /** The track, named for assistive technology. */
+  entering: "Entering the game",
+  signInToPlay: "Sign in to play.",
+  notOnThisGame: "Not on this game.",
+  ended: "This game has ended.",
+  deviceLimit: "This account is signed in on 8 devices.",
+  deviceLimitRecovery: "On an already signed-in device, open Settings → Devices and remove one. Then try again here.",
+  /** A scene that could not be set up, named for what the player does not see; the cause is in the console. */
+  mapNotDrawn: "The map could not be drawn.",
+  realmNotDrawn: "The realm could not be drawn.",
+  /** The way on when the map cannot be drawn: the realm view opens without it. */
+  openRealm: "Open realm",
+} as const;
+
+/** Season and a game's Results. */
+export const SEASON_WORDS = {
+  /** The view switch's name, for assistive technology. */
+  views: "Season views",
+  share: "Share",
+  /** Between a place and the field: "3rd of 24". */
+  of: "of",
+  /** Blitz's own unit, one word wherever a player reads it. */
+  vp: "points",
+} as const;
+
+/** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */
+export const RATING_WORDS = {
+  rating: "Rating",
+  blitzRating: "Blitz rating",
+  /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
+  unlinked: "Link a wallet in Settings to carry a rating.",
+} as const;
+
+/** You and Settings: their rows and groups, Settings' sheets and confirms. */
+export const PROFILE_WORDS = {
+  settings: "Settings",
+  /** The docs site, opened in a new tab. */
+  howToPlay: "How to play",
+  whatsNew: "What's new",
+  account: "Account",
+  notifications: "Notifications",
+  devices: "Devices",
+  /** Music outside a match, on this device. */
+  music: "Music",
+  recentGames: "Recent games",
+  name: "Name",
+  portrait: "Portrait",
+  signInMethods: "Sign-in",
+  discord: "Discord",
+  email: "email",
+  linkWallet: "Link wallet",
+  signOut: "Sign out",
+  signOutAsk: "Sign out?",
+  signOutCost: "This device forgets your account until you sign in again.",
+  remove: "Remove",
+  removing: "Removing…",
+  removeAsk: (device: string) => `Remove ${device}?`,
+  removeCost: "It signs out there and cannot enter a game until it signs in again.",
+  thisDevice: "This device",
+  /** A device the account knows but that has no name yet. */
+  device: (lastFour: string) => `Device ${lastFour}`,
+  deviceRemoved: "This device was removed",
+  blocked: "Blocked",
+  blockedLine: "The browser blocks alerts for Realms. Allow them in its site settings.",
+  install: "Install",
+} as const;
+
+/**
+ * The payout wallet: where withdrawals are paid and what pays a Blitz entry; a Blitz prize goes to the wallet a seat was
+ * drawn with. Also the wallets an account links, and Ready for a player with none.
+ */
+export const WALLET_WORDS = {
+  payoutWallet: "Payout wallet",
+  prizesGoHere: "Prizes go here",
+  stepWallet: "Wallet",
+  stepCode: "Email code",
+  haveOne: "I have a wallet",
+  haveOneLine: "Ready · Braavos · Controller",
+  needOne: "I need one",
+  needOneLine: "Ready: browser or email",
+  needOneLinePhone: "Ready, by email",
+  ready: "Ready",
+  braavos: "Braavos",
+  controller: "Controller",
+  extension: "extension",
+  byEmail: "by email",
+  formerlyArgent: "formerly Argent",
+  noInstall: "by email · no install",
+  inThisBrowser: "In this browser",
+  addExtension: "Add Ready's extension",
+  byEmailTitle: "By email",
+  noInstallShort: "No install",
+  keysStay: "Ready's own page; your keys stay with Ready",
+  emailStep: "Email and password, on Ready's page",
+  approveStep: "Approve Realms",
+  codeStep: "Signature, then our code",
+  backFromReady: "Added Ready? Reload this page, then link it.",
+  anotherWallet: "Another wallet",
+  codeSentTo: "Code sent to",
+  sending: "Sending…",
+  newCode: "New code",
+  confirmInWallet: "Confirm in your wallet",
+  canReceive: "Ready",
+  replace: "Replace",
+  unlink: "Unlink",
+  unlinkTitle: "Unlink wallet",
+  nothingPaysOut: "Nothing pays out until a wallet is linked",
+  opening: "Opening…",
+  noneHere: "No wallet this browser can open. Ready by email needs none.",
+  wrongWallet: (owner: string) => `Open ${owner}: only that wallet can sign this.`,
+  paymentFailed: "The wallet did not confirm it. Check it, then try again.",
+  tryAgain: "Try again",
+  whichHolds: (owner: string) => `Which wallet holds ${owner}?`,
+} as const;
+
+/** What every value screen shares: a fee the payout wallet cannot pay yet. */
+export const VALUE_WORDS = {
+  confirming: "Confirming…",
+  unconfirmed: "The network did not confirm it. Check again in a moment.",
+  refused: "The ledger refused it.",
+  noStrk: "No STRK for the fee",
+  swapOnAvnu: "Swap on AVNU",
+} as const;
+
+/** A paid Blitz's entry, in its lobby. */
+export const ENTRY_WORDS = {
+  entry: "Entry",
+  seat: "Seat",
+  seatEffect: "Entry",
+  sword: "Sword",
+  swordEffect: "Win ×2",
+  shield: "Shield",
+  shieldEffect: "Loss ½",
+  total: "Total",
+  payAndJoin: "Pay & join",
+  needMore: (amount: string) => `Need ${amount} more LORDS`,
+  paidFromWallet: "Entry is paid from your payout wallet",
+  registered: "Registered",
+  /** The slot is listed and the ledger does not hold it yet: a moment, not a failure. */
+  openingLine: "Entry is opening. It will be ready in a moment.",
+  registeredLine: "Your seat is drawn when entry closes.",
+  /** Past the close, until a game's roster names the wallet. */
+  drawingLine: "Entry has closed. Your seat is being drawn.",
+  seated: "Seated",
+  yourGame: "Your game",
+  notSeated: "Not seated",
+  paid: "Paid",
+  credit: "Credit",
+  credits: (count: number) => `Credit ×${count}`,
+  cancelled: "Cancelled",
+  takeRefund: "Take refund",
+  lords: "LORDS",
+  swordCredit: "Sword credit",
+  shieldCredit: "Shield credit",
+  back: "Back",
+  refunded: "Refunded",
+  closed: "Entry closed",
+  closedLine: "Entry has closed; this slot takes no more players.",
+  refundedLine: "Your LORDS and credits are back in your wallet.",
+  unreadable: "This game's paid entry could not be read, so it cannot be joined yet.",
+  whereItGoes: "Where this entry goes: the season pool, the season's chests, the treasury",
+} as const;
+
+/**
+ * A dev build only: the test token its ledger is paid in, minted to the wallet that pays. A word of its own, outside
+ * the entry's table, so a production build drops it with the button.
+ */
+export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
+
+/** After a paid Blitz: the rating's change and the chest the result minted. */
+export const REWARD_WORDS = {
+  unreadable: "This game's reward could not be read.",
+  rating: "Blitz rating",
+  chest: "Chest",
+  arrives: "Arrives with the results",
+  open: "Open",
+  inCollection: "In your collection",
+  traded: "In another collection",
+  cosmetic: "Cosmetic",
+  lords: "LORDS",
+  lordsSent: "Sent to the wallet that opened it",
+  swordCredit: "Sword credit",
+  shieldCredit: "Shield credit",
+  nextEntry: "Used at your next entry",
+  /** A chest's rank band (0 best .. 4), the one fact it shows sealed. */
+  band: ["Top 10%", "Top 25%", "Top half", "Top 75%", "Bottom 25%"],
+  opening: "Opening…",
+  /** A sealed chest's token reward, as a multiple of its slot's entry: what it can pay, and until when. */
+  entryUntil: (shares: number, date: string) => `${shares}× entry until ${date}`,
+  /** Under an opened chest's multiple: "4×" of the entry. */
+  theEntry: "the entry",
+  noLords: "No LORDS now",
+} as const;
+
+/** The Blitz season's prize, on Blitz's rating board. */
+export const SEASON_PRIZE_WORDS = {
+  unreadable: "The season's prize could not be read.",
+  pool: "Prize pool",
+  ends: (date: string) => `Ends ${date}`,
+  final: "Final",
+  paysToday: "If the season ended now",
+  placesPaid: (count: number) => `${count} places paid`,
+  noPlaces: "No place is paid until players are ranked.",
+  yourShare: "Your share",
+  review: "Claims open in",
+  held: "The list is being checked",
+  claimed: "Claimed to your seat's wallet",
+  /** The ledger takes no claim while its payouts are paused. */
+  paused: "Payouts are paused. Your share can be claimed when they resume.",
+  notPaid: "Outside the paid places this season",
+  claim: "Claim",
+} as const;
+
+/** The three alert levels (ruled) and what each carries, in one line. */
+export const LEVEL_WORDS = {
+  off: { word: "Off", line: "Nothing" },
+  important: { word: "Important", line: "Your day ends in an hour, your Blitz starts, a message to you" },
+  all: { word: "All", line: "Plus every clear, fight and build" },
+} as const;
+
+/** What's new under You: a post's stepper and reading time, and the legal pages' date. */
+export const NEWS_WORDS = {
+  newer: "Newer",
+  older: "Older",
+  updated: "Updated",
+  /** A post's reading time: "4min". */
+  minutes: (count: number) => `${count}min`,
+  /** The Scroll, the posts read inside What's new. */
+  scroll: "The Scroll",
+  thoughtPiece: "Thought piece",
+  update: "Update",
+} as const;
+
+/** The app's own states: install, update, offline, a page that does not exist. */
+export const APP_STATE_WORDS = {
+  install: "Install",
+  /** The install notice's one line: where the app will live. */
+  onHomeScreen: "Realms on your home screen",
+  updateReady: "Update ready",
+  update: "Update",
+  updating: "Updating…",
+  nothingHere: "Nothing here",
+  /** The browser's own words, quoted on the install steps. */
+  share: "Share",
+  addToHomeScreen: "Add to Home Screen",
+  add: "Add",
+  file: "File",
+  addToDock: "Add to Dock",
+} as const;
+
+// An army's readiness: what it lacks to move, and its warnings.
+
+export const getArmyFoodRequirementLabel = (resolvedWorldMode: ResolvedGameMode): "food" | "wheat" =>
+  resolvedWorldMode === "blitz" ? "wheat" : "food";
+
+export const formatArmyFoodRequirement = ({
+  missingWheat,
+  missingFish,
+  wheatLabel,
+  formatAmount,
+}: {
+  missingWheat: number;
+  missingFish: number;
+  wheatLabel: string;
+  formatAmount: (amount: number) => string;
+}): string => {
+  const missingParts = [
+    missingWheat > 0 ? `${formatAmount(missingWheat)} ${wheatLabel}` : null,
+    missingFish > 0 ? `${formatAmount(missingFish)} fish` : null,
+  ].filter(Boolean);
+
+  if (missingParts.length === 0) return "";
+  if (missingParts.length === 1) return missingParts[0] ?? "";
+
+  return `${missingParts.slice(0, -1).join(", ")} and ${missingParts[missingParts.length - 1]}`;
 };
 
-/** A structure by its kind, a mine by what it yields: "Camp", "Essence Rift", "Hyperstructure". */
-export const structureName = (type: StructureType, mineKind?: number): string =>
-  type === StructureType.Mine && mineKind !== undefined
-    ? getMinePresentation(mineKind).name
-    : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+interface ArmyFoodRequirement {
+  wheatPayAmount: number;
+  fishPayAmount: number;
+}
 
-/** A guard slot by its wall, never its internal name: "Castle Wall", not "Gamma". */
-export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
+interface ArmyFoodBalance {
+  wheat: number;
+  fish: number;
+}
 
-/** Each game as its age of the lore. */
-export const AGES = {
-  blitz: { game: "Blitz", age: "Age I" },
-  frontier: { game: "Frontier", age: "Age II" },
-  eternum: { game: "Eternum", age: "Age III" },
-} as const;
-export const ageLine = (game: keyof typeof AGES): string => `${AGES[game].game} · ${AGES[game].age}`;
+interface ArmyFoodRequirementWarning {
+  missingWheat: number;
+  missingFish: number;
+  hasWarning: boolean;
+}
+
+const getArmyFoodRequirementWarning = ({
+  costs,
+  food,
+}: {
+  costs: ArmyFoodRequirement;
+  food: ArmyFoodBalance;
+}): ArmyFoodRequirementWarning => {
+  const missingWheat = Math.max(0, costs.wheatPayAmount - food.wheat);
+  const missingFish = Math.max(0, costs.fishPayAmount - food.fish);
+
+  return {
+    missingWheat,
+    missingFish,
+    hasWarning: missingWheat > 0 || missingFish > 0,
+  };
+};
+
+export const getArmyMovementFoodRequirementWarnings = ({
+  travelFoodCosts,
+  exploreFoodCosts,
+  food,
+}: {
+  travelFoodCosts: ArmyFoodRequirement;
+  exploreFoodCosts: ArmyFoodRequirement;
+  food: ArmyFoodBalance;
+}) => {
+  const travel = getArmyFoodRequirementWarning({ costs: travelFoodCosts, food });
+  const explore = getArmyFoodRequirementWarning({ costs: exploreFoodCosts, food });
+
+  return {
+    travel,
+    explore,
+    combined: {
+      missingWheat: Math.max(travel.missingWheat, explore.missingWheat),
+      missingFish: Math.max(travel.missingFish, explore.missingFish),
+      hasWarning: travel.hasWarning || explore.hasWarning,
+    },
+  };
+};
+
+export const getArmyStaminaRequirementWarnings = ({
+  currentStamina,
+  minTravelStamina,
+  minExploreStamina,
+}: {
+  currentStamina: number;
+  minTravelStamina: number;
+  minExploreStamina: number;
+}): { hasTravelStaminaWarning: boolean; hasExploreStaminaWarning: boolean } => ({
+  hasTravelStaminaWarning: currentStamina < minTravelStamina,
+  hasExploreStaminaWarning: currentStamina < minExploreStamina,
+});
+
+export const getArmyReadinessTitle = ({
+  hasTravelStaminaWarning,
+  hasExploreStaminaWarning,
+  hasTravelFoodWarning,
+  hasExploreFoodWarning,
+}: {
+  hasTravelStaminaWarning: boolean;
+  hasExploreStaminaWarning: boolean;
+  hasTravelFoodWarning: boolean;
+  hasExploreFoodWarning: boolean;
+}): string => {
+  const travelBlocked = hasTravelStaminaWarning || hasTravelFoodWarning;
+  const exploreBlocked = hasExploreStaminaWarning || hasExploreFoodWarning;
+
+  if (travelBlocked && exploreBlocked) return "Travel and explore blocked";
+  if (travelBlocked) return "Travel blocked";
+  if (exploreBlocked) return "Explore blocked";
+
+  return "Ready to travel or explore";
+};
+
+/** Tooltip for a movement-blocked stamina bar; null when travel is possible. */
+export const formatTravelBlockedSummary = ({
+  staminaBlocked,
+  minTravelStamina,
+  missingWheat,
+  missingFish,
+  wheatLabel,
+  formatAmount,
+}: {
+  staminaBlocked: boolean;
+  minTravelStamina: number;
+  missingWheat: number;
+  missingFish: number;
+  wheatLabel: string;
+  formatAmount: (amount: number) => string;
+}): string | null => {
+  const requirements = [
+    staminaBlocked ? `${minTravelStamina}+ stamina` : null,
+    formatArmyFoodRequirement({ missingWheat, missingFish, wheatLabel, formatAmount }) || null,
+  ].filter(Boolean);
+
+  if (requirements.length === 0) return null;
+
+  return `Cannot travel — needs ${requirements.join(" and ")}`;
+};
+
+/** The visible reason food keeps an army still: what one step costs it and what its realm holds. */
+export const formatFoodBlock = (
+  block: {
+    action: "travel" | "explore";
+    perStep: ArmyFoodRequirement;
+    food: ArmyFoodBalance;
+  },
+  formatAmount: (amount: number) => string,
+): string => {
+  const part = (amount: number, label: string) => (amount > 0 ? `${formatAmount(amount)} ${label}` : null);
+  const cost = [part(block.perStep.wheatPayAmount, "wheat"), part(block.perStep.fishPayAmount, "fish")]
+    .filter(Boolean)
+    .join(" and ");
+  const held = [
+    part(Math.max(0, block.food.wheat), "wheat") ?? (block.perStep.wheatPayAmount > 0 ? "no wheat" : null),
+    block.perStep.fishPayAmount > 0 ? (part(Math.max(0, block.food.fish), "fish") ?? "no fish") : null,
+  ]
+    .filter(Boolean)
+    .join(" and ");
+  const verb = block.action === "travel" ? "Can't march" : "Can't explore";
+  const step = block.action === "travel" ? "each step" : "each explore";
+  return `${verb}: ${step} costs ${cost}; the realm has ${held}.`;
+};
+
+// Relics.
+
+/** "Damage Relic I" reads "Damage I": the word "Relic" is the chip's shape already. */
+export const relicShortName = (relicId: ResourcesIds): string => {
+  const relic = getRelicInfo(relicId);
+  if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
+  return relic.name.replace(" Relic", "");
+};
+
+/** A relic's activation as the game's relic rules set it: what it costs, and how long it works. */
+interface RelicActivation {
+  essenceCost: number;
+  durationSeconds: number;
+}
+
+/** What a relic does and for how long: "Increases damage by 20% for 30m". */
+export const relicEffectLine = (
+  relicId: ResourcesIds,
+  { durationSeconds }: Pick<RelicActivation, "durationSeconds">,
+) => (durationSeconds > 0 ? `${relicEffect(relicId)} for ${formatDuration(durationSeconds)}` : relicEffect(relicId));
+
+/**
+ * The one line every relic's hover says: its name, what it does, for how long, and what activating it costs ("Damage
+ * I: Increases damage by 20% for 30m. Costs 500 Essence to activate."); given the Essence its holder can pay with, what
+ * it lacks ("Costs 500 Essence to activate; you have 200.").
+ */
+export const relicLine = (relicId: ResourcesIds, activation: RelicActivation, essenceHeld?: number): string => {
+  const short = essenceHeld !== undefined && essenceHeld < activation.essenceCost;
+  const cost = `Costs ${formatCharge(activation.essenceCost)} ${ESSENCE} to activate`;
+  const held = short ? `; you have ${formatAmount(Math.floor(essenceHeld))}` : "";
+  return `${relicShortName(relicId)}: ${relicEffectLine(relicId, activation)}. ${cost}${held}.`;
+};
+
+// A realm's automation.
+
+/** An automation preset's line on hover: "Smart: Production runs itself, spread across the realm's buildings." */
+export const presetLine = ({ label, description }: { label: string; description: string }): string =>
+  `${label}: ${description}`;
+
+/** Why the realm's automation cannot be changed now; null when it can. */
+export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): string | null => {
+  if (!ordersAllowed) return "Only the realm's player can change its automation";
+  if (!hydrated) return "Loading the realm's automation";
+  return null;
+};

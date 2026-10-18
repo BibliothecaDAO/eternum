@@ -1,3 +1,4 @@
+import { knownAmount } from "@/ui/utils/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { structureMapPosition } from "@bibliothecadao/eternum";
@@ -22,19 +23,20 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { getBuildingFromResource, ID, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  getBuildingFromResource,
+  ID,
+  ResourcesIds,
+  StructureType,
+  structureName,
+  formatAmount,
+  formatRate,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 import { HudChip, HudIconButton, HudPanel, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 
 import React, { useCallback, useMemo, useState } from "react";
-import {
-  ALWAYS_SHOW_RESOURCES,
-  formatProductionPerHour,
-  formatResourceAmount,
-  formatTimeRemaining,
-  HIDE_TIME_REMAINING_FOR,
-  TIER_DISPLAY_NAMES,
-} from "./utils";
+import { ALWAYS_SHOW_RESOURCES, productionTimeLeft, HIDE_TIME_REMAINING_FOR, TIER_DISPLAY_NAMES } from "./utils";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -118,7 +120,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       .map((structure) => {
         const realmId = Number(structure.structure.metadata.realm_id || 0);
         const label = realmId
-          ? getRealmNameById(realmId) || `Realm #${realmId}`
+          ? getRealmNameById(realmId) || structureName(StructureType.Realm)
           : mode.structure.getTypeName(
               structure.structure.base.category as StructureType,
               presentedMineKind(structure.structure),
@@ -483,12 +485,12 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
                               {summary ? (
                                 <div className="flex items-baseline gap-1.5">
                                   <span className="text-hud-strong text-hud-accent">
-                                    {formatResourceAmount(summary.totalAmount)}
+                                    {formatAmount(knownAmount(summary.totalAmount))}
                                   </span>
                                   <span
                                     className={summary.totalProductionPerSecond > 0 ? "text-hud-good" : "text-hud-cue"}
                                   >
-                                    {formatProductionPerHour(summary.totalProductionPerSecond)}
+                                    {formatRate(summary.totalProductionPerSecond)}
                                   </span>
                                 </div>
                               ) : (
@@ -653,14 +655,14 @@ const TransferCell = React.memo((props: TransferCellProps) => {
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <div className="flex flex-wrap items-center gap-1">
-            <span className="text-hud-ink">{formatResourceAmount(cell.amount)}</span>
+            <span className="text-hud-ink">{formatAmount(knownAmount(cell.amount))}</span>
             {canCraftRelic && <HudChip>Forge</HudChip>}
           </div>
           {cell.isProducing && (
             <div className="flex items-center gap-1.5 text-hud-cue">
-              <span>{formatProductionPerHour(cell.productionPerSecond)}</span>
+              <span>{formatRate(cell.productionPerSecond)}</span>
               {cell.outputRemaining > 0 && !cell.isStorageCapped && !HIDE_TIME_REMAINING_FOR.includes(resourceId) && (
-                <span title="Time until production runs out">({formatTimeRemaining(cell.timeRemainingSeconds)})</span>
+                <span title="Time until production runs out">({productionTimeLeft(cell.timeRemainingSeconds)})</span>
               )}
             </div>
           )}

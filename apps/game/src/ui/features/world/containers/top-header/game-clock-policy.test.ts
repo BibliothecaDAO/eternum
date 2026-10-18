@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import { resolveGameClock, formatGameClockDuration } from "./game-clock-policy";
+import { resolveGameClock } from "./game-clock-policy";
 const clock = (now: number, overrides = {}) =>
   resolveGameClock({ startAt: 120, endAt: 720, now, armyTickSeconds: 60, gameOver: false, ...overrides });
 it("changes from start countdown to remaining time at the horn", () => {
@@ -23,16 +23,7 @@ it("does not invent missing clock configuration", () => {
   expect(clock(100, { startAt: null }).phase).toBe("unavailable");
   expect(() => clock(121, { armyTickSeconds: 0 })).toThrow("Army tick duration is unavailable");
 });
-it("formats short and multi-day durations", () => {
-  expect(formatGameClockDuration(4328)).toBe("1h 12m 08s");
-  expect(formatGameClockDuration(68)).toBe("1m 08s");
-  expect(formatGameClockDuration(90000)).toBe("1d 01h 0m 00s");
-});
-
 it("keeps mobile countdowns short without losing seconds in the final hour", () => {
-  expect(formatGameClockDuration(90000, true)).toBe("1d 1h");
-  expect(formatGameClockDuration(4328, true)).toBe("1h 12m");
-  expect(formatGameClockDuration(68, true)).toBe("1m 08s");
   expect(clock(600).compactLabel).toBe("2m 00s left");
   expect(clock(60).compactLabel).toBe("Starts in 1m 00s");
   expect(clock(0).compactLabel).toBe("Clock unavailable");

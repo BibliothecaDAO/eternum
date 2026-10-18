@@ -6,7 +6,7 @@ import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
-import { formatNumber, knownBalance } from "@/ui/utils/utils";
+import { knownBalance } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -21,7 +21,18 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  ID,
+  Resources,
+  resources,
+  ResourcesIds,
+  StructureType,
+  formatCharge,
+  LORDS,
+  resourceName,
+  formatPercent,
+} from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
@@ -130,7 +141,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     systemCalls.sell_resources,
   ]);
 
-  const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
+  const chosenResourceName = resourceName(Number(resourceId));
 
   // Dedicated handler for Lords Amount
   const handleLordsAmountChange = (amount: number) => {
@@ -163,6 +174,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           multiplyByPrecision(amount) || 0,
           configManager.getBankConfig().lpFeesNumerator,
         ),
+        false,
       );
       setLordsAmount(calculatedLordsAmount);
     } else {
@@ -171,6 +183,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           multiplyByPrecision(amount) || 0,
           configManager.getBankConfig().lpFeesNumerator,
         ),
+        false,
       );
       const lordsAmountAfterFee = calculatedLordsAmount * (1 - configManager.getAdminBankOwnerFee());
       setLordsAmount(lordsAmountAfterFee);
@@ -223,7 +236,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   const isVillageAndMilitaryResource =
     store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
       StructureType.Village && isMilitaryResource(resourceId);
-  const swapLabel = `Swap ${isBuyResource ? "Lords" : chosenResourceName} for ${isBuyResource ? chosenResourceName : "Lords"}`;
+  const swapLabel = `Swap ${isBuyResource ? LORDS : chosenResourceName} for ${isBuyResource ? chosenResourceName : LORDS}`;
   // The swap acts at once; in Frontier it asks first, with what it takes and gives.
   const pressSwap = () => (confirmsLoss ? setOpenConfirmation(true) : onSwap());
 
@@ -239,35 +252,39 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       <div className="flex flex-col gap-1">
         <HudRow
           title="Price"
-          trail={`1 ${chosenResourceName} = ${formatNumber(marketManager.getMarketPrice(), 4)} LORDS`}
+          trail={`1 ${chosenResourceName} = ${formatCharge(marketManager.getMarketPrice())} ${LORDS}`}
         />
         <HudRow
           title="Slippage"
           trail={
             <span className="text-hud-bad">
-              -
-              {formatNumber(
-                marketManager.slippage(
-                  isBuyResource
-                    ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
-                    : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
-                  isBuyResource,
-                ) || 0,
-                4,
+              {formatPercent(
+                -(
+                  marketManager.slippage(
+                    isBuyResource
+                      ? multiplyByPrecision(Math.abs(lordsAmount - lpFee))
+                      : multiplyByPrecision(Math.abs(resourceAmount - lpFee)),
+                    isBuyResource,
+                  ) || 0
+                ) / 100,
+                { signed: true },
               )}
-              %
             </span>
           }
         />
         <HudRow
-          title={`Bank Owner Fee (${configManager.getAdminBankOwnerFee() * 100}%)`}
-          trail={<span className="text-hud-bad">{formatNumber(-ownerFee, 4)} Lords</span>}
-        />
-        <HudRow
-          title={`LP Fee (${configManager.getAdminBankLpFee() * 100}%)`}
+          title={`Bank Owner Fee (${formatPercent(configManager.getAdminBankOwnerFee())})`}
           trail={
             <span className="text-hud-bad">
-              {formatNumber(-lpFee, 4)} {isBuyResource ? "Lords" : chosenResourceName}
+              {formatCharge(-ownerFee)} {LORDS}
+            </span>
+          }
+        />
+        <HudRow
+          title={`LP Fee (${formatPercent(configManager.getAdminBankLpFee())})`}
+          trail={
+            <span className="text-hud-bad">
+              {formatCharge(-lpFee)} {isBuyResource ? LORDS : chosenResourceName}
             </span>
           }
         />
@@ -291,7 +308,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       {canSwap && !canCarry && (
         <HudNotice
           tone="bad"
-          line={`Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : "Lords"}`}
+          line={`Warning: not enough donkeys to transport ${isBuyResource ? chosenResourceName : LORDS}`}
         />
       )}
       {!amountsBiggerThanZero && <HudNotice tone="warn" line="Enter an amount to swap" />}
@@ -344,12 +361,12 @@ const SwapSummary = ({
 }) => (
   <span className="flex items-center justify-center gap-2 text-hud-strong">
     <span className="flex items-center text-hud-bad">
-      -{gives.amount.toLocaleString()}
+      -{formatCharge(gives.amount)}
       <ResourceIcon resource={gives.resourceId} size="md" />
     </span>
     <span>→</span>
     <span className="flex items-center text-hud-good">
-      +{gets.amount.toLocaleString()}
+      +{formatCharge(gets.amount)}
       <ResourceIcon resource={gets.resourceId} size="md" />
     </span>
   </span>

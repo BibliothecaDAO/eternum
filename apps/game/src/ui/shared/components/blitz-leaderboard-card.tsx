@@ -1,3 +1,4 @@
+import { formatExact } from "@bibliothecadao/types";
 import { FONTS } from "@/tokens";
 import { forwardRef, type Ref, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,7 +11,6 @@ import {
   BLITZ_CARD_FONT_FACES,
   BLITZ_CARD_BASE_STYLES,
   BLITZ_CARD_GOLD_THEME,
-  formatBlitzValue as formatValue,
   formatBlitzRankParts as formatRankParts,
 } from "../lib/blitz-card-shared";
 import { APP_HOST } from "@/config/app-address";
@@ -193,7 +193,7 @@ const PodiumEntry = ({ entry, positionClass }: { entry: LandingLeaderboardEntry;
         {rankSuffix && <span className="podium-rank-suffix">{rankSuffix}</span>}
       </div>
       <div className="podium-name">{name}</div>
-      <div className="podium-points">{formatValue(entry.points)} points</div>
+      <div className="podium-points">{formatExact(Math.max(0, entry.points))} points</div>
     </div>
   );
 };

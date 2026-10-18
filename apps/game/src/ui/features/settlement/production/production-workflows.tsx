@@ -1,5 +1,5 @@
 import { resolveCompactLane } from "@/hooks/helpers/use-compact-hud";
-import { type Building, type RealmInfo as RealmInfoType, ResourcesIds } from "@bibliothecadao/types";
+import { type Building, type RealmInfo as RealmInfoType, ResourcesIds, resourceName } from "@bibliothecadao/types";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -68,7 +68,7 @@ export const ProductionWorkflows = ({
               value={selectedResource === null ? "" : String(selectedResource)}
               options={[
                 { value: "", label: "Select a resource" },
-                ...producedResources.map((resource) => ({ value: String(resource), label: ResourcesIds[resource] })),
+                ...producedResources.map((resource) => ({ value: String(resource), label: resourceName(resource) })),
               ]}
               onChange={(value) => onSelectResource(value ? (Number(value) as ResourcesIds) : null)}
             />

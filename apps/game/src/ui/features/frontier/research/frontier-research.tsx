@@ -2,7 +2,6 @@ import { type IconMeaning } from "@/ui/design-system/icon";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -28,7 +27,7 @@ import {
   nativeRuleConstants,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, formatAmount } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { reachMark } from "../depth-art";

@@ -1,3 +1,4 @@
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -68,7 +69,7 @@ const PointDeltaEffect = ({ value, color, intensity, position }: PointDeltaEffec
         transform: "translateX(-50%)",
       }}
     >
-      +{value.toLocaleString()}
+      +{formatExact(value)}
       {intensity === "large" && <BurstRing color={color} />}
     </div>
   );

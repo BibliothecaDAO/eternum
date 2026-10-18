@@ -1,3 +1,5 @@
+import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { formatCountdown } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -12,7 +14,6 @@ import type { PlaytestSlot } from "../blitz-slot";
 
 import { type BlitzRow, seatedGameOf, slotKeyOf } from "../blitz-rows";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
-import { formatCountdown } from "@/ui/design-system/kit/time";
 import { useLayout } from "../frame/layout";
 import { type DirectoryGame, useRealmsPlayer } from "../herald";
 import { PageFrame } from "../frame/page-frame";
@@ -24,7 +25,6 @@ import { ageOf } from "../play/ages";
 import { usePlayFacts } from "../play/play-facts";
 import { FailureLine } from "../sign-in/failure-line";
 import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
-import { BLITZ_WORDS, ENTRY_WORDS, WORDS } from "../words";
 import { chatMembershipOf, useEntryTerms } from "./entry";
 import { PaidEntry, SignInToJoin } from "./entry-panel";
 import { SeatsChip } from "./seats-chip";

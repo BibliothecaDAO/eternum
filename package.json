@@ -109,6 +109,7 @@
     "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
     "shell:check": "node --test scripts/shell-tokens/*.test.mjs && node scripts/shell-tokens/check.mjs",
     "hud:check": "node --test scripts/hud-sheet/*.test.mjs && node scripts/hud-sheet/check.mjs && node scripts/hud-sheet/reach.mjs",
+    "words:check": "node --test scripts/words/*.test.mjs && node scripts/words/check.mjs --check",
     "hud:capture": "node scripts/hud-sheet/capture.mjs",
     "icons:review": "node scripts/icons/review.mjs",
     "icons:prove": "node scripts/icons/prove.mjs",

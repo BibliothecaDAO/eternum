@@ -296,7 +296,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-16",
     title: "One Transfer window",
     description:
-      "Transfer (T) lists your holdings as the holdings list does, sends any goods to several holdings at once with each total split evenly, and opens from the map: select a holding, right-click another of yours. Arrivals, Automation and Balances are a click away.",
+      "Transfer lists your holdings as the holdings list does, sends any goods to several holdings at once with each total split evenly, and opens from the map: select a holding, right-click another of yours. Arrivals, Automation and Balances are a click away.",
     type: "feature",
   },
   {
@@ -600,7 +600,7 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-10-14",
-    title: "Queue an army's next order",
+    title: "Give an army its next order while it moves",
     description:
       "An army stays selected after you order it. Tap a tile while its order is on its way and that tile becomes its next order, shown in the order bar: it leaves as soon as the first one lands. A later tap replaces it, and Cancel or Escape drops it.",
     type: "feature",
@@ -1478,7 +1478,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-09-17",
     title: "Command sync recovery",
     description:
-      "A stalled game update now reports an error and releases queued controls instead of blocking play until reload.",
+      "A stalled game update now reports an error and releases the controls that were waiting instead of blocking play until reload.",
     type: "fix",
   },
   {
@@ -3217,7 +3217,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-25",
     title: "Explore Arrival Previews",
     description:
-      "Added the travel-style destination ghost and pulsing arrival ring to explore commands, making queued exploration feedback visible immediately.",
+      "Added the travel-style destination ghost and pulsing arrival ring to explore commands, making a waiting exploration visible immediately.",
     type: "improvement",
     gameSlug: "world",
   },

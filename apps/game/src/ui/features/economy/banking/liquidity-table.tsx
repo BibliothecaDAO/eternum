@@ -4,7 +4,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { HudField, HudTableHead } from "@/ui/design-system/kit/hud-elements";
 import { LiquidityResourceRow } from "./liquidity-resource-row";
-import { ID, ResourcesIds, resources } from "@bibliothecadao/types";
+import { ID, ResourcesIds, resourceName } from "@bibliothecadao/types";
 import { useState } from "react";
 
 type LiquidityTableProps = {
@@ -31,11 +31,7 @@ export const LiquidityTable = ({ entity_id }: LiquidityTableProps) => {
   const filteredResources = Object.entries(mode.resources.getTiers()).flatMap(([tier, resourceIds]) => {
     return resourceIds.filter(
       (resourceId) =>
-        resourceId !== ResourcesIds.Lords &&
-        resources
-          .find((r) => r.id === resourceId)
-          ?.trait.toLowerCase()
-          .includes(searchTerm.toLowerCase()),
+        resourceId !== ResourcesIds.Lords && resourceName(resourceId).toLowerCase().includes(searchTerm.toLowerCase()),
     );
   });
 

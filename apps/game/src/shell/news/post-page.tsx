@@ -1,9 +1,10 @@
+import { NEWS_WORDS } from "@/ui/design-system/kit/words";
+import { formatContentDay } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Button } from "@/ui/design-system/kit/button";
 
-import { formatContentDay } from "@/ui/design-system/kit/time";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import type { ScrollPost } from "../generated/scroll-posts";
@@ -12,7 +13,6 @@ import { Panel } from "@/ui/design-system/kit/panel";
 import { Title } from "@/ui/design-system/kit/title";
 import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { ListRow } from "@/ui/design-system/kit/list-row";
-import { NEWS_WORDS } from "../words";
 import { postHref, postKind, postPainting, publishedPosts, WHATS_NEW_PATH } from "./posts";
 
 /**

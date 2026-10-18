@@ -3,7 +3,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useEffect, useMemo, useState } from "react";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { formatBiomeBonus } from "@/ui/features/military";
+import { biomeBonusText, formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
 
@@ -167,7 +167,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
                   key={troopType}
                   className={`relative flex-1 rounded-lg border-2 px-2 py-2 ${styles.containerClass}`}
                   role="tooltip"
-                  aria-label={`${config.label}: ${formatBiomeBonus(bonus)} combat effectiveness`}
+                  aria-label={`${config.label}: ${biomeBonusText(bonus)} combat effectiveness`}
                 >
                   <div className="mb-1.5 flex justify-center">
                     <ResourceIcon resource={config.resourceId} size="lg" withTooltip={false} className="opacity-90" />

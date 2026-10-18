@@ -3,6 +3,7 @@
  * hand-off to the game's route, where the doorway carries on while the map boots.
  */
 
+import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,7 +25,6 @@ import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { Pill } from "@/ui/design-system/kit/pill";
-import { BLITZ_WORDS } from "@/shell/words";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { seasonRealm } from "@/shell/season";

@@ -10,7 +10,7 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { TierChip } from "../utils/tier-chip";
-import { currencyFormat } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   getGuardSlotCooldownRemaining,
   configManager,
@@ -20,12 +20,12 @@ import {
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
   DISPLAYED_SLOT_NUMBER_MAP,
-  GUARD_SLOT_NAMES,
   GuardSlot,
-  resources,
   StructureType,
   TroopTier,
   TroopType,
+  formatAmount,
+  guardSlotName,
 } from "@bibliothecadao/types";
 import type { KeyboardEvent } from "react";
 import { useMemo, useState } from "react";
@@ -158,7 +158,7 @@ export const CompactDefenseDisplay = ({
     const rawSlot = defense.slot;
     const guardSlotKey = rawSlot as GuardSlot;
     const slotDisplayNumber = DISPLAYED_SLOT_NUMBER_MAP[guardSlotKey];
-    const slotName = GUARD_SLOT_NAMES[guardSlotKey] ?? `Slot ${slotDisplayNumber}`;
+    const slotName = guardSlotName(guardSlotKey);
     const isEmptySlot = troopCount === 0;
     const cooldownSeconds = getGuardSlotCooldownRemaining(defense, currentBlockTimestamp);
     const isSlotUnlocked = unlockedSlotSet.has(rawSlot);
@@ -234,7 +234,9 @@ export const CompactDefenseDisplay = ({
                 size={isBanner ? "xs" : "sm"}
                 className="shrink-0"
               />
-              <span className={cn(valueTextClass, "text-hud-accent truncate")}>{currencyFormat(troopCount, 0)}</span>
+              <span className={cn(valueTextClass, "text-hud-accent truncate")}>
+                {formatAmount(knownAmount(troopCount))}
+              </span>
             </div>
             <GuardStaminaBar current={staminaCurrent} max={staminaMax} />
           </div>
@@ -288,7 +290,7 @@ export const CompactDefenseDisplay = ({
                   Total
                 </span>
                 <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
-                  {currencyFormat(totalTroopCount, 0)}
+                  {formatAmount(knownAmount(totalTroopCount))}
                 </span>
               </div>
             )}
@@ -331,7 +333,7 @@ export const CompactDefenseDisplay = ({
                 {isBanner ? "Total" : "Total Troops"}
               </span>
               <span className={cn(valueTextClass, "text-hud-accent text-hud-strong")}>
-                {currencyFormat(totalTroopCount, 0)}
+                {formatAmount(knownAmount(totalTroopCount))}
               </span>
             </div>
           )}

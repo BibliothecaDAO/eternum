@@ -1,12 +1,12 @@
+import { formatAmount } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 
-import { DAY } from "@/ui/design-system/kit/words";
+import { DAY, BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { Title } from "@/ui/design-system/kit/title";
 
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
@@ -25,7 +25,6 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { signInHref } from "../sign-in/sign-in-route";
-import { BLITZ_WORDS, ENTRY_WORDS, PITCH, PLAY_WORDS, WORDS } from "../words";
 import { ageOf } from "./ages";
 import type { PlayItem } from "./play-board";
 

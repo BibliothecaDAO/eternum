@@ -3,7 +3,7 @@ import { mineMeaning, realmMeaning, structureMeaning } from "@/ui/design-system/
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import { getMinePresentation, StructureType } from "@bibliothecadao/types";
+import { StructureType, structureName } from "@bibliothecadao/types";
 
 /**
  * The one grammar every list of the player's holdings reads by: the HUD's holdings panel, the transfer window's Send
@@ -56,7 +56,7 @@ export const kindsHeld = (holdings: ReadonlyArray<Pick<ListedHolding, "category"
     const presentsOneMineKind = kind === StructureType.Mine && onlyMineKind !== undefined;
     return {
       kind,
-      plural: presentsOneMineKind ? `${getMinePresentation(onlyMineKind).name}s` : plural,
+      plural: presentsOneMineKind ? `${structureName(StructureType.Mine, onlyMineKind)}s` : plural,
       icon: presentsOneMineKind ? mineMeaning(onlyMineKind) : structureMeaning(kind),
       count: counts.get(kind)!,
     };

@@ -1,6 +1,6 @@
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import {

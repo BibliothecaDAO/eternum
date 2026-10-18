@@ -1,7 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
-import { formatNumber } from "@/ui/utils/utils";
-import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { TroopTier, TroopType, formatCharge, formatExact } from "@bibliothecadao/types";
 
 import { TroopBadge } from "./transfer-troop-badge";
 
@@ -46,9 +45,9 @@ export const TransferBalanceCards = ({ cards }: TransferBalanceCardsProps) => {
               </div>
             ) : null}
             <div className="mt-3 flex items-center gap-2 text-hud-display text-hud-accent">
-              <span>{formatNumber(Math.max(0, before), 0)}</span>
+              <span>{formatExact(Math.max(0, before))}</span>
               <SemanticIcon name="arrow-right" className="h-5 w-5 text-hud-muted" />
-              <span>{formatNumber(Math.max(0, after), 0)}</span>
+              <span>{formatExact(Math.max(0, after))}</span>
             </div>
           </div>
         );

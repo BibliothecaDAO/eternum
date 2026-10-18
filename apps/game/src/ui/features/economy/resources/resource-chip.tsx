@@ -1,5 +1,5 @@
+import { relicLine } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { relicLine } from "@/ui/features/relics/relic-words";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -12,23 +12,25 @@ import { ProductionModal } from "@/ui/features/settlement/production/production-
 import { CountUpNumber } from "@/ui/shared";
 import { HudIconButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { currencyFormat, currencyIntlFormat, knownBalance } from "@/ui/utils/utils";
+import { knownBalance, knownAmount } from "@/ui/utils/utils";
 import {
   bonusActive,
   configManager,
   divideByPrecision,
-  formatTime,
   isRelic as isResourceRelic,
   ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import {
-  findResourceById,
   ID,
   RelicEffect,
   RelicRecipientType,
   ResourcesIds,
   StructureType,
+  formatWait,
+  formatAmount,
+  formatRate,
+  resourceName,
 } from "@bibliothecadao/types";
 import { useCallback, useMemo } from "react";
 
@@ -66,7 +68,7 @@ export const ResourceChip = ({
 
   const now = useCurrentDefaultTick();
   const resourceEnumId = resourceId as ResourcesIds;
-  const resourceName = findResourceById(resourceEnumId)?.trait ?? "resource";
+  const name = resourceName(resourceEnumId);
 
   // Undefined when this client holds no resource owner for the structure: the chip then shows nothing.
   const production = useMemo(
@@ -160,9 +162,9 @@ export const ResourceChip = ({
   if (hideZeroBalance && balance <= 0 && !(isRelic && relicEffectActivated)) {
     return null;
   }
-  const ratePerHour = isProducing && !hasReachedMaxCap ? `+${currencyIntlFormat(productionRate * 60 * 60, 4)}/h` : null;
+  const ratePerHour = isProducing && !hasReachedMaxCap ? formatRate(productionRate) : null;
   const timeLeft =
-    timeUntilValueReached > 0 && timeUntilValueReached <= 1_000_000_000 ? formatTime(timeUntilValueReached) : null;
+    timeUntilValueReached > 0 && timeUntilValueReached <= 1_000_000_000 ? formatWait(timeUntilValueReached) : null;
   // Each action keeps the app's named tip on hover, as before; the chip is the anchor it hangs from.
   const tipOn = (content: string) => (event: React.MouseEvent<HTMLElement>) =>
     setTooltip({ anchorElement: event.currentTarget, content, position: "bottom" });
@@ -175,7 +177,7 @@ export const ResourceChip = ({
         title={
           <CountUpNumber
             value={balance}
-            format={(v) => currencyFormat(v, 2)}
+            format={(v) => formatAmount(knownAmount(v))}
             className={cn("tabular-nums text-hud-strong", relicEffectActivated && "text-hud-accent")}
             highlightClassName="text-hud-good scale-105"
           />
@@ -191,7 +193,7 @@ export const ResourceChip = ({
                     setTooltip({
                       anchorElement: e.currentTarget,
                       position: "top",
-                      content: `Relic effect expires in ${formatTime(relicTimeRemaining)}`,
+                      content: `Relic effect expires in ${formatWait(relicTimeRemaining)}`,
                     });
                   }}
                   onMouseLeave={(e) => {
@@ -200,7 +202,7 @@ export const ResourceChip = ({
                   }}
                 >
                   <SemanticIcon name="relics" className="h-3 w-3" />
-                  {formatTime(relicTimeRemaining)}
+                  {formatWait(relicTimeRemaining)}
                 </span>
               )}
               {ratePerHour && <span className="tabular-nums text-hud-good">{ratePerHour}</span>}
@@ -290,7 +292,7 @@ export const ResourceChip = ({
                 size="sm"
                 disabled={disableButtons || relicTimeRemaining > 0}
                 onMouseEnter={tipOn(
-                  `Activate · ${relicLine(resourceId, knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
+                  `Activate · ${relicLine(resourceId, configManager.getRelicActivation(resourceId), knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
                 )}
                 onMouseLeave={tipOff}
                 onClick={(event) => {

@@ -4,10 +4,19 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { HudButton, HudField, HudNotice, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
-import { configManager, divideByPrecision, formatTime, getBuildingQuantity } from "@bibliothecadao/eternum";
+import { configManager, divideByPrecision, getBuildingQuantity } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ActionRefusedError, getBuildingFromResource, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import {
+  ActionRefusedError,
+  getBuildingFromResource,
+  RealmInfo,
+  ResourcesIds,
+  formatWait,
+  formatExact,
+  resourceName,
+  formatPercent,
+} from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
 import { RawResourcesPanel } from "./raw-resources-panel";
@@ -239,14 +248,14 @@ export const ResourceProductionControls = ({
     <HudField
       value={String(Math.round(productionAmount))}
       inputMode="numeric"
-      aria-label={`Amount of ${ResourcesIds[selectedResource]}`}
+      aria-label={`Amount of ${resourceName(selectedResource)}`}
       onChange={(typed) => setProductionAmount(Math.max(1, Number(typed.replace(/\D/g, "")) || 0))}
     />
   );
 
   if (compact)
     return (
-      <section aria-label={`${ResourcesIds[selectedResource]} production`} className="flex flex-col gap-2">
+      <section aria-label={`${resourceName(selectedResource)} production`} className="flex flex-col gap-2">
         {canUseLabor && (
           <div role="group" aria-label="Production recipe" className="flex gap-1">
             <HudButton
@@ -263,12 +272,12 @@ export const ResourceProductionControls = ({
               aria-pressed={!useRawResources}
               onClick={() => setUseRawResources(false)}
             >
-              Labor
+              {resourceName(ResourcesIds.Labor)}
             </HudButton>
           </div>
         )}
         <span className="flex flex-col gap-1">
-          <span className="text-hud-label text-hud-muted">Amount of {ResourcesIds[selectedResource]}</span>
+          <span className="text-hud-label text-hud-muted">Amount of {resourceName(selectedResource)}</span>
           {amountField}
         </span>
         <p className="text-hud-label">
@@ -277,7 +286,7 @@ export const ResourceProductionControls = ({
             : currentInputs
                 .map(
                   (input) =>
-                    `${Math.ceil(input.amount * productionAmount).toLocaleString()} ${ResourcesIds[input.resource]}`,
+                    `${formatExact(Math.ceil(input.amount * productionAmount))} ${resourceName(input.resource)}`,
                 )
                 .join(" · ")}
         </p>
@@ -307,11 +316,11 @@ export const ResourceProductionControls = ({
     );
 
   const timeRequired = ticks
-    ? formatTime(Math.floor((ticks / buildingCount) * (isVillageLikeStructureCategory(realm.category) ? 2 : 1)))
+    ? formatWait(Math.floor((ticks / buildingCount) * (isVillageLikeStructureCategory(realm.category) ? 2 : 1)))
     : "0s";
 
   return (
-    <HudPanel kind="section" title={`Start production · ${ResourcesIds[selectedResource]}`} collapsible={false}>
+    <HudPanel kind="section" title={`Start production · ${resourceName(selectedResource)}`} collapsible={false}>
       <div className="flex flex-col gap-3">
         <div className={canUseLabor ? "grid grid-cols-1 gap-4 lg:grid-cols-2" : "grid grid-cols-1 gap-4"}>
           <div className="flex flex-col gap-2">
@@ -348,9 +357,9 @@ export const ResourceProductionControls = ({
         {error && <HudNotice tone="bad" line={error} />}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hud-divider pt-3">
           <span className="flex items-center gap-1.5 text-hud-strong">
-            {Math.round(productionAmount).toLocaleString()} {ResourcesIds[selectedResource]}
+            {formatExact(Math.round(productionAmount))} {resourceName(selectedResource)}
             <ResourceIcon resource={selectedResource} size="xs" withTooltip={false} />
-            {bonus > 1 && <span className="text-hud-good">+{Math.round((bonus - 1) * 100)}% bonus</span>}
+            {bonus > 1 && <span className="text-hud-good">{formatPercent(bonus - 1, { signed: true })} bonus</span>}
           </span>
           <span className="text-hud-label text-hud-cue">Time required {timeRequired}</span>
         </div>

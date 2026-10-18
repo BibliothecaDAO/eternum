@@ -1,9 +1,17 @@
 import { HudButton, HudNumberField, HudSelect } from "@/ui/design-system/kit/hud-elements";
-import { formatNumber, knownBalance } from "@/ui/utils/utils";
+import { knownBalance } from "@/ui/utils/utils";
 import { getBlockTimestamp, getBalance } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ID, Resources, ResourcesIds, findResourceById } from "@bibliothecadao/types";
+import {
+  ID,
+  Resources,
+  ResourcesIds,
+  findResourceById,
+  formatCharge,
+  formatAmount,
+  resourceName,
+} from "@bibliothecadao/types";
 import { memo } from "react";
 
 /** One side of a bank trade: how much (typed, or all that is held), and of which resource. */
@@ -39,7 +47,7 @@ export const ResourceBar = memo(
     const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;
     const finalResourceBalance =
       selectedResourceBalance === undefined ? undefined : selectedResourceBalance - (hasLordsFees ? lordsFee : 0);
-    const trait = findResourceById(Number(resourceId))?.trait ?? "";
+    const trait = resourceName(Number(resourceId));
 
     return (
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-hud-divider pb-2">
@@ -53,10 +61,10 @@ export const ResourceBar = memo(
                 disabled={(finalResourceBalance ?? 0) <= 0}
                 onClick={() => setAmount(finalResourceBalance ?? 0)}
               >
-                Max: {selectedResourceBalance === undefined ? "—" : selectedResourceBalance.toLocaleString()}
+                Max: {selectedResourceBalance === undefined ? "—" : formatAmount(selectedResourceBalance)}
               </HudButton>
               {hasLordsFees && (
-                <span className="text-hud-bad">{`[+${isNaN(lordsFee) ? "0" : formatNumber(lordsFee, 2)}]`}</span>
+                <span className="text-hud-bad">{`[+${isNaN(lordsFee) ? "0" : formatCharge(lordsFee)}]`}</span>
               )}
             </span>
           )}
@@ -68,8 +76,8 @@ export const ResourceBar = memo(
             disabled={resources.length <= 1}
             options={resources.map((resource) => ({
               value: resource.id as ResourcesIds,
-              label: resource.trait,
-              hint: balanceOf(resource.id)?.toLocaleString() ?? "—",
+              label: resourceName(resource.id),
+              hint: formatAmount(balanceOf(resource.id)) ?? "—",
             }))}
             onChange={setResourceId}
           />

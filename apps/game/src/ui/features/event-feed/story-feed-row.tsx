@@ -13,7 +13,7 @@ import { Position, configManager, structureMapPosition, entityMapPosition } from
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { formatClockTime } from "@bibliothecadao/eternum";
+import { formatClockTime } from "@bibliothecadao/types";
 import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -83,7 +83,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   const open = useStoryOpener(event);
   return (
     <HudEventRow
-      time={formatClockTime(event.timestampMs)}
+      time={formatClockTime(event.timestampMs / 1000)}
       tip={open ? event.presentation.description : "This event’s location is no longer available"}
       onOpen={open ?? undefined}
     >

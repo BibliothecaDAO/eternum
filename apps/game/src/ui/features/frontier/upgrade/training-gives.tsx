@@ -1,5 +1,5 @@
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudCard, HudChip, HudRarity } from "@/ui/design-system/kit/hud-elements";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { XP } from "@/ui/design-system/kit/words";

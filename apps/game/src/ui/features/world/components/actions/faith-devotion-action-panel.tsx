@@ -19,7 +19,7 @@ import {
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
-import { ID, StructureType } from "@bibliothecadao/types";
+import { ID, StructureType, formatExact, formatCharge, formatPercent, formatRate } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -52,14 +52,6 @@ const buildWonderOwnerLabel = (entry: FaithLeaderboardEntry): string => {
   }
 
   return displayAddress(entry.ownerAddress);
-};
-
-const formatFaithPerSecond = (value: number): string => {
-  if (Number.isInteger(value)) {
-    return value.toLocaleString();
-  }
-
-  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
 const resolveFaithSplitPercentages = (
@@ -237,13 +229,13 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
           <EntityDetailStatList compact columns={2}>
             <EntityDetailStat
               compact
-              label={`You · ${structureOwnerPercent}%`}
-              value={`${formatFaithPerSecond(structureOwnerFpPerSec)} faith/s`}
+              label={`You · ${formatPercent(structureOwnerPercent / 100)}`}
+              value={`faith ${formatRate(structureOwnerFpPerSec)}`}
             />
             <EntityDetailStat
               compact
-              label={`Wonder owner · ${wonderOwnerPercent}%`}
-              value={`${formatFaithPerSecond(wonderOwnerFpPerSec)} faith/s`}
+              label={`Wonder owner · ${formatPercent(wonderOwnerPercent / 100)}`}
+              value={`faith ${formatRate(wonderOwnerFpPerSec)}`}
             />
           </EntityDetailStatList>
         </>
@@ -429,8 +421,8 @@ const WonderTable = ({
           <span className="block truncate text-hud-body text-hud-ink">{entry.wonderName}</span>
           <span className="block truncate text-hud-label text-hud-muted">{buildWonderOwnerLabel(entry)}</span>
         </span>
-        <span className="text-right text-hud-body text-hud-ink">{entry.faithPointsPerSecond.toLocaleString()}</span>
-        <span className="text-right text-hud-body text-hud-ink">{entry.followerCount.toLocaleString()}</span>
+        <span className="text-right text-hud-body text-hud-ink">{formatCharge(entry.faithPointsPerSecond)}</span>
+        <span className="text-right text-hud-body text-hud-ink">{formatExact(entry.followerCount)}</span>
       </HudTableRow>
     ))}
   </div>

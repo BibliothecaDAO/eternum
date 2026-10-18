@@ -1,8 +1,8 @@
+import { REWARD_WORDS } from "@/ui/design-system/kit/words";
+import { formatExact, formatDate } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type ComponentProps, lazy, type ReactNode, Suspense, useState } from "react";
 
-import { formatExact } from "@/ui/design-system/kit/amount";
-import { formatDate } from "@/ui/design-system/kit/time";
 import { Button } from "@/ui/design-system/kit/button";
 import { IconLine } from "@/ui/design-system/kit/icon-line";
 import { Panel } from "@/ui/design-system/kit/panel";
@@ -17,7 +17,6 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import type { ChestContent } from "@realms-world/value-ledger/codecs";
 import { type EnvironmentLedger, lordsOf, openChestCalls } from "../value/ledger";
-import { REWARD_WORDS } from "../words";
 import { entryMultipleOf, type PlayedGameKeys, type Reward, rewardState, useReward } from "./reward";
 
 const WalletSign = lazy(() =>

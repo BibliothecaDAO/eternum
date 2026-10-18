@@ -1,11 +1,9 @@
+import { formatAmount, formatExact, formatDuration, formatRate, formatClockTime } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { formatClockTime, formatDuration } from "@/ui/design-system/kit/time";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import {
-  AN_HOUR,
   DAY,
   DAY_ENDS,
   ESSENCE,
@@ -124,7 +122,7 @@ const Stores = ({ stores, onOpen }: { stores: StoreReading[]; onOpen?: () => voi
 };
 
 /**
- * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +302 an hour · Full in 14h". Each part
+ * A store in one line, as its plate says it when asked: "Wheat 1,771 of 6,000 · +5/min · Full in 14h". Each part
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
 export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading): string => {
@@ -132,8 +130,8 @@ export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading
   if (limit === undefined) return held;
   const against = `${held} ${OF} ${formatExact(limit)}`;
   if (fullIn === 0) return `${against} · ${FULL}`;
-  const rate = perHour !== undefined && perHour > 0 ? ` · +${formatAmount(perHour)} ${AN_HOUR}` : "";
-  return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn)}`}`;
+  const rate = perHour !== undefined && perHour > 0 ? ` · ${formatRate(perHour / 3600)}` : "";
+  return `${against}${rate}${fullIn === undefined ? "" : ` · ${FULL_IN} ${formatDuration(fullIn, { days: false })}`}`;
 };
 
 /**
@@ -179,7 +177,6 @@ const StoreMeter = ({ store }: { store: StoreReading }) =>
 
 /** A landing's "+N" shows this long, and never again when the counter remounts. */
 const DELTA_MS = 1_400;
-const delta = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
 /** The plate's "+N" as a payout lands: it pops above the number and fades as it rises. */
 const LandingDelta = ({ target }: { target: string }) => {
@@ -196,7 +193,7 @@ const LandingDelta = ({ target }: { target: string }) => {
           animate={{ opacity: [0, 1, 1, 0], y: reduced ? 0 : -14, scale: 1 }}
           transition={{ duration: DELTA_MS / 1000, times: [0, 0.1, 0.7, 1], ease: EASE.outQuart }}
         >
-          +{delta.format(landing.amount)}
+          +{formatAmount(landing.amount)}
         </motion.span>
       )}
     </AnimatePresence>

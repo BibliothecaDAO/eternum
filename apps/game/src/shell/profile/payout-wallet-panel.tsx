@@ -1,3 +1,4 @@
+import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH, type SignInOptions } from "@realms-world/identity";
 import { lazy, Suspense, useEffect, useState } from "react";
@@ -15,7 +16,6 @@ import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { useLayout } from "../frame/layout";
 import { Loading } from "../loading";
 import { CodeBoxes } from "../sign-in/fields";
-import { WALLET_WORDS } from "../words";
 
 const WalletPicker = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletPicker })),

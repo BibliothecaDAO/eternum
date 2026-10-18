@@ -1,7 +1,7 @@
+import { formatGameClock } from "@bibliothecadao/types";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { formatGameClockDuration } from "@/ui/features/world/containers/top-header/game-clock-policy";
 import { isExplicitSpectateSession } from "./spectator-session";
 import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -33,7 +33,7 @@ export const refusedBeforePlay = (): boolean => {
 };
 
 export const refusalBefore = (opensAt: number, now: number): string | null =>
-  now < opensAt ? `Starts in ${formatGameClockDuration(opensAt - now)}` : null;
+  now < opensAt ? `Starts in ${formatGameClock(opensAt - now)}` : null;
 
 const playOpensAt = (): number => {
   if (configManager.getDevModeConfig().dev_mode_on) return 0;

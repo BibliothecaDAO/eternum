@@ -5,7 +5,7 @@ import {
   type CombatRules,
   type FightForecast,
 } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, type Troops } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type Troops, formatExact } from "@bibliothecadao/types";
 import { survivalOf, type SideRange } from "./battle-range";
 
 /** Whole troops from a scaled count, as the contract counts them. */
@@ -65,10 +65,10 @@ export const extraTroopsToSurvive = (current: bigint, survives: (count: bigint) 
  */
 export const aboutTroops = (troops: number, atMost = Infinity): string => {
   const exact = Math.ceil(troops);
-  if (troops < 100) return exact.toLocaleString();
+  if (troops < 100) return formatExact(exact);
   const unit = 10 ** (Math.floor(Math.log10(troops)) - 1);
   const rounded = Math.ceil(troops / unit) * unit;
-  return (rounded <= atMost ? rounded : exact).toLocaleString();
+  return formatExact(rounded <= atMost ? rounded : exact);
 };
 
 /** A realm an army can come from, and the largest army it can hold of the attacking troop's tier. */
@@ -108,7 +108,7 @@ export const describeSurvivalAdvice = ({
   if (home === null) return `about ${aboutTroops(extra)} more troops to survive it`;
   if (total <= home.cap) return `about ${aboutTroops(extra, home.cap - current)} more troops to survive it`;
   const lift = nextLevel && total <= nextLevel.cap ? nextLevel : null;
-  const cap = (realm: ArmyCap) => `cap ${realm.cap.toLocaleString()}`;
+  const cap = (realm: ArmyCap) => `cap ${formatExact(realm.cap)}`;
   const options = [
     lift ? `level it to ${lift.name} (${cap(lift)})` : null,
     source === null
@@ -119,7 +119,7 @@ export const describeSurvivalAdvice = ({
   ].filter(Boolean);
   // The total read against the smallest cap offered, so no option is asked for more than it holds.
   const atMost = Math.min(...[lift, source].map((realm) => realm?.cap ?? Infinity));
-  const needs = `it needs about ${aboutTroops(total, atMost)} troops, and ${home.name}'s army cap is ${home.cap.toLocaleString()}`;
+  const needs = `it needs about ${aboutTroops(total, atMost)} troops, and ${home.name}'s army cap is ${formatExact(home.cap)}`;
   return options.length ? `${needs}: ${options.join(", or ")}` : `${needs}; no realm of yours can raise that many yet`;
 };
 

@@ -6,7 +6,6 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { isStaminaRecharging, STAMINA_RECHARGING_TEXT_CLASS } from "@/ui/shared/lib/stamina-visuals";
 import { BiomeInfoPanel } from "@/ui/features";
-import { formatStringNumber } from "@/ui/utils/utils";
 import {
   CombatSimulator,
   configManager,
@@ -27,10 +26,14 @@ import {
   ID,
   RelicEffect,
   RESOURCE_PRECISION,
-  resources,
   ResourcesIds,
   TroopTier,
   TroopType,
+  formatCharge,
+  formatPercent,
+  resourceName,
+  resources,
+  formatExact,
 } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
@@ -406,12 +409,11 @@ export const RaidContainer = ({
                                 {Math.floor(raidSimulation.attackerTroopsLeft)}
                                 <span className="text-hud-body text-hud-muted ml-1">
                                   (
-                                  {Math.floor(
-                                    (raidSimulation.attackerTroopsLeft /
-                                      divideByPrecision(attackerArmyData.troops.count)) *
-                                      100,
+                                  {formatPercent(
+                                    raidSimulation.attackerTroopsLeft /
+                                      divideByPrecision(attackerArmyData.troops.count),
                                   )}
-                                  %)
+                                  )
                                 </span>
                               </span>
                             </div>
@@ -527,10 +529,8 @@ export const RaidContainer = ({
                               </div>
                               <div className="text-hud-body text-hud-muted">
                                 (
-                                {Math.floor(
-                                  (raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100,
-                                )}
-                                %)
+                                {formatPercent(raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops)}
+                                )
                               </div>
                             </div>
                           </div>
@@ -581,7 +581,7 @@ export const RaidContainer = ({
                                       : "text-hud-bad"
                                 }`}
                               >
-                                {raidSimulation?.successChance.toFixed(2)}%
+                                {formatPercent(raidSimulation ? raidSimulation.successChance / 100 : undefined)}
                               </span>
                             </div>
                             <HudMeter
@@ -636,14 +636,13 @@ export const RaidContainer = ({
                                 {raidSimulation ? Math.floor(raidSimulation.raiderDamageTaken) : 0}
                                 <span className="text-hud-label ml-1">
                                   (
-                                  {raidSimulation && attackerArmyData && attackerArmyData.troops.count
-                                    ? Math.floor(
-                                        (raidSimulation.raiderDamageTaken /
-                                          divideByPrecision(attackerArmyData.troops.count)) *
-                                          100,
-                                      )
-                                    : 0}
-                                  %)
+                                  {formatPercent(
+                                    raidSimulation && attackerArmyData && attackerArmyData.troops.count
+                                      ? raidSimulation.raiderDamageTaken /
+                                          divideByPrecision(attackerArmyData.troops.count)
+                                      : 0,
+                                  )}
+                                  )
                                 </span>
                               </div>
                             </div>
@@ -653,12 +652,12 @@ export const RaidContainer = ({
                                 {raidSimulation ? Math.floor(raidSimulation.defenderDamageTaken) : 0}
                                 <span className="text-hud-label ml-1">
                                   (
-                                  {raidSimulation && raidSimulation.totalDefenderTroops
-                                    ? Math.floor(
-                                        (raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops) * 100,
-                                      )
-                                    : 0}
-                                  %)
+                                  {formatPercent(
+                                    raidSimulation && raidSimulation.totalDefenderTroops
+                                      ? raidSimulation.defenderDamageTaken / raidSimulation.totalDefenderTroops
+                                      : 0,
+                                  )}
+                                  )
                                 </span>
                               </div>
                             </div>
@@ -688,12 +687,10 @@ export const RaidContainer = ({
                                   >
                                     <div className="flex items-center gap-2">
                                       <ResourceIcon resource={resource.resourceId} size="md" />
-                                      <span className="text-hud-accent">
-                                        {resources.find((r) => r.id === resource.resourceId)?.trait || ""}
-                                      </span>
+                                      <span className="text-hud-accent">{resourceName(resource.resourceId)}</span>
                                     </div>
                                     <span className="text-hud-title text-hud-accent">
-                                      {formatStringNumber(resource.amount, 0)}
+                                      {formatExact(resource.amount)}
                                     </span>
                                   </div>
                                 ))}

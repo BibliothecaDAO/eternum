@@ -1,4 +1,5 @@
-import { currencyIntlFormat, displayAddress } from "@/ui/utils/utils";
+import { formatExact } from "@bibliothecadao/types";
+import { displayAddress } from "@/ui/utils/utils";
 import { buildBlitzShareMessageText } from "@/ui/shared/lib/x-share-messages";
 
 const DEFAULT_FALLBACK_ORIGIN = "https://eternum.game";
@@ -86,7 +87,7 @@ export const buildBlitzShareMessage = ({
   eventLabel = "Realms Blitz",
 }: BlitzShareMessageOptions = {}): string => {
   const placement = rank && rank > 0 ? formatOrdinal(rank) : "a top spot";
-  const pointsLabel = currencyIntlFormat(points ?? 0, 0);
+  const pointsLabel = formatExact(points ?? 0);
 
   return buildBlitzShareMessageText({
     placement,

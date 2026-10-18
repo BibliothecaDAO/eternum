@@ -1,3 +1,4 @@
+import { knownAmount } from "@/ui/utils/utils";
 import { StructureSelect } from "@/ui/design-system/molecules/structure-select";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -9,11 +10,18 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudLoading, HudTabs, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { useMarket } from "@/hooks/helpers/use-trade";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { findResourceById, ID, MarketInterface, ResourcesIds } from "@bibliothecadao/types";
+import {
+  ID,
+  MarketInterface,
+  ResourcesIds,
+  formatAmount,
+  formatCharge,
+  LORDS,
+  resourceName,
+} from "@bibliothecadao/types";
 
 import { lazy, Suspense, useMemo, useState } from "react";
 import { resolveBestPrices } from "./best-prices";
@@ -152,7 +160,7 @@ const MarketResourcePicker = ({
 
 /** The compact trade view's header: the resource on the desk, its balance and best prices, and the way back. */
 const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange: () => void }) => {
-  const trait = findResourceById(desk.selectedResource)?.trait ?? "";
+  const name = resourceName(desk.selectedResource);
   const balance = useStructureResourceBalance(desk.structureEntityId, desk.selectedResource);
   const bestPrices = useMemo(() => resolveBestPrices(desk.bidOffers, desk.askOffers), [desk.bidOffers, desk.askOffers]);
 
@@ -161,9 +169,9 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
       <span className="flex min-w-0 items-center gap-2">
         <ResourceIcon resource={desk.selectedResource} size="sm" withTooltip={false} />
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-hud-strong">{trait}</span>
+          <span className="truncate text-hud-strong">{name}</span>
           <span className="flex flex-wrap gap-x-2 text-hud-label text-hud-muted">
-            <span title="Balance">{currencyFormat(balance, 0)} owned</span>
+            <span title="Balance">{formatAmount(knownAmount(balance))} owned</span>
             <span className="text-hud-good" title="Best ask">
               Buy {formatPrice(bestPrices.lowestAsk.get(desk.selectedResource))}
             </span>
@@ -180,7 +188,7 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
   );
 };
 
-const formatPrice = (price: number | undefined) => (price === undefined ? "—" : formatNumber(price, 4));
+const formatPrice = (price: number | undefined) => (price === undefined ? "—" : formatCharge(price));
 
 const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) => {
   const { currentDefaultTick } = getBlockTimestamp();
@@ -262,16 +270,16 @@ const TradingStructureHeader = ({
         }))}
       />
       <div className="flex items-center gap-1.5">
-        <span title="Lords">
+        <span title={LORDS}>
           <HudChip>
             <ResourceIcon resource={ResourcesIds.Lords} size="xs" withTooltip={false} />
-            {currencyFormat(balances.lords, 0)}
+            {formatAmount(knownAmount(balances.lords))}
           </HudChip>
         </span>
         <span title="Donkeys">
           <HudChip tone={balances.donkeys !== undefined && balances.donkeys > 0 ? undefined : "bad"}>
             <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
-            {currencyFormat(balances.donkeys, 0)}
+            {formatAmount(knownAmount(balances.donkeys))}
           </HudChip>
         </span>
       </div>

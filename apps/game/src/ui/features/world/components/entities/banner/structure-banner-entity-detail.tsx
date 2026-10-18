@@ -14,8 +14,8 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
-import { ID, StructureType } from "@bibliothecadao/types";
-import { configManager, formatTime, toHexString } from "@bibliothecadao/eternum";
+import { ID, StructureType, formatWait } from "@bibliothecadao/types";
+import { configManager, toHexString } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { playerAvatarUrl } from "@/hooks/use-player-profile";
 import { LeftView } from "@/types";
@@ -132,17 +132,17 @@ const StructureBannerEntityDetailContent = memo(
       : null;
     const militiaUnlockLabel = villageTimerSummary
       ? villageTimerSummary.militiaUnlockRemainingSeconds > 0
-        ? formatTime(villageTimerSummary.militiaUnlockRemainingSeconds)
+        ? formatWait(villageTimerSummary.militiaUnlockRemainingSeconds)
         : "Ready"
       : "—";
     const settlementImmunityLabel = villageTimerSummary
       ? villageTimerSummary.settlementImmunityRemainingSeconds > 0
-        ? formatTime(villageTimerSummary.settlementImmunityRemainingSeconds)
+        ? formatWait(villageTimerSummary.settlementImmunityRemainingSeconds)
         : "Expired"
       : "—";
     const postRaidWindowLabel = villageTimerSummary
       ? villageTimerSummary.postRaidImmunityWindowSeconds > 0
-        ? formatTime(villageTimerSummary.postRaidImmunityWindowSeconds)
+        ? formatWait(villageTimerSummary.postRaidImmunityWindowSeconds)
         : "Unavailable"
       : "—";
     const showFaithTab =

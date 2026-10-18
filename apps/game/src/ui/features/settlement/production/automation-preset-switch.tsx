@@ -1,6 +1,6 @@
+import { automationRefusal, presetLine } from "@/ui/design-system/kit/words";
 import { HudSelect } from "@/ui/design-system/kit/hud-elements";
 import { useAutomationStore, type RealmEntityType } from "@/hooks/store/use-automation-store";
-import { automationRefusal, presetLine } from "./automation-words";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { inferRealmPreset, REALM_PRESETS, type RealmPresetId } from "@bibliothecadao/eternum/automation";
@@ -18,11 +18,12 @@ export function AutomationPresetSwitch({ entityId, entityType }: { entityId: num
     store.setRealmPreset(realmId, presetId);
   };
   const preset = inferRealmPreset(automation);
+  const chosen = REALM_PRESETS.find((entry) => entry.id === preset);
   return (
     // The realm card's header holds it: its keys choose here, never the map's shortcuts.
     <span
       className="inline-flex"
-      data-tip={refusal ?? presetLine(preset)}
+      data-tip={refusal ?? (chosen ? presetLine(chosen) : undefined)}
       onKeyDown={(event) => event.stopPropagation()}
     >
       <HudSelect

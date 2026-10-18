@@ -14,7 +14,6 @@ import { surfaceAnchorFrom } from "@/ui/design-system/molecules/popover";
 import {
   activeCombatRules,
   configManager,
-  formatTime,
   getGuardsByStructure,
   getTroopResourceId,
   StaminaManager,
@@ -41,6 +40,8 @@ import {
   type ActorType,
   type ID,
   type Troops,
+  formatWait,
+  formatExact,
 } from "@bibliothecadao/types";
 import { TierChip } from "../utils/tier-chip";
 
@@ -420,7 +421,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   };
 
   const formatTroopValue = (value: number) => {
-    return Math.round(value).toLocaleString();
+    return formatExact(Math.round(value));
   };
 
   const casualtyLine = (label: string, side: SideRange) => {
@@ -526,10 +527,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               why={
                 [
                   cooldownBlocksAttack && attackerCooldownRemaining > 0
-                    ? `${formatTime(attackerCooldownRemaining)} remaining`
+                    ? `${formatWait(attackerCooldownRemaining)} remaining`
                     : null,
                   isLowStamina ? `Current: ${attackerStaminaValue ?? "—"} / Required: ${requiredAttackStamina}` : null,
-                  isLowStamina && staminaWaitSeconds !== null ? `Ready in: ${formatTime(staminaWaitSeconds)}` : null,
+                  isLowStamina && staminaWaitSeconds !== null ? `Ready in: ${formatWait(staminaWaitSeconds)}` : null,
                 ]
                   .filter(Boolean)
                   .join(" · ") || undefined

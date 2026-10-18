@@ -2,7 +2,7 @@ import { type FC } from "react";
 
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudRing } from "@/ui/design-system/kit/hud-elements";
-import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
+import { productionTimeLeft } from "@/ui/features/economy/resources/entity-resource-table/utils";
 import { ResourcesIds } from "@bibliothecadao/types";
 
 const PRODUCTION_DEPLETION_WINDOW_SECONDS = 10 * 60;
@@ -51,7 +51,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
       // normal state, not a warning, and shows no badge.
       timer={
         isProducing && remaining !== null && remaining >= 60
-          ? formatTimeRemaining(Math.ceil(remaining / 60) * 60)
+          ? productionTimeLeft(Math.ceil(remaining / 60) * 60)
           : undefined
       }
       foot={amount}

@@ -4,7 +4,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { formatAmount, formatExact } from "./amount";
 import { Button } from "./button";
 import { ClockLine } from "./clock-line";
 import { clockLineText } from "./clock-text";
@@ -30,7 +29,6 @@ import { FailureCard, StateCard } from "./state-card";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
 import { Title } from "./title";
-import { formatClockTime, formatDuration, formatMoment } from "./time";
 import { ViewSwitch } from "./view-switch";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
@@ -48,43 +46,6 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
-});
-
-describe("amounts", () => {
-  it("shows an unknown amount as a dash, never zero, and compacts past ten thousand", () => {
-    expect(formatAmount(undefined)).toBe("—");
-    expect(formatAmount(0)).toBe("0");
-    expect(formatAmount(1_498)).toBe("1,498");
-    expect(formatAmount(12_400)).toBe("12.4K");
-  });
-
-  it("keeps a price exact at any size", () => {
-    expect(formatExact(24_000)).toBe("24,000");
-    expect(formatExact(undefined)).toBe("—");
-  });
-});
-
-describe("time", () => {
-  it("writes durations in hours and minutes, never days, rounding up so time left never reads 0m", () => {
-    expect(formatDuration(7 * 3600 + 14 * 60)).toBe("7h 14m");
-    expect(formatDuration(12 * 3600)).toBe("12h");
-    expect(formatDuration(42 * 60)).toBe("42m");
-    expect(formatDuration(30 * 3600)).toBe("30h");
-    expect(formatDuration(1)).toBe("1m");
-    expect(formatDuration(undefined)).toBe("—");
-  });
-
-  it("writes a moment as the local clock time, unknown as a dash", () => {
-    const at = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
-    expect(formatClockTime(at)).toBe("21:40");
-    expect(formatClockTime(undefined)).toBe("—");
-  });
-
-  it("writes a moment a day away with its day, so a clock time already gone today never reads as past", () => {
-    const now = new Date(2026, 9, 10, 15, 0).getTime() / 1000;
-    expect(formatMoment(new Date(2026, 9, 11, 14, 32).getTime() / 1000, now)).toBe("11 Oct 14:32");
-    expect(formatMoment(undefined, now)).toBe("—");
-  });
 });
 
 describe("the clock", () => {

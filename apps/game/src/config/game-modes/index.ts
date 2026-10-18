@@ -1,12 +1,13 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { configManager, getEntityInfo, getStructureName, nativeGameModeOf } from "@bibliothecadao/eternum";
 import {
-  configManager,
-  getEntityInfo,
-  getStructureName,
-  getStructureTypeName,
-  nativeGameModeOf,
-} from "@bibliothecadao/eternum";
-import { BuildingType, type ContractAddress, type ID, StructureType, getResourceTiers } from "@bibliothecadao/types";
+  BuildingType,
+  type ContractAddress,
+  type ID,
+  StructureType,
+  getResourceTiers,
+  structureName,
+} from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 
 export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
@@ -98,7 +99,7 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
 const buildStructureHelpers = (isBlitz: boolean) => ({
   // A mode names the active game's structures, from the active game's facts.
   getName: (structure: StructureNameInput) => getStructureName(structure, isBlitz),
-  getTypeName: getStructureTypeName,
+  getTypeName: structureName,
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
     getEntityInfo(entityId, playerAccount, store, isBlitz),
 });

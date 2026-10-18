@@ -69,7 +69,7 @@ describe("the leaderboard's columns", () => {
       ["Tiles", "5 each"],
       ["Crates", "250 each"],
       ["Camps & Rifts", "300 each"],
-      ["HS taken", "1.5K each"],
+      ["HS taken", "1,500 each"],
       ["HS held", "x/s"],
       ["Points"],
     ]);
@@ -89,7 +89,7 @@ describe("the scoring rules on a phone", () => {
       />,
     );
     expect(dom(html).querySelector('[aria-label="Scoring rules"]')?.textContent).toBe(
-      "Tiles 5 each · Crates 250 each · Camps & Rifts 300 each · HS taken 1.5K each · HS held x/s",
+      "Tiles 5 each · Crates 250 each · Camps & Rifts 300 each · HS taken 1,500 each · HS held x/s",
     );
   });
 });

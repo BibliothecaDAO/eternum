@@ -1,4 +1,4 @@
-import { getHexDistance } from "@bibliothecadao/types";
+import { getHexDistance, formatExact } from "@bibliothecadao/types";
 import type { PointsGrants } from "./points-goal";
 
 /** A hex in contract space, as the map and its facts give it. */
@@ -88,7 +88,7 @@ export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHa
   troopsOnHand
     ? {
         key: "coach:raise",
-        line: `Raise an army at ${troopsOnHand.realmName} (${troopsOnHand.troops.toLocaleString()} troops on hand): it explores for +${grants.exploreTile.toLocaleString()} points a tile.`,
+        line: `Raise an army at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.troops)} troops on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
         verb: "Raise an army",
         act: { kind: "raise", realmId: troopsOnHand.realmId },
       }
@@ -101,13 +101,13 @@ export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHa
 
 const openCrateStep = ({ army, target }: Pair, grants: PointsGrants): CoachStep => ({
   key: `coach:open-crate:${target.hex.col}:${target.hex.row}`,
-  line: `Your army is beside ${target.name}: open it for +${grants.openRelicCrate.toLocaleString()} points.`,
+  line: `Your army is beside ${target.name}: open it for +${formatExact(grants.openRelicCrate)} points.`,
   verb: "Open the crate",
   act: { kind: "open-crate", armyId: army.entityId, hex: target.hex },
 });
 
 const exploreStep = (army: CoachArmy, grants: PointsGrants): CoachStep => {
-  const points = `+${grants.exploreTile.toLocaleString()} points a tile`;
+  const points = `+${formatExact(grants.exploreTile)} points a tile`;
   return army.selected
     ? {
         key: `coach:explore:${army.entityId}:selected`,
@@ -168,7 +168,7 @@ const goFor = (kind: CoachTarget["kind"], state: CoachState, admits?: (pair: Pai
 /** A target's line, its button's verb, and the line once its army is selected: how to take it on the map. */
 const goWords = (kind: CoachTarget["kind"], name: string, grants: PointsGrants) => {
   if (kind === "crate") {
-    const points = `+${grants.openRelicCrate.toLocaleString()} points`;
+    const points = `+${formatExact(grants.openRelicCrate)} points`;
     return {
       line: `Open ${name}: ${points}.`,
       verb: "Show the crate",
@@ -177,8 +177,8 @@ const goWords = (kind: CoachTarget["kind"], name: string, grants: PointsGrants) 
   }
   const [line, points] =
     kind === "site"
-      ? [`Take ${name} from The Vanguard`, `+${grants.claimCampFromBandits.toLocaleString()} points`]
-      : [`Take ${name}`, `+${grants.claimHyperstructureFromBandits.toLocaleString()} points, then points every second`];
+      ? [`Take ${name} from The Vanguard`, `+${formatExact(grants.claimCampFromBandits)} points`]
+      : [`Take ${name}`, `+${formatExact(grants.claimHyperstructureFromBandits)} points, then points every second`];
   return {
     line: `${line}: ${points}.`,
     verb: `Show ${name}`,

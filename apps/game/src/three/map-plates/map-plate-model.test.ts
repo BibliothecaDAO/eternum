@@ -1,9 +1,8 @@
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, siteName } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { stack, type PlateBox } from "./map-plate-layout";
 import { attackOrder, buildArmyPlate, buildStructurePlate, restingGuard } from "./map-plate-model";
-import { siteName } from "./site-name";
 
 const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = {}) => ({
   entityId: 29,

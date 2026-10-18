@@ -1,8 +1,8 @@
+import { formatAmount, LORDS } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { CHESTS, ESSENCE, LABOR, LORDS, REVEALS, SITES_CLEARED } from "@/ui/design-system/kit/words";
+import { CHESTS, ESSENCE, LABOR, REVEALS, SITES_CLEARED } from "@/ui/design-system/kit/words";
 
 /** A day's totals as the log counts them; LORDS arrive with the contracts' ruin chests. Unknown shows as a dash. */
 export type DayTotals = {

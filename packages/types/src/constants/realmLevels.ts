@@ -12,7 +12,3 @@ export enum RealmLevelNames {
   Kingdom = "Kingdom",
   Empire = "Empire",
 }
-
-export const getLevelName = (level: RealmLevels): string => {
-  return RealmLevelNames[RealmLevels[level] as keyof typeof RealmLevelNames];
-};

@@ -1,8 +1,7 @@
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { fightLine } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, formatExact } from "@bibliothecadao/types";
 
 import { battleRecordOf } from "../sites/fight-record";
 import { fightVerdict } from "../sites/fight-result";

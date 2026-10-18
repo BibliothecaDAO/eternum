@@ -1,15 +1,24 @@
+import { formatAmount, formatPoints } from "@bibliothecadao/types";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboardEntry, HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { buildLandingLeaderboard } from "@/services/leaderboard/landing-leaderboard-service";
-import { formatAmount } from "@/ui/design-system/kit/amount";
 import { Button } from "@/ui/design-system/kit/button";
 import { Chip } from "@/ui/design-system/kit/chip";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
-import { CONTINUE, SEASON_ENDINGS, SEASON_OVER, WITHDRAW, YOU_PLACED } from "@/ui/design-system/kit/words";
+import {
+  CONTINUE,
+  SEASON_ENDINGS,
+  SEASON_OVER,
+  WITHDRAW,
+  YOU_PLACED,
+  REWARD_WORDS,
+  SEASON_WORDS,
+  WORDS,
+} from "@/ui/design-system/kit/words";
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { rosterWalletOf } from "@/runtime/world/directory";
@@ -17,7 +26,6 @@ import { rosterWalletOf } from "@/runtime/world/directory";
 import { gameKeyOf, gameSlotKeyOf } from "../blitz-rows";
 import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { entryHref } from "../game-links";
-import { formatPoints } from "../format";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
 import { backFrom, isOpenedFrom, openedFrom } from "../frame/opened-from";
@@ -35,7 +43,6 @@ import { Figure } from "@/ui/design-system/kit/figure";
 import { useNowSeconds } from "../use-now";
 import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
-import { REWARD_WORDS, SEASON_WORDS, WORDS } from "../words";
 import { gameTitle } from "./history-row";
 import { gameOfResults } from "./results-link";
 import { type RewardSeat, useSealedChest } from "./reward";
@@ -244,7 +251,7 @@ const BlitzResult = ({
                     <PlayerName account={entry.address} you={isOwn} portrait />
                   </span>
                   <span className="text-base font-bold tabular-nums">
-                    {formatPoints(entry.totalPoints)} {SEASON_WORDS.vp}
+                    {formatPoints(Math.round(entry.totalPoints))}
                   </span>
                 </li>
               );

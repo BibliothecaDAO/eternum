@@ -1,3 +1,4 @@
+import { StructureType, structureName } from "@bibliothecadao/types";
 import { getPlayerName } from "@/hooks/use-player-profile";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
@@ -117,18 +118,12 @@ const wonderFaith = (rows: FaithReadModels, wonderId: bigint): ReadModelRow =>
 const ownerName = (owner: unknown): string | null =>
   typeof owner === "string" || typeof owner === "bigint" ? getPlayerName(owner) : null;
 
-const structureTypeLabel = (structureType: number): string => {
-  if (structureType === REALM_STRUCTURE_TYPE) return "Realm";
-  if (structureType === VILLAGE_STRUCTURE_TYPE) return "Village";
-  return "Structure";
-};
-
 const structureLabel = (structureId: bigint, structureType: number, realmId: number): string => {
   if (structureType === REALM_STRUCTURE_TYPE && realmId > 0) {
     const realmName = getRealmNameById(realmId);
-    return realmName ? `Realm - ${realmName}` : `Realm #${realmId}`;
+    if (realmName) return `${structureName(StructureType.Realm)} - ${realmName}`;
   }
-  return structureTypeLabel(structureType);
+  return structureName(structureType as StructureType);
 };
 
 const followerEntries = (rows: FaithReadModels, wonderId: bigint): WonderFaithFollowerEntry[] =>
@@ -153,7 +148,7 @@ const followerEntries = (rows: FaithReadModels, wonderId: bigint): WonderFaithFo
       {
         structureId,
         structureType,
-        structureTypeLabel: structureTypeLabel(structureType),
+        structureTypeLabel: structureName(structureType as StructureType),
         structureLabel: structureLabel(structureId, structureType, realmId),
         ownerAddress: address(structure.owner),
         ownerName: ownerName(structure.owner),

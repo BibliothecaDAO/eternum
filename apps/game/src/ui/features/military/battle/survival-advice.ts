@@ -1,6 +1,6 @@
 import { configManager, getEntityName, getIsBlitz } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { getLevelName, StructureType, type ID, type Troops } from "@bibliothecadao/types";
+import { StructureType, type ID, type Troops, rankName } from "@bibliothecadao/types";
 
 import {
   fieldArmyTroops,
@@ -35,7 +35,7 @@ export const readSurvivalAdvice = (
   const level = Number(home.base.level);
   const nextLevel =
     level < configManager.getMaxLevel(StructureType.Realm)
-      ? { name: getLevelName(level + 1), cap: configManager.getMaxArmySize(level + 1, tier) }
+      ? { name: rankName(level + 1), cap: configManager.getMaxArmySize(level + 1, tier) }
       : null;
   const total = current + extra;
   const source =

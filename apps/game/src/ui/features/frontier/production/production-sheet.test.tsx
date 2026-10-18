@@ -38,8 +38,8 @@ describe("Production", () => {
     );
     const rows = [...host.querySelectorAll("section[aria-label='Production'] > div > div")];
     // Each row writes its store's word beside the icon.
-    expect(rows[0].textContent).toBe("wheat+500/h9,640 / 18KFull in 16h 44m");
-    expect(rows[1].textContent).toBe("labor+0/h18KFullRealm");
+    expect(rows[0].textContent).toBe("wheat+8.3/min9,640 / 18KFull in 16h 44m");
+    expect(rows[1].textContent).toBe("labor0/min18KFullRealm");
     expect(rows[2].textContent).toContain("troops");
     act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Realm")!.click());
     expect(onSpend).toHaveBeenCalledWith("realm");

@@ -1,7 +1,9 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudNotice, HudRelic, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
-import { relicKind, relicLine, relicShortName } from "../relic-words";
+import { relicLine, relicShortName, ESSENCE } from "@/ui/design-system/kit/words";
+import { configManager } from "@bibliothecadao/eternum";
+import { RELIC_KIND } from "@/ui/features/world/components/entities/relic-kind";
+import { getRelicInfo, RelicRecipientType, ResourcesIds, formatCharge, formatAmount } from "@bibliothecadao/types";
 import { RelicInfoResult, useRelicMetadata } from "../hooks/use-relic-activation";
 
 /** A held relic: its chip, how many are held, and what it does on hover once the game's relic rules have arrived. */
@@ -10,11 +12,11 @@ export const HeldRelic = ({ relicId, held }: { relicId: ResourcesIds; held: stri
   return (
     <HudRelic
       icon={resourceMeaning(relicId)}
-      kind={relicKind(relicId)}
+      kind={RELIC_KIND[getRelicInfo(relicId)!.type]}
       gives={relicShortName(relicId)}
       trail={`×${held}`}
       state="held"
-      tip={relicInfo ? relicLine(relicId) : undefined}
+      tip={relicInfo ? relicLine(relicId, configManager.getRelicActivation(relicId)) : undefined}
     />
   );
 };
@@ -35,13 +37,17 @@ export const RelicEssenceRequirement = ({
   <div className="flex flex-col gap-1">
     <HudRow
       title="Activation cost"
-      trail={<span className="tabular-nums">{essenceCost.toLocaleString()} Essence</span>}
+      trail={
+        <span className="tabular-nums">
+          {formatCharge(essenceCost)} {ESSENCE}
+        </span>
+      }
     />
     <HudRow
       title="Essence balance"
       trail={
         <span className={hasEnoughEssence ? "tabular-nums text-hud-good" : "tabular-nums text-hud-bad"}>
-          {essenceBalance?.toLocaleString() ?? "—"}
+          {formatAmount(essenceBalance) ?? "—"}
         </span>
       }
     />
@@ -70,5 +76,5 @@ export const RelicIncompatibilityNotice = ({
 
 /** The Essence an activation pays, as its button names it. */
 export const essencePrice = (essenceCost: number) => [
-  { icon: resourceMeaning(ResourcesIds.Essence), word: "Essence", amount: essenceCost.toLocaleString() },
+  { icon: resourceMeaning(ResourcesIds.Essence), word: "Essence", amount: formatCharge(essenceCost) },
 ];

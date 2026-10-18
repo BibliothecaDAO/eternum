@@ -2,7 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../blitz-slot";
-import { YOU } from "@/ui/design-system/kit/words";
+import { YOU, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
@@ -11,7 +11,6 @@ import { Field } from "@/ui/design-system/kit/field";
 import { Kbd } from "@/ui/design-system/kit/kbd";
 import { Panel } from "@/ui/design-system/kit/panel";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { CHAT_WORDS } from "../words";
 import { type ChatHold, useLobbyChat } from "./lobby-chat";
 
 /** The longest message the chat takes (packages/types chat/shared.ts). */

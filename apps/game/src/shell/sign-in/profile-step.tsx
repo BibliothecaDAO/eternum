@@ -1,3 +1,4 @@
+import { SIGN_IN_WORDS } from "@/ui/design-system/kit/words";
 import { IDENTITY_PORTRAITS, nameRuleViolation, type Session } from "@realms-world/identity";
 import { useState, type FormEvent } from "react";
 
@@ -5,7 +6,6 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { Button } from "@/ui/design-system/kit/button";
 import { nameRefusal } from "@/ui/modules/identity/identity-failures";
 
-import { SIGN_IN_WORDS } from "../words";
 import { FailureLine } from "./failure-line";
 import { NameField, PortraitGrid } from "./fields";
 

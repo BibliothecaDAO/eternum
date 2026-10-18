@@ -5,7 +5,6 @@ import {
   canPayTroopRaise,
   configManager,
   divideByPrecision,
-  formatTime,
   getGuardSlotCooldownRemaining,
   getGuardsByStructure,
   getTroopResourceId,
@@ -31,6 +30,8 @@ import {
   StructureType,
   TroopTier,
   TroopType,
+  formatWait,
+  guardSlotName,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -426,7 +427,7 @@ export const useArmyCreation = ({
     ? !isDefenseSlotCompatible && selectedGuardLabel
       ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabel}. Reinforce it with the same troop type and tier.`
       : selectedSlotCooldown > 0
-        ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} was wiped out and is rebuilding for ${formatTime(selectedSlotCooldown)}.`
+        ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} was wiped out and is rebuilding for ${formatWait(selectedSlotCooldown)}.`
         : isDefenseSlotCreationBlocked
           ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
           : null

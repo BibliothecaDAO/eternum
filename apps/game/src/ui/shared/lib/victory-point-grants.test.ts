@@ -16,15 +16,15 @@ describe("what a held hyperstructure earns", () => {
   it("states no one rate where each hyperstructure pays by the realms around it (Blitz), and gives the rule on hover", () => {
     expect(describeHyperstructureHold(blitz)).toEqual({
       grant: "x/s",
-      rule: "Hold a Hyperstructure: 1 points every second for each realm settled on the six sites around it",
+      rule: "Hold a Hyperstructure: 1 point every second for each realm settled on the six sites around it",
     });
   });
 
   it("is its rate a second where no multiplier applies", () => {
-    expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "flat" }).grant).toBe("1/s");
+    expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "flat" }).grant).toBe("+1/s");
   });
 
   it("is twice its rate a second in a Duel", () => {
-    expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "double" }).grant).toBe("2/s");
+    expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "double" }).grant).toBe("+2/s");
   });
 });

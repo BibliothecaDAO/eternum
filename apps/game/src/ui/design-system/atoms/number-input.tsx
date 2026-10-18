@@ -1,3 +1,4 @@
+import { formatCharge, readTypedNumber, typedNumberText } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useUISound } from "@/audio";
@@ -31,23 +32,12 @@ export const NumberInput = ({
   onBlur: onBlurProp,
   disabled = false,
 }: NumberInputProps) => {
-  const formatNumber = (num: number): string => {
-    if (num >= 1000) {
-      return num.toLocaleString("en-US");
-    }
-    return String(num);
-  };
-
   const playClick = useUISound("ui.click");
-  const [displayValue, setDisplayValue] = useState(formatNumber(value));
+  const [displayValue, setDisplayValue] = useState(formatCharge(value));
 
   useEffect(() => {
-    setDisplayValue(formatNumber(value));
+    setDisplayValue(formatCharge(value));
   }, [value]);
-
-  const parseNumber = (str: string): number => {
-    return parseFloat(str.replace(/,/g, ""));
-  };
 
   return (
     <div className={cn("ui-field w-full gap-1", className)} data-fill>
@@ -83,32 +73,22 @@ export const NumberInput = ({
             setDisplayValue("");
             return;
           }
-          if (allowDecimals) {
-            const match = inputValue.match(/[+-]?([0-9,]+([.][0-9]*)?|[.][0-9]+)/);
-            if (match) {
-              const parsedNumber = Math.min(parseNumber(match[0]), max);
-              setDisplayValue(match[0]);
-              onChange(parsedNumber);
-            } else {
-              setDisplayValue(formatNumber(min));
-              onChange(min);
-            }
+          const typed = typedNumberText(inputValue, { whole: !allowDecimals });
+          if (typed === undefined) {
+            setDisplayValue(formatCharge(min));
+            onChange(min);
+          } else if (allowDecimals) {
+            setDisplayValue(typed);
+            onChange(Math.min(readTypedNumber(typed) ?? min, max));
           } else {
-            const match = inputValue.match(/[+-]?([0-9,]+)/);
-            if (match) {
-              const parsedValue = parseNumber(match[0]);
-              const maxValue = Math.min(Math.max(Math.floor(parsedValue), min), max);
-              setDisplayValue(formatNumber(maxValue));
-              onChange(maxValue);
-            } else {
-              setDisplayValue(formatNumber(min));
-              onChange(min);
-            }
+            const whole = Math.min(Math.max(readTypedNumber(typed, { whole: true }) ?? min, min), max);
+            setDisplayValue(formatCharge(whole));
+            onChange(whole);
           }
         }}
         onBlur={() => {
           if (displayValue === "") {
-            setDisplayValue(formatNumber(Math.max(value, min)));
+            setDisplayValue(formatCharge(Math.max(value, min)));
           }
           onBlurProp?.();
         }}

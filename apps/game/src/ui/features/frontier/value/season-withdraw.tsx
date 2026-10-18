@@ -1,9 +1,8 @@
+import { formatExact, formatMoment } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 
-import { formatMoment } from "@/ui/design-system/kit/time";
 import { WITHDRAW, WITHDRAWALS_CLOSED, withdrawUntil } from "@/ui/design-system/kit/words";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 

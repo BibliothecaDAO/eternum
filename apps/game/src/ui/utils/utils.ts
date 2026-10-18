@@ -4,42 +4,16 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 
 export { getEntityIdFromKeys };
 
-export const formatStringNumber = (number: number, decimals: number): string => {
-  return number.toLocaleString("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-};
-
-export const formatNumber = (num: number, decimals: number): string => {
-  // Convert to string with max decimals
-  let str = num.toFixed(decimals);
-
-  // Remove trailing zeros after decimal point
-  if (str.includes(".")) {
-    str = str.replace(/\.?0+$/, "");
-  }
-
-  return str;
-};
-
 /** A raw balance for display: undefined when it is not known here, which shows as "—", never as zero. */
 export const knownBalance = (raw: bigint | number | undefined): number | undefined =>
   raw === undefined ? undefined : divideByPrecision(Number(raw));
 
-/** A raw amount for display; an amount this client does not know shows as "—", never as zero. */
-export const currencyFormat = (num: number | undefined, decimals: number): string => {
-  if (num === undefined) return "—";
-  const formattedDecimals = formatNumber(divideByPrecision(num, false), decimals);
-  return Number(formattedDecimals).toLocaleString();
-};
-
-export function currencyIntlFormat(num: number, decimals: number = 2): string {
-  return Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: decimals,
-  }).format(num || 0);
-}
+/**
+ * A raw amount as it is written: divided out exactly, never floored, so a fraction reaches the words module ("<1",
+ * "0.25 LORDS"). Undefined when it is not known here. knownBalance floors it for what a player can spend.
+ */
+export const knownAmount = (raw: bigint | number | undefined): number | undefined =>
+  raw === undefined ? undefined : divideByPrecision(Number(raw), false);
 
 export function displayAddress(string: string) {
   if (string === undefined) return "unknown";
@@ -114,13 +88,4 @@ export const getRandomBackgroundImage = () => {
 
 export const adjustWonderLordsCost = (cost: ResourceCost[]): ResourceCost[] => {
   return cost.map((item) => (item.resource === ResourcesIds.Lords ? { ...item, amount: item.amount * 0.1 } : item));
-};
-
-export const formatArrivalTime = (date: Date | null) => {
-  if (!date) return "";
-
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} `;
 };

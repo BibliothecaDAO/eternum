@@ -1,5 +1,5 @@
+import { formatClockTime, formatDuration } from "@bibliothecadao/types";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
-import { formatClockTime, formatDuration } from "@/ui/design-system/kit/time";
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
 import { DAY_ENDS, LEFT } from "@/ui/design-system/kit/words";
 

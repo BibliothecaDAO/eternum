@@ -9,7 +9,6 @@ import { sendOnce, useAllInFlight, useInFlight } from "@/hooks/store/use-actions
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { requireActiveGameClient } from "@/sync/active-game-client";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
@@ -19,7 +18,7 @@ import {
   BUILD,
   HUT,
   LABOR,
-  makesAnHour,
+  makes,
   needsAt,
   ONE_A_REALM,
   POPULATION,
@@ -43,7 +42,17 @@ import {
 } from "@bibliothecadao/eternum";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { BUILDINGS_CENTER, BuildingType, getHexDistance, type HexPosition, ResourcesIds } from "@bibliothecadao/types";
+import {
+  BUILDINGS_CENTER,
+  BuildingType,
+  getHexDistance,
+  type HexPosition,
+  ResourcesIds,
+  formatAmount,
+  formatExact,
+  formatCharge,
+  formatRate,
+} from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
@@ -297,8 +306,6 @@ const buildTile = (option: BuildOption, labor: number | undefined): BuildTile =>
   };
 };
 
-const times = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-
 /**
  * What a building does, in one line from its real effect: "Farm: +302 wheat an hour, takes 1 population". A training
  * building starts every new army at its type's tier in its attribute.
@@ -307,7 +314,7 @@ const buildingLine = (option: BuildOption): string => {
   const { effect } = option;
   const does =
     effect.kind === "produces"
-      ? makesAnHour(formatAmount(effect.perHour), PRODUCTS[effect.resource].word)
+      ? makes(PRODUCTS[effect.resource].word, formatRate(effect.perHour / 3600))
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
         : `+${formatAmount(effect.amount)} ${POPULATION}`;
@@ -324,7 +331,7 @@ const riseLine = (option: BuildOption, price: number): string | undefined =>
     ? priceRaised(
         formatExact(price / option.rise.times),
         LABOR,
-        times.format(option.rise.times),
+        formatCharge(option.rise.times),
         formatAmount(option.rise.standing),
       )
     : undefined;
@@ -337,7 +344,7 @@ const buildGains = (option: BuildOption): BuildGain[] => {
   const { effect } = option;
   const gain: BuildGain =
     effect.kind === "produces"
-      ? { icon: PRODUCTS[effect.resource].icon, value: `+${formatAmount(effect.perHour)}/h`, label: "produces" }
+      ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.perHour / 3600), label: "produces" }
       : effect.kind === "trains"
         ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
         : { icon: "person", value: `+${formatAmount(effect.amount)}`, label: "houses" };

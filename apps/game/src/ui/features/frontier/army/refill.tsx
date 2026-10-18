@@ -1,8 +1,8 @@
+import { formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatExact } from "@/ui/design-system/kit/amount";
 import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { hudPrices } from "../hud-prices";
-import { CANCEL, LORDS, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
+import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
 /**
  * Refill's control (wireframes 05, 08): the missing points as a LORDS price, one LORDS a point; when the realm holds

@@ -417,7 +417,7 @@ describe("every story the chain can tell", () => {
       resource_type: 38,
       amount: "3000000000000",
     });
-    expect(buildStoryEventPresentation(found).title).toBe("Dormant spire found: +3000 Essence");
+    expect(buildStoryEventPresentation(found).title).toBe("Dormant spire found: +3,000 Essence");
   });
 
   it("refuses a story it has no line for, rather than printing its fields", () => {

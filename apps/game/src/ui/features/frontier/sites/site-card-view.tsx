@@ -1,6 +1,6 @@
+import { formatAmount, formatExact, formatDuration, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import {
   HudButton,
   HudChip,
@@ -12,13 +12,11 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { hudPrices, type Price } from "../hud-prices";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { formatDuration } from "@/ui/design-system/kit/time";
 import {
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
   FULL,
-  LORDS,
   MOVE,
   needsStamina,
   ON_ITS_WAY,
@@ -386,7 +384,7 @@ const verbReason = (verb: SiteVerb, site: string): string | undefined => {
   if (verb.kind !== "short") return tooFarFrom(site);
   const { cost, held, wait } = verb.stamina;
   const line = needsStamina(formatExact(cost), formatExact(held));
-  return wait === undefined ? line : `${line} · ${formatDuration(wait)}`;
+  return wait === undefined ? line : `${line} · ${formatDuration(wait, { days: false })}`;
 };
 
 const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>

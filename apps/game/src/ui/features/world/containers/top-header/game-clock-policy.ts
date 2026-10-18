@@ -1,3 +1,4 @@
+import { formatGameClock } from "@bibliothecadao/types";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 
 export function resolveGameClock({
@@ -25,8 +26,8 @@ export function resolveGameClock({
   if (now < startAt)
     return {
       phase: "before",
-      label: `Starts in ${formatGameClockDuration(startAt - now)}`,
-      compactLabel: `Starts in ${formatGameClockDuration(startAt - now, true)}`,
+      label: `Starts in ${formatGameClock(startAt - now)}`,
+      compactLabel: `Starts in ${formatGameClock(startAt - now, { compact: true })}`,
       remainingRatio: null,
     } as const;
   if (!hasFiniteSeasonEnd(endAt))
@@ -39,30 +40,8 @@ export function resolveGameClock({
   const elapsedTicks = Math.floor(now / armyTickSeconds) - startTick;
   return {
     phase: "live",
-    label: `${formatGameClockDuration(endAt - now)} left`,
-    compactLabel: `${formatGameClockDuration(endAt - now, true)} left`,
+    label: `${formatGameClock(endAt - now)} left`,
+    compactLabel: `${formatGameClock(endAt - now, { compact: true })} left`,
     remainingRatio: Math.max(0, 1 - elapsedTicks / totalTicks),
   } as const;
 }
-
-export const formatGameClockDuration = (secondsUntilStart: number, compact = false): string => {
-  const total = Math.max(0, Math.floor(secondsUntilStart));
-  const days = Math.floor(total / 86_400);
-  const hours = Math.floor((total % 86_400) / 3_600);
-  const minutes = Math.floor((total % 3_600) / 60);
-  const seconds = total % 60;
-  const minuteSecondLabel = `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
-
-  if (compact && days > 0) return `${days}d ${hours}h`;
-  if (compact && hours > 0) return `${hours}h ${minutes}m`;
-
-  if (days > 0) {
-    return `${days}d ${hours.toString().padStart(2, "0")}h ${minuteSecondLabel}`;
-  }
-
-  if (hours > 0) {
-    return `${hours}h ${minuteSecondLabel}`;
-  }
-
-  return minuteSecondLabel;
-};

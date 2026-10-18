@@ -1,3 +1,4 @@
+import { formatClockTime } from "@bibliothecadao/types";
 import { Fragment, useEffect, useMemo, useRef } from "react";
 
 import {
@@ -19,11 +20,7 @@ interface DirectMessagesPanelProps {
 const toDisplayTime = (message: DirectMessage) => {
   const created = message.createdAt instanceof Date ? message.createdAt : new Date(message.createdAt);
   if (created instanceof Date && !Number.isNaN(created.getTime())) {
-    return created.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return formatClockTime(created.getTime() / 1000);
   }
   return "Now";
 };

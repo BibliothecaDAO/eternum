@@ -11,14 +11,14 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbnail } from "./building-thumbnail";
-import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
+import { productionTimeLeft } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
 import { HudCard, HudChip, HudIconButton, HudPanel, HudSwitch, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { Headline } from "@/ui/design-system/molecules/headline";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionStatusBadge } from "@/ui/shared";
-import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
+import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { resolveBuildingRequirements } from "./construction-groups";
 import { type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
@@ -47,15 +47,15 @@ import { useQuery } from "@/hooks/helpers/use-query";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
-  BiomeType,
   BuildingType,
   BuildingTypeToString,
-  findResourceById,
   getBuildingFromResource,
   ID,
   isEconomyBuilding,
   ResourcesIds,
   TroopType,
+  formatAmount,
+  resourceName,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
 
@@ -599,7 +599,6 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                   <HudPanel key={group.tier} kind="section" title={group.label} collapsible={false}>
                     <div className={CARD_GRID}>
                       {slots.map(({ resourceId, troopHint }) => {
-                        const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
                         const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
 
@@ -643,7 +642,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                               );
                             }}
                             active={previewBuilding?.resource === resourceId}
-                            buildingName={resource?.trait}
+                            buildingName={resourceName(resourceId)}
                             resource={resourceId}
                             productionStatus={productionStatus}
                             troopHint={troopHint}
@@ -686,7 +685,6 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                   <HudPanel kind="section" title="Other" collapsible={false}>
                     <div className={CARD_GRID}>
                       {others.map((resourceId) => {
-                        const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
                         const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
                         const buildability = resolveConstructionBuildability({
@@ -727,7 +725,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                               );
                             }}
                             active={previewBuilding?.resource === resourceId}
-                            buildingName={resource?.trait}
+                            buildingName={resourceName(resourceId)}
                             resource={resourceId}
                             productionStatus={productionStatus}
                             toolTip={
@@ -1014,7 +1012,9 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
           <span className="text-hud-label text-hud-muted">Pay with</span>
           <span className={useSimpleCost ? "text-hud-label text-hud-cue" : "text-hud-label"}>Resources</span>
           <HudSwitch on={useSimpleCost} label="Pay with labor" onChange={setUseSimpleCost} />
-          <span className={useSimpleCost ? "text-hud-label" : "text-hud-label text-hud-cue"}>Labor</span>
+          <span className={useSimpleCost ? "text-hud-label" : "text-hud-label text-hud-cue"}>
+            {resourceName(ResourcesIds.Labor)}
+          </span>
         </div>
       )}
 
@@ -1125,7 +1125,7 @@ export const BuildingCard = ({
   const effectiveOutputRemaining = productionStatus?.outputRemaining ?? null;
   const outputLabel =
     productionStatus?.isProducing && effectiveOutputRemaining !== null
-      ? currencyIntlFormat(effectiveOutputRemaining, Math.abs(effectiveOutputRemaining) >= 1000 ? 1 : 0)
+      ? formatAmount(effectiveOutputRemaining)
       : undefined;
   const totalProductionBuildings = count;
   const activeProductionBuildings =
@@ -1136,7 +1136,7 @@ export const BuildingCard = ({
         : 0;
   const formattedRemaining =
     productionStatus?.isProducing && effectiveRemainingSeconds !== null
-      ? formatTimeRemaining(Math.ceil(effectiveRemainingSeconds))
+      ? productionTimeLeft(Math.ceil(effectiveRemainingSeconds))
       : null;
   const productionBadge =
     productionStatus && resource !== undefined ? (
@@ -1319,7 +1319,7 @@ const ResourceInfo = ({
   const gives = structure ? describeBuildingGives(game.setup.store, structure, buildingId, capacity) : null;
 
   const resourceById = useMemo(() => {
-    return findResourceById(resourceId)?.trait;
+    return resourceName(resourceId);
   }, [resourceId]);
 
   return (

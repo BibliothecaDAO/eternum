@@ -8,7 +8,7 @@ import { configManager, divideByPrecision, getArmyTotalCapacityInKg, gramToKg } 
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ActorType, ID, RelicRecipientType, RELICS, resources, ResourcesIds } from "@bibliothecadao/types";
+import { ActorType, ID, RelicRecipientType, RELICS, resources, formatExact, resourceName } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
 
@@ -408,7 +408,7 @@ export const TransferResourcesContainer = ({
           {/* Max Capacity Info */}
           <div className="flex justify-between items-center text-hud-body">
             <span className="text-hud-accent">Max Capacity:</span>
-            <span className="text-hud-strong text-hud-accent">{maxCapacityKg.toLocaleString()} kg</span>
+            <span className="text-hud-strong text-hud-accent">{formatExact(maxCapacityKg)} kg</span>
           </div>
 
           {/* Capacity Bar */}
@@ -417,21 +417,21 @@ export const TransferResourcesContainer = ({
             <div
               className="absolute top-0 left-0 h-full bg-hud-accent flex items-center justify-center"
               style={{ width: `${capacityPercentageForBar}%` }}
-              title={`Current Load: ${currentLoadKg.toLocaleString()} kg`}
+              title={`Current Load: ${formatExact(currentLoadKg)} kg`}
             >
               {capacityPercentageForBar > 15 && (
-                <span className="text-hud-label text-hud-dark truncate px-1">{currentLoadKg.toLocaleString()} kg</span>
+                <span className="text-hud-label text-hud-dark truncate px-1">{formatExact(currentLoadKg)} kg</span>
               )}
             </div>
             {/* Weight that will be added with the current selection */}
             <div
               className="absolute top-0 h-full bg-hud-warn flex items-center justify-center"
               style={{ width: `${selectedPercentageForBar}%`, left: `${capacityPercentageForBar}%` }}
-              title={`Selected: ${selectedResourcesWeightKg.toLocaleString()} kg`}
+              title={`Selected: ${formatExact(selectedResourcesWeightKg)} kg`}
             >
               {selectedPercentageForBar > 15 && (
                 <span className="text-hud-label text-hud-dark truncate px-1">
-                  {selectedResourcesWeightKg.toLocaleString()} kg
+                  {formatExact(selectedResourcesWeightKg)} kg
                 </span>
               )}
             </div>
@@ -450,23 +450,23 @@ export const TransferResourcesContainer = ({
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-hud-body">
             <div>
               <span className="text-hud-accent">Current Load:</span>
-              <span className="float-right text-hud-ink">{currentLoadKg.toLocaleString()} kg</span>
+              <span className="float-right text-hud-ink">{formatExact(currentLoadKg)} kg</span>
             </div>
             <div>
               <span className="text-hud-warn">Selected:</span>
-              <span className="float-right text-hud-ink">{selectedResourcesWeightKg.toLocaleString()} kg</span>
+              <span className="float-right text-hud-ink">{formatExact(selectedResourcesWeightKg)} kg</span>
             </div>
             <div>
               <span className="text-hud-accent">After Transfer:</span>
               <span
                 className={`float-right ${currentLoadKg + selectedResourcesWeightKg > maxCapacityKg ? "text-hud-bad" : "text-hud-ink"}`}
               >
-                {(currentLoadKg + selectedResourcesWeightKg).toLocaleString()} kg
+                {formatExact(currentLoadKg + selectedResourcesWeightKg)} kg
               </span>
             </div>
             <div>
               <span className="text-hud-good">Remaining:</span>
-              <span className="float-right text-hud-ink">{displayAvailableCapacityKg.toLocaleString()} kg</span>
+              <span className="float-right text-hud-ink">{formatExact(displayAvailableCapacityKg)} kg</span>
             </div>
           </div>
         </div>
@@ -487,7 +487,7 @@ export const TransferResourcesContainer = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">
             <ResourceIcon resource={resource.resourceId} size="sm" withTooltip={false} />
-            <span className="ml-2">{ResourcesIds[resource.resourceId]}</span>
+            <span className="ml-2">{resourceName(resource.resourceId)}</span>
           </div>
           <HudButton kind="secondary" size="sm" onClick={() => toggleResourceSelection(resource)}>
             {isSelected ? "Remove" : "Select"}
@@ -497,7 +497,7 @@ export const TransferResourcesContainer = ({
         <div className="flex items-center text-hud-body text-hud-accent mb-2 gap-2">
           <span>{resourceWeight} kg per unit</span>
           <span className="text-hud-cue">•</span>
-          <span>{displayAmount.toLocaleString()} available</span>
+          <span>{formatExact(displayAmount)} available</span>
         </div>
 
         {isSelected && (
@@ -506,7 +506,7 @@ export const TransferResourcesContainer = ({
               rows={[
                 {
                   icon: resourceMeaning(resource.resourceId),
-                  name: ResourcesIds[resource.resourceId],
+                  name: resourceName(resource.resourceId),
                   held: displayAmount,
                   value: resourceAmounts[resource.resourceId] || 0,
                 },

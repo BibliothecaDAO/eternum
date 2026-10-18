@@ -74,6 +74,7 @@ const mix = (entityId: number): number => {
   return (hash ^ (hash >>> 16)) >>> 0;
 };
 
+/** A camp's, a rift's or a ruin's name: one word of two halves, "Grimhold", "Ashreach". */
 export const siteName = (entityId: number): string => {
   const hash = mix(entityId);
   const first = FIRST[hash % FIRST.length];
@@ -81,4 +82,38 @@ export const siteName = (entityId: number): string => {
   // A doubled letter at the join reads badly ("Gloommere"): the next ending that does not double one takes its place.
   while (first.at(-1) === SECOND[second][0]) second = (second + 1) % SECOND.length;
   return `${first}${SECOND[second]}`;
+};
+
+/**
+ * A band's second word: what an army is, never a place, so "Iron Wardens" never reads as somewhere to go (the owner,
+ * 18 October 2026: armies take a generated name, from words that do not read as a place).
+ */
+const BAND = [
+  "Blades",
+  "Brands",
+  "Claws",
+  "Fangs",
+  "Guard",
+  "Hammers",
+  "Host",
+  "Hounds",
+  "Lances",
+  "Ravens",
+  "Reavers",
+  "Riders",
+  "Shields",
+  "Spears",
+  "Strikers",
+  "Sworn",
+  "Wardens",
+  "Wolves",
+] as const;
+
+/**
+ * An army without a given name, named off its id as places are: two words, the world's word and the band's, "Iron
+ * Wardens", the same on every client. Its own mix of the id, so an army and a place of one id never share a word.
+ */
+export const armyName = (entityId: number): string => {
+  const hash = mix(entityId ^ 0x5bd1e995);
+  return `${FIRST[hash % FIRST.length]} ${BAND[Math.floor(hash / FIRST.length) % BAND.length]}`;
 };

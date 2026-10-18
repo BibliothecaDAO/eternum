@@ -1,5 +1,13 @@
-import { formatTime, TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
+import {
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  formatWait,
+  formatExact,
+  formatRate,
+  formatCharge,
+  resourceName,
+} from "@bibliothecadao/types";
 
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 
@@ -70,7 +78,7 @@ export function troopRaisePrices(costs: TroopRaiseCost[] | undefined) {
     .map(({ resource, amount }) => ({
       icon: resourceMeaning(resource),
       word: ResourcesIds[resource].toLowerCase(),
-      amount: Math.ceil(Number(amount) / RESOURCE_PRECISION).toLocaleString(),
+      amount: formatExact(Math.ceil(Number(amount) / RESOURCE_PRECISION)),
     }));
 }
 
@@ -80,7 +88,7 @@ export function troopRaisePrices(costs: TroopRaiseCost[] | undefined) {
  */
 export function describeTroopSource(name: string, inputs: readonly { resource: ResourcesIds; perTroop: number }[]) {
   const from = inputs.length
-    ? `, from ${inputs.map(({ resource, perTroop }) => `${perTroop.toLocaleString()} ${ResourcesIds[resource].toLowerCase()}`).join(" and ")} each`
+    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatCharge(perTroop)} ${resourceName(resource).toLowerCase()}`).join(" and ")} each`
     : "";
   return `${name} are trained by a ${name} barracks on the realm board${from}.`;
 }
@@ -88,7 +96,7 @@ export function describeTroopSource(name: string, inputs: readonly { resource: R
 /** None on hand: "No Knight T1 on hand.", or while a barracks trains them, when a full army is ready. */
 function describeEmptyTroop(supply: TroopSupply): string {
   if (supply.perHour > 0 && supply.secondsToFullArmy !== null) {
-    return `No ${supply.name} yet: a full army in ${formatTime(Math.ceil(supply.secondsToFullArmy)).trim()}.`;
+    return `No ${supply.name} yet: a full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}.`;
   }
   return `No ${supply.name} on hand.`;
 }

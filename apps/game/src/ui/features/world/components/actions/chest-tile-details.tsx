@@ -1,6 +1,6 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
+import { type ID, relicChestPack, relicChestRelics, ResourcesIds, formatExact } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -75,7 +75,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
         <EntityDetailStat
           compact
           label="Points"
-          value={configManager.getVictoryPointGrants().openRelicCrate.toLocaleString()}
+          value={formatExact(configManager.getVictoryPointGrants().openRelicCrate)}
         />
       </EntityDetailStatList>
     </div>

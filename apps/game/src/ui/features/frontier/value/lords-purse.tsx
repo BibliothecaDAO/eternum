@@ -1,7 +1,7 @@
+import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { formatAmount, formatExact } from "@/ui/design-system/kit/amount";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
-import { LABOR, LORDS, REALMS } from "@/ui/design-system/kit/words";
+import { LABOR, REALMS } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**

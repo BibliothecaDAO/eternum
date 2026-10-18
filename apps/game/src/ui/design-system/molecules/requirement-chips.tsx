@@ -1,7 +1,7 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, formatExact, formatCharge, resourceName } from "@bibliothecadao/types";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 export interface ResourceRequirement {
@@ -26,16 +26,16 @@ export const RequirementChips = ({
     {requirements?.map((req) => {
       const isMet = req.current !== undefined && req.current >= req.amount;
       const incomingTitle = req.incoming
-        ? ` (+${Math.floor(req.incoming.amount).toLocaleString()} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
+        ? ` (+${formatExact(Math.floor(req.incoming.amount))} in transit, ${formatIncomingEta(req.incoming.etaSeconds)})`
         : "";
       return (
         <span
           key={`${req.resource}-${req.amount}`}
-          data-tip={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}${incomingTitle}`}
+          data-tip={`${resourceName(req.resource)} — need ${formatCharge(req.amount)}${incomingTitle}`}
         >
           <HudChip tone={isMet ? undefined : "bad"}>
             <ResourceIcon withTooltip={false} resource={req.resource} size="xs" />
-            {req.current === undefined ? "—" : Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
+            {req.current === undefined ? "—" : formatExact(Math.floor(req.current))} / {formatCharge(req.amount)}
             {req.incoming && <span className="text-hud-good">↑</span>}
           </HudChip>
         </span>

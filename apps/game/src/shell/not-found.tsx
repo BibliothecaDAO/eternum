@@ -1,3 +1,4 @@
+import { APP_STATE_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { Button } from "@/ui/design-system/kit/button";
 import { StateCard } from "@/ui/design-system/kit/state-card";
 import { Title } from "@/ui/design-system/kit/title";
@@ -5,7 +6,6 @@ import { Title } from "@/ui/design-system/kit/title";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
 import { StepVerb } from "./frame/step-verb";
-import { APP_STATE_WORDS, WORDS } from "./words";
 
 /**
  * A page that does not exist, also drawn inside a page whose subject does not exist (a post, a player): on a phone the

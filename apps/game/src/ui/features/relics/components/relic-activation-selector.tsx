@@ -12,10 +12,10 @@ import {
   HudRow,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
-import { currencyFormat } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { EntityType, ID, RelicRecipientType, Troops } from "@bibliothecadao/types";
+import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibliothecadao/types";
 
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../hooks/use-relic-activation";
@@ -85,7 +85,12 @@ const RelicActivationHolderCard = ({
   })();
 
   return (
-    <HudPanel kind="section" title={holder.entityName} cue={`×${currencyFormat(holder.amount, 0)}`} collapsible={false}>
+    <HudPanel
+      kind="section"
+      title={holder.entityName}
+      cue={`×${formatAmount(knownAmount(holder.amount))}`}
+      collapsible={false}
+    >
       <div className="flex flex-col gap-2">
         <HudRow
           title={`ID: ${holder.entityId}`}

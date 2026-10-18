@@ -1,13 +1,13 @@
+import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
+import { formatContentDay } from "@bibliothecadao/types";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { latestFeatures } from "@/ui/features/world/latest-features";
 
-import { formatContentDay } from "@/ui/design-system/kit/time";
 import { PageFrame } from "../frame/page-frame";
 import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
-import { PROFILE_WORDS } from "../words";
 import { postHref, publishedPosts } from "./posts";
 
 /**
