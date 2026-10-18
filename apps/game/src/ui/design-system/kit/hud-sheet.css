@@ -530,8 +530,12 @@ button.ui-row {
   cursor: pointer;
   transition: background-color var(--hud-fast) var(--hud-ease);
 }
-.ui-table-row:is(:hover, [data-state="hover"]) {
+.ui-table-row:is(:hover, [data-state="hover"]):not(:disabled) {
   background: var(--hud-hover);
+}
+.ui-table-row:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 .ui-table-row[aria-current="true"] {
   border-left-color: rgb(var(--hud-accent));

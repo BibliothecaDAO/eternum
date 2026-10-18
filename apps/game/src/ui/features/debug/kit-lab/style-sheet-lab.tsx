@@ -1082,6 +1082,18 @@ const RowsSection = () => (
           <span>3</span>
           <span className="text-right text-hud-strong">15</span>
         </HudTableRow>
+        <HudTableRow
+          cols={TABLE_COLS}
+          label="uxplay: their points"
+          title="No surviving realm"
+          disabled
+          onClick={() => undefined}
+        >
+          <span>#3</span>
+          <span className="text-hud-strong">uxplay</span>
+          <span>0</span>
+          <span className="text-right text-hud-strong">0</span>
+        </HudTableRow>
       </div>
     }
     today={

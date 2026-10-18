@@ -524,13 +524,16 @@ export const HudRow = ({
 
 /**
  * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up), with
- * the list row's hover and the chosen one's bar. It is a button, so Enter and Space choose it.
+ * the list row's hover and the chosen one's bar. It is a button, so Enter and Space choose it; `disabled` when it leads
+ * nowhere, `title` its hover.
  */
 export const HudTableRow = ({
   cols,
   colsWide,
   label,
+  title,
   selected = false,
+  disabled = false,
   state,
   onClick,
   children,
@@ -538,7 +541,9 @@ export const HudTableRow = ({
   cols: string;
   colsWide?: string;
   label: string;
+  title?: string;
   selected?: boolean;
+  disabled?: boolean;
   state?: string;
   onClick: () => void;
   children: ReactNode;
@@ -547,7 +552,9 @@ export const HudTableRow = ({
     type="button"
     className="ui-table-row"
     aria-label={label}
+    title={title}
     aria-current={selected || undefined}
+    disabled={disabled}
     data-state={state}
     style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
     onClick={onClick}
