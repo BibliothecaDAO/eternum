@@ -2,23 +2,31 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 
 import { formatCount, type MapPlate, type PlateTroops } from "./map-plate-model";
-import { plateRows, type PlateSegment } from "./map-plate-rows";
+import { plateRows, restingStamina, type PlateSegment } from "./map-plate-rows";
 
 /**
  * A map plate (the owner's pick, map-labels rounds 2 to 5): the rows `plateRows` says, on the HUD panel's surface. A
  * painting only for a troop stack, where it reads faster than a word; everything else said in words.
  */
-export const Plate = ({ plate, open }: { plate: MapPlate; open: boolean }) => (
-  <div className="mp-plate" data-open={open}>
-    {plateRows(plate, open).map((row, index) => (
-      <div key={index} className="mp-plate__row">
-        {row.map((segment, at) => (
-          <Segment key={at} segment={segment} />
-        ))}
-      </div>
-    ))}
-  </div>
-);
+export const Plate = ({ plate, open }: { plate: MapPlate; open: boolean }) => {
+  const stamina = restingStamina(plate, open);
+  return (
+    <div className="mp-plate" data-open={open}>
+      {plateRows(plate, open).map((row, index) => (
+        <div key={index} className="mp-plate__row">
+          {row.map((segment, at) => (
+            <Segment key={at} segment={segment} />
+          ))}
+        </div>
+      ))}
+      {stamina !== null && (
+        <span className="mp-plate__stamina" role="img" aria-label={`Stamina ${Math.round(stamina * 100)}%`}>
+          <i style={{ width: `${stamina * 100}%` }} />
+        </span>
+      )}
+    </div>
+  );
+};
 
 /** A plate with no room beside its neighbours: the kind's painting in a disk ringed in the side's colour. */
 export const Pin = ({ plate }: { plate: MapPlate }) => (

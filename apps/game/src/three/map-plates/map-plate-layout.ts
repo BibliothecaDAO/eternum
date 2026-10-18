@@ -1,7 +1,7 @@
 import { CLASSIC_HUD_FONTS, HUD_TYPE } from "@/tokens";
 
 import { formatCount, type MapPlate } from "./map-plate-model";
-import { plateRows, type PlateSegment } from "./map-plate-rows";
+import { plateRows, restingStamina, type PlateSegment } from "./map-plate-rows";
 
 /** A plate's box on screen, in CSS pixels from the map's top left. */
 export interface PlateBox {
@@ -44,6 +44,8 @@ const ROW_HEIGHT = 24;
 const PLATE_PADDING_Y = 6;
 const PLATE_PADDING_X = 6 + 8 + 3 + 1;
 const READING_GAP = 6;
+/** An army's resting stamina bar under its rows: its height and margins (map-plates.css .mp-plate__stamina). */
+const RESTING_STAMINA = 3 + 1 + 2;
 
 /** The plate's faces, as map-plates.css draws them from the HUD sheet: every reading at the body size, told by weight. */
 const face = (role: keyof typeof HUD_TYPE, weight: keyof typeof HUD_TYPE = role) =>
@@ -109,6 +111,6 @@ export const plateSize = (plate: MapPlate, open: boolean): { width: number; heig
   );
   return {
     width: Math.ceil(width + PLATE_PADDING_X),
-    height: rows.length * ROW_HEIGHT + PLATE_PADDING_Y,
+    height: rows.length * ROW_HEIGHT + PLATE_PADDING_Y + (restingStamina(plate, open) === null ? 0 : RESTING_STAMINA),
   };
 };

@@ -36,8 +36,8 @@ type PlateRow = readonly PlateSegment[];
  * What a plate says, row by row (the owner's rounds 5 and 6 of the map labels, the sheet's round 3): at rest two short
  * rows, opened (its tile hovered, or selected) at most three, from the most important fact down. No id anywhere.
  *
- * - An army: its player, then its troops. Opened: the realm it comes from joins the player, its stamina ("84/150") its
- *   troops.
+ * - An army: its player, then its troops, a tight stamina bar under them (`restingStamina`). Opened: the realm it
+ *   comes from joins the player, its stamina ("84/150") its troops.
  * - A realm or a hyperstructure: its player and its name, then its guard. Opened: the guard slots in attack order, and
  *   a row of troops on their way, each time before its troops.
  * - A camp or a rift: its lore name, then its guard. Opened: its owner, its name and kind, and what it holds beside its
@@ -45,6 +45,13 @@ type PlateRow = readonly PlateSegment[];
  */
 export const plateRows = (plate: MapPlate, open: boolean): PlateRow[] =>
   plate.kind === "army" ? armyRows(plate, open) : plate.named ? placeRows(plate, open) : siteRows(plate, open);
+
+/**
+ * An army at rest: how full its stamina is (0 to 1), drawn as a tight bar under its troops, with no number (owner,
+ * sheet round 5); opened, its stamina is a reading with its exact "x/y". None for anything else, or unknown stamina.
+ */
+export const restingStamina = (plate: MapPlate, open: boolean): number | null =>
+  plate.kind === "army" && !open && plate.stamina ? plate.stamina.current / plate.stamina.max : null;
 
 const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
   open

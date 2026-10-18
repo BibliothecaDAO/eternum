@@ -73,6 +73,21 @@
   background: var(--hud-good);
 }
 
+/* An army at rest: its stamina as a tight bar under its troops, the plate's width, no number. */
+.mp-plate__stamina {
+  display: block;
+  height: 3px;
+  margin: 1px 0 2px;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.mp-plate__stamina > i {
+  display: block;
+  height: 100%;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-good);
+}
+
 /* The readings: a player in the side's colour, a place's own name in the accent, a kind in words, a label or a time
    in the muted colour, a count by its weight. */
 .mp-owner {

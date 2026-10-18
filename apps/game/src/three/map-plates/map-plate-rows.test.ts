@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { plateSize } from "./map-plate-layout";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";
-import { plateRows, type PlateSegment } from "./map-plate-rows";
+import { plateRows, restingStamina, type PlateSegment } from "./map-plate-rows";
 
 /** A plate's rows as a player reads them: a troop stack as its tier and count, a divider as "|". */
 const read = (plate: ArmyPlate | StructurePlate, open: boolean) =>
@@ -73,6 +74,17 @@ describe("what a map plate says (two short rows at rest, three at most opened, n
     expect(read(army, false)).toEqual(["djizus", "T3 300"]);
     expect(read(army, true)).toEqual(["djizus Sangsang", "T3 300 84/150"]);
     expect(read({ ...army, stamina: undefined }, true)).toEqual(["djizus Sangsang", "T3 300"]);
+  });
+
+  it("rests an army's stamina as a share under its troops, with no number, and drops it once opened shows x/y", () => {
+    expect(restingStamina(army, false)).toBe(0.56);
+    expect(restingStamina(army, true)).toBeNull();
+    expect(restingStamina({ ...army, stamina: undefined }, false)).toBeNull();
+    expect(restingStamina(realm, false)).toBeNull();
+    // Laid out with its bar: two rows, the frame, and the bar's 6px; opened, three readings on two rows.
+    expect(plateSize(army, false).height).toBe(2 * 24 + 6 + 6);
+    expect(plateSize({ ...army, stamina: undefined }, false).height).toBe(2 * 24 + 6);
+    expect(plateSize(army, true).height).toBe(2 * 24 + 6);
   });
 
   it("rests a realm on its player and name over its guard total, and says no strength", () => {
