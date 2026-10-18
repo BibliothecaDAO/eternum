@@ -13,13 +13,10 @@ import { LeftView } from "@/types";
 import { BuildingThumbnail } from "./building-thumbnail";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
-import Button from "@/ui/design-system/atoms/button";
-import { Tabs } from "@/ui/design-system/atoms/tab";
+import { HudCard, HudChip, HudIconButton, HudPanel, HudSwitch, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { Headline } from "@/ui/design-system/molecules/headline";
-import { HintModalButton } from "@/ui/design-system/molecules/hint-modal-button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
@@ -133,6 +130,9 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
   },
 ];
 
+/** The cards of a group: one column on a phone, then two, then three across the Build window. */
+const CARD_GRID = "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3";
+
 type ResourceProductionStatus = {
   resourceId: ResourcesIds;
   isProducing: boolean;
@@ -143,7 +143,7 @@ type ResourceProductionStatus = {
   activeBuildings: number;
 };
 
-export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?: string; entityId: number }) => {
+export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) => {
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
   const lane = useCompactLane();
@@ -587,26 +587,17 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     () => [
       {
         key: "resources",
-        label: (
-          <div className="flex relative group flex-col items-center">
-            <div className="resource-tab-selector">Resources</div>
-          </div>
-        ),
+        label: "Resources",
         component: () => {
           const ownedResources = new Set(realm?.resources ?? []);
           return (
-            <div className="resource-cards-selector flex flex-col gap-3 p-2">
+            <div className="flex flex-col gap-3">
               {RESOURCE_TIER_GROUPS.map((group) => {
                 const slots = group.slots.filter((slot) => ownedResources.has(slot.resourceId));
                 if (slots.length === 0) return null;
                 return (
-                  <div key={group.tier} className="rounded-md border border-gold/15">
-                    <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
-                        {group.label}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
+                  <HudPanel key={group.tier} kind="section" title={group.label} collapsible={false}>
+                    <div className={CARD_GRID}>
                       {slots.map(({ resourceId, troopHint }) => {
                         const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
@@ -680,7 +671,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         );
                       })}
                     </div>
-                  </div>
+                  </HudPanel>
                 );
               })}
               {/* Fallback for any owned resource we didn't slot — render under
@@ -692,11 +683,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const others = (realm?.resources ?? []).filter((id) => !slottedIds.has(id));
                 if (others.length === 0) return null;
                 return (
-                  <div className="rounded-md border border-gold/15">
-                    <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">Other</span>
-                    </div>
-                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
+                  <HudPanel kind="section" title="Other" collapsible={false}>
+                    <div className={CARD_GRID}>
                       {others.map((resourceId) => {
                         const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
@@ -766,7 +754,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         );
                       })}
                     </div>
-                  </div>
+                  </HudPanel>
                 );
               })()}
             </div>
@@ -775,13 +763,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       },
       {
         key: "economic",
-        label: (
-          <div className="economy-tab-selector flex relative group flex-col items-center">
-            <div>Economic</div>
-          </div>
-        ),
+        label: "Economic",
         component: () => (
-          <div className="economy-selector grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
+          <div className={CARD_GRID}>
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
               .toSorted((a, b) => {
@@ -821,10 +805,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const destroyPending = isDestroyLocked;
                 const destroyDisabled = count <= 0 || destroyPending;
 
-                const isFarm = building === BuildingType.ResourceWheat;
-                const isFishingVillage = building === BuildingType.ResourceFish;
-                const isMarket = building === BuildingType.ResourceDonkey;
-
                 const pauseResumePending = isProductionLocked;
                 const allPausedState = pausedByCategory.get(building);
                 const showPauseResume = !isWorkersHut;
@@ -833,12 +813,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   <BuildingCard
                     canPlaceOnMap={!isMapView}
                     buildLoading={isBuildPending}
-                    className={clsx({
-                      "farm-card-selector": isFarm,
-                      "fish-card-selector": isFishingVillage,
-                      "workers-hut-card-selector": isWorkersHut,
-                      "market-card-selector": isMarket,
-                    })}
                     key={`${entityId}:${index}`}
                     buildingId={building}
                     gives={givesOf(building)}
@@ -882,14 +856,10 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       },
       {
         key: "military",
-        label: (
-          <div className="military-tab-selector flex relative group flex-col items-center">
-            <div>Military</div>
-          </div>
-        ),
+        label: "Military",
         component: () => {
           if (armyGroups.length === 0) {
-            return <div className="p-2 text-xs text-gold/60">No military buildings available.</div>;
+            return <p className="text-hud-label text-hud-muted">No military buildings available.</p>;
           }
 
           // With the wider Build modal all three tiers fit in one row, so we
@@ -897,130 +867,106 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           // its bonus next to the group label so the player still sees
           // biome-bonus info without an extra filter click.
           return (
-            <div className="p-2 space-y-3">
-              <div className="space-y-3">
-                {armyGroups.map((group) => {
-                  const bonusMultiplier = group.bonus ?? 1;
-                  const bonusPercent = Math.round((bonusMultiplier - 1) * 100);
-                  const bonusLabel = `${bonusPercent > 0 ? "+" : ""}${bonusPercent}%`;
-                  const isPositiveBonus = bonusPercent > 0;
-                  const isNegativeBonus = bonusPercent < 0;
-                  return (
-                    <div
-                      key={group.armyType}
-                      className={clsx(
-                        "border border-gold/15 rounded-md",
-                        group.isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-2 border-b border-gold/10 px-3 py-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold/85">
-                          {group.armyType}
-                        </span>
-                        <span
-                          className={clsx(
-                            "rounded-md border px-2 py-0.5 text-sm font-bold tabular-nums",
-                            isPositiveBonus
-                              ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-200 shadow-[0_0_10px_rgba(110,231,183,0.35)]"
-                              : isNegativeBonus
-                                ? "border-red-400/60 bg-red-500/15 text-red-200 shadow-[0_0_10px_rgba(244,114,114,0.35)]"
-                                : "border-gold/30 bg-gold/10 text-gold/80",
-                          )}
-                          title="Biome combat bonus for this army type"
-                        >
+            <div className="flex flex-col gap-3">
+              {armyGroups.map((group) => {
+                const bonusMultiplier = group.bonus ?? 1;
+                const bonusPercent = Math.round((bonusMultiplier - 1) * 100);
+                const bonusLabel = `${bonusPercent > 0 ? "+" : ""}${bonusPercent}%`;
+                return (
+                  <HudPanel
+                    key={group.armyType}
+                    kind="section"
+                    title={group.armyType}
+                    collapsible={false}
+                    cue={
+                      <span className="flex items-center gap-1" title="Biome combat bonus for this army type">
+                        {group.isRecommended && <HudChip tone="good">Recommended</HudChip>}
+                        <HudChip tone={bonusPercent > 0 ? "good" : bonusPercent < 0 ? "bad" : undefined}>
                           {bonusLabel}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] lg:grid-cols-3 gap-2 p-2">
-                        {group.buildings
-                          .toSorted((a, b) => {
-                            const buildingA = BuildingType[a as keyof typeof BuildingType];
-                            const buildingB = BuildingType[b as keyof typeof BuildingType];
-                            const infoA = getMilitaryBuildingInfo(buildingA);
-                            const infoB = getMilitaryBuildingInfo(buildingB);
-                            return (infoA?.tier || 0) - (infoB?.tier || 0);
-                          })
-                          .map((buildingType, index) => {
-                            const building = BuildingType[buildingType as keyof typeof BuildingType];
-                            const producedResourceId = configManager.getResourceBuildingProduced(building) as
-                              | ResourcesIds
-                              | undefined;
-                            const productionStatus = producedResourceId
-                              ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
-                              : undefined;
+                        </HudChip>
+                      </span>
+                    }
+                  >
+                    <div className={CARD_GRID}>
+                      {group.buildings
+                        .toSorted((a, b) => {
+                          const buildingA = BuildingType[a as keyof typeof BuildingType];
+                          const buildingB = BuildingType[b as keyof typeof BuildingType];
+                          const infoA = getMilitaryBuildingInfo(buildingA);
+                          const infoB = getMilitaryBuildingInfo(buildingB);
+                          return (infoA?.tier || 0) - (infoB?.tier || 0);
+                        })
+                        .map((buildingType, index) => {
+                          const building = BuildingType[buildingType as keyof typeof BuildingType];
+                          const producedResourceId = configManager.getResourceBuildingProduced(building) as
+                            | ResourcesIds
+                            | undefined;
+                          const productionStatus = producedResourceId
+                            ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
+                            : undefined;
 
-                            const buildability = resolveConstructionBuildability({
-                              entityId,
-                              buildingType: building,
-                              useSimpleCost,
-                              store: game.setup.store,
-                              realm,
-                              mode,
-                              hasAvailableBuildingTile,
-                            });
-                            const canBuild = buildability.canSubmit;
-                            const disabledReason = buildability.reason;
-                            const count = getBuildingCountFor(building);
-                            const destroyPending = isDestroyLocked;
-                            const destroyDisabled = count <= 0 || destroyPending;
+                          const buildability = resolveConstructionBuildability({
+                            entityId,
+                            buildingType: building,
+                            useSimpleCost,
+                            store: game.setup.store,
+                            realm,
+                            mode,
+                            hasAvailableBuildingTile,
+                          });
+                          const canBuild = buildability.canSubmit;
+                          const disabledReason = buildability.reason;
+                          const count = getBuildingCountFor(building);
+                          const destroyPending = isDestroyLocked;
+                          const destroyDisabled = count <= 0 || destroyPending;
 
-                            const pauseResumePending = isProductionLocked;
-                            const allPausedState = pausedByCategory.get(building);
+                          const pauseResumePending = isProductionLocked;
+                          const allPausedState = pausedByCategory.get(building);
 
-                            return (
-                              <BuildingCard
-                                canPlaceOnMap={!isMapView}
-                                buildLoading={isBuildPending}
-                                className={clsx("border border-gold/10", {
-                                  "bg-emerald-900/5": canBuild,
-                                  "border-emerald-700/5": canBuild,
-                                  "ring-1 ring-emerald-500/30": group.isRecommended,
-                                })}
-                                key={`${entityId}:${index}`}
-                                buildingId={building}
-                                gives={givesOf(building)}
-                                requirements={resolveBuildingRequirements(
-                                  entityId,
-                                  game.setup.store,
-                                  building,
-                                  useSimpleCost,
-                                  currentDefaultTick,
-                                )}
-                                onClick={() => {
-                                  if (!canBuild) return;
-                                  selectBuildingCard({ type: building }, () => {});
-                                }}
-                                active={previewBuilding?.type === building}
-                                buildingName={`${BuildingTypeToString[building]}`}
-                                resource={configManager.getResourceBuildingProduced(building)}
-                                productionStatus={productionStatus}
-                                toolTip={
-                                  <BuildingInfo
-                                    buildingId={building}
-                                    entityId={entityId}
-                                    useSimpleCost={useSimpleCost}
-                                  />
-                                }
-                                disabled={!canBuild}
-                                disabledReason={disabledReason}
-                                count={count}
-                                onBuild={() => handleAutoBuild({ type: building })}
-                                buildDisabled={!canBuild}
-                                onDestroy={() => handleDestroyBuilding({ type: building })}
-                                destroyDisabled={destroyDisabled}
-                                destroyLoading={destroyPending}
-                                onPauseResumeAll={() => handlePauseResumeAll({ type: building })}
-                                pauseResumeAllDisabled={count <= 0 || pauseResumePending}
-                                pauseResumeAllLoading={pauseResumePending}
-                                allPaused={allPausedState ?? false}
-                              />
-                            );
-                          })}
-                      </div>
+                          return (
+                            <BuildingCard
+                              canPlaceOnMap={!isMapView}
+                              buildLoading={isBuildPending}
+                              key={`${entityId}:${index}`}
+                              buildingId={building}
+                              gives={givesOf(building)}
+                              requirements={resolveBuildingRequirements(
+                                entityId,
+                                game.setup.store,
+                                building,
+                                useSimpleCost,
+                                currentDefaultTick,
+                              )}
+                              onClick={() => {
+                                if (!canBuild) return;
+                                selectBuildingCard({ type: building }, () => {});
+                              }}
+                              active={previewBuilding?.type === building}
+                              buildingName={`${BuildingTypeToString[building]}`}
+                              resource={configManager.getResourceBuildingProduced(building)}
+                              productionStatus={productionStatus}
+                              toolTip={
+                                <BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />
+                              }
+                              disabled={!canBuild}
+                              disabledReason={disabledReason}
+                              count={count}
+                              onBuild={() => handleAutoBuild({ type: building })}
+                              buildDisabled={!canBuild}
+                              onDestroy={() => handleDestroyBuilding({ type: building })}
+                              destroyDisabled={destroyDisabled}
+                              destroyLoading={destroyPending}
+                              onPauseResumeAll={() => handlePauseResumeAll({ type: building })}
+                              pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                              pauseResumeAllLoading={pauseResumePending}
+                              allPaused={allPausedState ?? false}
+                            />
+                          );
+                        })}
                     </div>
-                  );
-                })}
-              </div>
+                  </HudPanel>
+                );
+              })}
             </div>
           );
         },
@@ -1059,30 +1005,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   }, [selectedTab, tabs]);
 
   return (
-    <div className={`${className}`}>
-      <div className="flex flex-wrap justify-between items-center px-3 py-2 gap-3 border-b border-gold/20">
-        <div className="flex items-center gap-2">
-          {configManager.buildingCostMode === "choice" && (
-            <label
-              className="inline-flex min-h-11 items-center cursor-pointer"
-              title="Pay for buildings with resources or with labor; each card shows its cost in the one chosen"
-            >
-              <span className="mr-2 text-xs text-gold/70">Pay with</span>
-              <span className={`mr-2 text-xs ${useSimpleCost ? "text-gold/50" : ""}`}>Resources</span>
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={useSimpleCost}
-                  onChange={() => setUseSimpleCost(!useSimpleCost)}
-                />
-                <div className="w-9 h-5 bg-brown/50 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold/30"></div>
-              </div>
-              <span className={`ml-2 text-xs ${useSimpleCost ? "" : "text-gold/50"}`}>Labor</span>
-            </label>
-          )}
+    <div>
+      {configManager.buildingCostMode === "choice" && (
+        <div
+          className="flex min-h-11 items-center gap-2 border-b border-hud-divider pb-2"
+          title="Pay for buildings with resources or with labor; each card shows its cost in the one chosen"
+        >
+          <span className="text-hud-label text-hud-muted">Pay with</span>
+          <span className={useSimpleCost ? "text-hud-label text-hud-cue" : "text-hud-label"}>Resources</span>
+          <HudSwitch on={useSimpleCost} label="Pay with labor" onChange={setUseSimpleCost} />
+          <span className={useSimpleCost ? "text-hud-label" : "text-hud-label text-hud-cue"}>Labor</span>
         </div>
-      </div>
+      )}
 
       <details
         open={lane === null || summaryOpen}
@@ -1090,37 +1024,33 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           if (lane !== null) setSummaryOpen(event.currentTarget.open);
         }}
       >
-        <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm text-gold underline underline-offset-4 lg:hidden">
+        <summary className="flex min-h-11 cursor-pointer items-center text-hud-accent underline underline-offset-4 lg:hidden">
           Built here · view buildings
         </summary>
         <RealmBuildingSummary
-          className="realm-summary-selector"
           headline="Built here"
           items={realmBuildingSummary}
           buildActions={realmBuildingSummaryActions}
         />
       </details>
 
-      <Tabs
-        selectedIndex={selectedTab}
-        onChange={(index: any) => {
-          setSelectedTab(index);
-        }}
-        className="construction-panel-selector h-full mt-2"
-      >
-        <Tabs.List className="construction-tabs-selector sticky top-0 z-10 bg-[#101c23] [&_button]:min-h-11">
-          {tabs.map((tab, index) => (
-            <Tabs.Tab key={index}>{tab.label}</Tabs.Tab>
-          ))}
-        </Tabs.List>
-
-        <Tabs.Panels className="overflow-hidden">
-          {tabs.map((tab, index) => {
-            const shouldRender = visitedTabs.has(tab.key) || selectedTab === index;
-            return <Tabs.Panel key={index}>{shouldRender ? tab.component() : null}</Tabs.Panel>;
-          })}
-        </Tabs.Panels>
-      </Tabs>
+      <div className="mt-2 flex flex-col gap-3">
+        <HudTabs
+          tabs={tabs.map((tab) => ({ key: tab.key, label: tab.label }))}
+          value={tabs[selectedTab]?.key ?? tabs[0].key}
+          onChange={(key) => setSelectedTab(tabs.findIndex((tab) => tab.key === key))}
+        />
+        {tabs.map((tab, index) => {
+          const shown = selectedTab === index;
+          // A tab visited once stays drawn while hidden, so coming back to it keeps where the player was.
+          if (!shown && !visitedTabs.has(tab.key)) return null;
+          return (
+            <div key={tab.key} role="tabpanel" aria-label={tab.label} hidden={!shown}>
+              {tab.component()}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -1136,7 +1066,6 @@ export const BuildingCard = ({
   productionStatus,
   toolTip,
   requirements,
-  className,
   disabled = false,
   disabledReason,
   badge,
@@ -1171,7 +1100,6 @@ export const BuildingCard = ({
    * can tell at a glance which troop the resource unlocks.
    */
   troopHint?: ResourceTroopHint;
-  className?: string;
   disabled?: boolean;
   disabledReason?: string;
   badge?: React.ReactNode;
@@ -1259,169 +1187,93 @@ export const BuildingCard = ({
   };
 
   return (
-    <div
-      onClick={handleClick}
-      className={clsx(
-        "overflow-hidden text-ellipsis cursor-pointer relative h-48 min-w-20 rounded border border-gold/20 bg-black/20 transition-colors hover:border-gold/50 hover:bg-gold/15",
-        {
-          "!border-gold": active,
-          "cursor-not-allowed hover:bg-gold/10 hover:border-gold/20": isDisabled,
-        },
-        className,
-      )}
-    >
-      <BuildingThumbnail
-        building={buildingId}
-        alt={buildingName}
-        className="absolute inset-0 w-full h-full object-contain"
-      />
-      <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between gap-2">
-        {/* Vertical action stack — every button is the same h-7 w-7 square so
-            the column is visually tidy. Build is the primary action (gold
-            chip); Pause + Destroy live below as smaller icon buttons. */}
-        <div className="flex flex-col items-start gap-1.5">
-          <button
-            type="button"
-            disabled={Boolean(buildDisabled || isDisabled || buildLoading)}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (buildDisabled || isDisabled) return;
-              onBuild?.();
-            }}
-            className={clsx(
-              "inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition",
-              !buildDisabled && !isDisabled && "hover:bg-amber-300",
-              (buildDisabled || isDisabled) && "opacity-60 cursor-not-allowed",
-            )}
-            title="Build"
-            aria-label="Build"
-          >
-            {buildLoading ? (
-              <span className="text-[10px] font-bold">…</span>
-            ) : (
-              <SemanticIcon name="build" className="h-3.5 w-3.5" />
-            )}
-          </button>
-          {onPauseResumeAll && (
-            <button
-              type="button"
-              disabled={Boolean(pauseResumeAllDisabled)}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (pauseResumeAllDisabled) return;
-                onPauseResumeAll();
-              }}
-              className={clsx(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition",
-                allPaused
-                  ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
-                  : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-                pauseResumeAllDisabled && "opacity-60 cursor-not-allowed",
-              )}
-              title={allPaused ? "Resume all" : "Pause all"}
-              aria-label={allPaused ? "Resume all" : "Pause all"}
-            >
-              {pauseResumeAllLoading ? (
-                <span className="text-[10px] font-bold">…</span>
-              ) : allPaused ? (
-                <SemanticIcon name="play" className="h-3.5 w-3.5" />
-              ) : (
-                <SemanticIcon name="pause" className="h-3.5 w-3.5" />
-              )}
-            </button>
-          )}
-          {onDestroy && (
-            <button
-              type="button"
-              disabled={Boolean(destroyDisabled)}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (destroyDisabled) return;
-                onDestroy();
-              }}
-              className={clsx(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 text-white shadow transition",
-                !destroyDisabled && "hover:bg-red-800",
-                destroyDisabled && "opacity-60 cursor-not-allowed",
-              )}
-              title="Destroy building"
-              aria-label="Destroy building"
-            >
-              {destroyLoading ? (
-                <span className="text-[10px] font-bold">…</span>
-              ) : (
-                <SemanticIcon name="trash" className="h-3.5 w-3.5" />
-              )}
-            </button>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          {isWorkersHut && (
-            <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/30">
-              {count}
-            </span>
-          )}
-          {productionBadge ||
-            (resource !== undefined && (
-              <div className="rounded p-1 bg-brown/40">
-                <ResourceIcon withTooltip={false} resource={resource} size="lg" />
-              </div>
-            ))}
-          {badge && <div>{badge}</div>}
-        </div>
-      </div>
-      {showDisabledMessage && (
-        <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
-          <div className="self-center text-gold/90 leading-tight">{disabledReason}</div>
-        </div>
-      )}
-      <div className="absolute inset-x-0 bottom-0 space-y-0.5 bg-gradient-to-t from-black/85 via-black/70 to-transparent p-2 pt-6">
-        <div className="flex items-center justify-between gap-2">
-          <h6 className="truncate text-left">{buildingName}</h6>
-          <div className="flex items-center gap-1.5">
-            {troopHint && (
+    <HudCard
+      title={buildingName}
+      picture={<BuildingThumbnail building={buildingId} alt={buildingName} />}
+      detail={
+        <>
+          {gives && <span className="truncate text-hud-good">{gives}</span>}
+          <BuildingCostLines requirements={requirements} />
+        </>
+      }
+      corner={
+        <>
+          {troopHint && (
+            <HudChip>
               <span
-                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/90 shadow-md"
+                className="inline-flex items-center gap-1"
                 title={`T${troopHint.tier} ${troopHint.troopLabel}`}
                 aria-label={`T${troopHint.tier} ${troopHint.troopLabel}`}
               >
-                <span>T{troopHint.tier}</span>
+                T{troopHint.tier}
                 <ResourceIcon resource={troopHint.troopResource} size="xs" withTooltip={false} />
               </span>
-            )}
-            <SemanticIcon
-              name="info"
-              onMouseEnter={() => {
-                setTooltip({
-                  content: toolTip,
-                  position: "right",
-                });
-              }}
-              onMouseLeave={() => {
-                setTooltip(null);
-              }}
-              className="w-4 h-4"
+            </HudChip>
+          )}
+          {isWorkersHut && <HudChip>{count}</HudChip>}
+          {productionBadge ||
+            (resource !== undefined && <ResourceIcon withTooltip={false} resource={resource} size="lg" />)}
+          {badge}
+          <HudIconButton
+            icon="info"
+            label={`About ${buildingName}`}
+            kind="quiet"
+            size="sm"
+            onMouseEnter={() => setTooltip({ content: toolTip, position: "right" })}
+            onMouseLeave={() => setTooltip(null)}
+          />
+        </>
+      }
+      actions={
+        <>
+          <HudIconButton
+            icon="build"
+            label="Build"
+            kind="primary"
+            size="sm"
+            aria-busy={buildLoading || undefined}
+            disabled={Boolean(buildDisabled || isDisabled || buildLoading)}
+            onClick={() => onBuild?.()}
+          />
+          {onPauseResumeAll && (
+            <HudIconButton
+              icon={allPaused ? "play" : "pause"}
+              label={allPaused ? "Resume all" : "Pause all"}
+              size="sm"
+              aria-busy={pauseResumeAllLoading || undefined}
+              disabled={Boolean(pauseResumeAllDisabled)}
+              onClick={onPauseResumeAll}
             />
-          </div>
-        </div>
-        {gives && <p className="truncate text-left text-xs font-semibold text-emerald-300">{gives}</p>}
-        <BuildingCostLines requirements={requirements} />
-      </div>
-    </div>
+          )}
+          {onDestroy && (
+            <HudIconButton
+              icon="trash"
+              label="Destroy building"
+              size="sm"
+              tone="bad"
+              aria-busy={destroyLoading || undefined}
+              disabled={Boolean(destroyDisabled)}
+              onClick={onDestroy}
+            />
+          )}
+        </>
+      }
+      selected={active}
+      disabled={isDisabled}
+      refusal={showDisabledMessage ? disabledReason : undefined}
+      onClick={handleClick}
+    />
   );
 };
 
 /** A card's cost, named, a line per resource: "10 Labor (you have 1,574)", red while short. */
 const BuildingCostLines = ({ requirements }: { requirements: ResourceRequirement[] | undefined }) => {
-  if (requirements === undefined) return <p className="text-left text-xs text-gold/60">Cost unknown</p>;
-  if (requirements.length === 0) return <p className="text-left text-xs text-gold/60">Free</p>;
+  if (requirements === undefined) return <span>Cost unknown</span>;
+  if (requirements.length === 0) return <span>Free</span>;
   return (
-    <ul className="text-left text-xs">
+    <ul>
       {requirements.map(({ resource, amount, current }) => (
-        <li
-          key={resource}
-          className={clsx("truncate", current !== undefined && current < amount ? "text-red-300" : "text-gold/85")}
-        >
+        <li key={resource} className={clsx("truncate", current !== undefined && current < amount && "text-hud-bad")}>
           {describeCostLine(resource, amount, current)}
         </li>
       ))}
@@ -1433,15 +1285,11 @@ const ResourceInfo = ({
   resourceId,
   buildingId,
   entityId,
-  isPaused,
-  hintModal = false,
   useSimpleCost = false,
 }: {
   resourceId: ResourcesIds;
   buildingId: BuildingType;
   entityId: ID | undefined;
-  isPaused?: boolean;
-  hintModal?: boolean;
   useSimpleCost?: boolean;
 }) => {
   const game = useGame();
@@ -1476,43 +1324,38 @@ const ResourceInfo = ({
   }, [resourceId]);
 
   return (
-    <div className="flex flex-col p-3 space-y-3 text-sm  ">
-      <Headline className="pb-2 border-b border-gold/20 mb-2 ">
+    <div className="flex flex-col gap-3 p-3">
+      <Headline className="mb-2 border-b border-hud-line pb-2">
         <div className="flex justify-between items-center w-full gap-3">
           <div className="flex items-center gap-2">
             <ResourceIcon className="self-center" resource={resourceId} size="md" />
             <h6 className="">{resourceById} Production</h6>
           </div>
-          {hintModal && <HintModalButton section={HintSection.Buildings} />}
         </div>
       </Headline>
-
-      {isPaused && (
-        <div className="py-2 px-3 bg-red/20 text-red-200 rounded font-bold"> ⚠️ Building Production Paused </div>
-      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {resourceById && (
           <div>
-            <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
+            <h6 className="mb-1 text-hud-label text-hud-muted">Produces</h6>
             <div className="flex items-center gap-2 mt-1">
               <ResourceIcon className="self-center" resource={resourceId} size="xl" />
-              <h6 className="text-lg font-semibold text-green-400">{gives ?? "—"}</h6>
+              <h6 className="text-hud-title text-hud-good">{gives ?? "—"}</h6>
             </div>
           </div>
         )}
         <div>
           {population !== 0 && (
             <div className="mb-2">
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
-              <h6 className="text-gold text-lg font-semibold">+{population}</h6>
+              <h6 className="mb-1 text-hud-label text-hud-muted">Population Cost</h6>
+              <h6 className="text-hud-title text-hud-accent">+{population}</h6>
             </div>
           )}
 
           {capacity !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Pop. Capacity Grant</h6>
-              <h6 className="text-gold text-lg font-semibold">+{capacity}</h6>
+              <h6 className="mb-1 text-hud-label text-hud-muted">Max Pop. Capacity Grant</h6>
+              <h6 className="text-hud-title text-hud-accent">+{capacity}</h6>
             </div>
           )}
         </div>
@@ -1520,13 +1363,13 @@ const ResourceInfo = ({
 
       {cost === undefined ? (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
-          <p className="text-gold/70">—</p>
+          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Cost</h6>
+          <p className="text-hud-muted">—</p>
         </>
       ) : (
         cost.length > 0 && (
           <>
-            <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
+            <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Cost</h6>
             <div className="grid grid-cols-2 gap-2">
               {Object.keys(cost).map((resourceId) => {
                 const balance = getBalance(
@@ -1554,9 +1397,7 @@ const ResourceInfo = ({
       {buildingCost === undefined && <p>Building Creation Cost: —</p>}
       {buildingCost && buildingCost.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
-            Building Creation Cost
-          </h6>
+          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Building Creation Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
@@ -1586,18 +1427,13 @@ const ResourceInfo = ({
 const BuildingInfo = ({
   buildingId,
   entityId,
-  name = BuildingTypeToString[buildingId as keyof typeof BuildingTypeToString],
-  hintModal = false,
-  isPaused,
   useSimpleCost = false,
 }: {
   buildingId: BuildingType;
   entityId: ID | undefined;
-  name?: string;
-  hintModal?: boolean;
-  isPaused?: boolean;
   useSimpleCost?: boolean;
 }) => {
+  const name = BuildingTypeToString[buildingId as keyof typeof BuildingTypeToString];
   const game = useGame();
   useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
   const currentDefaultTick = useCurrentDefaultTick();
@@ -1639,42 +1475,37 @@ const BuildingInfo = ({
       : null;
 
   return (
-    <div className="flex flex-col p-3 space-y-3 text-sm">
-      <Headline className="pb-2 border-b border-gold/20 mb-2">
+    <div className="flex flex-col gap-3 p-3">
+      <Headline className="mb-2 border-b border-hud-line pb-2">
         <div className="flex justify-between items-center w-full gap-3">
           <div className="flex items-center gap-2">
             <h6>{name}</h6>
           </div>
-          {hintModal && <HintModalButton section={HintSection.Buildings} />}
         </div>
       </Headline>
-
-      {isPaused && (
-        <div className="py-2 px-3 bg-red/20 text-red-200 rounded font-bold"> ⚠️ Building Production Paused </div>
-      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div>
           {population !== 0 && (
             <div className="mb-2">
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Population Cost</h6>
-              <span className="text-gold text-lg font-semibold">+{population}</span>
+              <h6 className="mb-1 text-hud-label text-hud-muted">Population Cost</h6>
+              <span className="text-hud-title text-hud-accent">+{population}</span>
             </div>
           )}
           {capacity !== 0 && (
             <div>
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Max Population Grant</h6>
-              <span className="text-gold text-lg font-semibold">+{capacity}</span>
+              <h6 className="mb-1 text-hud-label text-hud-muted">Max Population Grant</h6>
+              <span className="text-hud-title text-hud-accent">+{capacity}</span>
             </div>
           )}
         </div>
         <div>
           {resourceProduced !== undefined && gives && (
             <div>
-              <h6 className="text-gold/70 text-xs uppercase tracking-wider mb-1">Produces</h6>
+              <h6 className="mb-1 text-hud-label text-hud-muted">Produces</h6>
               <div className="flex items-center gap-2 mt-1">
                 <ResourceIcon withTooltip={false} className="self-center" resource={resourceProduced} size="sm" />
-                <span className="text-lg font-semibold text-green-400">{gives}</span>
+                <span className="text-hud-title text-hud-good">{gives}</span>
               </div>
             </div>
           )}
@@ -1683,7 +1514,7 @@ const BuildingInfo = ({
 
       {Array.isArray(ongoingCost) && ongoingCost.length > 0 ? (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
+          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
@@ -1692,7 +1523,6 @@ const BuildingInfo = ({
                 <ResourceCost
                   key={`ongoing-cost-${index}`}
                   type="horizontal"
-                  className="!text-xs"
                   resourceId={costItem.resource}
                   amount={costItem.amount}
                   balance={balance.balance}
@@ -1702,7 +1532,7 @@ const BuildingInfo = ({
           </div>
         </>
       ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not labor mode
-        <div className="text-gold/70 italic text-xs pt-2 border-t border-gold/10">
+        <div className="border-t border-hud-divider pt-2 text-hud-label italic text-hud-muted">
           No ongoing resource costs in this mode.
         </div>
       ) : null}
@@ -1710,9 +1540,7 @@ const BuildingInfo = ({
       {buildingCost === undefined && <p>Building Creation Cost: —</p>}
       {buildingCost && buildingCost.length > 0 && (
         <>
-          <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">
-            Building Creation Cost
-          </h6>
+          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Building Creation Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
               const balance = getBalance(
@@ -1725,7 +1553,6 @@ const BuildingInfo = ({
                 <ResourceCost
                   key={`fixed-cost-${index}`}
                   type="horizontal"
-                  className="!text-xs"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
                   balance={balance.balance}

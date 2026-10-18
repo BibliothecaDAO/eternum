@@ -98,7 +98,7 @@ describe("construction model thumbnails", () => {
 
   it("uses model artwork in plot choices and keeps painted resource costs", () => {
     const picker = dom(<PlotConstructionPicker {...({} as PlotConstructionTarget)} />);
-    const farm = picker.querySelector('button[aria-label="Farm"]');
+    const farm = [...picker.querySelectorAll(".ui-card")].find((card) => card.textContent?.includes("Farm"));
     expect(farm?.querySelector("[data-building-thumbnail]")?.getAttribute("src")).toBe(
       "/images/buildings/construction/farm.png",
     );

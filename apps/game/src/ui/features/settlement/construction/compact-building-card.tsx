@@ -1,7 +1,7 @@
 import { BuildingThumbnail } from "./building-thumbnail";
 import type { BuildingType } from "@bibliothecadao/types";
 import { useState, type ReactNode } from "react";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { RequirementChips, type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 
 interface BuildingAction {
@@ -25,10 +25,10 @@ interface CompactBuildingCardProps {
   destroy: BuildingAction;
 }
 
-const ACTION_CLASS =
-  "min-h-11 rounded-md border border-gold/30 px-3 text-sm text-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15 disabled:opacity-50";
-
-/** Costs are visible before building; management remains available even when another building is unaffordable. */
+/**
+ * Costs are visible before building; management remains available even when another building is unaffordable. Destroy
+ * acts at once, as on the desktop card: Blitz and Eternum ask no confirmation.
+ */
 export const CompactBuildingCard = ({
   name,
   building,
@@ -44,89 +44,70 @@ export const CompactBuildingCard = ({
   destroy,
 }: CompactBuildingCardProps) => {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [confirmDestroy, setConfirmDestroy] = useState(false);
   return (
-    <article className={cn("min-w-0 rounded-lg border border-gold/20 bg-black/20 p-3", active && "border-gold")}>
+    <HudPanel kind="section" collapsible={false}>
       <div className="flex items-center gap-3">
         <BuildingThumbnail building={building} alt="" className="h-14 w-14 shrink-0 object-contain" />
         <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold leading-tight text-gold">{name}</h3>
-          <p className="text-xs text-gold/75">
+          <h3 className="flex items-center gap-2 text-hud-title">
+            {name}
+            {active && <HudChip>Chosen</HudChip>}
+          </h3>
+          <p className="text-hud-label text-hud-muted">
             {count} built{status && ` · ${status}`}
           </p>
         </div>
-        <button
-          type="button"
-          className={cn(ACTION_CLASS, "shrink-0 bg-gold text-black")}
+        <HudButton
+          kind="primary"
           aria-label={`Build ${name}`}
           disabled={build.disabled || build.pending}
           onClick={build.onClick}
         >
           {build.pending ? "Building…" : "Build"}
-        </button>
+        </HudButton>
       </div>
-      <div className="mt-2 space-y-1">
-        <p className="text-xs text-gold/75">Cost · owned / needed</p>
+      <div className="mt-2 flex flex-col gap-1">
+        <p className="text-hud-label text-hud-muted">Cost · owned / needed</p>
         <RequirementChips requirements={requirements} />
-        {disabledReason && <p className="text-sm text-gold/85">{disabledReason}</p>}
+        {disabledReason && <p className="text-hud-muted">{disabledReason}</p>}
       </div>
       <details
-        className="mt-2 border-t border-gold/15"
-        onToggle={(event) => {
-          setDetailsOpen(event.currentTarget.open);
-          if (!event.currentTarget.open) setConfirmDestroy(false);
-        }}
+        className="mt-2 border-t border-hud-divider"
+        onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
       >
-        <summary className="flex min-h-11 cursor-pointer items-center text-sm text-gold underline underline-offset-4">
+        <summary className="flex min-h-11 cursor-pointer items-center text-hud-accent underline underline-offset-4">
           Details & management
         </summary>
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
             {onPlace && (
-              <button
-                type="button"
-                className={ACTION_CLASS}
-                disabled={build.disabled || build.pending}
-                onClick={onPlace}
-              >
+              <HudButton kind="secondary" disabled={build.disabled || build.pending} onClick={onPlace}>
                 Place on map
-              </button>
+              </HudButton>
             )}
             {production.onClick && count > 0 && (
-              <button
-                type="button"
-                className={ACTION_CLASS}
+              <HudButton
+                kind="secondary"
                 disabled={production.disabled || production.pending}
                 onClick={production.onClick}
               >
                 {production.pending ? "Updating…" : production.paused ? "Resume all" : "Pause all"}
-              </button>
+              </HudButton>
             )}
             {destroy.onClick && count > 0 && (
-              <button
-                type="button"
-                className={cn(ACTION_CLASS, "border-red-400/50 text-red-300")}
+              <HudButton
+                kind="secondary"
+                tone="bad"
                 disabled={destroy.disabled || destroy.pending}
-                onClick={() => {
-                  if (!confirmDestroy) setConfirmDestroy(true);
-                  else {
-                    destroy.onClick?.();
-                    setConfirmDestroy(false);
-                  }
-                }}
+                onClick={destroy.onClick}
               >
-                {destroy.pending ? "Destroying…" : confirmDestroy ? "Confirm destroy one" : "Destroy one"}
-              </button>
-            )}
-            {confirmDestroy && (
-              <button type="button" className={ACTION_CLASS} onClick={() => setConfirmDestroy(false)}>
-                Cancel
-              </button>
+                {destroy.pending ? "Destroying…" : "Destroy one"}
+              </HudButton>
             )}
           </div>
           {detailsOpen && details}
         </div>
       </details>
-    </article>
+    </HudPanel>
   );
 };
