@@ -14,7 +14,7 @@ export const SecondaryMenuItems = () => {
         id={SETTINGS_POPOVER_ID}
         ariaLabel="Settings"
         align="end"
-        className="w-[420px] overflow-y-auto"
+        className="w-hud-settings overflow-y-auto"
         trigger={
           <HudIconButton
             icon="settings"
