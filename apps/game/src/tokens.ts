@@ -443,6 +443,16 @@ export const HUD_SHEET = {
   good: "#66ddab",
   bad: "#ff7b6b",
   warn: "#f0b35a",
+  /**
+   * The player's six structure groups, by order, never by meaning: a group is a category the player picks, so its
+   * colour is no tone (a red group is no danger).
+   */
+  "group-1": "#f87171",
+  "group-2": "#fbbf24",
+  "group-3": "#4ade80",
+  "group-4": "#60a5fa",
+  "group-5": "#818cf8",
+  "group-6": "#a78bfa",
   /** Troop tiers, as channels: T1 blue, T2 green, T3 purple. */
   t1: "96 165 250",
   t2: "52 211 153",
@@ -495,6 +505,7 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
     "cue",
     "hover",
     "chosen",
+    ...[1, 2, 3, 4, 5, 6].map((order) => `group-${order}`),
   ].map((name) => [name, `var(--hud-${name})`]),
 ]);
 

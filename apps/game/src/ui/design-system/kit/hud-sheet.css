@@ -128,12 +128,12 @@ button.ui-panel__name {
   background: transparent;
   color: var(--hud-muted);
 }
-/* A painting that toggles (a star that pins): faint until pressed, brighter under the pointer. */
-.ui-button[data-icon-only][aria-pressed="false"] > img {
+/* A quiet painting that toggles (a star that pins): faint until pressed, brighter under the pointer. */
+.ui-button[data-kind="quiet"][data-icon-only][aria-pressed="false"] > img {
   opacity: 0.35;
   transition: opacity var(--hud-fast) var(--hud-ease);
 }
-.ui-button[data-icon-only][aria-pressed="false"]:is(:hover, [data-state="hover"]) > img {
+.ui-button[data-kind="quiet"][data-icon-only][aria-pressed="false"]:is(:hover, [data-state="hover"]) > img {
   opacity: 0.7;
 }
 /* What loses something, on a secondary or quiet button: its words and line in the bad tone. */
