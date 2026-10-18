@@ -16,6 +16,10 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { OpenedFromPanel } from "./opened-from-panel";
+import { SheetHandle, useSheetCloses } from "./sheet-closes";
+import { BACK, CLOSE } from "./words";
+
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
  * (src/tokens.ts: HUD_TYPE, HUD_SHEET, HUD_MODES) by its classes (hud-sheet.css). A screen takes these and gives them
@@ -532,11 +536,50 @@ export const HudTabs = <K extends string | number>({
 );
 
 /** A small tag: a count in the age's accent, or a state in its tone. */
-export const HudChip = ({ tone, children }: { tone?: Tone; children: ReactNode }) => (
-  <span className="ui-chip" data-tone={tone}>
+export const HudChip = ({
+  tone,
+  icons,
+  label,
+  tip,
+  children,
+}: {
+  tone?: Tone;
+  /** The paintings of what it counts, one or two overlapping (stamina; a returning army's troops). */
+  icons?: readonly IconMeaning[];
+  /** What it counts, for assistive technology, which reads it with the chip's own words ("Stamina 120"). */
+  label?: string;
+  /** A fuller line for the hover than the chip's words, where the facts have one. */
+  tip?: string;
+  children: ReactNode;
+}) => (
+  <span
+    className="ui-chip"
+    data-tone={tone}
+    data-tip={tip}
+    role={label === undefined ? undefined : "img"}
+    aria-label={label === undefined ? undefined : `${label} ${textOf(children)}`}
+  >
+    {icons && icons.length > 0 && (
+      <span className="ui-chip__icons" aria-hidden="true">
+        {icons.map((icon) => (
+          <Icon key={icon} name={icon} size={16} />
+        ))}
+      </span>
+    )}
     {children}
   </span>
 );
+
+/** The words a chip's children say, for its name: its strings and numbers, joined. */
+const textOf = (node: ReactNode): string =>
+  typeof node === "string" || typeof node === "number"
+    ? String(node)
+    : Array.isArray(node)
+      ? node
+          .map((child) => textOf(child).trim())
+          .filter(Boolean)
+          .join(" ")
+      : "";
 
 /** A troop tier: T1 blue, T2 green, T3 purple. */
 export const HudTierChip = ({ tier }: { tier: 1 | 2 | 3 }) => (
@@ -971,6 +1014,41 @@ export const HudWindow = ({
       </WindowFootContext.Provider>
       <footer ref={setFoot} className="ui-window__foot" />
     </section>
+  );
+};
+
+/**
+ * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
+ * arrow when it opened from another panel, whose place it takes). On a phone it is a bottom sheet with a handle (a tap or
+ * a drag down closes it) over a backdrop a tap closes; from the desktop width up it docks under the top bar and the
+ * stage stays playable beside it. Escape and the system back close it on both.
+ */
+export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
+  const back = useContext(OpenedFromPanel);
+  useSheetCloses(onClose);
+  return (
+    <>
+      <button type="button" aria-hidden tabIndex={-1} onClick={onClose} className="ui-sheet__backdrop" />
+      <section role="dialog" aria-label={label} data-kit-sheet className="ui ui-panel ui-sheet">
+        <SheetHandle onClose={onClose}>
+          <i className="ui-sheet__grip" />
+        </SheetHandle>
+        <PanelHead
+          title={label}
+          cue={
+            <HudIconButton
+              icon={back ? "arrow-left" : "close"}
+              label={back ? BACK : CLOSE}
+              kind="quiet"
+              size="sm"
+              onClick={onClose}
+            />
+          }
+          fold={null}
+        />
+        <div className="ui-sheet__body">{children}</div>
+      </section>
+    </>
   );
 };
 

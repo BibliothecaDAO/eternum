@@ -11,6 +11,7 @@ import { Button as KitButton } from "@/ui/design-system/kit/button";
 import { Chip as KitChip } from "@/ui/design-system/kit/chip";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { PriceChip } from "@/ui/design-system/kit/price-chip";
+import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
 import { TroopTierChip } from "@/ui/design-system/kit/troop-tier-chip";
 import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
@@ -54,6 +55,7 @@ import {
   HudTip,
   HudTroopAmount,
   HudTransfer,
+  HudSheet,
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
@@ -189,6 +191,7 @@ export const StyleSheetLab = () => {
               <CardSection />
               <EventsSection store={store} />
               <WindowSection />
+              <SheetSection />
               <DeployOptionsSection />
               <ConfirmSection />
               <LoadingSection />
@@ -1089,7 +1092,7 @@ const RelicSection = () => (
 const ChipsSection = () => (
   <Element
     name="Chip"
-    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour."
+    rule="A small tag: a count in gold, a state in its tone, a troop tier in its colour. An amount of something leads with its painting (two overlap), and is named whole for assistive technology."
     sheet={
       <div className="flex flex-wrap items-center gap-3">
         <HudChip>3</HudChip>
@@ -1097,6 +1100,15 @@ const ChipsSection = () => (
         <HudChip tone="good">Ready</HudChip>
         <HudChip tone="warn">2m left</HudChip>
         <HudChip tone="bad">Under attack</HudChip>
+        <HudChip icons={["wheat"]} label="Wheat">
+          1,200
+        </HudChip>
+        <HudChip icons={["order-enlightenment", "troops"]} label="Returned">
+          +40
+        </HudChip>
+        <HudChip icons={["labor"]} label="Labor" tone="bad" tip="The rest does not fit">
+          +12
+        </HudChip>
         <HudTierChip tier={1} />
         <HudTierChip tier={2} />
         <HudTierChip tier={3} />
@@ -1440,6 +1452,35 @@ const WindowSection = () => (
         <SurfaceFrame title="Military" icon="military" onClose={() => undefined} bodyClassName="p-4">
           <TroopAmount troopCount={200} maxAffordable={500} held={500} onChange={() => undefined} disabled={false} />
         </SurfaceFrame>
+      </div>
+    }
+  />
+);
+
+/** A sheet is fixed to the screen; in the lab its frame holds it, as the screen would. */
+const SHEET_FRAME = "relative h-96 w-[30rem] overflow-hidden [transform:translateZ(0)]";
+
+const SheetSection = () => (
+  <Element
+    name="Sheet"
+    rule="A panel over the stage, the Frontier HUD's army, site and menu: its name and its way out in the header band (a back arrow when it opened from another panel). A bottom sheet with a handle on a phone, docked under the top bar from the desktop width up; Escape and the system back close it."
+    sheet={
+      <div className={SHEET_FRAME}>
+        <HudSheet label="Refill" onClose={() => undefined}>
+          <HudChip>
+            <Icon name="stamina" size={18} />
+            +40
+          </HudChip>
+          <HudButton kind="primary">Refill</HudButton>
+        </HudSheet>
+      </div>
+    }
+    today={
+      <div className={SHEET_FRAME}>
+        <KitSheet label="Refill" onClose={() => undefined}>
+          <h2 className="frontier-title">Refill</h2>
+          <KitButton role="primary" word="Refill" />
+        </KitSheet>
       </div>
     }
   />

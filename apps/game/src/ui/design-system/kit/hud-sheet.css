@@ -326,6 +326,13 @@ button.ui-panel__name {
   flex: none;
   white-space: nowrap;
 }
+/* A chip's paintings: two overlap, so a pair reads as one thing. */
+.ui-chip__icons {
+  display: inline-flex;
+}
+.ui-chip__icons > * + * {
+  margin-left: calc(-1 * theme(spacing.1));
+}
 .ui-chip[data-tone="good"] {
   border-color: color-mix(in srgb, var(--hud-good) 45%, transparent);
   background: color-mix(in srgb, var(--hud-good) 14%, transparent);
@@ -674,6 +681,60 @@ span.ui-row__choose {
 }
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
+/* ── Sheet: a panel over the stage; a bottom sheet on a phone, docked under the top bar from the desktop width up. ── */
+.ui-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: calc(theme(zIndex.hud-sheet) - 1);
+  border: 0;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+}
+.ui-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: theme(zIndex.hud-sheet);
+  display: flex;
+  max-height: 85dvh;
+  flex-direction: column;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  /* Shown even while the panel it opened from steps aside for it. */
+  visibility: visible;
+}
+.ui-sheet__grip {
+  display: block;
+  width: theme(spacing.10);
+  height: theme(spacing.1);
+  border-radius: 9999px;
+  background: var(--hud-line-strong);
+}
+.ui-sheet__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing.2);
+  overflow-y: auto;
+  padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .ui-sheet__backdrop {
+    display: none;
+  }
+  .ui-sheet {
+    inset-inline: auto;
+    right: theme(spacing.2);
+    top: theme(spacing.hud-frontier-page-top);
+    bottom: auto;
+    width: theme(spacing.hud-frontier-page);
+    max-height: calc(100dvh - theme(spacing.hud-frontier-page-top) - theme(spacing.2));
+    border-radius: var(--hud-radius-panel);
+  }
+}
+
 .ui-window {
   display: flex;
   flex-direction: column;

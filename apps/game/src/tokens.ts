@@ -598,6 +598,8 @@ export const HUD_LAYERS = {
   column: "20",
   foot: "26",
   rail: "30",
+  /** A Frontier sheet over the stage; its backdrop one under it. */
+  sheet: "40",
   motion: "60",
   loading: "110",
   popover: "130",

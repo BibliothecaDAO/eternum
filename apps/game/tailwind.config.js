@@ -69,7 +69,7 @@ export default {
       maxWidth: WIDTHS,
       width: WIDTHS,
       spacing: { ...GUTTERS, ...prefixed(HUD_LAYOUT, "hud") },
-      zIndex: prefixed(HUD_LAYERS, "hud"),
+      zIndex: { 1: "1", 100: "100", 250: "250", 1000: "1000", ...prefixed(HUD_LAYERS, "hud") },
       screens: SCREENS,
       typography: ({ theme }) => ({
         pink: {
@@ -233,12 +233,6 @@ export default {
       },
       strokeWidth: {
         8: "8px",
-      },
-      zIndex: {
-        1: "1",
-        100: "100",
-        250: "250",
-        1000: "1000",
       },
       animation: {
         slowPulse: "slowPulse 2s ease-in-out infinite",
