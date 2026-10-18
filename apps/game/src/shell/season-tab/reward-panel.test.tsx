@@ -154,3 +154,29 @@ it("says nothing of tokens on a sealed chest whose rank band draws none", async 
   });
   expect(late.textContent).not.toContain("No LORDS now");
 });
+
+it.each([0, 1, 2, 3, 4])(
+  "keeps reward band %i on its title, art and Open button, then its opened art",
+  async (band) => {
+    const sealed = await mount({ ...SEALED, chest: { ...CHEST, band } });
+    const images = [...sealed.querySelectorAll(`img[data-icon="reward-chest-${band}"]`)];
+    expect(images).toHaveLength(3);
+    expect(images.map((image) => image.getAttribute("src"))).toEqual(
+      Array(3).fill(`/images/blitz-chests/band-${band}-sealed.webp`),
+    );
+    expect(sealed.querySelector('[data-icon="chest"]')).toBeNull();
+    const opening = await mount({ ...SEALED, chest: { ...OPENED, band, finished: false }, held: false });
+    const opened = [...opening.querySelectorAll(`img[data-icon="reward-chest-${band}-opened"]`)];
+    expect(opened).toHaveLength(2);
+    expect(opened.map((image) => image.getAttribute("src"))).toEqual(
+      Array(2).fill(`/images/blitz-chests/band-${band}-opened.webp`),
+    );
+    expect(opening.querySelector('[data-icon="chest"]')).toBeNull();
+  },
+);
+
+it("does not claim a rank band while the chest is pending", async () => {
+  const pending = await mount({ ...SEALED, result: { ...SEALED.result, rank: 0, chestId: 0n }, chest: null });
+  expect(pending.querySelectorAll('[data-icon="reward-chest"]')).toHaveLength(2);
+  expect(pending.textContent).not.toMatch(/Top 10%|Bottom 25%/);
+});

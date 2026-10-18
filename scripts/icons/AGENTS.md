@@ -8,3 +8,7 @@
 
 Do not repaint or alter a subject to fix padding. Rebuild through `normalizeMaster`. Historical comparisons remain exact
 archived bytes; they are references, not production deliveries. Construction thumbnails retain their separate pipeline.
+
+Reward rank-band chests use `rewardChestMeaning` and the approved sealed/opened images. `chest` is the world's crate.
+`validate.test.mjs` rejects the old conflated mapping; `files.test.mjs` verifies and decodes all ten original images;
+`reward-panel.test.tsx` checks every band's title, full artwork and Open button.

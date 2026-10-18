@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { Icon, SvgIcon } from "./icon";
 import { iconDefinition, iconMeanings, iconUrl, orderMeaning, resourceMeaning, type IconMeaning } from "./icon-meaning";
 import { HexMarker } from "./hex-marker";
-import { realmMeaning, realmMarkerMeaning } from "./domain-icon-meaning";
+import { realmMeaning, realmMarkerMeaning, rewardChestMeaning } from "./domain-icon-meaning";
 import type { ResourcesIds } from "@bibliothecadao/types";
 
 describe("semantic icons", () => {
@@ -93,4 +93,21 @@ it("uses the unmodified LORDS token mark for resource, DOM and SVG consumers at 
       </svg>,
     ),
   ).toContain('href="/tokens/lords.svg"');
+});
+
+it("keeps reward rank artwork separate from map crates at every display size", () => {
+  for (const band of [0, 1, 2, 3, 4]) {
+    for (const opened of [false, true]) {
+      const meaning = rewardChestMeaning(band, opened);
+      for (const size of [16, 22, 26, 176, 192]) {
+        expect(renderToStaticMarkup(<Icon name={meaning} size={size} />)).toContain(
+          `/images/blitz-chests/band-${band}-${opened ? "opened" : "sealed"}.webp`,
+        );
+      }
+    }
+  }
+  expect(iconUrl("chest")).toBe("/icons/facets/64/chest.webp");
+  expect(rewardChestMeaning()).toBe("reward-chest");
+  for (const invalid of [-1, 5, 1.5, NaN])
+    expect(() => rewardChestMeaning(invalid)).toThrow("Unknown reward chest band");
 });

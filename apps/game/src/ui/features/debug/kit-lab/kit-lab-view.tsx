@@ -35,6 +35,7 @@ import { AreaDLab } from "./area-d-lab";
 import { DeployLab } from "./deploy-lab";
 import { IconLab } from "./icon-lab";
 import { TokensLab } from "./tokens-lab";
+import { RewardChestsLab } from "./reward-chests-lab";
 import { ResourceIconsLab } from "./resource-icons-lab";
 import { Link } from "react-router-dom";
 
@@ -60,6 +61,7 @@ export const KitLabView = () => {
     <Routes>
       <Route path="construction" element={<ConstructionLab />} />
       <Route path="icons" element={<IconLab />} />
+      <Route path="reward-chests" element={<RewardChestsLab />} />
       <Route path="resource-icons" element={<ResourceIconsLab />} />
       <Route path="deploy" element={<DeployLab />} />
       <Route path="area-d" element={<AreaDLab />} />
@@ -83,6 +85,7 @@ const Components = () => {
       <div className="mx-auto flex max-w-[390px] flex-col gap-8 lg:max-w-5xl lg:flex-row lg:flex-wrap">
         <Link to="/lab/kit/icons">Facets icon catalog</Link>
         <Link to="/lab/kit/tokens">Design tokens</Link>
+        <Link to="/lab/kit/reward-chests">Reward chest tiers</Link>
         <Link to="/lab/kit/resource-icons">Resource icon review</Link>
         <Link to="/lab/kit/construction">Construction models</Link>
         <ClockSection />
@@ -416,7 +419,7 @@ const PillsSection = () => (
     </div>
     {/* On a plate: a credit, a wallet, a step to press, a prize and one that does not come. */}
     <div className="flex flex-wrap items-center gap-2">
-      <Pill size="sm" tone="gold" rimmed icon="chest">
+      <Pill size="sm" tone="gold" rimmed icon="reward-chest">
         Credit ×2
       </Pill>
       <Pill tone="muted" icon="backpack">
@@ -487,7 +490,7 @@ const PanelsSection = () => (
     <Panel icon="crown" title="Frontier" aside={<span className="text-kit-gold">12th</span>}>
       <p className="px-1 text-base text-kit-muted">Gilded, on a plate, small padding.</p>
     </Panel>
-    <Panel rule="line" pad="lg" icon="chest" title="Chest">
+    <Panel rule="line" pad="lg" icon="reward-chest" title="Chest">
       <p className="text-base text-kit-muted">Line, on a plate, large padding.</p>
     </Panel>
     <div className="plate p-5">

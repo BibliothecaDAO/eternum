@@ -72,6 +72,10 @@ const open = async (entry: string | typeof FROM_LIST = FROM_LIST) => {
 
 it("keeps the player's own ended season in reach: its results lead back into it, where its LORDS can be withdrawn", async () => {
   const { container, button } = await open();
+  expect(container.querySelector('[data-icon="reward-chest"]')?.getAttribute("src")).toBe(
+    "/images/blitz-chests/band-4-sealed.webp",
+  );
+  expect(container.querySelector('[data-icon="chest"]')).toBeNull();
   await act(async () => button("Withdraw")!.click());
   expect(container.querySelector("[data-where]")!.textContent).toBe(entryHref({ chainId: "0x52", game_id: 3 }, "play"));
 });

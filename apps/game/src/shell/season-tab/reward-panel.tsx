@@ -1,3 +1,4 @@
+import { rewardChestMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { REWARD_WORDS } from "@/ui/design-system/kit/words";
 import { formatExact, formatDate } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -22,10 +23,6 @@ import { entryMultipleOf, type PlayedGameKeys, type Reward, rewardState, useRewa
 const WalletSign = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletSign })),
 );
-
-/** Each rank band's chest, sealed or opened (0 the top 10 percent .. 4 the bottom 25). */
-const chestArt = (band: number, opened: boolean) =>
-  `/images/blitz-chests/band-${band}-${opened ? "opened" : "sealed"}.webp`;
 
 /**
  * After a paid Blitz: the rated game's MMR change with the sword or shield applied, and the mystery chest the result
@@ -106,11 +103,12 @@ const ChestPlate = ({
   const now = useNowSeconds();
   const [signing, setSigning] = useState(false);
   const state = rewardState(reward, owner);
-  const band = reward.chest?.band ?? 0;
+  const band = reward.chest?.band;
+  const chestIcon = rewardChestMeaning(band, state === "opening" || state === "opened");
 
   if (state === "pending")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
         <IconLine tone="muted" icon="hourglass">
           {REWARD_WORDS.arrives}
@@ -119,7 +117,7 @@ const ChestPlate = ({
     );
   if (state === "opened")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <Stage>
           {reward.content ? <Prize content={reward.content} entryFee={reward.token.entryFee} /> : <Loading />}
         </Stage>
@@ -127,16 +125,16 @@ const ChestPlate = ({
     );
   if (state === "opening")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <Stage>
-          <img src={chestArt(band, true)} alt="" className="relative size-48 animate-pulse object-contain" />
+          <SemanticIcon name={chestIcon} size={192} className="relative animate-pulse" />
           <span className="relative font-body text-xl text-kit-gold2">{REWARD_WORDS.opening}</span>
         </Stage>
       </Plate>
     );
   if (state === "traded")
     return (
-      <Plate icon="chest" title={REWARD_WORDS.chest}>
+      <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
         <ChestArt band={band} dim />
         <IconLine tone="muted" icon="chronicles">
           {REWARD_WORDS.traded}
@@ -157,14 +155,14 @@ const ChestPlate = ({
     </Suspense>
   ) : null;
   return (
-    <Plate icon="chest" title={REWARD_WORDS.chest}>
+    <Plate icon={chestIcon} title={REWARD_WORDS.chest}>
       <ChestArt band={band} glow={state === "sealed"} />
       {reward.token.shares > 0 && (
         <p className="flex flex-wrap gap-2">
           <TokensUntil shares={reward.token.shares} seasonEnd={reward.seasonEnd} now={now} />
         </p>
       )}
-      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon="chest" onClick={() => setSigning(true)} />}
+      {open ?? <Button role="primary" word={REWARD_WORDS.open} icon={chestIcon} onClick={() => setSigning(true)} />}
     </Plate>
   );
 };
@@ -245,12 +243,12 @@ const TokenPrize = ({ amount, entryFee }: { amount: bigint; entryFee: bigint }) 
   );
 };
 
-const ChestArt = ({ band, dim = false, glow = false }: { band: number; dim?: boolean; glow?: boolean }) => (
+const ChestArt = ({ band, dim = false, glow = false }: { band?: number; dim?: boolean; glow?: boolean }) => (
   <div className={cn("relative flex h-48 items-center justify-center rounded-control", glow && "bg-halo")}>
-    <img src={chestArt(band, false)} alt="" className={cn("size-44 object-contain", dim && "opacity-40 grayscale")} />
+    <SemanticIcon name={rewardChestMeaning(band)} size={176} className={cn(dim && "opacity-40 grayscale")} />
     <span className="absolute bottom-1 left-1">
       <Pill size="lg" tone="muted" icon="victory">
-        {REWARD_WORDS.band[band] ?? REWARD_WORDS.band[0]}
+        {band === undefined ? REWARD_WORDS.chest : REWARD_WORDS.band[band]}
       </Pill>
     </span>
   </div>

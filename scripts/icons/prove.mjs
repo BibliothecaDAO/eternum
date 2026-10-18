@@ -145,10 +145,14 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
         })()`);
       }
       const state = await b.evaluate(`(async () => {
+        const {meanings} = await (await fetch('/icons/facets/manifest.json')).json();
         const icons = await Promise.all([...document.querySelectorAll('img[data-icon],image[data-icon]')].map(async element => {
           const html = element instanceof HTMLImageElement;
           const url = element.getAttribute(html ? 'src' : 'href');
-          const result = {meaning: element.dataset.icon, kind: html ? 'html' : 'svg', url, loaded: false};
+          const meaning = element.dataset.icon, entry = meanings[meaning];
+          const pixels = url?.split('/')[3] ?? '64';
+          const expected = entry?.token ? '/tokens/'+entry.token+'.svg' : entry?.rewardChest ? '/images/blitz-chests/'+entry.rewardChest+'.webp' : '/icons/facets/'+pixels+'/'+entry?.art+'.webp';
+          const result = {meaning, kind: html ? 'html' : 'svg', url, expected, loaded: false};
           try {
             if (!url) throw new Error('Missing artwork URL');
             result.resolvedUrl = new URL(url, document.baseURI).href;
@@ -169,12 +173,7 @@ export async function proveIcons(b, out, records, baseUrl, onlyLayout, onlyPages
       record.state = state;
       record.checks.push({
         check: "All rendered HTML and SVG icon URLs decode as semantic artwork",
-        ok:
-          state.icons.length > 0 &&
-          state.icons.every(
-            (i) =>
-              i.loaded && (i.meaning === "lords" ? i.url === "/tokens/lords.svg" : i.url.startsWith("/icons/facets/")),
-          ),
+        ok: state.icons.length > 0 && state.icons.every((i) => i.loaded && i.url === i.expected),
       });
       const lords = state.icons.filter((icon) => icon.meaning === "lords");
       if (["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"].includes(name)) {
@@ -382,6 +381,63 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
   }
 }
 
+export async function proveRewardChests(b, out, records, baseUrl) {
+  for (const [layout, width, height] of [
+    ["desktop", 1440, 1000],
+    ["phone", 390, 844],
+  ]) {
+    const record = { name: `${layout}-reward-chests`, ready: false, presses: [], checks: [] };
+    records.push(record);
+    await b.run("set", "viewport", String(width), String(height));
+    await b.run("open", `${baseUrl}/lab/kit/reward-chests`, "--ignore-https-errors");
+    await b.run("wait", "[data-reward-chests]");
+    record.ready = true;
+    record.checks.push({
+      check: "All five tiers show the original sealed and opened artwork",
+      ok: await b.evaluate(`(async () => {
+      const rows = [...document.querySelectorAll('[data-reward-band]')];
+      for (const row of rows) {
+        const band = row.dataset.rewardBand;
+        for (const image of row.querySelectorAll('img')) await image.decode();
+        const sealed = [...row.querySelectorAll('[data-icon="reward-chest-'+band+'"]')];
+        if (sealed.length !== 3 || !sealed.every(i=>i.getAttribute('src')==='/images/blitz-chests/band-'+band+'-sealed.webp')) return false;
+        if (row.querySelector('[data-icon="reward-chest-'+band+'-opened"]').getAttribute('src') !== '/images/blitz-chests/band-'+band+'-opened.webp') return false;
+      }
+      return rows.length === 5 && document.documentElement.scrollWidth <= innerWidth;
+    })()`),
+    });
+    await b.run("screenshot", join(out, `${layout}-reward-comparison.png`));
+    await b.run("scrollintoview", '[data-reward-band="4"]');
+    await b.run("screenshot", join(out, `${layout}-reward-comparison-lower.png`));
+    for (const state of ["pending", "sealed", "opening", "lords"]) {
+      await b.run("open", `${baseUrl}/lab/kit/reward-chests`, "--ignore-https-errors");
+      const step = { state, status: "failed" };
+      record.presses.push(step);
+      const selector = `a[href*="reward-${state}/results"]`;
+      await b.run("scrollintoview", selector);
+      await b.run("click", selector);
+      await b.run("wait", 'img[data-icon^="reward-chest"]');
+      const expected =
+        state === "pending"
+          ? "reward-chest"
+          : state === "sealed"
+            ? "reward-chest-2"
+            : state === "opening"
+              ? "reward-chest-2-opened"
+              : "reward-chest-0-opened";
+      const okay = await b.evaluate(`(async()=>{
+        const icons=[...document.querySelectorAll('img[data-icon^="reward-chest"]')];
+        for(const i of icons) await i.decode();
+        return icons.length>0 && icons.every(i=>i.dataset.icon===${JSON.stringify(expected)}) && !document.querySelector('[data-icon="chest"]');
+      })()`);
+      if (okay) step.status = "led";
+      record.checks.push({ check: `${state} reward uses its own tier artwork`, ok: okay });
+      await b.run("scrollintoview", 'img[data-icon^="reward-chest"]');
+      await b.run("screenshot", join(out, `${layout}-reward-${state}.png`));
+    }
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const baseUrl = process.argv[3] ?? "https://127.0.0.1:4193";
   const missingSvg = process.argv.includes("--missing-svg");
@@ -393,22 +449,24 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       where: (r) => ({ name: r.name }),
     },
     (b, out, records) =>
-      process.argv.includes("--resources")
-        ? proveResourceIcons(b, out, records, baseUrl)
-        : process.argv.includes("--minimap-url")
-          ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
-          : proveIcons(
-              b,
-              out,
-              records,
-              baseUrl,
-              missingSvg ? "desktop" : undefined,
-              missingSvg || process.argv.includes("--catalog")
-                ? ["catalog"]
-                : process.argv.includes("--lords")
-                  ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
-                  : undefined,
-              missingSvg,
-            ),
+      process.argv.includes("--rewards")
+        ? proveRewardChests(b, out, records, baseUrl)
+        : process.argv.includes("--resources")
+          ? proveResourceIcons(b, out, records, baseUrl)
+          : process.argv.includes("--minimap-url")
+            ? proveMinimapEmblems(b, out, records, process.argv[process.argv.indexOf("--minimap-url") + 1])
+            : proveIcons(
+                b,
+                out,
+                records,
+                baseUrl,
+                missingSvg ? "desktop" : undefined,
+                missingSvg || process.argv.includes("--catalog")
+                  ? ["catalog"]
+                  : process.argv.includes("--lords")
+                    ? ["catalog", "purse", "frontier", "withdraw", "entry", "results", "lords-prize"]
+                    : undefined,
+                missingSvg,
+              ),
   );
 }

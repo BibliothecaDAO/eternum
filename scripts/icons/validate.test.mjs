@@ -71,3 +71,14 @@ test("LORDS rejects a rotated mark, a redirected resource and a leftover paintin
   leftover.icons.push({ id: "lords" });
   assert.throws(() => validateIcons(leftover), /Remove the painted LORDS asset/);
 });
+
+test("reward tiers reject the map-crate mapping and another band's artwork", () => {
+  for (const name of Object.keys(meanings).filter((name) => name.startsWith("reward-chest"))) {
+    const input = valid();
+    input.meanings[name] = { art: "chest", label: "Chest", family: "Rewards" };
+    assert.throws(() => validateIcons(input), /must use its approved reward tier/);
+  }
+  const wrongBand = valid();
+  wrongBand.meanings["reward-chest-0"].rewardChest = "band-4-sealed";
+  assert.throws(() => validateIcons(wrongBand), /must use its approved reward tier/);
+});

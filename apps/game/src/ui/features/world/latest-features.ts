@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Reward chests keep their tiers",
+    description:
+      "Blitz rewards show their own rank-band chest artwork in panel titles, entry details and Open buttons. Map crates keep their in-game model.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-18",
     title: "Deploy map shows only where an army can go",
     description:
       "The Military window's deploy map now shows your realm and the six tiles around it, the only ones an army can step out onto, drawn large. Free tiles carry a green mark, occupied ones a red mark, and tiles not yet explored a question mark.",

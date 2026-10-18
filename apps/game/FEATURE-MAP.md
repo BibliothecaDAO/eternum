@@ -456,3 +456,14 @@ fixture.
 `pnpm --dir apps/game prove:endgame --port 4199 --mode gallery --out <fresh-directory>` starts the app, drives visible
 controls, records map/orb captures, checks Results/Escape and cleans up. `--mode cost --iterations 3` measures the busy
 fixture on WebGPU and WebGL at 1920×1080. See `src/lab/README.md`.
+
+## Reward chest artwork
+
+Paid Blitz Results → Chest uses the five approved rank-band chests, sealed or opened, through `rewardChestMeaning` and
+`Icon`. The entry's reward share, payout-wallet prize line and unranked results chest count use the unranked reward
+chest. In-game crates keep `chest`, the model render. `/lab/kit/reward-chests` compares all bands and links to the real
+reward panel's sealed, opening, opened and pending fixtures. Reward tests exercise every band and reject the map-crate
+artwork.
+
+`pnpm icons:prove <new-evidence-dir> https://127.0.0.1:4193 --rewards` drives the comparison links on desktop and phone,
+decodes every tier and checks the real results page selects the right chest in each state.

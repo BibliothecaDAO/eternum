@@ -1,0 +1,36 @@
+{
+  "revision": "84b6dd86b80",
+  "reason": "Owner-approved five reward rank bands, sealed and opened. Preserve separately from the world-map crate.",
+  "files": {
+    "band-0-opened.webp": {
+      "sha256": "6dfdd754627f5a353956add56bec8dcb7ec6c3f17d111709a58c9160e5b04f22"
+    },
+    "band-0-sealed.webp": {
+      "sha256": "af4910d6729262d72e4e6f197b5c50f7f54cb6575855b9f616ef265cafdf9892"
+    },
+    "band-1-opened.webp": {
+      "sha256": "96a5be1c28241b99715757a9c923164ef615cdfb4d03a510f83d87f35915891c"
+    },
+    "band-1-sealed.webp": {
+      "sha256": "ce95a807ed0ee088219dfc2efa3524800b0c51ebe379a5f17426673e468cd303"
+    },
+    "band-2-opened.webp": {
+      "sha256": "6fc97680406f85229d18ae7cff9b60f3b45a01cee869cde75d0b9a5384606882"
+    },
+    "band-2-sealed.webp": {
+      "sha256": "2ab608011fd70c5ee2f9bfe5f28552dcd9a89670b20c60e11e54c078934c57b5"
+    },
+    "band-3-opened.webp": {
+      "sha256": "92b9fd8399c9defb3e2ac587764f745da694d8214bda6d7678b294643f888226"
+    },
+    "band-3-sealed.webp": {
+      "sha256": "df99d9998279ba26513f03492135cdd2f34b75b258f67447518bb9ee21181b46"
+    },
+    "band-4-opened.webp": {
+      "sha256": "6c5d35d6f60eed8d1ac566814acf34b7c72fe48681d38055291a9c87a4ee1da0"
+    },
+    "band-4-sealed.webp": {
+      "sha256": "54ea39b1196f65eebcac93ba338fbb3adb876701081d341b52502b743fed615d"
+    }
+  }
+}

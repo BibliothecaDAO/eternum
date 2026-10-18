@@ -7,8 +7,9 @@ export type IconPixels = 64 | 128 | 256;
 export const iconMeanings = Object.keys(meanings) as IconMeaning[];
 
 type Meaning = { label: string; family: string; rotation?: number; orderId?: number } & (
-  | { art: string; token?: never }
-  | { token: string; art?: never }
+  | { art: string; token?: never; rewardChest?: never }
+  | { token: string; art?: never; rewardChest?: never }
+  | { rewardChest: string; art?: never; token?: never }
 );
 export function iconDefinition(name: IconMeaning): Meaning {
   const definition: Meaning = meanings[name];
@@ -18,6 +19,7 @@ export function iconDefinition(name: IconMeaning): Meaning {
 
 export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {
   const definition = iconDefinition(name);
+  if (definition.rewardChest) return `/images/blitz-chests/${definition.rewardChest}.webp`;
   return definition.token ? `/tokens/${definition.token}.svg` : `/icons/facets/${pixels}/${definition.art}.webp`;
 }
 

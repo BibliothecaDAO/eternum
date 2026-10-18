@@ -234,7 +234,7 @@ const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: strin
 const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
   const parts = [
     { key: "pool", icon: "victory" as const, amount: shares.pool, tone: "text-kit-gold2" },
-    { key: "chests", icon: "chest" as const, amount: shares.chests, tone: "text-kit-cream" },
+    { key: "chests", icon: "reward-chest" as const, amount: shares.chests, tone: "text-kit-cream" },
     { key: "treasury", icon: "final-seal" as const, amount: shares.treasury, tone: "text-kit-muted" },
   ].filter((part) => part.amount > 0n);
   return (
@@ -462,7 +462,7 @@ const Lords = ({ amount, size, tone = "text-kit-cream" }: { amount: bigint; size
 );
 
 const CreditChip = ({ count }: { count?: number }) => (
-  <Pill size="sm" tone="gold" rimmed icon="chest">
+  <Pill size="sm" tone="gold" rimmed icon="reward-chest">
     {count && count > 1 ? ENTRY_WORDS.credits(count) : ENTRY_WORDS.credit}
   </Pill>
 );

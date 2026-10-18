@@ -343,7 +343,7 @@ const FrontierResult = ({
           {own && (
             <div className="flex flex-wrap gap-2 pt-1">
               <Chip icons={["flag"]} value={formatAmount(own.sites_cleared.total)} label="Sites cleared" />
-              <Chip icons={["chest"]} value={formatAmount(own.chests_earned)} label="Chests" />
+              <Chip icons={["reward-chest"]} value={formatAmount(own.chests_earned)} label="Chests" />
               <Chip icons={["lords"]} value={formatAmount(wholeLords(own.rewards.lords))} label="LORDS" />
               <Chip icons={["portal"]} value={formatAmount(own.deepest_depth)} label="Deepest" />
             </div>

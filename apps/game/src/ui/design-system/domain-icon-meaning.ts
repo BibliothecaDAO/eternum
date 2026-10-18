@@ -91,3 +91,10 @@ export function troopMeaning(troops: { category: string; tier: string }): IconMe
   iconDefinition(name);
   return name;
 }
+
+/** Reward rank bands use the approved sealed/opened chest family, never the world's crate. */
+export function rewardChestMeaning(band?: number, opened = false): IconMeaning {
+  if (band === undefined) return "reward-chest";
+  if (!Number.isInteger(band) || band < 0 || band > 4) throw new Error(`Unknown reward chest band: ${band}`);
+  return `reward-chest-${band}${opened ? "-opened" : ""}` as IconMeaning;
+}

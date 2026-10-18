@@ -1360,6 +1360,61 @@
       "art": "map-realm-3",
       "label": "Empire hex emblem",
       "family": "Minimap"
+    },
+    "reward-chest": {
+      "rewardChest": "band-4-sealed",
+      "label": "Reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-0": {
+      "rewardChest": "band-0-sealed",
+      "label": "Top 10% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-0-opened": {
+      "rewardChest": "band-0-opened",
+      "label": "Top 10% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-1": {
+      "rewardChest": "band-1-sealed",
+      "label": "Top 10–25% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-1-opened": {
+      "rewardChest": "band-1-opened",
+      "label": "Top 10–25% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-2": {
+      "rewardChest": "band-2-sealed",
+      "label": "Top 25–50% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-2-opened": {
+      "rewardChest": "band-2-opened",
+      "label": "Top 25–50% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-3": {
+      "rewardChest": "band-3-sealed",
+      "label": "Top 50–75% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-3-opened": {
+      "rewardChest": "band-3-opened",
+      "label": "Top 50–75% reward chest · opened",
+      "family": "Rewards"
+    },
+    "reward-chest-4": {
+      "rewardChest": "band-4-sealed",
+      "label": "Bottom 25% reward chest",
+      "family": "Rewards"
+    },
+    "reward-chest-4-opened": {
+      "rewardChest": "band-4-opened",
+      "label": "Bottom 25% reward chest · opened",
+      "family": "Rewards"
     }
   },
   "resources": {

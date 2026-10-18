@@ -399,7 +399,7 @@ const ReadyName = ({ line }: { line: string }) => (
 const PrizesGoHere = () => (
   <p className="flex items-center gap-2 font-body text-lg text-kit-muted">
     <SemanticIcon name="lords" size={26} />
-    <SemanticIcon name="chest" size={26} />
+    <SemanticIcon name="reward-chest" size={26} />
     <SemanticIcon name="victory" size={26} />
     <span className="ml-1">{WALLET_WORDS.prizesGoHere}</span>
   </p>

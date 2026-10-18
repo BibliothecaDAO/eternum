@@ -70,3 +70,15 @@ test("LORDS keeps the verified official token bytes and no painted deliveries", 
     await assert.rejects(readFile(new URL(file, game)), { code: "ENOENT" });
   }
 });
+
+test("all ten reward chest images retain the approved tier artwork and decode", async () => {
+  const game = new URL("../../apps/game/", import.meta.url);
+  const { files } = JSON.parse(await readFile(new URL("asset-sources/reward-chests.json", game), "utf8"));
+  assert.equal(Object.keys(files).length, 10);
+  for (const [file, { sha256 }] of Object.entries(files)) {
+    const bytes = await readFile(new URL(`public/images/blitz-chests/${file}`, game));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), sha256, `Restore approved reward artwork: ${file}`);
+    const { info } = await sharp(bytes).raw().toBuffer({ resolveWithObject: true });
+    assert.ok(info.width >= 192 && info.height >= 192);
+  }
+});
