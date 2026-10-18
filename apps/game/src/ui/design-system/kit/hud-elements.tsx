@@ -122,7 +122,7 @@ const formatAmount = (amount: number) => Math.round(amount).toLocaleString("en-U
  * the whole part only ("1.5" is 1), held between `min` and `max` ("-500" is 0). Nothing typed yet is null: the field
  * stays blank until it loses focus, and nothing is reported.
  */
-export const parseWholeAmount = (text: string, min: number, max: number): number | null => {
+const parseWholeAmount = (text: string, min: number, max: number): number | null => {
   if (text.trim() === "") return null;
   const match = text.match(/[+-]?[0-9,]+/);
   const parsed = match ? Math.floor(Number.parseFloat(match[0].replace(/,/g, ""))) : Number.NaN;
@@ -136,7 +136,7 @@ const DECIMAL = /[+-]?(?:[0-9,]+(?:[.][0-9]*)?|[.][0-9]+)/;
  * sign, digits, thousands commas and a fraction, at most `max`, and below `min` only as `min` ("-2" is 0). Nothing
  * typed yet is null; anything else that holds no number is `min`.
  */
-export const parseDecimalAmount = (text: string, min: number, max: number): number | null => {
+const parseDecimalAmount = (text: string, min: number, max: number): number | null => {
   if (text.trim() === "") return null;
   const match = text.match(DECIMAL);
   const parsed = match ? Number.parseFloat(match[0].replace(/,/g, "")) : Number.NaN;

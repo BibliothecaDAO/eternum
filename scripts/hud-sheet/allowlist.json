@@ -202,7 +202,7 @@
   "apps/game/src/ui/features/world/components/structure-status-row/structure-status-row.tsx": 40,
   "apps/game/src/ui/features/world/containers/compact-hud.tsx": 35,
   "apps/game/src/ui/features/world/containers/hud-chat-window.tsx": 6,
-  "apps/game/src/ui/features/world/containers/hud-layout.ts": 4,
+  "apps/game/src/ui/features/world/containers/hud-layout.ts": 3,
   "apps/game/src/ui/features/world/containers/left-facets/merged-resource-panel.tsx": 10,
   "apps/game/src/ui/features/world/containers/left-facets/structure-actions-panel.tsx": 13,
   "apps/game/src/ui/features/world/containers/left-facets/structure-category-filter.tsx": 10,
