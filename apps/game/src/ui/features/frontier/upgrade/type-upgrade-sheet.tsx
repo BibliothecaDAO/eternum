@@ -1,8 +1,8 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import type { Price } from "../hud-prices";
-import { HudButton, HudCard, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCard, HudChip, HudRarity, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refused-verb";
-import { type Tier, TierChip } from "@/ui/design-system/kit/tier-chip";
+import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { chooseOne, RESEARCH, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -90,13 +90,13 @@ export const TypeUpgradeSheet = ({
       </div>
       {now && now.length > 0 && <Figures figures={now} />}
       <div className="flex items-center justify-center gap-2">
-        <TierChip tier={tier} showWord />
+        <HudRarity tier={tier} word />
         {!top && (
           <>
             <span aria-hidden className="text-hud-muted">
               →
             </span>
-            <TierChip tier={(tier + 1) as Tier} showWord />
+            <HudRarity tier={(tier + 1) as Tier} word />
           </>
         )}
         {top && <SemanticIcon name="check" size={22} />}

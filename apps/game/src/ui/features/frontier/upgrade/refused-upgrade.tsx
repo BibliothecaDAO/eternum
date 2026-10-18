@@ -1,6 +1,6 @@
 import type { Price } from "../hud-prices";
 import { HudButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
-import { shortfallLine } from "@/ui/design-system/kit/reason-plate";
+import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import type { Refusal } from "@/ui/design-system/kit/refused-verb";
 
 import { hudPrices } from "../hud-prices";

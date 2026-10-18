@@ -82,6 +82,20 @@ const AREAS = {
     "ui/design-system/molecules/structure-workspace.tsx",
     "ui/design-system/molecules/tooltip.tsx",
   ],
+  "B. Windows and modals": [
+    "ui/features/settlement",
+    "ui/features/relics",
+    "ui/features/progression/hints",
+    "ui/features/economy/trading",
+    "ui/features/economy/banking",
+    "ui/features/event-feed",
+    "ui/features/frontier/upgrade",
+    "ui/features/frontier/guide",
+    "ui/features/world/components/structure-edit-popup.tsx",
+    "ui/features/world/containers/construction-modal.tsx",
+    "ui/features/world/containers/military-modal.tsx",
+  ],
+  "C. Transfer": ["ui/features/economy/transfers", "ui/features/economy/resources"],
 };
 
 /** Modules an area renders that another area has still to migrate, each with the area that owns it. */
@@ -162,7 +176,19 @@ const WAITING = {
   "ui/features/world/components/bottom-right-panel/hex-minimap.tsx":
     "A, the world map's sheet: the minimap canvas's colours, painted in WebGL, not CSS",
   "ui/design-system/molecules/requirement-chips.tsx":
-    "B (blitz-ux): REQUIREMENT_CHIP's last uses (market, order, faith); the export goes when they land",
+    "A (hud): REQUIREMENT_CHIP's last use, faith-devotion-action-panel; the export goes when it lands",
+  "ui/design-system/atoms/hud-typography.ts": "A (hud): the structure sidebar's type, read by Build and Transfer",
+  "ui/features/world/components/structure-status-row/structure-status-row.tsx": "A (hud): the structure sidebar's rows",
+  "ui/features/world/containers/left-facets/structure-category-filter.tsx": "A (hud): the structure sidebar's filter",
+  "ui/features/world/containers/top-header/structure-groups.ts":
+    "A (hud): the group colours Edit structure and the Transfer pickers paint",
+  "ui/features/world/components/entities/hooks/use-structure-entity-detail.ts": "A (hud): Military's structure heading",
+  "ui/features/military/components/troop-chip.tsx": "D (rings): an army holder's troops in the relic target",
+  "ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx":
+    "D (rings): the Military window's deploy form",
+  "ui/features/military/components/unified-army-creation-modal/existing-armies-panel.tsx":
+    "D (rings): the Military window's army list",
+  "ui/shared/components/production-status-badge.tsx": "D (rings): the Build and Production badges",
   "ui/features/military/components/army-deployment-picker.tsx":
     "D (rings): the map's deploy picker, built in the deploy layout the owner picks",
 };
