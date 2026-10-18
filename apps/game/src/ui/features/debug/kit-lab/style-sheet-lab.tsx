@@ -84,10 +84,14 @@ import { DeviceContext, Element, type Device } from "./sheet-element";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { createContext, type ReactNode, useContext, useRef, useState } from "react";
+import { lazy, Suspense, createContext, type ReactNode, useContext, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { eventStories, installFixtureGame, PLAYER } from "./fixture-game";
+
+const MapContextWorld = lazy(() =>
+  import("@/lab/sheet-map/view").then((module) => ({ default: module.MapContextWorld })),
+);
 
 const STATES = ["rest", "hover", "pressed", "focus", "disabled"] as const;
 
@@ -197,7 +201,13 @@ export const StyleSheetLab = () => {
               <LoadingSection />
               <TopBarSection />
               <PlatesSection />
-              <MapContextSection />
+              <MapContextSection
+                world={
+                  <Suspense fallback={<p>Loading map comparison…</p>}>
+                    <MapContextWorld />
+                  </Suspense>
+                }
+              />
               <MinimapSection />
               <AppSurfacesSection />
             </main>

@@ -167,3 +167,25 @@ not GPU duration. This fixture is not a live match or a phone profile.
 
 For an entry stall, add `--trace` to cost mode to retain a browser timeline and CPU profile beside the raw intervals.
 Tracing runs are diagnostic evidence; compare ordinary runs for the frame budget.
+
+## HUD sheet · Map context, 3D
+
+At `/lab/kit`, scroll to **Map context → 3D map overlays → Open 3D comparison**. Five visible tabs compare Today with
+Blitz, Frontier and Eternum on four shipped terrain strips: hex states, paths/order anchors, ownership/minimap colours,
+strategic markers and sites/fog. Close the comparison to release its renderer. Unopened sections allocate no world. The
+query records `chapter=hexes|routes|ownership|strategic|sites`; `rendererMode=webgpu-force-webgl` selects WebGL.
+
+The 3D scope consumes the HUD sheet's `HUD_SHEET` ownership and `HUD_MODES` accents in `src/tokens.ts`. The DOM half
+(bubbles, deploy picker, order line and plates) belongs to the same section. No production scene uses `MAP_SHEET` yet.
+The [inventory](sheet-map/inventory.md) records colours, widths, alpha and motion, including absent and inert states.
+
+Start the client, drive the section and five tabs and retain both backend captures with one command (free port):
+
+```sh
+pnpm --dir apps/game prove:map-context --port 4199 --out <fresh-evidence-directory>
+```
+
+The runner stops its own server and browser, and never removes evidence. For a server already owned by you, pass
+`--base-url https://127.0.0.1:4199`. It drives visible controls, checks specimen counts and native terrain, and records
+screenshots and a JSON transcript. It uses the existing isolated browser driver when the shared browser is occupied.
+`inventory.mjs <fresh-json-path>` records the 20 source files' hex-literal colour counts and hashes.

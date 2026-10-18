@@ -1,0 +1,163 @@
+.map-sheet-lab {
+  height: 860px;
+  min-height: 650px;
+  display: flex;
+  flex-direction: column;
+  background: #130f0c;
+  color: #f4ebdc;
+  font:
+    14px/1.4 Inter,
+    sans-serif;
+}
+.map-sheet-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 24px;
+  border-bottom: 1px solid #46351c;
+}
+.map-sheet-controls h3 {
+  font:
+    600 20px/1.3 Inter,
+    sans-serif;
+  margin: 0 0 4px;
+}
+.map-sheet-controls p,
+.map-sheet-lab footer p {
+  margin: 0;
+  color: #b9b1a1;
+}
+.map-sheet-controls nav {
+  display: flex;
+  gap: 8px;
+}
+.map-sheet-controls button {
+  padding: 8px 14px;
+  border: 1px solid #6b5230;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+}
+.map-sheet-controls button[aria-pressed="true"] {
+  background: #dfaa54;
+  color: #1b1207;
+  border-color: #dfaa54;
+}
+.map-sheet-headings {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0 2%;
+}
+.map-sheet-headings > div {
+  border-top: 2px solid;
+  padding: 8px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+.map-sheet-headings small {
+  color: #b9b1a1;
+}
+.map-sheet-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.map-sheet-stage canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.map-sheet-labels {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.map-sheet-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: rgb(19 15 12 / 86%);
+  white-space: nowrap;
+}
+.map-sheet-lab footer {
+  padding: 10px 24px;
+  border-top: 1px solid #46351c;
+}
+.map-sheet-minimaps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.map-sheet-minimaps svg {
+  display: block;
+  height: 90px;
+  width: 100%;
+}
+.map-sheet-proposed-minimap [data-owner="you"] > polygon {
+  stroke: var(--map-you);
+}
+.map-sheet-proposed-minimap [data-owner="ally"] > polygon {
+  stroke: var(--map-ally);
+}
+.map-sheet-proposed-minimap [data-owner="enemy"] > polygon {
+  stroke: var(--map-enemy);
+}
+.map-sheet-proposed-minimap [data-owner="neutral"] > polygon {
+  stroke: var(--map-neutral);
+}
+.map-sheet-proposed-minimap [data-owner="you"] > g {
+  fill: var(--map-you);
+}
+.map-sheet-proposed-minimap [data-owner="ally"] > g {
+  fill: var(--map-ally);
+}
+.map-sheet-proposed-minimap [data-owner="enemy"] > g {
+  fill: var(--map-enemy);
+}
+.map-sheet-proposed-minimap [data-owner="neutral"] > g {
+  fill: var(--map-neutral);
+}
+
+.map-context-world {
+  min-width: 0;
+  color: var(--kit-cream, #f4ebdc);
+}
+.map-context-world-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 0;
+}
+.map-context-world-heading h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.map-context-world-heading p {
+  font-size: 13px;
+  opacity: 0.7;
+}
+.map-context-world-heading button {
+  padding: 8px 14px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.map-context-world .map-sheet-controls {
+  padding: 12px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.map-context-world .map-sheet-controls button {
+  padding: 6px 10px;
+}

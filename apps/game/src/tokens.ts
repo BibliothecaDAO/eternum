@@ -625,6 +625,8 @@ export const hudVariables = (): Record<string, string> => ({
     ]),
   ),
   "--hud-font": CLASSIC_HUD_FONTS.ui,
+  "--hud-map-explored": MAP_SHEET.minimap.explored,
+  "--hud-map-fog": MAP_SHEET.minimap.fog,
 });
 
 /** Each mode's variables, and the derived values again, so a mode root (and the lab's editor on it) restyles them. */
@@ -632,3 +634,33 @@ export const hudModeVariables = (mode: HudMode): Record<string, string> => ({
   ...Object.fromEntries(Object.entries(HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value])),
   ...Object.fromEntries(Object.entries(HUD_DERIVED).map(([name, value]) => [`--hud-${name}`, value])),
 });
+
+/** Map scope: appearance only. Live managers keep their shipped presentation until approval. */
+export const MAP_SHEET = {
+  ownership: {
+    you: HUD_SHEET.own,
+    ally: HUD_SHEET.ally,
+    enemy: HUD_SHEET.enemy,
+    neutral: HUD_SHEET.neutral,
+    unowned: HUD_SHEET.neutral,
+  },
+  danger: HUD_SHEET.bad,
+  ink: HUD_COLORS.cream,
+  casing: HUD_COLORS.ink,
+  fill: { selected: 0.12, endpoint: 0.18, range: 0.04 },
+  ring: { outerRadius: 0.98, innerRadius: 0.96, casingWidth: 0.018, opacity: 0.9 },
+  line: { width: 0.045, casingWidth: 0.09, opacity: 0.9, previewOpacity: 0.45 },
+  marker: { size: 0.85 },
+  fogEdge: { opacity: 0.16, width: 0.025 },
+  minimap: { explored: "rgb(var(--hud-ink) / 0.1)", fog: "var(--hud-well)" },
+} as const;
+
+export function mapAgeAccent(age: HudMode): string {
+  return (
+    "#" +
+    HUD_MODES[age].accent
+      .split(" ")
+      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}

@@ -69,7 +69,9 @@
     "verify:pwa": "node scripts/verify-pwa-build.mjs dist",
     "optimize:outposts": "node scripts/outposts/optimize-outpost.mjs",
     "verify:outposts": "node scripts/outposts/verify-outpost.mjs",
-    "prove:endgame": "node ./scripts/run-endgame-mist-study.mjs"
+    "prove:endgame": "node ./scripts/run-endgame-mist-study.mjs",
+    "prove:map-context": "node ./scripts/sheet-map/prove.mjs",
+    "inventory:map-context": "node ./scripts/sheet-map/inventory.mjs"
   },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",

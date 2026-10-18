@@ -1,3 +1,5 @@
+import { createMapSheetFixture, type MapChapter } from "@/lab/sheet-map/fixture";
+import { MapSheetPresentation } from "@/lab/sheet-map/presentation";
 import { EndgameFixtureScene } from "@/lab/endgame-mist/fixture-scene";
 import { createEndgameFixture } from "@/lab/endgame-mist/fixture";
 import type { EndgameLabSettings } from "@/lab/endgame-mist/fixture";
@@ -52,7 +54,7 @@ import { TERRAIN_DEEP_FOG_COLOR, TERRAIN_DEEP_FOG_OPACITY } from "@/three/terrai
 import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/utils";
 
 import { TerrainLabInteraction } from "./terrain-lab-interaction";
-import type { TerrainLabPreview } from "./terrain-lab-preview";
+import { DEFAULT_TERRAIN_LAB_PREVIEW, type TerrainLabPreview } from "./terrain-lab-preview";
 
 const LAB_LIGHTING_OPTIONS = {
   world: { snap: true, environment: "world" },
@@ -156,6 +158,7 @@ export interface ProceduralTerrainDebugRendererHandle {
 }
 
 interface MountProceduralTerrainDebugRendererInput {
+  mapSheet?: { chapter: MapChapter; overlay: HTMLDivElement };
   endgame?: EndgameLabSettings;
   gameMode?: GameModeId;
   canvas: HTMLCanvasElement;
@@ -184,6 +187,7 @@ type TerrainDebugRendererConstructor = new (options: {
 }) => TerrainDebugRendererSurface;
 
 interface TerrainDebugRuntime {
+  mapSheet: MapSheetPresentation | null;
   endgame: EndgameFixtureScene | null;
   renderSubmissionMs: number[];
   gameMode: GameModeId;
@@ -249,6 +253,7 @@ export async function mountProceduralTerrainDebugRenderer(
         resizeObserver.disconnect();
         runtime.controls.dispose();
         runtime.interaction.dispose();
+        runtime.mapSheet?.dispose();
         runtime.endgame?.dispose();
         runtime.realmModel?.dispose();
         runtime.terrain.dispose();
@@ -322,11 +327,13 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
 
   const scene = new Scene();
   scene.background = background;
-  let request = input.endgame
-    ? createEndgameFixture(input.endgame).request
-    : input.localRadius === undefined
-      ? createTerrainVerificationRequest(input.sceneId)
-      : createLocalTerrainLabRequest(input.localRadius);
+  let request = input.mapSheet
+    ? createMapSheetFixture(input.mapSheet.chapter)
+    : input.endgame
+      ? createEndgameFixture(input.endgame).request
+      : input.localRadius === undefined
+        ? createTerrainVerificationRequest(input.sceneId)
+        : createLocalTerrainLabRequest(input.localRadius);
   const camera = new PerspectiveCamera(36, 1, 0.1, 300);
   const controls = new MapControls(camera, input.canvas);
   controls.enableDamping = false;
@@ -446,6 +453,9 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
       throw error;
     }
   }
+  const mapSheet = input.mapSheet
+    ? new MapSheetPresentation(scene, terrain, input.mapSheet.chapter, input.mapSheet.overlay)
+    : null;
   const firstRenderStartedAt = performance.now();
   renderer.render(scene, camera);
   const firstRenderMs = performance.now() - firstRenderStartedAt;
@@ -461,7 +471,9 @@ async function createRuntime(input: MountProceduralTerrainDebugRendererInput): P
     createPipelineCompiler({ getRenderer: () => renderer, getCamera: () => camera }),
     input.localRadius !== undefined,
   );
+  if (input.mapSheet) await interaction.configure({ ...DEFAULT_TERRAIN_LAB_PREVIEW, selection: false });
   return {
+    mapSheet,
     endgame,
     renderSubmissionMs: [],
     atmosphere,
@@ -688,6 +700,10 @@ function resizeRenderer(canvas: HTMLCanvasElement, runtime: TerrainDebugRuntime)
   runtime.renderer.setSize(width, height);
   runtime.camera.aspect = width / height;
   runtime.camera.updateProjectionMatrix();
+  if (runtime.mapSheet) {
+    runtime.mapSheet.frame(runtime.camera, width / height);
+    runtime.controls.target.copy(runtime.mapSheet.target);
+  }
 }
 
 function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerrainDebugRendererInput): () => void {
@@ -715,6 +731,7 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
       runtime.weather.update(deltaSeconds, runtime.atmosphere);
       runtime.interaction.update(deltaSeconds, runtime.weather.getWind());
     }
+    runtime.mapSheet?.update(deltaSeconds, runtime.camera, input.canvas.clientWidth, input.canvas.clientHeight);
     const submittedAt = performance.now();
     runtime.renderer.render(runtime.scene, runtime.camera);
     runtime.renderSubmissionMs.push(performance.now() - submittedAt);
