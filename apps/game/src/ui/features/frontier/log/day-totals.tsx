@@ -1,5 +1,6 @@
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon";
 import { formatAmount } from "@/ui/design-system/kit/amount";
+import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 import { CHESTS, ESSENCE, LABOR, LORDS, REVEALS, SITES_CLEARED } from "@/ui/design-system/kit/words";
 
@@ -35,22 +36,13 @@ type TotalCell = { icon: IconMeaning; name: string; value: string };
  * figure ("Reveals 31"), which is what a screen reader says and what the tooltip shows.
  */
 export const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
-  <div className="frontier-card grid w-full grid-cols-3 gap-y-1 !rounded-xl px-1.5 py-2">
+  <HudPanel collapsible={false} bodyClassName="grid grid-cols-3 justify-items-center gap-1">
     {cells.map((cell) => (
-      <Total key={cell.icon} cell={cell} />
+      <HudChip key={cell.icon} icons={[cell.icon]} label={cell.name}>
+        {cell.value}
+      </HudChip>
     ))}
-  </div>
+  </HudPanel>
 );
 
 const gained = (amount: number | undefined) => (amount === undefined ? "—" : `+${formatAmount(amount)}`);
-
-const Total = ({ cell }: { cell: TotalCell }) => (
-  <span
-    role="img"
-    aria-label={`${cell.name} ${cell.value}`}
-    className="flex h-[34px] items-center justify-center gap-1.5"
-  >
-    <SemanticIcon name={cell.icon} size={22} />
-    <span className="text-base tabular-nums">{cell.value}</span>
-  </span>
-);
