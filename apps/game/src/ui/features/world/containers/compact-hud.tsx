@@ -278,7 +278,7 @@ const SheetContent = ({
   ordersAllowed: boolean;
   tileDetails: ReactNode;
 }) => {
-  if (tab === "map") return <MinimapPanel compact />;
+  if (tab === "map") return <MinimapPanel />;
   if (tab === "details" && tileDetails === null)
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">

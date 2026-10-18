@@ -161,7 +161,6 @@
   "apps/game/src/ui/features/world/components/actions/faith-devotion-action-panel.tsx": 13,
   "apps/game/src/ui/features/world/components/actions/spire-travel-modal.tsx": 24,
   "apps/game/src/ui/features/world/components/armies/army-warning.tsx": 6,
-  "apps/game/src/ui/features/world/components/bottom-right-panel/bottom-right-panel.tsx": 5,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 9,
   "apps/game/src/ui/features/world/components/hyperstructures/hyperstructure-construction.tsx": 3,
   "apps/game/src/ui/features/world/components/hyperstructures/hyperstructure-vp-display.tsx": 11,
