@@ -109,7 +109,7 @@ export function ResourceIconsLab() {
       {section === "Models" && (
         <p>
           Rendered directly from the current game models. Workshop keeps its shipped icon until its dedicated model is
-          ready. The Hyperstructure site uses the game’s foundation-only model kit.
+          ready. The Hyperstructure icon renders the completed game model, including its shaft and crown.
         </p>
       )}
       {study.changes
