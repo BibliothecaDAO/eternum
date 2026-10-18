@@ -1,4 +1,4 @@
-import { formatWait } from "@bibliothecadao/types";
+import { formatCount, formatWait } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useFactView } from "@/hooks/use-fact-view";
 import { resourceArrivalsView } from "@/sync/fact-views";
@@ -22,8 +22,7 @@ export function IncomingCaravans({ structureId, isOwner }: { structureId: number
   if (!incoming) return null;
   return (
     <p className="px-3 py-2 text-hud-label text-hud-ink" aria-label="Incoming caravans">
-      Incoming · {incoming.count} {incoming.count === 1 ? "caravan" : "caravans"} · next in{" "}
-      {formatWait(incoming.nextInSeconds)}
+      Incoming · {formatCount(incoming.count, "caravan")} · next in {formatWait(incoming.nextInSeconds)}
     </p>
   );
 }

@@ -5,13 +5,11 @@ import {
   type CombatRules,
   type FightForecast,
 } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, type Troops, formatExact } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type Troops, formatCount, formatExact } from "@bibliothecadao/types";
 import { survivalOf, type SideRange } from "./battle-range";
 
 /** Whole troops from a scaled count, as the contract counts them. */
 export const wholeTroops = (scaled: bigint): number => Number(scaled / BigInt(RESOURCE_PRECISION));
-
-const exchanges = (count: number) => (count === 1 ? "1 exchange" : `${count} exchanges`);
 
 /**
  * What the whole fight takes, the one part of it the casualty lines do not show: "2 exchanges · 60 stamina", "Out of
@@ -21,8 +19,8 @@ export const describeFightCost = (forecast: FightForecast): string | null => {
   if (forecast.outcome === "refused") return null;
   const cost = `${forecast.staminaSpent} stamina`;
   if (forecast.outcome === "stalls" && forecast.stoppedBy === "cooldown") return `One attack, then cooldown · ${cost}`;
-  if (forecast.outcome === "stalls") return `Out of stamina after ${exchanges(forecast.exchanges)}`;
-  return `${exchanges(forecast.exchanges)} · ${cost}`;
+  if (forecast.outcome === "stalls") return `Out of stamina after ${formatCount(forecast.exchanges, "exchange")}`;
+  return `${formatCount(forecast.exchanges, "exchange")} · ${cost}`;
 };
 
 /**

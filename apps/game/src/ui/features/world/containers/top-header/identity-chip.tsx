@@ -207,7 +207,7 @@ export const usePlayerReadings = (name: string, standing: IdentityStanding | nul
       <span className="max-w-36 truncate">{name}</span>
     </span>,
     ...(standing
-      ? [<span key="rank">#{standing.rank}</span>, <span key="points">{formatPoints(standing.points)} points</span>]
+      ? [<span key="rank">#{standing.rank}</span>, <span key="points">{formatPoints(standing.points)}</span>]
       : []),
     <span key="goal" className="text-hud-muted">
       {goal.line}

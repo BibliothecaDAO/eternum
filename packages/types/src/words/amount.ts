@@ -3,6 +3,7 @@
  * Every one is written for en-US, whatever the device's language, so "1,250" never reads "1.250". Unknown is a dash,
  * never zero.
  */
+import { formatCount } from "./count";
 import { POINT, POINTS } from "./nouns";
 
 const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
@@ -105,4 +106,4 @@ export const formatOrdinal = (place: number | undefined): string =>
 
 /** Points, always exact: a player counts them to the unit against the one above. "1 point", "1,250 points". */
 export const formatPoints = (points: number | undefined): string =>
-  points === undefined ? `— ${POINTS}` : `${exact.format(points)} ${points === 1 ? POINT : POINTS}`;
+  points === undefined ? `— ${POINTS}` : formatCount(points, POINT, POINTS);

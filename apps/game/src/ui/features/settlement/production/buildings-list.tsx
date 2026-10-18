@@ -7,7 +7,7 @@ import { configManager, getRealmInfo, getStructureRelicEffects } from "@biblioth
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { Building, RealmInfo, ResourcesIds, resourceName } from "@bibliothecadao/types";
+import { Building, RealmInfo, ResourcesIds, formatCount, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { getPlayerName } from "@/services/identity/player-profiles";
 
@@ -66,8 +66,6 @@ export const BuildingsList = ({
 
   if (!productionBoostBonus) return <p>Loading production…</p>;
 
-  const buildingsLine = (count: number) => `${count} building${count !== 1 ? "s" : ""}`;
-
   if (selectedResource !== null) {
     if (!selectedProduction) {
       return <p className="text-hud-muted">Loading production data…</p>;
@@ -77,7 +75,7 @@ export const BuildingsList = ({
       <HudRow
         lead={<ResourceIcon resource={selectedProduction.resource} size="md" />}
         title={resourceName(selectedProduction.resource)}
-        detail={`${buildingsLine(selectedProduction.buildings.length)} producing`}
+        detail={`${formatCount(selectedProduction.buildings.length, "building")} producing`}
         trail={
           <HudButton kind="secondary" size="sm" onClick={() => onSelectProduction(null)}>
             Change resource
@@ -97,7 +95,7 @@ export const BuildingsList = ({
             key={production.resource}
             lead={<ResourceIcon resource={production.resource} size="md" />}
             title={resourceName(production.resource)}
-            detail={buildingsLine(production.buildings.length)}
+            detail={formatCount(production.buildings.length, "building")}
             onClick={() => onSelectProduction(production.resource)}
             trail={
               <span className="w-80 max-w-full">

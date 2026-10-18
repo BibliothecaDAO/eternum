@@ -34,7 +34,7 @@ import {
   ResourceArrivalManager,
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { BuildingType, StructureType, type ResourceArrivalInfo } from "@bibliothecadao/types";
+import { BuildingType, StructureType, formatCount, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -266,7 +266,7 @@ const describeProvisionFailure = (
   const next =
     retry.nextAttemptInHeads === null
       ? "giving up until reload"
-      : `retry in ${retry.nextAttemptInHeads} ${retry.nextAttemptInHeads === 1 ? "block" : "blocks"}`;
+      : `retry in ${formatCount(retry.nextAttemptInHeads, "block")}`;
   return `Provisioning ${names} failed (attempt ${retry.attempt}): ${reason} · ${next}`;
 };
 

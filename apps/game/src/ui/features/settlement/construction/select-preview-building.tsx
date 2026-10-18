@@ -55,6 +55,7 @@ import {
   ResourcesIds,
   TroopType,
   formatAmount,
+  formatPercent,
   resourceName,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -868,8 +869,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
             <div className="flex flex-col gap-3">
               {armyGroups.map((group) => {
                 const bonusMultiplier = group.bonus ?? 1;
-                const bonusPercent = Math.round((bonusMultiplier - 1) * 100);
-                const bonusLabel = `${bonusPercent > 0 ? "+" : ""}${bonusPercent}%`;
+                const bonusLabel = formatPercent(bonusMultiplier - 1, { signed: true });
                 return (
                   <HudPanel
                     key={group.armyType}
@@ -879,7 +879,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                     cue={
                       <span className="flex items-center gap-1" title="Biome combat bonus for this army type">
                         {group.isRecommended && <HudChip tone="good">Recommended</HudChip>}
-                        <HudChip tone={bonusPercent > 0 ? "good" : bonusPercent < 0 ? "bad" : undefined}>
+                        <HudChip tone={bonusMultiplier > 1 ? "good" : bonusMultiplier < 1 ? "bad" : undefined}>
                           {bonusLabel}
                         </HudChip>
                       </span>

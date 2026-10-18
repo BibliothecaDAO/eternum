@@ -36,7 +36,7 @@ import { calculatePresetAllocations, getAutomationOverallocation } from "@biblio
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType, structureName } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
@@ -273,7 +273,7 @@ export const useAutomation = () => {
             verboseLog(`[Automation] Starting just-in-time planning for ${realmList.length} realms`);
             for (const realmConfig of realmList) {
               if (signal.aborted) break;
-              const realmLabel = realmConfig.realmName ?? "Realm";
+              const realmLabel = realmConfig.realmName ?? structureName(StructureType.Realm);
 
               if (skipRemainingRealmsMessage) {
                 recordRealmSkippedStatus({

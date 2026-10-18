@@ -1,6 +1,13 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { type ID, relicChestPack, relicChestRelics, ResourcesIds, formatExact } from "@bibliothecadao/types";
+import {
+  type ID,
+  relicChestPack,
+  relicChestRelics,
+  ResourcesIds,
+  formatCount,
+  formatExact,
+} from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -65,11 +72,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   const relics = row && relicChestRelics(relicChestPack(row));
   return (
     <div className="flex flex-col gap-2">
-      {relics && (
-        <p className="text-hud-accent text-hud-body">
-          {relics.length === 1 ? "1 relic" : `${relics.length} relics`} inside
-        </p>
-      )}
+      {relics && <p className="text-hud-accent text-hud-body">{formatCount(relics.length, "relic")} inside</p>}
       {relics && <RelicList relics={relics} />}
       <EntityDetailStatList compact columns={1}>
         <EntityDetailStat

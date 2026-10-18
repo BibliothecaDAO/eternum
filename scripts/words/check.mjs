@@ -29,6 +29,9 @@ const CATEGORIES = {
   "number.percent": "a percent written by hand (`${n}%`, {n}%)",
   "number.grouping": "thousands grouped by hand (a regex over digit triples)",
   "number.points": "points written by the compact amount rule (formatAmount(points)): points are exact",
+  "number.plural":
+    'a noun\'s number picked by hand (n === 1 ? "army" : "armies"), or a count before a fixed plural (`${max} slots`): formatCount picks it',
+  "words.doubled": "a writer's own noun or unit written again after it ({formatPoints(n)} points)",
   "number.floored":
     "a figure floored before it is written (formatAmount(knownBalance(x)), divideByPrecision(x) inside a writer): write knownAmount(x)",
   "time.intl": "Intl.DateTimeFormat / RelativeTimeFormat",
@@ -76,7 +79,7 @@ const NAME_TABLES = new Set(["StructureTypeToNameMapping", "getMinePresentation"
 const KEY_TABLES = new Set(["RealmLevelNames", "MineKinds"]);
 // Where a player reads a value: these attributes, and these fields of an object a screen draws.
 const VISIBLE_ATTRIBUTES =
-  /^(title|aria-label|aria-description|label|placeholder|alt|tooltip|tip|data-tip|description|heading|subtitle|caption|message|hint)$/;
+  /^(title|aria-label|aria-description|label|placeholder|alt|tooltip|tip|data-tip|description|heading|subtitle|caption|message|hint|detail)$/;
 const VISIBLE_KEYS =
   /^(label|title|text|description|message|tooltip|heading|subtitle|caption|hint|summary|detail|line|reason)$/;
 // A string a player cannot read: an attribute or a call that takes code, not words.
@@ -178,6 +181,106 @@ const compactPoints = (node) => {
   return false;
 };
 
+// What each writer already writes after its figure. Written again after the call, it reads twice: "35 points points".
+// A "%" or a rate's unit after any figure is number.percent or number.rate already.
+const TIME_TAIL = /^\s*(?:s|m|h|d|secs?|seconds?|mins?|minutes?|hrs?|hours?|days?)\b/;
+const WRITTEN_TAIL = new Map([
+  ["formatPoints", /^\s*(?:points?|pts|VP)\b/i],
+  ["formatAgo", /^\s*ago\b/],
+  ["formatDuration", TIME_TAIL],
+  ["formatWait", TIME_TAIL],
+  ["formatGameClock", TIME_TAIL],
+  ["formatOrdinal", /^(?:st|nd|rd|th)\b/],
+  ["formatPercent", /^\s*percent\b/],
+]);
+const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** The noun formatCount writes, from its literal arguments: formatCount(n, "slot") writes "slot" or "slots". */
+const countTail = (call) => {
+  const [, singular, plural] = call.arguments;
+  if (!singular || !ts.isStringLiteralLike(singular)) return null;
+  const nouns = [singular.text, plural && ts.isStringLiteralLike(plural) ? plural.text : `${singular.text}s`];
+  return new RegExp(`^\\s*(?:${nouns.map(escape).join("|")})\\b`);
+};
+/** The text written right after a call: the template's next literal, a + "…" after it, or JSX text beside it. */
+const textAfter = (node) => {
+  let call = node;
+  let up = node.parent;
+  while (up && (ts.isParenthesizedExpression(up) || ts.isNonNullExpression(up) || ts.isAsExpression(up))) {
+    call = up;
+    up = up.parent;
+  }
+  if (!up) return null;
+  if (ts.isTemplateSpan(up)) return up.literal.text;
+  if (ts.isBinaryExpression(up) && up.left === call && up.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+    if (ts.isStringLiteralLike(up.right)) return up.right.text;
+    if (ts.isTemplateExpression(up.right)) return up.right.head.text;
+    return null;
+  }
+  if (ts.isJsxExpression(up) && (ts.isJsxElement(up.parent) || ts.isJsxFragment(up.parent))) {
+    const siblings = up.parent.children;
+    let text = "";
+    for (const sibling of siblings.slice(siblings.indexOf(up) + 1)) {
+      if (ts.isJsxText(sibling)) text += sibling.text;
+      else if (ts.isJsxExpression(sibling) && sibling.expression && ts.isStringLiteralLike(sibling.expression))
+        text += sibling.expression.text;
+      else break;
+      if (text.trim()) break;
+    }
+    return text;
+  }
+  return null;
+};
+const writtenTwice = (node) => {
+  if (!ts.isCallExpression(node)) return false;
+  const name = calleeName(node).replace(/^.*\./, "");
+  const tail = name === "formatCount" ? countTail(node) : WRITTEN_TAIL.get(name);
+  if (!tail) return false;
+  const after = textAfter(node);
+  return after !== null && tail.test(after);
+};
+
+// A noun's number is the words module's one plural rule (formatCount), never a ternary on a count of one. Read from the
+// two words the ternary picks between, so a count compared to one for anything else is left alone.
+const VERB_PLURALS = new Map([
+  ["is", "are"],
+  ["was", "were"],
+  ["has", "have"],
+]);
+const pluralOf = (one, many) =>
+  many === `${one}s` ||
+  many === `${one}es` ||
+  (/[^aeiou]y$/.test(one) && many === `${one.slice(0, -1)}ies`) ||
+  VERB_PLURALS.get(one) === many;
+const ONE_OR_TWO = (node) => ts.isNumericLiteral(node) && (node.text === "1" || node.text === "2");
+const handPlural = (node) => {
+  if (!ts.isConditionalExpression(node)) return false;
+  let condition = node.condition;
+  while (ts.isParenthesizedExpression(condition)) condition = condition.expression;
+  if (!ts.isBinaryExpression(condition) || !(ONE_OR_TWO(condition.left) || ONE_OR_TWO(condition.right))) return false;
+  if (!/^(?:===|!==|==|!=|<|<=|>|>=)$/.test(condition.operatorToken.getText())) return false;
+  const [a, b] = [wordsOf(node.whenTrue), wordsOf(node.whenFalse)];
+  if (a === null || b === null) return false;
+  return pluralOf(a, b) || pluralOf(b, a);
+};
+/** A branch's words without its count: "1 exchange" and `${count} exchanges` read "exchange" and "exchanges". */
+const wordsOf = (node) => {
+  if (ts.isStringLiteralLike(node)) return node.text.replace(/^\d[\d,]*\s*/, "");
+  if (ts.isTemplateExpression(node))
+    return [node.head.text, ...node.templateSpans.map((span) => span.literal.text)].join("").trim();
+  return null;
+};
+
+// A count written before a noun in its plural, whatever the count: "All 1 field army slots are in use". Read where the
+// count is plainly one (a length, a count, a maximum) and the noun is lower case, in text a player reads.
+const COUNT_NAME = /(?:^|\.)(?:length|\w*[cC]ount|max[A-Z]\w*)$/;
+const PLURAL_NOUN = /^ (?:[a-z]+ )*[a-z]+[^s\W]s\b/;
+const fixedPlural = (span) => {
+  let expression = span.expression;
+  if (ts.isCallExpression(expression) && /^format(?:Exact|Amount)$/.test(calleeName(expression)))
+    expression = expression.arguments[0] ?? expression;
+  return COUNT_NAME.test(expression.getText()) && PLURAL_NOUN.test(span.literal.text);
+};
+
 // A figure is written for a player and read from the number it was written from, never parsed back: a compact or
 // rounded figure ("12.4K", "<1") parses to the wrong number.
 // "1234567".replace(/\B(?=(\d{3})+(?!\d))/g, ","): thousands grouped by hand.
@@ -238,6 +341,7 @@ const isCodeTemplate = (template) =>
  * object, or what a function named for text (…Label, …Name, …Text, …Title, …Line) returns. A value handed to a call, a
  * key or a comparison is code.
  */
+const TEXT_NAME = /(?:Label|Name|Text|Title|Line|Words?|Copy|Message)$/;
 const readsAsText = (node) => {
   for (let child = node, up = node.parent; up && !ts.isSourceFile(up); child = up, up = up.parent) {
     if (ts.isJsxExpression(up)) {
@@ -247,9 +351,11 @@ const readsAsText = (node) => {
     if (ts.isJsxAttribute(up)) return VISIBLE_ATTRIBUTES.test(up.name.getText());
     if (ts.isTemplateSpan(up)) return !isCodeTemplate(up.parent) && !isCodeString(up.parent);
     if (ts.isPropertyAssignment(up)) return up.initializer === child && VISIBLE_KEYS.test(up.name.getText());
+    // const limitMessage = …: a value named for the words it holds, as a function named for them returns them.
+    if (ts.isVariableDeclaration(up)) return up.initializer === child && TEXT_NAME.test(up.name.getText());
     if (ts.isReturnStatement(up) || (ts.isArrowFunction(up) && up.body === child)) {
       const fn = ts.isReturnStatement(up) ? enclosingFunctionName(up) : namedFunction(up.parent);
-      return /(?:Label|Name|Text|Title|Line|Words?|Copy)$/.test(fn ?? "");
+      return TEXT_NAME.test(fn ?? "");
     }
     if (ts.isBinaryExpression(up) && up.operatorToken.kind === ts.SyntaxKind.PlusToken) continue;
     if (ts.isConditionalExpression(up) && up.condition !== child) continue;
@@ -330,6 +436,10 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (work) hit(work, node);
     if (readsBackWritten(node)) hit("number.parse", node);
     if (compactPoints(node)) hit("number.points", node);
+    if (writtenTwice(node)) hit("words.doubled", node);
+    if (handPlural(node)) hit("number.plural", node);
+    if (ts.isTemplateExpression(node) && !inConsole(node) && !handPlural(node.parent) && readsAsText(node))
+      for (const span of node.templateSpans) if (fixedPlural(span)) hit("number.plural", span);
     if (
       ts.isCallExpression(node) &&
       // The writers that keep a fraction or say "<1"; formatExact writes whole counts.

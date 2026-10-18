@@ -1,4 +1,4 @@
-import { BuildingType, ResourcesIds, type ID } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, formatCount, formatPercent, type ID } from "@bibliothecadao/types";
 
 export type EmpireSuggestionAction =
   | "build-copper"
@@ -281,7 +281,7 @@ const resolveWheatSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggesti
   return resolveBuildSuggestion(
     input,
     "wheat",
-    `Build ${missing} ${missing === 1 ? "farm" : "farms"} for steady wheat (${builtOf(input.buildingCounts.wheat, wheatTarget)}).`,
+    `Build ${formatCount(missing, "farm")} for steady wheat (${builtOf(input.buildingCounts.wheat, wheatTarget)}).`,
   );
 };
 
@@ -310,7 +310,7 @@ const resolveMilitarySuggestion = (input: BlitzRealmSuggestionInput): BlitzSugge
 
   const bonusLabel =
     typeof target.bonusPercent === "number" && target.bonusPercent > 0
-      ? ` for +${target.bonusPercent}% biome bonus`
+      ? ` for ${formatPercent(target.bonusPercent / 100, { signed: true })} biome bonus`
       : "";
 
   return resolveBuildSuggestion(

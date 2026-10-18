@@ -1,4 +1,5 @@
 import { HudNotice, HudTabs } from "@/ui/design-system/kit/hud-elements";
+import { formatCount } from "@bibliothecadao/types";
 
 interface ArmyTypeToggleProps {
   armyType: boolean;
@@ -30,9 +31,9 @@ export const ArmyTypeToggle = ({
   const limitMessage = armyType
     ? maxExplorers === undefined
       ? "This structure's army limit is unknown."
-      : `All ${maxExplorers} field army slots are in use. Level up the realm or disband an army to raise another.`
+      : `Your ${formatCount(maxExplorers, "field army slot is", "field army slots are")} in use. Level up the realm or disband an army to raise another.`
     : hasDefenseArmies
-      ? `All ${maxGuards} defense slots hold troops. Pick one to reinforce it.`
+      ? `Your ${formatCount(maxGuards, "defense slot holds", "defense slots hold")} troops. Pick a slot to reinforce it.`
       : `This structure has no defense slots.`;
 
   const shouldShowLimitWarning = (armyType && !canCreateAttackArmy) || (!armyType && !canCreateDefenseArmy);

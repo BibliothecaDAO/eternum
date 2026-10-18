@@ -55,24 +55,46 @@ describe("the Military window once the field army cap is full", () => {
     }
   });
 
-  it("says the cap plainly, as a note and not an error, with what lifts it", () => {
+  // A level 1 realm has one slot of each: the note counts it as one ("All 1 field army slots" before).
+  it.each([
+    { slots: 1, note: "Your 1 field army slot is in use. Level up the realm or disband an army to raise another." },
+    { slots: 3, note: "Your 3 field army slots are in use. Level up the realm or disband an army to raise another." },
+  ])("says a cap of $slots plainly, as a note and not an error, with what lifts it", ({ slots, note }) => {
     const html = renderToStaticMarkup(
       <ArmyTypeToggle
         armyType
         canCreateAttackArmy={false}
         canCreateDefenseArmy
         canInteractWithDefense
-        currentExplorersCount={1}
-        maxExplorers={1}
+        currentExplorersCount={slots}
+        maxExplorers={slots}
         currentGuardsCount={0}
         maxGuards={1}
         onSelect={() => {}}
       />,
     );
-    expect(html).toContain(
-      "All 1 field army slots are in use. Level up the realm or disband an army to raise another.",
-    );
+    expect(html).toContain(note);
     expect(html).toContain('role="status"');
     expect(html).not.toContain("text-danger");
+  });
+
+  it.each([
+    { slots: 1, note: "Your 1 defense slot holds troops. Pick a slot to reinforce it." },
+    { slots: 2, note: "Your 2 defense slots hold troops. Pick a slot to reinforce it." },
+  ])("counts $slots full defense slots in the same rule", ({ slots, note }) => {
+    const html = renderToStaticMarkup(
+      <ArmyTypeToggle
+        armyType={false}
+        canCreateAttackArmy
+        canCreateDefenseArmy={false}
+        canInteractWithDefense
+        currentExplorersCount={0}
+        maxExplorers={1}
+        currentGuardsCount={slots}
+        maxGuards={slots}
+        onSelect={() => {}}
+      />,
+    );
+    expect(html).toContain(note);
   });
 });

@@ -1,3 +1,4 @@
+import { formatCount } from "../words/count";
 import { ResourcesIds } from "./resource-ids";
 
 // Relic recipient type
@@ -313,7 +314,7 @@ export const relicChestPack = (value: unknown): RelicChestPack => {
   return { pack: pack as RelicPackName, lucky: fields.lucky };
 };
 
-const relicCount = (count: number): string => `${count} relic${count === 1 ? "" : "s"}`;
+const relicCount = (count: number): string => formatCount(count, "relic");
 
 /**
  * Where an opened chest's relics went, as the contract pays them, the army named first so it reads even when cut: army

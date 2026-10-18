@@ -4,7 +4,7 @@ import { configManager, getStructureRelicEffects, ResourceManager } from "@bibli
 import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { useNativeRowOrAbsent } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { getProducedResource, ID, RealmInfo, ResourcesIds } from "@bibliothecadao/types";
+import { getProducedResource, ID, RealmInfo, ResourcesIds, formatCount } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudRow, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
@@ -130,8 +130,8 @@ const SidebarRealm = ({
         title={mode.structure.getName(realm.structure).name}
         detail={
           hasProduction
-            ? `${buildingsData.length} buildings · ${activeProductionBuildings}/${totalProductionBuildings} producing`
-            : `${buildingsData.length} buildings · no production`
+            ? `${formatCount(buildingsData.length, "building")} · ${activeProductionBuildings}/${totalProductionBuildings} producing`
+            : `${formatCount(buildingsData.length, "building")} · no production`
         }
         trail={
           activeRelics.length > 0 ? (

@@ -23,7 +23,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { ResourceArrivals } from "@/ui/features/economy/trading";
 import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers/transfer-automation-modal";
 import { deliveryLandsAt, isMilitaryResource, ResourceManager, shipmentTravelSeconds } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds, formatExact } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, formatCount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 import { BalancesView } from "./balances-view";
@@ -429,7 +429,7 @@ const sendWords = ({
     return `Not enough donkeys: these loads need ${formatExact(donkeys.needed)}, ${formatExact(donkeys.held)} here`;
   const to = destinations > 1 ? ` to ${destinations} holdings` : "";
   const repeat = every === null ? "" : ` · every ${every} min`;
-  return `Send ${goods} ${goods === 1 ? "good" : "goods"}${to} · ${landsText(landsIn)}${repeat}`;
+  return `Send ${formatCount(goods, "good")}${to} · ${landsText(landsIn)}${repeat}`;
 };
 
 /** Each destination's goods in whole units, as much as the source holds now. */

@@ -6,6 +6,7 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   formatAmount,
+  formatCount,
   formatDuration,
   getRelicInfo,
   relicEffect,
@@ -615,7 +616,7 @@ export const SEASON_PRIZE_WORDS = {
   ends: (date: string) => `Ends ${date}`,
   final: "Final",
   paysToday: "If the season ended now",
-  placesPaid: (count: number) => `${count} places paid`,
+  placesPaid: (count: number) => `${formatCount(count, "place")} paid`,
   noPlaces: "No place is paid until players are ranked.",
   yourShare: "Your share",
   review: "Claims open in",

@@ -5,6 +5,7 @@ import {
   formatAgo,
   formatAmount,
   formatCharge,
+  formatCount,
   formatClockTime,
   formatCountdown,
   formatDuration,
@@ -158,6 +159,17 @@ const Numbers = () => (
       rows={[1, 2, 3, 11, 22].map((place) => ({
         input: String(place),
         cells: [formatOrdinal(place), formatPoints(place === 1 ? 1 : place * 1_250)],
+      }))}
+    />
+    <Rule
+      head={["Count", "formatCount slot", "army, armies", "with its verb"]}
+      rows={[0, 1, 3, 12_500].map((count) => ({
+        input: String(count),
+        cells: [
+          formatCount(count, "field army slot"),
+          formatCount(count, "army", "armies"),
+          `Your ${formatCount(count, "slot is", "slots are")} in use`,
+        ],
       }))}
     />
   </Section>

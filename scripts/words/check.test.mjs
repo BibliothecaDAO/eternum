@@ -47,6 +47,21 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     'import { formatExact } from "@/ui/design-system/kit/amount";', // 29: a retired words file
     'export { siteName } from "../../../three/map-plates/site-name";', // 30
     "const pool = <p>{formatAmount(divideByPrecision(total))}</p>;", // 31: divideByPrecision floors by default
+    // 32: the top bar as it shipped in 7ba1001dc0c (identity-chip.tsx), which read "35 points points"
+    '<span key="points">{formatPoints(standing.points)} points</span>,',
+    "const since = <p>{formatAgo(at)} ago</p>;", // 33
+    "const wait = formatWait(left) + ' seconds';", // 34
+    'const held = `${formatCount(n, "relic")} relics`;', // 35
+    "const done = <p>{formatGameClock(s)}{' '}min</p>;", // 36
+    'const slots = `${n} ${n === 1 ? "slot" : "slots"}`;', // 37: a plural picked by hand
+    'const line = `${n} building${n !== 1 ? "s" : ""}`;', // 38
+    'const army = count > 1 ? "armies" : "army";', // 39
+    'const verb = `${n} ${n === 1 ? "is" : "are"} in use`;', // 40
+    // 41: the deploy sheet as it shipped in 7ba1001dc0c (army-type-toggle.tsx), which read "All 1 field army slots"
+    "const limitMessage = armyType ? `All ${maxExplorers} field army slots are in use.` : '';",
+    'const exchanges = (count: number) => (count === 1 ? "1 exchange" : `${count} exchanges`);', // 42
+    "const bonusLabel = `${bonusPercent > 0 ? '+' : ''}${bonusPercent}%`;", // 43: words held in a named value
+    "const row = <Row detail={`${rows.length} buildings`} />;", // 44
   ].join("\n");
   assert.deepEqual(scan(source), [
     "1 formatter",
@@ -81,6 +96,19 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "29 retired",
     "30 retired",
     "31 number.floored",
+    "32 words.doubled",
+    "33 words.doubled",
+    "34 words.doubled",
+    "35 words.doubled",
+    "36 words.doubled",
+    "37 number.plural",
+    "38 number.plural",
+    "39 number.plural",
+    "40 number.plural",
+    "41 number.plural",
+    "42 number.plural",
+    "43 number.percent",
+    "44 number.plural",
   ]);
 });
 
@@ -126,6 +154,15 @@ test("leaves code alone: arithmetic, coordinates, logs, CSS, keys and components
     "const byName = { [ResourcesIds[id]]: 1 };",
     "export function GoldRow({ n }) { return <span>{n}</span>; }",
     "if (troop === 'Knight') {}",
+    "const top = <p>#{rank} · {formatPoints(points)}</p>;",
+    "const left = `${formatDuration(s)} left`;",
+    "const more = <p>{formatWait(s)} more</p>;",
+    'const held = `${formatCount(n, "relic")} held`;',
+    'const mode = count === 1 ? "single" : "split";',
+    'const pick = n === 1 ? "solo" : "solos" + suffix;',
+    "throw new Error(`${slots} slots × ${pool.count} pool instances`);",
+    "let html = `<h2>Palette (${playerCount} players)</h2>`;",
+    "const key = `${rows.length} rows`;",
   ].join("\n");
   assert.deepEqual(scan(source), []);
 });

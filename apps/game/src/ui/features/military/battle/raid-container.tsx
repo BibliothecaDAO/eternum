@@ -30,6 +30,7 @@ import {
   TroopTier,
   TroopType,
   formatCharge,
+  formatCount,
   formatPercent,
   resourceName,
   resources,
@@ -442,7 +443,7 @@ export const RaidContainer = ({
                       <h4 className="text-hud-display text-hud-accent">Defender Forces</h4>
                       {targetTroops.length > 0 && (
                         <span className="bg-hud-well text-hud-accent px-2 py-1 rounded-md text-hud-body">
-                          {targetTroops.length} {targetTroops.length === 1 ? "Guard" : "Guards"}
+                          {formatCount(targetTroops.length, "Guard")}
                         </span>
                       )}
                     </div>

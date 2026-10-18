@@ -30,6 +30,7 @@ import {
   RelicRecipientType,
   ResourcesIds,
   StructureType,
+  formatCount,
   formatExact,
   formatAmount,
   resourceName,
@@ -215,7 +216,7 @@ const ResourceRings = ({
 /** "Wheat · 12,400 held · 3 buildings · 4h of production left": the ring's tooltip. */
 const describeResource = ({ resourceId, held, buildings, producing, secondsLeft }: ResourceReading): string => {
   const parts = [`${resourceName(resourceId)} · ${formatExact(Math.floor(held))} held`];
-  if (buildings > 0) parts.push(`${buildings} building${buildings === 1 ? "" : "s"}`);
+  if (buildings > 0) parts.push(formatCount(buildings, "building"));
   if (producing && secondsLeft === Number.POSITIVE_INFINITY) parts.push("production never runs out");
   else if (producing && secondsLeft !== null && secondsLeft >= 60)
     parts.push(`${productionTimeLeft(Math.ceil(secondsLeft / 60) * 60)} of production left`);

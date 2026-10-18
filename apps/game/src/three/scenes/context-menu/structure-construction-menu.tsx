@@ -15,6 +15,8 @@ import {
   findResourceById,
   getBuildingFromResource,
   resourceName,
+  StructureType,
+  structureName as structureKindName,
 } from "@bibliothecadao/types";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -120,7 +122,7 @@ export const createConstructionMenu = ({
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
-  const structureName = getEntityName(structureEntityId, store, getIsBlitz()) ?? "Realm";
+  const structureName = getEntityName(structureEntityId, store, getIsBlitz()) ?? structureKindName(StructureType.Realm);
 
   const makeBuildingAction = ({
     suffix,

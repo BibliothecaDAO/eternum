@@ -1,6 +1,7 @@
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
 import { structureMapPosition } from "@bibliothecadao/eternum";
+import { formatCount } from "@bibliothecadao/types";
 import { memo, useRef } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { Position } from "@bibliothecadao/eternum";
@@ -68,7 +69,7 @@ function AttentionCycle() {
         onClick={goToNext}
         disabled={items.length === 0}
         aria-label={`Attention: ${items.length}. Go to next item`}
-        title={`${targets.length} locations need attention · ${suggestions.length} suggested actions`}
+        title={`${formatCount(targets.length, "location needs", "locations need")} attention · ${formatCount(suggestions.length, "suggested action")}`}
       >
         <span className="max-lg:hidden">Attention</span>
         {items.length > 0 && <HudChip tone="bad">{items.length}</HudChip>}

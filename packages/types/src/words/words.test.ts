@@ -15,6 +15,7 @@ import {
   readTypedNumber,
   typedNumberText,
 } from "./amount";
+import { formatCount } from "./count";
 import { ageLine, guardSlotName, rankName, resourceName, structureName } from "./nouns";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment } from "./time";
 import { VOICE_RULES } from "./voice";
@@ -78,7 +79,17 @@ describe("numbers", () => {
   it("writes points exact, in the singular for one", () => {
     expect(formatPoints(1)).toBe("1 point");
     expect(formatPoints(125_430)).toBe("125,430 points");
+    expect(formatPoints(0)).toBe("0 points");
     expect(formatPoints(undefined)).toBe("— points");
+  });
+
+  it("counts a noun in its right number, through the one plural rule", () => {
+    expect(formatCount(1, "field army slot")).toBe("1 field army slot");
+    expect(formatCount(0, "field army slot")).toBe("0 field army slots");
+    expect(formatCount(3, "army", "armies")).toBe("3 armies");
+    expect(formatCount(12_500, "relic")).toBe("12,500 relics");
+    expect(formatCount(1, "slot is", "slots are")).toBe("1 slot is");
+    expect(formatCount(2, "slot is", "slots are")).toBe("2 slots are");
   });
 });
 
