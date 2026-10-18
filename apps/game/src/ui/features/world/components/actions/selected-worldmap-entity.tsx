@@ -255,7 +255,7 @@ const TileChrome = ({
   headerAction?: ReactNode;
   children: ReactNode;
 }) => (
-  <HudPanel title={title} cue={headerAction} className="min-w-0" bodyClassName="pt-0">
+  <HudPanel title={title} cue={headerAction} className="min-w-0">
     {children}
   </HudPanel>
 );

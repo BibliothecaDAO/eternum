@@ -30,7 +30,7 @@ export function ChestTileDetails({
   return (
     <div className="flex shrink-0 flex-col gap-2">
       <HudPanel className="min-w-0" divided collapsible={false}>
-        <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
+        <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction}>
           <div className="flex items-center gap-2 text-hud-accent">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
             <p className="truncate text-hud-title">{opening ? "Crate opened" : "Crate"}</p>

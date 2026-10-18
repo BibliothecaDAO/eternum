@@ -179,7 +179,6 @@ const StructureBannerEntityDetailContent = memo(
             kind="section"
             title={coordsLabel ?? ownerDisplayName ?? "Owner"}
             cue={coordsLabel ? headerAction : structureName}
-            bodyClassName="pt-0"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2 text-hud-ink">

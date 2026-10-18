@@ -292,7 +292,7 @@ const LocalTilePanel = () => {
   // had five separate bubbles and felt over-atomized.
   if (!selectedBuildingHex) {
     return (
-      <HudPanel collapsible={false} bodyClassName="px-4 py-6 text-center">
+      <HudPanel collapsible={false} bodyClassName="text-center">
         <p className="text-hud-body text-hud-ink">Tap a building tile to view its details.</p>
       </HudPanel>
     );
@@ -304,7 +304,7 @@ const LocalTilePanel = () => {
   // resource breakdown.
   if (isCastleTile) {
     return (
-      <HudPanel title={panelTitle} bodyClassName="pt-0">
+      <HudPanel title={panelTitle}>
         <RealmUpgradeCompact />
       </HudPanel>
     );

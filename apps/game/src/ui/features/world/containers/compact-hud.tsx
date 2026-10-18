@@ -292,7 +292,7 @@ const SheetContent = ({
     return ordersAllowed ? (
       <EmpireColumn />
     ) : (
-      <HudPanel kind="section" title="Standings" collapsible={false} bodyClassName="p-0">
+      <HudPanel kind="section" title="Standings" collapsible={false}>
         <SpectatorStandingsBody />
       </HudPanel>
     );

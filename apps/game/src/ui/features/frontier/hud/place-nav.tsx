@@ -43,11 +43,7 @@ export const PlaceNav = ({
   );
   return (
     <nav aria-label="Places" className="flex">
-      <HudPanel
-        collapsible={false}
-        className="flex-1"
-        bodyClassName="flex h-14 items-stretch justify-between gap-0.5 p-0"
-      >
+      <HudPanel collapsible={false} className="flex-1" bodyClassName="flex h-14 items-stretch justify-between gap-0.5">
         {slot("map", "map", MAP)}
         {slot("realm", "realm", REALM, realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />)}
         <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />

@@ -63,7 +63,7 @@ const LeftColumn = () => {
           label="Spectator standings"
           title="Standings"
           className="flex max-h-hud-list flex-col"
-          bodyClassName="min-h-0 overflow-y-auto p-0"
+          bodyClassName="min-h-0 overflow-y-auto"
         >
           <SpectatorStandingsBody />
         </HudPanel>
