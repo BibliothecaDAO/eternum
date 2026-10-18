@@ -1592,7 +1592,7 @@ const PlateAt = ({
 const PlatesSection = () => (
   <Element
     name="Map plate"
-    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player over troops; opened, its home and exact stamina. A realm: player | name over its guard; opened, its slots and arrivals (time first). A camp or rift: its lore name over its guard; opened, its owner, kind and what it holds."
+    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player over troops; opened, player | home and exact stamina. A realm: player | name over its guard; opened, its slots and arrivals (time first). A camp or rift: its lore name over its guard; opened, its owner, kind and what it holds."
     sheet={
       <div className="flex flex-wrap items-end gap-4">
         <PlateAt plate={ARMY} />

@@ -26,7 +26,7 @@ export type PlateSegment =
   | { kind: "stamina"; current: number; max: number }
   /** Between the guard slots, in the order an attacker meets them. */
   | { kind: "next" }
-  /** Between a name and what it holds: "Xeswet | 1,455". */
+  /** Between two readings on one row: a player and their realm ("clientlane | Stolsli"), a guard and what is beside it. */
   | { kind: "divider" };
 
 type PlateRow = readonly PlateSegment[];
@@ -36,7 +36,7 @@ type PlateRow = readonly PlateSegment[];
  * rows, opened (its tile hovered, or selected) at most three, from the most important fact down. No id anywhere.
  *
  * - An army: its player, then its troops, a tight stamina bar under them (`restingStamina`). Opened: the realm it
- *   comes from joins the player, its stamina ("84/150") its troops.
+ *   comes from joins the player as on that realm's plate ("clientlane | Stolsli"), its stamina ("84/150") its troops.
  * - A realm or a hyperstructure: its player and its name, then its guard. Opened: the guard slots in attack order, and
  *   a row of troops on their way, each time before its troops.
  * - A camp or a rift: its lore name, then its guard. Opened: its owner, its name and kind, and what it holds beside its
@@ -55,10 +55,7 @@ export const restingStamina = (plate: MapPlate, open: boolean): number | null =>
 const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
   open
     ? [
-        [
-          { kind: "owner", text: plate.owner },
-          { kind: "title", text: plate.homeName },
-        ],
+        whose(plate.owner, plate.homeName),
         [
           { kind: "troops", troops: plate.troops },
           ...(plate.stamina ? [{ kind: "stamina", ...plate.stamina } as const] : []),
@@ -67,10 +64,7 @@ const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
     : [[{ kind: "owner", text: plate.owner }], [{ kind: "troops", troops: plate.troops }]];
 
 const placeRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
-  const rows: PlateRow[] = [
-    [{ kind: "owner", text: plate.owner }, { kind: "divider" }, { kind: "title", text: plate.name }],
-    guard(plate.guards, open),
-  ];
+  const rows: PlateRow[] = [whose(plate.owner, plate.name), guard(plate.guards, open)];
   if (open && plate.arrivals.length > 0) rows.push(arrivals(plate));
   return rows;
 };
@@ -87,6 +81,15 @@ const siteRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
     [...guard(plate.guards, true), ...holds, ...arriving],
   ];
 };
+
+/**
+ * A player and their realm, the same on a realm's plate and on an army's from it: "clientlane | Stolsli". A realm not
+ * known leaves the player alone, never an empty name.
+ */
+const whose = (owner: string, realm: string): PlateRow => [
+  { kind: "owner", text: owner },
+  ...(realm ? [{ kind: "divider" } as const, { kind: "title", text: realm } as const] : []),
+];
 
 /**
  * A guard: none, "Undefended"; at rest one number (a single slot as its troop stack, several as their total, "1,731

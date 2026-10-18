@@ -72,8 +72,17 @@ const camp: StructurePlate = {
 describe("what a map plate says (two short rows at rest, three at most opened, never an id)", () => {
   it("rests an army on its player over its troops, and opens it with its home and exact stamina", () => {
     expect(read(army, false)).toEqual(["djizus", "T3 300"]);
-    expect(read(army, true)).toEqual(["djizus Sangsang", "T3 300 84/150"]);
-    expect(read({ ...army, stamina: undefined }, true)).toEqual(["djizus Sangsang", "T3 300"]);
+    expect(read(army, true)).toEqual(["djizus | Sangsang", "T3 300 84/150"]);
+    expect(read({ ...army, stamina: undefined }, true)).toEqual(["djizus | Sangsang", "T3 300"]);
+  });
+
+  it("writes a player and their realm the same on the realm's plate and on its army's", () => {
+    const home = { ...realm, owner: "clientlane", name: "Stolsli" };
+    const out = { ...army, owner: "clientlane", homeName: "Stolsli" };
+    expect(read(home, false)[0]).toBe("clientlane | Stolsli");
+    expect(read(out, true)[0]).toBe("clientlane | Stolsli");
+    // A home not known leaves the player alone, never an empty name behind a divider.
+    expect(read({ ...out, homeName: "" }, true)[0]).toBe("clientlane");
   });
 
   it("rests an army's stamina as a share under its troops, with no number, and drops it once opened shows x/y", () => {

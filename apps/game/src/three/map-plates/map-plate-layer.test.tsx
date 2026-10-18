@@ -95,6 +95,33 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(plateOf("Niziz")!.dataset.selected).toBe("true");
   });
 
+  it("keeps the selected army's plate open, with its home, while another tile is hovered", async () => {
+    const armies = layer.createScope("army");
+    const structures = layer.createScope("structure");
+    armies.setLabel({
+      entityId: 2,
+      position: new Vector3(0, 0, 0),
+      plate: { ...army, owner: "clientlane", homeName: "Stolsli" },
+    });
+    structures.setLabel({ entityId: 1, position: new Vector3(3, 0, 0), plate: realm });
+    layer.setSelected(2);
+    await frame();
+    expect(isOpen("clientlane")).toBe(true);
+    expect(plateOf("clientlane")!.textContent).toContain("Stolsli");
+
+    structures.setHover(1);
+    await frame();
+    expect(isOpen("Niziz")).toBe(true);
+    expect(isOpen("clientlane")).toBe(true);
+    expect(plateOf("clientlane")!.textContent).toContain("Stolsli");
+    expect(plateOf("clientlane")!.textContent).toContain("60/120");
+
+    structures.clearHover();
+    await frame();
+    expect(isOpen("Niziz")).toBe(false);
+    expect(isOpen("clientlane")).toBe(true);
+  });
+
   it("drops the plates of things no longer placed, and only its own scope's", async () => {
     const armies = layer.createScope("army");
     const structures = layer.createScope("structure");

@@ -189,11 +189,12 @@ export class MapPlateLayer {
     this.invalidate();
   }
 
-  private openKey(): string | null {
-    if (this.hovered && this.entries.has(this.hovered)) return this.hovered;
-    if (this.selected === null) return null;
-    for (const entry of this.entries.values()) if (entry.entityId === this.selected) return entry.key;
-    return null;
+  /** The opened plates: the hovered tile's, and the selected thing's, which hovering elsewhere never closes. */
+  private openKeys(): ReadonlySet<string> {
+    const open = new Set<string>();
+    if (this.hovered && this.entries.has(this.hovered)) open.add(this.hovered);
+    for (const entry of this.entries.values()) if (entry.entityId === this.selected) open.add(entry.key);
+    return open;
   }
 
   /** The plates' content changed: draw it again, and lay it out on the next frame. */
@@ -208,7 +209,7 @@ export class MapPlateLayer {
   }
 
   private render(): void {
-    const open = this.openKey();
+    const open = this.openKeys();
     this.root.render(
       <>
         {[...this.entries.values()].map((entry) => (
@@ -223,12 +224,12 @@ export class MapPlateLayer {
             className="mp-at"
             data-relation={entry.plate.relation}
             data-selected={entry.entityId === this.selected}
-            style={{ display: "none", zIndex: entry.key === open ? 5 : this.pinned.has(entry.key) ? 0 : 1 }}
+            style={{ display: "none", zIndex: open.has(entry.key) ? 5 : this.pinned.has(entry.key) ? 0 : 1 }}
           >
             {this.pinned.has(entry.key) ? (
               <Pin plate={entry.plate} />
             ) : (
-              <Plate plate={entry.plate} open={entry.key === open} />
+              <Plate plate={entry.plate} open={open.has(entry.key)} />
             )}
           </div>
         ))}
@@ -237,7 +238,7 @@ export class MapPlateLayer {
   }
 
   private layout(camera: Camera, width: number, height: number): void {
-    const open = this.openKey();
+    const open = this.openKeys();
     const placed: { entry: PlateEntry; x: number; y: number }[] = [];
     for (const entry of this.entries.values()) {
       this.point.copy(entry.position).project(camera);
@@ -252,7 +253,7 @@ export class MapPlateLayer {
       placed.push({ entry, x, y });
     }
     const boxes: PlateBox[] = placed.map(({ entry, x, y }) => {
-      const size = entry.key === open ? entry.opened : entry.resting;
+      const size = open.has(entry.key) ? entry.opened : entry.resting;
       return {
         id: entry.key,
         x: x - size.width / 2,
@@ -267,7 +268,7 @@ export class MapPlateLayer {
       };
     });
     const lifts = stack(boxes);
-    const openBox = boxes.find((box) => box.id === open);
+    const openBoxes = boxes.filter((box) => open.has(box.id));
     const pinned = new Set(placed.filter(({ entry }) => !lifts.has(entry.key)).map(({ entry }) => entry.key));
     for (const { entry, x, y } of placed) {
       const element = this.elements.get(entry.key);
@@ -275,10 +276,11 @@ export class MapPlateLayer {
       const lift = lifts.get(entry.key);
       const box = boxes.find((candidate) => candidate.id === entry.key)!;
       const yields =
-        openBox !== undefined &&
-        entry.key !== open &&
+        !open.has(entry.key) &&
         lift !== undefined &&
-        intersects({ ...box, y: box.y - lift }, { ...openBox, y: openBox.y - (lifts.get(openBox.id) ?? 0) });
+        openBoxes.some((openBox) =>
+          intersects({ ...box, y: box.y - lift }, { ...openBox, y: openBox.y - (lifts.get(openBox.id) ?? 0) }),
+        );
       element.style.display = "";
       element.style.transform =
         lift === undefined
