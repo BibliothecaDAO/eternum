@@ -209,7 +209,7 @@ const StructureBannerEntityDetailContent = memo(
 
         {relicEffects.length > 0 && (
           <HudPanel kind="section" title="Active Relics" icon={"relics" as const}>
-            <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
+            <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} />
           </HudPanel>
         )}
 

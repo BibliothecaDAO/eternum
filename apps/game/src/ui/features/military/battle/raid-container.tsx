@@ -399,11 +399,7 @@ export const RaidContainer = ({
                         </div>
 
                         {/* Active Relic Effects */}
-                        <ActiveRelicEffects
-                          relicEffects={attackerActiveRelicEffects}
-                          entityId={attackerEntityId}
-                          compact={true}
-                        />
+                        <ActiveRelicEffects relicEffects={attackerActiveRelicEffects} entityId={attackerEntityId} />
                       </div>
 
                       {/* Raid Simulation Results */}
@@ -518,7 +514,7 @@ export const RaidContainer = ({
                       </div>
 
                       {/* Active Relic Effects for Defenders */}
-                      <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} compact={true} />
+                      <ActiveRelicEffects relicEffects={targetActiveRelicEffects} entityId={target.id} />
 
                       {/* Raid Simulation Results */}
                       {raidSimulation && (

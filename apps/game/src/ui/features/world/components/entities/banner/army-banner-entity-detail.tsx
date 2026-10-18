@@ -182,9 +182,7 @@ const ArmyBannerEntityDetailContent = memo(
               emptyMessage="No relics ready."
             />
           )}
-          {relicEffects.length > 0 && (
-            <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />
-          )}
+          {relicEffects.length > 0 && <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} />}
           {showResourceInventoryInline && (
             <CompactEntityInventory
               resources={explorerResources}
