@@ -322,8 +322,11 @@ export const HudTroopAmount = ({
   );
 };
 
-/** A stack of troops a realm holds: its painting, its tier and how many. */
-export type HudTroopStack = { key: string; icon: IconMeaning; tier: 1 | 2 | 3; held: number };
+/**
+ * A stack of troops a realm holds: its painting, its tier and how many. `disabled` shuts one the realm holds but this
+ * deploy cannot take (a guard slot takes only the troop and tier already in it).
+ */
+export type HudTroopStack = { key: string; icon: IconMeaning; tier: 1 | 2 | 3; held: number; disabled?: boolean };
 
 /**
  * Deploying an army: a column per troop, its tiers under its name, every one always in the same place (an empty one
@@ -356,12 +359,12 @@ export const HudDeploy = ({
         {troops.map(({ name, stacks }) => (
           <div key={name} className="ui-deploy__troop">
             <span className="ui-deploy__name">{name}</span>
-            {stacks.map(({ key, icon, tier, held }) => (
+            {stacks.map(({ key, icon, tier, held, disabled }) => (
               <HudButton
                 key={key}
                 kind="secondary"
                 size="sm"
-                disabled={held === 0}
+                disabled={held === 0 || disabled}
                 aria-pressed={key === chosen}
                 aria-label={`${name} T${tier}, ${formatAmount(held)} held`}
                 onClick={() => onChoose(key)}

@@ -493,6 +493,25 @@ describe("deploying an army", () => {
     expect(choose).toHaveBeenCalledWith("paladin-t3");
   });
 
+  it("shuts a held stack this deploy cannot take, still saying what it holds", () => {
+    const choose = vi.fn();
+    const locked = [
+      { name: "Knights", stacks: [{ key: "knight-t1", icon: "knight-t1", tier: 1, held: 2_400, disabled: true }] },
+      { name: "Paladins", stacks: [{ key: "paladin-t3", icon: "paladin-t3", tier: 3, held: 120 }] },
+    ] as const;
+    act(() =>
+      root.render(
+        <HudDeploy troops={locked} chosen="paladin-t3" onChoose={choose} value={100} most={120} onChange={vi.fn()} />,
+      ),
+    );
+    expect(stacks().map((stack) => [stack.getAttribute("aria-label"), stack.disabled])).toEqual([
+      ["Knights T1, 2,400 held", true],
+      ["Paladins T3, 120 held", false],
+    ]);
+    act(() => stacks()[0].click());
+    expect(choose).not.toHaveBeenCalled();
+  });
+
   it("puts the chosen stack's amount under the columns, with +500, Max and what fits", () => {
     const change = vi.fn();
     act(() =>
