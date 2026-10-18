@@ -44,6 +44,7 @@ import { PanelsLab } from "./panels-lab";
 import { GuidanceLab } from "./guidance-lab";
 import { StyleSheetLab } from "./style-sheet-lab";
 import { WindowsLab } from "./windows-lab";
+import { WordsLab } from "./words-lab";
 
 const HOUR = 3600;
 /** The handoff's one fiction: Day 12, today ends at 21:40 with 7h 14m left, tomorrow lasts 12h. */
@@ -66,6 +67,7 @@ export const KitLabView = () => {
       <Route path="windows/:surface?" element={<WindowsLab />} />
       <Route path="guidance" element={<GuidanceLab />} />
       <Route path="tokens" element={<TokensLab />} />
+      <Route path="words" element={<WordsLab />} />
       <Route path="hud/:state" element={<HudLab />} />
       <Route path="shell" element={<Components />} />
       <Route path="*" element={<StyleSheetLab />} />

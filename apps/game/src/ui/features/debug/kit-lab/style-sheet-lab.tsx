@@ -162,6 +162,7 @@ export const StyleSheetLab = () => {
             <Link to="/lab/kit/panels">HUD panels</Link>
             <Link to="/lab/kit/guidance">Guidance</Link>
             <Link to="/lab/kit/icons">Icons</Link>
+            <Link to="/lab/kit/words">Words</Link>
           </nav>
         </header>
         <div className="flex items-start gap-6">

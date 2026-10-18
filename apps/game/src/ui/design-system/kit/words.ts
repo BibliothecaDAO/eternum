@@ -1,7 +1,20 @@
 /**
  * The glossary's words the kit draws (frontier-narrative-2026-10/glossary.html, ruled final 7 October 2026), each spelled
- * once. A screen that needs one of these words imports it from here; nothing else spells it.
+ * once, and the game's nouns (resources, troops, structures, ranks, guard walls, the three ages), read from the game's
+ * own tables. A screen that needs one of these words imports it from here; nothing else spells it. Numbers are written
+ * by amount.ts, times by time.ts, a nameless place's name by three/map-plates/site-name.ts, and how all of it is worded
+ * by voice.ts.
  */
+import {
+  getMinePresentation,
+  GUARD_SLOT_NAMES,
+  RealmLevelNames,
+  resources,
+  ResourcesIds,
+  StructureType,
+  StructureTypeToNameMapping,
+  type GuardSlot,
+} from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
@@ -138,6 +151,9 @@ export const RUIN = "Ruin";
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
 export const GUARD = "guard";
+/** What taking a camp from the Vanguard scores: "250 points", "1 point" (formatPoints). */
+export const POINTS = "points";
+export const POINT = "point";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
@@ -172,7 +188,12 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"] as const;
+export const REALM_LEVELS = [
+  RealmLevelNames.Settlement,
+  RealmLevelNames.City,
+  RealmLevelNames.Kingdom,
+  RealmLevelNames.Empire,
+] as const;
 export const FARM = "Farm";
 export const WORKSHOP = "Workshop";
 export const BARRACKS = "Barracks";
@@ -291,3 +312,49 @@ export const REALM_NUMBER = "Realm number";
 export const REALM_NOT_IN_WALLET = "Not in this wallet";
 export const REALM_NOT_CLAIMED = "That Realm is not in your wallet, or it gave its labor today.";
 export const realmsADay = (cap: number) => `${cap} a day`;
+
+/** A moment just gone, and how long ago one was: "just now", "5m ago" (formatAgo). */
+export const JUST_NOW = "just now";
+export const AGO = "ago";
+
+const UNKNOWN = "—";
+
+/** A realm's rank by its level: "City", never "Level 2". */
+export const rankName = (level: number | undefined): string =>
+  (level === undefined ? undefined : REALM_LEVELS[level]) ?? UNKNOWN;
+
+/** The three troops, and a troop with its tier: "Knight T2". */
+export const TROOP_NAMES = ["Knight", "Crossbowman", "Paladin"] as const;
+const troopName = (troop: string, tier: string): string => `${troop} ${tier}`;
+
+const TROOP_RESOURCE = /^(Knight|Crossbowman|Paladin)(T[23])?$/;
+
+/**
+ * A resource by its id, as a player reads it: its name in the game's table, a troop with its tier ("Knight T2", where
+ * the table says "KnightT2"), LORDS in capitals. Never the id's enum key ("AncientFragment"); unknown is a dash.
+ */
+export const resourceName = (id: ResourcesIds | number | undefined): string => {
+  if (id === undefined) return UNKNOWN;
+  if (id === ResourcesIds.Lords) return LORDS;
+  const name = resources.find((resource) => resource.id === id)?.trait;
+  if (!name) return UNKNOWN;
+  const troop = TROOP_RESOURCE.exec(name);
+  return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
+};
+
+/** A structure by its kind, a mine by what it yields: "Camp", "Essence Rift", "Hyperstructure". */
+export const structureName = (type: StructureType, mineKind?: number): string =>
+  type === StructureType.Mine && mineKind !== undefined
+    ? getMinePresentation(mineKind).name
+    : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+
+/** A guard slot by its wall, never its internal name: "Castle Wall", not "Gamma". */
+export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
+
+/** Each game as its age of the lore. */
+export const AGES = {
+  blitz: { game: "Blitz", age: "Age I" },
+  frontier: { game: "Frontier", age: "Age II" },
+  eternum: { game: "Eternum", age: "Age III" },
+} as const;
+export const ageLine = (game: keyof typeof AGES): string => `${AGES[game].game} · ${AGES[game].age}`;

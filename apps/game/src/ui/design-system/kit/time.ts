@@ -2,6 +2,7 @@
  * The kit's one way to write time. Days run 8 to 24 hours, so a duration is hours and minutes and never days; a moment is
  * the device's local clock time. Unknown is a dash.
  */
+import { AGO, JUST_NOW } from "./words";
 
 const DASH = "—";
 
@@ -63,4 +64,18 @@ export const formatCountdown = (seconds: number): string => {
   const left = Math.max(0, Math.floor(seconds));
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${Math.floor(left / 3600)}:${pad(Math.floor(left / 60) % 60)}:${pad(left % 60)}`;
+};
+
+/**
+ * How long ago a moment was (unix seconds): "just now" under ten seconds, then "24s ago", "5m ago", "3h ago", and from
+ * a day back its date ("7 Oct"), which says more than a count of days.
+ */
+export const formatAgo = (unixSeconds: number | undefined, nowSeconds = Date.now() / 1000): string => {
+  if (unixSeconds === undefined) return DASH;
+  const elapsed = Math.max(0, Math.floor(nowSeconds - unixSeconds));
+  if (elapsed < 10) return JUST_NOW;
+  if (elapsed < 60) return `${elapsed}s ${AGO}`;
+  if (elapsed < 3600) return `${Math.floor(elapsed / 60)}m ${AGO}`;
+  if (elapsed < 86_400) return `${Math.floor(elapsed / 3600)}h ${AGO}`;
+  return formatDate(unixSeconds, nowSeconds);
 };

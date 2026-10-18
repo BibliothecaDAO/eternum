@@ -16,6 +16,11 @@ selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/guida
 in the top bar, Next up's route, Events rows with outcomes). `/lab/kit/area-d` the rings, leaderboard, tribes, Military
 picker and window body, Combat and crate panel as the game draws them, on the deploy fixture's realm; capture them with
 `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
+`/lab/kit/words` the words sheet: each voice, number, time,
+noun and name rule of the words module (`src/ui/design-system/kit`: words, amount, time, voice; names by
+`src/three/map-plates/site-name.ts`) beside what today's code writes for the same input.
+`node apps/game/scripts/words-inventory.mjs` counts every place outside that module that formats a number or a time,
+names a thing, or shows a string that breaks a voice rule.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
