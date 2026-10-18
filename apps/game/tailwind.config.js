@@ -69,6 +69,8 @@ export default {
       maxWidth: WIDTHS,
       width: WIDTHS,
       spacing: { ...GUTTERS, ...prefixed(HUD_LAYOUT, "hud") },
+      // An item sized to what it holds whatever its `height`, which then sets only its least size (the rail's details).
+      flexBasis: { content: "content" },
       zIndex: { 1: "1", 100: "100", 250: "250", 1000: "1000", ...prefixed(HUD_LAYERS, "hud") },
       screens: SCREENS,
       typography: ({ theme }) => ({

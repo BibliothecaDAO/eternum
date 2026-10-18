@@ -576,6 +576,8 @@ export const HUD_LAYOUT = {
   "chat-pane": "min(60vh, 520px)",
   /** The open chat's least height in the right column, its strip included: the composer and a few lines of history. */
   "chat-least": "300px",
+  /** The picked tile's details' least height in the right column (less when they hold less): a header and a body. */
+  "details-least": "120px",
   "chat-cap": "45vw",
   /**
    * The Frontier HUD's frame on a desktop (hud-bands): the status strip, the page beside the map, its top and its room

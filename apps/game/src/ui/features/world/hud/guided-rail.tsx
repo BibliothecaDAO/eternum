@@ -32,26 +32,33 @@ export const GuidedRail = () => {
 /**
  * The rail's frame: the right column, from under the top bar down to the base band. Its stacking rule: the panels that
  * are always on keep their height; the picked tile's details and the open chat share the room left, each giving up
- * room in proportion to its height, the details scrolling inside theirs and chat keeping at least its least height
- * (`chat-least`), so neither covers the other.
+ * room in proportion to its height, down to its least height (`details-least`, `chat-least`). On a screen too short
+ * for those, the column scrolls as a whole inside its own box, so nothing in it reaches the base band. The scroller
+ * reaches past the column's sides so the panels' shadows show; the column's own box, which the map's labels keep clear
+ * of, stays the column.
  */
 export const RailFrame = ({ children }: { children: ReactNode }) => (
   <aside
     {...HUD_COLUMN_MARK}
     aria-label="Guided rail"
-    className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex w-hud-column flex-col gap-2"
+    className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex w-hud-column flex-col"
   >
-    {children}
+    <div className="no-scrollbar -mx-6 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-6">
+      {children}
+    </div>
   </aside>
 );
 
-/** The picked tile's details in the rail: they shrink with the room the rail leaves them and scroll inside it. */
+/**
+ * The picked tile's details in the rail, sized to what they hold and scrolling inside it once the rail gives them
+ * less. They keep at least `details-least` (as tall as their `height`, or what they hold when that is less: flexbox's
+ * own least size for an item that does not scroll), so a header and a body always show.
+ */
 export const TileDetails = ({ children }: { children: ReactNode }) => (
-  <div
-    aria-label="Tile details"
-    className="pointer-events-auto flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin"
-  >
-    {children}
+  <div aria-label="Tile details" className="flex h-hud-details-least basis-content flex-col">
+    <div className="pointer-events-auto flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden scrollbar-thin">
+      {children}
+    </div>
   </div>
 );
 

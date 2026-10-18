@@ -12,7 +12,7 @@ import { RealmCard } from "@/ui/features/world/hud/realm-card";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { BiomeType, BiomeTypeToId, BUILDINGS_CENTER, BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
@@ -78,6 +78,19 @@ const LAB_TILES = {
 /** The picked tile as the right rail draws it, on the sites fixture with its tiles' biomes known. */
 const TileLab = ({ tile }: { tile: keyof typeof LAB_TILES }) => {
   useDocumentClass("classic-hud");
+  return (
+    <TileGame tile={tile}>
+      <div className="flex min-h-screen flex-col items-end bg-[#0b1418] p-6">
+        <div data-lab="tile" className="flex w-hud-column flex-col gap-2">
+          <SelectedWorldmapEntity />
+        </div>
+      </div>
+    </TileGame>
+  );
+};
+
+/** The sites fixture's game with one of the lab's tiles picked, for what draws the picked tile (the chat lab's rail too). */
+export const TileGame = ({ tile, children }: { tile: keyof typeof LAB_TILES; children: ReactNode }) => {
   const [store] = useState(() => {
     const store = installFixtureGame(campBeside);
     installBiomes(store);
@@ -89,11 +102,7 @@ const TileLab = ({ tile }: { tile: keyof typeof LAB_TILES }) => {
   const setup = { store, systemCalls: {} } as unknown as GameClientSetup;
   return (
     <GameProvider value={setup} account={{ address: PLAYER } as never}>
-      <div className="flex min-h-screen flex-col items-end bg-[#0b1418] p-6">
-        <div data-lab="tile" className="flex w-hud-column flex-col gap-2">
-          <SelectedWorldmapEntity />
-        </div>
-      </div>
+      {children}
     </GameProvider>
   );
 };

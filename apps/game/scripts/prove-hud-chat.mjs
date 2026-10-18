@@ -6,10 +6,13 @@
  *   viewport, and the history scrolls inside the pane without moving the composer;
  * - closed, at 1440×900: the strip stays inside the HUD's column, its last message truncated, its unread count in view;
  * - closed and folded on a phone held upright (390×844): the strip is its icon and its unread count alone;
- * - in the rail (`?state=rail`, the real rail frame, Events panel, tile details, chat and build tag over a stand-in map
- *   canvas), at 1920×1080 and 1440×900: the details and the open chat share the column without covering each other, the
- *   chat keeps its least height, the Events name reads whole beside its Log count, and the build tag sits in the band
- *   under the column; closed, the strip stays clear of the tag too. A wheel turned over each panel never reaches the
+ * - in the rail (`?state=rail`, the real rail frame, Events panel, the panels lab's real picked-army tile, chat and build
+ *   tag over a stand-in map canvas), chat open at 1920×1080, 1440×900, 1440×768 and 1280×720: the details and the open
+ *   chat share the column without covering each other, each keeping its least height (the details a header and a body,
+ *   the chat 300 px); on a screen too short for both, the column scrolls as a whole, the composer in view and every part
+ *   reachable at one end or the other; the Events name reads whole beside its Log count; and nothing in the column
+ *   covers the build tag in the band under it. Closed, at 1920×1080 and 1280×720, the same for the strip and the
+ *   details. A wheel turned over each panel never reaches the
  *   canvas under them, and turned over the bare map it does. The wheel goes where the browser sends one: to the element
  *   under the point, bubbling from there. agent-browser's own `mouse wheel` always fires at the viewport's corner
  *   (0, 0), whatever the mouse is over, so on the game's page it lands on the map.
@@ -25,6 +28,17 @@ import { fileURLToPath } from "node:url";
 import { runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const READY_MS = 30_000;
+/** Desktop sizes down to the shortest a laptop shows: the rail must hold at each. */
+const RAIL_OPEN_SIZES = [
+  ["1920", "1080"],
+  ["1440", "900"],
+  ["1440", "768"],
+  ["1280", "720"],
+];
+const RAIL_CLOSED_SIZES = [
+  ["1920", "1080"],
+  ["1280", "720"],
+];
 const SETTLE_MS = 1_500;
 
 /** The open pane: its box, its composer's, and the one element inside it that scrolls the history. */
@@ -71,7 +85,6 @@ const RAIL = `(() => {
   const events = rail?.querySelector('section[aria-label="Events"]');
   const title = events?.querySelector(".ui-panel__title");
   const details = rail?.querySelector('[aria-label="Tile details"]');
-  const firstPanel = details?.querySelector("section");
   return {
     viewport: { width: innerWidth, height: innerHeight },
     rail: rect(rail),
@@ -79,8 +92,14 @@ const RAIL = `(() => {
     eventsTitleCut: title ? title.scrollWidth > title.clientWidth : null,
     unread: rect(events?.querySelector('[aria-label="Unread events"]')),
     details: rect(details),
-    firstPanelHead: rect(firstPanel?.querySelector(".ui-panel__head")),
-    firstPanelRows: firstPanel ? [...firstPanel.querySelectorAll("p")].map(rect) : [],
+    detailsHold: details?.firstElementChild?.scrollHeight ?? null,
+    firstPanelHead: rect(details?.querySelector(".ui-panel__head")),
+    tagCovered: (() => {
+      const tag = document.querySelector('a[href*="github.com"]');
+      const box = tag?.getBoundingClientRect();
+      const hit = box && document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return box ? !(hit && tag.parentElement.contains(hit)) : null;
+    })(),
     pane: rect(rail?.querySelector('section[aria-label="Chat"]')),
     firstControl: rect(rail?.querySelector('section[aria-label="Chat"] button')),
     composer: rect(rail?.querySelector('section[aria-label="Chat"] input, section[aria-label="Chat"] textarea')),
@@ -168,18 +187,12 @@ const above = (upper, lower, slack = 1) => upper !== null && lower !== null && u
 const railOpenChecks = (rail) => [
   { check: "the rail is drawn with the details and the open chat", ok: rail.details !== null && rail.pane !== null },
   { check: "the details end above the chat", ok: above(rail.details, rail.chat) },
-  {
-    check: "the details keep their first panel (the army: owner, troops, stamina, rest) whole in view",
-    ok:
-      inside(rail.firstPanelHead, rail.details) &&
-      rail.firstPanelRows.length > 0 &&
-      rail.firstPanelRows.every((row) => inside(row, rail.details)),
-  },
+  ...detailsChecks(rail),
   {
     check: "the chat keeps its least height (300 px, strip included)",
     ok: rail.chat !== null && rail.chat.height >= 299,
   },
-  { check: "the chat stays inside the rail", ok: inside(rail.chat, rail.rail) },
+  { check: "the open chat's composer is in view, inside the rail", ok: inside(rail.composer, rail.rail) },
   {
     check: "the chat keeps its first control at the top and its composer at the foot, both inside it",
     ok: inside(rail.firstControl, rail.pane) && inside(rail.composer, rail.pane),
@@ -189,12 +202,46 @@ const railOpenChecks = (rail) => [
   ...tagChecks(rail),
 ];
 
-/** The build tag in the band under the column, clear of the strip. */
+/** The details' least height: `details-least` (120 px), or all they hold when that is less, with their first header. */
+const detailsChecks = (rail) => [
+  {
+    check: "the details keep a header and a body: 120 px, or all they hold",
+    ok:
+      rail.details !== null &&
+      rail.detailsHold !== null &&
+      rail.details.height >= Math.min(120, rail.detailsHold) - 1 &&
+      inside(rail.firstPanelHead, rail.details),
+  },
+];
+
+/** The build tag in the band under the column: the rail and the strip end above it, and nothing draws over it. */
 const tagChecks = (rail) => [
   { check: "the build tag is drawn", ok: rail.tag !== null && rail.tag.width > 0 },
   { check: "the rail ends above the build tag", ok: above(rail.rail, rail.tag) },
-  { check: "the strip ends above the build tag", ok: above(rail.strip, rail.tag) },
+  { check: "the strip is in the rail, above the build tag", ok: inside(rail.strip, rail.rail) },
+  { check: "nothing draws over the build tag", ok: rail.tagCovered === false },
   { check: "the build tag is on screen", ok: rail.tag !== null && rail.tag.bottom <= rail.viewport.height + 1 },
+];
+
+/** The column's two ends, as its own scroll shows them: Next up's head at its top, the strip at its bottom. */
+const REACH = `(() => {
+  const rail = document.querySelector('aside[aria-label="Guided rail"]');
+  const column = rail.firstElementChild;
+  const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
+  const was = column.scrollTop;
+  column.scrollTop = 0;
+  const top = rect(rail.querySelector("section .ui-panel__head"));
+  column.scrollTop = column.scrollHeight;
+  const bottom = rect(rail.querySelector('[aria-label="Chat strip"]'));
+  column.scrollTop = was;
+  return { rail: rect(rail), scrolls: column.scrollHeight - column.clientHeight, top, bottom };
+})()`;
+
+const reachChecks = (reach) => [
+  {
+    check: "every part is reachable: Next up's head at the column's top, the strip at its bottom",
+    ok: inside(reach.top, reach.rail) && inside(reach.bottom, reach.rail),
+  },
 ];
 
 /** The wheel over each place, as the canvas under them counted it: only the bare map's reaches it. */
@@ -274,30 +321,36 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         b.run("screenshot", join(out, "chat-strip.png"));
       }
 
-      for (const viewport of [
-        ["1920", "1080"],
-        ["1440", "900"],
-      ]) {
+      for (const viewport of RAIL_OPEN_SIZES) {
         const size = viewport.join("×");
         const rail = { state: `rail, chat open, ${size}`, ready: false, presses: [], checks: [] };
         records.push(rail);
         rail.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail`, viewport);
         if (rail.ready) {
           rail.measures = b.evaluate(RAIL);
-          rail.checks.push(...railOpenChecks(rail.measures));
+          rail.measures.reach = b.evaluate(REACH);
+          rail.checks.push(...railOpenChecks(rail.measures), ...reachChecks(rail.measures.reach));
           b.run("screenshot", join(out, `rail-open-${size}.png`));
           rail.measures.wheel = turnWheelOver(b);
           rail.checks.push(...wheelChecks(rail.measures.wheel));
         }
       }
 
-      const railClosed = { state: "rail, chat closed, 1920×1080", ready: false, presses: [], checks: [] };
-      records.push(railClosed);
-      railClosed.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail&chat=closed`, ["1920", "1080"]);
-      if (railClosed.ready) {
-        railClosed.measures = b.evaluate(RAIL);
-        railClosed.checks.push(...tagChecks(railClosed.measures));
-        b.run("screenshot", join(out, "rail-closed-1920×1080.png"));
+      for (const viewport of RAIL_CLOSED_SIZES) {
+        const size = viewport.join("×");
+        const closed = { state: `rail, chat closed, ${size}`, ready: false, presses: [], checks: [] };
+        records.push(closed);
+        closed.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail&chat=closed`, viewport);
+        if (closed.ready) {
+          closed.measures = b.evaluate(RAIL);
+          closed.measures.reach = b.evaluate(REACH);
+          closed.checks.push(
+            ...detailsChecks(closed.measures),
+            ...tagChecks(closed.measures),
+            ...reachChecks(closed.measures.reach),
+          );
+          b.run("screenshot", join(out, `rail-closed-${size}.png`));
+        }
       }
 
       const folded = { state: "closed and folded, 390×844", ready: false, presses: [], checks: [] };

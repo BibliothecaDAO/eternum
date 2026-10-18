@@ -6,11 +6,13 @@ import type { WorldChatMessage } from "@/ui/features/social/realtime-chat/model/
 import { HudButton, HudEventRow, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
 import { EventsPanel } from "@/ui/features/world/hud/events-card";
+import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RailFrame, TileDetails } from "@/ui/features/world/hud/guided-rail";
 import { BuildTag } from "@/ui/layouts/build-tag";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { TileGame } from "./panels-lab";
 
 /**
  * Dev only: the HUD's chat at /lab/kit/chat, the real HudChatWindow and chat shell over a room the lab fills, in the
@@ -44,11 +46,18 @@ const noop = () => undefined;
 
 /**
  * The rail as the desktop HUD stacks it, over a canvas standing in for the map: what is always on (Next up, Events with
- * eleven unread), a picked army's tile and its biome, then chat; the build tag in the band under the columns.
+ * eleven unread), the real picked-army tile of the panels lab (`/lab/kit/panels?tile=army`), then chat; the build tag
+ * in the band under the columns.
  */
 const RailLab = ({ chatOpen }: { chatOpen: boolean }) => (
+  <TileGame tile="army">
+    <RailStage chatOpen={chatOpen} />
+  </TileGame>
+);
+
+const RailStage = ({ chatOpen }: { chatOpen: boolean }) => (
   <div className="fixed inset-0">
-    <canvas data-lab="map" className="absolute inset-0 h-full w-full bg-[#0b1418]" />
+    <canvas data-lab="map" className="absolute inset-0 z-0 h-full w-full bg-[#0b1418]" />
     <RailFrame>
       <HudPanel label="Next up" title="Next up" cue="1 of 5">
         <p className="text-hud-body text-hud-ink">Your army can explore: +5 points a tile.</p>
@@ -64,22 +73,7 @@ const RailLab = ({ chatOpen }: { chatOpen: boolean }) => (
         ))}
       </EventsPanel>
       <TileDetails>
-        <HudPanel label="Army tile" title="Army Tile · (15, 8)">
-          {LAB_ARMY.map(([title, detail]) => (
-            <p key={title} className="flex justify-between py-1 text-hud-body text-hud-ink">
-              <span>{title}</span>
-              <span className="text-hud-muted">{detail}</span>
-            </p>
-          ))}
-        </HudPanel>
-        <HudPanel label="Biome" title="Biome" cue="Battle">
-          {LAB_BIOME.map(([troop, effect]) => (
-            <p key={troop} className="flex justify-between py-2 text-hud-body text-hud-ink">
-              <span>{troop}</span>
-              <span className="text-hud-muted">{effect}</span>
-            </p>
-          ))}
-        </HudPanel>
+        <SelectedWorldmapEntity />
       </TileDetails>
       <HudChatWindow open={chatOpen} onOpenChange={noop} />
     </RailFrame>
@@ -92,18 +86,6 @@ const LAB_EVENTS = [
   ["18:16", "Explored · (15, 8): +5 points, +50 Essence"],
   ["18:14", "Explored · (15, 7): +5 points, +200 Essence"],
 ];
-const LAB_ARMY = [
-  ["clientlane", "Stolsli"],
-  ["Knights T1", "1,000"],
-  ["Stamina", "97/120"],
-  ["Rested in", "1 min"],
-];
-const LAB_BIOME = [
-  ["Knights", "0%"],
-  ["Crossbowmen", "+30%"],
-  ["Paladins", "-30%"],
-];
-
 const LONG_LINE = "Meet at the southern gate with the reinforcements, then hold the ridge until the spire opens. ";
 
 /** Forty messages of a busy room; the last a long one, as the strip shows it. */
