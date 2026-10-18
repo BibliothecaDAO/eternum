@@ -89,8 +89,7 @@ const ORDER_SURFACES = `document.querySelectorAll(${JSON.stringify(
  * outgrow the screen), and the table's header row spans the body, leaving no empty strip beside it.
  */
 const LEADERBOARD_FITS = `(() => {
-  const frame = document.querySelector('[data-popover-panel="leaderboard"] [data-surface-frame]');
-  const body = frame?.children[1];
+  const body = document.querySelector('[data-popover-panel="leaderboard"] .ui-window__body');
   const header = body?.querySelector(".ui-table-head");
   if (!body || !header) return false;
   const content = body.firstElementChild.getBoundingClientRect();
@@ -112,8 +111,7 @@ const LEADERBOARD_HEADERS_FIT = `[...document.querySelectorAll('[data-popover-pa
  * detail), and the table keeps its width, running up to the detail with no strip between them.
  */
 const LEADERBOARD_DETAIL_FITS = `(() => {
-  const frame = document.querySelector('[data-popover-panel="leaderboard"] [data-surface-frame]');
-  const body = frame?.children[1];
+  const body = document.querySelector('[data-popover-panel="leaderboard"] .ui-window__body');
   const header = body?.querySelector(".ui-table-head");
   const detail = body?.querySelector('[aria-label="Player details"]');
   if (!body || !header || !detail) return false;

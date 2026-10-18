@@ -1,10 +1,9 @@
 import { useGame } from "@/hooks/context/game-context";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { buildWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -98,7 +97,7 @@ export const WonderFaithDetailPanel = ({
     <div className={cn("flex h-full min-h-0 flex-col gap-3", className)}>
       <div className="rounded-lg border border-hud-line bg-hud-well p-3">
         <div className="flex flex-col gap-1">
-          <span className="text-hud-label uppercase tracking-[0.25em] text-hud-muted">Wonder</span>
+          <span className="text-hud-label uppercase text-hud-muted">Wonder</span>
           <span className="text-hud-strong text-hud-accent">{wonderName}</span>
           <span className="text-hud-label text-hud-muted">Owner: {getOwnerLabel(wonderDetail)}</span>
         </div>
@@ -106,12 +105,12 @@ export const WonderFaithDetailPanel = ({
 
       {ordersAllowed && (
         <div className="flex flex-wrap gap-2">
-          <Button disabled={claiming} onClick={() => void claim("wonder")}>
+          <HudButton kind="secondary" disabled={claiming} onClick={() => void claim("wonder")}>
             Update wonder points
-          </Button>
-          <Button disabled={claiming} onClick={() => void claim("player")}>
+          </HudButton>
+          <HudButton kind="secondary" disabled={claiming} onClick={() => void claim("player")}>
             Claim faith points
-          </Button>
+          </HudButton>
         </div>
       )}
       <div className="grid grid-cols-2 gap-2 text-hud-label">
@@ -122,7 +121,7 @@ export const WonderFaithDetailPanel = ({
       </div>
 
       <div className="rounded-lg border border-hud-line bg-hud-hover p-3">
-        <div className="flex items-center justify-between text-hud-label uppercase tracking-[0.22em] text-hud-muted">
+        <div className="flex items-center justify-between text-hud-label uppercase text-hud-muted">
           <span>Per-Pledge Split</span>
           <span>
             {wonderDetail.ownerSharePercent}% / {wonderDetail.followerSharePercent}%
@@ -146,7 +145,7 @@ export const WonderFaithDetailPanel = ({
 
       <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-hud-line bg-hud-well">
         <div className="flex items-center justify-between border-b border-hud-divider px-3 py-2">
-          <span className="text-hud-label uppercase tracking-[0.24em] text-hud-muted">Faithful Followers</span>
+          <span className="text-hud-label uppercase text-hud-muted">Faithful Followers</span>
           <span className="text-hud-label text-hud-muted">{wonderDetail.followerCount}</span>
         </div>
         {followers.length === 0 ? (
@@ -155,24 +154,21 @@ export const WonderFaithDetailPanel = ({
           <div className="min-h-0 flex-1 overflow-auto">
             <div className="flex flex-col">
               {followers.map((follower) => (
-                <div
-                  key={follower.structureId.toString()}
-                  className="grid grid-cols-[minmax(0,1fr)_96px_96px] gap-2 border-b border-hud-divider px-3 py-2"
-                >
-                  <div className="min-w-0">
+                <div key={follower.structureId.toString()} className="flex gap-2 border-b border-hud-divider px-3 py-2">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate text-hud-label text-hud-accent">{follower.structureLabel}</div>
                     <div className="truncate text-hud-label text-hud-muted">
                       {follower.structureTypeLabel} ·{" "}
                       {follower.ownerName?.trim() || displayAddress(follower.ownerAddress)}
                     </div>
                   </div>
-                  <div className="text-right text-hud-label text-hud-muted">
+                  <div className="w-24 text-right text-hud-label text-hud-muted">
                     30% owner
                     <div className="font-mono text-hud-label text-hud-accent">
                       {formatInt(follower.fpToWonderOwnerPerSec)}
                     </div>
                   </div>
-                  <div className="text-right text-hud-label text-hud-muted">
+                  <div className="w-24 text-right text-hud-label text-hud-muted">
                     70% follower
                     <div className="font-mono text-hud-label text-hud-accent">
                       {formatInt(follower.fpToFollowerOwnerPerSec)}
@@ -206,9 +202,7 @@ const StatCard = ({
   >
     <div
       className={cn(
-        compact
-          ? "text-hud-label leading-tight tracking-[0.02em] text-hud-muted"
-          : "text-hud-label uppercase tracking-[0.22em] text-hud-muted",
+        compact ? "text-hud-label leading-tight text-hud-muted" : "text-hud-label uppercase text-hud-muted",
       )}
     >
       {label}
@@ -233,15 +227,8 @@ interface WonderFaithDetailModalProps {
 
 export const WonderFaithDetailModal = ({ wonderId, fallbackWonderName, onClose }: WonderFaithDetailModalProps) => {
   return (
-    <SurfaceFrame
-      title="Wonder Faith Details"
-      onClose={onClose}
-      className="max-h-[calc(100vh-7rem)] w-[980px]"
-      bodyClassName="overflow-auto"
-    >
-      <div className="p-4">
-        <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
-      </div>
-    </SurfaceFrame>
+    <HudWindow title="Wonder Faith Details" size="page" onClose={onClose}>
+      <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
+    </HudWindow>
   );
 };

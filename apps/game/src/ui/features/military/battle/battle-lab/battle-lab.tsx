@@ -5,7 +5,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SURFACE_WORKSPACE_CLASS, SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import {
   type Army,
@@ -323,121 +323,117 @@ export const BattleLab = ({
   ]);
 
   return (
-    <SurfaceFrame
-      title="Combat"
-      icon={"military" as const}
-      onClose={closeSurface}
-      className={SURFACE_WORKSPACE_CLASS}
-      bodyClassName="relative overflow-x-hidden"
-    >
-      <CombatParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
+    <HudWindow title="Combat" icon="military" size="workspace" onClose={closeSurface}>
+      <div className="relative overflow-x-hidden">
+        <CombatParametersPanel parameters={parameters} onParametersChange={setParameters} show={showParameters} />
 
-      {mode === "live" && isLoading ? (
-        <LoadingAnimation />
-      ) : raidActive ? (
-        <RaidContainer
-          attackerEntityId={attackerEntityId}
-          target={target!}
-          targetResources={targetResources}
-          attackerActiveRelicEffects={attackerRelicEffects}
-          targetActiveRelicEffects={targetRelicEffects}
-        />
-      ) : (
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-          {configManager.rollsCombatDice(state.defenderAlt) && (
-            <p className="text-hud-body text-hud-muted">
-              Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
-            </p>
-          )}
-          <label className="flex items-center gap-2 text-hud-body text-hud-muted">
-            <input
-              type="checkbox"
-              checked={state.defenderAlt}
-              onChange={(event) => dispatch({ type: "SET_DEFENDER_LAYER", alt: event.target.checked })}
-            />
-            Defender in ethereal layer
-          </label>
-          <BiomeEnvironmentBar
-            combatSimulator={combatSimulator}
-            biome={state.defenderAlt ? BiomeType.Underground : state.biome}
-            ethereal={state.defenderAlt}
-            onSelect={(biome) => dispatch({ type: "SET_BIOME", biome })}
+        {mode === "live" && isLoading ? (
+          <LoadingAnimation />
+        ) : raidActive ? (
+          <RaidContainer
+            attackerEntityId={attackerEntityId}
+            target={target!}
+            targetResources={targetResources}
+            attackerActiveRelicEffects={attackerRelicEffects}
+            targetActiveRelicEffects={targetRelicEffects}
           />
-
-          <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ArmyColumn
-              key={`attacker-${seed}`}
-              label="Attacker"
-              side="attacker"
-              army={state.attacker}
-              onChange={(patch) => dispatch({ type: "PATCH_ATTACKER", patch })}
-              guards={snapshot?.attackerType === "structure" ? snapshot.guards : undefined}
-              selectedGuardSlot={state.selectedGuardSlot}
-              onSelectGuard={handleSelectGuard}
-              footer={
-                prediction && (
-                  <OutcomeStrip
-                    side={prediction.attacker}
-                    total={state.attacker.troopCount}
-                    staminaBefore={state.attacker.stamina}
-                    staminaAfter={prediction.newAttackerStamina}
-                  />
-                )
-              }
+        ) : (
+          <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
+            {configManager.rollsCombatDice(state.defenderAlt) && (
+              <p className="text-hud-body text-hud-muted">
+                Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
+              </p>
+            )}
+            <label className="flex items-center gap-2 text-hud-body text-hud-muted">
+              <input
+                type="checkbox"
+                checked={state.defenderAlt}
+                onChange={(event) => dispatch({ type: "SET_DEFENDER_LAYER", alt: event.target.checked })}
+              />
+              Defender in ethereal layer
+            </label>
+            <BiomeEnvironmentBar
+              combatSimulator={combatSimulator}
+              biome={state.defenderAlt ? BiomeType.Underground : state.biome}
+              ethereal={state.defenderAlt}
+              onSelect={(biome) => dispatch({ type: "SET_BIOME", biome })}
             />
 
-            <ArmyColumn
-              key={`defender-${seed}`}
-              label="Defender"
-              side="defender"
-              army={state.defender}
-              onChange={(patch) => dispatch({ type: "PATCH_DEFENDER", patch })}
-              footer={
-                state.hasDefender && prediction ? (
-                  <OutcomeStrip
-                    side={prediction.defender}
-                    total={state.defender.troopCount}
-                    staminaBefore={state.defender.stamina}
-                    staminaAfter={prediction.newDefenderStamina}
-                  />
-                ) : null
-              }
-            />
+            <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <ArmyColumn
+                key={`attacker-${seed}`}
+                label="Attacker"
+                side="attacker"
+                army={state.attacker}
+                onChange={(patch) => dispatch({ type: "PATCH_ATTACKER", patch })}
+                guards={snapshot?.attackerType === "structure" ? snapshot.guards : undefined}
+                selectedGuardSlot={state.selectedGuardSlot}
+                onSelectGuard={handleSelectGuard}
+                footer={
+                  prediction && (
+                    <OutcomeStrip
+                      side={prediction.attacker}
+                      total={state.attacker.troopCount}
+                      staminaBefore={state.attacker.stamina}
+                      staminaAfter={prediction.newAttackerStamina}
+                    />
+                  )
+                }
+              />
 
-            <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
-              <span className="rounded-full border border-hud-line bg-hud-well px-3 py-2 text-hud-strong text-hud-accent">
-                VS
-              </span>
+              <ArmyColumn
+                key={`defender-${seed}`}
+                label="Defender"
+                side="defender"
+                army={state.defender}
+                onChange={(patch) => dispatch({ type: "PATCH_DEFENDER", patch })}
+                footer={
+                  state.hasDefender && prediction ? (
+                    <OutcomeStrip
+                      side={prediction.defender}
+                      total={state.defender.troopCount}
+                      staminaBefore={state.defender.stamina}
+                      staminaAfter={prediction.newDefenderStamina}
+                    />
+                  ) : null
+                }
+              />
+
+              <div className="pointer-events-none absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
+                <span className="rounded-full border border-hud-line bg-hud-well px-3 py-2 text-hud-strong text-hud-accent">
+                  VS
+                </span>
+              </div>
             </div>
+
+            {!state.hasDefender ? (
+              <div className="rounded-lg border border-hud-good bg-emerald-900/20 px-4 py-3 text-center text-hud-strong text-hud-good">
+                {rangedClaimBlocked
+                  ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
+                  : "No defending troops — this target can be claimed without a battle."}
+              </div>
+            ) : (
+              prediction && <OutcomeBanner outcomes={prediction.outcomes} />
+            )}
+
+            <ActionFooter
+              mode={mode}
+              attackType={state.attackType}
+              showRaidToggle={showRaidToggle}
+              onSetAttackType={(attackType) => dispatch({ type: "SET_ATTACK_TYPE", attackType })}
+              isEdited={isEdited || nonDefaultParams}
+              onResetToLive={handleResetToLive}
+              actionLabel={actionLabel}
+              actionDisabled={actionDisabled}
+              loading={loading}
+              onAction={onAttack}
+              warning={warning}
+              tweet={tweet}
+              cooldownEnd={state.attacker.battle_cooldown_end}
+            />
           </div>
-
-          {!state.hasDefender ? (
-            <div className="rounded-lg border border-hud-good bg-emerald-900/20 px-4 py-3 text-center text-hud-strong text-hud-good">
-              {rangedClaimBlocked
-                ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
-                : "No defending troops — this target can be claimed without a battle."}
-            </div>
-          ) : (
-            prediction && <OutcomeBanner outcomes={prediction.outcomes} />
-          )}
-
-          <ActionFooter
-            mode={mode}
-            attackType={state.attackType}
-            showRaidToggle={showRaidToggle}
-            onSetAttackType={(attackType) => dispatch({ type: "SET_ATTACK_TYPE", attackType })}
-            isEdited={isEdited || nonDefaultParams}
-            onResetToLive={handleResetToLive}
-            actionLabel={actionLabel}
-            actionDisabled={actionDisabled}
-            loading={loading}
-            onAction={onAttack}
-            warning={warning}
-            tweet={tweet}
-            cooldownEnd={state.attacker.battle_cooldown_end}
-          />
-        </div>
-      )}
-    </SurfaceFrame>
+        )}
+      </div>
+    </HudWindow>
   );
 };

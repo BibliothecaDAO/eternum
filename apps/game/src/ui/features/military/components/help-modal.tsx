@@ -1,5 +1,5 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { ActorType, ID } from "@bibliothecadao/types";
 
@@ -26,18 +26,10 @@ export const HelpModal = ({
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   return (
-    <SurfaceFrame
-      title="Transfer Troops & Relics"
-      icon={"swap" as const}
-      onClose={closeSurface}
-      className="w-[920px] max-h-[calc(100vh-7rem)]"
-      bodyClassName="overflow-y-auto"
-    >
-      <div className="p-4">
-        <Suspense fallback={<LoadingAnimation />}>
-          <HelpContainer selected={selected} target={target} allowBothDirections={allowBothDirections} />
-        </Suspense>
-      </div>
-    </SurfaceFrame>
+    <HudWindow title="Transfer Troops & Relics" icon="swap" size="page" onClose={closeSurface}>
+      <Suspense fallback={<LoadingAnimation />}>
+        <HelpContainer selected={selected} target={target} allowBothDirections={allowBothDirections} />
+      </Suspense>
+    </HudWindow>
   );
 };

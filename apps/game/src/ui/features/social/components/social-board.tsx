@@ -1,13 +1,11 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView, settlementPlayersView } from "@/sync/fact-views";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
-import { Tabs } from "@/ui/design-system/atoms/tab";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
+import { HudTabs, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import "@/ui/features/world/hud/hud.css";
 import { getPlayerInfo } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -24,7 +22,6 @@ import { useSocialStore } from "./use-social-store";
 
 interface SocialTabConfig {
   key: string;
-  label: ReactNode;
   component: ReactNode;
   expandedContent: ReactNode;
 }
@@ -57,23 +54,16 @@ const countStructuresByOwner = (structures: NativeRows["Structure"][]) =>
 
 export const LEADERBOARD_POPOVER_ID = "leaderboard";
 
-/**
- * The leaderboard's window takes its content's size: as wide as its table and as tall as its rows (24 players at most),
- * capped by the screen with its body scrolling under the title. A phone keeps the bottom sheet's width and height cap.
- */
-const LEADERBOARD_FRAME_CLASS =
-  "w-fit lg:max-h-[inherit] max-lg:w-screen max-lg:max-h-[min(85dvh,calc(var(--surface-viewport-height,100dvh)-4rem))] max-lg:landscape:w-[min(60vw,640px)] max-lg:landscape:max-h-[calc(var(--surface-viewport-height,100dvh)-3.5rem-max(1rem,env(safe-area-inset-bottom))-2px)]";
-
-/** The leaderboard hangs from the top centre as a framed, draggable surface, titled as the HUD's panels are. */
+/** The leaderboard hangs from the top centre as a HUD window as large as its table and rows, draggable by its bar. */
 export const LeaderboardSurface = () => (
-  <SurfaceFrame
-    title={<span className="text-hud-label text-hud-muted">Leaderboard</span>}
-    icon={"victory" as const}
+  <HudWindow
+    title="Leaderboard"
+    icon="victory"
+    size="fit"
     onClose={() => usePopoverStore.getState().close(LEADERBOARD_POPOVER_ID)}
-    className={LEADERBOARD_FRAME_CLASS}
   >
     <SocialBoard focusOwnPlayer />
-  </SurfaceFrame>
+  </HudWindow>
 );
 
 /**
@@ -165,12 +155,6 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     const baseTabs: SocialTabConfig[] = [
       {
         key: "Players",
-        label: (
-          <div className="flex items-center gap-2">
-            <SemanticIcon name="people" size={16} />
-            <span>Players</span>
-          </div>
-        ),
         component: (
           <PlayersPanel players={playerInfo} viewPlayerInfo={viewPlayerInfo} focusOwnPlayer={focusOwnPlayer} />
         ),
@@ -181,12 +165,6 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     if (showGuildsTab) {
       baseTabs.push({
         key: "Tribes",
-        label: (
-          <div className="flex items-center gap-2">
-            <SemanticIcon name="hexagon" size={16} />
-            <span>Tribes</span>
-          </div>
-        ),
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
           <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
@@ -199,12 +177,6 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     if (isEternumMode) {
       baseTabs.push({
         key: "Faith",
-        label: (
-          <div className="flex items-center gap-2">
-            <SemanticIcon name="relics" size={16} />
-            <span>Faith</span>
-          </div>
-        ),
         component: <FaithLeaderboardPanel />,
         expandedContent: null,
       });
@@ -237,39 +209,22 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
         {tabsLength === 1 ? (
           tabs[0].component
         ) : (
-          <Tabs
-            selectedIndex={activeTabIndex}
-            onChange={(index: number) => {
-              setSelectedTab(index);
-              setIsExpanded(false);
-              setSelectedPlayer(0n);
-            }}
-            className="h-full"
-          >
-            <div className="flex flex-col h-full">
-              <Tabs.List className="">
-                {tabs.map((tab) => (
-                  <Tabs.Tab key={tab.key} className="py-3 px-6 flex items-center justify-center">
-                    {tab.label}
-                  </Tabs.Tab>
-                ))}
-              </Tabs.List>
-
-              <Tabs.Panels className="overflow-hidden flex-1">
-                {tabs.map((tab) => (
-                  <Tabs.Panel key={tab.key} className="h-full">
-                    {tab.component}
-                  </Tabs.Panel>
-                ))}
-              </Tabs.Panels>
-            </div>
-          </Tabs>
+          <div className="flex h-full flex-col gap-2">
+            <HudTabs
+              tabs={tabs.map((tab) => ({ key: tab.key, label: tab.key }))}
+              value={tabs[activeTabIndex].key}
+              onChange={(key) => {
+                setSelectedTab(tabs.findIndex((tab) => tab.key === key));
+                setIsExpanded(false);
+                setSelectedPlayer(0n);
+              }}
+            />
+            <div className="flex-1 overflow-hidden">{tabs[activeTabIndex].component}</div>
+          </div>
         )}
       </div>
       {isExpanded && (
-        <div className="w-[360px] shrink-0 border-l border-hud-divider">
-          {tabs[activeTabIndex]?.expandedContent ?? null}
-        </div>
+        <div className="w-96 shrink-0 border-l border-hud-divider">{tabs[activeTabIndex]?.expandedContent ?? null}</div>
       )}
     </div>
   );
