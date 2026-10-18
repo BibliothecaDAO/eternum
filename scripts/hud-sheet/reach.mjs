@@ -20,6 +20,20 @@ const ALLOWLIST = new URL("./allowlist.json", import.meta.url);
  * branch (B, C and D add theirs as they land).
  */
 const AREAS = {
+  "G. Frontier pages": [
+    "ui/features/frontier/log",
+    "ui/features/frontier/production",
+    "ui/features/frontier/research",
+    "ui/features/frontier/rollover",
+    "ui/features/frontier/value",
+    "ui/features/frontier/deploy/deploy-view.tsx",
+    "ui/features/frontier/deploy/deploy-sheet.tsx",
+    "ui/features/frontier/amount-range.tsx",
+    "ui/features/frontier/day-ends.tsx",
+    "ui/features/frontier/refused-verb.tsx",
+    "ui/features/frontier/full-in.tsx",
+    "ui/features/frontier/hud-prices.ts",
+  ],
   "D. Military, rings, leaderboard": [
     "ui/features/military",
     "ui/features/social",
