@@ -824,6 +824,38 @@ export const HudNotice = ({ tone, line, why }: { tone?: Tone; line: string; why?
 );
 
 /**
+ * News across the top of the map: what kind it is (its painting and a word over the headline), the headline, a line,
+ * and what the player can do about it; its side in the news' tone (bad for a war report, warn for a timer).
+ */
+export const HudBanner = ({
+  tone,
+  icon,
+  eyebrow,
+  title,
+  line,
+  actions,
+}: {
+  tone?: Tone;
+  icon: IconMeaning;
+  eyebrow: string;
+  title: string;
+  line?: string;
+  actions?: ReactNode;
+}) => (
+  <section className="ui ui-banner" data-tone={tone} role="status" aria-label={title}>
+    <span className="ui-banner__mark" aria-hidden="true">
+      <Icon name={icon} size={20} />
+    </span>
+    <span className="ui-banner__words">
+      <span className="ui-banner__eyebrow">{eyebrow}</span>
+      <span className="ui-banner__title">{title}</span>
+      {line && <span className="ui-banner__line">{line}</span>}
+    </span>
+    {actions !== undefined && <span className="ui-banner__actions">{actions}</span>}
+  </section>
+);
+
+/**
  * How big a window is, by what it holds: one task (a name, a relic, a confirmation), a page to read (the Lordpedia), or a
  * workspace (Build, Production, Transfer, the market) that fills the desk on desktop and the sheet on a phone.
  */

@@ -129,7 +129,6 @@
   "apps/game/src/ui/features/military/components/unified-army-creation-modal/troop-amount.tsx": 10,
   "apps/game/src/ui/features/military/components/unified-army-creation-modal/troop-selection-grid.tsx": 44,
   "apps/game/src/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal.tsx": 19,
-  "apps/game/src/ui/features/news-headlines/news-headline-banner.tsx": 65,
   "apps/game/src/ui/features/progression/hints/buildings.tsx": 12,
   "apps/game/src/ui/features/progression/hints/combat.tsx": 11,
   "apps/game/src/ui/features/progression/hints/exploration-table.tsx": 54,
@@ -244,7 +243,6 @@
   "apps/game/src/ui/modules/boot-loader/segmented-bracket-loader.tsx": 5,
   "apps/game/src/ui/modules/identity/wallet-actions.tsx": 21,
   "apps/game/src/ui/motion/motion-scale.ts": 4,
-  "apps/game/src/ui/shared/components/alert-banner-shell.tsx": 12,
   "apps/game/src/ui/shared/components/production-status-badge.tsx": 40,
   "apps/game/src/ui/utils/tier-styles.ts": 18
 }

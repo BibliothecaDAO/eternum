@@ -1592,3 +1592,70 @@ button.ui-card__choose:disabled {
 .ui-sweep {
   background: linear-gradient(90deg, transparent, rgb(var(--hud-ink) / 0.35), transparent);
 }
+
+/* ── Banner: news across the top of the map, its side and mark in the news' tone. ── */
+.ui-banner {
+  --banner-tone: rgb(var(--hud-accent));
+  display: flex;
+  width: 32rem;
+  max-width: 100%;
+  align-items: center;
+  gap: theme(spacing.3);
+  border: 1px solid var(--hud-line);
+  border-left: 3px solid var(--banner-tone);
+  border-radius: var(--hud-radius-panel);
+  background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
+  box-shadow: var(--hud-shadow-panel);
+  padding: theme(spacing.3) theme(spacing.4);
+  pointer-events: auto;
+}
+.ui-banner[data-tone="good"] {
+  --banner-tone: var(--hud-good);
+}
+.ui-banner[data-tone="bad"] {
+  --banner-tone: var(--hud-bad);
+}
+.ui-banner[data-tone="warn"] {
+  --banner-tone: var(--hud-warn);
+}
+.ui-banner__mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--banner-tone);
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-well);
+}
+.ui-banner__words {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: theme(spacing[0.5]);
+}
+.ui-banner__eyebrow {
+  color: var(--banner-tone);
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-line-label);
+  font-weight: var(--hud-weight-label);
+}
+.ui-banner__title {
+  color: rgb(var(--hud-ink));
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-line-title);
+  font-weight: var(--hud-weight-title);
+}
+.ui-banner__line {
+  color: var(--hud-muted);
+}
+.ui-banner__actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing.1);
+  border-left: 1px solid var(--hud-divider);
+  padding-left: theme(spacing.3);
+}

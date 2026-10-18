@@ -20,6 +20,7 @@ import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
   HudBubble,
+  HudBanner,
   HudButton,
   HudCheck,
   HudCard,
@@ -1322,8 +1323,8 @@ const RowsSection = () => (
 
 const EventsSection = ({ store }: { store: NativeFactStore }) => (
   <Element
-    name="Event row and notice"
-    rule="What happened, said once: its time, a mark in its tone, the words (every toast is a row in Events); a notice says a line about the screen it sits in."
+    name="Event row, notice and banner"
+    rule="What happened, said once: its time, a mark in its tone, the words (every toast is a row in Events); a notice says a line about the screen it sits in; a banner is news across the top of the map, its side in its tone."
     sheet={
       <div className="flex w-96 flex-col">
         <HudEventRow time="12:04">
@@ -1342,6 +1343,24 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
           <HudNotice tone="good" line="Transfer sent" why="Arrives at Egonal in 4m." />
           <HudNotice tone="warn" line="Storage full" why="Wheat stops at 6,000 until some is spent." />
           <HudNotice tone="bad" line="Not sent" why="The army needs 30 stamina; ready in 24s." />
+        </div>
+        <div className="mt-4 flex flex-col gap-2">
+          <HudBanner
+            tone="bad"
+            icon="realm"
+            eyebrow="War Report"
+            title="Xeswet has fallen"
+            line="Moonhand took it from Kestrel."
+            actions={
+              <>
+                <HudButton kind="secondary" size="sm" icon="navigation">
+                  View
+                </HudButton>
+                <HudIconButton icon="close" label="Dismiss" kind="quiet" size="sm" />
+              </>
+            }
+          />
+          <HudBanner tone="warn" icon="hourglass" eyebrow="Timer Warning" title="Five minutes left" />
         </div>
       </div>
     }
