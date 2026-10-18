@@ -10,7 +10,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
@@ -133,7 +133,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
   };
 
   return (
-    <section className="space-y-3 p-3 text-xs text-gold" aria-label="Hyperstructure construction">
+    <section className="space-y-3 p-3 text-hud-body text-hud-ink" aria-label="Hyperstructure construction">
       <h4>Construction</h4>
       {hyperstructure.stage === "Foundation" ? (
         <>
@@ -142,9 +142,9 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
             construction.
           </p>
           {owned && (
-            <Button disabled={pending} onClick={initialize}>
+            <HudButton kind="secondary" size="sm" disabled={pending} onClick={initialize}>
               Start construction
-            </Button>
+            </HudButton>
           )}
         </>
       ) : (
@@ -206,23 +206,24 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                 )}
               </span>
               {canContribute && source && (
-                <input
-                  aria-label={`${ResourcesIds[row.resource]} contribution`}
-                  inputMode="decimal"
-                  className="w-20 bg-black/40 p-1"
-                  value={amounts[row.resource] ?? ""}
-                  disabled={
-                    pending || row.remaining === undefined || row.remaining === 0n || row.available === undefined
-                  }
-                  onChange={(event) => setAmounts((previous) => ({ ...previous, [row.resource]: event.target.value }))}
-                />
+                <span className="w-20">
+                  <HudField
+                    aria-label={`${ResourcesIds[row.resource]} contribution`}
+                    inputMode="decimal"
+                    value={amounts[row.resource] ?? ""}
+                    disabled={
+                      pending || row.remaining === undefined || row.remaining === 0n || row.available === undefined
+                    }
+                    onChange={(value) => setAmounts((previous) => ({ ...previous, [row.resource]: value }))}
+                  />
+                </span>
               )}
             </label>
           ))}
           {canContribute && source && (
-            <Button disabled={!canSubmit || pending} onClick={contribute}>
+            <HudButton kind="secondary" size="sm" disabled={!canSubmit || pending} onClick={contribute}>
               Contribute resources
-            </Button>
+            </HudButton>
           )}
         </>
       )}

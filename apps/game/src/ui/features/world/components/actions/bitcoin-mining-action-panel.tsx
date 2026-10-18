@@ -5,7 +5,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import Button from "@/ui/design-system/atoms/button";
+import { HudButton, HudField } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 
 export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntityId: number }) => {
@@ -103,23 +103,25 @@ export const BitcoinMiningActionPanel = ({ structureEntityId }: { structureEntit
           </p>
           <label className="flex items-center gap-2">
             Labor ({labor === undefined ? "—" : (labor / precision).toString()} available)
-            <input
-              aria-label="Mining Labor"
-              inputMode="numeric"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              className="w-24 bg-hud-well p-1"
-            />
+            <span className="w-24">
+              <HudField aria-label="Mining Labor" inputMode="numeric" value={amount} onChange={setAmount} />
+            </span>
           </label>
-          <Button onClick={contribute} disabled={!validAmount || pending}>
-            {pending ? "Submitting…" : "Contribute Labor"}
-          </Button>
+          <HudButton
+            kind="secondary"
+            size="sm"
+            onClick={contribute}
+            disabled={!validAmount}
+            busy={pending ? "Submitting…" : undefined}
+          >
+            Contribute Labor
+          </HudButton>
         </>
       )}
       {canClaim && (
-        <Button onClick={claim} disabled={!account || pending}>
+        <HudButton kind="secondary" size="sm" onClick={claim} disabled={!account || pending}>
           Settle mine phase {mine.next_phase.toString()}
-        </Button>
+        </HudButton>
       )}
     </section>
   );

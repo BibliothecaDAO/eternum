@@ -3,12 +3,9 @@ import type { ReactNode } from "react";
 import { getRelicInfo, type ID, relicChestPack, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
 /**
@@ -36,21 +33,23 @@ export function ChestTileDetails({
         <HudPanel kind="section" title={coordsLabel ?? "Relic tile"} cue={headerAction} bodyClassName="pt-0">
           <div className="flex items-center gap-2 text-hud-ink">
             <Icon name="chest" alt="" className="h-9 w-9 shrink-0 object-contain" />
-            <p className={cn("truncate", HUD_HEADLINE)}>{opening ? "Crate opened" : "Crate"}</p>
+            <p className="truncate text-hud-title text-hud-ink">{opening ? "Crate opened" : "Crate"}</p>
           </div>
         </HudPanel>
         <HudPanel kind="section" title="Contents" icon={"chest" as const}>
           {opening ? <RelicList relics={opening.relics} /> : <CrateContents crateEntityId={crateEntityId} />}
           {!opening && (
-            <button
-              type="button"
-              onClick={onOpen}
-              disabled={!onOpen}
-              data-tip={onOpen ? undefined : openBlockedReason}
-              className={cn(HUD_PILL_BUTTON, "mt-2")}
-            >
-              {onOpen ? "Open" : "Move next to it"}
-            </button>
+            <div className="mt-2">
+              <HudButton
+                kind="secondary"
+                size="sm"
+                onClick={onOpen}
+                disabled={!onOpen}
+                data-tip={onOpen ? undefined : openBlockedReason}
+              >
+                {onOpen ? "Open" : "Move next to it"}
+              </HudButton>
+            </div>
           )}
         </HudPanel>
       </HudPanel>
@@ -68,7 +67,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   return (
     <div className="flex flex-col gap-2">
       {relics && (
-        <p className={cn("text-hud-ink", HUD_BODY)}>
+        <p className="text-hud-body text-hud-ink">
           {relics.length === 1 ? "1 relic" : `${relics.length} relics`} inside
         </p>
       )}
@@ -88,7 +87,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
     {relics.map((relicId, index) => (
-      <li key={`${relicId}-${index}`} className={cn("flex items-center gap-2", HUD_BODY)}>
+      <li key={`${relicId}-${index}`} className="flex items-center gap-2 text-hud-body text-hud-ink">
         <ResourceIcon resource={relicId} size="sm" withTooltip={false} />
         <span className="truncate">{getRelicInfo(relicId)?.name ?? ResourcesIds[relicId]}</span>
       </li>

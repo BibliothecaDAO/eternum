@@ -7,9 +7,7 @@ import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacen
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
-import { HUD_BODY, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
-import { HUD_PILL_BUTTON } from "@/ui/design-system/atoms/overlay-surface";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -278,17 +276,20 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
 
   return (
     <div className="flex flex-col gap-2">
-      <p className={HUD_HEADLINE}>Reserved Hyperstructure</p>
-      <p className={HUD_BODY}>Reserved for a future Hyperstructure. Create it here or double-click the tile.</p>
+      <p className="text-hud-title text-hud-ink">Reserved Hyperstructure</p>
+      <p className="text-hud-body text-hud-ink">
+        Reserved for a future Hyperstructure. Create it here or double-click the tile.
+      </p>
       <div>
-        <button
-          type="button"
-          className={HUD_PILL_BUTTON}
-          disabled={!canCreate || isCreating}
+        <HudButton
+          kind="secondary"
+          size="sm"
+          disabled={!canCreate}
+          busy={isCreating ? "Creating…" : undefined}
           onClick={() => void handleCreateHyperstructure()}
         >
-          {isCreating ? "Creating…" : "Create here"}
-        </button>
+          Create here
+        </HudButton>
       </div>
     </div>
   );
@@ -296,14 +297,14 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
 
 const SpireTravelPanel = ({ mapLayer, onLookAtOtherLayer }: { mapLayer: boolean; onLookAtOtherLayer: () => void }) => (
   <div className="flex flex-col gap-2">
-    <p className={HUD_HEADLINE}>Spire</p>
-    <p className={HUD_BODY}>
+    <p className="text-hud-title text-hud-ink">Spire</p>
+    <p className="text-hud-body text-hud-ink">
       This spire stands on both layers. An army next to it crosses to the same hex on the other side.
     </p>
     <div>
-      <button type="button" className={HUD_PILL_BUTTON} onClick={onLookAtOtherLayer}>
+      <HudButton kind="secondary" size="sm" onClick={onLookAtOtherLayer}>
         {mapLayer ? "Look at the surface" : "Look at the ethereal layer"}
-      </button>
+      </HudButton>
     </div>
   </div>
 );
