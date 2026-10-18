@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-18",
+    title: "Military, rings and the leaderboard in the new style",
+    description:
+      "The resource rings, the leaderboard and tribes, the Military form and deploy picker, Combat, the attack preview, troop and relic transfers, chat and the crate panel now wear your game's colours and the one set of buttons, tabs, fields and chips. A ring's rim shows whether it is producing. Disbanding an army acts at once in Blitz and Eternum, and asks first only in Frontier, where it cannot be undone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-18",
     title: "Camps and rifts have names",
     description:
       "Every camp and rift on the map now carries a short name of its own, the same for every player (\"Grimtear\"), and no label shows an id. At rest a label says only who or what it is and its guard; hover it for the rest: an army's home and exact stamina, a realm's guard slots and the troops on their way (when they arrive first), a camp's or rift's kind and the Labor or Essence it holds. A stamina wait now counts to the second: \"ready in 24s\".",
