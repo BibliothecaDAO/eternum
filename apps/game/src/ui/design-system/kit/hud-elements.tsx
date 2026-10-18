@@ -394,36 +394,51 @@ export const HudDeploy = ({
 /** The shares a transfer row's quick steps take of what is held. */
 const TRANSFER_STEPS = [0.25, 0.5, 0.75, 1] as const;
 
-/** How much of something, from none to `max`, dragged: the part taken fills the track in the age's accent. */
+/**
+ * How much of something, from `min` (none by default) to `max`, dragged: the part taken fills the track in the age's
+ * accent. Where something runs out first (the wheat a deploy costs), `stop` marks it on the track and the thumb stops
+ * there.
+ */
 export const HudSlider = ({
   label,
   value,
+  min = 0,
   max,
+  stop,
   step = 1,
   disabled,
   onChange,
 }: {
   label: string;
   value: number;
+  min?: number;
   max: number;
+  stop?: number;
   step?: number;
   disabled?: boolean;
   onChange: (value: number) => void;
-}) => (
-  <span className="ui-slider">
-    <input
-      type="range"
-      aria-label={label}
-      min={0}
-      max={max}
-      step={step}
-      value={value}
-      disabled={disabled}
-      style={{ "--fill": `${max > 0 ? (value / max) * 100 : 0}%` } as React.CSSProperties}
-      onChange={(event) => onChange(Number(event.target.value))}
-    />
-  </span>
-);
+}) => {
+  const share = (amount: number) => `${max > min ? ((amount - min) / (max - min)) * 100 : 0}%`;
+  const most = Math.min(stop ?? max, max);
+  return (
+    <span className="ui-slider">
+      <input
+        type="range"
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        style={{ "--fill": share(value) } as React.CSSProperties}
+        onChange={(event) => onChange(Math.min(Number(event.target.value), most))}
+      />
+      {stop !== undefined && stop < max && (
+        <i className="ui-slider__stop" aria-hidden="true" style={{ left: share(stop) }} />
+      )}
+    </span>
+  );
+};
 
 /**
  * What a transfer moves: one row per resource, its painting and name, what is held, a slider, quick steps taking a share

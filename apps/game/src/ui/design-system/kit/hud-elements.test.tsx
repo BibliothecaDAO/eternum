@@ -232,6 +232,20 @@ describe("a slider", () => {
     });
     expect(moved).toHaveBeenCalledWith(60);
   });
+
+  it("starts at its least, marks where something runs out, and stops there", () => {
+    const moved = vi.fn();
+    act(() => root.render(<HudSlider label="Troops" value={1} min={1} max={101} stop={51} onChange={moved} />));
+    const range = host.querySelector<HTMLInputElement>('input[type="range"]')!;
+    expect([range.min, range.style.getPropertyValue("--fill")]).toEqual(["1", "0%"]);
+    expect(host.querySelector<HTMLElement>(".ui-slider__stop")!.style.left).toBe("50%");
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    act(() => {
+      set.call(range, "90");
+      range.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(moved).toHaveBeenCalledWith(51);
+  });
 });
 
 describe("a transfer row", () => {

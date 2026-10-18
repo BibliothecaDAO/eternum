@@ -1107,8 +1107,20 @@ button.ui-relic:focus-visible {
 
 /* ── Slider: a transfer row's amount, by dragging. ── */
 .ui-slider {
+  position: relative;
   display: flex;
   align-items: center;
+}
+/* Where something runs out before the end: a mark across the track, past which the thumb does not go. */
+.ui-slider__stop {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--hud-radius-chip);
+  background: var(--hud-bad);
+  pointer-events: none;
 }
 .ui-slider input[type="range"] {
   width: 100%;

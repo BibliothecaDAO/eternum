@@ -483,6 +483,7 @@ const AmountSection = () => {
 
 const TransferSection = () => {
   const [share, setShare] = useState(35);
+  const [troops, setTroops] = useState(120);
   const [rows, setRows] = useState([
     { icon: "wheat" as const, name: "Wheat", held: 6_400, value: 1_200 },
     { icon: "wood" as const, name: "Wood", held: 2_100, value: 0 },
@@ -506,6 +507,10 @@ const TransferSection = () => {
             </span>
             <HudSlider label="Labor share" value={share} max={100} onChange={setShare} />
             <HudSlider label="Labor share, closed" value={40} max={100} disabled onChange={() => undefined} />
+            <span data-lab-chrome className="text-xs text-white/50">
+              From one, stopped where the wheat runs out (Frontier&apos;s deploy):
+            </span>
+            <HudSlider label="Troops" value={troops} min={1} max={500} stop={320} onChange={setTroops} />
           </div>
         </div>
       }
