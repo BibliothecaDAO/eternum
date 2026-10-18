@@ -933,6 +933,15 @@ const TabsSection = () => {
           />
           <HudTabs
             tabs={[
+              { key: "realms", label: "Transfer" },
+              { key: "camps", label: "Arrivals", count: 2, countTone: "good" },
+              { key: "rifts", label: "Balances" },
+            ]}
+            value="realms"
+            onChange={() => undefined}
+          />
+          <HudTabs
+            tabs={[
               { key: "realms", label: "rest" },
               { key: "camps", label: "hover" },
               { key: "rifts", label: "focus" },

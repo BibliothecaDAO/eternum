@@ -11,6 +11,8 @@ import {
   HudSelect,
   HudSlider,
   HudTableRow,
+  HudTabs,
+  HudTransfer,
   HudWindow,
   HudWindowFoot,
 } from "./hud-elements";
@@ -146,6 +148,42 @@ describe("a slider", () => {
       range.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(moved).toHaveBeenCalledWith(60);
+  });
+});
+
+describe("a transfer row", () => {
+  it("names its total and its share by the good, and has the total ready to type on the row it opened for", () => {
+    const changed = vi.fn();
+    act(() =>
+      root.render(
+        <HudTransfer
+          rows={[
+            { icon: "wheat", name: "Wheat", held: 6_400, value: 1_200 },
+            { icon: "wood", name: "Wood", held: 2_100, value: 0, focus: true },
+          ]}
+          onChange={changed}
+        />,
+      ),
+    );
+    const total = host.querySelector<HTMLInputElement>('input[aria-label="Wheat: total to send"]')!;
+    expect(total.value).toBe("1,200");
+    expect(host.querySelector('input[aria-label="Wheat: share to send"]')).not.toBeNull();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Wood: total to send");
+  });
+});
+
+describe("a tab's count", () => {
+  it("takes the tone it is given", () => {
+    act(() =>
+      root.render(
+        <HudTabs
+          tabs={[{ key: "arrivals", label: "Arrivals", count: 2, countTone: "good" }]}
+          value="arrivals"
+          onChange={() => undefined}
+        />,
+      ),
+    );
+    expect(host.querySelector(".ui-chip")?.getAttribute("data-tone")).toBe("good");
   });
 });
 

@@ -209,7 +209,8 @@ export const HudTransfer = ({
   rows,
   onChange,
 }: {
-  rows: readonly { icon: IconMeaning; name: string; held: number; value: number; state?: string }[];
+  /** `focus`: the row the window opened for, its total ready to type. */
+  rows: readonly { icon: IconMeaning; name: string; held: number; value: number; focus?: boolean; state?: string }[];
   onChange: (index: number, amount: number) => void;
 }) => (
   <div className="ui-transfer">
@@ -222,7 +223,12 @@ export const HudTransfer = ({
             <span className="ui-transfer__held">{formatAmount(row.held)} held</span>
           </span>
         </span>
-        <HudSlider label={row.name} value={row.value} max={row.held} onChange={(amount) => onChange(index, amount)} />
+        <HudSlider
+          label={`${row.name}: share to send`}
+          value={row.value}
+          max={row.held}
+          onChange={(amount) => onChange(index, amount)}
+        />
         <span className="ui-transfer__steps">
           {TRANSFER_STEPS.map((step) => (
             <HudButton
@@ -240,7 +246,9 @@ export const HudTransfer = ({
         <label className="ui-field">
           <span className="sr-only">{row.name}</span>
           <input
+            aria-label={`${row.name}: total to send`}
             inputMode="numeric"
+            autoFocus={row.focus}
             value={formatAmount(row.value)}
             onChange={(event) =>
               onChange(index, Math.min(row.held, Number(event.target.value.replace(/\D/g, "")) || 0))
@@ -370,6 +378,8 @@ export const HudTabs = <K extends string | number>({
     icon?: IconMeaning;
     ariaLabel?: string;
     count?: number;
+    /** The count's tone, where it says how things stand (green: ready to claim). */
+    countTone?: Tone;
     disabled?: boolean;
     title?: string;
   }[];
@@ -396,7 +406,7 @@ export const HudTabs = <K extends string | number>({
       >
         {tab.icon && <Icon name={tab.icon} size={22} />}
         {tab.label}
-        {tab.count !== undefined && <HudChip>{tab.count}</HudChip>}
+        {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
       </button>
     ))}
   </div>
