@@ -17,4 +17,12 @@ describe("cn with the token classes", () => {
       "text-kit-cream text-shadow-title-flat",
     );
   });
+
+  it("keeps a HUD role (a size) beside a hud colour, and lets a later one of each replace the first", () => {
+    expect(cn("text-hud-label", "text-hud-muted")).toBe("text-hud-label text-hud-muted");
+    expect(cn("text-hud-label text-hud-muted", "text-hud-body text-hud-ink")).toBe("text-hud-body text-hud-ink");
+    expect(cn("bg-hud-well border-hud-line", "bg-hud-hover border-hud-line-strong")).toBe(
+      "bg-hud-hover border-hud-line-strong",
+    );
+  });
 });
