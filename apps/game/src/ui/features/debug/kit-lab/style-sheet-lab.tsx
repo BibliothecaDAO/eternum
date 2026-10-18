@@ -998,6 +998,34 @@ const RelicSection = () => (
           trailTone="warn"
         />
         <HudRelic icon={resourceMeaning(ResourcesIds.StaminaRelic1)} kind="production" gives="Harvest I · +20%" />
+        <span data-lab-chrome className="mt-2 text-xs text-white/50">
+          Held relics: working, ready to set to work (pressable, it breathes), only held:
+        </span>
+        <span className="flex gap-2">
+          <HudRelic
+            icon={resourceMeaning(ResourcesIds.StaminaRelic1)}
+            kind="stamina"
+            gives="Stamina I"
+            trail="×1"
+            state="active"
+          />
+          <HudRelic
+            icon={resourceMeaning(ResourcesIds.DamageRelic1)}
+            kind="damage"
+            gives="Damage I"
+            trail="×2"
+            state="ready"
+            onPress={() => undefined}
+            label="Activate Damage I"
+          />
+          <HudRelic
+            icon={resourceMeaning(ResourcesIds.DamageRelic1)}
+            kind="damage-reduction"
+            gives="Guard I"
+            trail="×1"
+            state="held"
+          />
+        </span>
       </div>
     }
     today={

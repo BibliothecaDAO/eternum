@@ -1034,7 +1034,8 @@ export type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration
 /**
  * A relic: its painting, what it gives (its name, its bonus) in its kind's colour, then how long it still works or how
  * many are held, in a tone when time runs short; named in full on hover. Sized to read on screen (the owner, 18 October
- * 2026: "bigger so we can actually read it").
+ * 2026: "bigger so we can actually read it"). A held relic says whether it is working (`active`), can be set to work
+ * now (`ready`, pulsing; with `onPress` the chip is the button that does it) or is only held (`held`).
  */
 export const HudRelic = ({
   icon,
@@ -1043,6 +1044,10 @@ export const HudRelic = ({
   trail,
   trailTone,
   title,
+  state,
+  onPress,
+  label,
+  tip,
 }: {
   icon: IconMeaning;
   kind: RelicKind;
@@ -1050,17 +1055,43 @@ export const HudRelic = ({
   trail?: ReactNode;
   trailTone?: Tone;
   title?: string;
-}) => (
-  <span className="ui-relic" data-kind={kind} title={title}>
-    <Icon name={icon} size={28} />
-    <span className="ui-relic__gives">{gives}</span>
-    {trail !== undefined && (
-      <span className="ui-relic__trail" data-tone={trailTone}>
-        {trail}
-      </span>
-    )}
-  </span>
-);
+  state?: "active" | "ready" | "held";
+  onPress?: () => void;
+  /** The pressable chip's name for assistive technology ("Activate Stamina I"). */
+  label?: string;
+  /** The app's tooltip on the pressable chip: what pressing it does and costs. */
+  tip?: string;
+}) => {
+  const words = (
+    <>
+      <Icon name={icon} size={28} />
+      <span className="ui-relic__gives">{gives}</span>
+      {trail !== undefined && (
+        <span className="ui-relic__trail" data-tone={trailTone}>
+          {trail}
+        </span>
+      )}
+    </>
+  );
+  return onPress ? (
+    <button
+      type="button"
+      className="ui-relic"
+      data-kind={kind}
+      data-state={state}
+      title={title}
+      aria-label={label}
+      data-tip={tip}
+      onClick={onPress}
+    >
+      {words}
+    </button>
+  ) : (
+    <span className="ui-relic" data-kind={kind} data-state={state} title={title}>
+      {words}
+    </span>
+  );
+};
 
 /** An answer on its way: a spinner and what is awaited. */
 export const HudLoading = ({ line }: { line: string }) => (

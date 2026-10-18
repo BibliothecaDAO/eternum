@@ -754,6 +754,41 @@ span.ui-row__choose {
 .ui-relic > img {
   flex: none;
 }
+/* Working: its whole line in its kind's colour. Only held: a dashed line, fainter. Ready: it breathes. */
+.ui-relic[data-state="active"] {
+  border-color: var(--relic);
+}
+.ui-relic[data-state="held"] {
+  border-style: dashed;
+  opacity: 0.7;
+}
+.ui-relic[data-state="ready"] {
+  animation: ui-relic-ready 1.6s var(--hud-ease) infinite;
+}
+@keyframes ui-relic-ready {
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--relic) 35%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-relic[data-state="ready"] {
+    animation: none;
+  }
+}
+/* A relic that is pressed to set it to work is a button with the chip's look. */
+button.ui-relic {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--hud-fast) var(--hud-ease);
+}
+button.ui-relic:hover {
+  background: color-mix(in srgb, var(--relic) 24%, transparent);
+}
+button.ui-relic:focus-visible {
+  outline: none;
+  box-shadow: var(--hud-focus);
+}
 .ui-relic__gives {
   min-width: 0;
   overflow: hidden;
