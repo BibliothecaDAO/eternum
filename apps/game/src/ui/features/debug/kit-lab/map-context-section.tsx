@@ -1,11 +1,12 @@
 import { Pin, Plate } from "@/three/map-plates/map-plates";
 import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
 import { siteName } from "@/three/map-plates/site-name";
-import { Icon } from "@/ui/design-system/icon";
-import { HudBubble, HudMenu, HudTierChip, HudTip } from "@/ui/design-system/kit/hud-elements";
+import { Icon, SvgIcon } from "@/ui/design-system/icon";
+import type { IconMeaning } from "@/ui/design-system/icon-meaning";
+import { HudBubble, HudMenu, HudMinimapFrame, HudTierChip, HudTip } from "@/ui/design-system/kit/hud-elements";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
-import type { ReactNode } from "react";
+import { type MouseEvent, type ReactNode, useState } from "react";
 
 import { Element } from "./sheet-element";
 
@@ -111,89 +112,221 @@ const ArrivalMarker = () => (
   </span>
 );
 
-export const MapContextSection = () => (
+/** The minimap's lattice: pointy hexes, offset rows. */
+const HEX = 8;
+const COLS = 23;
+const ROWS = 13;
+const at = (col: number, row: number) => ({
+  x: 10 + HEX * Math.sqrt(3) * (col + 0.5 * (row & 1)),
+  y: 10 + HEX * 1.5 * row,
+});
+const hexPoints = (x: number, y: number, radius: number) =>
+  Array.from({ length: 6 }, (_, index) => {
+    const angle = ((60 * index - 30) * Math.PI) / 180;
+    return `${x + Math.cos(angle) * radius},${y + Math.sin(angle) * radius}`;
+  }).join(" ");
+
+type Side = "own" | "ally" | "enemy" | "neutral";
+const SIDE = (side: Side) => `var(--hud-${side})`;
+/** What the player has walked: around the realm and along the army's road; the rest is fog. */
+const explored = (col: number, row: number) =>
+  Math.hypot(col - 8, (row - 6) * 1.2) < 6.5 || Math.hypot(col - 15, (row - 7) * 1.2) < 4.5;
+const MARKERS: readonly { col: number; row: number; name: IconMeaning; side: Side }[] = [
+  { col: 8, row: 6, name: "map-realm-1", side: "own" },
+  { col: 15, row: 7, name: "map-realm-2", side: "enemy" },
+  { col: 11, row: 3, name: "camp", side: "neutral" },
+  { col: 5, row: 9, name: "rift", side: "neutral" },
+  { col: 13, row: 10, name: "hyperstructure", side: "ally" },
+];
+const DOTS: readonly { col: number; row: number; side: Side }[] = [
+  { col: 10, row: 7, side: "own" },
+  { col: 6, row: 4, side: "own" },
+  { col: 14, row: 5, side: "enemy" },
+  { col: 12, row: 9, side: "ally" },
+  { col: 9, row: 2, side: "neutral" },
+];
+
+/** A marker on the minimap: its painting in a hex ringed in its side's colour. */
+const MinimapMarker = ({ col, row, name, side }: (typeof MARKERS)[number]) => {
+  const { x, y } = at(col, row);
+  return (
+    <g data-marker={name} data-side={side}>
+      <polygon
+        points={hexPoints(x, y, HEX * 1.25)}
+        fill="var(--hud-surface-to)"
+        stroke={SIDE(side)}
+        strokeWidth={1.4}
+      />
+      <SvgIcon name={name} x={x - HEX} y={y - HEX} size={HEX * 2} />
+    </g>
+  );
+};
+
+/** Something past the minimap's edge (a chosen army off view, an enemy closing in), as an arrow on the frame. */
+const EdgeMarker = ({ x, y, angle, side }: { x: number; y: number; angle: number; side: Side | "accent" }) => (
+  <path
+    d="M 0 -6 L 6 4 L -6 4 Z"
+    transform={`translate(${x} ${y}) rotate(${angle})`}
+    fill={side === "accent" ? "rgb(var(--hud-accent))" : SIDE(side)}
+    stroke="var(--hud-surface-to)"
+    strokeWidth={1}
+  />
+);
+
+/**
+ * The minimap as the sheet draws it: its frame, the walked land and the fog, whose things stand where (a dot for a
+ * thing, a marker for a place), the camera's view as a circle, arrows on the edge for what is off view. A click flies
+ * the camera there; a drag pans the minimap and the camera follows.
+ */
+const Minimap = () => {
+  const [camera, setCamera] = useState(at(9, 6));
+  const fly = (event: MouseEvent<SVGSVGElement>) => {
+    const svg = event.currentTarget;
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(svg.getScreenCTM()!.inverse());
+    setCamera({ x: point.x, y: point.y });
+  };
+  const legend: readonly [string, string][] = [
+    ["Frame", "the panel with no header, its map in a well (HudMinimapFrame)"],
+    ["Walked land and fog", "what the player has revealed in the surface's light, the rest in the well's dark"],
+    ["Dots", "a thing where it stands, in its side's colour: yours, an ally's, an enemy's, nobody's"],
+    ["Markers", "a place (realm, camp, rift, hyperstructure) as its painting in a hex ringed in its side's colour"],
+    ["Camera", "the view the world camera shows, as a circle in the accent; it follows the camera"],
+    ["Edge arrows", "what is past the edge: the chosen army in the accent, an enemy closing in in red"],
+    ["Click", "a click flies the camera there (try it); a drag pans the minimap and the camera follows"],
+  ];
+  return (
+    <figure data-map-context="Minimap" className="grid grid-cols-[22rem_minmax(0,1fr)] items-start gap-6">
+      <HudMinimapFrame>
+        <svg
+          viewBox="0 0 330 185"
+          className="block w-full cursor-crosshair"
+          onClick={fly}
+          role="img"
+          aria-label="Minimap"
+        >
+          {Array.from({ length: COLS * ROWS }, (_, index) => {
+            const col = index % COLS;
+            const row = Math.floor(index / COLS);
+            const { x, y } = at(col, row);
+            return (
+              <polygon
+                key={index}
+                points={hexPoints(x, y, HEX)}
+                fill={explored(col, row) ? "rgb(var(--hud-ink) / 0.1)" : "var(--hud-well)"}
+                stroke="var(--hud-divider)"
+                strokeWidth={0.5}
+              />
+            );
+          })}
+          {DOTS.map(({ col, row, side }) => {
+            const { x, y } = at(col, row);
+            return <circle key={`${col}-${row}`} cx={x} cy={y} r={3} fill={SIDE(side)} />;
+          })}
+          {MARKERS.map((marker) => (
+            <MinimapMarker key={marker.name} {...marker} />
+          ))}
+          <circle
+            cx={camera.x}
+            cy={camera.y}
+            r={30}
+            fill="rgb(var(--hud-accent) / 0.08)"
+            stroke="rgb(var(--hud-accent))"
+            strokeWidth={1.5}
+          />
+          <EdgeMarker x={322} y={60} angle={90} side="enemy" />
+          <EdgeMarker x={170} y={8} angle={0} side="accent" />
+        </svg>
+      </HudMinimapFrame>
+      <dl className="grid grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+        {legend.map(([term, meaning]) => (
+          <div key={term} className="contents">
+            <dt className="font-bold text-white">{term}</dt>
+            <dd className="text-white/70">{meaning}</dd>
+          </div>
+        ))}
+      </dl>
+    </figure>
+  );
+};
+
+export const MapContextSection = ({ world }: { world?: ReactNode }) => (
   <Element
     name="Map context"
     wide
-    rule="Everything drawn on the map itself, at the moment it appears: the same tokens and elements as the rest of the HUD. A right-click acts; nothing here asks for an extra click."
+    rule="Everything drawn on the map itself, and the minimap, at the moment it appears: the same tokens and elements as the rest of the HUD. A right-click acts; nothing here asks for an extra click. world's 3D overlay comparison (hexes, paths, ownership) mounts below."
     sheet={
-      <div className="grid grid-cols-3 gap-4">
-        <OnMap
-          name="Action bubbles"
-          when="Around the selected realm or army: its orders as bubbles, a count to act on as a badge."
-        >
-          <PlateAt plate={REALM} selected />
-          <div className="flex gap-3">
-            <HudBubble icon="military" word="Military" count={2} />
-            <HudBubble icon="transfer" word="Transfer" />
-            <HudBubble icon="build" word="Build" />
-          </div>
-        </OnMap>
-        <OnMap
-          name="Plates"
-          when="Over every realm, army, camp and rift: two rows at rest, the rest on hover (the hover card)."
-        >
-          <div className="flex items-end gap-3">
-            <PlateAt plate={CAMP} />
-            <PlateAt plate={CAMP} open />
-          </div>
-          <div className="flex items-end gap-3">
-            <PlateAt plate={ENEMY_ARMY} />
-            <PlateAt plate={ENEMY_ARMY} open />
-            <div className="mp !static">
-              <div className="mp-at !static" data-relation="enemy">
-                <Pin plate={ENEMY_ARMY} />
+      <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-3 gap-4">
+          <OnMap
+            name="Action bubbles"
+            when="Around the selected realm or army: its orders as bubbles, a count to act on as a badge."
+          >
+            <PlateAt plate={REALM} selected />
+            <div className="flex gap-3">
+              <HudBubble icon="military" word="Military" count={2} />
+              <HudBubble icon="transfer" word="Transfer" />
+              <HudBubble icon="build" word="Build" />
+            </div>
+          </OnMap>
+          <OnMap
+            name="Plates"
+            when="Over every realm, army, camp and rift: two rows at rest, the rest on hover (the hover card)."
+          >
+            <div className="flex items-end gap-3">
+              <PlateAt plate={CAMP} />
+              <PlateAt plate={CAMP} open />
+            </div>
+            <div className="flex items-end gap-3">
+              <PlateAt plate={ENEMY_ARMY} />
+              <PlateAt plate={ENEMY_ARMY} open />
+              <div className="mp !static">
+                <div className="mp-at !static" data-relation="enemy">
+                  <Pin plate={ENEMY_ARMY} />
+                </div>
               </div>
             </div>
-          </div>
-        </OnMap>
-        <OnMap
-          name="Order line"
-          when="Under the hovered tile while an army is selected: the right-click's order, its cost and payoff."
-        >
-          {line({ path: [step(ActionType.Move), step(ActionType.Explore)], food: { wheat: 50, fish: 0 } })}
-          {line({ path: [step(ActionType.Move), step(ActionType.Attack, 50)], target: CAMP.place })}
-          {line({ path: [step(ActionType.Move), step(ActionType.Help)] })}
-        </OnMap>
-        <OnMap name="Refusals" when="The same line where no order leads: why, and when it will, to the second.">
-          {line({ refusal: { reason: "stamina", need: 30 }, staminaWait: 24 })}
-          {line({ refusal: { reason: "too-far" } })}
-          {line({ explored: false })}
-        </OnMap>
-        <OnMap name="Crate and spire" when="Beside a relic crate or a spire: the right-click opens or travels.">
-          {line({ path: [step(ActionType.Move), step(ActionType.Chest)] })}
-          {line({ path: [step(ActionType.Move), step(ActionType.SpireTravel)] })}
-        </OnMap>
-        <OnMap name="Structure menu" when="A right-click on your own realm: what it can raise, one click each.">
-          <HudMenu
-            items={[
-              { label: "Create Attack Army", icon: "military" },
-              { label: "Create Defense Army", icon: "defend" },
-            ]}
-          />
-        </OnMap>
-        <OnMap
-          name="Deploy picker"
-          when="A right-click on a tile beside your realm: the Deploy army layout picked above, hung on the tile."
-        >
-          <HudTip line="Deploy an army here" how="Right-click" />
-        </OnMap>
-        <OnMap
-          name="Arrivals"
-          when="On the tile troops are marching to: what arrives and when; the realm's plate says it on hover too."
-        >
-          <ArrivalMarker />
-          <PlateAt plate={REALM} open />
-        </OnMap>
-        <OnMap
-          name="Hex highlights, paths, ownership"
-          when="world's map overlay study: the tiles an order reaches, the path it takes, whose land it is. It joins here."
-        >
-          <span data-lab-chrome className="max-w-xs text-center text-sm text-white/70">
-            world's study lands here, on these tokens: each order's highlight in the action colours, the path in the
-            accent, ownership in the side colours (own, ally, enemy, neutral).
-          </span>
-        </OnMap>
+          </OnMap>
+          <OnMap
+            name="Order line"
+            when="Under the hovered tile while an army is selected: the right-click's order, its cost and payoff."
+          >
+            {line({ path: [step(ActionType.Move), step(ActionType.Explore)], food: { wheat: 50, fish: 0 } })}
+            {line({ path: [step(ActionType.Move), step(ActionType.Attack, 50)], target: CAMP.place })}
+            {line({ path: [step(ActionType.Move), step(ActionType.Help)] })}
+          </OnMap>
+          <OnMap name="Refusals" when="The same line where no order leads: why, and when it will, to the second.">
+            {line({ refusal: { reason: "stamina", need: 30 }, staminaWait: 24 })}
+            {line({ refusal: { reason: "too-far" } })}
+            {line({ explored: false })}
+          </OnMap>
+          <OnMap name="Crate and spire" when="Beside a relic crate or a spire: the right-click opens or travels.">
+            {line({ path: [step(ActionType.Move), step(ActionType.Chest)] })}
+            {line({ path: [step(ActionType.Move), step(ActionType.SpireTravel)] })}
+          </OnMap>
+          <OnMap name="Structure menu" when="A right-click on your own realm: what it can raise, one click each.">
+            <HudMenu
+              items={[
+                { label: "Create Attack Army", icon: "military" },
+                { label: "Create Defense Army", icon: "defend" },
+              ]}
+            />
+          </OnMap>
+          <OnMap
+            name="Deploy picker"
+            when="A right-click on a tile beside your realm: the Deploy army layout picked above, hung on the tile."
+          >
+            <HudTip line="Deploy an army here" how="Right-click" />
+          </OnMap>
+          <OnMap
+            name="Arrivals"
+            when="On the tile troops are marching to: what arrives and when; the realm's plate says it on hover too."
+          >
+            <ArrivalMarker />
+            <PlateAt plate={REALM} open />
+          </OnMap>
+        </div>
+        <Minimap />
+        {world}
       </div>
     }
     today={
@@ -201,7 +334,9 @@ export const MapContextSection = () => (
         Today: bubbles (world/hud/action-bubbles.tsx, CircleButton), plates (three/map-plates), the order line
         (three/scenes/worldmap-order-tip.tsx), the structure menu (three/scenes/context-menu, its own look), the deploy
         picker (military/components/army-deployment-picker.tsx), arrivals only inside panels (incoming-caravans.tsx).
-        Each is styled on its own; here they share the sheet.
+        The minimap (world/components/bottom-right-panel/hex-minimap.tsx) draws biome colours, cyan and orange dots,
+        HexMarker's own side colours (yours green, an ally blue) and its camera circle. Each is styled on its own; here
+        they share the sheet.
       </span>
     }
   />
