@@ -235,7 +235,8 @@ describe("the Blitz order steps", () => {
     ],
   });
   // The tile panel's hex follows the selected army unless a case says where it stayed.
-  const ordered = (played, { confirmed = true, tile = played.after?.hex ?? null } = {}) => ({
+  // The probe's readings of the selected army's plate through the step: [page time, stamina].
+  const ordered = (played, { confirmed = true, tile = played.after?.hex ?? null, plateStamina = [] } = {}) => ({
     seen: { ...onTheMap, selection: { hex: tile, structure: null, ringedHexes: 0, army: played.after ?? null } },
     played: {
       before: army(home, 6),
@@ -247,12 +248,33 @@ describe("the Blitz order steps", () => {
     },
     actionLatency: traceOfOneMove({ confirmed }),
     window,
+    probe: { plateStamina },
   });
 
   it("completes an order whose army stayed selected through it and is offered orders from where it went", () => {
     const verdict = blitzStep("order-kept")(ordered({ after: army(moved, 5) }));
     expect(verdict).toMatchObject({ status: "completed", before: army(home, 6), after: army(moved, 5) });
     expect(verdict.orders.commands).toEqual([{ kind: "move", hash: "0x1", confirmed: true }]);
+  });
+
+  it("fails an order whose army's plate climbed back to an older bar while it walked", () => {
+    // A walk that redraws the plate from a stale record: 13, then 22 (a bar it had before), then 3.
+    const staleWalk = [
+      [10, 13],
+      [30, 22],
+      [50, 3],
+    ];
+    expect(blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { plateStamina: staleWalk })).reason).toBe(
+      "the army's plate read 13 stamina, then 22: a bar it no longer has",
+    );
+    const paidThenRegenerating = [
+      [10, 13],
+      [30, 3],
+      [50, 4],
+    ];
+    expect(
+      blitzStep("order-kept")(ordered({ after: army(moved, 5) }, { plateStamina: paidThenRegenerating })).status,
+    ).toBe("completed");
   });
 
   it("fails an order that handed the selection away, at the send or at the outcome", () => {

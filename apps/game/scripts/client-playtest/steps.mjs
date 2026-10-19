@@ -8,6 +8,7 @@ import {
   judgeBurst,
   judgeExplore,
   judgeNextOrder,
+  judgePlateStamina,
   refusalErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
@@ -771,7 +772,7 @@ const ORDER_TOOLTIP_TITLE = `JSON.stringify((() => {
  * while the order was in flight, and after it, offered orders from the tile the order took it to; the order sent and
  * confirmed.
  */
-function keptThroughItsOutcome({ seen, played, actionLatency, window }) {
+function keptThroughItsOutcome({ seen, played, actionLatency, window, probe }) {
   const sent = judgeSentOrder(played);
   if (sent) return sent;
   const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
@@ -786,6 +787,9 @@ function keptThroughItsOutcome({ seen, played, actionLatency, window }) {
   if (!(after.orders > 0)) return failed("the army was offered no orders after its outcome", { before, after });
   const reported = selectionOffTheArmy(seen, after);
   if (reported) return reported;
+  // The army walked to its order's tile with its plate open: the plate reads its bar through the walk.
+  const stale = judgePlateStamina(probe.plateStamina ?? [], window.from, { before, after });
+  if (stale) return stale;
   return completed({ before, inFlight: played.inFlight, after, target: played.target, orders });
 }
 

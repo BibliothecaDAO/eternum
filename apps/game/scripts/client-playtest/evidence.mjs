@@ -208,19 +208,22 @@ export function judgeExplore(played, clientActions) {
   if (!(played.tileChange >= REVEALED_TILE_CHANGE_MIN)) {
     return failed(`the explored tile did not visibly change on screen (${played.tileChange})`, { action });
   }
-  const climb = plateStaminaClimb(played.plateStamina ?? [], played.pressedAt);
-  if (climb) {
-    return failed(`the army's plate read ${climb.from} stamina, then ${climb.to}: a bar it no longer has`, { action });
-  }
+  const stale = judgePlateStamina(played.plateStamina ?? [], played.pressedAt, { action });
+  if (stale) return stale;
   // `rendered` is the client's marker (a rAF callback after the terrain page rebuilt); the screenshot is what showed.
   return completed({ action, tileChange: played.tileChange });
 }
 
-/** The first rise between two readings after `since` that regeneration cannot make, or null. */
-function plateStaminaClimb(readings, since) {
+/**
+ * Fails an order whose army's plate climbed back to a bar it no longer has: a rise between two of the probe's
+ * [time, reading] pairs after `since` that regeneration cannot make. Null when the plate only paid and regenerated.
+ */
+export function judgePlateStamina(readings, since, detail = {}) {
   const read = readings.filter(([t, stamina]) => t >= since && stamina !== null).map(([, stamina]) => stamina);
   for (let at = 1; at < read.length; at += 1) {
-    if (read[at] - read[at - 1] > PLATE_STAMINA_RISE_MAX) return { from: read[at - 1], to: read[at] };
+    if (read[at] - read[at - 1] > PLATE_STAMINA_RISE_MAX) {
+      return failed(`the army's plate read ${read[at - 1]} stamina, then ${read[at]}: a bar it no longer has`, detail);
+    }
   }
   return null;
 }
