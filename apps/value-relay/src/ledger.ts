@@ -1,12 +1,10 @@
 import { Effect } from "effect";
 import {
   decodeFrontierSeason,
-  isOtherEnvironmentChain,
   rpcAt,
   ledgerInteger,
   ledgerU256,
   readConfirmedLedgerHead,
-  type ShardEnvironment,
 } from "@realms-world/value-ledger";
 import { Account, hash, RpcProvider, type EmittedEvent } from "starknet";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
@@ -91,20 +89,11 @@ const resultCommitment = async (provider: RpcProvider, address: string, result: 
   return fields[0]!;
 };
 
-/**
- * Confirmed ledger events are the monitor's enumeration; each cursor pins the head across all pages. Dev and production
- * share the ledger, so each environment's pages keep only its own shards' rows: the other's shards are listed in the
- * other's directory, never in this one. Rows keep their page positions, so a fault's offset survives the filter.
- */
+/** Confirmed ledger events are the monitor's enumeration; each cursor pins the head across all pages. */
 export const ledgerMonitorReads = (
   rpcUrl: string,
   address: string,
-  environment: ShardEnvironment,
 ): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "frontierPool"> => {
-  const ownRows = <A extends { chainId: string }>(page: LedgerPage<A>): LedgerPage<A> => ({
-    ...page,
-    rows: page.rows.filter((row) => !isOtherEnvironmentChain(environment, row.chainId)),
-  });
   return {
     frontierPool: (chainId, gameId) =>
       relayOperation("read ledger Frontier pool", async () => {
@@ -125,7 +114,7 @@ export const ledgerMonitorReads = (
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
         const times = new Map<number, number>();
-        const page = await ledgerEventPage(
+        return ledgerEventPage(
           provider,
           address,
           ["WithdrawalPaid"],
@@ -145,13 +134,10 @@ export const ledgerMonitorReads = (
           },
           anchor,
         );
-        return ownRows(page);
       }),
     postedResults: (cursor, fromBlock = 0, anchor) =>
-      relayOperation("read ledger posted results", async () =>
-        ownRows(
-          await ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
-        ),
+      relayOperation("read ledger posted results", () =>
+        ledgerEventPage(rpcAt(rpcUrl), address, ["ResultsApplied"], cursor, fromBlock, decodeResult, anchor),
       ),
   };
 };

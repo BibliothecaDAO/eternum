@@ -1,4 +1,3 @@
-import { ownsValueLedger } from "@realms-world/chain";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, type RelaySettings } from "./environment";
 import {
@@ -62,7 +61,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private ledgerPermit<A, E>(operation: Effect.Effect<A, E>, chains: readonly string[] = []) {
     return this.ledgerSigning.withPermit(
       relayOperation("verify official value chain", async () => {
-        for (const chain of new Set(chains)) await requireActiveChain(this.env.IDENTITY, chain, this.env.ENVIRONMENT);
+        for (const chain of new Set(chains)) await requireActiveChain(this.env.IDENTITY, chain);
       }).pipe(Effect.andThen(onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, operation))),
     );
   }
@@ -191,7 +190,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private async portsFor(chainId: string) {
     const bound = await this.ctx.storage.get<string>("chain");
     if (bound && BigInt(bound) !== BigInt(chainId)) throw new Error("actor_chain_differs");
-    await requireActiveChain(this.env.IDENTITY, chainId, this.env.ENVIRONMENT);
+    await requireActiveChain(this.env.IDENTITY, chainId);
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
     return relayPortsOf(this.env, shard);
   }
@@ -308,8 +307,6 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     );
   }
   async openSlot(key: LedgerSlotKey, window: { start: number; end: number }) {
-    // Every paid slot opens here, from the calendar or the admin page: only the ledger's owner runs paid Blitz.
-    if (!ownsValueLedger(this.env.ENVIRONMENT)) throw new Error("paid_blitz_belongs_to_the_ledger_owner");
     await this.requireLaunchSlot(key);
     const shard = (await this.env.IDENTITY.shards()).find((row) => BigInt(row.chainId) === BigInt(key.chainId));
     if (shard?.status !== "active") throw new Error("new_slot_requires_active_shard");
@@ -365,7 +362,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private async requireLaunchSlot(key: LedgerSlotKey) {
     if (!Number.isInteger(key.slotId) || key.slotId <= 0 || key.slotId > 0xffffffff)
       throw new Error("wrong_launch_chain_or_slot");
-    await requireActiveChain(this.env.IDENTITY, key.chainId, this.env.ENVIRONMENT);
+    await requireActiveChain(this.env.IDENTITY, key.chainId);
   }
   async shardHeld() {
     return (await this.store.held()).map((row) => ({
@@ -423,7 +420,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
       ),
       grantLabor: (claim) =>
         relayOperation("grant on official shard", async () => {
-          await requireActiveChain(env.IDENTITY, claim.chainId, env.ENVIRONMENT);
+          await requireActiveChain(env.IDENTITY, claim.chainId);
           return Effect.runPromise(
             writeLaborGrants(
               {
@@ -530,7 +527,7 @@ export default {
       const chainId = new URL(request.url).searchParams.get("chainId");
       if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))
         return Response.json({ error: "shard_chain_required" }, { status: 400 });
-      await requireActiveChain(env.IDENTITY, chainId, env.ENVIRONMENT);
+      await requireActiveChain(env.IDENTITY, chainId);
       const shard = await readRegisteredShard(env.IDENTITY, chainId);
       return handleLaborRequest(request, {
         origin: env.BASE_URL,

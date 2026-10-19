@@ -71,18 +71,6 @@ it("finishes the original token with no caller-supplied draw or recipient and ma
   await Effect.runPromise(finishChestOnLedger(connection, "7"));
   expect(rpc.execute).toHaveBeenCalledOnce();
 });
-it("counts a chest the other environment's relay finished first as finished, and only that", async () => {
-  rpc.call.mockResolvedValueOnce(chest()).mockResolvedValueOnce(chest(true));
-  rpc.wait.mockResolvedValue({ isReverted: () => true });
-  await Effect.runPromise(finishChestOnLedger(connection, "7"));
-  rpc.call.mockResolvedValueOnce(chest()).mockResolvedValueOnce(chest(true));
-  rpc.execute.mockRejectedValueOnce(new Error("Ledger: chest already finished"));
-  await Effect.runPromise(finishChestOnLedger(connection, "7"));
-  expect(rpc.call).toHaveBeenCalledTimes(4);
-  rpc.call.mockResolvedValue(chest());
-  rpc.execute.mockRejectedValueOnce(new Error("rpc unavailable"));
-  await expect(Effect.runPromise(finishChestOnLedger(connection, "7"))).rejects.toThrow();
-});
 it("keeps reverted or malformed chest finishes unsuccessful", async () => {
   rpc.wait.mockResolvedValue({ isReverted: () => true });
   await expect(Effect.runPromise(finishChestOnLedger(connection, "7"))).rejects.toThrow();

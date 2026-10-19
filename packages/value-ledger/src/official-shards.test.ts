@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { activeShards, readRegisteredShard, requireActiveChain } from "./official-shards";
+import { expect, it, vi } from "vitest";
+import { activeShards, readRegisteredShard } from "./official-shards";
 const directory = {
   shards: vi.fn(async () => [
     { chainId: "0x1", url: "https://one.test", status: "active" as const },
@@ -34,26 +34,5 @@ it("names a manifest transport failure separately from an HTTP refusal", async (
   const network = vi.fn<typeof fetch>().mockRejectedValue(new TypeError("private network detail"));
   await expect(readRegisteredShard(directory, "0x1", network)).rejects.toMatchObject({
     message: "directory_shard_manifest_fetch_failed",
-  });
-});
-
-describe("requireActiveChain", () => {
-  const chainOf = (name: string) => `0x${Buffer.from(name, "ascii").toString("hex")}`;
-  const dev = chainOf("DEV_18dfa7f2b475f083");
-  const production = chainOf("PRODUCTION_18e0000000000000");
-  // Even a directory that lists the other environment's chain cannot hand it to a Worker.
-  const directory = {
-    shards: async () => [
-      { chainId: dev, url: "https://herald.dev.test", status: "active" as const },
-      { chainId: production, url: "https://herald.test", status: "active" as const },
-    ],
-  };
-  it("returns this environment's active row and refuses the other environment's chain", async () => {
-    await expect(requireActiveChain(directory, dev, "staging")).resolves.toMatchObject({ chainId: dev });
-    await expect(requireActiveChain(directory, production, "production")).resolves.toMatchObject({
-      chainId: production,
-    });
-    await expect(requireActiveChain(directory, production, "staging")).rejects.toThrow("other_environment_shard");
-    await expect(requireActiveChain(directory, dev, "production")).rejects.toThrow("other_environment_shard");
   });
 });

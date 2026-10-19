@@ -212,7 +212,7 @@ const legacyFault = async (
     throw new Error("fault_row_unavailable");
   }
   const cursor = previous.cursors?.[stream] ?? { fromBlock: 0, page: null };
-  const reads = ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT), env.ENVIRONMENT);
+  const reads = ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT));
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
@@ -287,28 +287,19 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
       frontierPool: (chainId: string, gameId: number) =>
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT), env.ENVIRONMENT).frontierPool(
-              chainId,
-              gameId,
-            ),
+            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).frontierPool(chainId, gameId),
           ),
         ),
       paidClaims: (cursor: string | null, fromBlock?: number) =>
         relayOperation("ledger paid claims unavailable", () =>
           Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT), env.ENVIRONMENT).paidClaims(
-              cursor,
-              fromBlock,
-            ),
+            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).paidClaims(cursor, fromBlock),
           ),
         ),
       postedResults: (cursor: string | null, fromBlock?: number) =>
         relayOperation("ledger results unavailable", () =>
           Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT), env.ENVIRONMENT).postedResults(
-              cursor,
-              fromBlock,
-            ),
+            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).postedResults(cursor, fromBlock),
           ),
         ),
       pause: () =>

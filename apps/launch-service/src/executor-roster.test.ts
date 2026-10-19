@@ -65,7 +65,6 @@ const target = {
     accountsAtRegistration: async (page: readonly { wallet: string }[]) => page.map(() => "0x456"),
     shards: async () => [{ url: "https://shard.test", chainId: listedChain, status: "active" as const }],
   },
-  environment: "staging" as "staging" | "production",
   accountAddress: "0x1",
   privateKey: "unused-test-key",
   /** A pool of two seaters; joining it is a shard write, so a refused run must not reach it. */
@@ -154,22 +153,8 @@ it("creates a test game on a dev shard with the named accounts as its roster, re
 it("refuses a queued test game on a Worker whose bindings select a production shard, before any shard write", async () => {
   listedChain = manifestChain = PRODUCTION_CHAIN;
   const run = await queueTestGame(PRODUCTION_CHAIN);
-  await expect(
-    executeRun(run, new D1LaunchStore(database.db, testChain(PRODUCTION_CHAIN)), {
-      ...target,
-      environment: "production",
-    }),
-  ).rejects.toMatchObject({
-    cause: new Error("test_blitz_dev_shard_only"),
-  });
-  expect(native.launchBlitz).not.toHaveBeenCalled();
-  expect(target.seaters).not.toHaveBeenCalled();
-});
-it("refuses any run a dev Worker is handed for a production chain, before any shard read or write", async () => {
-  listedChain = manifestChain = PRODUCTION_CHAIN;
-  const run = await queueTestGame(PRODUCTION_CHAIN);
   await expect(executeRun(run, new D1LaunchStore(database.db, testChain(PRODUCTION_CHAIN)))).rejects.toMatchObject({
-    cause: new Error("other_environment_shard"),
+    cause: new Error("test_blitz_dev_shard_only"),
   });
   expect(native.launchBlitz).not.toHaveBeenCalled();
   expect(target.seaters).not.toHaveBeenCalled();
