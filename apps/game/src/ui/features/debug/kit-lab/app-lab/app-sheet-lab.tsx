@@ -364,16 +364,17 @@ const TopBarSection = () => (
     name="Top bar"
     wide
     todayLabel={TODAY}
-    rule="The bar across the top of every page, over the page's painting: the mark, Play and Season with their icons and the current one in the accent; at its right end the LORDS the player holds and the player, who opens You. No key beside a name."
+    rule="The bar across the top of every page, over the page's painting: the mark, Play, Season and What's new with their icons and the current one in the accent; at its right end the LORDS the player holds and the player, who opens You. No key beside a name."
     sheet={
       <div className="flex flex-col gap-3">
-        {(["play", "season", "you"] as const).map((current) => (
+        {(["play", "season", "news", "you"] as const).map((current) => (
           <AppTopBar
             key={current}
             mark={<img src="/images/logos/realms-lockup.svg" alt="Realms" className="h-7" />}
             places={[
               { to: "#", label: "Play", icon: "play", current: current === "play" },
               { to: "#", label: "Season", icon: "leaderboard", current: current === "season" },
+              { to: "#", label: "What's new", icon: "chronicles", current: current === "news" },
             ]}
             player={{ to: "#", label: PLAYER.name, portrait: PLAYER.portrait, current: current === "you" }}
           />

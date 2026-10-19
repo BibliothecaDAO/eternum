@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "What's new has its own tab",
+    description:
+      "What's new sits beside Play and Season in the top bar and on a phone's tabs. It shows the latest changes, each with what it does for you, beside the Scroll's posts.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-19",
     title: "Clearer app pages for new players",
     description:
       "Season names each board's own season and says how to get on an empty board. A lobby's chat says when nobody has written and who can write, and on a phone the entry sits in the page instead of over the chat. Buttons no longer print their keys, and You says when you are not on Frontier's board yet.",

@@ -16,7 +16,6 @@ import { backFrom } from "../frame/opened-from";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
-import { WHATS_NEW_PATH } from "../news/posts";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import { PaintedCard } from "@/ui/design-system/kit/painted-card";
@@ -35,9 +34,9 @@ import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 export const HOW_TO_PLAY = "https://docs.realms.world/blitz/key-concepts";
 
 /**
- * You (spec 10, the place): the player's page as others see it, their finished games, then three rows: Settings, How
- * to play (the Blitz guide on the docs site) and What's new. Signed out, one card with Sign in above the two rows anyone
- * can read; a device removed elsewhere, one card with Sign in to add it back.
+ * You (spec 10, the place): the player's page as others see it, their finished games, then two rows: Settings and How
+ * to play (the Blitz guide on the docs site). Signed out, one card with Sign in above How to play; a device removed
+ * elsewhere, one card with Sign in to add it back. What's new is a place of its own, beside Play and Season.
  */
 export const ProfilePage = () => (
   <PageFrame title={useLayout() === "desktop" ? WORDS.you : undefined}>
@@ -47,12 +46,12 @@ export const ProfilePage = () => (
   </PageFrame>
 );
 
-/** Signed out: the card that says why, then what anyone can read. */
+/** Signed out: the card that says why, then How to play. */
 const SignedOut = ({ card }: { card: ReactNode }) => (
   <div className="flex max-w-column flex-col gap-4">
     {card}
     <SettingRows>
-      <ReadingRows />
+      <HowToPlayRow />
     </SettingRows>
   </div>
 );
@@ -210,27 +209,19 @@ const OwnProfile = ({ account }: { account: string }) => {
   );
 };
 
-/** Settings, then what anyone can read. */
+/** Settings, then How to play. */
 const Rows = () => {
   const navigate = useNavigate();
   return (
     <SettingRows>
       <SettingRow icon="person" name={PROFILE_WORDS.settings} onOpen={() => navigate(SETTINGS_PATH)} />
-      <ReadingRows />
+      <HowToPlayRow />
     </SettingRows>
   );
 };
 
-/** How to play, the Blitz guide in a new tab, and What's new. */
-const ReadingRows = () => {
-  const navigate = useNavigate();
-  return (
-    <>
-      <SettingRow icon="guide" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />
-      <SettingRow icon="chronicles" name={PROFILE_WORDS.whatsNew} onOpen={() => navigate(WHATS_NEW_PATH)} />
-    </>
-  );
-};
+/** How to play: the Blitz guide, in a new tab. */
+const HowToPlayRow = () => <SettingRow icon="guide" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />;
 
 const MusicSwitch = () => {
   const on = useAppMusic();

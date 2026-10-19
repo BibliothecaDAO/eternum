@@ -16,16 +16,17 @@ minimap frame) in every state, beside the versions the game draws today; Mode sw
 the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the reward chest at
 each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's fixtures;
 `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks them
-(nothing spills out of its block, every picture loads, one gold verb at most, the painting and the bar on a desktop),
-the bar with the longest name beside the install notice at 1024 and 1440 px (`/lab/app/long-name`), the lobby's entry
-with every choice taken at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet. The four
-pages: Play (`/`) the lead widest and each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry
-and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results
-(`/results/:id`) the player's place and points, the game's board, points by kind and the chest at its tier.
-`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
-`/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with outcomes).
-`/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate panel as the game
-draws them, on the deploy fixture's realm; capture them with
+(nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the painting
+and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install notice
+at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the lobby's entry with every choice taken
+at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet. The pages: Play (`/`) the lead
+widest and each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side;
+Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results (`/results/:id`) the player's place
+and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) the latest changes beside
+the Scroll's posts. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture
+realm. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
+outcomes). `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and crate panel as
+the game draws them, on the deploy fixture's realm; capture them with
 `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
 number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
 text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
@@ -38,24 +39,25 @@ failing) at desktop and phone sizes, counts what is on the page, presses each ro
 row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.json` and screenshots into a new
 directory per run, and exiting 1 unless every press arrived). The places beyond Play have their own:
 `pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
-Season, You, Settings and What's new from a fresh Play at both sizes, as a new visitor or, given a saved signed-in
-browser state, as a returning player, scrolling to and clicking each control through the browser. You is the bar's place
-named You: on a desktop the player's name and portrait at the bar's end (named "You: <name>" for assistive technology),
-through which a returning player reaches Settings and Sign out; a Season board counts as shown with its first place or
-its line saying no one is on it yet. Signed out it also measures the lab's fixture pages (Play, a running Blitz season,
-a claim, a sealed chest, a paid entry, You, Settings, What's new and a post, the legal pages, each sign-in step, the
-doorway's holds and an unknown path) and holds every page it passes, lab or live, to its content (words, controls,
-fields or a card's picture) starting within 64 px under the bar (or a phone's top row), every word displaying at 14 px
-or more as drawn (an SVG's scale counted), and on desktop the body starting at the window's left edge. It sets back what
-it changes (the alert level, music) to the value it read, however the flow ends, and stops before anything outward
-(paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots into a new directory
-per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as failed, and exits 1
-unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given
-`--watch /g/<chain>/<game>` and the saved state of a player who holds realms in that live game, it drives the one path
-inside a match it covers instead: it watches the game, opens the identity chip, presses its Play, and checks at both
-sizes that the doorway shows and goes, the game is played rather than watched, the chip names the player, and the page
-never reloads (`shell-proof-watch-to-play.json`). `apps/game/AGENTS.md` documents a spectator smoke test (agent-browser
-steps that open the client, watch a running game and check the canvas). Inside a match,
+Season, What's new (its own place, which stays lit on a post and the terms), You and Settings from a fresh Play at both
+sizes, as a new visitor or, given a saved signed-in browser state, as a returning player, scrolling to and clicking each
+control through the browser. You is the bar's place named You: on a desktop the player's name and portrait at the bar's
+end (named "You: <name>" for assistive technology), through which a returning player reaches Settings and Sign out; a
+Season board counts as shown with its first place or its line saying no one is on it yet. Signed out it also measures
+the lab's fixture pages (Play, a running Blitz season, a claim, a sealed chest, a paid entry, You, Settings, What's new
+and a post, the legal pages, each sign-in step, the doorway's holds and an unknown path) and holds every page it passes,
+lab or live, to its content (words, controls, fields or a card's picture) starting within 64 px under the bar (or a
+phone's top row), every word displaying at 14 px or more as drawn (an SVG's scale counted), and on desktop the body
+starting at the window's left edge. It sets back what it changes (the alert level, music) to the value it read, however
+the flow ends, and stops before anything outward (paying, leaving for the docs, signing out). It writes
+`shell-proof-<persona>.json` and screenshots into a new directory per run, marks a flow stopped by a service that did
+not answer as unavailable and any other stop as failed, and exits 1 unless every flow arrived
+(`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given `--watch /g/<chain>/<game>` and the saved
+state of a player who holds realms in that live game, it drives the one path inside a match it covers instead: it
+watches the game, opens the identity chip, presses its Play, and checks at both sizes that the doorway shows and goes,
+the game is played rather than watched, the chip names the player, and the page never reloads
+(`shell-proof-watch-to-play.json`). `apps/game/AGENTS.md` documents a spectator smoke test (agent-browser steps that
+open the client, watch a running game and check the canvas). Inside a match,
 `prove:play --game <chain>:<game> --profile <dir>` drives one game signed in (a browser profile signed in once through
 the game's own sign-in, kept outside the repo): `--crate <col>,<row>` finds a crate next to the player's army by
 pointer, reads the pack its panel names, opens it and reads the same relics back from the history **Log** opens after a
@@ -84,13 +86,13 @@ the foot.
 
 | Feature                                                                                                                                                                                                 | Route                                      | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Play: what to do now, then each mode's games                                                                                                                                                            | `/`                                        | Top bar **Play**, key `1` (see Play below)                                                                                                                              |
-| Season: Frontier's board, Blitz's rating and its prize                                                                                                                                                  | `/season`                                  | Top bar **Season**, key `2`; a phone switches Frontier / Blitz                                                                                                          |
+| Play: what to do now, then each mode's games                                                                                                                                                            | `/`                                        | Top bar **Play** (see Play below)                                                                                                                                       |
+| Season: Frontier's board, Blitz's rating and its prize                                                                                                                                                  | `/season`                                  | Top bar **Season**; a phone switches Frontier / Blitz                                                                                                                   |
 | A player's card and finished games                                                                                                                                                                      | `/p/:address`                              | A row of Frontier's board (Season or a result); **Back** returns to it                                                                                                  |
-| You: your card, finished games, Settings, docs, news                                                                                                                                                    | `/profile`                                 | Top bar **You**, key `3` (signed out: **Sign in**)                                                                                                                      |
+| You: your card, finished games, Settings, docs                                                                                                                                                          | `/profile`                                 | Top bar **You**, the player's name at its end (signed out: **Sign in**)                                                                                                 |
 | Settings: account, payout wallet, notifications, music, devices, sign out                                                                                                                               | `/profile/settings`                        | You, **Settings**                                                                                                                                                       |
 | How to play (the Blitz guide, docs.realms.world/blitz/key-concepts, a new tab)                                                                                                                          | —                                          | You, **How to play**                                                                                                                                                    |
-| What's new: the Scroll's posts and the latest changes                                                                                                                                                   | `/scroll`, `/scroll/:post`                 | You, **What's new**; its footer holds the community and legal links                                                                                                     |
+| What's new: the game's latest changes, each read whole, and the Scroll's posts                                                                                                                          | `/scroll`, `/scroll/:post`                 | Top bar **What's new** (a phone's tabs too); a post opens from its row; its footer holds the community and legal links                                                  |
 | Terms, privacy, credits                                                                                                                                                                                 | `/terms`, `/privacy`, `/credits`           | The footer of What's new                                                                                                                                                |
 | Sign in (Discord or an emailed code)                                                                                                                                                                    | `/sign-in`                                 | You, **Sign in**; Play free; a lobby's **Sign in**                                                                                                                      |
 | Blitz lobby: entry, payment, countdown, chat                                                                                                                                                            | `/blitz/:slot`, `/blitz/game-:chain-:game` | Play, **Join** on a slot, **Lobby** on a seat                                                                                                                           |

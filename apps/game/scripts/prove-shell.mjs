@@ -60,6 +60,10 @@ const joinSlot = () => ({ kind: "press", word: "Join", live: true });
 const boardShown = (title, rows) =>
   `[...document.querySelectorAll('[data-band="body"] .app-panel')].some((panel) => panel.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)} && (${rows} || panel.querySelector(".app-empty")))`;
 
+/** The place lit as the page's own, by its word, in the bar or the phone's tabs. */
+const placeLit = (word) =>
+  `[...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].some((tab) => tab.innerText.trim() === ${JSON.stringify(word)})`;
+
 /** Each flow's end, checked in the page. */
 const END = {
   // A board is shown when its panel holds its first place, or says it has no one on it yet.
@@ -71,8 +75,9 @@ const END = {
   musicOn: `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") === "true"`,
   signOutAsked: `[...document.querySelectorAll("[data-kit-sheet]")].some((sheet) => sheet.innerText.includes("Sign out?"))`,
   docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.world") && a.target === "_blank")`,
-  news: `location.pathname.startsWith("/scroll/") || document.querySelector("[data-kit-sheet]")`,
-  terms: `location.pathname === "/terms"`,
+  // A post of the Scroll, or the terms from What's new's footer, read under What's new's place.
+  news: `location.pathname.startsWith("/scroll/") && ${placeLit("What's new")}`,
+  terms: `location.pathname === "/terms" && ${placeLit("What's new")}`,
   signIn: `location.pathname === "/sign-in" && new URLSearchParams(location.search).get("next") === "/profile"`,
   lobby: `location.pathname.startsWith("/blitz/") && document.querySelector('[data-band="body"]')`,
   lobbySignIn: `location.pathname === "/sign-in" && (new URLSearchParams(location.search).get("next") ?? "").startsWith("/blitz/")`,
@@ -89,8 +94,8 @@ const flows = (layout, persona) => {
     blitzboard: { steps: blitz, end: END.blitzBoard, outage: RATINGS_DOWN },
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
     guide: { steps: [tab("You"), link("How to play")], end: END.docs },
-    news: { steps: [tab("You"), press("What's new"), press("first")], end: END.news },
-    terms: { steps: [tab("You"), press("What's new"), link("Terms of Service")], end: END.terms },
+    news: { steps: [tab("What's new"), press("first")], end: END.news },
+    terms: { steps: [tab("What's new"), link("Terms of Service")], end: END.terms },
   };
   if (persona === "new-visitor")
     return {

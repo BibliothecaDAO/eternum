@@ -9,6 +9,7 @@ import { BlitzLobbyPage } from "../blitz/blitz-pages";
 import { entryTermsKey, refundOwedKey, registeredSlotsKey, slotRegisteredKey } from "../blitz/entry";
 import { seasonPrizeKey } from "../season-tab/blitz-season";
 import { rewardKey } from "../season-tab/reward";
+import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
 import { PostPage } from "../news/post-page";
@@ -80,26 +81,30 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
   );
 };
 
+/** The real pages at their addresses under the screen's, each told its own so the places light it. */
 const LabPages = ({ screen }: { screen: LabScreen }) => {
   useLabSession(screen);
+  const { "*": page = "" } = useParams();
   return (
-    <Routes>
-      <Route index element={<PlayPage />} />
-      <Route path="blitz/:id" element={<BlitzLobbyPage />} />
-      <Route path="season" element={<SeasonPage />} />
-      <Route path="results/:id" element={<ResultsPage />} />
-      <Route path="profile" element={<ProfilePage />} />
-      <Route path="profile/settings" element={<SettingsPage />} />
-      <Route path="p/:address" element={<PlayerPage />} />
-      <Route path="scroll" element={<WhatsNewPage />} />
-      <Route path="scroll/:post" element={<PostPage />} />
-      <Route path="terms" element={<TermsPage />} />
-      <Route path="privacy" element={<PrivacyPage />} />
-      <Route path="credits" element={<CreditsPage />} />
-      <Route path="sign-in/:step" element={<LabSignIn />} />
-      <Route path="doorway/:state" element={<LabDoorway />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <PageAddress.Provider value={`/${page}`}>
+      <Routes>
+        <Route index element={<PlayPage />} />
+        <Route path="blitz/:id" element={<BlitzLobbyPage />} />
+        <Route path="season" element={<SeasonPage />} />
+        <Route path="results/:id" element={<ResultsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/settings" element={<SettingsPage />} />
+        <Route path="p/:address" element={<PlayerPage />} />
+        <Route path="scroll" element={<WhatsNewPage />} />
+        <Route path="scroll/:post" element={<PostPage />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="credits" element={<CreditsPage />} />
+        <Route path="sign-in/:step" element={<LabSignIn />} />
+        <Route path="doorway/:state" element={<LabDoorway />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </PageAddress.Provider>
   );
 };
 

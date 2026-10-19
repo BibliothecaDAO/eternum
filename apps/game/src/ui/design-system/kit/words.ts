@@ -338,6 +338,8 @@ export const realmsADay = (cap: number) => `${cap} a day`;
 export const WORDS = {
   play: "Play",
   season: SEASON,
+  /** What changed in the game and the Scroll's posts: a place of its own. */
+  whatsNew: "What's new",
   /** The player's own place: their card, their finished games, Settings. */
   you: "You",
   signIn: SIGN_IN,
@@ -356,8 +358,6 @@ export const WORDS = {
   live: "Live",
   /** Play's lead when no mode has a game live or scheduled. */
   noSeason: "No season running",
-  /** Before an age's numeral: "Age II". */
-  age: "Age",
 } as const;
 
 /** The desktop footer on the pages that scroll: its columns and their links. */
@@ -486,7 +486,6 @@ export const PROFILE_WORDS = {
   settings: "Settings",
   /** The docs site, opened in a new tab. */
   howToPlay: "How to play",
-  whatsNew: "What's new",
   account: "Account",
   notifications: "Notifications",
   devices: "Devices",
@@ -668,8 +667,10 @@ export const LEVEL_WORDS = {
   all: { word: "All", line: "Plus every clear, fight and build" },
 } as const;
 
-/** What's new under You: a post's stepper and reading time, and the legal pages' date. */
+/** What's new: its two lists, a post's stepper and reading time, and the legal pages' date. */
 export const NEWS_WORDS = {
+  /** The game's latest changes, the first of What's new's lists. */
+  changes: "Latest changes",
   newer: "Newer",
   older: "Older",
   updated: "Updated",

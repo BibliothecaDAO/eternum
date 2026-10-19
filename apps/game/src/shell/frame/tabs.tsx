@@ -2,7 +2,7 @@ import { WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -12,30 +12,37 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
+import { WHATS_NEW_PATH } from "../news/posts";
 import { Lockup } from "./lockup";
+import { usePageAddress } from "./page-address";
+
+type Place = { to: string; word: string; icon: IconMeaning; matches: readonly string[] };
+
+/** You: the player's place, at the end of both bars. */
+const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matches: ["/profile", "/results"] };
 
 /**
- * The app's three places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
- * now, Season where the player stands, You the player, their finished games and everything about the account.
+ * The app's four places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
+ * now, Season where the player stands, What's new what changed and the Scroll's posts (with the legal pages its footer
+ * leads to), You the player, their finished games and everything about the account.
  */
-const TABS: readonly { to: string; word: string; icon: IconMeaning; matches: readonly string[] }[] = [
-  { to: "/", word: WORDS.play, icon: "play" as const, matches: ["/", "/blitz"] },
-  { to: "/season", word: WORDS.season, icon: "leaderboard" as const, matches: ["/season", "/p/"] },
+const TABS: readonly Place[] = [
+  { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },
+  { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] },
   {
-    to: "/profile",
-    word: WORDS.you,
-    icon: "person" as const,
-    matches: ["/profile", "/results", "/scroll", "/terms", "/privacy", "/credits"],
+    to: WHATS_NEW_PATH,
+    word: WORDS.whatsNew,
+    icon: "chronicles",
+    matches: [WHATS_NEW_PATH, "/terms", "/privacy", "/credits"],
   },
+  YOU_TAB,
 ];
-
-const YOU_TAB = TABS[2];
 
 const matchesPath = (pathname: string, match: string) =>
   match === "/" ? pathname === "/" : pathname.startsWith(match);
 
 const useActiveTab = (): string | undefined => {
-  const { pathname } = useLocation();
+  const pathname = usePageAddress();
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
 };
 
@@ -55,7 +62,7 @@ const useSignedInPlayer = ():
 };
 
 /** A place's mark: its icon, or on You the signed-in player's portrait. */
-const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: boolean; size: number }) => {
+const TabIcon = ({ tab, current, size }: { tab: Place; current: boolean; size: number }) => {
   const portrait = useSignedInPlayer();
   if (tab === YOU_TAB && portrait)
     return (
@@ -71,7 +78,7 @@ const TabIcon = ({ tab, current, size }: { tab: (typeof TABS)[number]; current: 
   return <SemanticIcon name={Icon} size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
 };
 
-/** The phone's foot: the three places in thumb reach. */
+/** The phone's foot: the four places in thumb reach. */
 export const TabBar = () => {
   const active = useActiveTab();
   return (
@@ -82,7 +89,7 @@ export const TabBar = () => {
       {TABS.map((tab) => {
         const current = active === tab.to;
         return (
-          <NavLink
+          <Link
             key={tab.to}
             to={tab.to}
             data-role="tab"
@@ -94,7 +101,7 @@ export const TabBar = () => {
           >
             <TabIcon tab={tab} current={current} size={28} />
             {tab.word}
-          </NavLink>
+          </Link>
         );
       })}
     </nav>
@@ -102,15 +109,15 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play and Season with their icons, the
- * page's notice if it has one, and the player at the bar's far end (their name and portrait once signed in, else You).
- * It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step keeps the lockup and
- * the notice alone.
+ * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season and What's new with
+ * their icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
+ * signed in, else You). It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step
+ * keeps the lockup and the notice alone.
  */
 export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
   const active = useActiveTab();
   const player = useSignedInPlayer();
-  const placeOf = (tab: (typeof TABS)[number]) => ({
+  const placeOf = (tab: Place) => ({
     to: tab.to,
     label: tab.word,
     icon: tab.icon,

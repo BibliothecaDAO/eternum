@@ -118,3 +118,20 @@ it("draws a new account's refused name as refused", async () => {
   const lab = await renderLab("/lab/app/first-visit/sign-in/name-refused");
   expect(lab.querySelector('input[aria-invalid="true"]')).not.toBeNull();
 });
+
+// The pages this file draws for real: the reading pages under What's new, and an unknown path, which no place holds.
+it.each([
+  ["terms", ["What's new"]],
+  ["scroll/infrastructure-autonomous-worlds", ["What's new"]],
+  ["no-such-page", []],
+])("lights the place of the page it draws at %s, as the app does", async (page, lit) => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response("{}")),
+  );
+  const lab = await renderLab(`/lab/app/first-visit/${page}`);
+  const places = [...lab.querySelectorAll('[data-role="tab"]')];
+  expect(places).toHaveLength(4);
+  const current = places.filter((place) => place.getAttribute("aria-current") === "page");
+  expect(current.map((place) => place.textContent)).toEqual(lit);
+});

@@ -1,8 +1,8 @@
 /**
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
  * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
- * Season, Results sealed and opened) are shot at 1920×1080 and on a phone at 390×844, and checked; the app's other
- * pages are shot on the desktop, under the same frame.
+ * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; the
+ * app's other pages are shot on the desktop, under the same frame.
  *
  *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet]
  */
@@ -16,28 +16,33 @@ const PHONE = ["390", "844"];
 const READY_MS = 30_000;
 const SETTLE_MS = 2_000;
 
-/** The pages on the app sheet, each over the fixture state it is checked in. */
+/**
+ * The pages on the app sheet, each over the fixture state it is checked in, with the place lit in the bar while it is
+ * open (none on a full-screen step: the lobby).
+ */
 const SHEET_PAGES = {
-  play: "home",
+  play: { path: "home", place: "Play" },
   // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
-  "play-seated": "blitz-seat",
+  "play-seated": { path: "blitz-seat", place: "Play" },
   // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
-  "play-seated-late-slot": "blitz-seat-late-slot",
-  lobby: "entry-choose/blitz/slot-blitz-1630",
+  "play-seated-late-slot": { path: "blitz-seat-late-slot", place: "Play" },
+  lobby: { path: "entry-choose/blitz/slot-blitz-1630", place: null },
   // A launched game's lobby: its roster, the player's own seat ringed, and Enter.
-  "lobby-game": "blitz-seat/blitz/game-0x5245414c4d53-7",
-  season: "season-running/season",
-  results: "reward-sealed/results/0x5245414c4d53-7",
-  "results-opened": "reward-lords/results/0x5245414c4d53-7",
+  "lobby-game": { path: "blitz-seat/blitz/game-0x5245414c4d53-7", place: null },
+  season: { path: "season-running/season", place: "Season" },
+  results: { path: "reward-sealed/results/0x5245414c4d53-7", place: "You" },
+  "results-opened": { path: "reward-lords/results/0x5245414c4d53-7", place: "You" },
+  "whats-new": { path: "home/scroll", place: "What's new" },
 };
 
 /**
- * The desktop bar at its limits: the longest name an account takes beside Play's install notice, at the desktop's
- * narrowest width and a laptop's.
+ * The bars at their limits: on the desktop, the longest name an account takes beside Play's install notice, at the
+ * desktop's narrowest width and a laptop's; on a phone, the four places at the narrowest phone the app is held to.
  */
 const BAR_CASES = [
-  { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"] },
-  { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"] },
+  { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"], desktop: true, place: "Play" },
+  { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"], desktop: true, place: "Play" },
+  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "What's new" },
 ];
 
 /**
@@ -93,7 +98,6 @@ const OTHER_PAGES = {
   you: "home/profile",
   settings: "home/profile/settings",
   "sign-in": "first-visit/sign-in/start",
-  news: "home/scroll",
 };
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */
@@ -123,10 +127,12 @@ const otherPages = () =>
 
 /**
  * What holds for each page on the app sheet: nothing drawn spills out of its block, every picture on it loaded (the
- * painting, icons, portraits, the chest), and it has at most one gold verb; on the desktop it also stands on its
- * painting and the bar ends on the player. The glyphs it draws are counted.
+ * painting, icons, portraits, the chest), it has at most one gold verb, and its place is the one lit among the places;
+ * on the desktop it also stands on its painting and the bar ends on the player, on a phone each place's word reads
+ * whole. The glyphs it draws are counted.
  */
-const sheetPageChecks = (desktop) => (b) => {
+const sheetPageChecks = (page) => (b) => {
+  const { desktop, place } = page;
   const measure = b.evaluate(`(() => {
     // How far anything a block shows runs past the block's foot or its right side. Decoration (aria-hidden: a stage's
     // rays) may run past and be cut; content that is cut is the defect this catches, so it counts whole.
@@ -165,6 +171,11 @@ const sheetPageChecks = (desktop) => (b) => {
           .map(({ word, rect }) => word + " " + Math.round(rect.top) + "→" + Math.round(rect.bottom) + " at " + Math.round(edge));
       })(),
       places: document.querySelectorAll('[data-band="bar"] [data-role="tab"]').length,
+      // The places lit as the page's own, by their word ("You: Maelis" is You), and any place whose word is cut.
+      lit: [...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].map((tab) => (tab.getAttribute("aria-label") ?? tab.innerText).split(":")[0].trim()),
+      placesCut: [...document.querySelectorAll('[data-role="tab"]')]
+        .filter((tab) => tab.scrollWidth > tab.clientWidth + 1 || tab.getBoundingClientRect().right > innerWidth + 1)
+        .map((tab) => tab.innerText.trim()),
       playerRightGap: bar && player ? Math.round(bar.right - player.right) : null,
     };
   })()`);
@@ -173,10 +184,19 @@ const sheetPageChecks = (desktop) => (b) => {
     { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
     {
+      check: "its place is the one lit, or a full-screen step lights none",
+      ok: JSON.stringify(measure.lit) === JSON.stringify(place === null ? [] : [place]),
+    },
+    {
       check: "an age's band of painting is 96 px on a desktop, 64 px on a phone",
       ok: measure.ageBands.every((band) => band === (desktop ? "96px" : "64px")),
     },
-    ...(desktop ? [] : [{ check: "no control cut by the phone's notice or foot", ok: measure.cutAtEdge.length === 0 }]),
+    ...(desktop
+      ? []
+      : [
+          { check: "no control cut by the phone's notice or foot", ok: measure.cutAtEdge.length === 0 },
+          { check: "each place's word reads whole", ok: measure.placesCut.length === 0 },
+        ]),
     ...(desktop
       ? [
           ...barChecks(b),
@@ -226,13 +246,13 @@ const barChecks = (b) => {
 };
 
 const barCases = () =>
-  BAR_CASES.map((bar) => ({ ...bar, path: `/lab/app/${bar.path}?capture=1`, more: sheetPageChecks(true) }));
+  BAR_CASES.map((bar) => ({ ...bar, path: `/lab/app/${bar.path}?capture=1`, more: sheetPageChecks(bar) }));
 
 const sheetPages = (desktop) =>
-  Object.entries(SHEET_PAGES).map(([page, path]) => ({
+  Object.entries(SHEET_PAGES).map(([page, { path, place }]) => ({
     name: `${desktop ? "app" : "phone"}-${page}`,
     path: `/lab/app/${path}?capture=1`,
-    more: sheetPageChecks(desktop),
+    more: sheetPageChecks({ desktop, place }),
   }));
 
 /** An element's name as a file name: "Game card" is sheet-game-card.png. */

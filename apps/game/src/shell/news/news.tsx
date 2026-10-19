@@ -1,72 +1,70 @@
-import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { formatContentDay } from "@bibliothecadao/types";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Sheet } from "@/ui/design-system/kit/sheet";
+import { Icon } from "@/ui/design-system/icon";
+import { AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
+import { NEWS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { latestFeatures } from "@/ui/features/world/latest-features";
 
+import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
-import { postHref, publishedPosts } from "./posts";
+import { postHref, postKind, postPainting, publishedPosts } from "./posts";
 
 /**
- * What's new (spec 13), a row under You and the Scroll's address: the Scroll's posts and the latest changes in one list,
- * newest first. It ends on the footer, which holds the community and the legal pages.
+ * What's new (spec 13), a place of its own in the bar and the Scroll's address: the game's latest changes, each with
+ * what it does for the player, and the Scroll's posts, each opening its page, newest first in both. The desktop shows
+ * them side by side; a phone stacks them. It ends on the footer, which holds the community and the legal pages.
  */
-export const WhatsNewPage = () => (
-  <PageFrame back="/profile" title={PROFILE_WORDS.whatsNew} footer>
-    <div className="max-w-feed">
-      <SettingRows>
-        <NewsRows items={newsItems()} />
-      </SettingRows>
-    </div>
-  </PageFrame>
+export const WhatsNewPage = () => {
+  const phone = useLayout() === "phone";
+  return (
+    <PageFrame title={WORDS.whatsNew} footer>
+      <div className="flex flex-col gap-6">
+        {phone && <h1 className="text-app-title text-app-ink">{WORDS.whatsNew}</h1>}
+        <div
+          className={phone ? "flex flex-col gap-6" : "grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-6"}
+        >
+          <ChangesPanel />
+          <ScrollPanel />
+        </div>
+      </div>
+    </PageFrame>
+  );
+};
+
+/** The game's latest changes, each read whole in its row after its day, so a phone gives the words its width. */
+const ChangesPanel = () => (
+  <AppPanel icon="tools" title={NEWS_WORDS.changes} flush>
+    {latestFeatures.map((change) => (
+      <AppRow
+        key={`${change.date}:${change.title}`}
+        title={change.title}
+        detail={`${formatContentDay(change.date)} · ${change.description}`}
+      />
+    ))}
+  </AppPanel>
 );
 
-/** One entry of What's new: a post, or a change from the latest-features list. */
-type NewsItem =
-  | { kind: "post"; key: string; title: string; date: string; slug: string }
-  | { kind: "change"; key: string; title: string; date: string; description: string };
-
-const newsItems = (): NewsItem[] =>
-  [
-    ...publishedPosts.map(
-      (post): NewsItem => ({ kind: "post", key: post.slug, title: post.title, date: post.date, slug: post.slug }),
-    ),
-    ...latestFeatures.map(
-      (change): NewsItem => ({
-        kind: "change",
-        key: `${change.date}:${change.title}`,
-        title: change.title,
-        date: change.date,
-        description: change.description,
-      }),
-    ),
-  ].toSorted((a, b) => b.date.localeCompare(a.date));
-
-/** What's new's rows; a post opens its page, a change its sheet. */
-const NewsRows = ({ items }: { items: readonly NewsItem[] }) => {
+/** The Scroll's posts under the cover of its newest; each opens its page. */
+const ScrollPanel = () => {
   const navigate = useNavigate();
-  const [change, setChange] = useState<Extract<NewsItem, { kind: "change" }> | null>(null);
+  const newest = publishedPosts[0];
   return (
-    <>
-      {items.map((item) => (
-        <SettingRow
-          key={item.key}
-          icon="chronicles"
-          name={item.title}
-          value={formatContentDay(item.date)}
-          onOpen={() => (item.kind === "post" ? navigate(postHref(item)) : setChange(item))}
+    <AppPanel icon="chronicles" title={NEWS_WORDS.scroll} painting={newest ? postPainting(newest) : undefined} flush>
+      {publishedPosts.map((post) => (
+        <AppRow
+          key={post.slug}
+          title={post.title}
+          detail={`${postKind(post)} · ${NEWS_WORDS.minutes(post.readingTimeMinutes)}`}
+          trail={
+            <>
+              {formatContentDay(post.date)}
+              <Icon name="arrow-right" size={18} />
+            </>
+          }
+          onClick={() => navigate(postHref(post))}
         />
       ))}
-      {change && (
-        <Sheet label={change.title} onClose={() => setChange(null)} placement="page">
-          <h2 className="pt-1 font-body text-lg font-bold text-kit-cream">{change.title}</h2>
-          <p className="text-sm text-kit-muted">{formatContentDay(change.date)}</p>
-          <p className="pb-2 text-base leading-[26px] text-kit-cream">{change.description}</p>
-        </Sheet>
-      )}
-    </>
+    </AppPanel>
   );
 };

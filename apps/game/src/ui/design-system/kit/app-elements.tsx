@@ -1,7 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { type ButtonHTMLAttributes, type ReactNode, useId } from "react";
-import { Link, NavLink, type To, useNavigate } from "react-router-dom";
+import { Link, type To, useNavigate } from "react-router-dom";
 
 import { BACK } from "./words";
 
@@ -160,7 +160,7 @@ export const AppTopBar = ({
 );
 
 const AppBarLink = ({ place }: { place: AppBarPlace }) => (
-  <NavLink
+  <Link
     to={place.to}
     data-role="tab"
     aria-current={place.current ? "page" : undefined}
@@ -180,7 +180,7 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) => (
         {place.label}
       </>
     )}
-  </NavLink>
+  </Link>
 );
 
 /** A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised. */
