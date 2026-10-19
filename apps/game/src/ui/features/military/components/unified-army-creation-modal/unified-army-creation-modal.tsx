@@ -145,10 +145,10 @@ export const UnifiedArmyCreationBody = ({
             onSelect={form.handleGuardSlotSelect}
           />
         )}
-        {form.armyType && form.structureCoordX !== undefined && form.structureCoordY !== undefined && (
+        {form.armyType && form.deployCenter && (
           <RealmHexDeployMap
-            centerCol={Number(form.structureCoordX)}
-            centerRow={Number(form.structureCoordY)}
+            centerCol={form.deployCenter.col}
+            centerRow={form.deployCenter.row}
             ring={form.deployRing}
             selectedDirection={form.selectedDirection}
             onSelect={form.handleDirectionSelect}

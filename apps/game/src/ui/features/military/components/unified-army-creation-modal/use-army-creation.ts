@@ -1,5 +1,4 @@
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   canPayTroopRaise,
@@ -10,8 +9,6 @@ import {
   getTroopResourceId,
   readTroopRaiseCost,
   ResourceManager,
-  structureMapPosition,
-  spawnRing,
 } from "@bibliothecadao/eternum";
 import type { GameModeConfig } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -23,7 +20,6 @@ import {
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
   getBuildingFromResource,
-  getNeighborHexes,
   ID,
   ResourcesIds,
   StructureType,
@@ -60,7 +56,7 @@ import {
   heldTroops,
   readFieldArmyRoom,
 } from "./field-army-room";
-import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { useDeployRing } from "./use-deploy-ring";
 
 interface ArmyCreationOptions {
   /** The structure raising the army; undefined while the player has none to raise from. */
@@ -260,10 +256,7 @@ export const useArmyCreation = ({
     (selectedGuardCategory === selectedTroopCombo.type && selectedGuardTier === selectedTroopCombo.tier);
   const isDefenseSlotCreationBlocked = !isSelectedSlotOccupied && !canCreateDefenseArmy;
   const selectedSlotCooldown = selectedGuard?.cooldownRemaining ?? 0;
-  // Spawn hexes surround the structure's map position: for a Frontier realm the day's site, as the contract spawns.
-  const structurePosition = structureComponent ? structureMapPosition(store, structureComponent) : undefined;
-  const structureCoordX = structurePosition?.x;
-  const structureCoordY = structurePosition?.y;
+  const { center: deployCenter, ring: deployRing } = useDeployRing(structureComponent);
 
   useEffect(() => {
     if (armyType || fixedContext) {
@@ -295,24 +288,6 @@ export const useArmyCreation = ({
     setGuardSlot(initialGuardSlot ?? 0);
   }, [activeStructureId, initialGuardSlot]);
 
-  const neighborHexes = useMemo(
-    () =>
-      structureCoordX === undefined || structureCoordY === undefined
-        ? []
-        : getNeighborHexes(structureCoordX, structureCoordY),
-    [structureCoordX, structureCoordY],
-  );
-  const neighborTiles = useWorldSpatialTiles(neighborHexes);
-  // The six tiles an army can step out onto, each open, taken or unexplored (spawnRing), with the biome the map paints.
-  const deployRing = useMemo(() => {
-    if (!structureComponent) return [];
-    const tileAt = (hex: { col: number; row: number }) =>
-      neighborTiles.find((candidate) => candidate.hexCoords.col === hex.col && candidate.hexCoords.row === hex.row);
-    return spawnRing(store, structureComponent, (hex) => {
-      const tile = tileAt(hex);
-      return tile ? safeInteger(tile.occupierId) : undefined;
-    }).map((tile) => ({ ...tile, biome: tileAt(tile)?.biome }));
-  }, [neighborTiles, store, structureComponent]);
   const freeDirections = useMemo(
     () => deployRing.filter((tile) => tile.open).map((tile) => tile.direction),
     [deployRing],
@@ -519,8 +494,7 @@ export const useArmyCreation = ({
     defenseSlotInfoMessage,
     defenseSlotErrorMessage,
     handleGuardSlotSelect,
-    structureCoordX,
-    structureCoordY,
+    deployCenter,
     deployRing,
     selectedDirection,
     handleDirectionSelect,
