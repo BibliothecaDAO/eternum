@@ -116,6 +116,7 @@ it.each([
     `${FRONT}\n## Blitz\n\n### Fixes\n\n- {move} **A**: a.\n\n### New\n\n- {move} **B**: b.\n`,
     'kind "New" is out of order',
   ],
+  ["a release with no change", "2026-10-29.md", FRONT, "at least one change"],
   ["an unknown icon", "2026-10-29.md", RELEASE.replace("{wheat}", "{barley}"), 'unknown icon "barley"'],
   ["a change without its name", "2026-10-29.md", RELEASE.replace("**Selection holds**: ", ""), "a change reads"],
   [

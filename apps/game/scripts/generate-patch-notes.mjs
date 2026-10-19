@@ -59,7 +59,11 @@ function readRelease(fileName, source, icons) {
   if (date === null) throw new Error(`${where}: a release's file is named for its day, YYYY-MM-DD.md`);
   const { data, content } = matter(source);
   const front = decodeFrontmatter(where, data);
-  return { date, title: front.title, summary: front.summary, modes: readModes(where, content, icons) };
+  const modes = readModes(where, content, icons);
+  // What's new opens a release on its first changed section: a release with none has nothing to open.
+  if (Object.values(modes).every((changes) => changes.length === 0))
+    throw new Error(`${where}: a release names at least one change`);
+  return { date, title: front.title, summary: front.summary, modes };
 }
 
 function decodeFrontmatter(where, data) {
