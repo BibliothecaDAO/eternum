@@ -111,3 +111,11 @@ it("names Ratings when the read fails", async () => {
   expect(container.textContent).toContain("Ratings did not answer.");
   expect(container.textContent).not.toContain("503");
 });
+
+it("says no one has a rating yet when the board holds no one, rather than an empty panel", async () => {
+  const empty = answered(null);
+  top.current = { ...empty, data: { ...empty.data, total: 0, entries: [] } };
+  const container = await mount();
+  expect(container.textContent).toContain("No one has a rating yet.");
+  expect(rows(container)).toEqual([]);
+});

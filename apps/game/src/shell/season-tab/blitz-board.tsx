@@ -2,7 +2,7 @@ import { formatExact } from "@bibliothecadao/types";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppChip, AppFigure, AppPanel, AppRank, AppRow } from "@/ui/design-system/kit/app-elements";
+import { AppChip, AppEmpty, AppFigure, AppPanel, AppRank, AppRow } from "@/ui/design-system/kit/app-elements";
 import { RATING_WORDS } from "@/ui/design-system/kit/words";
 
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -84,6 +84,7 @@ const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
  */
 const TopRows = ({ top, shares }: { top: RatingTop; shares: bigint[] | null }) => {
   const self = top.self;
+  if (top.entries.length === 0 && self === null) return <AppEmpty icon="leaderboard" line={RATING_WORDS.noneRated} />;
   const ownInTop = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
   const shareOf = (rank: number | null) => (shares && rank !== null ? shares[rank - 1] : undefined);
   return (

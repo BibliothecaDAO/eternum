@@ -119,7 +119,16 @@ export const AppField = ({
 };
 
 /** One place of the app's bar: where it leads, its word, its icon (or the player's portrait), and whether it is here. */
-type AppBarPlace = { to: string; label: string; icon?: IconMeaning; portrait?: string; current: boolean };
+type AppBarPlace = {
+  to: string;
+  label: string;
+  icon?: IconMeaning;
+  /** The player's portrait: the place shows the player (their name and portrait) instead of its word and icon. */
+  portrait?: string;
+  /** The place's own word where it shows the player ("You"): what assistive technology names it, with the player. */
+  place?: string;
+  current: boolean;
+};
 
 /**
  * The desktop's bar across the top of every page, over the page's painting: the app's mark, its places with their icons
@@ -156,6 +165,7 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) => (
     to={place.to}
     data-role="tab"
     aria-current={place.current ? "page" : undefined}
+    aria-label={place.place !== undefined ? `${place.place}: ${place.label}` : undefined}
     className={cn("app-bar__place", place.portrait !== undefined && "app-bar__player")}
   >
     {place.portrait !== undefined ? (

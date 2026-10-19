@@ -39,15 +39,18 @@ row's own game, lobby or results (`scripts/prove-play.mjs`, writing `play-proof.
 directory per run, and exiting 1 unless every press arrived). The places beyond Play have their own:
 `pnpm --dir apps/game prove:shell --base-url https://127.0.0.1:<port> --out <dir> [--state <file>]` presses each flow of
 Season, You, Settings and What's new from a fresh Play at both sizes, as a new visitor or, given a saved signed-in
-browser state, as a returning player, scrolling to and clicking each control through the browser. Signed out it also
-measures the lab's fixture pages (Play, a running Blitz season, a claim, a sealed chest, a paid entry, You, Settings,
-What's new and a post, the legal pages, each sign-in step, the doorway's holds and an unknown path) and holds every page
-it passes, lab or live, to its content starting within 64 px under the bar (or a phone's top row), every word displaying
-at 14 px or more as drawn (an SVG's scale counted), and on desktop the body starting at the window's left edge. It sets
-back what it changes (the alert level, music) to the value it read, however the flow ends, and stops before anything
-outward (paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots into a new
-directory per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as failed,
-and exits 1 unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given
+browser state, as a returning player, scrolling to and clicking each control through the browser. You is the bar's place
+named You: on a desktop the player's name and portrait at the bar's end (named "You: <name>" for assistive technology),
+through which a returning player reaches Settings and Sign out; a Season board counts as shown with its first place or
+its line saying no one is on it yet. Signed out it also measures the lab's fixture pages (Play, a running Blitz season,
+a claim, a sealed chest, a paid entry, You, Settings, What's new and a post, the legal pages, each sign-in step, the
+doorway's holds and an unknown path) and holds every page it passes, lab or live, to its content (words, controls,
+fields or a card's picture) starting within 64 px under the bar (or a phone's top row), every word displaying at 14 px
+or more as drawn (an SVG's scale counted), and on desktop the body starting at the window's left edge. It sets back what
+it changes (the alert level, music) to the value it read, however the flow ends, and stops before anything outward
+(paying, leaving for the docs, signing out). It writes `shell-proof-<persona>.json` and screenshots into a new directory
+per run, marks a flow stopped by a service that did not answer as unavailable and any other stop as failed, and exits 1
+unless every flow arrived (`scripts/prove-shell.mjs`; the proofs share `scripts/prove-run.mjs`). Given
 `--watch /g/<chain>/<game>` and the saved state of a player who holds realms in that live game, it drives the one path
 inside a match it covers instead: it watches the game, opens the identity chip, presses its Play, and checks at both
 sizes that the doorway shows and goes, the game is played rather than watched, the chip names the player, and the page

@@ -56,10 +56,15 @@ const link = (word) => ({ kind: "link", word });
 /** Play's Join, on a Blitz slot the live data may not hold. */
 const joinSlot = () => ({ kind: "press", word: "Join", live: true });
 
+/** A Season board's panel, named by its title, holds `rows` or its empty line. */
+const boardShown = (title, rows) =>
+  `[...document.querySelectorAll('[data-band="body"] .app-panel')].some((panel) => panel.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)} && (${rows} || panel.querySelector(".app-empty")))`;
+
 /** Each flow's end, checked in the page. */
 const END = {
-  frontierBoard: `location.pathname === "/season" && [...document.querySelectorAll('[data-band="body"] button')].some((row) => /^1\\s/.test(row.innerText.trim()))`,
-  blitzBoard: `location.pathname === "/season" && [...document.querySelectorAll('[data-band="body"] h2')].some((title) => title.innerText.trim().startsWith("Blitz")) && document.querySelector('[data-band="body"] ol li')`,
+  // A board is shown when its panel holds its first place, or says it has no one on it yet.
+  frontierBoard: `location.pathname === "/season" && ${boardShown("Frontier", `[...panel.querySelectorAll(".app-row .app-rank")].some((rank) => rank.innerText.trim() === "1")`)}`,
+  blitzBoard: `location.pathname === "/season" && ${boardShown("Blitz", `panel.querySelector("ol li")`)}`,
   player: `location.pathname.startsWith("/p/") && document.querySelector('[data-role="back"]')`,
   results: `location.pathname.startsWith("/results/") && document.querySelector('[data-role="back"]')`,
   important: `document.querySelector('[role="radio"][aria-checked="true"]')?.innerText.trim() === "Important"`,
@@ -170,18 +175,19 @@ const MEASURE = `(() => {
     renderedSizes.push(Math.round(size * svgScale(el) * 10) / 10);
   }
   const body = band("body");
-  // Where the page's content starts: its first words or controls (its title row's or its body's) under the frame's
-  // edge, the desktop's bar or the phone's top row, so a painting, a spacer or a band that moves the whole body down
-  // counts as space; and the body's left edge in the window (a column left for a rail would be a gutter).
+  // Where the page's content starts: its first words, controls, fields or pictures (its title row's or its body's: a
+  // card's painting is the card) under the frame's edge, the desktop's bar or the phone's top row, so a spacer or a
+  // band that moves the whole body down counts as space, and so does the page's own painting, which stands behind the
+  // frame outside the body; and the body's left edge in the window (a column left for a rail would be a gutter).
   const frame = band("bar") ?? band("top");
   const frameEdge = frame ? frame.getBoundingClientRect().bottom : 0;
-  const shown = [band("title"), body].filter(Boolean).flatMap((part) => [...part.querySelectorAll("*")]).filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button")));
+  const shown = [band("title"), body].filter(Boolean).flatMap((part) => [...part.querySelectorAll("*")]).filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button, input, select, textarea, img")));
   return {
     path: location.pathname + location.search,
     controls: page.length,
     controlsInView: page.filter(inView).length,
     nav: nav.length,
-    gold: words(all.filter((el) => el.tagName === "BUTTON" && /primary/.test(el.className))),
+    gold: words(all.filter((el) => el.tagName === "BUTTON" && (/primary/.test(el.className) || el.dataset.kind === "primary"))),
     smallestText: renderedSizes.length ? Math.min(...renderedSizes) : null,
     smallestCssText: cssSizes.length ? Math.min(...cssSizes) : null,
     notice: band("notice") !== null,
@@ -237,13 +243,16 @@ const FIND = (step, mark) => `(() => {
   const controls = (root, css) => (root ? [...root.querySelectorAll(css)] : []);
   const pageControls = [...controls(body, "a[href], button"), ...controls(document.querySelector('[data-band="foot"]'), "a[href], button"), ...controls(document, "[data-kit-sheet] button")];
   let found;
-  // A desktop place carries its key beside its word ("You 3").
-  if (step.kind === "tab") found = [...document.querySelectorAll('[data-role="tab"]')].find((el) => text(el).replace(/ \\d$/, "") === step.word);
+  // A place by its name: its word, or where it shows the player ("You: Maelis"), its own word before the name.
+  const nameOf = (el) => el.getAttribute("aria-label") ?? text(el);
+  if (step.kind === "tab") found = [...document.querySelectorAll('[data-role="tab"]')].find((el) => nameOf(el) === step.word || nameOf(el).startsWith(step.word + ": "));
   if (step.kind === "press" && step.word === "first") found = controls(body, "button").find((el) => !el.closest("[role=radiogroup]"));
   else if (step.kind === "press") found = pageControls.find((el) => text(el) === step.word);
-  if (step.kind === "view") found = [...document.querySelectorAll('[role="radio"]')].find((el) => text(el) === step.word);
+  // A view of one thing: a switch's option, or a tab of the app sheet's tabs.
+  if (step.kind === "view") found = [...document.querySelectorAll('[role="radio"], [role="tab"]')].find((el) => text(el) === step.word);
   if (step.kind === "toggle") found = document.querySelector('[role="switch"][aria-label="' + step.word + '"]');
-  if (step.kind === "first-row") found = controls(body, "button").find((el) => /^1\\s/.test(el.innerText.trim()));
+  // A board's first place: the row ranked 1, opened by its words.
+  if (step.kind === "first-row") found = controls(body, ".app-row").find((row) => row.querySelector(".app-rank")?.innerText.trim() === "1")?.querySelector("button");
   if (step.kind === "finished-game") {
     const games = controls(body, 'a[href^="/results/"]');
     found = games[1] ?? games[0];

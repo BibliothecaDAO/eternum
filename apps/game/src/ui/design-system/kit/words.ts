@@ -450,6 +450,8 @@ export const SEASON_WORDS = {
   vp: "points",
   /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
+  /** Frontier's board before any realm is on it. */
+  boardEmpty: "No realm on the board yet.",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */
@@ -458,6 +460,8 @@ export const RATING_WORDS = {
   blitzRating: "Blitz rating",
   /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
   unlinked: "Link a wallet in Settings to carry a rating.",
+  /** Blitz's board before anyone has a rating. */
+  noneRated: "No one has a rating yet.",
 } as const;
 
 /** You and Settings: their rows and groups, Settings' sheets and confirms. */

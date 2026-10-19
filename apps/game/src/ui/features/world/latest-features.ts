@@ -34,6 +34,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-10-19",
+    title: "Season's empty boards speak",
+    description:
+      "A Season board with no one on it yet says so instead of standing empty, the desktop bar's name reads as You to screen readers, and the game's doorway starts at the top on a phone.",
+    type: "fix",
+  },
+  {
     date: "2026-10-18",
     title: "The app's new look",
     description:

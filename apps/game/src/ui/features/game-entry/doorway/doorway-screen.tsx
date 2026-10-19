@@ -80,7 +80,7 @@ export const DoorwayScreen = ({
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-doorway flex-col items-center gap-6 py-6">
-            {realm ? <RealmRising realm={realm} /> : <div className="h-24" aria-hidden />}
+            {realm && <RealmRising realm={realm} />}
             <StepTrack steps={view.steps} />
             {hold}
             {children}

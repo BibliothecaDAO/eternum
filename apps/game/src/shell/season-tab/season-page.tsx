@@ -153,6 +153,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   if (!season) return directory.isPending ? <Loading /> : null;
   if (board.isPending) return <Loading />;
   const rows = board.data?.mode === "frontier" ? boardRows(board.data.entries, player, rowsShown) : [];
+  if (rows.length === 0) return <AppEmpty icon="leaderboard" line={SEASON_WORDS.boardEmpty} />;
   return (
     <div>
       {rows.map(({ entry, own }) => (

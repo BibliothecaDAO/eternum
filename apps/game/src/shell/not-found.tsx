@@ -1,15 +1,14 @@
 import { APP_STATE_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { AppButton, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { Button } from "@/ui/design-system/kit/button";
 import { StateCard } from "@/ui/design-system/kit/state-card";
-import { Title } from "@/ui/design-system/kit/title";
 
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
-import { StepVerb } from "./frame/step-verb";
 
 /**
  * A page that does not exist, also drawn inside a page whose subject does not exist (a post, a player): on a phone the
- * storm above the line, on desktop one plate with Play on Enter.
+ * storm above the line, on desktop the app sheet's panel on the storm, with Play on Enter.
  */
 export const NothingHere = () =>
   useLayout() === "phone" ? (
@@ -19,14 +18,14 @@ export const NothingHere = () =>
     </StateCard>
   ) : (
     <div className="flex justify-center">
-      <section className="plate flex w-dialog flex-col items-stretch gap-5 p-6">
-        <Title level="plate" as="p" className="text-center leading-none">
-          {APP_STATE_WORDS.nothingHere}
-        </Title>
-        <StepVerb>
-          <Button role="primary" word={WORDS.play} icon="play" to="/" />
-        </StepVerb>
-      </section>
+      <AppPanel className="w-dialog">
+        <div className="flex flex-col items-stretch gap-5 text-center">
+          <p className="text-app-title text-app-ink">{APP_STATE_WORDS.nothingHere}</p>
+          <AppButton kind="primary" size="lg" icon="play" to="/" step>
+            {WORDS.play}
+          </AppButton>
+        </div>
+      </AppPanel>
     </div>
   );
 

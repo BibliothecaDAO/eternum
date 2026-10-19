@@ -120,7 +120,11 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
     <AppTopBar
       mark={<Lockup />}
       places={places ? TABS.filter((tab) => tab !== YOU_TAB).map(placeOf) : []}
-      player={places ? { ...placeOf(YOU_TAB), ...(player && { label: player.name, portrait: player.url }) } : null}
+      player={
+        places
+          ? { ...placeOf(YOU_TAB), ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }) }
+          : null
+      }
       notice={notice}
     />
   );
