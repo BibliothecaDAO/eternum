@@ -19,6 +19,7 @@ import {
   HudRow,
   HudSlider,
 } from "@/ui/design-system/kit/hud-elements";
+import { NOTHING_TO_AUTOMATE } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   resolveProductionPercentages,
@@ -499,12 +500,7 @@ export const RealmAutomationPanel = ({
   ]);
 
   if (!automationRows.length) {
-    return (
-      <HudEmpty
-        icon="automation"
-        line="This realm has no active production buildings yet. Create production structures to configure automation."
-      />
-    );
+    return <HudEmpty icon="automation" line={NOTHING_TO_AUTOMATE} />;
   }
 
   return (

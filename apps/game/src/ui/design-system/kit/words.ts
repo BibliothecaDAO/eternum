@@ -887,6 +887,13 @@ export const relicLine = (relicId: ResourcesIds, activation: RelicActivation, es
 export const presetLine = ({ label, description }: { label: string; description: string }): string =>
   `${label}: ${description}`;
 
+/**
+ * Automation with nothing to run: a realm whose only producers are farms and workers' huts holds no row, since Wheat and
+ * Labor produce on their own, so the line says that rather than that the realm produces nothing.
+ */
+export const NOTHING_TO_AUTOMATE =
+  "Nothing to automate here yet: Wheat and Labor produce on their own. Build a resource building to automate what it makes.";
+
 /** Why the realm's automation cannot be changed now; null when it can. */
 export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): string | null => {
   if (!ordersAllowed) return "Only the realm's player can change its automation";
