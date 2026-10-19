@@ -1,6 +1,6 @@
 import { hash, shortString } from "starknet";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
-import { gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
+import { gamesAbi, gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ShardReader } from "./shard-rpc";
@@ -259,65 +259,66 @@ it("does not fetch the full class again when the next alarm creates another read
   expect(rpc.contract).toHaveBeenCalledTimes(2);
 });
 
-it("reads a Blitz result that a release's logic class emits under its own event enum", async () => {
-  // Game 10 of dev chain DEV_18dfa7f2b475f083, as its shard emitted it at block 75,043: the prizes logic runs by library
-  // call from the Games contract and emits under BlitzEvent, a path the Games class itself does not declare.
-  const chainId = "0x4445565f31386466613766326234373566303833";
-  const blitzResult = {
-    from_address: address,
-    keys: [
-      hash.getSelectorFromName("BlitzEvent"),
-      hash.getSelectorFromName("RowSet"),
-      "0x1",
-      shortString.encodeShortString("BlitzResult"),
-    ],
-    data: [
-      "0x1",
-      "0xa",
-      "0x5",
-      "0x1",
-      "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0",
-      "0x1",
-      "0x1",
-      "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd",
-    ],
-    transaction_hash: "0xbeef",
-    block_number: 10,
-    block_hash: "0xa",
-  };
-  const rowSet = (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!;
-  const prizesLogic = [
-    {
-      type: "event",
-      name: "prizes::Event",
-      kind: "enum",
-      variants: [{ name: "BlitzEvent", type: "prizes::BlitzResultState::Event", kind: "nested" }],
-    },
-    {
-      type: "event",
-      name: "prizes::BlitzResultState::Event",
-      kind: "enum",
-      variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
-    },
-    rowSet,
-  ];
-  rpc.chain.mockResolvedValue(chainId);
+// Game 10 of dev chain DEV_18dfa7f2b475f083, as its shard emitted it at block 75,043: the prizes logic runs by library
+// call from the Games contract and emits under BlitzEvent, a path the Games class itself does not declare.
+const DEV_CHAIN = "0x4445565f31386466613766326234373566303833";
+const GAME_TEN_WALLET = "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0";
+const GAME_TEN_COMMITMENT = "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd";
+const gameTenResult = {
+  from_address: address,
+  keys: [
+    hash.getSelectorFromName("BlitzEvent"),
+    hash.getSelectorFromName("RowSet"),
+    "0x1",
+    shortString.encodeShortString("BlitzResult"),
+  ],
+  data: ["0x1", "0xa", "0x5", "0x1", GAME_TEN_WALLET, "0x1", "0x1", GAME_TEN_COMMITMENT],
+  transaction_hash: "0xbeef",
+  block_number: 10,
+  block_hash: "0xa",
+};
+const PRIZES_LOGIC = "0x77";
+const prizesLogicAbi = () => [
+  {
+    type: "event",
+    name: "prizes::Event",
+    kind: "enum",
+    variants: [{ name: "BlitzEvent", type: "prizes::BlitzResultState::Event", kind: "nested" }],
+  },
+  {
+    type: "event",
+    name: "prizes::BlitzResultState::Event",
+    kind: "enum",
+    variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
+  },
+  (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!,
+];
+
+/**
+ * A shard whose Games class is `gamesClass` and whose one release answers `release`, holding game 10's result. The node
+ * returns an event only when every key position the filter names matches it.
+ */
+const shardWithGameTen = (gamesClass: unknown[], release: string[]) => {
+  rpc.chain.mockResolvedValue(DEV_CHAIN);
   rpc.contract.mockImplementation(async (classHash: string) => ({
-    abi: BigInt(classHash) === 0x77n ? prizesLogic : abi,
+    abi: BigInt(classHash) === BigInt(PRIZES_LOGIC) ? prizesLogicAbi() : gamesClass,
   }));
   rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
-    entrypoint === "current_release" ? ["0x1"] : [...Array(17).fill("0x77"), "0x0"],
+    entrypoint === "current_release" ? ["0x1"] : release,
   );
-  // The node returns an event only when every key position the filter names matches it.
   rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
     events: keys.every(
       (allowed, index) =>
-        !allowed.length || allowed.some((key) => BigInt(key) === BigInt(blitzResult.keys[index] ?? "0x-1")),
+        !allowed.length || allowed.some((key) => BigInt(key) === BigInt(gameTenResult.keys[index] ?? "0x-1")),
     )
-      ? [blitzResult]
+      ? [gameTenResult]
       : [],
   }));
-  const reader = new ShardReader({ chainId, rpcUrl: "https://shard.test/rpc", gamesAddress: address });
+};
+
+/** Every Blitz result the relay reads from block 10, through each event filter. */
+const resultsAtBlockTen = async () => {
+  const reader = new ShardReader({ chainId: DEV_CHAIN, rpcUrl: "https://shard.test/rpc", gamesAddress: address });
   const ports = shardWithdrawalPorts(reader, fixture().bindings);
   const results = [];
   let cursor: string | null = null;
@@ -328,15 +329,34 @@ it("reads a Blitz result that a release's logic class emits under its own event 
     results.push(...page.results);
     cursor = page.next ?? null;
   } while (cursor);
-  expect(results).toEqual([
-    {
-      chainId,
-      gameId: 10,
-      rows: [{ wallet: "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0", rank: 1 }],
-      commitment: "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd",
-      blockNumber: 10,
-    },
-  ]);
+  return results;
+};
+
+const GAME_TEN = [
+  {
+    chainId: DEV_CHAIN,
+    gameId: 10,
+    rows: [{ wallet: GAME_TEN_WALLET, rank: 1 }],
+    commitment: GAME_TEN_COMMITMENT,
+    blockNumber: 10,
+  },
+];
+
+it("reads a Blitz result that a release's logic class emits under its own event enum", async () => {
+  // The Games class: its events, and the committed release entrypoints and types its Release layout is read from.
+  shardWithGameTen([...abi, ...gamesAbi], [...Array(17).fill(PRIZES_LOGIC), "0x0"]);
+  expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
+});
+
+it("reads a release laid out with one more logic class than today, from the Games ABI alone", async () => {
+  // A release that splits an eighteenth logic class off: its LogicClasses struct gains a member, and `release` answers
+  // nineteen felts. The prizes logic is the new class; the other seventeen are the old ones.
+  const games = JSON.parse(JSON.stringify(gamesAbi)) as { type: string; name: string; members?: unknown[] }[];
+  games
+    .find((item) => item.type === "struct" && item.name === "games_storage::release::LogicClasses")!
+    .members!.push({ name: "season_rules", type: "core::starknet::class_hash::ClassHash" });
+  shardWithGameTen([...abi, ...games], [...Array(17).fill("0x66"), PRIZES_LOGIC, "0x0"]);
+  expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
 });
 
 it("reads a full page's headers in batches the shard RPC accepts, checking each against its parent", async () => {

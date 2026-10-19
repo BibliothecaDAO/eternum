@@ -222,8 +222,9 @@ export class ShardReader {
    */
   private async prefixes(provider: RpcProvider, number: number) {
     const address = this.connection.gamesAddress;
-    const prefixes = rowSetPrefixes(await readShardAbi(provider, address, number));
-    for (const classHash of await releaseClasses(provider, address, number))
+    const games = await readShardAbi(provider, address, number);
+    const prefixes = rowSetPrefixes(games);
+    for (const classHash of await releaseClasses(provider, address, number, games))
       prefixes.push(...(await logicClassPrefixes(provider, classHash)));
     const unique = new Map(prefixes.map((prefix) => [prefix.map(felt).join(), prefix]));
     if (!unique.size) throw new Error("rowset_abi_unavailable");
@@ -280,18 +281,57 @@ const logicClassPrefixes = async (provider: RpcProvider, classHash: string) => {
 };
 
 /** The logic and migration classes of every release the Games contract has registered by a block. */
-const releaseClasses = async (provider: RpcProvider, address: string, number: number): Promise<string[]> => {
+const releaseClasses = async (
+  provider: RpcProvider,
+  address: string,
+  number: number,
+  games: unknown,
+): Promise<string[]> => {
   const call = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
   const [current] = await call("current_release", []);
   const classes = new Set<string>();
-  for (let release = 1n; release <= BigInt(current ?? "0"); release++) {
-    // Release: 17 logic classes, then the migration class (zero when the release migrates nothing).
-    const hashes = await call("release", [release.toString()]);
-    if (hashes.length !== 18) throw new Error("invalid_release_classes");
-    for (const classHash of hashes) if (BigInt(classHash) !== 0n) classes.add(felt(classHash));
+  const layout = BigInt(current ?? "0") > 0n ? releaseLayout(games) : null;
+  for (let release = 1n; layout && release <= BigInt(current!); release++) {
+    const answer = await call("release", [release.toString()]);
+    if (answer.length !== layout.size) throw new Error("invalid_release_classes");
+    // A zero migration class is a release that migrates nothing.
+    for (const position of layout.classes) if (BigInt(answer[position]!) !== 0n) classes.add(felt(answer[position]!));
   }
   return [...classes];
+};
+
+const CLASS_HASH = "core::starknet::class_hash::ClassHash";
+const ONE_FELT = new Set(["core::felt252", "core::integer::u8", "core::integer::u16", "core::integer::u32"]);
+
+/**
+ * Where the class hashes sit in `release`'s answer, and its length, read from the Games ABI's Release type: a logic
+ * class split off in a new release needs no relay change. A field the walk cannot size is refused, never guessed.
+ */
+const releaseLayout = (raw: unknown): { size: number; classes: number[] } => {
+  const abi = (typeof raw === "string" ? JSON.parse(raw) : raw) as {
+    type: string;
+    name?: string;
+    items?: unknown[];
+    outputs?: { type: string }[];
+    members?: { type: string }[];
+  }[];
+  const items = abi.flatMap((item) => (item.type === "interface" ? (item.items as typeof abi) : [item]));
+  const entry = items.find((item) => item.type === "function" && item.name === "release");
+  if (entry?.outputs?.length !== 1) throw new Error("release_abi_unavailable");
+  const structs = new Map(items.filter((item) => item.type === "struct").map((item) => [item.name, item]));
+  const layout = { size: 0, classes: [] as number[] };
+  const walk = (type: string, within: string[]) => {
+    if (type === CLASS_HASH) layout.classes.push(layout.size++);
+    else if (ONE_FELT.has(type)) layout.size++;
+    else {
+      const struct = structs.get(type);
+      if (!struct?.members || within.includes(type)) throw new Error("unsupported_release_abi");
+      for (const member of struct.members) walk(member.type, [...within, type]);
+    }
+  };
+  walk(entry.outputs[0]!.type, []);
+  return layout;
 };
 
 /** The RowSet paths one class declares; a class that emits no RowSet declares none. */
