@@ -3150,6 +3150,36 @@
         },
         "sha256": "f42cf6a7a7183a888e47358a46ea3240808183849456e3a8303f1dfa2028cbc7"
       }
+    },
+    {
+      "id": "beast-t1",
+      "label": "Beast \u00b7 T1",
+      "family": "Beasts",
+      "prompt": "prompts/beast-t1.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "24ac2ec5727873fc451e11eb90d9b45916440b6fcc63ff0b7bb5905dd8e47451"
+      }
+    },
+    {
+      "id": "beast-t2",
+      "label": "Beast \u00b7 T2",
+      "family": "Beasts",
+      "prompt": "prompts/beast-t2.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "7a069db684c0d62de05046e53fb5de064dd55586801bfe0dd5250eedf8b4b304"
+      }
+    },
+    {
+      "id": "beast-t3",
+      "label": "Beast \u00b7 T3",
+      "family": "Beasts",
+      "prompt": "prompts/beast-t3.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "c79e060f2bae6c0dcd1a951c5c7374eb9784382b08b4878d264467d1ef3cc601"
+      }
     }
   ]
 }

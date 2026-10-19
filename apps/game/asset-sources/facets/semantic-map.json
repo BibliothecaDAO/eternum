@@ -1414,5 +1414,20 @@
     "rewardChest": "band-4-opened",
     "label": "Bottom 25% reward chest \u00b7 opened",
     "family": "Rewards"
+  },
+  "beast-t1": {
+    "art": "beast-t1",
+    "label": "Beast \u00b7 T1",
+    "family": "Beasts"
+  },
+  "beast-t2": {
+    "art": "beast-t2",
+    "label": "Beast \u00b7 T2",
+    "family": "Beasts"
+  },
+  "beast-t3": {
+    "art": "beast-t3",
+    "label": "Beast \u00b7 T3",
+    "family": "Beasts"
   }
 }

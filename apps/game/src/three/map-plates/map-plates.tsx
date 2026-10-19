@@ -1,4 +1,5 @@
 import { formatExact, formatPercent } from "@bibliothecadao/types";
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 
@@ -54,7 +55,10 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
 /** A troop stack, its type shown by its painting: "[crossbow] T3 1,500". */
 const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
-    <Icon name={`${troops.type}-t${troops.tier}` as IconMeaning} size={20} />
+    <Icon
+      name={troops.beast ? beastMeaning(troops.tier) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
+      size={20}
+    />
     <HudTierChip tier={troops.tier} />
     <span className="mp-count">{formatExact(troops.count)}</span>
   </span>

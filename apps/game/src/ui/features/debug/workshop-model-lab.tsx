@@ -102,11 +102,6 @@ export function WorkshopModelLab() {
         </label>
       </header>
       <p role="status">{status}. Compared at game scale.</p>
-      <div className="workshop-lab-labels">
-        {WORKSHOP_LINEUP.map((asset) => (
-          <span key={asset.path}>{asset.label}</span>
-        ))}
-      </div>
       <div ref={host} className="workshop-lab-canvas" />
       <footer>Drag to orbit · scroll to inspect · all three buildings at their game scale</footer>
     </main>

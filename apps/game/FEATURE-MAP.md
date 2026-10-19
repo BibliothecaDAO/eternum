@@ -563,3 +563,18 @@ The receipt remains after a snapshot reload. Yesterday’s sites leave the curre
 `/lab/models?family=cleared-sites&rendererMode=webgpu-force-webgl` compares the production standard with the standing
 camp and stragglers, at gameplay and detail distance. Both use the game renderer; the selected standard uses the
 production receipt over native fixture facts.
+
+## Frontier beast guards
+
+Standing Frontier sites share their beast identity between the map model, hover plate and selected-site card. Ruins keep
+their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Stragglers show Troll, Wolf or
+Goblin for their existing combat class. Combat tiers, counts and forecasts are unchanged. Cleared sites do not show
+beasts.
+
+`/lab/models?family=beasts` compares the three new species studies with shipped beasts. **Set** switches to
+standing-site compositions or Stragglers; **View**, **Turn** and **Light** inspect them. The footer compares the old and
+new plates at HUD size. Pick a **Site** and **Combat class**, then **Select site** to inspect its production card.
+`pnpm --dir apps/game prove:beasts https://127.0.0.1:4218 <evidence-parent>` drives these controls, records the rendered
+parts and icon sizes, captures each result and releases the page. `verify:beasts` checks delivered geometry, materials,
+footprint and source provenance. `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports the saved
+Blender sources without modifying production.

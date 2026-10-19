@@ -36,19 +36,19 @@ export async function proveWorkshops(b, out, records, baseUrl) {
       }
       const expected = {
         distance: scenario.distance,
-        focus: scenario.focus,
+        focus: scenario.focus === "workshop" ? 1 : "lineup",
         yaw: Number(scenario.yaw),
         lighting: scenario.light,
       };
       const rendered = await waitFor(
         b,
-        `(() => { const node=document.querySelector('[data-workshop-rendered]'); if(!node) return false; const drawn=JSON.parse(node.dataset.workshopRendered); return Object.entries(${JSON.stringify(expected)}).every(([key,value]) => drawn[key] === value) && (drawn.focus === "lineup" ? drawn.drawnAssets.length === 3 : drawn.drawnAssets.includes("/models/new-buildings-opt/workshop.glb")); })()`,
+        `(() => { const node=document.querySelector('[data-lineup-rendered]'); if(!node) return false; const drawn=JSON.parse(node.dataset.lineupRendered); return Object.entries(${JSON.stringify(expected)}).every(([key,value]) => drawn[key] === value) && (drawn.focus === "lineup" ? drawn.drawnAssets.length === 3 : drawn.drawnAssets.includes("/models/new-buildings-opt/workshop.glb")); })()`,
         15000,
       );
       const actual = await b.evaluate(`(() => {
         const main = document.querySelector('[data-workshop-ready]');
-        const drawn = document.querySelector('[data-workshop-rendered]');
-        return { assets: JSON.parse(main.dataset.workshopAssets), drawn: drawn ? JSON.parse(drawn.dataset.workshopRendered) : null,
+        const drawn = document.querySelector('[data-lineup-rendered]');
+        return { assets: JSON.parse(main.dataset.workshopAssets), drawn: drawn ? JSON.parse(drawn.dataset.lineupRendered) : null,
           overflow: document.documentElement.scrollWidth > innerWidth };
       })()`);
       record.checks.push(

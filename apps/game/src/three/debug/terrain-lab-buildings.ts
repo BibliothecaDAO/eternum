@@ -6,7 +6,7 @@ import {
   SPIRE_MODEL_PATH,
   getStructureModelPaths,
 } from "@/three/constants/scene-constants";
-import { FALLEN_REALM_RUIN_PATH } from "../structures/fallen-realm";
+import { FALLEN_REALM_RUIN_PATH } from "../structures/frontier-beast";
 import { StructureType } from "@bibliothecadao/types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
 

@@ -3,7 +3,7 @@ import type { IncomingTroopArrival, SiteKind } from "@bibliothecadao/eternum";
 
 import { BuildingType, ID, StructureType, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { CosmeticAttachmentTemplate } from "../cosmetics/types";
-import type { fallenRealmBeast } from "../structures/fallen-realm";
+import type { FrontierBeast } from "../structures/frontier-beast";
 
 export enum SceneName {
   WorldMap = "map",
@@ -32,8 +32,8 @@ export interface StructureInfo {
   /** A guarded Frontier site's kind (its ExpeditionSite stands): its plate reads kind and strength, never an id. */
   siteKind?: SiteKind;
   clearedSite?: true;
-  /** A standing fallen realm's beast: the camp draws as its ruin and this beast instead of its village. */
-  fallenRealm?: ReturnType<typeof fallenRealmBeast>;
+  /** The standing site's beast identity shared by its model and plate. */
+  frontierBeast?: FrontierBeast;
   realmOrder?: number;
   cosmeticId?: string;
   cosmeticAssetPaths?: string[];

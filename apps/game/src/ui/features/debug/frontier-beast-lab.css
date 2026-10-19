@@ -1,0 +1,33 @@
+.beast-proof {
+  --mp-side: var(--hud-neutral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 12px;
+  min-height: 130px;
+  background: #172322;
+}
+.beast-proof .mp-plate {
+  position: relative;
+}
+.beast-proof small {
+  display: block;
+  margin-bottom: 6px;
+}
+.beast-proof select,
+.beast-proof button {
+  margin: 4px;
+  padding: 6px;
+  background: #263b35;
+  color: white;
+}
+.beast-icon-studies span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 12px;
+}
+.beast-lab .ui-sheet__backdrop {
+  background: transparent;
+}

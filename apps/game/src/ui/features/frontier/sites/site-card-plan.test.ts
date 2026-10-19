@@ -11,7 +11,8 @@ describe("Frontier's tile card", () => {
   it("shows a camp's guard as troops and tier, its labor payout, and the exact fight from the army beside it", () => {
     const { store, site, structure, attack } = campBeside();
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.name).toBe("Camp");
+    expect(plan.name).toBe("Wyvern");
+    expect(plan.beast?.beast).toBe("wyvern");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 550 });
     expect(plan.xp).toBe(82);

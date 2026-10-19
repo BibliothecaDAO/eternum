@@ -163,3 +163,18 @@ it("marks a cleared site with a flag and never calls it undefended", () => {
     buildStructurePlate(structure({ structureType: StructureType.Camp, clearedSite: true, guardArmies: [] })),
   ).toMatchObject({ icon: "flag", name: "Camp · Cleared", guards: null, place: undefined });
 });
+
+it("names a Frontier guard by its beast while retaining its combat stack and site lore", () => {
+  const plate = buildStructurePlate(
+    structure({
+      structureType: StructureType.Ruin,
+      structureName: "",
+      owner: { address: 0n, ownerName: "", guildName: "" },
+      frontierBeast: { beast: "wyvern", name: "Wyvern", scale: 1.35 },
+      guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: 2800 }],
+    }),
+  );
+  expect(plate.owner).toBe("Wyvern");
+  expect(plate.place).toBe(siteName(29));
+  expect(plate.guards).toEqual([{ type: "knight", tier: 1, count: 2800, beast: true }]);
+});

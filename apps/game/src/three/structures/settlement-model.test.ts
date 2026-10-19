@@ -1,3 +1,4 @@
+import { FRONTIER_BEAST_PATHS } from "./frontier-beast";
 import {
   BoxGeometry,
   Group,
@@ -65,9 +66,14 @@ function fixture(kind: "village" | "realm" = "village") {
 describe("gameplay villages", () => {
   it.each([false, true])("selects the approved model in world and local views (blitz=%s)", (blitz) => {
     expect(getStructureModelPaths()[StructureType.Village]).toEqual([VILLAGE_MODEL_PATH]);
-    expect(getStructureModelPaths()[StructureType.Camp]).toEqual([CAMP_MODEL_PATH, CLEARED_SITE_MODEL_PATH]);
+    expect(getStructureModelPaths()[StructureType.Camp]).toEqual([
+      CAMP_MODEL_PATH,
+      ...FRONTIER_BEAST_PATHS,
+      CLEARED_SITE_MODEL_PATH,
+    ]);
     expect(getStructureModelPaths()[StructureType.Stragglers]).toEqual([
       STRAGGLERS_MODEL_PATH,
+      ...FRONTIER_BEAST_PATHS,
       CLEARED_SITE_MODEL_PATH,
     ]);
     expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH]).size).toBe(3);

@@ -11,6 +11,6 @@ export const TARGET_MARKS: Record<AttackTargetKind, { word: string; icon: IconMe
   Camp: { word: CAMP, icon: "camp" },
   Rift: { word: RIFT, icon: "rift" },
   Ruin: { word: RUIN, icon: "ruin" },
-  Stragglers: { word: STRAGGLERS, icon: "troops" },
+  Stragglers: { word: STRAGGLERS, icon: "beast-t1" },
   Army: { word: ARMY, icon: "attack" },
 };

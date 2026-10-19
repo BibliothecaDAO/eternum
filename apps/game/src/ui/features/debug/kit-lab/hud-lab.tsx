@@ -181,7 +181,7 @@ const CAMP_CARD: LabSite = {
 };
 const RUIN_CARD: LabSite = {
   site: "Ruin",
-  beast: "Troll",
+  beast: { name: "Troll", tier: 1, combatClass: "Knight" },
   army: ARMY_CHIP,
   guard: 3_400,
   fight: WIN(2, 1_250, 1_520),

@@ -85,6 +85,12 @@ export function realmMarkerMeaning(level: number) {
   return `map-${realmMeaning(level)}` as const;
 }
 
+/** Beast art follows combat tier; Loot Survivor's species tier never selects this painting. */
+export function beastMeaning(tier: number): IconMeaning {
+  if (tier !== 1 && tier !== 2 && tier !== 3) throw new Error(`Unsupported beast combat tier ${tier}`);
+  return `beast-t${tier}`;
+}
+
 export function troopMeaning(troops: { category: string; tier: string }): IconMeaning {
   const name = `${troops.category.toLowerCase()}-${troops.tier.toLowerCase()}` as IconMeaning;
   if (!/^(knight|crossbowman|paladin)-t[123]$/.test(name)) throw new Error(`Unknown troop icon: ${name}`);

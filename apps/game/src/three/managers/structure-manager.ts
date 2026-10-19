@@ -3,9 +3,10 @@ import { MineKinds, structureName } from "@bibliothecadao/types";
 import { configManager, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
-  fallenRealmBeastModelIndex,
-  readStandingFallenRealm,
-} from "../structures/fallen-realm";
+  frontierBeastModelIndex,
+  frontierSiteComposition,
+  readStandingFrontierBeast,
+} from "../structures/frontier-beast";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
@@ -588,8 +589,8 @@ export class StructureManager {
       structureType: renderInfo.type,
       mineKind: structureComponent ? presentedMineKind(structureComponent) : undefined,
       hasWonder: renderInfo.hasWonder,
-      fallenRealm: this.store
-        ? readStandingFallenRealm(
+      frontierBeast: this.store
+        ? readStandingFrontierBeast(
             this.store,
             configManager.getActiveGameId(),
             renderable.entityId,
@@ -1252,8 +1253,8 @@ export class StructureManager {
    * Check if a structure uses a non-default cosmetic skin.
    */
   private hasCosmeticSkin(structure: StructureInfo): boolean {
-    // A fallen realm is drawn as its ruin and beast, never as a skinned camp.
-    if (structure.fallenRealm || structure.clearedSite) return false;
+    // Frontier sites retain their landmark and guard composition.
+    if (structure.frontierBeast || structure.clearedSite) return false;
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
@@ -1262,7 +1263,14 @@ export class StructureManager {
 
   /** The height of the model the structure is drawn with; nothing stands over its tile until that model is loaded. */
   private resolveStructureModelHeight(structure: StructureInfo): number {
-    return this.getModelForStructure(structure)?.height ?? 0;
+    if (!structure.frontierBeast) return this.getModelForStructure(structure)?.height ?? 0;
+    const models = this.structureModels.get(structure.structureType);
+    const composition = frontierSiteComposition(structure.structureType);
+    const landmark = (models?.get(0)?.height ?? 0) * composition.baseScale;
+    const guard =
+      (models?.get(frontierBeastModelIndex(structure.frontierBeast.beast))?.height ?? 0) *
+      structure.frontierBeast.scale;
+    return Math.max(landmark, guard);
   }
 
   private getModelForStructure(structure: StructureInfo): StructureModel | undefined {
@@ -1275,7 +1283,10 @@ export class StructureManager {
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
     if (structure.clearedSite) return this.structureModelPaths[String(structure.structureType)].length - 1;
-    if (structure.fallenRealm) return FALLEN_REALM_RUIN_MODEL_INDEX;
+    if (structure.frontierBeast)
+      return structure.structureType === StructureType.Stragglers
+        ? frontierBeastModelIndex(structure.frontierBeast.beast)
+        : FALLEN_REALM_RUIN_MODEL_INDEX;
     if (structure.structureType === StructureType.Hyperstructure) return 0;
     if (structure.structureType === StructureType.Mine) {
       const index = Object.keys(MineKinds).map(Number).indexOf(structure.mineKind!);
@@ -1289,7 +1300,7 @@ export class StructureManager {
 
   private getStructureModelIndices(structure: StructureInfo): number[] {
     const base = this.getBaseStructureModelIndex(structure);
-    if (structure.fallenRealm) return [base, fallenRealmBeastModelIndex(structure.fallenRealm.beast)];
+    if (structure.frontierBeast) return [...new Set([base, frontierBeastModelIndex(structure.frontierBeast.beast)])];
     return [base];
   }
 
@@ -1582,30 +1593,46 @@ export class StructureManager {
       return [];
     }
 
-    const bindings = [this.bindStructureInstance(model, structure.entityId, dirtyModels)];
-    if (structure.fallenRealm) {
-      bindings.push(this.bindFallenRealmBeast(structure.fallenRealm, models, structure.entityId, dirtyModels));
-    }
-
+    if (!structure.frontierBeast)
+      return [this.bindStructureInstance(model, structure.entityId, dirtyModels)].filter(isBoundStructureInstance);
+    const composition = frontierSiteComposition(structure.structureType);
+    const bindings: (StructureInstanceBinding | undefined)[] = [];
+    if (composition.baseScale > 0)
+      bindings.push(
+        this.bindSitePart(model, structure.entityId, dirtyModels, composition.baseScale, composition.baseZ),
+      );
+    const beastModel = models.get(frontierBeastModelIndex(structure.frontierBeast.beast));
+    if (beastModel)
+      bindings.push(
+        this.bindSitePart(
+          beastModel,
+          structure.entityId,
+          dirtyModels,
+          structure.frontierBeast.scale,
+          composition.beastZ,
+        ),
+      );
     return bindings.filter(isBoundStructureInstance);
   }
 
-  /** The beast stands on its ruin's origin at its depth's scale; the ruin itself never scales with it. */
-  private bindFallenRealmBeast(
-    { beast, scale }: NonNullable<StructureInfo["fallenRealm"]>,
-    models: Map<number, StructureModel>,
+  /** Compose both models in the site's local coordinates, restoring the common instance transform afterward. */
+  private bindSitePart(
+    model: StructureModel,
     entityId: ID,
     dirtyModels: Set<StructureModel>,
+    scale: number,
+    z: number,
   ): StructureInstanceBinding | undefined {
-    const model = models.get(fallenRealmBeastModelIndex(beast));
-    if (!model) return undefined;
-    const ruinScale = this.dummy.scale.clone();
+    const originalScale = this.dummy.scale.clone();
+    const originalPosition = this.dummy.position.clone();
+    this.dummy.translateZ(z);
     this.dummy.scale.multiplyScalar(scale);
     this.dummy.updateMatrix();
     try {
       return this.bindStructureInstance(model, entityId, dirtyModels);
     } finally {
-      this.dummy.scale.copy(ruinScale);
+      this.dummy.scale.copy(originalScale);
+      this.dummy.position.copy(originalPosition);
       this.dummy.updateMatrix();
     }
   }

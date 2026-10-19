@@ -19,6 +19,19 @@ import {
 /** One scale for chests, building types and attributes. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 
+/** Species names shared by Frontier's models, plates and selected-site cards. */
+export const BEAST_NAMES = {
+  troll: "Troll",
+  wyvern: "Wyvern",
+  hydra: "Hydra",
+  wolf: "Wolf",
+  goblin: "Goblin",
+  minotaur: "Minotaur",
+  chimera: "Chimera",
+  cyclops: "Cyclops",
+} as const;
+export const BEAST = "Beast";
+
 /** The clock line: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h". */
 export const DAY_ENDS = "Day ends";
 export const LEFT = "left";

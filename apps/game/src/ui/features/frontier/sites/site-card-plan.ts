@@ -1,16 +1,13 @@
-import { fallenRealmBeast } from "@/three/structures/fallen-realm";
+import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structures/frontier-beast";
 import {
   activeCombatRules,
   configManager,
-  expeditionDepth,
   forecastFight,
   getBlockTimestamp,
   ResourceManager,
   getGuardsByStructure,
-  readExpeditionRules,
   siteKindOf,
   siteReward,
-  type SiteKind,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -47,6 +44,7 @@ export interface SiteAttack {
  */
 export interface SiteCardPlan {
   name: string;
+  beast?: FrontierBeast;
   guard: { type: TroopType; tier: TroopTier; count: number } | null | undefined;
   kind: AttackTargetKind;
   /** The XP a clear pays; another player's army pays none this card can promise. */
@@ -86,8 +84,10 @@ export const readSiteCard = (
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
       : siteReward(kind, site);
+  const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id), siteTile);
   return {
-    name: siteName(store, kind, site, siteTile),
+    name: beast?.name ?? kind,
+    beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
     xp: siteClearXp(site),
@@ -161,19 +161,6 @@ export const storeAtLimit = (store: NativeFactStore, realmId: number, resourceId
   if (manager.storeLimit(resourceId) === undefined) return false;
   const held = manager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
   return held?.hasReachedMaxCapacity === true;
-};
-
-/** A site by its kind; a ruin by the Loot Survivor beast that holds it at its depth. */
-const siteName = (
-  store: NativeFactStore,
-  kind: SiteKind,
-  site: NativeRows["ExpeditionSite"],
-  siteTile: { row: number },
-): string => {
-  if (kind !== "Ruin") return kind;
-  const rules = readExpeditionRules(store, site.game_id);
-  if (!rules) throw new Error(`Ruin ${site.entity_id} stands in a game without expedition rules`);
-  return fallenRealmBeast(expeditionDepth(rules, { y: siteTile.row })).name;
 };
 
 const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({

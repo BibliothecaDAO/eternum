@@ -958,5 +958,17 @@
   "faceted/transfer": {
     "verdict": "beats shipped",
     "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
+  },
+  "faceted/beast-t1": {
+    "verdict": "beats shipped",
+    "reason": "Broad troll jaw, tusks and ears identify a beast instead of a human soldier; natural hide matches the map creature family."
+  },
+  "faceted/beast-t2": {
+    "verdict": "beats shipped",
+    "reason": "Larger tusks and short horns distinguish the middle combat-tier study from the unhorned first tier."
+  },
+  "faceted/beast-t3": {
+    "verdict": "beats shipped",
+    "reason": "Swept horns and a broad ridged brow distinguish the highest combat-tier study without relying on tiny markings."
   }
 }

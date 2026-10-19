@@ -1,3 +1,4 @@
+import { FrontierBeastLab } from "./frontier-beast-lab";
 import { WorkshopModelLab } from "./workshop-model-lab";
 import { RealmSeriesLab } from "./realm-series-lab";
 import { ClearedSiteLab } from "./cleared-site-lab";
@@ -42,6 +43,7 @@ const CLASS_ICONS = { knight: 26, crossbowman: 29, paladin: 32 };
 
 export function ModelLabView() {
   const [params] = useSearchParams();
+  if (params.get("family") === "beasts") return <FrontierBeastLab />;
   if (params.get("family") === "workshops") return <WorkshopModelLab />;
   if (params.get("family") === "cleared-sites") return <ClearedSiteLab />;
   return params.get("family") === "realms" ? <RealmSeriesLab /> : <UnitModelLabView />;
@@ -160,6 +162,7 @@ function UnitModelLabView() {
     <main className="model-lab" data-ready={ready} data-debug-route="model-lab">
       <header className="ml-header">
         <SemanticIcon name="resources" size={25} />
+        <Link to="/lab/models?family=beasts">Frontier beasts</Link>
         <Link to="/lab/models?family=realms">Realm ladder</Link>
         <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
         <Link to="/lab/models?family=cleared-sites">Cleared sites</Link>

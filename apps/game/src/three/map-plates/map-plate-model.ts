@@ -13,6 +13,7 @@ export interface PlateTroops {
   type: "crossbowman" | "knight" | "paladin";
   tier: 1 | 2 | 3;
   count: number;
+  beast?: true;
 }
 
 /** An army's plate: its owner over its troops and stamina; opened, the realm it comes from. */
@@ -107,6 +108,7 @@ export const buildStructurePlate = (
     | "clearedSite"
     | "guardArmies"
     | "incomingTroopArrivals"
+    | "frontierBeast"
   >,
   nowSeconds = 0,
   reward?: PlateReward,
@@ -116,11 +118,16 @@ export const buildStructurePlate = (
     structure.guardArmies
       ?.filter((guard) => guard.count > 0)
       .toSorted((a, b) => a.slot - b.slot)
-      .map((guard) => ({ type: troopType(guard.category), tier: tierOf(guard.tier), count: guard.count })) ?? null;
+      .map((guard) => ({
+        type: troopType(guard.category),
+        tier: tierOf(guard.tier),
+        count: guard.count,
+        ...(structure.frontierBeast ? { beast: true as const } : {}),
+      })) ?? null;
   return {
     kind: "structure",
     relation: relationOf(structure),
-    owner: ownerOf(structure.owner),
+    owner: structure.frontierBeast?.name ?? ownerOf(structure.owner),
     name: structure.clearedSite
       ? `${structureName(structure.structureType)} · Cleared`
       : named
