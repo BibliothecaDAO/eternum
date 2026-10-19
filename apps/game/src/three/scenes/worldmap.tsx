@@ -159,8 +159,8 @@ import { StrategicMarkerLayer, type StrategicArmyMarkerTier } from "@/three/mana
 import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
 import {
-  normalizeOwnerAddress,
   resolveWorldmapContentLadder,
+  topOwnerAddresses,
   type WorldmapContentLadder,
   type WorldmapLabelPriorityContext,
 } from "./worldmap-content-ladder";
@@ -607,6 +607,10 @@ function isSameWorldSpatialHex(hex: WorldSpatialHex | undefined, contract: { x: 
 
 /** How many leaderboard leaders keep their name tags in the mid zoom band. */
 const TOP_OWNER_LABEL_COUNT = 10;
+/** The facts the mid band's top owners are ranked from: points, shares that earn them, and who owns what. */
+const TOP_OWNER_FACTS: ReadonlySet<string> = new Set(["PlayerPoints", "HyperstructureShares", "Structure"]);
+const sameKeys = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+  a.size === b.size && [...a].every((key) => b.has(key));
 
 /** One minimap zoom click moves the camera by two wheel notches. */
 const MINIMAP_ZOOM_STEP_DELTA = 240;
@@ -749,6 +753,8 @@ export default class WorldmapScene extends WarpTravel {
 
   private armyManager!: ArmyManager;
   private mapPlates!: MapPlateLayer;
+  /** The top owners the managers' label priority context last carried. */
+  private topOwners: ReadonlySet<string> = new Set();
   private readonly terrainMovementInteractionBuffer: TerrainMovementInteraction[] = [];
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
@@ -1712,24 +1718,37 @@ export default class WorldmapScene extends WarpTravel {
     const onSelectedHex = selectedHex ? this.getHexagonEntity(sceneHexOf(selectedHex)) : undefined;
     const selectedEntityId =
       getLiveWorldmapEntityActions().selectedEntityId ?? onSelectedHex?.army?.id ?? onSelectedHex?.structure?.id;
+    this.topOwners = this.resolveTopOwnerAddresses();
     return {
       isSpectator: isExplicitSpectateSession(),
-      topOwnerAddresses: this.resolveTopOwnerAddresses(),
+      topOwnerAddresses: this.topOwners,
       selectedEntityId:
         selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
       hoveredEntityId: hovered?.army?.id ?? hovered?.structure?.id ?? null,
     };
   }
 
-  /** Top-10 by the live leaderboard; recomputed only when a label-priority refresh asks for it. */
+  /** The top ten players by the live leaderboard, every structure owner ranked (no points is 0). */
   private resolveTopOwnerAddresses(): ReadonlySet<string> {
-    const leaderboard = LeaderboardManager.instance(this.game.store);
-    const top = new Set<string>();
-    leaderboard.playersByRank.slice(0, TOP_OWNER_LABEL_COUNT).forEach(([address]: [bigint, number]) => {
-      const key = normalizeOwnerAddress(address);
-      if (key) top.add(key);
-    });
-    return top;
+    const game = configManager.getActiveGameId();
+    return topOwnerAddresses(
+      LeaderboardManager.instance(this.game.store).playersByRank,
+      [...this.game.store.inGame("Structure", game)].map((row) => row.owner),
+      TOP_OWNER_LABEL_COUNT,
+    );
+  }
+
+  /**
+   * The mid band's top owners follow the facts they come from: points awarded or a structure changing hands re-ranks
+   * them, and the plates of players who enter or leave the top ten come and go then, not at the next hover.
+   */
+  private registerTopOwnerWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.game.store.subscribe((changes) => {
+        if (!changes.some((change) => TOP_OWNER_FACTS.has(change.model))) return;
+        if (!sameKeys(this.resolveTopOwnerAddresses(), this.topOwners)) this.refreshLabelPriorityContext();
+      }),
+    );
   }
 
   private registerWorldUpdateSubscriptions(): void {
@@ -1743,6 +1762,7 @@ export default class WorldmapScene extends WarpTravel {
     this.registerRelicChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
     this.registerArmyProgressWorldUpdateSubscriptions();
+    this.registerTopOwnerWorldUpdateSubscriptions();
   }
 
   /**

@@ -103,8 +103,9 @@ export const EMPTY_LABEL_PRIORITY_CONTEXT: WorldmapLabelPriorityContext = Object
 });
 
 /**
- * near: every label; far: none; mid: selected, hovered and under-attack always,
- * then own, allied and top-10 owners — spectators see only the first three.
+ * near: every label; far: none; mid: selected, hovered and under-attack always, and what nobody owns (a hyperstructure,
+ * camp or rift the world holds: what a player weighs an army against, for spectators too); then own, allied and top-10
+ * owners. Spectators see only the first four.
  */
 export function shouldShowTextLabel(
   tier: WorldmapTextLabelTier,
@@ -113,7 +114,7 @@ export function shouldShowTextLabel(
 ): boolean {
   if (tier === "full") return true;
   if (tier === "none") return false;
-  if (isAlwaysLabelled(entity, context)) return true;
+  if (isAlwaysLabelled(entity, context) || entity.ownerAddress === 0n) return true;
   if (context.isSpectator) return false;
   return entity.isMine || entity.isAlly || isTopOwner(entity.ownerAddress, context);
 }
@@ -127,6 +128,33 @@ export function normalizeOwnerAddress(address: bigint | string | undefined): str
 function isAlwaysLabelled(entity: WorldmapLabelPriorityEntity, context: WorldmapLabelPriorityContext): boolean {
   return (
     entity.underAttack || entity.entityId === context.selectedEntityId || entity.entityId === context.hoveredEntityId
+  );
+}
+
+/**
+ * The top `count` players by points, over every player who owns a structure: a player with no points row has scored
+ * nothing (PlayerPoints' declared absence), so ranks at 0, never out of the ranking. `ranked` is the leaderboard's
+ * players by points; while it cannot rank (its scores not known yet) it is empty and every owner ranks at 0.
+ */
+export function topOwnerAddresses(
+  ranked: readonly (readonly [bigint, number])[],
+  owners: Iterable<bigint>,
+  count: number,
+): ReadonlySet<string> {
+  const points = new Map<string, number>();
+  for (const [address, score] of ranked) {
+    const key = normalizeOwnerAddress(address);
+    if (key) points.set(key, score);
+  }
+  for (const owner of owners) {
+    const key = normalizeOwnerAddress(owner);
+    if (key && !points.has(key)) points.set(key, 0);
+  }
+  return new Set(
+    [...points]
+      .toSorted((a, b) => b[1] - a[1])
+      .slice(0, count)
+      .map(([key]) => key),
   );
 }
 

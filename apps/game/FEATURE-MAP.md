@@ -271,21 +271,23 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 - **A selected structure that moves takes the selection with it**: when a Frontier realm is raised on its next day's
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
-- **Plates**: a plate over each realm, structure and army at gameplay zoom (only the selected, hovered and top ones in
-  the mid band, none when zoomed out), on the HUD panel's surface: two short rows at rest, three at most opened
-  (`src/three/map-plates/map-plate-rows.ts`), never an id. An army: its player over its troops; opened, "player | home
-  realm" as its realm's plate writes them, then its troops, then its stamina bar and exact "84/150" on its own row, as
-  at rest. A realm or hyperstructure: "player | name" over its guard (one slot as its troops, several as "1,731 guard"),
-  or "Undefended"; in Frontier, whose realms have no guard slots and are never attacked, "player | name" alone; opened,
-  the guard slots in the order an attacker meets them, and the troops on their way, each time before its troops
-  ("Arriving 13m T2 300"). A camp or rift: its lore name, read off its id on every client (`site-name.ts`), over its
-  guard; opened, its owner (the Vanguard for nobody's), its name and kind ("Grimtear Camp"), and what it holds beside
-  its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). Hover a tile, or select it, to open
-  its plate; the selected one stays open while another tile is hovered. Crowded plates stack up two steps (a one-row
-  plate as far as a two-row one), then shrink to a pin. Elsewhere an unnamed army or structure is called by its kind,
-  never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same
-  plates over a fixture world, `/lab/map-labels` (`zoom`, `hover`, `select`, `focus`, `busy=1`, `game=frontier` in the
-  address).
+- **Plates**: a plate over each realm, structure and army at gameplay zoom (in the mid band, the default zoom: the
+  selected, the hovered, what is under attack and what nobody owns (a hyperstructure, camp or rift), then yours, your
+  allies' and the top ten players', every structure owner ranked and one with no points at 0
+  (`worldmap-content-ladder.ts`); none when zoomed out), on the HUD panel's surface: two short rows at rest, three at
+  most opened (`src/three/map-plates/map-plate-rows.ts`), never an id. An army: its player over its troops; opened,
+  "player | home realm" as its realm's plate writes them, then its troops, then its stamina bar and exact "84/150" on
+  its own row, as at rest. A realm or hyperstructure: "player | name" over its guard (one slot as its troops, several as
+  "1,731 guard"), or "Undefended"; in Frontier, whose realms have no guard slots and are never attacked, "player | name"
+  alone; opened, the guard slots in the order an attacker meets them, and the troops on their way, each time before its
+  troops ("Arriving 13m T2 300"). A camp or rift: its lore name, read off its id on every client (`site-name.ts`), over
+  its guard; opened, its owner (the Vanguard for nobody's), its name and kind ("Grimtear Camp"), and what it holds
+  beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). Hover a tile, or select it, to
+  open its plate; the selected one stays open while another tile is hovered. Crowded plates stack up two steps (a
+  one-row plate as far as a two-row one), then shrink to a pin. Elsewhere an unnamed army or structure is called by its
+  kind, never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the
+  same plates over a fixture world, `/lab/map-labels` (`zoom`, `hover`, `select`, `focus`, `busy=1`, `game=frontier` in
+  the address).
 
 ## Outposts
 
