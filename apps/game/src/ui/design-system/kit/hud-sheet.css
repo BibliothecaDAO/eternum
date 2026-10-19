@@ -366,6 +366,10 @@ button.ui-panel__name {
   background: color-mix(in srgb, var(--hud-warn) 14%, transparent);
   color: var(--hud-warn);
 }
+/* A chip on a primary button's gold: its tones are washes over the dark, so on gold it takes the dark under it. */
+.ui-button[data-kind="primary"] .ui-chip {
+  background: rgb(var(--hud-dark));
+}
 /* ── Dial: a number in a ring that drains, in a tone near its end. ── */
 .ui-dial {
   position: relative;

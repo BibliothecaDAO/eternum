@@ -334,6 +334,15 @@ const ButtonsSection = () => (
           )}
         />
         <StateRow
+          label="with a count"
+          render={(state) => (
+            <HudButton kind="primary" icon="notifications" data-state={forced(state)} disabled={state === "disabled"}>
+              Attention
+              <HudChip tone="bad">3</HudChip>
+            </HudButton>
+          )}
+        />
+        <StateRow
           label="icon"
           render={(state) => (
             <HudIconButton
