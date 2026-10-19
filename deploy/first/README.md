@@ -164,11 +164,10 @@ alerts). `deploy:cloudflare` gives it to the status monitor with the Resend key.
 The status monitor probes every minute. It emails only when the client (`play`), sign-in (`accounts`), game launches
 (`launch`) or a world (`shard:…`) has been **down**, not slow or behind, for ten minutes in a row; components that cross
 that mark in the same minute share one email. Their recovery is one more. At most four emails go out in any 24 hours,
-because the same Resend account sends sign-in codes. A run hands its emails to Resend only within 50 seconds of its
-check, and each email counts until a day after the latest it could have been accepted, so one delayed by a Resend outage
-or a slow send keeps its place; the fourth says the earliest time email can resume, and the status page shows everything
-meanwhile (`apps/status-monitor/src/alerts.ts`). What each alert means and the first commands to run:
-[ON-CALL.md](./ON-CALL.md).
+because the same Resend account sends sign-in codes. An email counts from when it is queued until a day after it was
+last handed to Resend, so one delayed by a Resend outage keeps its place; the fourth says the earliest time email can
+resume, and the status page shows everything meanwhile (`apps/status-monitor/src/alerts.ts`). What each alert means and
+the first commands to run: [ON-CALL.md](./ON-CALL.md).
 
 ## Teardown
 

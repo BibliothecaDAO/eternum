@@ -6,14 +6,7 @@ import worker, { monitor } from "./worker";
 import { probeServices } from "./probes";
 import { nextMonitorState } from "./state";
 import type { MonitorState } from "./model";
-import {
-  DAILY_EMAILS,
-  NOTICE_LIFETIME_SECONDS,
-  NO_ALERTS,
-  recordNotices,
-  RESERVED_SECONDS,
-  SUSTAINED_SECONDS,
-} from "./alerts";
+import { DAILY_EMAILS, NOTICE_LIFETIME_SECONDS, NO_ALERTS, recordNotices, SUSTAINED_SECONDS } from "./alerts";
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
@@ -194,7 +187,7 @@ it("publishes atomically on local R2 and rejects an overlapping late writer", as
   });
   try {
     const bucket = (await mf.getR2Bucket("STATUS_BUCKET")) as unknown as R2Bucket;
-    await monitor(bucket, network(), () => now, valueTargets);
+    await monitor(bucket, network(), now, valueTargets);
     const original = await bucket.get("state.json");
     expect(original).not.toBeNull();
     let unblock!: () => void;
@@ -212,15 +205,15 @@ it("publishes atomically on local R2 and rejects an overlapping late writer", as
       }
       return network()(input, init);
     };
-    const late = monitor(bucket, slow, () => now + 60, valueTargets);
+    const late = monitor(bucket, slow, now + 60, valueTargets);
     await entered;
-    await monitor(bucket, network(), () => now + 120, valueTargets);
+    await monitor(bucket, network(), now + 120, valueTargets);
     unblock();
     await expect(late).rejects.toThrow("superseded");
     const published = await (await bucket.get("state.json"))!.json<{ document: { checked_at: number } }>();
     expect(published.document.checked_at).toBe(now + 120);
     const etag = (await bucket.get("state.json"))!.etag;
-    await monitor(bucket, network(), () => now + 120, valueTargets);
+    await monitor(bucket, network(), now + 120, valueTargets);
     expect((await bucket.get("state.json"))!.etag).toBe(etag);
   } finally {
     await disposeWorker(mf);
@@ -416,19 +409,10 @@ const resend = (clock: () => number) => {
   const keys = new Map<string, { body: string; at: number }>();
   const emails: { key: string; subject: string; text: string; at: number }[] = [];
   const conflicts: string[] = [];
-  const provider = {
-    emails,
-    conflicts,
-    refuse: false,
-    loseAnswers: 0,
-    sendSeconds: 0,
-    advance: (_seconds: number) => {},
-  };
+  const provider = { emails, conflicts, refuse: false, loseAnswers: 0 };
   const send: typeof fetch = async (input, init) => {
     expect(String(input)).toBe("https://api.resend.com/emails");
     if (provider.refuse) return new Response(null, { status: 500 });
-    // A slow provider: the request takes this long, and the email is accepted at its end.
-    provider.advance(provider.sendSeconds);
     const key = new Headers(init?.headers).get("idempotency-key")!;
     const body = String(init?.body);
     const known = keys.get(key);
@@ -581,11 +565,11 @@ it("records at most four emails in any 24 hours however a component flaps, the f
     const [first, ...rest] = [...notices.values()];
     expect(first!.text).not.toContain("Alert limit reached");
     expect(rest.at(-1)!.text).toContain(
-      `Alert limit reached: no more email before ${new Date((first!.recorded_at + RESERVED_SECONDS + 24 * 3600) * 1000).toISOString()}.`,
+      `Alert limit reached: no more email before ${new Date((first!.recorded_at + 24 * 3600) * 1000).toISOString()}.`,
     );
     expect(errors.mock.calls.some(([line]) => String(line).includes(`"status_alert_capped"`))).toBe(true);
-    // Once the first email's place is a day old, the next outage is told again.
-    for (let step = 0; step <= MINUTES + RESERVED_SECONDS / 60; step++) minute(at + step * 60, "down");
+    // Once the first email is a day old, the next outage is told again.
+    for (let step = 0; step <= MINUTES; step++) minute(at + step * 60, "down");
     expect(notices.size).toBe(DAILY_EMAILS + 1);
   } finally {
     errors.mockRestore();
@@ -613,9 +597,6 @@ const monitored = async () => {
   });
   let clock = now;
   const { provider, send } = resend(() => clock);
-  provider.advance = (seconds) => {
-    clock += seconds;
-  };
   const accountsHealth = { ok: false };
   const accounts = (input: RequestInfo | URL, init?: RequestInit) =>
     String(input) === "https://api.resend.com/emails"
@@ -633,7 +614,7 @@ const monitored = async () => {
     run: (at: number, failWrites: number[] = []) => {
       clock = at;
       failing = new Set(failWrites.map((write) => writes + write));
-      return monitor(flaky, accounts, () => clock, valueTargets, alerting);
+      return monitor(flaky, accounts, at, valueTargets, alerting);
     },
     state: async () => (await bucket.get("state.json"))!.json<MonitorState>(),
     accountsEmails: () => provider.emails.filter(({ key }) => key.includes(":accounts:")).map(({ key }) => key),
@@ -644,38 +625,34 @@ const monitored = async () => {
   };
 };
 
-it("delivers at most four emails in any 24 hours by their actual acceptance times, with slow sends and lost answers", async () => {
+it("delivers at most four emails in any 24 hours when Resend is down for two hours and loses an answer", async () => {
   const m = await monitored();
   try {
     const run = async (minute: number, accountsUp: boolean) => {
       m.accountsHealth.ok = accountsUp;
       await m.run(now + minute * 60);
     };
-    // Every accepted email takes Resend 30 s; the clock moves on during each send, past the observation time.
-    m.provider.sendSeconds = 30;
     m.provider.refuse = true;
-    // Two outages and their recoveries in the first 40 minutes: four notices, all held back by a Resend outage.
-    for (let minute = 0; minute <= 125; minute++) {
+    // Two outages and their recoveries in the first 40 minutes: four notices, all held back by the Resend outage.
+    for (let minute = 0; minute <= 120; minute++) {
       if (minute === 120) {
-        m.provider.refuse = false; // Resend is back: the first answer is lost, and the run's deadline cuts the rest.
+        m.provider.refuse = false; // Resend is back: all four go out at once, and the first answer is lost.
         m.provider.loseAnswers = 1;
       }
       await run(minute, !(minute <= 15 || (minute >= 19 && minute <= 34)));
     }
+    await run(121, true);
+    // Four places: the accounts outage, the world the harness never answers for, a recovery and the second outage.
     expect(m.provider.emails).toHaveLength(4);
-    // A third accounts outage begins 23 h 50 min after the first. When places free, Resend answers at once, so an email
-    // accepted right at the observation time meets the four accepted late in their run; its first answer is lost again.
-    m.provider.sendSeconds = 0;
-    m.provider.loseAnswers = 1;
-    for (let minute = 1430; minute <= 1700; minute++) await run(minute, minute < 1440);
+    expect(new Set(m.provider.emails.map(({ at }) => (at - now) / 60))).toEqual(new Set([120]));
+    // A third accounts outage begins 23 h 50 min after the first. The four went out at hour 2 and hold their places
+    // until hour 26, so nothing more is delivered before then, and email resumes once places free.
+    for (let minute = 1430; minute <= 1600; minute++) await run(minute, minute < 1440);
     const delivered = m.provider.emails.map(({ at }) => at);
-    expect(delivered.length).toBeGreaterThan(4);
-    // Measured on the provider's acceptance times: no 24 h window ever holds more than four emails.
     for (const end of delivered)
       expect(delivered.filter((at) => at <= end && end - at < 24 * 3600).length).toBeLessThanOrEqual(DAILY_EMAILS);
-    // Sends ran after their observation time, and each run stopped handing over notices at its deadline.
-    expect(delivered.some((at) => (at - now) % 60 !== 0)).toBe(true);
-    expect(m.errors.mock.calls.some(([line]) => String(line).includes(`"status_alert_deferred"`))).toBe(true);
+    expect(delivered.filter((at) => at > now + 121 * 60 && at < now + 1560 * 60)).toEqual([]);
+    expect(delivered.filter((at) => at >= now + 1560 * 60).length).toBeGreaterThan(0);
   } finally {
     await m.close();
   }
@@ -762,7 +739,7 @@ it("sends nothing from an overlapping observation that loses its write", async (
         String(input) === "https://api.resend.com/emails" ? send(input, init) : fallback(input, init);
     for (let minute = 0; minute <= MINUTES; minute++) {
       clock = now + minute * 60;
-      await monitor(bucket, mail(down), () => clock, valueTargets, alerting);
+      await monitor(bucket, mail(down), clock, valueTargets, alerting);
     }
     // Chat recovers. The late run reads the state and waits in its probes, while a newer run records and sends the
     // recovery with its own time; the late run's recovery would say another time under the same key.
@@ -778,10 +755,10 @@ it("sends nothing from an overlapping observation that loses its write", async (
       return network()(input, init);
     };
     clock = now + SUSTAINED_SECONDS + 60;
-    const late = monitor(bucket, mail(slow), () => now + SUSTAINED_SECONDS + 60, valueTargets, alerting);
+    const late = monitor(bucket, mail(slow), now + SUSTAINED_SECONDS + 60, valueTargets, alerting);
     await started;
     clock = now + SUSTAINED_SECONDS + 120;
-    await monitor(bucket, mail(network()), () => now + SUSTAINED_SECONDS + 120, valueTargets, alerting);
+    await monitor(bucket, mail(network()), now + SUSTAINED_SECONDS + 120, valueTargets, alerting);
     unblock();
     await expect(late).rejects.toThrow("superseded");
     const recoveries = provider.emails.filter(({ key }) => key === `staging:accounts:${now}:resolved`);
