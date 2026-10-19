@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Explore rows say what you found",
+    description:
+      'Events and the Log read "Explored: +100 Labor": what an explore found, without the tile\'s coordinates or the 5 points every tile scores.',
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
     title: "Compact name chip; structures in a player's detail",
     description:
       "The top bar's chip reads your name and \"#1 · 255 points\"; its hover gives the goal and what scores in one short line. In the leaderboard, a player's detail now counts the structures they own, by kind.",

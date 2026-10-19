@@ -67,12 +67,12 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
   ExplorationReward: (_event, payload, components) => ({
-    title: `${exploredAt(payload.coord)}: +${formatPoints(configManager.getVictoryPointGrants().exploreTile)}, +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`,
+    title: findLine("Explored", payload),
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "resource",
   }),
   SpireDiscovered: (_event, payload, components) => ({
-    title: `Dormant spire found: +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`,
+    title: findLine("Dormant spire found", payload),
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "prize",
   }),
@@ -713,13 +713,12 @@ const withPoints = (line: string, points: unknown): string => {
   return whole > 0 ? `${line} · +${formatPoints(whole)}` : line;
 };
 
-/** Where an explore revealed its find: "Explored · (4, 6)", in the map's own coordinates. */
-const exploredAt = (coord: unknown): string => {
-  const { x, y } = (coord ?? {}) as { x?: unknown; y?: unknown };
-  if (x === undefined || y === undefined) return "Explored";
-  const normalized = Position.fromContract({ x: Number(x), y: Number(y) }).getNormalized();
-  return `Explored · (${normalized.x}, ${normalized.y})`;
-};
+/**
+ * A find as the feed tells it: what was done and what it gave, "Explored: +100 Labor". Not where (the map shows it), nor
+ * an explore's points, a grant that never changes (the voice rule "A find says what it gave").
+ */
+const findLine = (found: string, payload: Record<string, unknown>): string =>
+  `${found}: +${formatResourceAmount(payload.amount) ?? "—"} ${resourceName(Number(payload.resource_type))}`;
 
 const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
 

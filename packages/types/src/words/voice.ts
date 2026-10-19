@@ -1,7 +1,8 @@
 /**
- * How every string a player reads is worded (the owner's rulings, briefs/hud-warroom.md and briefs/sheet-words.md,
- * 16–18 October 2026). A rule a single word can break carries the pattern that finds that word in a visible string:
- * the words inventory (scripts/words-inventory.mjs) counts them, and the lab shows each rule beside its example.
+ * How every string a player reads is worded (the owner's rulings, briefs/hud-warroom.md, briefs/sheet-words.md and
+ * briefs/stylesheet.md, 16–19 October 2026). A rule a single word can break carries the pattern that finds that word in
+ * a visible string: the words inventory (scripts/words-inventory.mjs) counts them, and the lab shows each rule beside
+ * its example.
  */
 interface VoiceRule {
   rule: string;
@@ -75,6 +76,13 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     instead: "—, never 0 or blank, when a figure cannot be read",
     bad: "0 wheat (still loading)",
     good: "— wheat",
+  },
+  {
+    rule: "A find says what it gave",
+    instead:
+      "what was done and what it gave; not where (the map shows it) nor a grant that never changes (the top bar counts points)",
+    bad: "Explored · (0, -4): +5 points, +100 Labor",
+    good: "Explored: +100 Labor",
   },
   {
     rule: "Short and precise",

@@ -618,7 +618,7 @@ it("leads a fight the viewer's army fell in with the army it cost", () => {
   expect(fight(null)).toBe("Lord 0123 vs Lord 0456 · Lord 0123 wins");
 });
 
-it("says where an explore found something, the points it scored and what it found", () => {
+it("says what an explore found, not where nor the points every tile scores", () => {
   const title = buildStoryEventPresentation(
     story("ExplorationReward", {
       explorer_id: 7,
@@ -628,7 +628,7 @@ it("says where an explore found something, the points it scored and what it foun
       amount: "200000000000",
     }),
   ).title;
-  expect(title).toBe("Explored · (4, 6): +5 points, +200 Essence");
+  expect(title).toBe("Explored: +200 Essence");
 });
 
 it("adds the points an opened crate scored", () => {

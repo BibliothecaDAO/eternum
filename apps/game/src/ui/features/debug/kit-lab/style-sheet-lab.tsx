@@ -1411,10 +1411,10 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
     sheet={
       <div className="flex w-96 flex-col">
         <HudEventRow time="12:04">
-          Explored · <strong>+5 points</strong>
+          Explored: <strong>+100 Labor</strong>
         </HudEventRow>
         <HudEventRow time="12:05" tone="good">
-          Found <strong>+200 Essence</strong>
+          Dormant spire found: <strong>+3,000 Essence</strong>
         </HudEventRow>
         <HudEventRow time="12:07" tone="bad">
           Army lost: <strong>1,000 Knights</strong> to The Vanguard

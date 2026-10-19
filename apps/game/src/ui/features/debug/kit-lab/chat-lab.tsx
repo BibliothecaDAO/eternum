@@ -83,8 +83,8 @@ const RailStage = ({ chatOpen }: { chatOpen: boolean }) => (
 
 const LAB_EVENTS = [
   ["18:18", "Army raised at Hetokamohuti"],
-  ["18:16", "Explored · (15, 8): +5 points, +50 Essence"],
-  ["18:14", "Explored · (15, 7): +5 points, +200 Essence"],
+  ["18:16", "Explored: +50 Essence"],
+  ["18:14", "Explored: +200 Essence"],
 ];
 const LONG_LINE = "Meet at the southern gate with the reinforcements, then hold the ridge until the spire opens. ";
 
