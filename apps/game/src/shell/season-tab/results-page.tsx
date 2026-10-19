@@ -152,6 +152,17 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
   );
 };
 
+/** The game's map as it ended, opened as a spectator: anyone may scout how a finished game stood. */
+const EndMapButton = ({ gameRef }: { gameRef: GameRef }) => (
+  <AppButton
+    kind="secondary"
+    icon="map"
+    to={entryHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }, "spectate")}
+  >
+    {RESULT_WORDS.endMap}
+  </AppButton>
+);
+
 /** Continue to Play after a match: the step, unless a sealed chest's Open is the page's. */
 const ContinueButton = ({ fromList, chestToOpen = false }: { fromList: boolean; chestToOpen?: boolean }) =>
   fromList ? null : (
@@ -190,6 +201,7 @@ const BlitzResult = ({
       <AppButton kind="quiet" icon="share" onClick={() => setSharing(true)}>
         {SEASON_WORDS.share}
       </AppButton>
+      <EndMapButton gameRef={gameRef} />
       <ContinueButton fromList={fromList} chestToOpen={chestToOpen} />
       {sharing && (
         <Suspense fallback={null}>
@@ -333,6 +345,7 @@ const FrontierResult = ({
       <AppButton kind="secondary" icon="leaderboard" to="/season">
         {WORDS.season}
       </AppButton>
+      <EndMapButton gameRef={gameRef} />
       {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
       {own && (
         <AppButton

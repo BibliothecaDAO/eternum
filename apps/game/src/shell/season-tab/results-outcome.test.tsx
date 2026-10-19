@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", () => new Promise<Response>(() => {})));
@@ -48,6 +48,12 @@ afterEach(async () => {
   unmount = null;
 });
 
+/** Where a press led, once it left the Results. */
+const Where = () => {
+  const { pathname, search } = useLocation();
+  return <output data-where>{`${pathname}${search}`}</output>;
+};
+
 const open = async (width: number) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(width);
@@ -59,6 +65,7 @@ const open = async (width: number) => {
         <MemoryRouter initialEntries={["/results/0x52-7"]}>
           <Routes>
             <Route path="/results/:id" element={<ResultsPage />} />
+            <Route path="*" element={<Where />} />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>,
@@ -77,14 +84,22 @@ it.each([390, 1440])(
     const outcome = body.querySelector(".app-panel")!;
     expect(outcome.textContent).toContain("3rd of 3");
     expect(outcome.textContent).toContain("352 points");
-    // Continue (the gold, with no chest to open) and Share are the page's own.
+    // Continue (the gold, with no chest to open), the end map and Share are the page's own.
     const buttons = [...page.querySelectorAll("button")].map((button) => [button.textContent, button.dataset.kind]);
     expect(buttons).toEqual([
       ["Share", "quiet"],
+      ["See the end map", "secondary"],
       ["Continue", "primary"],
     ]);
   },
 );
+
+it("opens the finished game's end map, watched, from See the end map", async () => {
+  const page = await open(1440);
+  const endMap = [...page.querySelectorAll("button")].find((button) => button.textContent === "See the end map")!;
+  await act(async () => endMap.click());
+  expect(page.querySelector("[data-where]")?.textContent).toBe("/g/0x52/7?spectate=true");
+});
 
 it("says how the player's points were made, a row per kind with its count and points, none counted twice", async () => {
   const page = await open(1440);

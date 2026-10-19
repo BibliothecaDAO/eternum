@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { disposeActiveGameSyncRuntime, installFreshGameSyncRuntime } from "../sync/game-sync-runtime";
 import type { HeraldSocket } from "../sync/herald-game-sync-transport";
+import { HERALD_GAME_FINALIZED_CLOSE } from "../sync/herald-http-types";
 import { createManualGameSyncScheduler } from "../sync/scheduler";
 import { createGameClient, type CreateGameClientInput } from "./game-client";
 import * as shardMetadata from "./shard";
@@ -315,6 +316,77 @@ describe("createGameClient", () => {
     expect(send).toHaveBeenLastCalledWith(JSON.stringify({ type: "select_actor", actor: "0x111", visit: "0x222" }));
     client.connect({ address: "0x111" } as AccountInterface);
     expect(send).toHaveBeenLastCalledWith(JSON.stringify({ type: "select_actor", actor: "0x111", visit: null }));
+    client.dispose();
+  });
+
+  it("watches a finished game from its final state and keeps it whole through connect, visit and disconnect", async () => {
+    const harness = createHarness();
+    // The finished game as Herald archived it: its rules, its release and its registry, ended at 1,792,400,000.
+    const review = {
+      confirmed_block: 640,
+      game_id: "54",
+      models: [rulesSnapshot, releaseSnapshot]
+        .map(({ model, rows }) => ({ model, rows }))
+        .concat({
+          model: "GameRegistry",
+          rows: [
+            {
+              key: "0x36",
+              value: {
+                name: "0x7465737432",
+                seed: "0x1",
+                ready: true,
+                end_at: "0x6ad5da80",
+                game_id: "0x36",
+                settled: true,
+                preset_id: "0x2",
+                dev_mode_on: false,
+                start_main_at: "0x6ad5cf60",
+                end_grace_seconds: "0x0",
+                start_settling_at: "0x6ad5ce34",
+              },
+            },
+          ],
+        }),
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        String(url).endsWith("/games/54/review/snapshot")
+          ? new Response(JSON.stringify(review))
+          : new Response(JSON.stringify(harness.manifest)),
+      ),
+    );
+    const creation = createGameClient(harness.input);
+    await vi.waitFor(() => expect(harness.sockets).toHaveLength(1));
+    // Herald refuses a finalized game's stream for good.
+    (harness.sockets[0]!.onclose as unknown as (event: { code: number }) => void)({
+      code: HERALD_GAME_FINALIZED_CLOSE,
+    });
+    const client = await harness.settle(creation);
+    const scheduler = harness.input.scheduler as ReturnType<typeof createManualGameSyncScheduler>;
+    // The runtime applies a gate change through its ingest queue, which this harness runs by hand.
+    const drain = async () => {
+      for (let round = 0; round < 20; round += 1) {
+        scheduler.flushNext();
+        await flushMicrotasks();
+      }
+    };
+    const scope = () => client.setup.store.subscriptionScope();
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    // An account connecting, a realm visited, the account leaving: the archive holds every scope, so none reopens a
+    // stream or leaves an absent row unknown.
+    client.connect({ address: "0x111" } as AccountInterface);
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    client.visit("0x222");
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    client.disconnect();
+    await drain();
+    expect(scope()).toHaveProperty("known");
+    expect(harness.sockets).toHaveLength(1);
     client.dispose();
   });
 

@@ -4,12 +4,15 @@
  * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; the
  * app's other pages are shot on the desktop, under the same frame.
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet|end-map] [--state <signed-in.json>]
+ *
+ * `end-map` runs on the live stack the client is served against, alone: the newest finished game's Results, its "See
+ * the end map" pressed, and the map it opens held until its scene is ready, watched and never played.
  */
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runProof, sleep, waitFor } from "./prove-run.mjs";
+import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORT = ["1920", "1080"];
 const PHONE = ["390", "844"];
@@ -282,9 +285,114 @@ const sheetElements = async (b, baseUrl, out) => {
   });
 };
 
+/** A game's map once a player can use it: its scene's route, and the entry's own "world-interactive" milestone. */
+const SCENE_READY = `/\\/(map|hex)$/.test(location.pathname) && (window.__eternumGameEntryTimeline ?? []).some((entry) => entry.name === "world-interactive")`;
+/** A finished game's map loads its whole end state before its scene is ready. */
+const END_MAP_MS = 180_000;
+
+/** The newest settled game in the directory's history, as the app reads it, or null when there is none. */
+const NEWEST_FINISHED = `(async () => {
+  const history = await (await fetch("/api/directory/history?limit=1", { cache: "no-store" })).json();
+  const game = history.games?.[0];
+  return game ? { chainId: game.chainId, gameId: game.game_id, name: game.name, status: game.status } : null;
+})()`;
+
+/** Marks the Results page's "See the end map" for the browser's click; false when the page has none. */
+const MARK_END_MAP = `(() => {
+  const button = [...document.querySelectorAll("button")].find((candidate) => candidate.innerText.trim() === "See the end map");
+  button?.setAttribute("data-proof-press", "end-map");
+  return button !== undefined;
+})()`;
+
+/**
+ * The fixture Results' "See the end map", pressed: it must lead to the game's own entry as a spectator, the address
+ * Play's Watch uses (play-route.ts, buildEntryHref). The game page it opens is left at once: its fixture chain is not
+ * a live one.
+ */
+const END_MAP_ADDRESS = {
+  path: "/lab/app/reward-sealed/results/0x5245414c4d53-7?capture=1",
+  leads: "/g/0x5245414c4d53/7?spectate=true",
+};
+
+const proveEndMapAddress = async (b, baseUrl) => {
+  const record = { name: "results-end-map", ready: false, presses: [], checks: [] };
+  b.run("open", `${baseUrl}${END_MAP_ADDRESS.path}`, "--ignore-https-errors");
+  if (!(await waitFor(b, MARK_END_MAP, READY_MS))) return { ...record, error: "no See the end map on the Results" };
+  const refused = clickAsPlayer(b, '[data-proof-press="end-map"]');
+  await waitFor(b, `location.pathname.startsWith("/g/")`, READY_MS);
+  const led = pathOf(b.url());
+  b.run("open", "about:blank");
+  record.presses.push({ press: "See the end map", status: refused ?? "led", led });
+  record.checks.push({ check: "See the end map leads to the game, watched", ok: led === END_MAP_ADDRESS.leads, led });
+  record.ready = true;
+  return record;
+};
+
+const SEEN_ON_THE_MAP = `({
+  path: location.pathname + location.search,
+  canvas: document.querySelector("canvas") !== null,
+  hud: ["Spectating", "Game finished"].filter((word) => document.body.innerText.includes(word)),
+  refused: document.body.innerText.includes("This game has ended."),
+  standings: [...document.querySelectorAll('.ui-table-row[aria-label$=" points"]')].map((row) => row.getAttribute("aria-label")),
+  noStandings: document.body.innerText.includes("No points scored yet"),
+  // A signed-in spectator's identity chip reads "Spectating", then "as <name>".
+  spectatingAs: /Spectating\\s+as (\\S+)/.exec(document.body.innerText)?.[1] ?? null,
+})`;
+
+/**
+ * A finished game's end map, from the app: its Results opened as anyone reads them, "See the end map" pressed as a
+ * player presses it, and the map it opens held until its scene is ready, its standings ranking the game's players.
+ * With a saved signed-in state (`--state <file>`, agent-browser's `state save`) the spectator is a signed-in player,
+ * whose account connects to the game once it is open. The game's page is left once shot.
+ */
+const proveEndMap = async (b, baseUrl, out, state) => {
+  const record = { name: state ? "end-map-signed-in" : "end-map", ready: false, presses: [], checks: [] };
+  if (state) b.run("--state", state, "open", "about:blank");
+  b.run("open", `${baseUrl}/`, "--ignore-https-errors");
+  record.game = (await waitFor(b, DRAWN, READY_MS)) ? b.evaluate(NEWEST_FINISHED) : null;
+  if (!record.game) return { ...record, error: "no finished game in the directory's history" };
+  const { chainId, gameId } = record.game;
+  b.run("open", `${baseUrl}/results/${chainId}-${gameId}`, "--ignore-https-errors");
+  if (!(await waitFor(b, `${MARK_END_MAP}`, READY_MS)))
+    return { ...record, error: "no See the end map on its Results" };
+  await sleep(SETTLE_MS);
+  b.run("screenshot", join(out, "end-map-1-results.png"));
+  const refused = clickAsPlayer(b, '[data-proof-press="end-map"]');
+  const reached = refused === null && (await waitFor(b, SCENE_READY, END_MAP_MS));
+  record.presses.push({
+    press: "See the end map",
+    status: reached ? "led" : (refused ?? "failed"),
+    led: pathOf(b.url()),
+  });
+  await sleep(SETTLE_MS * 2);
+  b.run("screenshot", join(out, "end-map-2-map.png"));
+  const seen = b.evaluate(SEEN_ON_THE_MAP);
+  record.checks.push(
+    { check: "it opens the finished game", ok: seen.path.startsWith(`/g/${chainId.toLowerCase()}/${gameId}/`), seen },
+    { check: "watched, not played", ok: seen.path.includes("spectate=true") },
+    { check: "its map draws, the doorway gone", ok: seen.canvas && !seen.refused },
+    { check: "the HUD says it is watched and finished", ok: seen.hud.length === 2 },
+    // A store left incomplete reads a player who never scored as unknown, and the standings empty.
+    { check: "its standings rank the game's players", ok: seen.standings.length > 0 && !seen.noStandings },
+    ...(state
+      ? [
+          {
+            check: "the identity chip names the signed-in player, spectating",
+            ok: seen.spectatingAs !== null,
+          },
+        ]
+      : []),
+  );
+  b.run("open", "about:blank");
+  record.ready = true;
+  return record;
+};
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
   const parts = process.argv[4]?.split(",") ?? ["pages", "others", "sheet"];
+  const stateAt = process.argv.indexOf("--state");
+  const state = stateAt === -1 ? null : process.argv[stateAt + 1];
   await runProof(
     {
       parent: resolve(process.argv[3] ?? ".context/app-sheet"),
@@ -298,11 +406,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         for (const page of sheetPages(true)) records.push(await shoot(b, baseUrl, out, page));
       if (parts.includes("others")) for (const page of otherPages()) records.push(await shoot(b, baseUrl, out, page));
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
+      if (parts.includes("end-map")) records.push(await proveEndMap(b, baseUrl, out, state));
       if (parts.includes("pages")) {
         for (const bar of barCases()) {
           b.run("set", "viewport", ...bar.viewport);
           records.push(await shoot(b, baseUrl, out, bar));
         }
+        records.push(await proveEndMapAddress(b, baseUrl));
         for (const entry of ENTRY_CASES) {
           b.run("set", "viewport", ...entry.viewport);
           records.push(await shoot(b, baseUrl, out, { ...entry, act: takeEveryChoice, more: entryChecks }));

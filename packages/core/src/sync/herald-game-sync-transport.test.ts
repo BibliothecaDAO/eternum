@@ -3,8 +3,13 @@ import bindings from "../../../../contracts/l3/world-native/schema/bindings.json
 import { nativeModelDefinition } from "../client/native-models";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { GameFinalizedError, HeraldGameSyncTransport, type HeraldSocket } from "./herald-game-sync-transport";
-import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
+import {
+  GameFinalizedError,
+  HeraldGameSyncTransport,
+  type HeraldGameSyncTransportOptions,
+  type HeraldSocket,
+} from "./herald-game-sync-transport";
+import { HERALD_GAME_FINALIZED_CLOSE, type HeraldGameSnapshot } from "./herald-http-types";
 import type {
   GameSyncEvent,
   GameSyncFact,
@@ -45,7 +50,7 @@ type Delivery =
   | { kind: "scope"; facts: GameSyncFact[]; expedition: boolean }
   | ({ kind: "facts" } & GameSyncFactBatch);
 
-const streamHarness = () => {
+const streamHarness = (options: Partial<HeraldGameSyncTransportOptions> = {}) => {
   const sockets: FakeSocket[] = [];
   const urls: string[] = [];
   const deliveries: Delivery[] = [];
@@ -87,6 +92,7 @@ const streamHarness = () => {
       return socket;
     },
     url: "wss://herald.test/games/54",
+    ...options,
   });
   const factBatches = () => deliveries.filter((delivery) => delivery.kind === "facts");
   return {
@@ -211,6 +217,141 @@ describe("HeraldGameSyncTransport", () => {
     // The gate stays as stopping left it, shut: nothing reads as known that the store cannot vouch for.
     expect(gates.slice(gatesBefore)).toEqual([{ gameId: 1, complete: false }]);
     warn.mockRestore();
+  });
+
+  describe("a finalized game, watched", () => {
+    /** Game 54's review snapshot: its registry, ended at 1,792,400,000, and one realm. */
+    const REVIEW: HeraldGameSnapshot = {
+      confirmed_block: 640,
+      game_id: "54",
+      models: [
+        { model: "GameRegistry", rows: [{ key: "0x36", value: { game_id: "0x36", end_at: "0x6ad5da80" } }] },
+        { model: "Structure", rows: [{ key: "0x36:0x7", value: { entity_id: "0x7" } }] },
+      ],
+    };
+    const closeAsFinalized = (socket: FakeSocket) =>
+      (socket.onclose as unknown as (event: { code: number }) => void)({ code: HERALD_GAME_FINALIZED_CLOSE });
+
+    it("holds the game as it ended: its review snapshot, under the game's end as its one head, and nothing after", async () => {
+      vi.useFakeTimers();
+      const harness = streamHarness({ finalState: async () => REVIEW });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await subscribed;
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(harness.heads).toEqual([{ block: 640, preconfirmed: false, timestamp: 1_792_400_000 }]);
+      expect(harness.deliveries.map((delivery) => ("model" in delivery ? delivery.model : delivery.kind))).toEqual([
+        "snapshot-start",
+        "GameRegistry",
+        "Structure",
+        "snapshot-end",
+      ]);
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 1_792_400_000 });
+      expect(harness.startFailures).toEqual([]);
+      expect(harness.sockets).toHaveLength(1);
+    });
+
+    /** A spectator's start on the final state, its gate open. */
+    const startedOnFinalState = async () => {
+      const finalState = vi.fn(async () => REVIEW);
+      const harness = streamHarness({ finalState });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      const writer = await subscribed;
+      await vi.waitFor(() => expect(gates.at(-1)?.complete).toBe(true));
+      return { finalState, gates, harness, writer };
+    };
+
+    it.each([
+      { label: "an account connecting", actor: "0x123", visit: undefined, after: { actor: "0x123" } },
+      {
+        label: "a realm visited (Frontier watches the leader)",
+        actor: undefined,
+        visit: "0x222",
+        after: { actor: null, visit: "0x222" },
+      },
+    ])("keeps the finished game whole through $label: no stream, no second read", async ({ actor, visit, after }) => {
+      const { finalState, gates, harness } = await startedOnFinalState();
+      harness.transport.selectActor(actor, visit);
+      await Promise.resolve();
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, timestamp: 1_792_400_000, ...after });
+      // And back: the account leaves, the visit ends.
+      harness.transport.selectActor(undefined);
+      await Promise.resolve();
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 1_792_400_000 });
+      expect(finalState).toHaveBeenCalledTimes(1);
+      expect(harness.sockets).toHaveLength(1);
+      expect(harness.sockets[0].sent.filter((message) => message.type === "select_actor")).toEqual([]);
+    });
+
+    it("opens the final state on the selection made while it was read", async () => {
+      let answer!: (snapshot: HeraldGameSnapshot) => void;
+      const harness = streamHarness({ finalState: () => new Promise((resolve) => (answer = resolve)) });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      harness.transport.selectActor("0x123");
+      answer(REVIEW);
+      await subscribed;
+      await vi.waitFor(() => expect(gates.at(-1)?.complete).toBe(true));
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: "0x123", timestamp: 1_792_400_000 });
+    });
+
+    it("takes nothing from a final state read after its session was cancelled", async () => {
+      let answer!: (snapshot: HeraldGameSnapshot) => void;
+      const harness = streamHarness({ finalState: () => new Promise((resolve) => (answer = resolve)) });
+      const { socket, writer } = await attached(harness);
+      snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+      harness.deliveries.length = 0;
+      closeAsFinalized(socket);
+      writer.cancel();
+      answer(REVIEW);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(harness.deliveries).toEqual([]);
+    });
+
+    it("ends a player's live game whole on its final state, under the stream's last chain time", async () => {
+      const harness = streamHarness({ finalState: async () => REVIEW, url: "wss://herald.test/games/54?actor=0x123" });
+      const gates: GameSyncSnapshotState[] = [];
+      harness.handlers.onSnapshotState = (state) => void gates.push(state);
+      const { socket } = await attached(harness);
+      snapshot("epoch-a", 1, "0x1", 1).forEach((message) => socket.receive(message));
+      socket.receive({ type: "head", epoch: "epoch-a", seq: 2, block: 13, preconfirmed: false, timestamp: 350 });
+      closeAsFinalized(socket);
+      await vi.waitFor(() => expect(gates.at(-1)?.complete).toBe(true));
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: "0x123", timestamp: 350 });
+      // The player leaves the account: the finished game stays whole.
+      harness.transport.selectActor(undefined);
+      await Promise.resolve();
+      expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 350 });
+    });
+
+    it("still ends a player's start as finalized: a player's finished game leads to its results", async () => {
+      const finalState = vi.fn(async () => REVIEW);
+      const harness = streamHarness({ finalState, url: "wss://herald.test/games/54?actor=0x123" });
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+      expect(finalState).not.toHaveBeenCalled();
+    });
+
+    it("ends the start as finalized when the review snapshot does not answer, or holds no end", async () => {
+      for (const finalState of [
+        async (): Promise<HeraldGameSnapshot> => Promise.reject(new Error("review_snapshot_not_frozen")),
+        async () => ({ ...REVIEW, models: REVIEW.models.slice(1) }),
+      ]) {
+        const harness = streamHarness({ finalState });
+        const subscribed = harness.transport.subscribe(harness.handlers);
+        closeAsFinalized(harness.sockets.at(-1)!);
+        await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+        expect(harness.deliveries).toEqual([]);
+      }
+    });
   });
 
   it("uses streamed head time for absence scope and forgets it on disposal", async () => {

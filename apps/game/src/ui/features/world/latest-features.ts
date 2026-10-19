@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Scout a finished game's map",
+    description:
+      "A finished game's Results now offer See the end map: the game's world as it ended, watched as a spectator, to scout how every realm, army and Hyperstructure stood.",
+    type: "feature",
+  },
+  {
+    date: "2026-10-19",
     title: "Cleared sites leave a standard",
     description: "Select a cleared site's standard to see its credited reward. Armies can move onto the cleared tile.",
     type: "feature",

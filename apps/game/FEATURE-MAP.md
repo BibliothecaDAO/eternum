@@ -38,9 +38,11 @@ each tier, sealed and opened, among them), and links to the real pages on the sh
 (nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the painting
 and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install notice
 at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the lobby's entry with every choice taken
-at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet. The pages: Play (`/`) the lead
+at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet;
+`prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses **See the
+end map** and holds the map to its scene being ready, watched and finished. The pages: Play (`/`) the lead
 widest and each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side;
-Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results (`/results/:id`) the player's place
+Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place
 and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) the latest changes beside
 the Scroll's posts. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture
 realm. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
@@ -122,6 +124,7 @@ the foot.
 | Boot diagnostics: the loading screen's timeline and renderer switch, verbose logs                                                                                                                       | `/g/:chain/:game/...?logs=1`               | Add `?logs=1` to a game's address; without it no screen shows them                                                                                                      |
 | Action timeline: the last actions and sends, each with its send stages (release ready, left the queue, nonce, answered and included with their source, settled) and stream phases, timed from the click | `/g/:chain/:game/map?logs=1`               | Bottom right of the world map; always recorded in `window.__clientActionLatencyMeasurements`                                                                            |
 | A finished game's results and review                                                                                                                                                                    | `/results/:chainId-:gameId`                | Play, **Results**; a finished game on You or a player's page; in the game, **Game finished** → **See the results**; an ended game's doorway or map address, **Results** |
+| A finished game's end map, watched (its state as it ended, from Herald's review snapshot)                                                                                                               | `/g/:chain/:game?spectate=true`            | Results, **See the end map**                                                                                                                                            |
 | Install the app (PWA)                                                                                                                                                                                   | —                                          | Play's notice, **Install**                                                                                                                                              |
 
 ### Season, You and Results
@@ -162,11 +165,12 @@ the foot.
 
 ## Blitz and Eternum in a match (`/g/:chain/:game/map` or `/hex`)
 
-A match opens from the lobby (**Your game**) or from home (**Enter**). Add `?spectate=true` to watch a running game.
-Both modes show one desktop HUD (`src/ui/features/world/hud/desktop-hud.tsx`): your holdings, the selected one's card
-and the minimap down the left; Next up, the events, the picked tile and chat down the right; the orders as round bubbles
-between them. Below 1024 px wide the panels open from one tab bar (Empire, Map, Log, Chat, Details), with the actions in
-a row above it (a rail on the left in landscape). The build tag sits in the band under the columns, at the bottom right.
+A match opens from the lobby (**Your game**) or from home (**Enter**). Add `?spectate=true` to watch a running game, or
+a finished one as it ended. Both modes show one desktop HUD (`src/ui/features/world/hud/desktop-hud.tsx`): your
+holdings, the selected one's card and the minimap down the left; Next up, the events, the picked tile and chat down the
+right; the orders as round bubbles between them. Below 1024 px wide the panels open from one tab bar (Empire, Map, Log,
+Chat, Details), with the actions in a row above it (a rail on the left in landscape). The build tag sits in the band
+under the columns, at the bottom right.
 
 The right column's layout has a command: `pnpm --dir apps/game prove:chat <base-url> <out-dir>` measures the real chat
 window, and on `/lab/kit/chat?state=rail` the real rail (Events with its Log count, the panels lab's real picked army,

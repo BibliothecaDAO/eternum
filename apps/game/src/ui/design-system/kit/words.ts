@@ -280,6 +280,8 @@ export const RESULT_WORDS = {
   sitesCleared: "Sites cleared",
   chests: "Chests",
   deepest: "Deepest",
+  /** A finished game's map, opened as a spectator: how it ended, to scout. */
+  endMap: "See the end map",
 } as const;
 export const YOU_PLACED = "You placed";
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
