@@ -1751,7 +1751,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.registerBattleWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
-    this.registerRelicChestWorldUpdateSubscriptions();
+    this.registerChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
     this.registerArmyProgressWorldUpdateSubscriptions();
     this.registerTopOwnerWorldUpdateSubscriptions();
@@ -1812,16 +1812,16 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  // A flourish only, for crates inside the loaded chunk: the relics themselves land in native store on the army or its home,
+  // A flourish only, for crates inside the loaded chunk: the reward itself lands in native store on the army or its home,
   // and the feed row (the UI's) covers every opening in the world.
-  private registerRelicChestWorldUpdateSubscriptions(): void {
+  private registerChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.RelicChest.onRelicChestOpened((opening) => {
+      this.worldUpdateListener.Chests.onChestOpened((opening) => {
         if (this.currentChunk === "null" || getActiveGameSyncRuntime()?.getStatus() !== "running") return;
         const hex = Position.fromContract({ x: opening.hex.x, y: opening.hex.y }).getNormalized();
         if (!this.isColRowInCurrentRenderBounds(hex.x, hex.y)) return;
-        const revealed = this.chestManager.revealRelics({ col: opening.hex.x, row: opening.hex.y }, opening.relics);
-        if (!revealed) void this.resourceFXManager.playRelicBurst(opening.relics, hex.x, hex.y);
+        const revealed = this.chestManager.revealReward({ col: opening.hex.x, row: opening.hex.y }, opening);
+        if (!revealed) void this.resourceFXManager.playChestRewardBurst(opening, hex.x, hex.y);
       }),
     );
   }
@@ -3861,7 +3861,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * The one chest opener, for a tap here or the HUD's request: a relic crate's command goes out, and its result comes
-   * back as its story. Frontier has no chest on a tile: a ruin's chest opens at its clear.
+   * back as its story, whether the chest yields Blitz relics or Frontier LORDS.
    */
   private async openChest(explorerId: ID, hex: HexPosition): Promise<void> {
     const account = useAccountStore.getState().account;

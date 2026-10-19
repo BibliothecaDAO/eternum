@@ -53,6 +53,7 @@ it("opens from the sealed panel, then keeps the exact awarded relics in its rece
   const root = createRoot(host);
   const open = vi.fn();
   const opening = {
+    kind: "relics" as const,
     title: "Crate opened",
     explorerId: 7,
     hex: { x: 4, y: 5 },

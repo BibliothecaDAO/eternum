@@ -43,7 +43,7 @@ describe("precompiled chest transitions", () => {
   it("fans out all three awarded icons with the opening and cleans them up after absorption", () => {
     const pool = createPool();
     pool.start("1,0", "open", new Matrix4(), 4);
-    pool.revealRelics("1,0", [39, 40, 41]);
+    pool.revealReward("1,0", { kind: "relics", relics: [41, 43, 39] });
     const actor = pool.group.children.find((child) => child.visible)!;
     const label = actor.children.find((child) => "element" in child) as Group & { element: HTMLElement };
     expect(label.element.querySelectorAll("img")).toHaveLength(3);
@@ -56,7 +56,7 @@ describe("precompiled chest transitions", () => {
     expect(Number((label.element.firstElementChild!.firstElementChild as HTMLElement).style.opacity)).toBe(1);
     pool.update(2, 6.7);
     expect(pool.has("1,0")).toBe(false);
-    expect(pool.hasRelicReveals()).toBe(false);
+    expect(pool.hasRewardReveals()).toBe(false);
     expect(label.parent).toBeNull();
     pool.dispose();
   });
@@ -87,16 +87,36 @@ it("keeps decorative gems sealed through summon sampling, reveals on open and se
     pool.update(0.7, 4.7);
     expect(gems.visible).toBe(false);
     pool.start("1,0", "open", new Matrix4(), 4.7);
-    pool.revealRelics("1,0", [41, 43, 39]);
+    pool.revealReward("1,0", { kind: "relics", relics: [41, 43, 39] });
     pool.update(0.7, 5.4);
     expect(gems.visible).toBe(true);
-    expect(pool.hasRelicReveals()).toBe(true);
+    expect(pool.hasRewardReveals()).toBe(true);
     pool.update(2, 7.4);
     expect(pool.has("1,0")).toBe(false);
     pool.start("2,0", "summon", new Matrix4(), 8);
     expect(gems.visible).toBe(false);
     pool.update(0.7, 8.7);
     expect(gems.visible).toBe(false);
+  } finally {
+    pool.dispose();
+  }
+});
+
+it.each([17, 0])("reveals exactly the paid LORDS amount %i, never relics or an expired prize", (amount) => {
+  const pool = createPool();
+  try {
+    pool.start("1,0", "open", new Matrix4(), 4);
+    pool.revealReward("1,0", { kind: "lords", amount });
+    const actor = pool.group.children.find((child) => child.visible)!;
+    const label = actor.children.find((child) => "element" in child) as Group & { element: HTMLElement };
+    expect([...label.element.querySelectorAll("img")].map((img) => img.alt)).toEqual(amount ? ["17 LORDS"] : []);
+    pool.update(0.7, 4.7);
+    expect(label.visible).toBe(true);
+    if (amount)
+      expect(Number((label.element.querySelector("img")!.parentElement as HTMLElement).style.opacity)).toBe(1);
+    pool.update(2, 6.7);
+    expect(pool.has("1,0")).toBe(false);
+    expect(label.parent).toBeNull();
   } finally {
     pool.dispose();
   }

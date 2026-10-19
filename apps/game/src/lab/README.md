@@ -4,7 +4,12 @@
 `ChestTileDetails`. Focus the chest or its held-open hover plate, Open, inspect the reveal/receipt, then Reset. The
 local fixture still supplies the public pack row; its opening is delivered through the native story listener. Pack and
 Lucky are fixture inputs, with no appearance/preview selector. `prove:relic-chest` starts the app, drives the visible
-controls on WebGPU and WebGL2, saves evidence in a fresh directory and releases its browser/server.
+controls for Blitz and Frontier on WebGPU and WebGL2, saves evidence in a fresh directory and releases its
+browser/server.
+
+`/lab/relic-chest?gameMode=frontier` uses a 17-LORDS common-share reservation, the real Frontier calendar and the same
+chest panel/model/caller. Advance to day rollover shows the expired zero reward; Open produces the recorded paid amount,
+including zero. This is a local native-fact fixture, not a transaction.
 
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
 each page link to see the painting on its real component with local app fixtures. Run

@@ -15,10 +15,17 @@ pub enum Discovery {
     Shrine,
     Well,
     Spire,
+    Chest,
 }
 
 // One reveal in two hundred, in basis points, when spire discovery is on.
 pub const SPIRE_FIND_BPS: u128 = 50;
+
+pub const FRONTIER_CHEST_FIND_BPS: u128 = 1;
+
+pub fn frontier_chest(seed: u256) -> bool {
+    crate::random::range(seed, 0x46524f4e544945525f4348455354, 10000) < FRONTIER_CHEST_FIND_BPS
+}
 
 pub fn surface(config: MapConfig, seed: u256, distance: u128, hyperstructures: u32, mode_rules: u32) -> Discovery {
     if mode_rules & crate::rules::DISCOVER_SPIRES != 0 && lottery(seed, 3, SPIRE_FIND_BPS, 10000 - SPIRE_FIND_BPS) {
@@ -119,6 +126,7 @@ pub fn tile_occupier(discovery: Discovery) -> Option<u8> {
         Discovery::Shrine => Some(crate::taxonomy::SHRINE_OCCUPIER),
         Discovery::Well => Some(crate::taxonomy::WELL_OCCUPIER),
         Discovery::Spire => Some(crate::taxonomy::DORMANT_SPIRE_OCCUPIER),
+        Discovery::Chest => Some(crate::taxonomy::CHEST_OCCUPIER),
         _ => None,
     }
 }

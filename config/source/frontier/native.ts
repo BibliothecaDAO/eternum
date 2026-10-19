@@ -37,7 +37,13 @@ export const frontierPreset: NativePreset = {
   gameType: "frontier",
   environmentGameType: "frontier",
   settlementMode: "Single",
-  modeRules: rule.HOME_REWARDS | rule.UNOWNED_TARGETS | rule.DEPTH_CONTENTS | rule.REVEAL_SUPPLIES | rule.SEASON_CLOSE,
+  modeRules:
+    rule.HOME_REWARDS |
+    rule.UNOWNED_TARGETS |
+    rule.DEPTH_CONTENTS |
+    rule.REVEAL_SUPPLIES |
+    rule.SEASON_CLOSE |
+    rule.DISCOVER_CHESTS,
   entryRule: rule.ENTRY_OPEN,
   commandMask: (
     [
@@ -54,6 +60,7 @@ export const frontierPreset: NativePreset = {
       "EnterDepth",
       "BuyTier",
       "InteractSite",
+      "OpenRelicChest",
       "RefillStamina",
       "WithdrawLords",
       "SetEntityName",

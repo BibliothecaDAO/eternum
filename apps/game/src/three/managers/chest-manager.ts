@@ -7,7 +7,7 @@ import { RewardTileModel } from "../rewards/reward-tile-model";
 import { ChestTransitions } from "../rewards/chest-transitions";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, nativeGameModeOf, configManager, type ChestReward } from "@bibliothecadao/eternum";
 import {
   getActiveGameSyncRuntime,
   type ChestSpatialProjectionChange,
@@ -115,7 +115,7 @@ export class ChestManager {
   }
 
   public hasActiveLabelAnimations(): boolean {
-    return this.chestTransitions?.hasRelicReveals() ?? false;
+    return this.chestTransitions?.hasRewardReveals() ?? false;
   }
 
   public getVisibleCount(): number {
@@ -303,14 +303,14 @@ export class ChestManager {
     this.renderVisibleChests(this.currentChunkKey);
   }
 
-  public revealRelics(hex: { col: number; row: number }, relics: readonly number[]): boolean {
+  public revealReward(hex: { col: number; row: number }, reward: ChestReward): boolean {
     if (!this.chestModel || !this.chestTransitions || !this.contentLadder.structureModels) return false;
     const hexCoords = { ...hex, alt: activeMapLayer() };
     const tile = { hexCoords };
     const key = this.transitionKey(tile);
     const opened = this.chestTransitions.start(key, "open", this.chestPlacement(tile), this.chestModel.time);
     if (!opened) return false;
-    this.chestTransitions.revealRelics(key, relics);
+    this.chestTransitions.revealReward(key, reward);
     const chest = this.worldSpatialProjection.getChestsAtHex(hexCoords)[0];
     const instance = chest ? this.chestInstanceIndices.get(chest.entityId) : undefined;
     if (instance !== undefined) this.chestModel.removeInstance(instance);
@@ -559,6 +559,7 @@ export class ChestManager {
     const labelDiv = createChestLabel(
       {
         entityId: chest.entityId,
+        rewardKind: nativeGameModeOf(configManager.getPresetId()) === "frontier" ? "lords" : "relics",
         hexCoords: Position.fromContract({ x: chest.hexCoords.col, y: chest.hexCoords.row }),
       },
       this.currentCameraView,

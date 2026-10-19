@@ -4,13 +4,13 @@ import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
 import { divideByPrecision } from "../utils/utils";
 import { siteKindOf } from "../utils/expeditions";
-import { describeRelicChestOpening } from "./story-event-formatter";
+import { describeRelicChestOpening, describeRewardChestOpening } from "./story-event-formatter";
 import type {
   BattleEventSystemUpdate,
   BuildingSystemUpdate,
   TierBoughtSystemUpdate,
   ExplorerRewardSystemUpdate,
-  RelicChestOpenedSystemUpdate,
+  ChestOpenedSystemUpdate,
   SitePayoutSystemUpdate,
 } from "./types";
 
@@ -75,20 +75,38 @@ export class WorldUpdateListener {
     });
   }
 
-  get RelicChest() {
+  get Chests() {
     return {
-      onRelicChestOpened: (callback: (value: RelicChestOpenedSystemUpdate) => void) =>
-        this.onStory("RelicChestOpened", (payload, event) => {
+      onChestOpened: (callback: (value: ChestOpenedSystemUpdate) => void) => {
+        const stopRelics = this.onStory("RelicChestOpened", (payload, event) => {
           const coord = fields(payload.coord);
           if (!coord || !Array.isArray(payload.relics)) throw new Error("Malformed chest opening");
           callback({
+            kind: "relics",
             title: describeRelicChestOpening(payload, this.setup.store),
             explorerId: integer(payload.explorer_id),
             hex: { x: integer(coord.x), y: integer(coord.y) },
             relics: payload.relics.map(integer) as ResourcesIds[],
             timestamp: integer(event.timestamp),
           });
-        }),
+        });
+        const stopLords = this.onStory("RewardChestOpened", (payload, event) => {
+          const coord = fields(payload.coord);
+          if (!coord) throw new Error("Malformed reward chest opening");
+          callback({
+            kind: "lords",
+            title: describeRewardChestOpening(payload, this.setup.store),
+            explorerId: integer(payload.explorer_id),
+            hex: { x: integer(coord.x), y: integer(coord.y) },
+            amount: integer(payload.amount),
+            timestamp: integer(event.timestamp),
+          });
+        });
+        return () => {
+          stopRelics();
+          stopLords();
+        };
+      },
     };
   }
 

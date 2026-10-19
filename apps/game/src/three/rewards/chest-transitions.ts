@@ -1,9 +1,10 @@
-import { ChestRelicReveal } from "./chest-relic-reveal";
+import { ChestRewardReveal } from "./chest-reward-reveal";
 import { AnimationMixer, Group, Matrix4, Scene, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { RewardSummoning } from "./reward-summoning";
 import { ChestPresentation } from "./chest-presentation";
+import type { ChestReward } from "@bibliothecadao/eternum";
 
 interface ChestTransition {
   root: Group;
@@ -11,7 +12,7 @@ interface ChestTransition {
   mixer: AnimationMixer;
   effect: RewardSummoning;
   presentation: ChestPresentation;
-  relics?: ChestRelicReveal;
+  reward?: ChestRewardReveal;
   tileKey?: string;
   kind?: "summon" | "open";
 }
@@ -58,8 +59,8 @@ export class ChestTransitions {
     const actor = this.active.get(tileKey) ?? this.actors.find((candidate) => candidate.tileKey === undefined);
     if (!actor) return false;
     if (actor.tileKey === tileKey && actor.kind === kind) return true;
-    actor.relics?.dispose();
-    actor.relics = undefined;
+    actor.reward?.dispose();
+    actor.reward = undefined;
     placement.decompose(actor.root.position, actor.root.quaternion, actor.root.scale);
     actor.tileKey = tileKey;
     actor.kind = kind;
@@ -77,16 +78,16 @@ export class ChestTransitions {
     return this.active.has(tileKey);
   }
 
-  hasRelicReveals(): boolean {
-    return [...this.active.values()].some((actor) => Boolean(actor.relics));
+  hasRewardReveals(): boolean {
+    return [...this.active.values()].some((actor) => Boolean(actor.reward));
   }
 
-  revealRelics(tileKey: string, relics: readonly number[]): void {
+  revealReward(tileKey: string, reward: ChestReward): void {
     const actor = this.active.get(tileKey);
-    if (!actor || actor.relics) return;
-    actor.relics = new ChestRelicReveal(relics);
-    actor.root.add(actor.relics.label);
-    actor.relics.update(actor.effect.openingElapsed);
+    if (!actor || actor.reward) return;
+    actor.reward = new ChestRewardReveal(reward);
+    actor.root.add(actor.reward.label);
+    actor.reward.update(actor.effect.openingElapsed);
   }
 
   revealProgress(tileKey: string): number {
@@ -103,7 +104,7 @@ export class ChestTransitions {
       actor.presentation.setOpening(actor.kind === "open");
       actor.presentation.setNightAmount(nightAmount);
       if (cameraPosition) actor.presentation.faceCamera(cameraPosition);
-      actor.relics?.update(actor.effect.openingElapsed);
+      actor.reward?.update(actor.effect.openingElapsed);
       const finished = actor.kind === "summon" ? actor.effect.isSummoned : actor.effect.isAbsorbed;
       if (finished) this.cancel(tileKey);
     }
@@ -114,8 +115,8 @@ export class ChestTransitions {
     const actor = this.active.get(tileKey);
     if (!actor) return;
     actor.root.visible = false;
-    actor.relics?.dispose();
-    actor.relics = undefined;
+    actor.reward?.dispose();
+    actor.reward = undefined;
     actor.tileKey = undefined;
     actor.kind = undefined;
     this.active.delete(tileKey);

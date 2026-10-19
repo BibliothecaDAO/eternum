@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 const { selectedTile, crate, founding } = vi.hoisted(() => ({
-  selectedTile: { occupierType: 0 },
+  selectedTile: { occupierType: 0, frontier: false },
   /** A crate opened on the tile this session, as the crate store keeps it. */
   crate: { opening: null as null | { relics: number[] } },
   founding: { create: (_site: { col: number; row: number }) => Promise.resolve() },
@@ -11,9 +11,16 @@ const { selectedTile, crate, founding } = vi.hoisted(() => ({
 vi.mock("@/hooks/helpers/use-tile-at", () => ({
   useTileAt: () => ({ biome: 1, occupier_type: selectedTile.occupierType, occupier_id: 900 }),
 }));
-vi.mock("@/hooks/store/use-relic-crate-store", () => ({ useRelicCrateOpening: () => crate.opening }));
+vi.mock("@/hooks/store/use-chest-opening-store", () => ({ useChestOpening: () => crate.opening }));
 vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => null }));
-vi.mock("./chest-tile-details", () => ({ ChestTileDetails: () => <div data-panel="crate" /> }));
+vi.mock("@/config/game-modes", () => ({
+  getGameModeConfig: () => ({ id: selectedTile.frontier ? "frontier" : "blitz" }),
+}));
+vi.mock("./chest-tile-details", () => ({
+  ChestTileDetails: ({ rewardChestId }: { rewardChestId?: number }) => (
+    <div data-panel="crate" data-reward-chest={rewardChestId} />
+  ),
+}));
 vi.mock("@/hooks/use-blitz-hyperstructure-creation", () => ({
   useBlitzHyperstructureCreation: ({ contractHex }: { contractHex: { col: number; row: number } }) => ({
     canCreate: true,
@@ -109,4 +116,22 @@ describe("a reserved Hyperstructure site", () => {
       useUIStore.getState().selectOnMap(null);
     }
   });
+});
+
+it("keeps chest focus and supplies only Frontier's reward metadata ID, never a sealed relic pack ID", () => {
+  useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
+  for (const frontier of [false, true]) {
+    selectedTile.frontier = frontier;
+    const { host, unmount } = mount(TileOccupier.Chest);
+    try {
+      expect(host.querySelector('[data-panel="crate"]')).not.toBeNull();
+      expect(host.querySelector('[data-panel="crate"]')?.getAttribute("data-reward-chest")).toBe(
+        frontier ? "900" : null,
+      );
+    } finally {
+      unmount();
+    }
+  }
+  selectedTile.frontier = false;
+  useUIStore.getState().selectOnMap(null);
 });

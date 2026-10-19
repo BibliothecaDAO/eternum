@@ -750,8 +750,8 @@ pub mod StructuresLogic {
                     assert!(rules.day_unit_seconds != 0, "site requires expeditions");
                     crate::logic::lords_budget::store_site_chest(key, chest);
                 },
-                Discovery::None | Discovery::Shrine | Discovery::Well |
-                Discovery::Spire => panic!("discovery is not a structure"),
+                Discovery::None | Discovery::Shrine | Discovery::Well | Discovery::Spire |
+                Discovery::Chest => panic!("discovery is not a structure"),
             }
             crate::logic::structures::StructureState::create(key, record);
             crate::logic::map::MapState::occupy(tile_key(game_id, coord), id, occupier, true);

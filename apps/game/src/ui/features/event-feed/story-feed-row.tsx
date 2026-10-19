@@ -35,15 +35,20 @@ function resolveStoryEventPosition(event: ProcessedStoryEvent, store: NativeFact
   return null;
 }
 
-/** Where an opened crate's relics are held: the army or its home structure, whichever got most of them. */
-type RelicHolder = { kind: "army"; id: number } | { kind: "structure"; id: number; position: Position };
+/** Where an opened chest's reward is held: the army or its home structure, whichever got most of them. */
+type ChestHolder = { kind: "army"; id: number } | { kind: "structure"; id: number; position: Position };
 
 /**
- * The holder of a crate's relics, while the opening army stands (its row names its home): its pack's army relics went
- * to it and the rest to its home, so the row opens whichever got most. Null for any other story, or once the army is
- * gone and its home unknown.
+ * LORDS go to the recorded home. Relic packs select the army or home that received most of them; that older story
+ * needs the surviving army's row to resolve its home.
  */
-function storyRelicHolder(event: ProcessedStoryEvent, store: NativeFactStore): RelicHolder | null {
+function storyChestHolder(event: ProcessedStoryEvent, store: NativeFactStore): ChestHolder | null {
+  if (event.story === "RewardChestOpened" && event.storyPayload.structure_id != null) {
+    const id = storyPayloadId(event.storyPayload.structure_id);
+    const home = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: id });
+    const site = home && structureMapPosition(store, home);
+    return site ? { kind: "structure", id, position: Position.fromContract(site) } : null;
+  }
   if (event.story !== "RelicChestOpened" || event.storyPayload.explorer_id == null) return null;
   const game_id = configManager.getActiveGameId();
   const explorerId = storyPayloadId(event.storyPayload.explorer_id);
@@ -58,7 +63,7 @@ function storyRelicHolder(event: ProcessedStoryEvent, store: NativeFactStore): R
 
 /**
  * Opens a story where it happened, for the Events card and the log alike. An opened crate's row selects what holds
- * its relics: an army pack's army (from the realm view, on the world map once it is shown), a structure pack's realm.
+ * its reward: a LORDS chest's realm, an army pack's army (from the realm view, on the world map once it is shown), a structure pack's realm.
  * Any other row, or a crate whose army is gone, flies to its tile. Null when the story has no place left to show.
  */
 export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null {
@@ -71,7 +76,7 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
   const selectArmy = useSelectArmyOnMap();
   const goToStructure = useGoToStructure(setup);
   const { isMapView } = useQuery();
-  const holder = storyRelicHolder(event, store);
+  const holder = storyChestHolder(event, store);
   const position = resolveStoryEventPosition(event, store);
   if (holder?.kind === "structure") return () => void goToStructure(holder.id, holder.position, isMapView);
   if (holder) return () => selectArmy(holder.id);

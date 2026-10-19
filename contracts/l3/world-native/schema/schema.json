@@ -8635,6 +8635,10 @@
         {
           "name": "Spire",
           "type": "()"
+        },
+        {
+          "name": "Chest",
+          "type": "()"
         }
       ]
     },
@@ -10255,6 +10259,10 @@
         {
           "name": "SpireDiscovered",
           "type": "world_native::exploration_rewards::ExtractedReward"
+        },
+        {
+          "name": "RewardChestOpened",
+          "type": "world_native::relics::RewardChestOpened"
         }
       ]
     },
@@ -11134,6 +11142,28 @@
         },
         {
           "name": "draw_weight",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::relics::RewardChestOpened": {
+      "type": "struct",
+      "name": "world_native::relics::RewardChestOpened",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "structure_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "coord",
+          "type": "world_native::troops::Coord"
+        },
+        {
+          "name": "amount",
           "type": "core::integer::u128"
         }
       ]
@@ -13031,5 +13061,5 @@
       ]
     }
   },
-  "identity": "79a5da7d64269fa2a1324357c98475bad2c36b45398e51aa5665a6f66834a6e7"
+  "identity": "066bd26329065436e9b5f7243dab4551e2a922bedb964db2d7e9e4d206a100c3"
 }

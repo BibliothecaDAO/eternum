@@ -42,6 +42,7 @@ const PLAYER_STORIES = [
   "StructureLevelUpStory",
   "ResourceReceiveArrivalStory",
   "RelicChestOpened",
+  "RewardChestOpened",
   "BuildingPaymentStory",
   "ExplorationReward",
   "ExplorerCreateStory",
@@ -56,7 +57,13 @@ const isEventsStory = (event: ProcessedStoryEvent, address: string | null): bool
   FIGHT_STORIES.includes(event.story) || (PLAYER_STORIES.includes(event.story) && involvesPlayer(event, address));
 
 /** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened. */
-const IMPORTANT_STORIES = ["BattleEvent", "RaidEvent", "StructureCapturedStory", "RelicChestOpened"];
+const IMPORTANT_STORIES = [
+  "BattleEvent",
+  "RaidEvent",
+  "StructureCapturedStory",
+  "RelicChestOpened",
+  "RewardChestOpened",
+];
 
 /**
  * Whether a story is important, the default view of Events and the Log: what the player must not miss. Their fights (an

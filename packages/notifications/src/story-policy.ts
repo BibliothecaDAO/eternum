@@ -31,6 +31,7 @@ const STORY_RULES = {
   StructureLevelUpStory: { level: "standard", recipients: "owner" },
   ResourceReceiveArrivalStory: { level: "standard", recipients: "owner" },
   RelicChestOpened: { level: "standard", recipients: "owner" },
+  RewardChestOpened: { level: "standard", recipients: "owner" },
   ProductionStory: { level: "all", recipients: "owner" },
   BuildingPaymentStory: { level: "all", recipients: "owner" },
   ResourceTransferStory: { level: "all", recipients: "transfer" },

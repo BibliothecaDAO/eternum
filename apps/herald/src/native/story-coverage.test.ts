@@ -106,6 +106,10 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
     },
   },
   HyperstructurePoints: { fields: [17, 50], expected: { player: 17n, points: 50n } },
+  RewardChestOpened: {
+    fields: [7, 3, 1, 12, 34, 17],
+    expected: { explorer_id: 7n, structure_id: 3n, coord, amount: 17n },
+  },
   RelicChestOpened: {
     fields: [7, 1, 12, 34, 3, 1, 2, 50, 44, 50],
     expected: { explorer_id: 7n, coord, chest: { pack: "Fortress", lucky: true }, relics: [50n, 44n], points: 50n },

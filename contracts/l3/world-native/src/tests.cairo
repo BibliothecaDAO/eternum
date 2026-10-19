@@ -43,6 +43,7 @@ mod fixtures;
 mod frontier_combat_vectors;
 mod frontier_discovery;
 mod frontier_economy;
+mod frontier_explore_chest;
 mod frontier_guards;
 mod frontier_reveal;
 pub(crate) mod games_fixture;

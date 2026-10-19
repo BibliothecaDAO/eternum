@@ -44,8 +44,17 @@ pub struct ChestOpened {
     pub points: u128,
 }
 
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RewardChestOpened {
+    pub explorer_id: u64,
+    pub structure_id: u64,
+    pub coord: Coord,
+    // Whole LORDS actually paid, including zero when the reservation expired.
+    pub amount: u128,
+}
+
 // A relic chest holds one themed pack of three level I relics, or all level II when its lucky roll wins. Its pack is
-// drawn when the chest appears, so the chest names it before anyone opens it. Opening pays army relics to the army
+// fixed when the chest appears. Opening pays army relics to the army
 // and structure relics to its home.
 #[derive(Copy, Drop, Serde, Debug, PartialEq, Default, starknet::Store)]
 pub enum RelicPack {

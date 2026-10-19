@@ -1,6 +1,6 @@
 import { Color, Matrix4, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from "three";
 import { CSS2DObject, CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
-import { Position } from "@bibliothecadao/eternum";
+import { Position, configManager, nativeGameModeOf, type ChestReward } from "@bibliothecadao/eternum";
 import { env } from "../../../env";
 import { initializeRendererBackendRuntime } from "@/three/renderer-backend-runtime";
 import { configureRendererColorOutput } from "@/three/renderer-color-output";
@@ -18,7 +18,7 @@ import { CameraView } from "@/three/scenes/camera-view";
 import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 
 export interface ChestProofScene {
-  open(relics: readonly number[]): void;
+  open(reward: ChestReward): void;
   reset(): void;
   dispose(): void;
 }
@@ -53,7 +53,14 @@ export async function mountChestProof(
   plateButton.setAttribute("aria-label", "Focus relic chest");
   plateButton.style.cssText = "pointer-events:auto;cursor:pointer;background:none;border:0;padding:0;";
   plateButton.append(
-    createChestLabel({ entityId: 9, hexCoords: Position.fromContract({ x: 0, y: 0 }) }, CameraView.Close),
+    createChestLabel(
+      {
+        entityId: 9,
+        rewardKind: nativeGameModeOf(configManager.getPresetId()) === "frontier" ? "lords" : "relics",
+        hexCoords: Position.fromContract({ x: 0, y: 0 }),
+      },
+      CameraView.Close,
+    ),
   );
   const plate = new CSS2DObject(plateButton);
   scene.add(plate);
@@ -160,10 +167,10 @@ export async function mountChestProof(
     return {
       reset,
       dispose,
-      open: (relics) => {
+      open: (reward) => {
         model!.setCount(0);
         transitions!.start("0,0", "open", placement, model!.time);
-        transitions!.revealRelics("0,0", relics);
+        transitions!.revealReward("0,0", reward);
         plate.visible = false;
       },
     };

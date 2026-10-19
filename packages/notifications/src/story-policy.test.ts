@@ -19,6 +19,7 @@ it("covers every native story and tests every cumulative level", () => {
       "StructureLevelUpStory",
       "ResourceReceiveArrivalStory",
       "RelicChestOpened",
+      "RewardChestOpened",
     ],
     all: [
       "ProductionStory",
@@ -137,4 +138,11 @@ it("notifies the acting owner of a native troop transfer only at all activity le
 it("notifies both owners for player capture, excluding the zero bandit owner", () => {
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x111" })).toEqual(["0x222", "0x111"]);
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x0" })).toEqual(["0x222"]);
+});
+
+it("notifies only the opening player of a reward chest payment or expiry", () => {
+  for (const amount of [17, 0])
+    expect(storyRecipients("RewardChestOpened", "0x0003", { explorer_id: 7, structure_id: 5, amount })).toEqual([
+      "0x3",
+    ]);
 });

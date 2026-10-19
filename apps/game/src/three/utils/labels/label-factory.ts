@@ -30,7 +30,7 @@ const ChestLabelType: LabelTypeDefinition<LabelData> = {
     const contentContainer = createContentContainer(cameraView);
 
     const line1 = document.createElement("span");
-    line1.textContent = "Relic Crate";
+    line1.textContent = data.rewardKind === "lords" ? "Reward Chest" : "Relic Crate";
     line1.style.color = "inherit";
     contentContainer.appendChild(line1);
 

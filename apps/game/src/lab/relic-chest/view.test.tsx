@@ -11,6 +11,7 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   host?.remove();
   vi.clearAllMocks();
+  window.history.replaceState({}, "", "/");
 });
 
 async function mount() {
@@ -39,7 +40,7 @@ it("focuses a sealed crate, then sends Open through the caller and displays the 
   expect(rewards()).toEqual([]);
   expect(host.textContent).toContain("Three relics. Open to reveal them.");
   await click("Open");
-  expect(renderer.open).toHaveBeenCalledWith([41, 43, 39]);
+  expect(renderer.open).toHaveBeenCalledWith(expect.objectContaining({ kind: "relics", relics: [41, 43, 39] }));
   expect(rewards()).toEqual(["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"]);
   expect(host.textContent).toContain("Crate opened");
   await click("Reset chest");
@@ -70,4 +71,23 @@ it("releases a renderer that finishes loading after the comparison was closed", 
   expect(renderer.dispose).toHaveBeenCalledTimes(1);
   expect(host.querySelector('[aria-label="Production relic chest on native terrain"]')).toBeNull();
   expect(host.querySelector("[data-relic-chest-lab]")?.getAttribute("data-ready")).toBe("false");
+});
+
+it("focuses and opens a funded Frontier chest, then records zero after rollover without inventing relics", async () => {
+  window.history.replaceState({}, "", "/lab/relic-chest?gameMode=frontier");
+  await mount();
+  await click("Focus chest");
+  expect(host.textContent).toContain("17 LORDS");
+  expect(rewards()).toEqual([]);
+  await click("Open");
+  expect(renderer.open).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "lords", amount: 17 }));
+  expect(host.textContent).toContain("17 LORDS paid to the army's realm");
+  await click("Reset chest");
+  await click("Advance to day rollover");
+  await click("Focus chest");
+  expect(host.textContent).toContain("Reservation expired");
+  await click("Open");
+  expect(renderer.open).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "lords", amount: 0 }));
+  expect(host.textContent).toContain("No LORDS paid");
+  expect(rewards()).toEqual([]);
 });

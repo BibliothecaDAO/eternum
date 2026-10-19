@@ -83,6 +83,11 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       .join(", "),
     icon: "prize",
   }),
+  RewardChestOpened: (_event, payload, components) => ({
+    title: describeRewardChestOpening(payload, components),
+    description: describeExplorer(payload.explorer_id, components),
+    icon: "prize",
+  }),
   RelicCrafted: (_event, payload) => ({
     title: "Relic crafted",
     description: resourceName(Number(payload.value)),
@@ -477,6 +482,13 @@ export function describeRelicChestOpening(payload: Record<string, unknown>, comp
     home: home ?? "its realm",
   });
   return `Crate opened: ${delivery}`;
+}
+
+export function describeRewardChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
+  const amount = BigInt(payload.amount as string | number | bigint);
+  if (amount === 0n) return "Chest expired: no LORDS paid";
+  const home = describeStructureName(payload.structure_id, components) ?? "its realm";
+  return `Chest opened: ${formatExact(amount)} LORDS to ${home}`;
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */

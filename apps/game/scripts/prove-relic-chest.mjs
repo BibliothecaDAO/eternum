@@ -10,6 +10,7 @@ const port = option("--port", "4199"),
   out = option("--out", ".context/relic-chest-" + Date.now());
 const backends = option("--backends", "webgpu-auto,webgpu-force-webgl").split(",");
 mkdirSync(out, { recursive: false });
+const games = ["blitz", "frontier"];
 const records = [];
 let log = "";
 const server = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", port, "--strictPort"], {
@@ -27,130 +28,193 @@ const check = (value, reason) => {
   if (!value) throw new Error(reason);
 };
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const snapshot = `({rewards:[...document.querySelectorAll('[data-chest-panel] [aria-label="Relics"] li')].map(x=>x.textContent),text:document.querySelector('[data-chest-panel]')?.textContent,renderer:document.querySelector('canvas')?.dataset.renderer,mapRelics:[...document.querySelectorAll('[data-chest-relics] img')].map(img=>({name:img.alt,opacity:Number(img.parentElement.style.opacity)}))})`;
+const snapshot = `({rewards:[...document.querySelectorAll('[data-chest-panel] [aria-label="Relics"] li')].map(x=>x.textContent),text:document.querySelector('[data-chest-panel]')?.textContent,renderer:document.querySelector('canvas')?.dataset.renderer,plate:document.querySelector('[aria-label="Focus relic chest"]')?.textContent,mapRewards:[...document.querySelectorAll('[data-chest-rewards] img')].map(img=>({name:img.alt,opacity:Number(img.parentElement.style.opacity)}))})`;
 try {
   const deadline = Date.now() + 30_000;
   while (!log.includes("Local:")) {
     check(server.exitCode === null && Date.now() < deadline, log || "Client did not start");
     await pause(200);
   }
-  for (const backend of backends) {
-    const profile = mkdtempSync(join(tmpdir(), "relic-chest-proof-"));
-    const browser = createBrowserSession("relic-chest-" + Date.now(), { profile, headed: false });
-    let devtools;
-    try {
-      browser.run([
-        "open",
-        `https://127.0.0.1:${port}/lab/relic-chest?capture=1&rendererMode=${backend}`,
-        "--ignore-https-errors",
-        "--args",
-        "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
-      ]);
-      browser.run(["set", "viewport", "1920", "1080"]);
-      browser.run(["wait", "--fn", "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'"]);
-      devtools = await openPageDevTools(browser);
-      const read = async (expression) => {
-        const result = await devtools.send("Runtime.evaluate", { expression, returnByValue: true });
-        check(!result.exceptionDetails, JSON.stringify(result.exceptionDetails));
-        return result.result.value;
-      };
-      const capture = async (phase) => {
-        const { data } = await devtools.send("Page.captureScreenshot", { format: "png" });
-        writeFileSync(join(out, `${backend}-${phase}.png`), Buffer.from(data, "base64"));
-      };
-      const click = async (selector, text) => {
-        const point = await read(
-          `(()=>{const r=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.textContent.trim()===${JSON.stringify(text)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`,
+  for (const game of games)
+    for (const backend of backends) {
+      const profile = mkdtempSync(join(tmpdir(), "relic-chest-proof-"));
+      const browser = createBrowserSession("relic-chest-" + Date.now(), { profile, headed: false });
+      let devtools;
+      try {
+        browser.run([
+          "open",
+          `https://127.0.0.1:${port}/lab/relic-chest?capture=1&rendererMode=${backend}&gameMode=${game}`,
+          "--ignore-https-errors",
+          "--args",
+          "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
+        ]);
+        browser.run(["set", "viewport", "1920", "1080"]);
+        browser.run(["wait", "--fn", "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'"]);
+        devtools = await openPageDevTools(browser);
+        const read = async (expression) => {
+          const result = await devtools.send("Runtime.evaluate", { expression, returnByValue: true });
+          check(!result.exceptionDetails, JSON.stringify(result.exceptionDetails));
+          return result.result.value;
+        };
+        const capture = async (phase) => {
+          const { data } = await devtools.send("Page.captureScreenshot", { format: "png" });
+          writeFileSync(join(out, `${game}-${backend}-${phase}.png`), Buffer.from(data, "base64"));
+        };
+        const click = async (selector, text) => {
+          const point = await read(
+            `(()=>{const r=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.textContent.trim()===${JSON.stringify(text)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()`,
+          );
+          await devtools.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+          await devtools.send("Input.dispatchMouseEvent", {
+            type: "mousePressed",
+            button: "left",
+            clickCount: 1,
+            ...point,
+          });
+          await devtools.send("Input.dispatchMouseEvent", {
+            type: "mouseReleased",
+            button: "left",
+            clickCount: 1,
+            ...point,
+          });
+          await pause(100);
+        };
+        await capture("rest");
+        browser.click("Focus relic chest");
+        const sealed = await read(snapshot);
+        check(sealed.renderer === (backend === "webgpu-auto" ? "webgpu" : "webgl2-fallback"), "Wrong backend");
+        check(sealed.plate.includes(game === "frontier" ? "Reward Chest" : "Relic Crate"), "Wrong chest label");
+        check(sealed.rewards.length === 0 && sealed.mapRewards.length === 0, "Sealed chest leaks relics");
+        let revealed, receipt, lucky, luckyOpened, expired, expiredOpened;
+        if (game === "blitz") {
+          check(
+            sealed.text.includes("Three relics. Open to reveal them.") && sealed.text.includes("250"),
+            "Missing sealed panel or points",
+          );
+          await capture("focused-sealed");
+          await click("[data-chest-panel] button", "Open");
+          await pause(750);
+          revealed = await read(snapshot);
+          const war = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
+          check(
+            revealed.rewards.join("|") === war.join("|") && revealed.text.includes("Crate opened"),
+            "Opening receipt differs",
+          );
+          check(
+            revealed.mapRewards.length === 3 &&
+              revealed.mapRewards.every((icon, index) => icon.opacity > 0.2 && icon.name === war[index]),
+            "Opening did not reveal the exact awarded icons",
+          );
+          await capture("reveal");
+          await pause(2400);
+          receipt = await read(snapshot);
+          check(
+            receipt.rewards.join("|") === war.join("|") && receipt.mapRewards.length === 0,
+            "Reveal cleanup or persistent receipt failed",
+          );
+          await capture("receipt");
+          browser.click("Reset chest");
+          browser.run(["select", '[aria-label="Fixture pack"]', "Fortress"]);
+          browser.run(["click", 'input[type="checkbox"]']);
+          browser.click("Focus relic chest");
+          lucky = await read(snapshot);
+          check(lucky.rewards.length === 0 && lucky.mapRewards.length === 0, "Lucky pack leaked");
+          await click("[data-chest-panel] button", "Open");
+          luckyOpened = await read(snapshot);
+          check(
+            luckyOpened.rewards.join("|") ===
+              "Structure Defense Relic II|Damage Reduction Relic II|Troop Production Relic II",
+            "Lucky opening differs from its actual pack",
+          );
+        } else {
+          check(
+            sealed.text.includes("17 LORDS") && sealed.text.includes("Expires at day rollover"),
+            "Missing reservation",
+          );
+          await capture("focused-funded");
+          await click("[data-chest-panel] button", "Open");
+          await pause(750);
+          revealed = await read(snapshot);
+          check(
+            revealed.rewards.length === 0 && revealed.text.includes("17 LORDS paid to the army's realm"),
+            "Wrong LORDS receipt",
+          );
+          check(
+            revealed.mapRewards.length === 1 &&
+              revealed.mapRewards[0].name === "17 LORDS" &&
+              revealed.mapRewards[0].opacity > 0.2,
+            "Wrong LORDS reveal",
+          );
+          await capture("reveal");
+          await pause(2400);
+          receipt = await read(snapshot);
+          check(
+            receipt.text.includes("17 LORDS paid to the army's realm") && receipt.mapRewards.length === 0,
+            "LORDS cleanup or receipt failed",
+          );
+          await capture("receipt");
+          browser.click("Reset chest");
+          browser.click("Advance to day rollover");
+          browser.click("Focus relic chest");
+          expired = await read(snapshot);
+          check(
+            expired.text.includes("0 LORDS") && expired.text.includes("Reservation expired"),
+            "Expired chest still advertises reward",
+          );
+          await capture("expired");
+          await click("[data-chest-panel] button", "Open");
+          await pause(750);
+          expiredOpened = await read(snapshot);
+          check(
+            expiredOpened.text.includes("No LORDS paid") &&
+              expiredOpened.mapRewards.length === 0 &&
+              expiredOpened.rewards.length === 0,
+            "Expired chest invented a reward",
+          );
+          await capture("expired-receipt");
+        }
+        browser.click("Reset chest");
+        browser.click("Close 3D proof");
+        browser.run([
+          "wait",
+          "--fn",
+          "!document.querySelector('canvas') && !document.querySelector('[data-chest-rewards]')",
+        ]);
+        const errors = browser.run(["errors"]);
+        check(!errors.trim(), errors);
+        records.push({
+          game,
+          backend,
+          sealed,
+          revealed,
+          receipt,
+          lucky,
+          luckyOpened,
+          expired,
+          expiredOpened,
+          released: true,
+          errors,
+        });
+        writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
+      } catch (error) {
+        writeFileSync(
+          join(out, `${game}-${backend}-failure.txt`),
+          String(error) +
+            "\n" +
+            browser.run(["snapshot"]) +
+            "\n" +
+            browser.run(["errors"]) +
+            "\n" +
+            browser.run(["console"]),
         );
-        await devtools.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
-        await devtools.send("Input.dispatchMouseEvent", {
-          type: "mousePressed",
-          button: "left",
-          clickCount: 1,
-          ...point,
-        });
-        await devtools.send("Input.dispatchMouseEvent", {
-          type: "mouseReleased",
-          button: "left",
-          clickCount: 1,
-          ...point,
-        });
-        await pause(100);
-      };
-      await capture("rest");
-      browser.click("Focus relic chest");
-      const sealed = await read(snapshot);
-      check(sealed.renderer === (backend === "webgpu-auto" ? "webgpu" : "webgl2-fallback"), "Wrong backend");
-      check(sealed.rewards.length === 0 && sealed.mapRelics.length === 0, "Sealed chest leaks relics");
-      check(
-        sealed.text.includes("Three relics. Open to reveal them.") && sealed.text.includes("250"),
-        "Missing sealed panel or points",
-      );
-      await capture("focused-sealed");
-      await click("[data-chest-panel] button", "Open");
-      await pause(750);
-      const revealed = await read(snapshot);
-      const war = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
-      check(
-        revealed.rewards.join("|") === war.join("|") && revealed.text.includes("Crate opened"),
-        "Opening receipt differs",
-      );
-      check(
-        revealed.mapRelics.length === 3 &&
-          revealed.mapRelics.every((icon, index) => icon.opacity > 0.2 && icon.name === war[index]),
-        "Opening did not reveal the exact awarded icons",
-      );
-      await capture("reveal");
-      await pause(2400);
-      const receipt = await read(snapshot);
-      check(
-        receipt.rewards.join("|") === war.join("|") && receipt.mapRelics.length === 0,
-        "Reveal cleanup or persistent receipt failed",
-      );
-      await capture("receipt");
-      browser.click("Reset chest");
-      browser.run(["select", '[aria-label="Fixture pack"]', "Fortress"]);
-      browser.run(["click", 'input[type="checkbox"]']);
-      browser.click("Focus relic chest");
-      const lucky = await read(snapshot);
-      check(lucky.rewards.length === 0 && lucky.mapRelics.length === 0, "Lucky pack leaked");
-      await click("[data-chest-panel] button", "Open");
-      const luckyOpened = await read(snapshot);
-      check(
-        luckyOpened.rewards.join("|") ===
-          "Structure Defense Relic II|Damage Reduction Relic II|Troop Production Relic II",
-        "Lucky opening differs from its actual pack",
-      );
-      browser.click("Reset chest");
-      browser.click("Close 3D proof");
-      browser.run([
-        "wait",
-        "--fn",
-        "!document.querySelector('canvas') && !document.querySelector('[data-chest-relics]')",
-      ]);
-      const errors = browser.run(["errors"]);
-      check(!errors.trim(), errors);
-      records.push({ backend, sealed, revealed, receipt, lucky, luckyOpened, released: true, errors });
-      writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
-    } catch (error) {
-      writeFileSync(
-        join(out, `${backend}-failure.txt`),
-        String(error) +
-          "\n" +
-          browser.run(["snapshot"]) +
-          "\n" +
-          browser.run(["errors"]) +
-          "\n" +
-          browser.run(["console"]),
-      );
-      browser.run(["screenshot", join(out, `${backend}-failure.png`)], { allowFailure: true });
-      throw error;
-    } finally {
-      devtools?.close();
-      browser.close();
-      rmSync(profile, { recursive: true, force: true });
+        browser.run(["screenshot", join(out, `${game}-${backend}-failure.png`)], { allowFailure: true });
+        throw error;
+      } finally {
+        devtools?.close();
+        browser.close();
+        rmSync(profile, { recursive: true, force: true });
+      }
     }
-  }
   writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true, records }, null, 2) + "\n");
 } finally {
   if (server.exitCode === null) {

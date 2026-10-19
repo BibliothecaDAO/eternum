@@ -204,3 +204,18 @@ describe("A fight in Events", () => {
     expect(await fightRow("5", "0", 10)).toContain("clientlane vs The Vanguard · clientlane wins");
   });
 });
+
+it("keeps the player's LORDS chest in Events and opens its receiving realm even after the opening army is gone", async () => {
+  game.armies = new Set();
+  const opened = story(
+    "lords",
+    "RewardChestOpened",
+    PLAYER,
+    { explorer_id: 9, structure_id: 5, amount: "17", coord: { x: 3, y: 4 } },
+    "Chest opened: 17 LORDS to Stolsli",
+  );
+  expect(eventsRows([opened])).toEqual([opened]);
+  await clickRow(opened);
+  expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
+  expect(game.selectArmy).not.toHaveBeenCalled();
+});

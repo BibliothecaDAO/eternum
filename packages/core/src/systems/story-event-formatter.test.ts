@@ -364,6 +364,7 @@ describe("every story the chain can tell", () => {
     TroopsTransferred: { source: { Explorer: 7 }, target: { Explorer: 8 }, amount },
     LordsWithdrawn: { account: "0x111", amount },
     TierBought: { explorer_id: 7, attribute: "Battle", tier: 2, price: 100 },
+    RewardChestOpened: { explorer_id: 7, structure_id: 5, coord, amount: 17 },
     SitePayout: {
       structure_id: 5,
       explorer_id: 7,
@@ -637,4 +638,18 @@ it("adds the points an opened crate scored", () => {
     story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest), points: 250_000_000n }),
   );
   expect(title).toBe("Crate opened: 3 relics to the army · +250 points");
+});
+
+it("tells the recorded whole LORDS payment and names its home even after the opening army is gone", () => {
+  vi.spyOn(configManager, "getPresetId").mockReturnValue(5);
+  const { store, setStructure } = buildStore();
+  setStructure(5, 1, 1);
+  expect(
+    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 17 }), store)
+      .title,
+  ).toBe("Chest opened: 17 LORDS to Stolsli");
+  expect(
+    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 5, amount: 0 }), store)
+      .title,
+  ).toBe("Chest expired: no LORDS paid");
 });

@@ -1,7 +1,7 @@
 import { ChestTileDetails } from "./chest-tile-details";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useRelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
+import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacent-own-explorer";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -29,6 +29,7 @@ import {
 import { type ReactNode, useCallback } from "react";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { toast } from "@/ui/features/event-feed/notify";
+import { getGameModeConfig } from "@/config/game-modes";
 
 // Layout: vertical column of bubbles. The outer parent (TileDetails atom in
 // bottom-right-panel) already provides positioning + scroll, so this layout
@@ -66,7 +67,7 @@ const SelectedWorldmapEntityContent = ({
   const openSurface = usePopoverStore((state) => state.openSurface);
 
   const tile = useTileAt(selectedHex.col, selectedHex.row);
-  const crateOpening = useRelicCrateOpening(selectedHex);
+  const crateOpening = useChestOpening(selectedHex);
 
   const biome = tile && tile.biome !== 0 ? biomeTypeOf(tile.biome) : BiomeType.None;
   const handleSimulateBattle = useCallback(() => {
@@ -95,10 +96,11 @@ const SelectedWorldmapEntityContent = ({
   // A crate opened this session keeps its panel after the tile empties, now listing what it yielded. An army standing
   // on the tile comes first, the crate under it: the unit the player can order beats the tile's memory.
   const cratePanel = (isChest || crateOpening) && (
-    <RelicCrateTilePanel
+    <ChestTilePanel
+      rewardChestId={isChest && getGameModeConfig().id === "frontier" ? tile.occupier_id : undefined}
       opening={crateOpening}
       selectedHex={selectedHex}
-      coordsLabel={title("Relic Tile")}
+      coordsLabel={title(getGameModeConfig().id === "frontier" ? "Chest Tile" : "Relic Tile")}
       headerAction={isArmy ? undefined : headerAction}
     />
   );
@@ -178,13 +180,15 @@ const SelectedWorldmapEntityContent = ({
 };
 
 // The crate panel opens with the player's adjacent explorer; the contract accepts no other opener.
-const RelicCrateTilePanel = ({
+const ChestTilePanel = ({
+  rewardChestId,
   opening,
   selectedHex,
   coordsLabel,
   headerAction,
 }: {
-  opening: ReturnType<typeof useRelicCrateOpening>;
+  rewardChestId?: ID;
+  opening: ReturnType<typeof useChestOpening>;
   selectedHex: HexPosition;
   coordsLabel?: string;
   headerAction?: ReactNode;
@@ -198,6 +202,7 @@ const RelicCrateTilePanel = ({
   }, [explorerId, selectedHex]);
   return (
     <ChestTileDetails
+      rewardChestId={rewardChestId}
       coordsLabel={coordsLabel}
       headerAction={headerAction}
       opening={opening}

@@ -384,6 +384,20 @@ pub mod MapLogic {
             };
             let day = crate::logic::expeditions::discovery(counter)
                 .unwrap_or(crate::expeditions::ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+            if !key.alt
+                && crate::rules::rule_enabled(context.rules.unbox(), crate::rules::DISCOVER_CHESTS)
+                && crate::discovery::frontier_chest(seed) {
+                let chest = crate::logic::lords_budget::common_candidate(key.game_id, context);
+                if crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
+                    let id = crate::entity_ids::allocate_home(key.game_id, home);
+                    crate::logic::lords_budget::store_site_chest(
+                        crate::resources::ResourceKey { game_id: key.game_id, entity_id: id }, chest,
+                    );
+                    crate::logic::map::MapState::occupy(key, id, crate::taxonomy::CHEST_OCCUPIER, false);
+                    crate::logic::expeditions::record_discovery(counter, crate::discovery::Discovery::Chest);
+                    return crate::discovery::Discovery::Chest;
+                }
+            }
             // A refused ruin still contributes its rolled tier, and leaves this Realm day free.
             let ruin = if day.ruin_found {
                 None

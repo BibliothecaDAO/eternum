@@ -73,7 +73,11 @@ pub mod RelicState {
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
             let chest_id = IRelicMapLibraryDispatcher { class_hash: classes.map.read() }
                 .consume_relic_chest(game_id, command.coord);
-            self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
+            if context.rules.unbox().day_unit_seconds != 0 {
+                self.pay_reward_chest(game_id, actor, command, chest_id, explorer.owner, context);
+            } else {
+                self.pay_chest(game_id, actor, command, chest_id, explorer.owner, context);
+            }
             ()
         }
         fn apply_relic(
@@ -478,6 +482,40 @@ pub mod RelicState {
                     context.timestamp,
                 );
             crate::logic::troops::TroopState::save(key, crate::troops::ExplorerRecordTrait::into_record(explorer));
+        }
+
+        fn pay_reward_chest(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: OpenChest,
+            chest_id: u64,
+            home: u64,
+            context: ExecutionContext,
+        ) {
+            let reward = crate::logic::lords_budget::pay(ResourceKey { game_id, entity_id: chest_id }, context);
+            self
+                .resources(game_id)
+                .grant_resource(
+                    ResourceKey { game_id, entity_id: home },
+                    reward.resource_type,
+                    reward.amount,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            crate::logic::stories::emit_entity_story(
+                ResourceKey { game_id, entity_id: command.explorer_id },
+                actor,
+                crate::ownership::Story::RewardChestOpened(
+                    crate::relics::RewardChestOpened {
+                        explorer_id: command.explorer_id,
+                        structure_id: home,
+                        coord: command.coord,
+                        amount: reward.amount / crate::rules::RESOURCE_PRECISION,
+                    },
+                ),
+                context.timestamp,
+            );
         }
 
         fn pay_chest(

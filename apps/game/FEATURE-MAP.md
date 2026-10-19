@@ -6,6 +6,12 @@ needs an adjacent own army (the panel otherwise says "Move next to it"). `/lab/r
 presentation using the production instanced model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
+Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
+labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
+day-rollover expiry; opening credits the army’s home realm and leaves a receipt. `/lab/relic-chest?gameMode=frontier`
+exercises funded and expired openings through the same panel, model, caller and native story listener. The proof command
+above covers both formats and renderers; it uses local facts, not a live transaction.
+
 ## Cleared-site standard
 
 Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped camp

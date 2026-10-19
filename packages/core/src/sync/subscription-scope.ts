@@ -1,3 +1,4 @@
+import { TileOccupier } from "@bibliothecadao/types";
 import {
   expeditionRealmSite,
   entityHomeNamespace,
@@ -75,8 +76,9 @@ export function deriveGameSyncScope(
   const entities = new Set([...realms, ...armies.map(({ value }) => syncScalar(value.explorer_id))]);
   for (const { value } of read("TileOccupancy", spacing, [...regions].map(scopeLookup.occupancyIn))) {
     if (
-      value.is_structure === true &&
-      hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) })
+      Number(value.category) === TileOccupier.Chest ||
+      (value.is_structure === true &&
+        hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) }))
     )
       entities.add(syncScalar(value.entity_id));
   }
