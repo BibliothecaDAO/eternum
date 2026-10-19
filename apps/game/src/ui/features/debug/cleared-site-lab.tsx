@@ -1,3 +1,4 @@
+import { SiteReceipt } from "../frontier/sites/site-receipt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { siteReward } from "@bibliothecadao/eternum";
@@ -10,7 +11,7 @@ import { campBeside } from "../frontier/sites/site-fixture";
 import { siteClearXp } from "../frontier/sites/site-card-plan";
 import "./cleared-site-lab.css";
 
-/** Appearance study over existing site facts; the assessment identifies the missing durable payout receipt. */
+/** The shipped standard and receipt beside the standing site, over native fixture facts. */
 export function ClearedSiteLab() {
   const [params, setParams] = useSearchParams();
   const kind: ClearedSiteStudy = params.get("site") === "stragglers" ? "stragglers" : "camp";
@@ -22,6 +23,24 @@ export function ClearedSiteLab() {
   const signature = `${kind}:${distance}`;
   const fixture = useMemo(() => campBeside(kind === "camp" ? "Camp" : "Stragglers"), [kind]);
   const reward = siteReward(kind === "camp" ? "Camp" : "Stragglers", fixture.site);
+  const cleared = useMemo(() => {
+    const source = campBeside(kind === "camp" ? "Camp" : "Stragglers");
+    source.store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x72",
+        value: {
+          ...source.site,
+          clear: {
+            explorer_id: 201n,
+            home_id: 7n,
+            reward: reward ? { resource_type: reward.resourceType, amount: reward.amount } : null,
+          },
+        },
+      },
+    ]);
+    return { site: source.store.require("ExpeditionSite", source.site), structure: source.structure };
+  }, [kind, reward?.amount, reward?.resourceType]);
   const name = structureName(fixture.structure.base.category);
 
   useEffect(() => {
@@ -56,7 +75,7 @@ export function ClearedSiteLab() {
         <Link to="/lab">Lab</Link>
         <div>
           <h1>After the fight</h1>
-          <p>Current site · proposed cleared standard</p>
+          <p>Standing site · cleared standard</p>
         </div>
         <label>
           Site{" "}
@@ -93,28 +112,33 @@ export function ClearedSiteLab() {
             <button className="cleared-site-close" aria-label="Close site" onClick={() => select(null)}>
               ×
             </button>
-            <span className="cleared-site-status">{selected ? "Cleared" : "Standing"}</span>
-            <h2>{name}</h2>
-            <p>{selected ? "Clear reward" : "Reward for clearing"}</p>
-            <div className="cleared-site-rewards">
-              {reward && (
-                <span>
-                  <Icon name={resourceMeaning(reward.resourceType)} size={28} />
-                  <strong>{formatAmount(Number(reward.amount) / RESOURCE_PRECISION)}</strong>{" "}
-                  {resourceName(reward.resourceType)}
-                </span>
-              )}
-              <span>
-                <strong>{formatAmount(siteClearXp(fixture.site))}</strong> {XP}
-              </span>
-            </div>
-            {selected && <small>Full-reward example. Exact received amounts need the retained contract receipt.</small>}
+            {selected ? (
+              <SiteReceipt selected={cleared} />
+            ) : (
+              <>
+                <span className="cleared-site-status">{selected ? "Cleared" : "Standing"}</span>
+                <h2>{name}</h2>
+                <p>{selected ? "Clear reward" : "Reward for clearing"}</p>
+                <div className="cleared-site-rewards">
+                  {reward && (
+                    <span>
+                      <Icon name={resourceMeaning(reward.resourceType)} size={28} />
+                      <strong>{formatAmount(Number(reward.amount) / RESOURCE_PRECISION)}</strong>{" "}
+                      {resourceName(reward.resourceType)}
+                    </span>
+                  )}
+                  <span>
+                    <strong>{formatAmount(siteClearXp(fixture.site))}</strong> {XP}
+                  </span>
+                </div>
+              </>
+            )}
           </aside>
         )}
       </section>
       <footer>
-        Visual study only. The standard reuses the shipped camp artwork; movement and paid receipts still require the
-        contract change. Drag to orbit, scroll to inspect, or select either model.
+        The standard leaves the tile centre open. Select it to read the stored clear reward. Drag to orbit or scroll to
+        inspect.
       </footer>
     </main>
   );

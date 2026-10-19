@@ -1,4 +1,4 @@
-"""Derive the cleared-site study from the shipped camp's authored standard."""
+"""Derive the cleared-site standard from the shipped camp's authored standard."""
 
 import json
 import math

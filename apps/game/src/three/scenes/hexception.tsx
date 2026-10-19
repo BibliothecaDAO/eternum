@@ -1136,7 +1136,7 @@ export default class HexceptionScene extends HexagonScene {
     const standing = requireActiveGameSyncRuntime()
       .requireWorldSpatialProjection()
       .getStructuresAtHex({ alt: DEFAULT_COORD_ALT, col: position.col, row: position.row })
-      .find((entry) => entry.entityId !== null);
+      .find((entry) => entry.entityId !== null && !entry.clearedSite);
     const structure = pickLocalRealm({
       atRoute: standing?.entityId
         ? this.game.store.get("Structure", { game_id: gameId, entity_id: standing.entityId })

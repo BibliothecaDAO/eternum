@@ -31,7 +31,10 @@ const site = (store: NativeFactStore, cleared: boolean) =>
         game_id: GAME,
         entity_id: 42,
         initial_guard_count: String(100n * BigInt(RESOURCE_PRECISION)),
-        cleared,
+        alt: false,
+        col: 1,
+        row: 1,
+        clear: cleared ? { explorer_id: "1", home_id: "7", reward: null } : null,
       },
     },
   ] as never);

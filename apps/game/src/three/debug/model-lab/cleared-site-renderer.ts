@@ -14,7 +14,7 @@ import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 
 export type ClearedSiteStudy = "camp" | "stragglers";
-const CLEARED_STANDARD_PATH = "/lab/cleared-site/standard.glb";
+import { CLEARED_SITE_MODEL_PATH } from "../../constants/scene-constants";
 
 /** Existing world renderer, terrain, camera and ownership material; only the proposed marker is a lab asset. */
 export async function mountClearedSiteStudy(
@@ -87,7 +87,7 @@ export async function mountClearedSiteStudy(
     resize();
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
-    const paths = [settings.kind === "camp" ? CAMP_MODEL_PATH : STRAGGLERS_MODEL_PATH, CLEARED_STANDARD_PATH];
+    const paths = [settings.kind === "camp" ? CAMP_MODEL_PATH : STRAGGLERS_MODEL_PATH, CLEARED_SITE_MODEL_PATH];
     for (const [slot, path] of paths.entries()) {
       const gltf = await gltfLoader.loadAsync(path);
       const model = new SettlementModel(gltf, 1);

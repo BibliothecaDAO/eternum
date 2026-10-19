@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2fa06b05d0c49dcb853cefa897d137ac4ba78bea896f00a67400f89437131968";
+export const nativeFactSchemaIdentity = "cda2c0bd065119fa4fe8cf14ecd34aa6aac6ede29635170fcac5b4c34dc12314";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -225,7 +225,7 @@ export interface NativeRows {
   ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly scouting_kinds: number; readonly homecoming: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
-  ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly initial_guard_count: bigint; readonly cleared: boolean };
+  ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
   Structure: { readonly game_id: number; readonly entity_id: bigint; readonly owner: bigint; readonly base: { readonly troop_max_guard_count: number; readonly troop_max_explorer_count: number; readonly created_at: number; readonly category: number; readonly level: number; readonly starting_troops_granted: boolean }; readonly resources_packed: bigint; readonly metadata: { readonly realm_id: number; readonly order: number; readonly has_wonder: boolean; readonly village_realm: bigint; readonly mine_kind: number; readonly deepest_depth: number } };
   ResourceBalance: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly balance: bigint };
   ResourceProduction: { readonly game_id: number; readonly entity_id: bigint; readonly resource_type: number; readonly building_count: number; readonly production_rate: bigint; readonly output_amount_left: bigint; readonly last_settled_at: number };
@@ -1358,7 +1358,21 @@ export const nativeFactModels = {
       "game_id": "u32",
       "entity_id": "u64",
       "initial_guard_count": "u128",
-      "cleared": "boolean"
+      "alt": "boolean",
+      "col": "u32",
+      "row": "u32",
+      "clear": {
+        "option": {
+          "explorer_id": "u64",
+          "home_id": "u64",
+          "reward": {
+            "option": {
+              "resource_type": "u8",
+              "amount": "u128"
+            }
+          }
+        }
+      }
     }
   },
   "Structure": {
@@ -2243,6 +2257,13 @@ export const nativeSyncScopes = {
     ]
   },
   "ExpeditionSite": {
+    "regions": [
+      {
+        "alt": "alt",
+        "x": "col",
+        "y": "row"
+      }
+    ],
     "entities": [
       "entity_id"
     ]

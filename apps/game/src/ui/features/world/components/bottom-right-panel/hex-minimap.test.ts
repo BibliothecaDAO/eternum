@@ -44,3 +44,30 @@ describe("minimap tiles", () => {
     ]);
   });
 });
+
+it("keeps an army visible on a cleared site's tile", () => {
+  const projection: Projection = {
+    getTiles: () => [{ ...exploredTile(40, 12), occupierId: 201, occupierType: TileOccupier.ExplorerKnightT1 }],
+    getStructures: () => [
+      {
+        kind: "structure",
+        spatialId: "entity:710",
+        entityId: 710,
+        reserved: false,
+        clearedSite: true,
+        hexCoords: { alt: false, col: 40, row: 12 },
+        occupierType: TileOccupier.Camp,
+      },
+    ],
+  };
+  expect(readMinimapTiles(projection, false)).toEqual([
+    {
+      col: 40,
+      row: 12,
+      biome: 3,
+      occupier_id: "201",
+      occupier_type: TileOccupier.ExplorerKnightT1,
+      occupier_is_structure: false,
+    },
+  ]);
+});

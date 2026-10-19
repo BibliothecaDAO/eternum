@@ -104,6 +104,7 @@ export const buildStructurePlate = (
     | "isMine"
     | "isAlly"
     | "owner"
+    | "clearedSite"
     | "guardArmies"
     | "incomingTroopArrivals"
   >,
@@ -120,17 +121,20 @@ export const buildStructurePlate = (
     kind: "structure",
     relation: relationOf(structure),
     owner: ownerOf(structure.owner),
-    name: named
-      ? structure.structureName.trim()
-      : structureName(structure.structureType, structure.mineKind ?? undefined),
+    name: structure.clearedSite
+      ? `${structureName(structure.structureType)} · Cleared`
+      : named
+        ? structure.structureName.trim()
+        : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
-    place: named ? undefined : siteName(Number(structure.entityId)),
+    place: named || structure.clearedSite ? undefined : siteName(Number(structure.entityId)),
     reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
-    icon:
-      structure.structureType === StructureType.Mine && structure.mineKind !== undefined
+    icon: structure.clearedSite
+      ? "flag"
+      : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structureMeaning(structure.structureType),
-    guards,
+    guards: structure.clearedSite ? null : guards,
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
         troops: { type: troopType(arrival.troopType), tier: tierOf(arrival.troopTier), count: arrival.count },

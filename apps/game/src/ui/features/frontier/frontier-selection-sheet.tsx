@@ -1,3 +1,5 @@
+import { SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
+import { structureName } from "@bibliothecadao/types";
 import { FrontierSpireSheet } from "./frontier-spire-sheet";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -17,8 +19,8 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 /**
  * What the player tapped, as its Frontier card: an open plot of the realm the build sheet, the keep its upgrade sheet,
  * a standing building its type's Upgrade sheet, a standing site or another player's army the tile card, a Shrine or
- * Well its card, a spire its own. Anything else, an empty tile or an army the dock already shows, has no card and opens
- * nothing. The result of
+ * Well its card, a spire its own. A cleared site shows its receipt, even with an army on the tile. Other empty tiles
+ * and armies the dock already shows open no card. The result of
  * the player's own attack stands in the card's place until it is closed.
  */
 export const FrontierSelectionSheet = ({
@@ -34,6 +36,7 @@ export const FrontierSelectionSheet = ({
   const fight = useFightResult();
   const openPlot = useOpenPlot(realm);
   const target = useSelectedTarget();
+  const cleared = useSelectedClearedSite();
   const mapSite = useSelectedMapSite();
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
@@ -51,7 +54,16 @@ export const FrontierSelectionSheet = ({
       </HudSheet>
     );
   if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />;
-  if (target) return <TileCard selected={target} onClose={close} />;
+  if (target)
+    return (
+      <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />
+    );
+  if (cleared)
+    return (
+      <HudSheet label={structureName(cleared.structure.base.category)} onClose={close}>
+        <SiteReceipt selected={cleared} />
+      </HudSheet>
+    );
   if (mapSite) return <MapSiteCard selected={mapSite} onClose={close} />;
   if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;

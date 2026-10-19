@@ -193,24 +193,28 @@ it("counts season days from the exact start, whatever the time of day", () => {
 describe("siteReward", () => {
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
-    expect(siteReward("Camp", { initial_guard_count: guard, cleared: false })).toEqual({
+    expect(siteReward("Camp", { initial_guard_count: guard, clear: null })).toEqual({
       resourceType: ResourcesIds.Labor,
       amount: 550n * 1_000_000_000n,
     });
-    expect(siteReward("Rift", { initial_guard_count: guard, cleared: false })).toEqual({
+    expect(siteReward("Rift", { initial_guard_count: guard, clear: null })).toEqual({
       resourceType: ResourcesIds.Essence,
       amount: 3_300n * 1_000_000_000n,
     });
     // An odd scaled count halves as the contract's integer division does.
-    expect(siteReward("Camp", { initial_guard_count: 3n, cleared: false })?.amount).toBe(1n);
-    expect(siteReward("Stragglers", { initial_guard_count: guard, cleared: false })).toBeNull();
-    expect(siteReward("Ruin", { initial_guard_count: guard, cleared: false })).toBeNull();
+    expect(siteReward("Camp", { initial_guard_count: 3n, clear: null })?.amount).toBe(1n);
+    expect(siteReward("Stragglers", { initial_guard_count: guard, clear: null })).toBeNull();
+    expect(siteReward("Ruin", { initial_guard_count: guard, clear: null })).toBeNull();
   });
 
   it("pays nothing more once the site is cleared: the contract pays a site once", () => {
     const guard = 1_100n * 1_000_000_000n;
-    expect(siteReward("Camp", { initial_guard_count: guard, cleared: true })).toBeNull();
-    expect(siteReward("Rift", { initial_guard_count: guard, cleared: true })).toBeNull();
+    expect(
+      siteReward("Camp", { initial_guard_count: guard, clear: { explorer_id: 1n, home_id: 7n, reward: null } }),
+    ).toBeNull();
+    expect(
+      siteReward("Rift", { initial_guard_count: guard, clear: { explorer_id: 1n, home_id: 7n, reward: null } }),
+    ).toBeNull();
   });
 });
 

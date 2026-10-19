@@ -1,3 +1,4 @@
+import { dayOf } from "../utils/days";
 import { describe, expect, it } from "vitest";
 import { rowInGameSyncScope } from "./model-manifest";
 import { deriveGameSyncScope, scopeInputKeys, type ScopeRowReader } from "./subscription-scope";
@@ -63,4 +64,19 @@ describe("visited realm scope", () => {
     for (const value of ["0x0", `0x${((1n << 251n) - 256n).toString(16)}`])
       expect(() => deriveGameSyncScope("0xa", 350, expedition, read, value)).toThrow("Invalid gameplay account");
   });
+});
+
+it("retains the cleared site's facts by its own coordinate, then drops yesterday's region", () => {
+  const site = { model: "ExpeditionSite", value: { entity_id: "999", alt: false, col: 513, row: 1600 } };
+  const withSite: ScopeRowReader = (model, spacing, keys) =>
+    [...rows, site].filter(
+      (row) => row.model === model && scopeInputKeys(model, row.value, spacing).some((key) => keys.includes(key)),
+    );
+  const today = deriveGameSyncScope("0xa", 350, expedition, withSite);
+  expect(today.expedition?.entities.has("999")).toBe(true);
+  for (const model of ["Structure", "SiteChest", "ExpeditionSite"])
+    expect(rowInGameSyncScope(model, site.value, today)).toBe(true);
+  const tomorrow = deriveGameSyncScope("0xa", dayOf(expedition, 350)!.end, expedition, withSite);
+  expect(tomorrow.expedition?.entities.has("999")).toBe(false);
+  expect(rowInGameSyncScope("ExpeditionSite", site.value, tomorrow)).toBe(false);
 });

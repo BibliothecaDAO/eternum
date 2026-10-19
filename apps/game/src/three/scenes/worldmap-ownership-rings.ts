@@ -72,7 +72,10 @@ function describeStructure({ store, gameId }: OwnershipSources, structureId: ID 
 
 /** The structure standing on a hex; null on an empty hex or a reserved construction site. */
 function structureAt({ projection }: OwnershipSources, hex: WorldSpatialHex): ID | null {
-  return projection.getStructuresAtHex(hex).find((candidate) => !candidate.reserved)?.entityId ?? null;
+  return (
+    projection.getStructuresAtHex(hex).find((candidate) => !candidate.reserved && !candidate.clearedSite)?.entityId ??
+    null
+  );
 }
 
 /**

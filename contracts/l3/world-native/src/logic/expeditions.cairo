@@ -7,21 +7,22 @@ pub fn expedition_site(key: crate::resources::ResourceKey) -> Option<ExpeditionS
 }
 
 pub fn create_site(key: crate::resources::ResourceKey, guards: Span<crate::troops::Troops>) {
+    let coord = crate::structures::structure_coord(key);
     assert!(expedition_site(key).is_none(), "site already initialized");
     let mut initial_guard_count = 0;
     for guard in guards {
         initial_guard_count += *guard.count;
     }
     assert!(initial_guard_count != 0, "empty site guard");
-    write_site(key, ExpeditionSite { initial_guard_count, cleared: false });
+    write_site(key, ExpeditionSite { initial_guard_count, alt: coord.alt, col: coord.x, row: coord.y, clear: None });
 }
 
-pub fn clear_site(key: crate::resources::ResourceKey) -> ExpeditionSite {
+pub fn clear_site(key: crate::resources::ResourceKey, result: SiteClear) {
     let mut site = expedition_site(key).expect('missing expedition site');
-    assert!(!site.cleared, "site already cleared");
-    site.cleared = true;
+    assert!(site.clear.is_none(), "site already cleared");
+    site.clear = Some(result);
     write_site(key, site);
-    site
+    crate::logic::map::MapState::clear_expedition_site(key);
 }
 
 fn write_site(key: crate::resources::ResourceKey, site: ExpeditionSite) {

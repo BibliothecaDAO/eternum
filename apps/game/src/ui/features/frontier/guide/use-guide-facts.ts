@@ -181,7 +181,7 @@ const guardBesideAnArmy = (
     }),
   );
   for (const site of store.inGame("ExpeditionSite", gameId)) {
-    if (site.cleared) continue;
+    if (site.clear) continue;
     const structure = store.get("Structure", { game_id: gameId, entity_id: site.entity_id });
     const position = structure && isGuarded(structure, store) ? structureMapPosition(store, structure) : null;
     if (position && beside.has(`${position.x},${position.y}`)) return true;
@@ -205,10 +205,10 @@ const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   const isKind = (site: NativeRows["ExpeditionSite"], category: StructureType) =>
     store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === category;
   return {
-    siteCleared: sites.some((site) => site.cleared),
-    ruin: sites.some((site) => !site.cleared && isKind(site, StructureType.Ruin)),
-    stragglers: sites.some((site) => !site.cleared && isKind(site, StructureType.Stragglers)),
-    chestPaid: sites.some((site) => site.cleared && isKind(site, StructureType.Ruin)),
+    siteCleared: sites.some((site) => site.clear),
+    ruin: sites.some((site) => !site.clear && isKind(site, StructureType.Ruin)),
+    stragglers: sites.some((site) => !site.clear && isKind(site, StructureType.Stragglers)),
+    chestPaid: sites.some((site) => site.clear && isKind(site, StructureType.Ruin)),
   };
 };
 

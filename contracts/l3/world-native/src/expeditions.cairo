@@ -13,7 +13,17 @@ pub fn is_site_category(category: u8) -> bool {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ExpeditionSite {
     pub initial_guard_count: u128,
-    pub cleared: bool,
+    pub alt: bool,
+    pub col: u32,
+    pub row: u32,
+    pub clear: Option<SiteClear>,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
+pub struct SiteClear {
+    pub explorer_id: u64,
+    pub home_id: u64,
+    pub reward: Option<crate::resources::ResourceAmount>,
 }
 
 #[starknet::interface]

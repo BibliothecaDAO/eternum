@@ -1,11 +1,11 @@
-# Cleared-site standard study
+# Cleared-site standard
 
-This lab proposal reuses the shipped camp's timber pole, crossbar, cloth and sun emblem. The source is
+The cleared-site standard reuses the shipped camp's timber pole, crossbar, cloth and sun emblem. The source is
 `../outposts/camp.blend`, with its packed textures and editable standard pieces. No replacement painting or unrelated
 art is introduced. `scripts/frontier/export-cleared-standard.py` matches those authored pieces to the camp's baked
 production meshes, retaining the UVs, color attributes and separate ownership cloth. It removes the camp and puts the
 standard at the rear of a radius-one tile. The pole is 82% of its original height; horizontal detail is 110% so the
-cloth remains readable. The centre stays open for a later movement implementation.
+cloth remains readable. The centre stays open for an army on the cleared tile.
 
 Rebuild from the repository root with Blender 5.2.1 and an external build directory:
 
@@ -16,11 +16,10 @@ pnpm --dir apps/game optimize:outposts /absolute/external/build/standard.glb /ab
 ```
 
 The first command also retains the derived editable `.blend` and triangle summary beside its raw export. Review the
-compressed result before copying it to `public/lab/cleared-site/standard.glb`. The lab uses the existing settlement
-loader and ownership material. This delivery is referenced only by the cleared-site lab, never by a production model
-catalog. It must be promoted or deleted when that review ends.
+compressed result before copying it to `public/models/outposts/cleared-standard.glb`. The production catalog and lab use
+the same delivery, settlement loader and ownership material. The cleared site selects this model from its category’s
+catalog; its original standing model remains for uncleared sites.
 
-The two-site comparison uses the world's renderer, terrain and camera profile. The selected panel illustrates an
-uncapped camp clear or XP-only stragglers from existing native fixture facts and shared reward formulas. It does not
-claim to persist a paid receipt or make the live tile walkable. Those require the contract and sync change assessed
-separately.
+The two-site lab comparison uses the world renderer, terrain and camera profile. The selected standard uses the
+production receipt component over native fixture facts. Exact credits live in `ExpeditionSite.clear`; its coordinate
+retains the marker after occupancy is removed.

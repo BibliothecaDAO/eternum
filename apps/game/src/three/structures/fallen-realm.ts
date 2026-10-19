@@ -36,8 +36,7 @@ export const fallenRealmBeast = (depth: number): { beast: FallenRealmBeast; scal
 };
 
 /**
- * What a site's tile shows of a fallen realm: the ruin and the depth's beast while it stands. Once cleared, nothing
- * here: the capture replaced the site's occupancy with the closed chest, which draws as every closed chest does.
+ * A fallen realm shows its ruin and depth's beast while standing; the shared cleared-site standard replaces both.
  */
 const BEAST_ORDER = Object.keys(FALLEN_REALM_BEASTS) as FallenRealmBeast[];
 
@@ -50,9 +49,9 @@ export const FALLEN_REALM_RUIN_MODEL_INDEX = 0;
 export const fallenRealmBeastModelIndex = (beast: FallenRealmBeast): number => 1 + BEAST_ORDER.indexOf(beast);
 
 export const fallenRealmOnTile = (
-  site: Pick<NativeRows["ExpeditionSite"], "cleared">,
+  site: Pick<NativeRows["ExpeditionSite"], "clear">,
   depth: number,
-): ReturnType<typeof fallenRealmBeast> | null => (!site.cleared ? fallenRealmBeast(depth) : null);
+): ReturnType<typeof fallenRealmBeast> | null => (!site.clear ? fallenRealmBeast(depth) : null);
 
 /**
  * The beast a site's tile shows, read from its facts: a ruin is its own structure category, and shows its beast only

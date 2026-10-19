@@ -16,7 +16,7 @@ async (page) => {
         );
         const requests = [];
         const onResponse = (response) => {
-          if (/\/(models\/outposts|lab\/cleared-site)\//.test(response.url()))
+          if (/\/models\/outposts\//.test(response.url()))
             requests.push({ url: response.url(), status: response.status() });
         };
         page.on("response", onResponse);
@@ -31,11 +31,11 @@ async (page) => {
           // The cloth's visible centre at the fixed viewport and the two authored camera views.
           await page.mouse.click(distance === 20 ? 850 : 995, distance === 20 ? 505 : 444);
           const receipt = page.getByRole("complementary", { name: "Selected site" });
-          await receipt.getByText("Cleared", { exact: true }).waitFor();
-          const rewards = (await receipt.locator(".cleared-site-rewards").innerText()).replace(/\s+/g, " ").trim();
+          await receipt.getByRole("region", { name: "Clear reward" }).waitFor();
+          const rewards = (await receipt.locator("[data-site-rewards]").innerText()).replace(/\s+/g, " ").trim();
           const expected = kind === "camp" ? "550 Labor 82 XP" : "82 XP";
           if (rewards !== expected) throw new Error(`Expected ${expected}; selected site showed ${rewards}`);
-          for (const path of [`/models/outposts/${kind}.glb`, "/lab/cleared-site/standard.glb"]) {
+          for (const path of [`/models/outposts/${kind}.glb`, "/models/outposts/cleared-standard.glb"]) {
             if (!requests.some((request) => request.url.endsWith(path) && request.status === 200))
               throw new Error(`Missing delivered model ${path}`);
           }

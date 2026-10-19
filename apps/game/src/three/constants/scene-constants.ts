@@ -49,6 +49,7 @@ const BITCOIN_MINE_MODEL_PATH = "/models/ethereal/bitcoin-mine.glb";
 const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 
 export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
+export const CLEARED_SITE_MODEL_PATH = "/models/outposts/cleared-standard.glb";
 export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
 export const STRAGGLERS_MODEL_PATH = "/models/outposts/stragglers.glb";
 export const REALM_MODEL_PATHS = {
@@ -63,7 +64,10 @@ export function isRealmModelPath(path: string): boolean {
 }
 
 export function isSettlementModelPath(path: string): boolean {
-  return [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH].includes(path) || isRealmModelPath(path);
+  return (
+    [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH, CLEARED_SITE_MODEL_PATH].includes(path) ||
+    isRealmModelPath(path)
+  );
 }
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
@@ -176,11 +180,11 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.Bank]: [BUILDINGS_MODELS_PATH + BuildingFilenames.Bank],
     [StructureType.Mine]: Object.values(MineKinds).map((kind) => kind.model),
     [StructureType.Village]: [VILLAGE_MODEL_PATH],
-    [StructureType.Camp]: [CAMP_MODEL_PATH],
+    [StructureType.Camp]: [CAMP_MODEL_PATH, CLEARED_SITE_MODEL_PATH],
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
-    [StructureType.Rift]: [RIFT_MODEL_PATH],
-    [StructureType.Ruin]: FALLEN_REALM_MODEL_PATHS,
-    [StructureType.Stragglers]: [STRAGGLERS_MODEL_PATH],
+    [StructureType.Rift]: [RIFT_MODEL_PATH, CLEARED_SITE_MODEL_PATH],
+    [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
+    [StructureType.Stragglers]: [STRAGGLERS_MODEL_PATH, CLEARED_SITE_MODEL_PATH],
   };
 }
 

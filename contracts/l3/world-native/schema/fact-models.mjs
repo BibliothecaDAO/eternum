@@ -1372,7 +1372,7 @@ export const syncScopes = {
   TileOccupancy: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   Building: { realms: ["structure_id"] },
   RealmKnowledge: { realms: ["structure_id"] },
-  ExpeditionSite: { entities: ["entity_id"] },
+  ExpeditionSite: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   SiteChest: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,

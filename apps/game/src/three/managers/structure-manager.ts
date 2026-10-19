@@ -600,9 +600,12 @@ export class StructureManager {
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
-      attachments: cosmetic.attachments,
+      attachments: renderable.clearedSite ? [] : cosmetic.attachments,
+      clearedSite: renderable.clearedSite,
       siteKind: this.resolveSiteKind(renderable.entityId, renderInfo.type),
-      guardArmies: guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots()),
+      guardArmies: renderable.clearedSite
+        ? undefined
+        : guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots()),
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
       attackedFromDegrees: battleDirections?.attackedFromDegrees,
@@ -615,7 +618,7 @@ export class StructureManager {
   /** The kind of a guarded Frontier site still standing; undefined for every other structure. */
   private resolveSiteKind(entityId: ID, structureType: StructureType): SiteKind | undefined {
     const site = this.store?.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: entityId });
-    return site ? siteKindOf(structureType) : undefined;
+    return site && !site.clear ? siteKindOf(structureType) : undefined;
   }
 
   private resolveHyperstructureInitialized(entityId: ID, structureType: StructureType): boolean {
@@ -1250,7 +1253,7 @@ export class StructureManager {
    */
   private hasCosmeticSkin(structure: StructureInfo): boolean {
     // A fallen realm is drawn as its ruin and beast, never as a skinned camp.
-    if (structure.fallenRealm) return false;
+    if (structure.fallenRealm || structure.clearedSite) return false;
     if (!structure.cosmeticId || !structure.cosmeticAssetPaths?.length) {
       return false;
     }
@@ -1271,6 +1274,7 @@ export class StructureManager {
   }
 
   private getBaseStructureModelIndex(structure: StructureInfo): number {
+    if (structure.clearedSite) return this.structureModelPaths[String(structure.structureType)].length - 1;
     if (structure.fallenRealm) return FALLEN_REALM_RUIN_MODEL_INDEX;
     if (structure.structureType === StructureType.Hyperstructure) return 0;
     if (structure.structureType === StructureType.Mine) {

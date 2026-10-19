@@ -6,13 +6,12 @@ needs an adjacent own army (the panel otherwise says "Move next to it"). `/lab/r
 presentation using the production instanced model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
-## Cleared-site visual study
+## Cleared-site standard
 
 Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped camp
-or stragglers with the proposed standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
-Click a model or its selection button to open the reward example; Close site dismisses it. The marker is a lab-only
-asset. Live movement and exact credited receipts await the contract change; the example reads the existing native site
-fixture and shared payout/XP formulas.
+or stragglers with the production standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
+Click a model or its selection button to open the reward panel; Close site dismisses it. The selected standard uses the
+production receipt component over native clear-result facts.
 
 Proof: serve the client, open that URL with `&evidence=/absolute/new/capture/directory`, then run
 `scripts/frontier/prove-cleared-site.playwright.js` through the browser connection with the page as its argument. It
@@ -550,3 +549,13 @@ releases each WebGL page after capture. The exported `proveWorkshops` also accep
 
 To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 `node apps/game/scripts/render-building-thumbnails.mjs https://127.0.0.1:4218 /absolute/evidence/directory /models/new-buildings-opt/workshop.glb`.
+
+## Cleared Frontier sites
+
+On the world map, win the adjacent fight at a guarded site. Its standard replaces the structure; select that tile to
+read the credited resource and XP, including with an army standing there. The normal Move order enters the cleared tile.
+The receipt remains after a snapshot reload. Yesterday’s sites leave the current region with the new day.
+
+`/lab/models?family=cleared-sites&rendererMode=webgpu-force-webgl` compares the production standard with the standing
+camp and stragglers, at gameplay and detail distance. Both use the game renderer; the selected standard uses the
+production receipt over native fixture facts.

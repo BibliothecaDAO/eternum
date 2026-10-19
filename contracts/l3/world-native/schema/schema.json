@@ -4686,14 +4686,32 @@
           "feltLength": 1
         },
         {
-          "name": "cleared",
+          "name": "alt",
           "type": "core::bool",
-          "id": "0x636c6561726564",
+          "id": "0x616c74",
           "feltLength": 1
+        },
+        {
+          "name": "col",
+          "type": "core::integer::u32",
+          "id": "0x636f6c",
+          "feltLength": 1
+        },
+        {
+          "name": "row",
+          "type": "core::integer::u32",
+          "id": "0x726f77",
+          "feltLength": 1
+        },
+        {
+          "name": "clear",
+          "type": "core::option::Option::<world_native::expeditions::SiteClear>",
+          "id": "0x636c656172",
+          "feltLength": null
         }
       ],
       "keyLength": 2,
-      "valueLength": 2
+      "valueLength": null
     },
     {
       "name": "Structure",
@@ -7058,6 +7076,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::expeditions::SiteClear>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::expeditions::SiteClear>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::expeditions::SiteClear"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::guilds::Guild>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::guilds::Guild>",
@@ -8715,8 +8747,20 @@
           "type": "core::integer::u128"
         },
         {
-          "name": "cleared",
+          "name": "alt",
           "type": "core::bool"
+        },
+        {
+          "name": "col",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "row",
+          "type": "core::integer::u32"
+        },
+        {
+          "name": "clear",
+          "type": "core::option::Option::<world_native::expeditions::SiteClear>"
         }
       ]
     },
@@ -8751,6 +8795,24 @@
         {
           "name": "empty_reveal_limit",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::expeditions::SiteClear": {
+      "type": "struct",
+      "name": "world_native::expeditions::SiteClear",
+      "members": [
+        {
+          "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "home_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "reward",
+          "type": "core::option::Option::<world_native::resources::ResourceAmount>"
         }
       ]
     },
@@ -12925,5 +12987,5 @@
       ]
     }
   },
-  "identity": "2fa06b05d0c49dcb853cefa897d137ac4ba78bea896f00a67400f89437131968"
+  "identity": "cda2c0bd065119fa4fe8cf14ecd34aa6aac6ede29635170fcac5b4c34dc12314"
 }

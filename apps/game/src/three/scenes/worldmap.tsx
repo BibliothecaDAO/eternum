@@ -1483,6 +1483,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private writeStructureMarker(structure: StructureSpatialRenderable): void {
     if (structure.reserved) return;
+    if (structure.clearedSite) {
+      this.strategicMarkers.removeStructure(structure.entityId);
+      return;
+    }
     const facts = this.structureManager.getStructureMarkerFacts(structure.entityId);
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
@@ -1647,13 +1651,15 @@ export default class WorldmapScene extends WarpTravel {
           y: previous.hexCoords.row,
         }).getNormalized();
         const currentStayedAtPreviousHex =
-          current?.hexCoords.col === previous.hexCoords.col && current.hexCoords.row === previous.hexCoords.row;
+          !current?.clearedSite &&
+          current?.hexCoords.col === previous.hexCoords.col &&
+          current.hexCoords.row === previous.hexCoords.row;
         if (!currentStayedAtPreviousHex && this.isHexInRetainedRenderArea(previousHex.x, previousHex.y)) {
           gameWorkerManager.updateStructureHex(previousHex.x, previousHex.y, null);
         }
       }
 
-      if (current && !current.reserved) {
+      if (current && !current.reserved && !current.clearedSite) {
         const currentHex = Position.fromContract({
           x: current.hexCoords.col,
           y: current.hexCoords.row,
@@ -2519,10 +2525,11 @@ export default class WorldmapScene extends WarpTravel {
     const army = this.getArmyAtHex({ col: hex.x, row: hex.y });
     const projectedStructure = this.worldSpatialProjection
       .getStructuresAtHex({ alt: activeMapLayer(), col: contractHex.x, row: contractHex.y })
-      .find((candidate) => !candidate.reserved);
-    const structure = projectedStructure
-      ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
-      : undefined;
+      .find((candidate) => !candidate.reserved && !candidate.clearedSite);
+    const structure =
+      projectedStructure && !projectedStructure.reserved
+        ? { id: projectedStructure.entityId, owner: this.getStructureOwnerAddress(projectedStructure.entityId) }
+        : undefined;
     const projectedChest = this.worldSpatialProjection.getChestsAtHex({
       alt: activeMapLayer(),
       col: contractHex.x,
@@ -2761,6 +2768,10 @@ export default class WorldmapScene extends WarpTravel {
     });
     if (order === "pin") {
       // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
+      const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+      const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
+      if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
+        this.openTargetCardForSelectedArmy(target);
       this.state.updateEntityActionHoveredHex(hexCoords);
     } else if (order === "attack" && path) {
       this.onArmyAttack(path, selectedEntityId);
@@ -3182,7 +3193,7 @@ export default class WorldmapScene extends WarpTravel {
       game_id: configManager.getActiveGameId(),
       entity_id: safeInteger(entityId),
     });
-    return site !== undefined && !site.cleared;
+    return site !== undefined && !site.clear;
   }
 
   private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3768,7 +3779,7 @@ export default class WorldmapScene extends WarpTravel {
   private buildProjectedStructureActionIndex(): Map<number, Map<number, HexEntityInfo>> {
     const index = new Map<number, Map<number, HexEntityInfo>>();
     this.worldSpatialProjection.getStructures(activeMapLayer()).forEach((structure) => {
-      if (structure.reserved) return;
+      if (structure.reserved || structure.clearedSite) return;
 
       const normalized = Position.fromContract({
         x: structure.hexCoords.col,
@@ -6307,7 +6318,7 @@ export default class WorldmapScene extends WarpTravel {
     retainedBounds.forEach((bounds) => {
       const contractBounds = this.toContractBounds(bounds);
       this.worldSpatialProjection.getStructuresInBounds(contractBounds).forEach((structure) => {
-        if (structure.reserved || retainedStructureIds.has(structure.entityId)) {
+        if (structure.reserved || structure.clearedSite || retainedStructureIds.has(structure.entityId)) {
           return;
         }
         retainedStructureIds.add(structure.entityId);

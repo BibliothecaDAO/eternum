@@ -82,6 +82,7 @@ export const SiteCardView = ({
   verb,
   choices,
   guide,
+  receipt,
   onRealm,
   onClose,
 }: {
@@ -99,6 +100,7 @@ export const SiteCardView = ({
   choices?: readonly SiteChoice[];
   /** The guide's line when it speaks about this fight. */
   guide?: ReactNode;
+  receipt?: ReactNode;
   /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
   onClose: () => void;
@@ -129,6 +131,7 @@ export const SiteCardView = ({
           )}
         </Plate>
       </div>
+      {receipt}
       {guide}
       <Verb
         verb={verb}

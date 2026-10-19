@@ -19,7 +19,15 @@ const siteFacts = (site: { category: StructureType; cleared: boolean } | undefin
     GameRegistry: { start_main_at: 0, seed: 1 },
     SettlementRules: { spacing: 10 },
     Structure: site && { game_id: 1, entity_id: 9, base: { category: site.category } },
-    ExpeditionSite: site && { game_id: 1, entity_id: 9, initial_guard_count: 0n, cleared: site.cleared },
+    ExpeditionSite: site && {
+      game_id: 1,
+      entity_id: 9,
+      initial_guard_count: 0n,
+      alt: false,
+      col: 1,
+      row: 1,
+      clear: site.cleared ? { explorer_id: 1n, home_id: 7n, reward: null } : null,
+    },
   };
   return { get: (model: string) => rows[model] } as never;
 };
@@ -38,9 +46,9 @@ describe("a fallen realm on the map", () => {
   });
 
   it("shows the ruin and its beast only while the fallen realm stands", () => {
-    expect(fallenRealmOnTile({ cleared: false }, 1)?.beast).toBe("wyvern");
+    expect(fallenRealmOnTile({ clear: null }, 1)?.beast).toBe("wyvern");
     // Cleared: the tile's closed chest is the capture's occupancy, drawn as every closed chest.
-    expect(fallenRealmOnTile({ cleared: true }, 1)).toBeNull();
+    expect(fallenRealmOnTile({ clear: { explorer_id: 1n, home_id: 7n, reward: null } }, 1)).toBeNull();
   });
 
   it("draws a standing ruin as its ruin and its depth's beast, from the facts alone", () => {

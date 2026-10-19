@@ -9,7 +9,7 @@ import {
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
-type ScopeInputModel = "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy";
+type ScopeInputModel = "PlayerEntry" | "Structure" | "ExplorerTroops" | "TileOccupancy" | "ExpeditionSite";
 export type ScopeRowReader = (
   model: ScopeInputModel,
   spacing: number,
@@ -80,6 +80,9 @@ export function deriveGameSyncScope(
     )
       entities.add(syncScalar(value.entity_id));
   }
+  for (const { value } of read("ExpeditionSite", spacing, [...regions].map(scopeLookup.sitesIn))) {
+    entities.add(syncScalar(value.entity_id));
+  }
   scope.expedition = {
     day: today,
     spacing,
@@ -105,6 +108,7 @@ export const scopeLookup = {
   entryOf: (player: unknown) => `PlayerEntry.player:${syncScalar(player)}`,
   structuresOf: (owner: unknown) => `Structure.owner:${syncScalar(owner)}`,
   structure: (entity: unknown) => `Structure.entity:${syncScalar(entity)}`,
+  sitesIn: (region: string) => `ExpeditionSite.region:${region}`,
   occupancyIn: (region: string) => `TileOccupancy.region:${region}`,
   occupancyOf: (entity: unknown) => `TileOccupancy.entity:${syncScalar(entity)}`,
   armiesOf: (home: unknown) => `ExplorerTroops.owner:${syncScalar(home)}`,
@@ -116,6 +120,11 @@ export function scopeInputKeys(model: string, row: Record<string, unknown>, spac
   if (model === "PlayerEntry") return [scopeLookup.entryOf(row.player)];
   if (model === "ExplorerTroops") return [scopeLookup.armiesOf(row.owner), scopeLookup.army(row.explorer_id)];
   if (model === "Structure") return [scopeLookup.structuresOf(row.owner), scopeLookup.structure(row.entity_id)];
+  if (model === "ExpeditionSite") {
+    const region =
+      spacing === undefined ? undefined : gameSyncRegion({ alt: row.alt, x: row.col, y: row.row }, spacing);
+    return region === undefined ? [] : [scopeLookup.sitesIn(region)];
+  }
   if (model !== "TileOccupancy") return [];
   const region = spacing === undefined ? undefined : gameSyncRegion({ alt: row.alt, x: row.col, y: row.row }, spacing);
   return [

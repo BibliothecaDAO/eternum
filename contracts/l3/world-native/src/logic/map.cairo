@@ -129,6 +129,15 @@ pub mod MapState {
         write_occupancy(key, None);
     }
 
+    pub fn clear_expedition_site(site_key: crate::resources::ResourceKey) {
+        let site = crate::logic::expeditions::expedition_site(site_key).expect('missing expedition site');
+        assert!(site.clear.is_some(), "site not cleared");
+        let key = TileKey { game_id: site_key.game_id, alt: site.alt, col: site.col, row: site.row };
+        let previous = crate::logic::map::occupancy(key).expect('missing site blocker');
+        assert!(previous.is_structure && previous.entity_id == site_key.entity_id, "site blocker mismatch");
+        write_occupancy(key, None);
+    }
+
     fn write_terrain(key: TileKey, data: u128) {
         let state = crate::state::write();
         let storage_key = (key.game_id, key.alt, key.col, key.row);

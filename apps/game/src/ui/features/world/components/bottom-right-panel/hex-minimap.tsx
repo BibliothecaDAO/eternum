@@ -68,7 +68,7 @@ export const readMinimapTiles = (
     });
   }
   for (const structure of projection.getStructures(alt)) {
-    if (structure.entityId === null) continue;
+    if (structure.entityId === null || structure.clearedSite) continue;
     const key = `${structure.hexCoords.col}:${structure.hexCoords.row}`;
     tilesByHex.set(key, {
       ...(tilesByHex.get(key) ?? { col: structure.hexCoords.col, row: structure.hexCoords.row }),

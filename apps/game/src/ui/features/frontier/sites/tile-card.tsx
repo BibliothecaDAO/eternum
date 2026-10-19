@@ -22,7 +22,7 @@ import {
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { GuideSlot } from "../guide/frontier-guide";
@@ -101,7 +101,7 @@ export const useSelectedTarget = (): AttackTarget | null => {
 const standingSite = (store: NativeFactStore, tile: TileSpatialRenderable): AttackTarget | null => {
   const key = { game_id: configManager.getActiveGameId(), entity_id: tile.occupierId };
   const site = store.get("ExpeditionSite", key);
-  if (!site || site.cleared) return null;
+  if (!site || site.clear) return null;
   return { kind: "site", site, structure: store.require("Structure", key), tile };
 };
 
@@ -129,7 +129,15 @@ const targetId = (target: AttackTarget): number =>
  * armies are the choices. The card stays between attacks and closes when the target falls. It is the one surface an
  * army's attack is confirmed on, whatever it attacks.
  */
-export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClose: () => void }) => {
+export const TileCard = ({
+  selected,
+  onClose,
+  receipt,
+}: {
+  selected: AttackTarget;
+  onClose: () => void;
+  receipt?: ReactNode;
+}) => {
   const { setup, account } = useGame();
   const actor = useSelectedOwnArmy();
   const attack = useSiteAttack(selected.tile, actor);
@@ -175,6 +183,7 @@ export const TileCard = ({ selected, onClose }: { selected: AttackTarget; onClos
 
   return (
     <SiteCardView
+      receipt={receipt}
       site={plan.kind}
       beast={plan.kind === "Ruin" ? plan.name : undefined}
       army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}

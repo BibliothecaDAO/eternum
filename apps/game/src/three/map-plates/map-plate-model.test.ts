@@ -157,3 +157,9 @@ describe("plate stacking", () => {
     expect(stack([box("a", 0, 1), box("far", 400, 0)]).get("far")).toBe(0);
   });
 });
+
+it("marks a cleared site with a flag and never calls it undefended", () => {
+  expect(
+    buildStructurePlate(structure({ structureType: StructureType.Camp, clearedSite: true, guardArmies: [] })),
+  ).toMatchObject({ icon: "flag", name: "Camp · Cleared", guards: null, place: undefined });
+});

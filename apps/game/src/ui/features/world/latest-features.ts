@@ -35,9 +35,8 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
-    title: "Cleared site visual study",
-    description:
-      "The model lab compares a planted standard with today's guarded sites. Select either model to preview its reward panel.",
+    title: "Cleared sites leave a standard",
+    description: "Select a cleared site's standard to see its credited reward. Armies can move onto the cleared tile.",
     type: "feature",
     readMore: "/lab/models?family=cleared-sites",
   },

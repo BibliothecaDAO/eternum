@@ -63,9 +63,9 @@ export const siteKindOf = (category: number): SiteKind => {
  */
 export const siteReward = (
   kind: SiteKind,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "cleared">,
+  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "clear">,
 ): { resourceType: ResourcesIds; amount: bigint } | null => {
-  if (site.cleared) return null;
+  if (site.clear) return null;
   if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
   if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
   return null;
@@ -134,7 +134,7 @@ export const isExpeditionRealm = (
   structure: NativeRows["Structure"],
 ): boolean => isRealmCategory(structure.base.category) && readExpeditionRules(store, structure.game_id) !== null;
 
-/** Frontier homes use their daily site; all other structures read their canonical occupancy. */
+/** Frontier homes follow the calendar; discovered sites retain their position after their blocker is cleared. */
 export const structureMapPosition = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"],
@@ -148,8 +148,19 @@ export const structureMapPosition = (
     );
     return site ? { x: site.col, y: site.row, alt: false } : null;
   }
-  return entityMapPosition(store, structure.game_id, structure.entity_id);
+  return fixedStructurePosition(store, structure);
 };
+
+/** A discovered site's position survives its blocker; other fixed structures are positioned by occupancy. */
+function fixedStructurePosition(
+  store: Pick<NativeFactStore, "get" | "entityOccupancy">,
+  structure: NativeRows["Structure"],
+): { x: number; y: number; alt: boolean } {
+  const site = SITE_KINDS.has(structure.base.category) ? store.get("ExpeditionSite", structure) : undefined;
+  return site
+    ? { x: site.col, y: site.row, alt: site.alt }
+    : entityMapPosition(store, structure.game_id, structure.entity_id);
+}
 
 /** How many hexes the local view reads around its centre: its terrain disk's radius. */
 export const LOCAL_VIEW_REACH = 2;
@@ -167,7 +178,7 @@ export function structureLocalPosition(
     const edge = Number(MAX_U32) - LOCAL_VIEW_REACH;
     return { x: edge - structure.metadata.realm_id, y: edge, alt: false };
   }
-  return entityMapPosition(store, structure.game_id, structure.entity_id);
+  return fixedStructurePosition(store, structure);
 }
 
 /** Where a realm stands on today's surface region: the site the contract computes for (home region, day, depth 0). */
