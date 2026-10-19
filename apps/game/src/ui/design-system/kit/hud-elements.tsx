@@ -1216,10 +1216,12 @@ export const HudWindow = ({
  * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
  * arrow when it opened from another panel, whose place it takes). On a phone it is a bottom sheet with a handle (a tap or
  * a drag down closes it) over a backdrop a tap closes; from the desktop width up it docks under the top bar and the
- * stage stays playable beside it. Escape and the system back close it on both.
+ * stage stays playable beside it. Escape and the system back close it on both. Its foot is a window's (HudWindowFoot),
+ * so the verb and its cost stay in view while the body scrolls.
  */
 export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
   const back = useContext(OpenedFromPanel);
+  const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
   return (
     <>
@@ -1241,14 +1243,18 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
           }
           fold={null}
         />
-        <div className="ui-sheet__body">{children}</div>
+        <WindowFootContext.Provider value={foot}>
+          <div className="ui-sheet__body">{children}</div>
+        </WindowFootContext.Provider>
+        <footer ref={setFoot} className="ui-window__foot" />
       </section>
     </>
   );
 };
 
 /**
- * The one way to fill a window's foot: what it costs on the left, then the way out and the one verb, the verb last.
+ * The one way to fill a window's or a sheet's foot: what it costs on the left, then the way out and the one verb, the
+ * verb last.
  * It is drawn where its state lives, anywhere in the window's body (as the body's first child when the verb is known at
  * the top), and lands in the window's foot.
  */
