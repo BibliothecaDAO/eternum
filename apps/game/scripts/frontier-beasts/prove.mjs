@@ -6,14 +6,28 @@ import { runProof, waitFor } from "../prove-run.mjs";
 export async function proveBeasts(b, out, records, baseUrl) {
   await b.run("set", "viewport", "1600", "1000");
   for (const scenario of [
-    { name: "models-gameplay", group: "models", focus: "lineup", models: 6 },
-    { name: "minotaur-detail", group: "models", focus: "1", models: 6 },
-    { name: "chimera-detail", group: "models", focus: "3", models: 6 },
-    { name: "cyclops-detail", group: "models", focus: "5", models: 6 },
-    { name: "standing-sites", group: "sites", focus: "lineup", models: 7 },
-    { name: "beasts", group: "beasts", focus: "lineup", models: 2 },
-    { name: "wolf-panel", group: "beasts", focus: "0", models: 2, band: "lowly", species: "Wolf", count: "325" },
-    { name: "goblin-panel", group: "beasts", focus: "1", models: 2, band: "stronger", species: "Goblin", count: "500" },
+    { name: "models-gameplay", group: "models", focus: "lineup", models: 5, species: "troll" },
+    { name: "standing-sites", group: "sites", focus: "lineup", models: 7, species: "troll" },
+    {
+      name: "lowly-beast",
+      group: "beasts",
+      focus: "0",
+      models: 2,
+      species: "minotaur",
+      band: "lowly",
+      panel: true,
+    },
+    {
+      name: "stronger-beast",
+      group: "beasts",
+      focus: "1",
+      models: 2,
+      species: "cyclops",
+      band: "stronger",
+      panel: true,
+    },
+    { name: "wyvern-panel", group: "models", focus: "1", models: 5, species: "wyvern", depth: "1", panel: true },
+    { name: "hydra-panel", group: "models", focus: "2", models: 5, species: "hydra", depth: "2", panel: true },
   ]) {
     const record = { name: scenario.name, ready: false, presses: [], checks: [] };
     records.push(record);
@@ -67,21 +81,41 @@ export async function proveBeasts(b, out, records, baseUrl) {
       if (scenario.band) {
         await b.run("select", 'select[aria-label="Site"]', "3");
         await b.run("select", 'select[aria-label="Beast strength"]', scenario.band);
-        await b.run("click", 'button:has-text("Select site")');
+        record.presses.push({ action: `Select ${scenario.band} beast`, status: "led" });
+      }
+      if (scenario.depth) {
+        await b.run("select", 'select[aria-label="Depth"]', scenario.depth);
+        record.presses.push({ action: `Select depth ${scenario.depth}`, status: "led" });
+      }
+      const plate = await b.evaluate(`(() => {
+        const p=document.querySelector('[data-after] .mp-plate');
+        return { rows: Array.from(p.querySelectorAll('.mp-plate__row')).map(row=>row.textContent), icon:p.querySelector('img')?.dataset.icon, tier:!!p.querySelector('.ui-tier') || /T[123]/.test(p.textContent) };
+      })()`);
+      const speciesName = scenario.species[0].toUpperCase() + scenario.species.slice(1);
+      record.checks.push({
+        check: "species title follows site name, with its own icon and no tier badge",
+        ok:
+          plate.rows[1] === speciesName &&
+          !plate.rows[0].includes(speciesName) &&
+          plate.icon === `beast-${scenario.species}` &&
+          !plate.tier,
+        actual: plate,
+      });
+      if (scenario.panel) {
+        await b.run("find", "role", "button", "click", "--name", "Select site", "--exact");
         record.presses.push({
-          action: `Select ${scenario.band} Beasts`,
+          action: "Select site",
           status: (await waitFor(b, 'document.querySelector("[role=dialog]")', 5000)) ? "led" : "failed",
         });
         const panel = await b.evaluate(
-          `(() => {const p=document.querySelector('[role=dialog]');return {text:p?.textContent,beast:!!p?.querySelector('[data-icon="beast-t1"]'),oldGuard:!!p?.querySelector('[data-icon="troops"]')};})()`,
+          `(() => {const p=document.querySelector('[role=dialog]');return {text:p?.textContent,icons:Array.from(p?.querySelectorAll('[data-icon]')??[]).map(i=>i.dataset.icon)};})()`,
         );
         record.checks.push({
-          check: `selected panel names ${scenario.species} with its strength and the actual T1 beast icon`,
+          check: "selected panel shares the species portrait and omits the beast tier",
           ok:
-            panel.text?.includes(scenario.species) &&
-            panel.text?.includes(scenario.count) &&
-            panel.beast &&
-            !panel.oldGuard,
+            panel.text?.includes(speciesName) &&
+            panel.icons.includes(`beast-${scenario.species}`) &&
+            !/T[123]/.test(panel.text),
           actual: panel,
         });
       }
@@ -89,8 +123,11 @@ export async function proveBeasts(b, out, records, baseUrl) {
         `Array.from(document.querySelectorAll('.beast-icon-studies img')).map(img=>({width:img.getBoundingClientRect().width,loaded:img.complete&&img.naturalWidth>0,meaning:img.dataset.icon}))`,
       );
       record.checks.push({
-        check: "three tier paintings decoded at real 20px HUD size",
-        ok: icons.length === 3 && icons.every((icon) => icon.width === 20 && icon.loaded),
+        check: "five distinct species paintings decoded at real 20px HUD size",
+        ok:
+          icons.length === 5 &&
+          new Set(icons.map((icon) => icon.meaning)).size === 5 &&
+          icons.every((icon) => icon.width === 20 && icon.loaded),
         actual: icons,
       });
       await b.run("screenshot", join(out, `${scenario.name}.png`));

@@ -1,3 +1,4 @@
+import { plateRows } from "./map-plate-rows";
 import { StructureType, siteName } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
@@ -174,7 +175,13 @@ it("names a Frontier guard by its beast while retaining its combat stack and sit
       guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: 2800 }],
     }),
   );
-  expect(plate.owner).toBe("Wyvern");
+  expect(plate.beast).toBe("Wyvern");
+  expect(plate.icon).toBe("beast-wyvern");
   expect(plate.place).toBe(siteName(29));
-  expect(plate.guards).toEqual([{ type: "knight", tier: 1, count: 2800, beast: true }]);
+  expect(plateRows(plate, true).slice(0, 2)).toEqual([
+    [{ kind: "owner", text: `${siteName(29)} Ruin` }],
+    [{ kind: "title", text: "Wyvern" }],
+  ]);
+  expect(plateRows(plate, false)[0]).toEqual([{ kind: "title", text: "Wyvern" }]);
+  expect(plate.guards).toEqual([{ type: "knight", tier: 1, count: 2800, beast: "wyvern" }]);
 });

@@ -56,10 +56,10 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
 const Troops = ({ troops }: { troops: PlateTroops }) => (
   <span className="mp-troops">
     <Icon
-      name={troops.beast ? beastMeaning(troops.tier) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
+      name={troops.beast ? beastMeaning(troops.beast) : (`${troops.type}-t${troops.tier}` as IconMeaning)}
       size={20}
     />
-    <HudTierChip tier={troops.tier} />
+    {!troops.beast && <HudTierChip tier={troops.tier} />}
     <span className="mp-count">{formatExact(troops.count)}</span>
   </span>
 );

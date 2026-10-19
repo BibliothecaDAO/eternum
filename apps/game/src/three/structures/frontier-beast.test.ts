@@ -1,3 +1,5 @@
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { iconDefinition } from "@/ui/design-system/icon-meaning";
 import { describe, expect, it } from "vitest";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
@@ -62,8 +64,8 @@ describe("Frontier guard identity", () => {
     "keeps both ranged encounters' identities at depth $depth through casualties",
     ({ depth, bounds }) => {
       for (const [low, high, name, species] of [
-        [bounds.beast_weak_lower, bounds.beast_weak_upper, "Wolf", "wolf"],
-        [bounds.beast_strong_lower, bounds.beast_strong_upper, "Goblin", "goblin"],
+        [bounds.beast_weak_lower, bounds.beast_weak_upper, "Minotaur", "minotaur"],
+        [bounds.beast_strong_lower, bounds.beast_strong_upper, "Cyclops", "cyclops"],
       ] as const) {
         for (const initial of [low, Math.floor((low + high) / 2), high]) {
           const read = (remaining: number, cleared = false) =>
@@ -71,10 +73,11 @@ describe("Frontier guard identity", () => {
               row: depth * 10 + 5,
             });
           const identity = read(initial)!;
-          expect(identity).toEqual({ beast: species, name, scale: 1 });
+          expect(identity).toEqual({ beast: species, name, scale: species === "minotaur" ? 0.8 : 1 });
           expect(getStructureModelPaths()[StructureType.Beasts][frontierBeastModelIndex(identity.beast)]).toBe(
             FRONTIER_BEASTS[species].path,
           );
+          expect(iconDefinition(beastMeaning(identity.beast)).art).toBe(`beast-${identity.beast}`);
           expect(read(1)).toEqual(identity);
           expect(read(0)).toEqual(identity);
           expect(read(0, true)).toBeUndefined();
@@ -101,6 +104,17 @@ describe("Frontier guard identity", () => {
     expect(() =>
       readStandingFrontierBeast(without(facts(StructureType.Beasts), "DepthRules"), 1, 9, { row: 5 }),
     ).toThrow("without depth rules");
+  });
+  it("has exactly five active species with distinct model and portrait deliveries", () => {
+    expect(Object.keys(FRONTIER_BEASTS)).toEqual(["troll", "wyvern", "hydra", "minotaur", "cyclops"]);
+    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(5);
+    expect(
+      new Set(
+        (Object.keys(FRONTIER_BEASTS) as (keyof typeof FRONTIER_BEASTS)[]).map(
+          (beast) => iconDefinition(beastMeaning(beast)).art,
+        ),
+      ).size,
+    ).toBe(5);
   });
   it("does not turn ordinary neutral holdings into Frontier beasts", () => {
     expect(

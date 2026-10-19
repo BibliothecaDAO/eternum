@@ -1,3 +1,4 @@
+import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { BuildingType, ResourceMiningTypes, StructureType } from "@bibliothecadao/types";
 import { iconDefinition, type IconMeaning } from "./icon-meaning";
 const buildingMeanings = {
@@ -85,10 +86,9 @@ export function realmMarkerMeaning(level: number) {
   return `map-${realmMeaning(level)}` as const;
 }
 
-/** Beast art follows combat tier; Loot Survivor's species tier never selects this painting. */
-export function beastMeaning(tier: number): IconMeaning {
-  if (tier !== 1 && tier !== 2 && tier !== 3) throw new Error(`Unsupported beast combat tier ${tier}`);
-  return `beast-t${tier}`;
+/** Species identity selects the painting, independent of combat tier and remaining strength. */
+export function beastMeaning(species: FrontierSpecies): IconMeaning {
+  return `beast-${species}`;
 }
 
 export function troopMeaning(troops: { category: string; tier: string }): IconMeaning {

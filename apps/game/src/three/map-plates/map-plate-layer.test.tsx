@@ -60,6 +60,37 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     container.remove();
   });
 
+  it("shows a beast's species and strength without a tier while armies retain theirs", async () => {
+    const structures = layer.createScope("structure");
+    const armies = layer.createScope("army");
+    structures.setLabel({
+      entityId: 1,
+      position: new Vector3(-3, 0, 0),
+      plate: {
+        ...realm,
+        relation: "neutral",
+        name: "Ruin",
+        named: false,
+        place: "Woecrag",
+        beast: "Wyvern",
+        guards: [{ type: "knight", tier: 1, count: 2800, beast: "wyvern" }],
+        icon: "beast-wyvern",
+      },
+    });
+    armies.setLabel({ entityId: 2, position: new Vector3(3, 0, 0), plate: army });
+    await frame();
+    expect(plateOf("Wyvern")!.textContent).toBe("Wyvern2,800");
+    expect(plateOf("Wyvern")!.querySelector('[data-icon="beast-wyvern"]')).not.toBeNull();
+    expect(plateOf("Tamsin")!.textContent).toContain("T1");
+    structures.setHover(1);
+    await frame();
+    expect([...plateOf("Wyvern")!.querySelectorAll(".mp-plate__row")].map((row) => row.textContent)).toEqual([
+      "Woecrag Ruin",
+      "Wyvern",
+      "2,800",
+    ]);
+  });
+
   it("draws a thing's plate over it, and follows the thing as it moves", async () => {
     const armies = layer.createScope("army");
     armies.setLabel({ entityId: 2, position: new Vector3(0, 0, 0), plate: army });

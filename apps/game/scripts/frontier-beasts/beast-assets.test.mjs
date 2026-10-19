@@ -5,7 +5,7 @@ import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import draco from "draco3dgltf";
 import { it, expect } from "vitest";
 
-for (const species of ["minotaur", "chimera", "cyclops", "wolf", "goblin"]) {
+for (const species of ["minotaur", "cyclops"]) {
   it(`${species}: delivered sculpt fits the hex and retains paint, normals and editable provenance`, async () => {
     const path = new URL(`../../public/models/frontier/beast-${species}.glb`, import.meta.url);
     const bytes = readFileSync(path);

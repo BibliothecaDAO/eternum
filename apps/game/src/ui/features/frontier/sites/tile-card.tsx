@@ -185,11 +185,7 @@ export const TileCard = ({
     <SiteCardView
       receipt={receipt}
       site={plan.kind}
-      beast={
-        plan.beast && plan.guard
-          ? { name: plan.beast.name, tier: Number(plan.guard.tier.slice(1)) as 1 | 2 | 3, combatClass: plan.guard.type }
-          : undefined
-      }
+      beast={plan.beast && plan.guard ? { ...plan.beast, combatClass: plan.guard.type } : undefined}
       army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}
       fight={plan.fight}

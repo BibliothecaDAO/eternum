@@ -1,4 +1,5 @@
-import { mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
+import type { FrontierSpecies } from "../structures/frontier-beast";
+import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { StructureType, siteName, structureName, formatExact } from "@bibliothecadao/types";
@@ -13,7 +14,7 @@ export interface PlateTroops {
   type: "crossbowman" | "knight" | "paladin";
   tier: 1 | 2 | 3;
   count: number;
-  beast?: true;
+  beast?: FrontierSpecies;
 }
 
 /** An army's plate: its owner over its troops and stamina; opened, the realm it comes from. */
@@ -35,6 +36,8 @@ export interface StructurePlate {
   kind: "structure";
   relation: PlateRelation;
   owner: string;
+  /** The standing guard species, shown as the title above its strength. */
+  beast?: string;
   /** A realm's or a hyperstructure's own name; else its kind's ("Camp", "Essence Rift"). */
   name: string;
   /** Whether `name` is the place's own, set as a title, rather than its kind's. */
@@ -122,12 +125,13 @@ export const buildStructurePlate = (
         type: troopType(guard.category),
         tier: tierOf(guard.tier),
         count: guard.count,
-        ...(structure.frontierBeast ? { beast: true as const } : {}),
+        ...(structure.frontierBeast ? { beast: structure.frontierBeast.beast } : {}),
       })) ?? null;
   return {
     kind: "structure",
     relation: relationOf(structure),
-    owner: structure.frontierBeast?.name ?? ownerOf(structure.owner),
+    owner: ownerOf(structure.owner),
+    beast: structure.frontierBeast?.name,
     name: structure.clearedSite
       ? `${structureName(structure.structureType)} · Cleared`
       : named
@@ -138,6 +142,8 @@ export const buildStructurePlate = (
     reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
     icon: structure.clearedSite
       ? "flag"
+      : structure.frontierBeast
+        ? beastMeaning(structure.frontierBeast.beast)
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
         : structureMeaning(structure.structureType),

@@ -1,3 +1,4 @@
+import type { FrontierBeast } from "@/three/structures/frontier-beast";
 import { formatAmount, formatExact, formatDuration, LORDS } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
@@ -11,7 +12,6 @@ import {
   HudRarity,
   HudRow,
   HudSheet,
-  HudTierChip,
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
@@ -90,7 +90,7 @@ export const SiteCardView = ({
   onClose,
 }: {
   site: AttackTargetKind;
-  beast: { name: string; tier: 1 | 2 | 3; combatClass: string } | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
   fight: SiteFight | undefined;
@@ -115,11 +115,11 @@ export const SiteCardView = ({
   return (
     <HudSheet label={word} onClose={onClose}>
       <header className="flex items-center justify-between gap-3">
-        <SiteMark icon={icon} />
+        <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
         {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>
       {picking && choices ? (
-        <Choices choices={choices} guardIcon={beast ? beastMeaning(beast.tier) : "troops"} />
+        <Choices choices={choices} guardIcon={beast ? beastMeaning(beast.beast) : "troops"} />
       ) : (
         <Matchup army={army} beast={beast} guard={guard} />
       )}
@@ -171,7 +171,7 @@ const Matchup = ({
   guard,
 }: {
   army: { art: IconMeaning; troops: number } | null;
-  beast: { name: string; tier: 1 | 2 | 3; combatClass: string } | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   guard: number | null | undefined;
 }) => (
   <div className="flex items-center justify-center gap-2">
@@ -185,19 +185,18 @@ const Matchup = ({
   </div>
 );
 
-/** The species and the actual combat tier stay distinct, including while choosing an army. */
+/** Species and remaining strength, including while choosing an army. */
 const BeastGuard = ({
   beast,
   guard,
 }: {
-  beast: { name: string; tier: 1 | 2 | 3; combatClass: string } | undefined;
+  beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   guard: number | null | undefined;
 }) =>
   guard === null ? null : (
     <span className="flex items-center gap-2" data-tip={beast?.combatClass}>
       {beast && <span className="text-hud-strong text-hud-ink">{beast.name}</span>}
-      <HudChip icons={[beast ? beastMeaning(beast.tier) : "troops"]} label={beast ? BEAST : TROOPS}>
-        {beast && <HudTierChip tier={beast.tier} />}
+      <HudChip icons={[beast ? beastMeaning(beast.beast) : "troops"]} label={beast ? BEAST : TROOPS}>
         {formatExact(guard)}
       </HudChip>
     </span>
@@ -225,10 +224,16 @@ const Choices = ({ choices, guardIcon }: { choices: readonly SiteChoice[]; guard
 );
 
 /** The fight: attacks to win as pips beside the flag and what this attack costs; or, a loss, in amber, never greyed. */
-const FightPlate = ({ fight, beast }: { fight: SiteFight | undefined; beast: { tier: 1 | 2 | 3 } | undefined }) => (
+const FightPlate = ({
+  fight,
+  beast,
+}: {
+  fight: SiteFight | undefined;
+  beast: Pick<FrontierBeast, "beast"> | undefined;
+}) => (
   <span {...guideTarget("forecast")} className="flex flex-1">
     <Plate>
-      <Forecast fight={fight} size="plate" guardIcon={beast ? beastMeaning(beast.tier) : "troops"} />
+      <Forecast fight={fight} size="plate" guardIcon={beast ? beastMeaning(beast.beast) : "troops"} />
     </Plate>
   </span>
 );

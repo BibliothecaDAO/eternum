@@ -959,18 +959,6 @@
     "verdict": "beats shipped",
     "reason": "Owner selected Ivory relief. Broad cream silhouette, common light and dark contour improve small utility controls; content artwork remains separate."
   },
-  "faceted/beast-t1": {
-    "verdict": "beats shipped",
-    "reason": "Broad troll jaw, tusks and ears identify a beast instead of a human soldier; natural hide matches the map creature family."
-  },
-  "faceted/beast-t2": {
-    "verdict": "beats shipped",
-    "reason": "Larger tusks and short horns distinguish the middle combat-tier study from the unhorned first tier."
-  },
-  "faceted/beast-t3": {
-    "verdict": "beats shipped",
-    "reason": "Swept horns and a broad ridged brow distinguish the highest combat-tier study without relying on tiny markings."
-  },
   "official/brand-x": {
     "verdict": "beats shipped",
     "reason": "Nothing shipped for X in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
@@ -995,5 +983,25 @@
     "verdict": "beats shipped",
     "reason": "Nothing shipped for CoinGecko in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
     "officialSource": "apps/web/src/site/data/socials.ts"
+  },
+  "faceted/beast-troll": {
+    "reason": "Broad tusked jaw and pointed ears match the shipped Troll.",
+    "verdict": "equal"
+  },
+  "faceted/beast-wyvern": {
+    "reason": "Red reptile profile and wing distinguish the shipped Wyvern.",
+    "verdict": "beats shipped"
+  },
+  "faceted/beast-hydra": {
+    "reason": "Three blue serpentine heads match the shipped Hydra.",
+    "verdict": "beats shipped"
+  },
+  "faceted/beast-minotaur": {
+    "reason": "Ivory bull horns, dark mane and slate hide match the approved Minotaur.",
+    "verdict": "beats shipped"
+  },
+  "faceted/beast-cyclops": {
+    "reason": "One central amber eye and olive hide match the approved Cyclops.",
+    "verdict": "beats shipped"
   }
 }

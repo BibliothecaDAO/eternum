@@ -57,7 +57,7 @@ describe("a guarded site's card", () => {
       root.render(
         <SiteCardView
           site="Ruin"
-          beast={{ name: "Troll", tier: 1, combatClass: "Knight" }}
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
           army={{ ...army, troops: 1_200 }}
           guard={3_400}
           fight={{ outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 }}
@@ -71,7 +71,7 @@ describe("a guarded site's card", () => {
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
     expect(card.textContent).toContain("Troll");
-    expect(card.querySelectorAll('[data-icon="beast-t1"]')).toHaveLength(2);
+    expect(card.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(3);
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
     expect(card.textContent).toContain("2,300");
@@ -139,7 +139,7 @@ describe("a guarded site's card with no army chosen", () => {
       root.render(
         <SiteCardView
           site="Rift"
-          beast={{ name: "Wyvern", tier: 1, combatClass: "Knight" }}
+          beast={{ name: "Wyvern", beast: "wyvern", combatClass: "Knight" }}
           army={null}
           guard={1_100}
           fight={undefined}
@@ -173,7 +173,7 @@ describe("a guarded site's card with no army chosen", () => {
         candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
       )!;
     // Two attacks win it: the figures are the first one's, the troops it costs and the guard it leaves standing.
-    expect(row("Army 1").querySelector('[data-icon="beast-t1"]')).not.toBeNull();
+    expect(row("Army 1").querySelector('[data-icon="beast-wyvern"]')).not.toBeNull();
     expect(row("Army 1").textContent).toBe("Army 15,000 troops−456492");
     expect(row("Army 1").querySelector('[aria-label="2"]')).not.toBeNull();
     expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");

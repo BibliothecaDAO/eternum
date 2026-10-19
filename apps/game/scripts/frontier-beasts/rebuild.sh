@@ -6,7 +6,7 @@ case "$output" in /*) ;; *) echo 'Use an absolute output directory'; exit 1;; es
 if [[ -e "$output" ]]; then echo 'Choose a fresh output directory'; exit 1; fi
 mkdir -p "$output/raw"
 cd "$root"
-for name in minotaur chimera cyclops wolf goblin; do
+for name in minotaur cyclops; do
   blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier-beasts/export-beast.py -- \
     "apps/game/asset-sources/frontier-beasts/$name.blend" "$output/raw/$name.glb" > "$output/$name-export.log" 2>&1
   node apps/game/scripts/outposts/optimize-outpost.mjs "$output/raw/$name.glb" "$output/beast-$name.glb" > "$output/$name-compress.log" 2>&1

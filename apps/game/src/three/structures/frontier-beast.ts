@@ -10,8 +10,8 @@ export const FRONTIER_BEASTS = {
   troll: { path: "/models/frontier/beast-troll.glb", lootSurvivorId: 71, lootTier: 5, maxScale: 1.46 },
   wyvern: { path: "/models/frontier/beast-wyvern.glb", lootSurvivorId: 37, lootTier: 3, maxScale: 1.38 },
   hydra: { path: "/models/frontier/beast-hydra.glb", lootSurvivorId: 59, lootTier: 2, maxScale: 1.7 },
-  wolf: { path: "/models/frontier/beast-wolf.glb", lootSurvivorId: 47, lootTier: 5, maxScale: 1 },
-  goblin: { path: "/models/frontier/beast-goblin.glb", lootSurvivorId: 16, lootTier: 4, maxScale: 1 },
+  minotaur: { path: "/models/frontier/beast-minotaur.glb", maxScale: 1 },
+  cyclops: { path: "/models/frontier/beast-cyclops.glb", maxScale: 1 },
 } as const;
 export type FrontierSpecies = keyof typeof FRONTIER_BEASTS;
 export interface FrontierBeast {
@@ -26,7 +26,7 @@ export const FALLEN_REALM_DEPTHS: readonly { beast: FrontierSpecies; scale: numb
   { beast: "hydra", scale: 1.7 },
 ];
 export type BeastBand = "lowly" | "stronger";
-const ROAMING_BEASTS = { lowly: "wolf", stronger: "goblin" } as const;
+const ROAMING_BEASTS = { lowly: { beast: "minotaur", scale: 0.8 }, stronger: { beast: "cyclops", scale: 1 } } as const;
 type BeastBounds = Pick<
   NativeRows["DepthRules"],
   "beast_weak_lower" | "beast_weak_upper" | "beast_strong_lower" | "beast_strong_upper"
@@ -52,8 +52,8 @@ export function frontierBeast(depth: number, category = StructureType.Ruin, band
   if (!entry) throw new Error(`No Frontier beast for depth ${depth}`);
   if (category === StructureType.Beasts) {
     if (!band) throw new Error("Beast identity requires its initial strength band");
-    const beast = ROAMING_BEASTS[band];
-    return { beast, scale: 1, name: BEAST_NAMES[beast] };
+    const roaming = ROAMING_BEASTS[band];
+    return { ...roaming, name: BEAST_NAMES[roaming.beast] };
   }
   return {
     beast: entry.beast,

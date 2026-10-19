@@ -1415,19 +1415,29 @@
     "label": "Bottom 25% reward chest \u00b7 opened",
     "family": "Rewards"
   },
-  "beast-t1": {
-    "art": "beast-t1",
-    "label": "Beast \u00b7 T1",
+  "beast-troll": {
+    "art": "beast-troll",
+    "label": "Troll",
     "family": "Beasts"
   },
-  "beast-t2": {
-    "art": "beast-t2",
-    "label": "Beast \u00b7 T2",
+  "beast-wyvern": {
+    "art": "beast-wyvern",
+    "label": "Wyvern",
     "family": "Beasts"
   },
-  "beast-t3": {
-    "art": "beast-t3",
-    "label": "Beast \u00b7 T3",
+  "beast-hydra": {
+    "art": "beast-hydra",
+    "label": "Hydra",
+    "family": "Beasts"
+  },
+  "beast-minotaur": {
+    "art": "beast-minotaur",
+    "label": "Minotaur",
+    "family": "Beasts"
+  },
+  "beast-cyclops": {
+    "art": "beast-cyclops",
+    "label": "Cyclops",
     "family": "Beasts"
   },
   "brand-x": {

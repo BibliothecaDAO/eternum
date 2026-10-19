@@ -4,14 +4,14 @@ import { StructureType } from "@bibliothecadao/types";
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import {
   FRONTIER_BEASTS,
-  type BeastBand,
   frontierBeast,
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
+  type BeastBand,
 } from "@/three/structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
 import { Plate } from "@/three/map-plates/map-plates";
-import type { StructurePlate } from "@/three/map-plates/map-plate-model";
+import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
 import { SiteCardView } from "../frontier/sites/site-card-view";
 import { BEAST_NAMES } from "@/ui/design-system/kit/words";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
@@ -20,14 +20,17 @@ import "./workshop-model-lab.css";
 import "./frontier-beast-lab.css";
 import "@/three/map-plates/map-plates.css";
 
-const MODELS: readonly LineupAsset[] = [
-  { label: `${BEAST_NAMES.troll} · shipped`, parts: [{ path: FRONTIER_BEASTS.troll.path, scale: 1.2 }] },
-  { label: `${BEAST_NAMES.minotaur} · Loot T1 study`, parts: [{ path: "/models/frontier/beast-minotaur.glb" }] },
-  { label: `${BEAST_NAMES.wyvern} · shipped`, parts: [{ path: FRONTIER_BEASTS.wyvern.path, scale: 1.35 }] },
-  { label: `${BEAST_NAMES.chimera} · Loot T2 study`, parts: [{ path: "/models/frontier/beast-chimera.glb" }] },
-  { label: `${BEAST_NAMES.hydra} · shipped`, parts: [{ path: FRONTIER_BEASTS.hydra.path, scale: 1.45 }] },
-  { label: `${BEAST_NAMES.cyclops} · Loot T3 study`, parts: [{ path: "/models/frontier/beast-cyclops.glb" }] },
+const MODEL_BEASTS = [
+  frontierBeast(0),
+  frontierBeast(1),
+  frontierBeast(2),
+  frontierBeast(0, StructureType.Beasts, "lowly"),
+  frontierBeast(0, StructureType.Beasts, "stronger"),
 ];
+const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale }) => ({
+  label: name,
+  parts: [{ path: FRONTIER_BEASTS[beast].path, scale }],
+}));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
   { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
@@ -35,7 +38,7 @@ const SITES = [
   { kind: "Beasts", category: StructureType.Beasts, base: "" },
 ] as const;
 const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ kind, category, base }) => {
-  const beast = frontierBeast(0, category, category === StructureType.Beasts ? "lowly" : undefined);
+  const beast = frontierBeast(0, category, "lowly");
   const composition = frontierSiteComposition(category);
   return {
     label: `${kind} · ${beast.name}`,
@@ -45,18 +48,15 @@ const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ kind, category, base })
     ],
   };
 });
-const BEASTS = (["lowly", "stronger"] as const).map((band) => {
+const BEAST_MODELS = (["lowly", "stronger"] as const).map((band) => {
   const beast = frontierBeast(0, StructureType.Beasts, band);
-  return {
-    label: `${beast.name} · ${band}`,
-    parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }],
-  };
+  return { label: `${beast.name} · ${band}`, parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }] };
 });
 
 export function FrontierBeastLab() {
   const [params, setParams] = useSearchParams();
   const group = params.get("group") ?? "models";
-  const lineup = group === "sites" ? SITE_MODELS : group === "beasts" ? BEASTS : MODELS;
+  const lineup = group === "sites" ? SITE_MODELS : group === "beasts" ? BEAST_MODELS : MODELS;
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
@@ -75,19 +75,18 @@ export function FrontierBeastLab() {
   const [panel, setPanel] = useState(false);
   const [site, setSite] = useState(2);
   const [band, setBand] = useState<BeastBand>("lowly");
-  const beast = frontierBeast(0, SITES[site].category, band);
-  const guard = SITES[site].category === StructureType.Beasts ? (band === "lowly" ? 325 : 500) : 2800;
-  const plate: StructurePlate = {
-    kind: "structure",
-    relation: "neutral",
-    owner: beast.name,
-    name: SITES[site].kind,
-    place: "Woecrag",
-    named: false,
-    icon: "ruin",
-    guards: [{ type: "knight", tier: 1, count: guard, beast: true }],
-    arrivals: [],
-  };
+  const [depth, setDepth] = useState(0);
+  const beast = frontierBeast(depth, SITES[site].category, band);
+  const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;
+  const plate = buildStructurePlate({
+    entityId: 29,
+    structureName: "",
+    structureType: SITES[site].category,
+    isMine: false,
+    owner: { address: 0n, ownerName: "", guildName: "" },
+    frontierBeast: beast,
+    guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: strength }],
+  });
   useEffect(() => {
     const controller = new AbortController();
     let mounted: typeof renderer.current = null;
@@ -129,9 +128,9 @@ export function FrontierBeastLab() {
         <label>
           Set{" "}
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
-            <option value="models">New models beside shipped</option>
+            <option value="models">Five species</option>
             <option value="sites">Standing sites</option>
-            <option value="beasts">Beasts</option>
+            <option value="beasts">Roaming beasts</option>
           </select>
         </label>
         <label>
@@ -177,30 +176,31 @@ export function FrontierBeastLab() {
               ))}
             </select>
           </label>
-          {SITES[site].category === StructureType.Beasts && (
+          {site === 3 ? (
             <select aria-label="Beast strength" value={band} onChange={(e) => setBand(e.target.value as BeastBand)}>
-              <option value="lowly">Lowly</option>
-              <option value="stronger">Stronger</option>
+              <option value="lowly">Lowly · {BEAST_NAMES.minotaur}</option>
+              <option value="stronger">Stronger · {BEAST_NAMES.cyclops}</option>
+            </select>
+          ) : (
+            <select aria-label="Depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
+              {["Surface", "I", "II", "III"].map((label, index) => (
+                <option key={label} value={index}>
+                  {label}
+                </option>
+              ))}
             </select>
           )}
           <button onClick={() => setPanel(true)}>Select site</button>
         </div>
-        <div data-before>
-          <small>Before</small>
-          <Plate
-            plate={{ ...plate, owner: "The Vanguard", guards: [{ ...plate.guards![0], beast: undefined }] }}
-            open
-          />
-        </div>
         <div data-after>
-          <small>After · combat T1</small>
+          <small>Selected plate</small>
           <Plate plate={plate} open />
         </div>
         <div className="beast-icon-studies">
-          <small>Combat tier artwork · 20 px</small>
-          {([1, 2, 3] as const).map((tier) => (
-            <span key={tier}>
-              <Icon name={beastMeaning(tier)} size={20} /> T{tier}
+          <small>Species portraits · 20 px</small>
+          {MODEL_BEASTS.map(({ beast: species }) => (
+            <span key={species} title={BEAST_NAMES[species]}>
+              <Icon name={beastMeaning(species)} size={20} />
             </span>
           ))}
         </div>
@@ -208,10 +208,15 @@ export function FrontierBeastLab() {
       {panel && (
         <SiteCardView
           site={SITES[site].kind}
-          beast={{ name: beast.name, tier: 1, combatClass: "Knight" }}
+          beast={{ ...beast, combatClass: "Knight" }}
           army={{ art: "knight-t1", troops: 5000 }}
-          guard={guard}
-          fight={{ outcome: "wins", exchanges: 2, troopsLost: 550, guardLeft: 0 }}
+          guard={strength}
+          fight={{
+            outcome: "wins",
+            exchanges: 2,
+            troopsLost: Math.floor(strength / 5),
+            guardLeft: Math.floor(strength / 3),
+          }}
           pay={site === 0 ? { icon: "labor", amount: 1400 } : site === 1 ? { icon: "essence", amount: 8400 } : null}
           xp={132}
           verb={null}

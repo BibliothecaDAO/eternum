@@ -3152,33 +3152,53 @@
       }
     },
     {
-      "id": "beast-t1",
-      "label": "Beast \u00b7 T1",
+      "id": "beast-troll",
+      "label": "Troll",
       "family": "Beasts",
-      "prompt": "prompts/beast-t1.txt",
+      "prompt": "prompts/beast-troll.txt",
       "source": {
         "kind": "painted",
         "sha256": "24ac2ec5727873fc451e11eb90d9b45916440b6fcc63ff0b7bb5905dd8e47451"
       }
     },
     {
-      "id": "beast-t2",
-      "label": "Beast \u00b7 T2",
+      "id": "beast-wyvern",
+      "label": "Wyvern",
       "family": "Beasts",
-      "prompt": "prompts/beast-t2.txt",
+      "prompt": "prompts/beast-wyvern.txt",
       "source": {
         "kind": "painted",
-        "sha256": "7a069db684c0d62de05046e53fb5de064dd55586801bfe0dd5250eedf8b4b304"
+        "sha256": "6429f4a77ecec9e0c8287045343b16a9b8e8367c32455997166d117d1685b3c8"
       }
     },
     {
-      "id": "beast-t3",
-      "label": "Beast \u00b7 T3",
+      "id": "beast-hydra",
+      "label": "Hydra",
       "family": "Beasts",
-      "prompt": "prompts/beast-t3.txt",
+      "prompt": "prompts/beast-hydra.txt",
       "source": {
         "kind": "painted",
-        "sha256": "c79e060f2bae6c0dcd1a951c5c7374eb9784382b08b4878d264467d1ef3cc601"
+        "sha256": "28c887a4fdeb7d477f065021756e308c78a821e49f46654170e03a4eeb0a54cb"
+      }
+    },
+    {
+      "id": "beast-minotaur",
+      "label": "Minotaur",
+      "family": "Beasts",
+      "prompt": "prompts/beast-minotaur.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "3cd93674afae4ada72b81fe00835e0f3e193302eb40c21a798738ee9fc4168c6"
+      }
+    },
+    {
+      "id": "beast-cyclops",
+      "label": "Cyclops",
+      "family": "Beasts",
+      "prompt": "prompts/beast-cyclops.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "f5b1cc00c9a6c055b8a47bac1a2e28da61f18533cc9352005feb84dd140562de"
       }
     }
   ]
