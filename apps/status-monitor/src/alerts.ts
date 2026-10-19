@@ -19,12 +19,9 @@ const isEmailed = (componentId: string) =>
 export const NOTICE_LIFETIME_SECONDS = 23 * 3600;
 
 /**
- * At most this many emails go out in any 24 hours: the Resend account also sends players' sign-in codes, and on 10-17
- * an uncapped monitor's 340 emails blocked them. A notice holds its place from when it is recorded until a day after the
- * last minute it was handed to Resend, which is when its email may have gone out: a send delayed by an outage, or one
- * whose answer was lost, keeps its place as long as it could still be delivered. The last notice allowed says so;
- * changes after it wait, untold, for a place, and only the ones still true then are told. The status page always shows
- * everything.
+ * At most this many emails in any 24 hours: the Resend account also sends players' sign-in codes, and on 10-17 an
+ * uncapped monitor's 340 emails blocked them. The last one allowed says so; changes after it wait, untold, for the window
+ * to free a place, and only the ones still true then are told. The status page always shows everything.
  */
 export const DAILY_EMAILS = 4;
 const DAY_SECONDS = 24 * 3600;
@@ -45,18 +42,12 @@ export interface Notice {
   text: string;
 }
 
-/** One notice's place in the daily cap: the last minute it was handed to Resend, or would be after this write. */
-export interface Reservation {
-  key: string;
-  at: number;
-}
-
-/** The incidents told and not yet resolved, the notices recorded and not yet confirmed sent, and their cap places. */
+/** The incidents told and not yet resolved, the notices recorded and not yet confirmed sent, and when each was recorded. */
 export interface AlertState {
   told: string[];
   outbox: Notice[];
-  /** The places of the last 24 hours' notices; a state written before the cap holds none. */
-  sent?: Reservation[];
+  /** Recording times of the last 24 hours' notices; a state written before the cap holds none. */
+  sent?: number[];
 }
 
 export const NO_ALERTS: AlertState = { told: [], outbox: [], sent: [] };
@@ -73,18 +64,11 @@ export function recordNotices(
 ): AlertState {
   const now = document.checked_at;
   const told = new Set(previous.told.filter((id) => document.incidents.some((incident) => incident.id === id)));
+  const sent = (previous.sent ?? []).filter((at) => now - at < DAY_SECONDS);
   const outbox = previous.outbox.filter((notice) => {
     const live = now - notice.recorded_at < NOTICE_LIFETIME_SECONDS;
     if (!live) console.error(JSON.stringify({ event: "status_alert_expired", key: notice.key }));
     return live;
-  });
-  // The monitor sends the whole outbox right after writing this state, so each queued notice may go out this minute.
-  const places = new Map((previous.sent ?? []).map((place) => [place.key, place.at]));
-  for (const notice of outbox) places.set(notice.key, now);
-  const state = () => ({
-    told: [...told],
-    outbox,
-    sent: [...places].filter(([, at]) => now - at < DAY_SECONDS).map(([key, at]) => ({ key, at })),
   });
   const changes = [
     {
@@ -98,27 +82,24 @@ export function recordNotices(
       incidents: document.incidents.filter((incident) => incident.status === "resolved" && told.has(incident.id)),
     },
   ].filter((change) => change.incidents.length > 0);
-  if (!changes.length) return state();
+  if (!changes.length) return { told: [...told], outbox, sent };
   if (!alerting) {
     console.error(JSON.stringify({ event: "status_alerts_unconfigured", untold: countIncidents(changes) }));
-    return state();
+    return { told: [...told], outbox, sent };
   }
   for (const change of changes) {
-    const held = [...places.values()].filter((at) => now - at < DAY_SECONDS);
-    if (held.length >= DAILY_EMAILS) {
+    if (sent.length >= DAILY_EMAILS) {
       console.error(JSON.stringify({ event: "status_alert_capped", untold: change.incidents.length }));
       continue;
     }
-    // A place frees a day after its notice was last handed to Resend: never sooner than a day after the earliest.
-    const limitEndsAt = held.length + 1 === DAILY_EMAILS ? Math.min(now, ...held) + DAY_SECONDS : null;
-    const notice = noticeOf(alerting, change.incidents, change.news, now, limitEndsAt);
-    outbox.push(notice);
-    places.set(notice.key, now);
+    sent.push(now);
+    const limitEndsAt = sent.length === DAILY_EMAILS ? sent[0]! + DAY_SECONDS : null;
+    outbox.push(noticeOf(alerting, change.incidents, change.news, now, limitEndsAt));
     for (const incident of change.incidents)
       if (change.news === "opened") told.add(incident.id);
       else told.delete(incident.id);
   }
-  return state();
+  return { told: [...told], outbox, sent };
 }
 
 /** Sends each recorded notice, exactly as recorded; returns the keys Resend confirmed. */
@@ -167,7 +148,7 @@ function noticeOf(
       ...(limitEndsAt === null
         ? []
         : [
-            `Alert limit reached: no more email before ${iso(limitEndsAt)}. The status page shows every change meanwhile.`,
+            `Alert limit reached: no more email until ${iso(limitEndsAt)}. The status page shows every change meanwhile.`,
           ]),
     ].join("\n"),
   };

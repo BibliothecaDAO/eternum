@@ -9,8 +9,7 @@ status page. Only an outage players feel, which only the owner can end, is email
 
 The outage and its recovery are each emailed exactly once; components that cross the ten minutes in the same minute,
 such as a world and launches when the box stops, share one email, and so do their recoveries. At most four emails go out
-in any 24 hours (`status_alert_capped` in the log when one is held back), counted until a day after each was last handed
-to Resend, so a send delayed by a Resend outage still counts: the fourth says the earliest time email can resume, and a
+in any 24 hours (`status_alert_capped` in the log when one is held back): the fourth says when email resumes, and a
 change made meanwhile is emailed then only if it is still true. Shorter outages, slowdowns and every other component
 stay on the status page; read it first. Each email is recorded in the monitor's state before it is sent and retried as
 recorded until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and logged as

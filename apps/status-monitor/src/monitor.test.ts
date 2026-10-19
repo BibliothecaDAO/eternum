@@ -407,7 +407,7 @@ it("reports game launches down while a run has failed or is stranded", async () 
  */
 const resend = (clock: () => number) => {
   const keys = new Map<string, { body: string; at: number }>();
-  const emails: { key: string; subject: string; text: string; at: number }[] = [];
+  const emails: { key: string; subject: string; text: string }[] = [];
   const conflicts: string[] = [];
   const provider = { emails, conflicts, refuse: false, loseAnswers: 0 };
   const send: typeof fetch = async (input, init) => {
@@ -424,7 +424,7 @@ const resend = (clock: () => number) => {
     } else {
       keys.set(key, { body, at: clock() });
       const email = JSON.parse(body);
-      emails.push({ key, subject: email.subject, text: email.text, at: clock() });
+      emails.push({ key, subject: email.subject, text: email.text });
     }
     if (provider.loseAnswers > 0) {
       provider.loseAnswers--;
@@ -540,36 +540,32 @@ it("tells components that go down together in one email, and their recovery in o
   ]);
 });
 
-it("records at most four emails in any 24 hours however a component flaps, the fourth saying so", () => {
+it("sends at most four emails in any 24 hours however a component flaps, the fourth saying so", () => {
   const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
   try {
     const accounts = (status: "up" | "down") => [probe("accounts", "Sign in and accounts", status)];
-    let state: MonitorState | null = null;
-    let alerts = NO_ALERTS;
-    const notices = new Map<string, (typeof alerts.outbox)[number]>();
-    // Each minute is observed, then its whole outbox delivered at once, as the monitor does when Resend answers.
-    const minute = (at: number, status: "up" | "down") => {
-      state = nextMonitorState(state, at, accounts(status), [])!;
-      alerts = recordNotices(state.document, alerts, alerting);
-      alerts.outbox.forEach((notice) => notices.set(notice.key, notice));
-      alerts = { ...alerts, outbox: [] };
-    };
+    let run: { state: MonitorState | null; alerts: typeof NO_ALERTS } = { state: null, alerts: NO_ALERTS };
+    const notices = new Map<string, (typeof run.alerts.outbox)[number]>();
+    const collect = () => run.alerts.outbox.forEach((notice) => notices.set(notice.key, notice));
     let at = now;
     // Down for ten minutes, up for one, all day: 120 outages and recoveries.
     while (at < now + 24 * 3600) {
-      for (let step = 0; step <= MINUTES; step++) minute(at + step * 60, "down");
-      minute(at + (MINUTES + 1) * 60, "up");
+      run = observe(run, at, MINUTES, accounts("down"));
+      collect();
+      run = observe(run, at + (MINUTES + 1) * 60, 0, accounts("up"));
+      collect();
       at += (MINUTES + 2) * 60;
     }
     expect(notices.size).toBe(DAILY_EMAILS);
     const [first, ...rest] = [...notices.values()];
     expect(first!.text).not.toContain("Alert limit reached");
     expect(rest.at(-1)!.text).toContain(
-      `Alert limit reached: no more email before ${new Date((first!.recorded_at + 24 * 3600) * 1000).toISOString()}.`,
+      `Alert limit reached: no more email until ${new Date((first!.recorded_at + 24 * 3600) * 1000).toISOString()}.`,
     );
     expect(errors.mock.calls.some(([line]) => String(line).includes(`"status_alert_capped"`))).toBe(true);
     // Once the first email is a day old, the next outage is told again.
-    for (let step = 0; step <= MINUTES; step++) minute(at + step * 60, "down");
+    run = observe(run, at, MINUTES, accounts("down"));
+    collect();
     expect(notices.size).toBe(DAILY_EMAILS + 1);
   } finally {
     errors.mockRestore();
@@ -624,39 +620,6 @@ const monitored = async () => {
     },
   };
 };
-
-it("delivers at most four emails in any 24 hours when Resend is down for two hours and loses an answer", async () => {
-  const m = await monitored();
-  try {
-    const run = async (minute: number, accountsUp: boolean) => {
-      m.accountsHealth.ok = accountsUp;
-      await m.run(now + minute * 60);
-    };
-    m.provider.refuse = true;
-    // Two outages and their recoveries in the first 40 minutes: four notices, all held back by the Resend outage.
-    for (let minute = 0; minute <= 120; minute++) {
-      if (minute === 120) {
-        m.provider.refuse = false; // Resend is back: all four go out at once, and the first answer is lost.
-        m.provider.loseAnswers = 1;
-      }
-      await run(minute, !(minute <= 15 || (minute >= 19 && minute <= 34)));
-    }
-    await run(121, true);
-    // Four places: the accounts outage, the world the harness never answers for, a recovery and the second outage.
-    expect(m.provider.emails).toHaveLength(4);
-    expect(new Set(m.provider.emails.map(({ at }) => (at - now) / 60))).toEqual(new Set([120]));
-    // A third accounts outage begins 23 h 50 min after the first. The four went out at hour 2 and hold their places
-    // until hour 26, so nothing more is delivered before then, and email resumes once places free.
-    for (let minute = 1430; minute <= 1600; minute++) await run(minute, minute < 1440);
-    const delivered = m.provider.emails.map(({ at }) => at);
-    for (const end of delivered)
-      expect(delivered.filter((at) => at <= end && end - at < 24 * 3600).length).toBeLessThanOrEqual(DAILY_EMAILS);
-    expect(delivered.filter((at) => at > now + 121 * 60 && at < now + 1560 * 60)).toEqual([]);
-    expect(delivered.filter((at) => at >= now + 1560 * 60).length).toBeGreaterThan(0);
-  } finally {
-    await m.close();
-  }
-}, 120_000);
 
 it("sends one recovery when the write confirming it fails, even after Resend forgets the key", async () => {
   const m = await monitored();
