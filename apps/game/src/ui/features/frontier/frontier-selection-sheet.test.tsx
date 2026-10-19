@@ -1,6 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { tiles } = vi.hoisted(() => ({
   tiles: { current: [] as { occupierType: number; hexCoords: object }[] },
@@ -17,18 +17,27 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { campBeside } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { expeditionSpireTile, readExpeditionRules } from "@bibliothecadao/eternum";
+import { expeditionSpireTile, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 
 /** Rules for the sheets that never read them here. */
 const RULES = { dayUnitSeconds: 100, spacing: 10, startMainAt: 100, seed: 1n };
 
+afterEach(() => setBlockTimestampSource(null));
+
 const sheetFor = (occupierType: number | null) => {
+  const { store } = campBeside();
   tiles.current = occupierType === null ? [] : [{ occupierType, hexCoords: { col: 4, row: 5, alt: false } }];
   const host = document.createElement("div");
   const root = createRoot(host);
-  act(() => root.render(<FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />));
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+        <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+      </GameProvider>,
+    ),
+  );
   const sheet = host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
   act(() => root.unmount());
   return sheet;

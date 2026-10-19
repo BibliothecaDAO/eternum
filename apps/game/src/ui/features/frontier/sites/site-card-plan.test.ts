@@ -21,15 +21,27 @@ describe("Frontier's tile card", () => {
     expect(plan.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
   });
 
-  it("has no fight for an army out of reach or none selected, and an unknown guard until its slots arrive", () => {
+  it("has no fight for an army out of reach or none selected", () => {
     const { store, site, structure, attack } = campBeside();
     expect(
       readSiteCard(store, site, structure, SITE_TILE, attack({ col: 44, row: 12, alt: false })).fight,
     ).toBeUndefined();
     expect(readSiteCard(store, site, structure, SITE_TILE, null).fight).toBeUndefined();
-    const unknown = campBeside("Camp", false);
-    const plan = readSiteCard(unknown.store, unknown.site, unknown.structure, SITE_TILE, null);
-    expect(plan.guard).toBeUndefined();
+  });
+
+  it("distinguishes an unknown guard from an empty slot after the snapshot completes", () => {
+    const { store, site, structure, attack } = campBeside("Camp", false);
+    const army = attack({ col: 41, row: 12, alt: false });
+    store.setSnapshot({ gameId: 1, complete: false, actor: "0x111", timestamp: 350 });
+    expect(readSiteCard(store, site, structure, SITE_TILE, army)).toMatchObject({
+      guard: undefined,
+      fight: undefined,
+    });
+    store.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+    expect(readSiteCard(store, site, structure, SITE_TILE, army)).toMatchObject({
+      guard: null,
+      fight: undefined,
+    });
   });
 
   it("names a ruin by the beast its depth calls for, and pays its chest", () => {
