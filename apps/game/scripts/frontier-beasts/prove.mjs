@@ -7,13 +7,13 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
   await b.run("set", "viewport", "1600", "1000");
   for (const scenario of [
     ...["troll", "wyvern", "hydra", "minotaur", "cyclops"].flatMap((beast) => [
-      { name: `${beast}-comparison`, group: `refined-${beast}`, focus: "lineup", models: 2, species: beast },
-      { name: `${beast}-sculpt`, group: `refined-${beast}`, focus: "1", models: 2, species: beast },
+      { name: `${beast}-gameplay`, group: `species-${beast}`, focus: "lineup", models: 1, species: beast },
+      { name: `${beast}-sculpt`, group: `species-${beast}`, focus: "0", models: 1, species: beast },
       {
         name: `${beast}-rear`,
-        group: `refined-${beast}`,
-        focus: "1",
-        models: 2,
+        group: `species-${beast}`,
+        focus: "0",
+        models: 1,
         species: beast,
         yaw: "180",
         lighting: "sunset",
@@ -78,13 +78,10 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         `(() => {const node=document.querySelector('[data-lineup-rendered]');return node?JSON.parse(node.dataset.lineupRendered):null;})()`,
       );
       record.checks.push({ check: "controls reached the rendered model selection", ok: rendered, actual });
-      if (scenario.group.startsWith("refined-") && focus === "lineup") {
-        const expected = [
-          `/models/frontier/beast-${scenario.species}.glb`,
-          `/models/frontier/studies/beast-${scenario.species}.glb`,
-        ];
+      if (scenario.group.startsWith("species-") && focus === "lineup") {
+        const expected = [`/models/frontier/beast-${scenario.species}.glb`];
         record.checks.push({
-          check: "current and refined deliveries both drawn",
+          check: "production species delivery drawn",
           ok: expected.every((path) => actual?.drawnAssets.includes(path)),
           actual: actual?.drawnAssets,
         });

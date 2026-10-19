@@ -6,14 +6,11 @@ import draco from "draco3dgltf";
 import { it, expect } from "vitest";
 import { FRONTIER_BEASTS } from "../../src/three/structures/frontier-beast";
 
-const deliveries = [
-  ...["minotaur", "cyclops"].map((species) => ({ species, directory: "", sourceDirectory: "" })),
-  ...["troll", "wyvern", "hydra", "minotaur", "cyclops"].map((species) => ({
-    species,
-    directory: "studies/",
-    sourceDirectory: "refined/",
-  })),
-];
+const deliveries = ["troll", "wyvern", "hydra", "minotaur", "cyclops"].map((species) => ({
+  species,
+  directory: "",
+  sourceDirectory: "refined/",
+}));
 for (const { species, directory, sourceDirectory } of deliveries) {
   it(`${directory}${species}: delivered sculpt fits the hex and retains paint, normals and editable provenance`, async () => {
     const path = new URL(`../../public/models/frontier/${directory}beast-${species}.glb`, import.meta.url);
