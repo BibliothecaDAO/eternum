@@ -47,6 +47,13 @@ const TOOLS = [
   },
   {
     group: "Art",
+    label: "Relic chest",
+    path: "/lab/relic-chest",
+    route: "relic-chest",
+    View: lazy(() => import("./relic-chest/view").then((module) => ({ default: module.RelicChestLab }))),
+  },
+  {
+    group: "Art",
     label: "Endgame mist",
     path: "/lab/endgame",
     route: "endgame",

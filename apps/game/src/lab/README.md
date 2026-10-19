@@ -1,5 +1,11 @@
 # Lab tools
 
+`/lab/relic-chest`: the picked opening-only presentation, using `RewardTileModel`, `ChestTransitions` and
+`ChestTileDetails`. Focus the chest or its held-open hover plate, Open, inspect the reveal/receipt, then Reset. The
+local fixture still supplies the public pack row; its opening is delivered through the native story listener. Pack and
+Lucky are fixture inputs, with no appearance/preview selector. `prove:relic-chest` starts the app, drives the visible
+controls on WebGPU and WebGL2, saves evidence in a fresh directory and releases its browser/server.
+
 App painting comparison: `/lab/kit/app-art` shows Season and Blitz Results beside their existing reference art. Follow
 each page link to see the painting on its real component with local app fixtures. Run
 `pnpm --dir apps/game prove:app-art --port 4199 --out <fresh-dir>` for comparison and page screenshots, loaded-image

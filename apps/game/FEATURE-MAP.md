@@ -1,5 +1,11 @@
 # Feature map — game client
 
+Relic crates on the Blitz map: select the chest's tile to focus its labelled crate and opening action. A sealed crate
+says "Three relics. Open to reveal them."; its actual relics appear on opening and stay in the tile's receipt. Open
+needs an adjacent own army (the panel otherwise says "Move next to it"). `/lab/relic-chest` exercises that single
+presentation using the production instanced model, opening pool, panel and native opening story. Run
+`pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
+
 What a player can do and how they get there, so a report or a screenshot can be reproduced. Update it in the change that
 adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. In the dev
 build, `/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and

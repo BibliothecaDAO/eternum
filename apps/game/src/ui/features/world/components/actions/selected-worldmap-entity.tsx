@@ -96,7 +96,6 @@ const SelectedWorldmapEntityContent = ({
   // on the tile comes first, the crate under it: the unit the player can order beats the tile's memory.
   const cratePanel = (isChest || crateOpening) && (
     <RelicCrateTilePanel
-      crateEntityId={isChest ? tile.occupier_id : null}
       opening={crateOpening}
       selectedHex={selectedHex}
       coordsLabel={title("Relic Tile")}
@@ -180,13 +179,11 @@ const SelectedWorldmapEntityContent = ({
 
 // The crate panel opens with the player's adjacent explorer; the contract accepts no other opener.
 const RelicCrateTilePanel = ({
-  crateEntityId,
   opening,
   selectedHex,
   coordsLabel,
   headerAction,
 }: {
-  crateEntityId: ID | null;
   opening: ReturnType<typeof useRelicCrateOpening>;
   selectedHex: HexPosition;
   coordsLabel?: string;
@@ -201,7 +198,6 @@ const RelicCrateTilePanel = ({
   }, [explorerId, selectedHex]);
   return (
     <ChestTileDetails
-      crateEntityId={crateEntityId}
       coordsLabel={coordsLabel}
       headerAction={headerAction}
       opening={opening}

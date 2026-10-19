@@ -22,6 +22,9 @@ function createPool() {
     ring.add(new Mesh(geometry, material));
     scene.add(ring);
   }
+  const gems = new Group();
+  gems.name = "OrbitGems";
+  scene.add(gems);
   return new ChestTransitions({ scene, animations: [] } as unknown as GLTF);
 }
 
@@ -72,4 +75,29 @@ describe("precompiled chest transitions", () => {
     expect(pool.start("5,0", "summon", new Matrix4(), 1)).toBe(true);
     pool.dispose();
   });
+});
+
+it("keeps decorative gems sealed through summon sampling, reveals on open and seals a reused actor", () => {
+  const pool = createPool();
+  try {
+    pool.start("1,0", "summon", new Matrix4(), 4);
+    const actor = pool.group.children.find((child) => child.visible)!;
+    const gems = actor.getObjectByName("OrbitGems")!;
+    expect(gems.visible).toBe(false);
+    pool.update(0.7, 4.7);
+    expect(gems.visible).toBe(false);
+    pool.start("1,0", "open", new Matrix4(), 4.7);
+    pool.revealRelics("1,0", [41, 43, 39]);
+    pool.update(0.7, 5.4);
+    expect(gems.visible).toBe(true);
+    expect(pool.hasRelicReveals()).toBe(true);
+    pool.update(2, 7.4);
+    expect(pool.has("1,0")).toBe(false);
+    pool.start("2,0", "summon", new Matrix4(), 8);
+    expect(gems.visible).toBe(false);
+    pool.update(0.7, 8.7);
+    expect(gems.visible).toBe(false);
+  } finally {
+    pool.dispose();
+  }
 });

@@ -21,6 +21,7 @@ vi.mock("../ui/features/debug/procedural-terrain-debug-view", () => ({
 }));
 vi.mock("../ui/features/debug/model-lab-view", () => ({ ModelLabView: () => <Tool name="models" /> }));
 vi.mock("../ui/features/debug/reward-lab-view", () => ({ RewardLabView: () => <Tool name="rewards" /> }));
+vi.mock("./relic-chest/view", () => ({ RelicChestLab: () => <Tool name="relic-chest" /> }));
 vi.mock("../ui/features/debug/terrain-prop-debug-view", () => ({ TerrainPropDebugView: () => <Tool name="props" /> }));
 vi.mock("./endgame-mist/view", () => ({ EndgameMistLabView: () => <Tool name="endgame" /> }));
 vi.mock("../ui/features/debug/world-fx-gym-view", () => ({ WorldFxGymView: () => <Tool name="fx" /> }));
@@ -88,6 +89,7 @@ it.each([
   ["/lab/", "terrain"],
   ["/lab/models", "models"],
   ["/lab/rewards", "rewards"],
+  ["/lab/relic-chest", "relic-chest"],
   ["/lab/terrain-props", "props"],
   ["/lab/world-fx", "fx"],
   ["/lab/endgame?variation=tide&gameMode=frontier", "endgame"],

@@ -1,33 +1,22 @@
 import { Icon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import {
-  type ID,
-  relicChestPack,
-  relicChestRelics,
-  ResourcesIds,
-  formatCount,
-  formatExact,
-} from "@bibliothecadao/types";
+import { ResourcesIds, formatExact } from "@bibliothecadao/types";
 import { configManager } from "@bibliothecadao/eternum";
-import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { RelicChip } from "@/ui/features/military/utils/relic-chip";
 import type { RelicCrateOpening } from "@/hooks/store/use-relic-crate-store";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
 /**
- * The relic crate tile, in the structure tile's chrome: header, name row, the pack it holds with the Open action. Once
- * the crate is opened the contents list the relics it yielded. Its biome is the tile panel's other part.
+ * A sealed crate keeps its contents a surprise. Only an opening receipt supplies relics to this panel.
  */
 export function ChestTileDetails({
-  crateEntityId,
   coordsLabel,
   headerAction,
   opening,
   onOpen,
   openBlockedReason,
 }: {
-  crateEntityId: ID | null;
   coordsLabel?: string;
   headerAction?: ReactNode;
   opening: RelicCrateOpening | null;
@@ -44,7 +33,7 @@ export function ChestTileDetails({
           </div>
         </HudPanel>
         <HudPanel kind="section" title="Contents" icon="chest">
-          {opening ? <RelicList relics={opening.relics} /> : <CrateContents crateEntityId={crateEntityId} />}
+          {opening ? <RelicList relics={opening.relics} /> : <CrateContents />}
           {!opening && (
             <div className="mt-2">
               <HudButton
@@ -63,17 +52,10 @@ export function ChestTileDetails({
   );
 }
 
-/** The relics the crate holds, as the chain stored them when the crate appeared, and the points opening it scores. */
-const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
-  const row = useNativeRow(
-    "RelicChest",
-    crateEntityId === null ? undefined : { game_id: configManager.getActiveGameId(), entity_id: crateEntityId },
-  );
-  const relics = row && relicChestRelics(relicChestPack(row));
+const CrateContents = () => {
   return (
     <div className="flex flex-col gap-2">
-      {relics && <p className="text-hud-accent text-hud-body">{formatCount(relics.length, "relic")} inside</p>}
-      {relics && <RelicList relics={relics} />}
+      <p className="text-hud-body">Three relics. Open to reveal them.</p>
       <EntityDetailStatList compact columns={1}>
         <EntityDetailStat
           compact
@@ -85,7 +67,7 @@ const CrateContents = ({ crateEntityId }: { crateEntityId: ID | null }) => {
   );
 };
 
-/** The relics a crate holds or yielded, each as the sheet's relic chip in its kind's colour, its effect on hover. */
+/** The awarded relics, each as the sheet's relic chip with its effect on hover. */
 const RelicList = ({ relics }: { relics: ResourcesIds[] }) => (
   <ul aria-label="Relics" className="flex flex-col gap-1">
     {relics.map((relicId, index) => (

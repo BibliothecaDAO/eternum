@@ -183,7 +183,7 @@ export const AreaDLab = () => {
         </Surface>
         <Surface name="crate">
           <div className="w-80">
-            <ChestTileDetails crateEntityId={null} opening={null} onOpen={() => undefined} />
+            <ChestTileDetails opening={null} onOpen={() => undefined} />
           </div>
         </Surface>
       </div>

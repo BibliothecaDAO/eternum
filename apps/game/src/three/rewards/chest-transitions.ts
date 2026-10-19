@@ -68,6 +68,7 @@ export class ChestTransitions {
     actor.effect.seek(kind === "summon" ? 0 : 1);
     if (kind === "open") actor.effect.open();
     actor.effect.update(0, animationTime);
+    actor.presentation.setOpening(kind === "open");
     this.active.set(tileKey, actor);
     return true;
   }
@@ -99,6 +100,7 @@ export class ChestTransitions {
     for (const [tileKey, actor] of this.active) {
       actor.mixer.setTime(animationTime);
       actor.effect.update(delta, animationTime);
+      actor.presentation.setOpening(actor.kind === "open");
       actor.presentation.setNightAmount(nightAmount);
       if (cameraPosition) actor.presentation.faceCamera(cameraPosition);
       actor.relics?.update(actor.effect.openingElapsed);
