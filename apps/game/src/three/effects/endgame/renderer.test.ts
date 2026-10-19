@@ -123,6 +123,8 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
     manager.destroy();
     projection.dispose();
   });
+  // The world map asks for the veil in the game's last minutes, before its end.
+  manager.prepareGameEnd();
   await manager.prepare();
   expect(scene.getObjectByName("Spires")).toBeDefined();
   expect(compile).toHaveBeenCalledOnce();

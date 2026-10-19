@@ -531,7 +531,9 @@ A live game ending starts the nine-second spire-orb contraction, burst and fract
 Frontier spares the signed-in player's expedition realm. **See the results** opens Results immediately; **Escape** skips
 the cosmetic event through the scene shortcuts on both map and realm views. The next Escape resumes normal back-out;
 live games keep normal Escape behavior. Opening an already-ended game shows the frozen state. Terrain and game facts
-stay intact.
+stay intact. The spire model and the veil's shaders load with the first spire on the map or in the game's last ten
+minutes, not at boot; a game a player closes early loads them at its end, and the veil shows from where it has reached
+once they are ready.
 
 The client uses at most two discovered/rule-defined spires. With none, it materialises on two actual unoccupied observed
 hexes, on opposite sides of the explored map. It never claims to know hidden spire coordinates. A map with no empty

@@ -45,6 +45,7 @@ export class SpireManager {
   private endgameEffect: MapEndPresentation | null = null;
   private endgameModel: SpireModel | null = null;
   private endgameOrigin = "";
+  private gameEndRequested = false;
 
   constructor(
     private readonly scene: Scene,
@@ -75,7 +76,6 @@ export class SpireManager {
       ...(ruleSpires ? [ruleSpires.subscribe(() => this.refresh())] : []),
     ];
     this.refresh();
-    if (!this.loading && !this.model) this.startModelLoad(2);
   }
 
   public advanceGameEnd(
@@ -91,6 +91,7 @@ export class SpireManager {
       }
       return;
     }
+    this.prepareGameEnd();
     const origin = worldOrigin(),
       originKey = origin.col + ":" + origin.row;
     if (this.endgamePlan && this.endgameOrigin !== originKey) {
@@ -129,6 +130,16 @@ export class SpireManager {
     this.endgameModel.needsUpdate();
     this.endgameModel.updateAnimations(frame.finished ? 0 : delta, { camera });
     this.endgameEffect.update(frame);
+  }
+
+  /**
+   * Loads the spire model and the game-end veil's shaders, once: as the game's end nears, or when it has ended. A game
+   * with no spire tiles asks for neither before then.
+   */
+  public prepareGameEnd(): void {
+    if (this.gameEndRequested || this.destroyed) return;
+    this.gameEndRequested = true;
+    if (!this.model && !this.loading) this.startModelLoad(2);
   }
 
   public async prepare(): Promise<void> {

@@ -11,6 +11,13 @@ export const ENDGAME_SEQUENCE = {
   endOpacity: 0.86,
 } as const;
 
+/** How long before a game's end the veil's model and shaders load, so it plays on time without costing every boot. */
+const GAME_END_PRELOAD_SECONDS = 600;
+
+/** Whether a game ending at `endAt` (chain seconds; 0 when it has no end time) is within its preload window at `now`. */
+export const gameEndIsNear = (endAt: number, now: number): boolean =>
+  endAt > 0 && endAt - now <= GAME_END_PRELOAD_SECONDS;
+
 export function endgameFrame(elapsed: number | null) {
   const sequence = ENDGAME_SEQUENCE;
   const seconds = elapsed === null ? 0 : Math.max(0, Math.min(sequence.duration, elapsed));

@@ -1,4 +1,4 @@
-import type { endgameFrame } from "../effects/endgame/sequence";
+import { gameEndIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
@@ -7792,6 +7792,8 @@ export default class WorldmapScene extends WarpTravel {
 
   public advanceGameEnd(frame: ReturnType<typeof endgameFrame>, delta: number): void {
     if (frame.phase === "live") {
+      if (gameEndIsNear(configManager.getSeasonConfig().endAt, getBlockTimestamp().currentBlockTimestamp))
+        this.spireManager.prepareGameEnd();
       this.spireManager.advanceGameEnd(frame, delta, this.camera, null);
       return;
     }

@@ -136,6 +136,8 @@ export class EndgameFixtureScene {
       await new Promise((resolve) => setTimeout(resolve, 30));
     }
     this.spires = new SpireManager(scene, this.projection, new Group(), terrain, undefined, undefined, compile);
+    // The lab plays the end on demand, as a game in its last minutes: the veil is ready before it is asked for.
+    this.spires.prepareGameEnd();
     await this.spires.prepare();
     this.spires.update(0, camera);
   }
