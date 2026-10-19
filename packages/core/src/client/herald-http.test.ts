@@ -7,9 +7,11 @@ import {
   fetchHeraldGameHistory,
   fetchHeraldLeaderboard,
   fetchHeraldGameDirectory,
+  fetchHeraldGameReviewSnapshot,
   fetchHeraldGameSnapshot,
   snapshotModelRows,
 } from "./herald-http";
+import { HeraldHttpError } from "../sync/herald-http-types";
 
 const world = { url: "https://gateway.example/herald/" } as Shard;
 
@@ -21,6 +23,18 @@ afterEach(() => {
 });
 
 describe("Herald HTTP client", () => {
+  it("names Herald's failure status, so a refusal is told from a failure worth retrying", async () => {
+    vi.stubGlobal("fetch", mockFetch);
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "review_snapshot_not_frozen" }), { status: 404 }))
+      .mockResolvedValueOnce(new Response("", { status: 503 }));
+    const refused = await fetchHeraldGameReviewSnapshot(world, 7).catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(HeraldHttpError);
+    expect(refused).toMatchObject({ status: 404, permanent: true });
+    const unavailable = await fetchHeraldGameReviewSnapshot(world, 7).catch((error: unknown) => error);
+    expect(unavailable).toMatchObject({ status: 503, permanent: false });
+  });
+
   it("preserves a configured path prefix for directory and selective snapshot requests", async () => {
     vi.stubGlobal("fetch", mockFetch);
     mockFetch

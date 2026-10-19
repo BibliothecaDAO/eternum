@@ -9,7 +9,7 @@ import {
   type HeraldGameSyncTransportOptions,
   type HeraldSocket,
 } from "./herald-game-sync-transport";
-import { HERALD_GAME_FINALIZED_CLOSE, type HeraldGameSnapshot } from "./herald-http-types";
+import { HERALD_GAME_FINALIZED_CLOSE, HeraldHttpError, type HeraldGameSnapshot } from "./herald-http-types";
 import type {
   GameSyncEvent,
   GameSyncFact,
@@ -422,12 +422,29 @@ describe("HeraldGameSyncTransport", () => {
       expect(harness.deliveries).toEqual([]);
     });
 
+    it("ends the start as finalized after one read when Herald refuses the review snapshot", async () => {
+      vi.useFakeTimers();
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      // Herald froze no review for this game, and never will: its answer does not change on a retry.
+      const finalState = vi.fn(async (): Promise<HeraldGameSnapshot> => {
+        throw new HeraldHttpError("Herald review snapshot failed: 404 Not Found", 404);
+      });
+      const harness = streamHarness({ finalState });
+      const subscribed = harness.transport.subscribe(harness.handlers);
+      closeAsFinalized(harness.sockets.at(-1)!);
+      await expect(subscribed).rejects.toBeInstanceOf(GameFinalizedError);
+      await vi.advanceTimersByTimeAsync(120_000);
+      expect(finalState).toHaveBeenCalledTimes(1);
+      expect(harness.deliveries).toEqual([]);
+      warn.mockRestore();
+    });
+
     it("starts on the final state once a review snapshot that did not answer does", async () => {
       vi.useFakeTimers();
       const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
       const finalState = vi
         .fn<() => Promise<HeraldGameSnapshot>>()
-        .mockRejectedValueOnce(new Error("review unavailable"))
+        .mockRejectedValueOnce(new HeraldHttpError("Herald review snapshot failed: 503 Service Unavailable", 503))
         .mockResolvedValue(REVIEW);
       const harness = streamHarness({ finalState });
       const subscribed = harness.transport.subscribe(harness.handlers);

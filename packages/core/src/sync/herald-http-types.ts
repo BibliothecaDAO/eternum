@@ -174,3 +174,18 @@ export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboar
 
 /** Herald closes a game stream with this code when the game is finalized; the stream will never serve it again. */
 export const HERALD_GAME_FINALIZED_CLOSE = 4409;
+
+/** Herald answered, with a failure status. A client error other than a timeout or a rate limit will not change on retry. */
+export class HeraldHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "HeraldHttpError";
+  }
+
+  get permanent(): boolean {
+    return this.status >= 400 && this.status < 500 && this.status !== 408 && this.status !== 429;
+  }
+}

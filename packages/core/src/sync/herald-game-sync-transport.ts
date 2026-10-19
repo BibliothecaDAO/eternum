@@ -1,5 +1,5 @@
 import type { GameSyncModelDefinition } from "./model-manifest";
-import { HERALD_GAME_FINALIZED_CLOSE, type HeraldGameSnapshot } from "./herald-http-types";
+import { HERALD_GAME_FINALIZED_CLOSE, HeraldHttpError, type HeraldGameSnapshot } from "./herald-http-types";
 import type {
   GameSyncFact,
   GameSyncHead,
@@ -372,8 +372,9 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
    * The game's final state as one snapshot through the same handlers a stream's snapshot reaches, then the store's
    * gate opened on it for the selected scope. A game that was shown keeps the last chain time its stream reported; a
    * start on the final state takes the game's own end as its one head, before any row reads chain time, and is refused
-   * as finalized when the final state holds no end. A read that fails is retried, as a dropped stream reconnects,
-   * until it answers. A session cancelled or restarted meanwhile takes nothing.
+   * as finalized when the final state holds no end or Herald refuses it (a review never frozen stays so). A read that
+   * fails otherwise is retried, as a dropped stream reconnects, until it answers. A session cancelled or restarted
+   * meanwhile takes nothing.
    */
   private async applyFinalState(start: { clock: number | undefined } | { failure: GameFinalizedError }): Promise<void> {
     const handlers = this.handlers;
@@ -394,6 +395,10 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         break;
       } catch (error) {
         if (!current()) return;
+        if (error instanceof HeraldHttpError && error.permanent) {
+          console.warn(`[Herald] the final state of ${this.options.url} was refused`, error);
+          return refuse();
+        }
         console.warn(`[Herald] the final state of ${this.options.url} could not be read; retrying`, error);
       }
       await new Promise((resolve) => setTimeout(resolve, delay * (0.5 + Math.random() / 2)));

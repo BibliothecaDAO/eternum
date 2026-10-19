@@ -1,9 +1,10 @@
-import type {
-  HeraldGameDirectory,
-  HeraldFrontierDayRanks,
-  HeraldGameLeaderboard,
-  HeraldGameSnapshot,
-  HeraldHistoryPage,
+import {
+  HeraldHttpError,
+  type HeraldGameDirectory,
+  type HeraldFrontierDayRanks,
+  type HeraldGameLeaderboard,
+  type HeraldGameSnapshot,
+  type HeraldHistoryPage,
 } from "../sync/herald-http-types";
 
 import type { Shard } from "./shard";
@@ -20,7 +21,7 @@ const buildHeraldUrl = (shard: Pick<Shard, "url">, pathname: string): string => 
 const fetchHeraldJson = async <Payload>(url: string, description: string): Promise<Payload> => {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   if (!response.ok) {
-    throw new Error(`${description} failed: ${response.status} ${response.statusText}`);
+    throw new HeraldHttpError(`${description} failed: ${response.status} ${response.statusText}`, response.status);
   }
   return (await response.json()) as Payload;
 };
