@@ -21,6 +21,8 @@ const SHEET_PAGES = {
   play: "home",
   // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
   "play-seated": "blitz-seat",
+  // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
+  "play-seated-late-slot": "blitz-seat-late-slot",
   lobby: "entry-choose/blitz/slot-blitz-1630",
   // A launched game's lobby: its roster, the player's own seat ringed, and Enter.
   "lobby-game": "blitz-seat/blitz/game-0x5245414c4d53-7",
@@ -150,6 +152,8 @@ const sheetPageChecks = (desktop) => (b) => {
         .filter((image) => !(image.complete && image.naturalWidth > 0))
         .map((image) => image.currentSrc || image.src),
       goldVerbs: document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary').length,
+      // Each age column's band of painting above its games, as computed.
+      ageBands: [...document.querySelectorAll(".app-age-column__body")].map((body) => getComputedStyle(body).paddingTop),
       // A phone's first screen ends where its notice or foot row begins: a control straddling that edge is half hidden.
       cutAtEdge: (() => {
         const bands = ["notice", "foot", "tabs"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
@@ -168,6 +172,10 @@ const sheetPageChecks = (desktop) => (b) => {
     { check: "nothing spills out of its block", ok: measure.spill <= 1, measure },
     { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
+    {
+      check: "an age's band of painting is 96 px on a desktop, 64 px on a phone",
+      ok: measure.ageBands.every((band) => band === (desktop ? "96px" : "64px")),
+    },
     ...(desktop ? [] : [{ check: "no control cut by the phone's notice or foot", ok: measure.cutAtEdge.length === 0 }]),
     ...(desktop
       ? [

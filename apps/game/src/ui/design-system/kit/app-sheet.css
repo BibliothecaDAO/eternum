@@ -384,15 +384,6 @@
   border-radius: var(--app-radius-panel);
   box-shadow: var(--app-shadow-panel);
 }
-/* A phone stacks the columns: each keeps a band of its painting, short, so its games come up into the first screen. */
-@media (max-width: 1023px) {
-  .app-age-column {
-    min-height: 0;
-  }
-  .app-age-column__body {
-    padding-top: theme(spacing.16);
-  }
-}
 .app-age-column__painting {
   position: absolute;
   inset: 0;
@@ -408,6 +399,16 @@
   margin-top: auto;
   background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
   padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
+}
+/* A phone stacks the columns: each keeps a band of its painting, short, so its games come up into the first screen.
+   It follows the rules it narrows, so it wins at their specificity. */
+@media (max-width: 1023px) {
+  .app-age-column {
+    min-height: 0;
+  }
+  .app-age-column__body {
+    padding-top: theme(spacing.16);
+  }
 }
 .app-age-column__name {
   font-family: var(--app-face-title);

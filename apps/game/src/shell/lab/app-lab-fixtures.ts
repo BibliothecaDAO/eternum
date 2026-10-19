@@ -156,6 +156,9 @@ export const LAB_SCREENS = {
   "long-name": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  // The seat's Blitz leads, and the next slot's entry closes hours away: its row reads the longer clock QA met on dev
+  // ("Entry closes 12:55 · 10h 46m left"), which wraps on a phone.
+  "blitz-seat-late-slot": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
   // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
   "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
@@ -261,6 +264,9 @@ const CLOSED_ENTRY: EntryTerms = {
 };
 
 /** Screens whose slot has closed: its lobby is reached by its address once the list no longer shows it. */
+/** A slot whose entry closes hours away, as QA met dev's 11:00Z slot: 10h 46m. */
+const LATE_SLOT_CLOSE = NOW + 10 * 3600 + 46 * 60;
+
 const CLOSED_SLOT_SCREENS: readonly LabScreen[] = ["entry-drawing", "entry-seated", "entry-unseated", "entry-refunded"];
 
 /** How many registered in the slot, as the ledger counts them. */
@@ -287,7 +293,7 @@ export type LabScreen = keyof typeof LAB_SCREENS;
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
 export const labSlots = (screen: LabScreen) => {
   const closed = CLOSED_SLOT_SCREENS.includes(screen);
-  const closesAt = closed ? CLOSED_ENTRY.close : ENTRY.close;
+  const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
   return {
     slots: [
       {
