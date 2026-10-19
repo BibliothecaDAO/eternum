@@ -393,11 +393,14 @@ describe("native presets", () => {
     expect(design.rules.tick_config.armies_tick_in_seconds).toBe(120);
     expect(design.rules.troop_stamina_config).toMatchObject({
       stamina_gain_per_tick: 1,
-      stamina_explore_stamina_cost: 30,
+      stamina_explore_stamina_cost: 20,
       stamina_travel_stamina_cost: 10,
       stamina_attack_req: 30,
       capture_stamina_refund: 0,
-      stamina_initial: 150,
+      stamina_initial: 120,
+      stamina_knight_max: 120,
+      stamina_crossbowman_max: 120,
+      stamina_paladin_max: 120,
     });
     expect(design.economy.relics).toEqual([]);
     expect(design.economy.progression.unwrap()).toEqual({
