@@ -31,6 +31,8 @@ AREAS = {
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
+        # Building thumbnails and workshop asset tests use the icon normalizer.
+        "scripts/icons/normalize.mjs",
         "deploy/first/environments.json",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",
