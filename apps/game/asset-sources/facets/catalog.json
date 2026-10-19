@@ -179,7 +179,7 @@
         "model": "/models/reward-tiles/chest-c2.glb",
         "inputs": {
           "apps/game/public/models/reward-tiles/chest-c2.glb": "e65db3a9a319316b0f485bf9feeb426b74b970a17a619ce758991d91cf2fd438",
-          "apps/game/src/three/rewards/chest-presentation.ts": "b882fbd99cd2b3a486b50ec65473f7a185db57953e2fc0808e1a045940d3cce8",
+          "apps/game/src/three/rewards/chest-presentation.ts": "85e99e1dbb26ef1360a72159d41450a4af120262da40b25c82fb2f7165b1d4ce",
           "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
         },
         "sha256": "dbb342171232be10ede039516ec4893e54fe93ec9b2293e2ad8fb21645794d9f"

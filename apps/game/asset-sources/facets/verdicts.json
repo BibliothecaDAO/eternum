@@ -45,7 +45,7 @@
   },
   "faceted/chest": {
     "verdict": "equal",
-    "reason": "Actual chest body only, retaining its runtime material; terrain, pedestal, seal rings and orbit gems removed."
+    "reason": "Actual chest body only, retaining its runtime material; terrain, pedestal, seal rings and orbit gems removed. Presentation input refreshed after the surprise-chest change: only OrbitGems visibility changes, and render-model.ts discards OrbitGems before rendering ChestBody. Body geometry, transform and material are unchanged, so the existing master and deliveries remain valid."
   },
   "faceted/move": {
     "verdict": "beats shipped",
