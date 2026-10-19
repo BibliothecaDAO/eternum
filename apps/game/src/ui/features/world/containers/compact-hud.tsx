@@ -39,13 +39,13 @@ type CompactTab = "empire" | "map" | "log" | "chat" | "details";
 const SHEET_TABS: ReadonlySet<CompactTab> = new Set(["empire", "map", "details"]);
 
 const COMPACT_TAB_IMAGES = {
-  empire: "home" as const,
-  standings: "victory" as const,
-  map: "map" as const,
-  log: "news" as const,
-  chat: "discord" as const,
-  details: "explore" as const,
-} as const;
+  empire: "home",
+  standings: "victory",
+  map: "map",
+  log: "news",
+  chat: "discord",
+  details: "explore",
+} as const satisfies Record<string, IconMeaning>;
 
 /** Safe-area insets, never less than the shell's own padding so a phone without a notch keeps its gutters. */
 const SAFE_BOTTOM = "max(env(safe-area-inset-bottom), 0.5rem)";
@@ -283,7 +283,7 @@ const SheetContent = ({
   if (tab === "details" && tileDetails === null)
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-6 text-center font-sans text-sm text-gold/80">
-        <img src={COMPACT_TAB_IMAGES.details} alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
+        <SemanticIcon name={COMPACT_TAB_IMAGES.details} size={28} />
         <p>Tap a tile on the map to inspect its army, structure, or terrain.</p>
       </div>
     );
