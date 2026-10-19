@@ -1,9 +1,8 @@
 import { createBrowserSession, openPageDevTools } from "./client-playtest/browser-session.mjs";
-import { spawn } from "node:child_process";
+import { withDevClient } from "./lib/dev-client.mjs";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { loadavg, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
 const arg = (name, fallback) => {
   const index = process.argv.indexOf(name);
@@ -17,16 +16,12 @@ const output = resolve(arg("--out", ".context/endgame-proof-" + Date.now()));
 const entrance = arg("--spires", null);
 if (entrance !== null && entrance !== "awaken" && entrance !== "materialise") throw new Error("Unknown spire entrance");
 const iterations = Number(arg("--iterations", "3"));
-const app = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const urlBase = base ?? "https://127.0.0.1:" + port;
 const duration = 9;
 if (!["gallery", "cost"].includes(mode)) throw new Error("Mode must be gallery or cost");
 if (!Number.isInteger(iterations) || iterations < 1 || iterations > 5)
   throw new Error("Iterations must be from 1 to 5");
 mkdirSync(output, { recursive: false });
 const records = [];
-let server;
-let log = "";
 let cancelled = false;
 process.on("SIGINT", () => {
   cancelled = true;
@@ -101,7 +96,7 @@ async function captureTimedStage(devTools, seconds, name) {
   writeFileSync(join(output, name + ".png"), Buffer.from(data, "base64"));
   return result.value;
 }
-async function gallery(browser, world, spires) {
+async function gallery(browser, urlBase, world, spires) {
   const url = urlBase + "/lab/endgame?gameMode=" + world + "&spires=" + spires;
   const adapter = openScenario(browser, url);
   const name = "fracture-" + world + "-" + spires;
@@ -187,7 +182,7 @@ const sample = (browser, count, includeBurst = false) =>
       includeBurst +
       ")burstSnapshot=window.__terrainVerification.getSnapshot();}return JSON.stringify({intervals:values,burstSnapshot,snapshot:window.__terrainVerification.getSnapshot()});})()",
   );
-async function cost(browser, rendererMode, iteration) {
+async function cost(browser, urlBase, rendererMode, iteration) {
   const url = urlBase + "/lab/endgame?capture=1&gameMode=blitz&spires=awaken&busy=1&rendererMode=" + rendererMode;
   const adapter = openScenario(browser, url);
   const drawingBuffer = browser.read(
@@ -281,45 +276,29 @@ async function cost(browser, rendererMode, iteration) {
   });
 }
 try {
-  if (!base) {
-    server = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", port, "--strictPort"], {
-      cwd: app,
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: true,
-    });
-    server.stdout.on("data", (chunk) => {
-      log += chunk;
-    });
-    server.stderr.on("data", (chunk) => {
-      log += chunk;
-    });
-    const deadline = Date.now() + 30000;
-    while (!log.includes("Local:")) {
-      check(server.exitCode === null && Date.now() < deadline, "Client failed to start: " + log);
-      await pause(200);
-    }
-  }
-  const scenarios = mode === "gallery" ? ["blitz", "frontier"] : ["webgpu-auto", "webgpu-force-webgl"];
-  for (const scenario of scenarios) {
-    const entrances = mode === "gallery" ? (entrance ? [entrance] : ["materialise", "awaken"]) : ["awaken"];
-    for (const spires of entrances)
-      for (let i = 0; i < (mode === "gallery" ? 1 : iterations); i++) {
-        await pause(0);
-        check(!cancelled, "Cancelled");
-        const profile = mkdtempSync(join(tmpdir(), "endgame-study-"));
-        const browser = createBrowserSession("endgame-" + Date.now().toString(36), { profile, headed: false });
-        try {
-          if (mode === "gallery") await gallery(browser, scenario, spires);
-          else await cost(browser, scenario, i + 1);
-        } finally {
-          browser.close();
-          rmSync(profile, { recursive: true, force: true });
-          writeFileSync(join(output, "study.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
+  await withDevClient({ base, port, out: output }, async (urlBase) => {
+    const scenarios = mode === "gallery" ? ["blitz", "frontier"] : ["webgpu-auto", "webgpu-force-webgl"];
+    for (const scenario of scenarios) {
+      const entrances = mode === "gallery" ? (entrance ? [entrance] : ["materialise", "awaken"]) : ["awaken"];
+      for (const spires of entrances)
+        for (let i = 0; i < (mode === "gallery" ? 1 : iterations); i++) {
+          await pause(0);
+          check(!cancelled, "Cancelled");
+          const profile = mkdtempSync(join(tmpdir(), "endgame-study-"));
+          const browser = createBrowserSession("endgame-" + Date.now().toString(36), { profile, headed: false });
+          try {
+            if (mode === "gallery") await gallery(browser, urlBase, scenario, spires);
+            else await cost(browser, urlBase, scenario, i + 1);
+          } finally {
+            browser.close();
+            rmSync(profile, { recursive: true, force: true });
+            writeFileSync(join(output, "study.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
+          }
         }
-      }
-  }
-  writeFileSync(join(output, "study.json"), JSON.stringify({ ok: true, records }, null, 2) + "\n");
-  console.log(JSON.stringify({ ok: true, mode, records: records.length, output }));
+    }
+    writeFileSync(join(output, "study.json"), JSON.stringify({ ok: true, records }, null, 2) + "\n");
+    console.log(JSON.stringify({ ok: true, mode, records: records.length, output }));
+  });
 } catch (error) {
   writeFileSync(
     join(output, "study.json"),
@@ -327,10 +306,4 @@ try {
   );
   process.exitCode = 1;
   console.error(error);
-} finally {
-  if (server && server.exitCode === null) {
-    process.kill(-server.pid, "SIGTERM");
-    await new Promise((resolve) => server.once("exit", resolve));
-  }
-  if (server) writeFileSync(join(output, "client.log"), log);
 }

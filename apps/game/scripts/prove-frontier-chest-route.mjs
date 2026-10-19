@@ -12,7 +12,7 @@ const check = (condition, message) => {
 };
 
 /** Exercise the game route and mounted Frontier HUD, with local reward facts and no signed commands. */
-export async function proveFrontierChestRoute(browser, { port, backend, out }) {
+export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }) {
   browser.run([
     "open",
     "about:blank",
@@ -73,10 +73,8 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
       };
     `,
     });
-    await devtools.send("Page.navigate", { url: `https://127.0.0.1:${port}/` });
-    await wait(
-      `location.origin===${JSON.stringify(`https://127.0.0.1:${port}`)} && document.readyState === 'complete'`,
-    );
+    await devtools.send("Page.navigate", { url: `${baseUrl}/` });
+    await wait(`location.origin===${JSON.stringify(new URL(baseUrl).origin)} && document.readyState === 'complete'`);
     check(
       await read(`window.__frontierRouteProofCatalogue===${JSON.stringify(schemaIdentity)}`),
       "Fixture preload did not run",
@@ -84,7 +82,7 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
     const game = await read(
       `(async()=>{const directory=await(await fetch('/api/directory')).json();for(const shard of directory.shards ?? []){const game=shard.games?.find(g=>g.mode==='frontier'&&g.status==='Live');if(game)return {chainId:shard.chainId,gameId:game.game_id};}throw Error('No live Frontier route available');})()`,
     );
-    const route = `https://127.0.0.1:${port}/g/${game.chainId}/${game.gameId}/map?spectate=true&rendererMode=${backend}`;
+    const route = `${baseUrl}/g/${game.chainId}/${game.gameId}/map?spectate=true&rendererMode=${backend}`;
     await devtools.send("Page.navigate", { url: route });
     await wait("Boolean(document.querySelector('#main-canvas')) && document.body.innerText.includes('Day ends')");
     if (!(await read("location.pathname.endsWith('/map')"))) {
@@ -154,7 +152,7 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
     const expiredOpened = await snapshot();
     check(expiredOpened.fixture.sends === 2, "Expired opening did not use the same command path");
     await capture("expired-receipt");
-    await devtools.send("Page.navigate", { url: `https://127.0.0.1:${port}/` });
+    await devtools.send("Page.navigate", { url: `${baseUrl}/` });
     await wait("!document.querySelector('canvas')");
     const errors = browser.run(["errors"]);
     check(!errors.trim(), errors);

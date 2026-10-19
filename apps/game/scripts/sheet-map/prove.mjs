@@ -1,9 +1,8 @@
 import { createBrowserSession } from "../client-playtest/browser-session.mjs";
-import { spawn } from "node:child_process";
+import { withDevClient } from "../lib/dev-client.mjs";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
 const option = (key, fallback) => {
   const index = process.argv.indexOf(key);
@@ -12,44 +11,23 @@ const option = (key, fallback) => {
 const out = resolve(option("--out", ".context/sheet-map-" + Date.now()));
 const port = option("--port", "4199");
 const base = option("--base-url", null);
-const app = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const chapters = option("--chapters", "hexes,routes,ownership,strategic,sites").split(",");
 const backends = option("--backends", "webgpu-auto,webgpu-force-webgl").split(",");
 if (chapters.some((chapter) => !["hexes", "routes", "ownership", "strategic", "sites"].includes(chapter)))
   throw new Error("Unknown chapter");
 mkdirSync(out, { recursive: false });
-let server,
-  log = "";
 const records = [];
 const pause = (ms) => new Promise((done) => setTimeout(done, ms));
 const check = (value, message) => {
   if (!value) throw new Error(message);
 };
-try {
-  if (!base) {
-    server = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", port, "--strictPort"], {
-      cwd: app,
-      detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    server.stdout.on("data", (chunk) => {
-      log += chunk;
-    });
-    server.stderr.on("data", (chunk) => {
-      log += chunk;
-    });
-    const deadline = Date.now() + 30000;
-    while (!log.includes("Local:")) {
-      check(server.exitCode === null && Date.now() < deadline, log || "Client did not start");
-      await pause(200);
-    }
-  }
+await withDevClient({ base, port, out }, async (baseUrl) => {
   for (const backend of backends)
     for (const chapter of chapters) {
       const profile = mkdtempSync(join(tmpdir(), "sheet-map-proof-"));
       const browser = createBrowserSession("sheet-map-" + Date.now().toString(36), { profile, headed: false });
       try {
-        const url = `${base ?? "https://127.0.0.1:" + port}/lab/kit?chapter=hexes&rendererMode=${backend}`;
+        const url = `${baseUrl}/lab/kit?chapter=hexes&rendererMode=${backend}`;
         browser.run([
           "open",
           url,
@@ -113,10 +91,4 @@ try {
       await pause(0);
     }
   writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true, records }, null, 2) + "\n");
-} finally {
-  if (server && server.exitCode === null) {
-    process.kill(-server.pid, "SIGTERM");
-    await new Promise((done) => server.once("exit", done));
-  }
-  if (server) writeFileSync(join(out, "client.log"), log);
-}
+});

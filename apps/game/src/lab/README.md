@@ -1,5 +1,9 @@
 # Lab tools
 
+A lab proof that starts its own client does it through `scripts/lib/dev-client.mjs`: `pnpm dev` on the proof's `--port`,
+stopped whatever happens, or the server `--base-url` names. Proofs of pages that need no dev server take a base URL and
+use `scripts/prove-run.mjs`.
+
 `/lab/relic-chest`: the picked opening-only presentation, using `RewardTileModel`, `ChestTransitions` and
 `ChestTileDetails`. Focus the chest or its held-open hover plate, Open, inspect the reveal/receipt, then Reset. The
 local fixture still supplies the public pack row; its opening is delivered through the native story listener. Pack and

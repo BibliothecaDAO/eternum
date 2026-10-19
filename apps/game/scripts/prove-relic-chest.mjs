@@ -1,41 +1,24 @@
 import { proveFrontierChestRoute } from "./prove-frontier-chest-route.mjs";
-import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createBrowserSession, openPageDevTools } from "./client-playtest/browser-session.mjs";
+import { withDevClient } from "./lib/dev-client.mjs";
 
 const option = (key, fallback) => (process.argv.includes(key) ? process.argv[process.argv.indexOf(key) + 1] : fallback);
 const port = option("--port", "4199"),
+  base = option("--base-url", null),
   out = option("--out", ".context/relic-chest-" + Date.now());
 const backends = option("--backends", "webgpu-auto,webgpu-force-webgl").split(",");
 mkdirSync(out, { recursive: false });
 const games = ["blitz", "frontier"];
 const records = [];
-let log = "";
-const server = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", port, "--strictPort"], {
-  cwd: fileURLToPath(new URL("../", import.meta.url)),
-  detached: true,
-  stdio: ["ignore", "pipe", "pipe"],
-});
-server.stdout.on("data", (chunk) => {
-  log += chunk;
-});
-server.stderr.on("data", (chunk) => {
-  log += chunk;
-});
 const check = (value, reason) => {
   if (!value) throw new Error(reason);
 };
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const snapshot = `({rewards:[...document.querySelectorAll('[data-chest-panel] [aria-label="Relics"] li')].map(x=>x.textContent),text:document.querySelector('[data-chest-panel]')?.textContent,renderer:document.querySelector('canvas')?.dataset.renderer,plate:document.querySelector('[aria-label="Focus relic chest"]')?.textContent,mapRewards:[...document.querySelectorAll('[data-chest-rewards] img')].map(img=>({name:img.alt,opacity:Number(img.parentElement.style.opacity)}))})`;
-try {
-  const deadline = Date.now() + 30_000;
-  while (!log.includes("Local:")) {
-    check(server.exitCode === null && Date.now() < deadline, log || "Client did not start");
-    await pause(200);
-  }
+await withDevClient({ base, port, out }, async (baseUrl) => {
   for (const game of games)
     for (const backend of backends) {
       const profile = mkdtempSync(join(tmpdir(), "relic-chest-proof-"));
@@ -43,13 +26,13 @@ try {
       let devtools;
       try {
         if (game === "frontier") {
-          records.push(await proveFrontierChestRoute(browser, { port, backend, out }));
+          records.push(await proveFrontierChestRoute(browser, { baseUrl, backend, out }));
           writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
           continue;
         }
         browser.run([
           "open",
-          `https://127.0.0.1:${port}/lab/relic-chest?capture=1&rendererMode=${backend}&gameMode=${game}`,
+          `${baseUrl}/lab/relic-chest?capture=1&rendererMode=${backend}&gameMode=${game}`,
           "--ignore-https-errors",
           "--args",
           "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
@@ -173,10 +156,4 @@ try {
       }
     }
   writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: true, records }, null, 2) + "\n");
-} finally {
-  if (server.exitCode === null) {
-    process.kill(-server.pid, "SIGTERM");
-    await new Promise((resolve) => server.once("exit", resolve));
-  }
-  writeFileSync(join(out, "client.log"), log);
-}
+});
