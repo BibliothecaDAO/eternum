@@ -28,13 +28,16 @@ import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
 import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 
-/** The docs site, where each mode's rules are written down (apps/game-docs). */
-const HOW_TO_PLAY = "https://docs.realms.world";
+/**
+ * How to play: the Blitz guide's first page on the docs site (apps/game-docs), the rules a new player reads before a
+ * game. The site's front page is about the Realms at large and teaches no game.
+ */
+export const HOW_TO_PLAY = "https://docs.realms.world/blitz/key-concepts";
 
 /**
  * You (spec 10, the place): the player's page as others see it, their finished games, then three rows: Settings, How
- * to play (the docs site) and What's new. Signed out, one card with Sign in above the two rows anyone can read; a
- * device removed elsewhere, one card with Sign in to add it back.
+ * to play (the Blitz guide on the docs site) and What's new. Signed out, one card with Sign in above the two rows anyone
+ * can read; a device removed elsewhere, one card with Sign in to add it back.
  */
 export const ProfilePage = () => (
   <PageFrame title={useLayout() === "desktop" ? WORDS.you : undefined}>
@@ -218,7 +221,7 @@ const Rows = () => {
   );
 };
 
-/** How to play, on the docs site in a new tab, and What's new. */
+/** How to play, the Blitz guide in a new tab, and What's new. */
 const ReadingRows = () => {
   const navigate = useNavigate();
   return (
