@@ -91,6 +91,9 @@ export interface HeraldGameSyncTransportOptions {
 const DEFAULT_RECONNECT_MS = 200;
 // A stalled browser WebSocket handshake took 31 seconds before retrying during entry profiling.
 const HELLO_TIMEOUT_MS = 10_000;
+// Every client of a game reads its final state in the same second: retries back off and spread out.
+const FINAL_STATE_RETRY_FIRST_MS = 1_000;
+const FINAL_STATE_RETRY_MAX_MS = 30_000;
 
 const deferred = <Value>(): Deferred<Value> => {
   let rejectPromise!: (error: Error) => void;
@@ -369,8 +372,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
    * The game's final state as one snapshot through the same handlers a stream's snapshot reaches, then the store's
    * gate opened on it for the selected scope. A game that was shown keeps the last chain time its stream reported; a
    * start on the final state takes the game's own end as its one head, before any row reads chain time, and is refused
-   * as finalized when the final state cannot be read or holds no end. A session cancelled or restarted meanwhile takes
-   * nothing.
+   * as finalized when the final state holds no end. A read that fails is retried, as a dropped stream reconnects,
+   * until it answers. A session cancelled or restarted meanwhile takes nothing.
    */
   private async applyFinalState(start: { clock: number | undefined } | { failure: GameFinalizedError }): Promise<void> {
     const handlers = this.handlers;
@@ -382,14 +385,19 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       this.finalStart = null;
       this.failStart(start.failure);
     };
-    if (!handlers || !this.options.finalState) return refuse();
+    const read = this.options.finalState;
+    if (!handlers || !read) return refuse();
     let final: HeraldGameSnapshot;
-    try {
-      final = await this.options.finalState();
-    } catch (error) {
+    for (let delay = FINAL_STATE_RETRY_FIRST_MS; ; delay = Math.min(delay * 2, FINAL_STATE_RETRY_MAX_MS)) {
+      try {
+        final = await read();
+        break;
+      } catch (error) {
+        if (!current()) return;
+        console.warn(`[Herald] the final state of ${this.options.url} could not be read; retrying`, error);
+      }
+      await new Promise((resolve) => setTimeout(resolve, delay * (0.5 + Math.random() / 2)));
       if (!current()) return;
-      console.warn(`[Herald] the final state of ${this.options.url} could not be read`, error);
-      return refuse();
     }
     if (!current()) return;
     const clock = "clock" in start ? start.clock : endOf(final);
