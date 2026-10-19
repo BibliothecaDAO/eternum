@@ -1,76 +1,48 @@
-# Frontier map structures
+# Frontier beast models
 
-The procedural builders in `apps/game/scripts/frontier/` are the editable source. They reuse the settlement geometry and
-limestone bake. No hand-authored Blender file is required. Generated textures are packed into each source export;
-temporary bake files are removed after packing. Terrain comes from the scene, not the model.
+The five production beasts come from the packed Blender sources in `apps/game/asset-sources/frontier-beasts/refined/`.
+Each source retains its sculpt and painted textures. The matching `*-paint.png` files and prompts live beside the
+sources. `apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these refined sculpts; the packed `.blend` files
+are the inputs to delivery rebuilds.
 
-## Placement and compression
+| Species  | Editable source under `refined/` | Production delivery under `public/models/frontier/` |
+| -------- | -------------------------------- | --------------------------------------------------- |
+| Troll    | `troll.blend`                    | `beast-troll.glb`                                   |
+| Wyvern   | `wyvern.blend`                   | `beast-wyvern.glb`                                  |
+| Hydra    | `hydra.blend`                    | `beast-hydra.glb`                                   |
+| Minotaur | `minotaur.blend`                 | `beast-minotaur.glb`                                |
+| Cyclops  | `cyclops.blend`                  | `beast-cyclops.glb`                                 |
 
-Every model's origin is the tile's ground center. Geometry is authored Z-up, facing -Y, and exported Y-up, facing +Z,
-with baked transforms. Load at scale 1 on a radius-one hex; the builder rejects geometry outside its inscribed circle.
-Compression uses the existing structure pipeline: Draco geometry, ETC1S color and UASTC normal textures. Rebuild before
-recompressing.
+## Rebuild and validate
 
-## Fallen realm ruin
-
-The fallen-realm ruin now belongs to the [outpost family](../outposts/SOURCE.md), with packed `ruin.blend` and runtime
-path `/models/outposts/ruin.glb`. Its old builder and GLB are removed. The beast remains at the shared ground-center
-origin, facing +Z; the ruin stays at scale one. Central rubble and recessed violet fissures replace the old courtyard
-stain and wall treatment. The depth table remains troll 1.2, wyvern 1.35, hydra 1.45 and hydra 1.7.
-
-`pnpm --dir apps/game verify:fallen-realm` decodes delivered triangles and verifies all four placements against the new
-ruin, with zero masonry contacts and a radius-one footprint at a 0.001 BVH tolerance. Conservatively retained runtime
-maximum scales are not new first-contact measurements.
-
-## Troll
-
-Asset ID: `beast-troll`. Runtime path: `/models/frontier/beast-troll.glb`.
+From the repository root, with workspace dependencies, Blender and the texture encoder installed:
 
 ```sh
-blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-beast-troll.py
-node apps/game/scripts/optimize-structure-models.mjs frontier/beast-troll.glb
-node apps/game/scripts/optimize-structure-models.mjs --verify frontier/beast-troll.glb
-node apps/game/scripts/frontier/verify-beast-placement.mjs beast-troll
+bash apps/game/scripts/frontier-beasts/rebuild.sh /absolute/path/to/a-new-beast-build
+pnpm --dir apps/game verify:beasts
 ```
 
-The Troll's hunched shoulders, long arms, tusks and stone club are a static presentation. Place it at the ruin's origin,
-facing +Z. It has no ruin geometry or gameplay statistics. Skin volumes are fused before export; the shared procedural
-surface bake supplies the hide grain. The ground-center origin and baked transforms match the structures.
+The output directory must be absolute and must not already exist. The rebuild exports all five packed sources through
+`export-beast.py`, then compresses the fresh exports through `scripts/outposts/optimize-outpost.mjs`. It writes
+`beast-{troll,wyvern,hydra,minotaur,cyclops}.glb` and per-model logs into that external directory. It does not overwrite
+production deliveries. Review the rebuilt files in the game's lab before copying an approved set to the production
+paths, then run `verify:beasts` again against those delivered bytes. Never recompress an already compressed delivery.
 
-## Wyvern
+`verify:beasts` checks the committed GLBs' source hashes, grounded footprint at each species' maximum runtime scale,
+triangle and byte budgets, one primitive, unit transforms, UVs, color and normal textures, and KTX2 encoding. The lab is
+`/lab/models?family=beasts`; its Set, View, Turn and Light controls expose the current species and site compositions.
 
-Asset ID: `beast-wyvern`. Runtime path: `/models/frontier/beast-wyvern.glb`.
+## Runtime identity and placement
 
-```sh
-blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-beast-wyvern.py
-node apps/game/scripts/optimize-structure-models.mjs frontier/beast-wyvern.glb
-node apps/game/scripts/optimize-structure-models.mjs --verify frontier/beast-wyvern.glb
-node apps/game/scripts/frontier/verify-beast-placement.mjs beast-wyvern
-```
+Models are static, authored Z-up facing -Y and delivered Y-up facing +Z with baked transforms. Each origin is the tile's
+ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textures. Terrain belongs to the scene.
 
-Two clawed legs, upright folded wings, a horned head and a tucked tail distinguish the Wyvern from the Troll. Skin uses
-the shared grain bake; wing membranes, eyes and horns retain separate materials. The pose is static and shares the
-ruin's origin and +Z facing.
+`src/three/structures/frontier-beast.ts` owns species paths, depth/band selection, scales and site composition. The
+standing depth beasts are Troll, Wyvern and the three-headed Hydra; the two roaming encounters use Minotaur and Cyclops.
+Species art does not define combat tiers. Both the model and player-facing identity use that shared resolver.
 
-## Hydra
-
-Asset ID: `beast-hydra`. Runtime path: `/models/frontier/beast-hydra.glb`.
-
-```sh
-blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier/build-beast-hydra.py
-node apps/game/scripts/optimize-structure-models.mjs frontier/beast-hydra.glb
-node apps/game/scripts/optimize-structure-models.mjs --verify frontier/beast-hydra.glb
-node apps/game/scripts/frontier/verify-beast-placement.mjs beast-hydra
-```
-
-Five S-curved necks rise from staggered roots: two low heads watch the gate, one high head anchors the center, and two
-heads sweep sideways from the rear. Unequal lengths and opposing bends separate the silhouette and shadow. Dark teal
-hide and pale throat strips distinguish it from the other beasts. The pose is static; deeper Hydra encounters reuse this
-file at a larger uniform scale from the frontend's single depth table. There is no separate deep-Hydra export.
-
-## Shrines and wells
-
-The approved shrines and wells now live in the [outpost family](../outposts/SOURCE.md), with packed Blender sources and
-the shared outpost export pipeline. Their old builders and GLBs are removed. They remain static, single-use sites
-managed by tile occupancy: shrines grant an attribute level, wells restore stamina. The client owns discovery, use and
-removal.
+The ruin, shrines and wells belong to the [outpost family](../outposts/SOURCE.md). The ruin delivery is
+`/models/outposts/ruin.glb`; the beast is a separate model. `pnpm --dir apps/game verify:fallen-realm` is a read-only
+geometry check of the delivered ruin and depth beasts. It reports tile fit and masonry intersections at the specified
+runtime scales; its result must be rerun after model changes. A passing beast footprint/source check alone does not
+establish ruin clearance.
