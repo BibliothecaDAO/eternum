@@ -63,6 +63,8 @@ import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
 import { type ComponentProps, useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import { DayPill } from "@/ui/features/frontier/hud/day-pill";
+import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
 import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
@@ -1385,7 +1387,21 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
       {() => (
         <FrontierDesktop
           season={{ rank: "#12", onOpen: noop }}
-          strip={slots.strip}
+          clock={<DayPill clock={lab.clock} />}
+          realm={
+            <RealmPanel
+              name={LAB_REALM_NAME}
+              level={1}
+              stores={[...lab.stores]}
+              {...(!lab.visiting && {
+                lords: lab.purse?.lords ?? LAB_LORDS,
+                labor: lab.purse?.realms,
+                onOpenStores: noop,
+                onWithdraw: noop,
+                onRealms: noop,
+              })}
+            />
+          }
           armies={slots.dock}
           guide={slots.guide}
           page={slots.page}
@@ -1411,19 +1427,21 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
 /** Frontier's preset, so the lab's game plays as a Frontier game. */
 const FRONTIER_PRESET = 5;
 
+/** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
+const LAB_REALM_NAME = "Duskbite";
+const LAB_LORDS = 320;
+
 /** The place a lab state has open, as the desktop's round places light it. */
 const labSurface = (lab: LabState): HudSurface | null =>
-  lab.menu
-    ? "menu"
-    : lab.season
-      ? "season"
-      : lab.tree
-        ? "research"
-        : lab.production
-          ? "production"
-          : lab.results === "today" || lab.results === "today-earlier" || lab.results === "today-failed"
-            ? "today"
-            : null;
+  lab.season
+    ? "season"
+    : lab.tree
+      ? "research"
+      : lab.production
+        ? "production"
+        : lab.results === "today" || lab.results === "today-earlier" || lab.results === "today-failed"
+          ? "today"
+          : null;
 
 /**
  * The armies on the lab, as ArmyDock draws them: a phone's row of tokens with an open slot for each army still to

@@ -1,4 +1,7 @@
-import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
+import { BACK, GUIDE, PROFILE_WORDS, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import { useLayout } from "@/shell/frame/layout";
+import { useGuideLines } from "@/ui/features/frontier/guide/frontier-guide";
+import { GuideSaid } from "@/ui/features/frontier/guide/guide-lines-sheet";
 import { AudioCategory, useAudio } from "@/audio";
 import {
   identityClient,
@@ -20,6 +23,7 @@ import { RENDERER_MODES, requestedRendererMode } from "@/ui/debug/renderer-debug
 import {
   HudButton,
   HudField,
+  HudIconButton,
   HudNotice,
   HudPortrait,
   HudSelect,
@@ -46,24 +50,26 @@ const effectsCategories = Object.values(AudioCategory).filter((category) => cate
 
 /**
  * Player settings first; installing the app and the keys, rarely touched, come last before the session. The keys are
- * one row whose Show opens their list in Settings' place, and the renderer is a row of Video & Graphics, so Settings
- * stays one short page.
+ * one row whose Show opens their list in Settings' place, as the guide's lines are in Frontier, and the renderer is a
+ * row of Video & Graphics, so Settings stays one short page.
  */
 export const SettingsPanel = () => {
-  const [shortcuts, setShortcuts] = useState(false);
-  if (shortcuts) return <KeyboardShortcuts onBack={() => setShortcuts(false)} />;
+  const [page, setPage] = useState<"settings" | "keys" | "guide">("settings");
+  const back = () => setPage("settings");
+  if (page === "keys") return <KeyboardShortcuts onBack={back} />;
+  if (page === "guide") return <GuideLinesPage onBack={back} />;
   return (
     <div className="flex flex-col gap-4 p-1">
       <ProfileHeader />
       <AudioSettings />
       <VideoSettings />
-      <NextUpSettings />
+      <CoachSettings onShowLines={() => setPage("guide")} />
       <SettingsSection title={PROFILE_WORDS.notifications}>
         <NotificationSettings />
       </SettingsSection>
       <SettingsSection title="App">
         <InstallSetting />
-        <KeyboardShortcutsSetting onShow={() => setShortcuts(true)} />
+        <KeyboardShortcutsSetting onShow={() => setPage("keys")} />
       </SettingsSection>
       <SessionActions />
     </div>
@@ -255,6 +261,42 @@ function VideoSettings() {
         <HudSwitch on={haptics} label="Haptics" onChange={setHaptics} />
       </HudSetting>
     </SettingsSection>
+  );
+}
+
+/**
+ * The game's coach: Frontier's guide on a desktop, its switch and a row whose Show opens every line it has said (a
+ * phone reads the guide from its Menu); elsewhere Next up's tips.
+ */
+function CoachSettings({ onShowLines }: { onShowLines: () => void }) {
+  const guide = useGuideLines();
+  const desktop = useLayout() === "desktop";
+  if (!guide || !desktop) return <NextUpSettings />;
+  return (
+    <SettingsSection title={GUIDE}>
+      <HudSetting name={GUIDE} about="The Aspect's lines as you play">
+        <HudSwitch on={guide.on} label={GUIDE} onChange={guide.toggle} />
+      </HudSetting>
+      <HudSetting name="Lines said">
+        <HudButton kind="secondary" size="sm" onClick={onShowLines}>
+          {SETTINGS_WORDS.show}
+        </HudButton>
+      </HudSetting>
+    </SettingsSection>
+  );
+}
+
+/** Every line the guide has said, under Back to Settings. */
+function GuideLinesPage({ onBack }: { onBack: () => void }) {
+  const guide = useGuideLines();
+  return (
+    <section aria-label={GUIDE} className="flex flex-col gap-3 p-1">
+      <header className="flex items-center gap-2">
+        <HudIconButton icon="arrow-left" label={BACK} kind="quiet" size="sm" onClick={onBack} />
+        <h2 className="text-hud-title text-hud-ink">{GUIDE}</h2>
+      </header>
+      <GuideSaid lines={guide?.lines ?? []} />
+    </section>
   );
 }
 

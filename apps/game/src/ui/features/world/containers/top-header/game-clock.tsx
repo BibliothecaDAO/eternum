@@ -51,7 +51,7 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
           <span className={cn("whitespace-nowrap tabular-nums", compact && "text-hud-label")}>
             {compact ? clock.compactLabel : clock.label}
           </span>
-          {clock.remainingRatio !== null && <GameSpent share={1 - clock.remainingRatio} />}
+          {clock.remainingRatio !== null && <ClockSpent label="Game spent" share={1 - clock.remainingRatio} />}
         </span>,
       ]}
     </HudPill>
@@ -59,11 +59,11 @@ export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
 });
 GameClock.displayName = "GameClock";
 
-/** The game spent, as a hairline along the clock's foot. */
-const GameSpent = ({ share }: { share: number }) => (
+/** The time spent of what a clock counts (the game, a Frontier day), as a hairline along the clock's foot. */
+export const ClockSpent = ({ label, share }: { label: string; share: number }) => (
   <div
     role="progressbar"
-    aria-label="Game spent"
+    aria-label={label}
     aria-valuemin={0}
     aria-valuemax={100}
     aria-valuenow={Math.round(share * 100)}

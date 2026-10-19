@@ -42,13 +42,13 @@ export type StoreReading = {
 };
 
 /** A store's tone on the sheet: calm reads as ink, within the hour as warn, at the limit as bad. */
-const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | undefined }> = {
+export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | undefined }> = {
   calm: { text: "text-hud-ink", meter: undefined },
   amber: { text: "text-hud-warn", meter: "warn" },
   ember: { text: "text-hud-bad", meter: "bad" },
 };
 
-const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
+export const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
   essence: { icon: "essence", word: ESSENCE },
   labor: { icon: "labor", word: LABOR },
   wheat: { icon: "wheat", word: WHEAT },
@@ -179,7 +179,7 @@ const StoreMeter = ({ store }: { store: StoreReading }) =>
 const DELTA_MS = 1_400;
 
 /** The plate's "+N" as a payout lands: it pops above the number and fades as it rises. */
-const LandingDelta = ({ target }: { target: string }) => {
+export const LandingDelta = ({ target }: { target: string }) => {
   const landing = useLandingDelta(target);
   const reduced = useReducedMotion();
   return (

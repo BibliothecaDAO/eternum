@@ -8,6 +8,7 @@ import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useLayout } from "@/shell/frame/layout";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -30,7 +31,9 @@ import { useResearchPlan } from "./research/research-reader";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
-import { FrontierStrip } from "./hud/frontier-strip";
+import { FrontierDayClock } from "./hud/day-pill";
+import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
+import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
 import { MenuSheet } from "./hud/menu-sheet";
 import { FrontierRealms } from "./value/frontier-realms";
@@ -177,8 +180,18 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {desktop ? (
         <FrontierDesktop
           season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
-          strip={strip}
-          purse={purse}
+          clock={<FrontierDayClock rules={rules} />}
+          realm={
+            (realm ?? visited) && (
+              <FrontierRealmPanel
+                rules={rules}
+                realm={(realm ?? visited)!}
+                own={realm && !visit ? realm : null}
+                labor={realmLabor?.plan.total ?? 0}
+                onSurface={setSurface}
+              />
+            )
+          }
           armies={dock}
           guide={<GuideSlot host="foot" />}
           page={page}
@@ -363,6 +376,43 @@ const HudMenu = ({
 const HudGuide = ({ onClose }: { onClose: () => void }) => {
   const guide = useGuideLines();
   return guide && <GuideLinesSheet on={guide.on} lines={guide.lines} onToggle={guide.toggle} onClose={onClose} />;
+};
+
+/**
+ * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name, rank
+ * and stores, and for the player's own realm its LORDS (Withdraw), its Realms' labor (Realms) and Production.
+ */
+const FrontierRealmPanel = ({
+  rules,
+  realm,
+  own,
+  labor,
+  onSurface,
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"];
+  /** The player's own realm, the one read; null while watching or visiting. */
+  own: NativeRows["Structure"] | null;
+  labor: number;
+  onSurface: (surface: HudSurface) => void;
+}) => {
+  const name = useGameModeConfig().structure.getName(realm).name;
+  const stores = useStoreReadings(realm, rules);
+  const lords = useRealmLords(own ?? realm);
+  return (
+    <RealmPanel
+      name={name}
+      level={realm.base.level}
+      stores={stores}
+      {...(own && {
+        lords,
+        labor,
+        onOpenStores: () => onSurface("production"),
+        onWithdraw: () => onSurface("withdraw"),
+        onRealms: () => onSurface("realms"),
+      })}
+    />
+  );
 };
 
 /**

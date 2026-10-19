@@ -1,6 +1,6 @@
 import { HudBubble } from "@/ui/design-system/kit/hud-elements";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
-import { MENU, PRODUCTION, REALM, RESEARCH, SEASON, TODAY } from "@/ui/design-system/kit/words";
+import { PRODUCTION, REALM, RESEARCH, SEASON, TODAY } from "@/ui/design-system/kit/words";
 import type { SeasonGoal } from "@/ui/features/world/containers/top-header/identity-chip";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HudColumn, HudFoot } from "@/ui/features/world/hud/desktop-hud";
@@ -13,14 +13,15 @@ import type { HudSurface } from "./frontier-nav";
 /**
  * Frontier on the one desktop HUD every mode shares (the owner, 19 October 2026: "A unified hud, with elements that can
  * differ a bit"; issue 5067): the shared top bar, the left column, the rail and the foot, with Frontier's own panels in
- * them. The left column holds the realm's stores and day (the strip), its LORDS, its armies and the minimap; the rail
- * the guide where Blitz has Next up, then the shared events and chat; the foot the selected army's state over the round
+ * them. The top bar's clock is the day's, Frontier's one day timer. The left column holds one panel for the realm (its
+ * stores and LORDS as rings, as Blitz's realm card reads a holding), one for its armies, and the minimap; the rail the
+ * guide where Blitz has Next up, then the shared events and chat; the foot the selected army's state over the round
  * places. An order goes from the map itself, as in Blitz. Sheets and moments render beside the regions.
  */
 export const FrontierDesktop = ({
   season,
-  strip,
-  purse,
+  clock,
+  realm,
   armies,
   guide,
   page,
@@ -31,8 +32,9 @@ export const FrontierDesktop = ({
 }: {
   /** The player's place on the season's board, in the top bar's chip, which opens it. */
   season?: SeasonGoal;
-  strip: ReactNode;
-  purse?: ReactNode;
+  /** The day, in the top bar's clock place. */
+  clock: ReactNode;
+  realm?: ReactNode;
   armies?: ReactNode;
   guide?: ReactNode;
   /** A nav page (Research, the Season's board): the right panel, in the rail's place. */
@@ -45,10 +47,9 @@ export const FrontierDesktop = ({
   children?: ReactNode;
 }) => (
   <>
-    <TopHeader season={season} />
+    <TopHeader season={season} clock={clock} />
     <HudColumn label={REALM}>
-      <div className="pointer-events-auto shrink-0">{strip}</div>
-      {purse}
+      {realm}
       <div className="flex shrink-0 flex-col">{armies}</div>
       <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
     </HudColumn>
@@ -75,9 +76,9 @@ export const FrontierDesktop = ({
 );
 
 /**
- * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), Production, Today,
- * the Season and the Menu (the guide's lines, the player's Realms). Map and Realm are the top bar's Realm / World, and
- * chat the rail's strip.
+ * Frontier's places as the shared HUD's round bubbles: Research (lit while a node can be bought), Production, Today and
+ * the Season. A desktop has no Menu: Map and Realm are the top bar's Realm / World, chat the rail's strip, the Realms'
+ * labor the realm panel's chip, the guide's switch and lines Settings', and leaving the game Settings' Leave game.
  */
 export const FrontierPlaces = ({
   surface,
@@ -107,7 +108,6 @@ export const FrontierPlaces = ({
       {research !== undefined && bubble("production", "production", PRODUCTION)}
       {bubble("today", "clock", TODAY)}
       {bubble("season", "victory", SEASON)}
-      {bubble("menu", "menu", MENU)}
     </nav>
   );
 };
