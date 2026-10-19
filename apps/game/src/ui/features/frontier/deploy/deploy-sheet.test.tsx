@@ -20,7 +20,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
-import { type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { type GameClient, setBlockTimestampSource, spawnRing } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { Direction, TroopTier, TroopType } from "@bibliothecadao/types";
 import { frontierDay } from "./deploy-fixture";
@@ -51,19 +51,30 @@ const render = (store: unknown, row: unknown, onClose = () => {}) => {
   return { host, root, draw };
 };
 
-const setSlider = (host: HTMLElement, value: number) => {
-  const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
+const countField = (host: HTMLElement) => host.querySelector<HTMLInputElement>(".ui-amount input")!;
+const typeCount = (host: HTMLElement, value: number) => {
+  const field = countField(host);
   act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, String(value));
-    slider.dispatchEvent(new Event("input", { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, String(value));
+    field.dispatchEvent(new Event("input", { bubbles: true }));
   });
 };
+const press = (host: HTMLElement, word: string) =>
+  act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
+const outOf = (host: HTMLElement) => host.querySelector(".ui-amount__of")?.textContent;
+const foot = (host: HTMLElement) => host.querySelector(".ui-window__foot")?.textContent ?? "";
+
+/** The ring's tiles on the map selector, in spawnRing's order, and the one the sheet aims at. */
+const tiles = (host: HTMLElement) => [...host.querySelectorAll('[aria-label="Deploy tile"] [role="radio"]')];
+const tileToward = (host: HTMLElement, store: unknown, row: unknown, direction: Direction) =>
+  tiles(host)[spawnRing(store as never, row as never, () => 0).findIndex((tile) => tile.direction === direction)];
+const click = (element: Element) => act(() => element.dispatchEvent(new MouseEvent("click", { bubbles: true })));
 
 const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
-  it("opens at half of what the realm can field, with Minimum and Maximum on its ends, and deploys the dragged count", async () => {
+  it("opens at half of what the realm can field, with +500 and Max beside the count, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -76,27 +87,18 @@ describe("the Deploy sheet", () => {
     } as unknown as GameClient);
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
-    const slider = host.querySelector<HTMLInputElement>("input[type=range]")!;
-    const most = Number(slider.max);
-    expect(Number(slider.value)).toBe(Math.ceil(most / 2));
-    // The ends are buttons that take their amount, and say which they are.
-    const end = (name: string) => host.querySelector<HTMLButtonElement>(`button[aria-label^="${name}"]`)!;
-    expect(end("Maximum").getAttribute("aria-label")).toBe(`Maximum ${most.toLocaleString("en-US")}`);
-    act(() => end("Maximum").click());
-    expect(Number(slider.value)).toBe(most);
-    act(() => end("Minimum").click());
-    expect(slider.value).toBe("1");
+    // 420 knights at home and 1,000 wheat at 2 a troop: all 420 can go.
+    expect(outOf(host)).toBe("of 420");
+    expect(countField(host).value).toBe("210");
+    press(host, "Max");
+    expect(countField(host).value).toBe("420");
+    typeCount(host, 120);
+    // Deploy in the foot, beside its price and how far the wheat left lets the army march.
     expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(host.querySelector('[aria-label="wheat to deploy −2"]')).not.toBeNull();
-
-    setSlider(host, 120);
-    expect(deployButton(host)?.textContent).toBe("Deploy");
-    // Every figure names itself: what the deploy costs, what it leaves, and how far that carries the army.
-    expect(host.querySelector('[aria-label="wheat to deploy −240"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="wheat left at home 760"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label^="tiles the wheat left pays for "]')).not.toBeNull();
-    expect(host.querySelector('[aria-label^="stamina it starts with "]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="troops 120"]')).not.toBeNull();
+    expect(foot(host)).toMatch(/^240 wheatLeaves wheat to march [\d.,]+K? tiles?Deploy$/);
+    // The window shows the decision only: no slider, stamina, attribute marks or day clock.
+    expect(host.querySelector("input[type=range]")).toBeNull();
+    expect(host.textContent).not.toMatch(/stamina|Day ends/i);
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -146,7 +148,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("stops the slider where the wheat runs out, with a line on the track", () => {
+  it("caps the count where the wheat runs out, and says the army is left no wheat to march", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -157,14 +159,12 @@ describe("the Deploy sheet", () => {
       },
     ] as never);
     const { host, root } = render(store, row);
-    // 100 wheat deploys 50 troops: the thumb stops at the line however far it is dragged.
-    expect(host.querySelector(".ui-slider__stop")).not.toBeNull();
-    setSlider(host, 300);
-    expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(host.querySelector('[aria-label="wheat to deploy −100"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="wheat left at home 0"]')?.getAttribute("data-tone")).toBe("bad");
-    // Maximum takes what the wheat allows, not what the troops would.
-    expect(host.querySelector('button[aria-label^="Maximum"]')!.getAttribute("aria-label")).toBe("Maximum 50");
+    // 100 wheat deploys 50 of the 420 troops: Max takes what the wheat allows, and the count reads out of 50, not
+    // "that fit", since the castle has room.
+    expect(outOf(host)).toBe("of 50");
+    typeCount(host, 300);
+    expect(countField(host).value).toBe("50");
+    expect(foot(host)).toBe("100 wheatLeaves no wheat to marchDeploy");
     act(() => root.unmount());
     host.remove();
   });
@@ -182,7 +182,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("deploys onto the tile the player picks, with taken and unexplored tiles closed", async () => {
+  it("deploys onto the tile the player picks on the map selector, with taken and unexplored tiles closed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     ring.taken = 0;
     const { store, row } = frontierDay();
@@ -194,19 +194,20 @@ describe("the Deploy sheet", () => {
       actions: { createExplorerArmy },
     } as unknown as GameClient);
     const { host, root, draw } = render(store, row);
-    const tiles = () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Deploy tile"] [role="radio"]')];
-    expect(tiles()).toHaveLength(6);
+    expect(tiles(host)).toHaveLength(6);
     // The taken tile cannot be picked; the first open one is chosen until the player picks.
-    expect(tiles()[0].disabled).toBe(true);
-    expect(tiles()[1].getAttribute("aria-checked")).toBe("true");
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Deploy west"]')!.click());
+    expect(tiles(host)[0].getAttribute("aria-disabled")).toBe("true");
+    expect(tiles(host)[1].getAttribute("aria-checked")).toBe("true");
+    click(tileToward(host, store, row, Direction.WEST));
+    expect(tileToward(host, store, row, Direction.WEST).getAttribute("aria-checked")).toBe("true");
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ spawnDirection: Direction.WEST }));
 
-    // An unexplored ring closes every tile, and there is no Deploy to send.
+    // An unexplored ring leaves no tile to pick, and there is no Deploy to send.
     ring.explored = false;
     draw();
-    expect(tiles().every((tile) => tile.disabled)).toBe(true);
+    expect(tiles(host)).toHaveLength(0);
+    expect(host.textContent).toContain("No adjacent tiles");
     expect(deployButton(host)).toBeUndefined();
     act(() => root.unmount());
     host.remove();
@@ -216,13 +217,12 @@ describe("the Deploy sheet", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const order = (direction: Direction) => openArmyDeployment({ structureId: 7, isExplorer: true, direction });
-    const chosen = (host: HTMLElement) => host.querySelector('[role="radio"][aria-checked="true"]');
     order(Direction.WEST);
     const { host, root } = render(store, row);
-    expect(chosen(host)?.getAttribute("aria-label")).toBe("Deploy west");
+    expect(tileToward(host, store, row, Direction.WEST).getAttribute("aria-checked")).toBe("true");
 
     act(() => order(Direction.EAST));
-    expect(chosen(host)?.getAttribute("aria-label")).toBe("Deploy east");
+    expect(tileToward(host, store, row, Direction.EAST).getAttribute("aria-checked")).toBe("true");
     act(() => root.unmount());
     host.remove();
   });

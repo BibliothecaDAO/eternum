@@ -61,7 +61,7 @@ const BIOME: Record<Direction, number> = {
 };
 
 /** The six tiles around the realm at (10, 10): four free, one taken, one not yet explored. */
-const RING: readonly DeployTile[] = getNeighborHexes(10, 10).map(({ col, row, direction }) => ({
+export const DEPLOY_RING: readonly DeployTile[] = getNeighborHexes(10, 10).map(({ col, row, direction }) => ({
   col,
   row,
   direction,
@@ -146,7 +146,7 @@ const MilitaryForm = () => {
             <RealmHexDeployMap
               centerCol={10}
               centerRow={10}
-              ring={RING}
+              ring={DEPLOY_RING}
               selectedDirection={direction}
               onSelect={setDirection}
             />

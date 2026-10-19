@@ -243,19 +243,24 @@ export const BUILDING_FIGURES = {
 export const MINIMUM = "Minimum";
 export const MAXIMUM = "Maximum";
 
-/** The Deploy sheet's figures, each named on its tooltip (the screen shows icons and numbers). */
-export const DEPLOY_FIGURES = {
-  slots: "army slots",
-  wheatToDeploy: "wheat to deploy",
-  wheatLeft: "wheat left at home",
-  tilesPaid: "tiles the wheat left pays for",
-  revealSends: "Essence or labor each reveal sends home",
-  scout: "scout: its reveals send nothing home",
-  startingStamina: "stamina it starts with",
-} as const;
+/**
+ * How far the wheat left at home after a deploy lets the new army march (each troop eats wheat a tile), short: a scout
+ * eats so little that its reach runs to thousands.
+ */
+export const marchLine = (tiles: number) =>
+  tiles === 0
+    ? `Leaves no ${WHEAT} to march`
+    : `Leaves wheat to march ${tiles === 1 ? "1 tile" : `${formatAmount(tiles)} tiles`}`;
 
-/** Raise an army from troops at home. */
+/** What each reveal of a new army sends home; a lone troop scouts, and its reveals send nothing. */
+export const revealSendsLine = (amount: number, scout: boolean) =>
+  scout
+    ? "A scout's reveals send nothing home"
+    : `Each reveal sends home ${formatAmount(amount)} ${ESSENCE.toLowerCase()} or ${LABOR}`;
+
+/** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
+export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 

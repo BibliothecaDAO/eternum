@@ -21,6 +21,7 @@ import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
+import { DEPLOY_RING } from "./deploy-section";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import type { FightResult } from "@/ui/features/frontier/sites/fight-result";
@@ -145,17 +146,19 @@ type LabOrder = {
   wheat: { cost: number; held: number | undefined; wait: number | undefined };
 };
 
-/** A city's deploy: 6,200 troops at home, 2 wheat a troop, the realm trained Battle and Homecoming to uncommon. */
+/**
+ * A city's deploy: 6,200 troops at home, 2 wheat a troop. `figures` is the owner's pick between the three Deploy
+ * options: only the price ("bare"), the price and how far the army can march (the default), or those and what each
+ * reveal sends home ("yield").
+ */
 type LabDeploy = {
   count: number;
   troopsAtHome: number;
-  troopsMax: number;
-  wheatStop?: number;
   wheat: number;
-  tiles: number;
+  figures?: "bare" | "yield";
 };
 
-const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, troopsMax: 6_200, wheat: 14_410, tiles: 44 };
+const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 type LabChest = Parameters<typeof RuinChestMoment>[0];
@@ -510,18 +513,20 @@ const STATES = {
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   deploy: { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: DEPLOY },
-  "deploy-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, count: 1, tiles: 99 } },
+  "deploy-bare": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, figures: "bare" } },
+  "deploy-yield": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, figures: "yield" } },
+  "deploy-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, count: 1 } },
   "deploy-wheat": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    deploy: { ...DEPLOY, count: 1_000, wheatStop: 1_000, wheat: 2_000, tiles: 0 },
+    deploy: { ...DEPLOY, count: 1_000, wheat: 2_000 },
   },
   "deploy-empty": {
     clock: CLOCK,
     stores: STORES,
     armies: [],
-    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsMax: 0 },
+    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0 },
   },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
   "site-full": {
@@ -1153,34 +1158,24 @@ export const HudLab = () => {
   );
 };
 
-const RING = [
-  Direction.EAST,
-  Direction.NORTH_EAST,
-  Direction.NORTH_WEST,
-  Direction.WEST,
-  Direction.SOUTH_WEST,
-  Direction.SOUTH_EAST,
-].map((direction) => ({ direction, open: true, explored: true }));
-
-/** Deploy on the fiction: 2 wheat a troop, 0.02 a troop a tile, a full new army at 150 stamina. */
+/** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile, and a tenth of each troop sent home a reveal. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
-  const cost = deploy.count * 2;
+  const [count, setCount] = useState(deploy.count);
+  const [chosen, setChosen] = useState<Direction | null>(Direction.EAST);
+  const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
+  const wheatLeft = deploy.wheat - count * 2;
   return (
     <DeployView
-      slots={{ used: deploy.troopsAtHome === 0 ? 0 : 1, allowed: 4 }}
       art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
       troopsAtHome={deploy.troopsAtHome}
-      count={deploy.count}
-      troopsMax={deploy.troopsMax}
-      wheatStop={deploy.wheatStop}
-      onCount={noop}
-      equation={{ wheatCost: cost, wheatLeft: Math.max(0, deploy.wheat - cost), tiles: deploy.tiles }}
-      revealYield={500}
-      startingStamina={150}
-      startingTiers={[2, 1, 1, 2]}
-      clock={CLOCK}
-      ring={{ tiles: RING, chosen: Direction.EAST, onPick: noop }}
-      canDeploy={deploy.count > 0}
+      count={count}
+      amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
+      onCount={setCount}
+      wheatCost={count * 2}
+      march={deploy.figures === "bare" ? undefined : count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
+      revealYield={deploy.figures === "yield" ? count / 10 : undefined}
+      ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}
+      canDeploy={count > 0}
       sending={false}
       onDeploy={noop}
       wheatShort={undefined}
