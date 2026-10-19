@@ -37,7 +37,7 @@ export function planGameEnd(
     row = (bounds.minRow + bounds.maxRow) / 2;
   const nearest = (a: EndgameHex, b: EndgameHex) =>
     (a.col - col) ** 2 + (a.row - row) ** 2 - (b.col - col) ** 2 - (b.row - row) ** 2 || a.row - b.row || a.col - b.col;
-  const anchor = [...observed].sort(nearest)[0];
+  const anchor = observed.reduce((best, tile) => (nearest(tile, best) < 0 ? tile : best));
   const known = [...new Map(spires.map((hex) => [hex.col + ":" + hex.row, hex])).values()].sort(nearest);
   const sources: EndgameSource[] = known.slice(0, 2).map((p) => ({ ...p, materialise: false }));
   if (!sources.length) {
