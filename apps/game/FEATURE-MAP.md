@@ -114,9 +114,9 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 ## Shell (outside a game)
 
 On a desktop, every page stands on its painting (the age or mode it shows, else the app's landscape) under the app
-sheet's bar: the lockup, Play and Season with their icons, the page's notice, and the player (name and portrait, or You)
-at its right end. `Esc` goes back and `Enter` takes the page's step, neither key printed on its button
-(`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and
+sheet's bar: the lockup, Play, Season, What's new and Market with their icons, the page's notice, and the player (name
+and portrait, or You) at its right end. `Esc` goes back and `Enter` takes the page's step, neither key printed on its
+button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and
 `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A full-screen step (sign-in, a lobby) keeps the bar with the
 lockup alone. Every page's content starts at the top, under the bar; a painting is its ground, never space above it.
 `Enter` presses the page's step button (the one marked as its step) when it is enabled, nothing has focus that answers
