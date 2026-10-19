@@ -47,15 +47,21 @@ export const hudColumnRects = (root: ParentNode = document): DOMRect[] =>
 /** No label is wider than twice this, so one anchored farther from a column never reaches under it. */
 const WIDEST_HALF_LABEL_PX = 240;
 
-/** Shifts each world label that reaches under a HUD column back beside it; called after the labels are placed. */
+/**
+ * Shifts each world label that reaches under a HUD column back beside it; called after the labels are placed. Every
+ * read (the columns, the labels' widths) comes before the first write, so the browser lays the page out once per call,
+ * not once per label, under any HUD that marks its columns.
+ */
 export function keepLabelsBesideHudColumns(labels: HTMLElement, root: ParentNode = document): void {
   const columns = hudColumnRects(root);
+  const shifts: Array<[HTMLElement, string]> = [];
   for (const label of labels.children) {
     if (!(label instanceof HTMLElement)) continue;
     const anchor = labelAnchor(label);
     const shift = anchor ? clearance(anchor, columns, () => label.offsetWidth / 2) : 0;
-    label.style.translate = shift ? `${shift}px 0` : "";
+    shifts.push([label, shift ? `${shift}px 0` : ""]);
   }
+  for (const [label, translate] of shifts) if (label.style.translate !== translate) label.style.translate = translate;
 }
 
 /** Where CSS2DRenderer anchored a label: the pixel offset in its last translate. */

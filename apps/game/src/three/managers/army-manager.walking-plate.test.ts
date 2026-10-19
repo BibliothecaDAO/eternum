@@ -55,7 +55,11 @@ const managerWithVisibleArmy = (stamina: number) => {
       setMovementCompleteCallback: vi.fn(),
     },
     pathRenderer: { createPath: vi.fn() },
-    plates: { setLabel: vi.fn(({ plate }: { plate: ArmyPlate }) => drawn.push(plate)), removeLabel: vi.fn() },
+    plates: {
+      setLabel: vi.fn(({ plate }: { plate: ArmyPlate }) => drawn.push(plate)),
+      setPosition: vi.fn(),
+      removeLabel: vi.fn(),
+    },
   });
   manager.markVisibleArmyPresentationDirty(false);
   manager.flushVisibleArmyPresentation();
@@ -81,11 +85,12 @@ describe("a walking army's plate", () => {
     // The next chain second reads the bar the explore left: 60.
     manager.resolveArmyStaminaSnapshot = () => ({ current: 60, max: 150 });
     manager.refreshArmyStamina(ARMY, 1_792_397_846);
+    expect(drawn.at(-1)?.stamina).toEqual({ current: 60, max: 150 });
 
-    // A frame mid-walk redraws the plate where the army stands.
+    // A frame mid-walk moves the plate where the army stands and draws no older bar over it.
     drawn.length = 0;
     manager.updateVisibleArmyPresentation();
-
-    expect(drawn.map((plate) => plate.stamina)).toEqual([{ current: 60, max: 150 }]);
+    expect(drawn).toEqual([]);
+    expect(manager.plates.setPosition).toHaveBeenCalledWith(ARMY, expect.any(Vector3));
   });
 });

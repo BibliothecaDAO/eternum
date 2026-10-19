@@ -1,4 +1,5 @@
 import type { ID } from "@bibliothecadao/types";
+import { memo } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { type Camera, Matrix4, Vector3 } from "three";
 
@@ -23,6 +24,8 @@ export interface MapPlateInput {
 /** One manager's view of the layer: its own things, keyed by entity id. */
 export interface MapPlateScope {
   setLabel(input: MapPlateInput): void;
+  /** Moves a thing's label as it stands, saying the same: a marching army each frame. A thing with none has none. */
+  setPosition(entityId: ID, position: Vector3): void;
   removeLabel(entityId: ID): void;
   removeMany(entityIds: Iterable<ID>): void;
   /** Keeps only the plates whose thing is still placed: the reconcile that hides a model hides its plate too. */
@@ -38,6 +41,8 @@ interface PlateEntry {
   key: string;
   entityId: ID;
   plate: MapPlate;
+  /** What the plate says, as one string: a plate built again from unchanged facts costs no render. */
+  says: string;
   position: Vector3;
   /**
    * Each view's size, the one the layout weighs: estimated from its words until the view is drawn, then as last drawn,
@@ -116,6 +121,7 @@ export class MapPlateLayer {
     const ownKeys = () => [...this.entries.keys()].filter((key) => key.startsWith(`${namespace}:`));
     return {
       setLabel: (input) => this.setEntry(keyOf(input.entityId), input),
+      setPosition: (entityId, position) => this.moveEntry(keyOf(entityId), position),
       removeLabel: (entityId) => this.removeEntries([keyOf(entityId)]),
       removeMany: (entityIds) => this.removeEntries([...entityIds].map(keyOf)),
       retainOnly: (entityIds) => {
@@ -201,23 +207,35 @@ export class MapPlateLayer {
   }
 
   private setEntry(key: string, input: MapPlateInput): void {
-    const existing = this.entries.get(key);
-    if (existing && samePlate(existing.plate, input.plate)) {
-      if (!existing.position.equals(input.position)) {
-        existing.position.copy(input.position);
-        this.layoutDirty = true;
-      }
+    const says = JSON.stringify(input.plate);
+    if (this.entries.get(key)?.says === says) {
+      this.moveEntry(key, input.position);
       return;
     }
     this.entries.set(key, {
       key,
       entityId: input.entityId,
       plate: input.plate,
+      says,
       position: input.position.clone(),
       sizes: estimates(input.plate),
     });
     this.invalidate();
   }
+
+  private moveEntry(key: string, position: Vector3): void {
+    const entry = this.entries.get(key);
+    if (!entry || entry.position.equals(position)) return;
+    entry.position.copy(position);
+    this.layoutDirty = true;
+  }
+
+  /** A slot's element as React commits it: the next frame's layout places it, whatever ran before the commit. */
+  private readonly register = (key: string, element: HTMLDivElement | null): void => {
+    if (element) this.elements.set(key, element);
+    else this.elements.delete(key);
+    this.layoutDirty = true;
+  };
 
   private removeEntries(keys: readonly string[]): void {
     let removed = false;
@@ -242,7 +260,7 @@ export class MapPlateLayer {
     return this.closed.has(entry.key) ? "token" : this.askedViewOf(entry);
   }
 
-  /** The plates' content changed: draw it again, and lay it out on the next frame. */
+  /** The labels' content changed: draw the ones that changed again, and lay them all out on the next frame. */
   private invalidate(): void {
     this.layoutDirty = true;
     if (this.renderQueued) return;
@@ -257,43 +275,34 @@ export class MapPlateLayer {
     this.root.render(
       <>
         {[...this.entries.values()].map((entry) => (
-          <div
+          <LabelSlot
             key={entry.key}
-            ref={(element) => {
-              // A committed element is placed by the next frame's layout, whatever ran before React committed it.
-              if (element) this.elements.set(entry.key, element);
-              else this.elements.delete(entry.key);
-              this.layoutDirty = true;
-            }}
-            className="mp-at"
-            data-key={entry.key}
-            data-view={this.viewOf(entry)}
-            data-relation={entry.plate.relation}
-            data-selected={entry.entityId === this.selected}
-            style={{ display: "none", zIndex: this.viewOf(entry) === "token" ? 1 : 5 }}
-          >
-            {drawn(entry, this.viewOf(entry))}
-          </div>
+            entry={entry}
+            view={this.viewOf(entry)}
+            selected={entry.entityId === this.selected}
+            register={this.register}
+          />
         ))}
       </>,
     );
   }
 
-  /** Each thing on screen, where its token stands; a thing off screen is hidden. */
-  private onScreen(camera: Camera, width: number, height: number): { entry: PlateEntry; x: number; y: number }[] {
+  /** Each thing on screen, where its token stands; the layout hides the rest after its reads. */
+  private onScreen(
+    camera: Camera,
+    width: number,
+    height: number,
+  ): { placed: { entry: PlateEntry; x: number; y: number }[]; offScreen: string[] } {
     const placed: { entry: PlateEntry; x: number; y: number }[] = [];
+    const offScreen: string[] = [];
     for (const entry of this.entries.values()) {
       this.point.copy(entry.position).project(camera);
       const x = ((this.point.x + 1) / 2) * width;
       const y = ((1 - this.point.y) / 2) * height;
-      if (this.point.z < 1 && x > -60 && x < width + 60 && y > -60 && y < height + 60) {
-        placed.push({ entry, x, y });
-        continue;
-      }
-      const element = this.elements.get(entry.key);
-      if (element) element.style.display = "none";
+      if (this.point.z < 1 && x > -60 && x < width + 60 && y > -60 && y < height + 60) placed.push({ entry, x, y });
+      else offScreen.push(entry.key);
     }
-    return placed;
+    return { placed, offScreen };
   }
 
   /**
@@ -308,8 +317,13 @@ export class MapPlateLayer {
     return entry.sizes[view];
   }
 
+  /**
+   * Every read (the drawn sizes, the HUD's columns) comes before the first write (each element's place, or its hiding
+   * off screen), so the browser lays the page out once per layout, not once per label.
+   */
   private layout(camera: Camera, width: number, height: number): void {
-    const things: PlateThing[] = this.onScreen(camera, width, height).map(({ entry, x, y }) => {
+    const { placed, offScreen } = this.onScreen(camera, width, height);
+    const things: PlateThing[] = placed.map(({ entry, x, y }) => {
       const asked = this.askedViewOf(entry);
       return {
         id: entry.key,
@@ -326,6 +340,10 @@ export class MapPlateLayer {
       this.orderLineAsk,
     );
     this.orderLineAt = orderLine;
+    for (const key of offScreen) {
+      const element = this.elements.get(key);
+      if (element && element.style.display !== "none") element.style.display = "none";
+    }
     if (!sameKeys(closed, this.closed)) {
       this.closed = closed;
       this.invalidate();
@@ -341,12 +359,32 @@ export class MapPlateLayer {
   }
 }
 
-/** A thing as drawn: its token at rest, its plate opened. */
-const drawn = (entry: PlateEntry, view: PlateView | "token") =>
-  view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} view={view} />;
+/** One thing's element, its token at rest or its plate opened: drawn again only when its plate or its view changes. */
+const LabelSlot = memo(function LabelSlot({
+  entry,
+  view,
+  selected,
+  register,
+}: {
+  entry: PlateEntry;
+  view: PlateView | "token";
+  selected: boolean;
+  register: (key: string, element: HTMLDivElement | null) => void;
+}) {
+  return (
+    <div
+      ref={(element) => register(entry.key, element)}
+      className="mp-at"
+      data-key={entry.key}
+      data-view={view}
+      data-relation={entry.plate.relation}
+      data-selected={selected}
+      style={{ display: "none", zIndex: view === "token" ? 1 : 5 }}
+    >
+      {view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} view={view} />}
+    </div>
+  );
+});
 
 const sameKeys = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
   a.size === b.size && [...a].every((key) => b.has(key));
-
-/** Two plates draw the same: a plate built again from unchanged facts costs no render. */
-const samePlate = (a: MapPlate, b: MapPlate) => JSON.stringify(a) === JSON.stringify(b);

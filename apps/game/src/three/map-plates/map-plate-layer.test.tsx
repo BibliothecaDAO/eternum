@@ -11,6 +11,29 @@ import { tokenSize } from "./map-plate-token";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+/** Each label drawn, its token or its plate, by its owner's name, as React renders it. */
+const { drawn } = vi.hoisted(() => ({ drawn: [] as string[] }));
+vi.mock("./map-plates", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./map-plates")>();
+  return {
+    ...actual,
+    Plate: (props: Parameters<typeof actual.Plate>[0]) => {
+      drawn.push(`plate ${props.plate.owner}`);
+      return <actual.Plate {...props} />;
+    },
+  };
+});
+vi.mock("./map-plate-token", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./map-plate-token")>();
+  return {
+    ...actual,
+    Token: (props: Parameters<typeof actual.Token>[0]) => {
+      drawn.push(`token ${props.plate.owner}`);
+      return <actual.Token {...props} />;
+    },
+  };
+});
+
 const army: ArmyPlate = {
   kind: "army",
   relation: "enemy",
@@ -302,6 +325,77 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
 
     layer.placeOrderLine(null);
     expect(element.dataset.yields).toBe("false");
+  });
+
+  it("draws again only the label whose tile is hovered, not every label on the map", async () => {
+    const armies = layer.createScope("army");
+    ["Oren", "Tamsin", "Ysolde"].forEach((owner, index) =>
+      armies.setLabel({ entityId: index + 1, position: new Vector3(index * 3 - 3, 0, 0), plate: { ...army, owner } }),
+    );
+    await frame();
+    drawn.length = 0;
+
+    armies.setHover(2);
+    await frame();
+    expect(drawn).toEqual(["plate Tamsin"]);
+    expect(isOpen("Tamsin")).toBe(true);
+  });
+
+  it("moves a marching army's label each frame without drawing it again", async () => {
+    const armies = layer.createScope("army");
+    armies.setLabel({ entityId: 2, position: new Vector3(0, 0, 0), plate: army });
+    await frame();
+    const before = plateOf("1,321")!.style.transform;
+    drawn.length = 0;
+
+    armies.setPosition(2, new Vector3(2, 0, 0));
+    await frame();
+    expect(plateOf("1,321")!.style.transform).not.toBe(before);
+    expect(drawn).toEqual([]);
+    // A thing with no label has nothing to move.
+    armies.setPosition(9, new Vector3(1, 0, 0));
+    await frame();
+    expect(container.querySelectorAll(".mp-at")).toHaveLength(1);
+  });
+
+  it("reads every drawn size before it places or hides any label, so a frame lays the page out once", async () => {
+    const armies = layer.createScope("army");
+    armies.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: army });
+    armies.setLabel({ entityId: 2, position: new Vector3(2, 0, 0), plate: { ...army, owner: "Oren" } });
+    armies.setLabel({ entityId: 3, position: new Vector3(0, 0, 0), plate: { ...army, owner: "Ysolde" } });
+    await frame();
+    // The third walks off screen: the frame must read the others' sizes before it hides it.
+    const order: string[] = [];
+    const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth")!;
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get() {
+        order.push("read");
+        return 40;
+      },
+    });
+    const elements = [...container.querySelectorAll<HTMLElement>(".mp-at")];
+    for (const element of elements)
+      for (const name of ["transform", "display"] as const) {
+        let value = element.style[name];
+        Object.defineProperty(element.style, name, {
+          configurable: true,
+          get: () => value,
+          set: (next: string) => {
+            order.push("write");
+            value = next;
+          },
+        });
+      }
+    try {
+      armies.setLabel({ entityId: 3, position: new Vector3(0, 0, 500), plate: { ...army, owner: "Ysolde" } });
+      armies.setLabel({ entityId: 1, position: new Vector3(1, 0, 0), plate: army });
+      await frame();
+    } finally {
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", width);
+    }
+    expect(order).toContain("read");
+    expect(order.slice(order.indexOf("write"))).not.toContain("read");
   });
 });
 

@@ -45,6 +45,34 @@ it("leaves a label alone clear of the columns, under one, or once it no longer r
   expect(crate.style.translate).toBe("");
 });
 
+it("reads every label's width before it moves any, so the page is laid out once, not once per label", () => {
+  column(12, 332);
+  const layer = document.createElement("div");
+  const order: string[] = [];
+  for (const x of [425, 430, 435]) {
+    const element = document.createElement("div");
+    element.style.transform = `translate(-50%,-50%) translate(${x}px,200px)`;
+    Object.defineProperty(element, "offsetWidth", {
+      get: () => {
+        order.push("read");
+        return 300;
+      },
+    });
+    const style = element.style;
+    let translate = "";
+    Object.defineProperty(style, "translate", {
+      get: () => translate,
+      set: (value: string) => {
+        order.push("write");
+        translate = value;
+      },
+    });
+    layer.append(element);
+  }
+  keepLabelsBesideHudColumns(layer);
+  expect(order).toEqual(["read", "read", "read", "write", "write", "write"]);
+});
+
 it("finds the map's open area between the columns, below their tops and above the order bubbles", () => {
   column(12, 332);
   column(1588, 1908);

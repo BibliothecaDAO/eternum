@@ -1301,6 +1301,13 @@ export class ArmyManager {
     });
   }
 
+  /** A marching army's label follows it each frame, saying what its facts last made it say. */
+  private moveArmyCompactLabel(entityId: ID, position: Vector3): void {
+    const labelPosition = this.tempCompactLabelPosition.copy(position);
+    labelPosition.y += ARMY_PLATE_HEIGHT;
+    this.plates.setPosition(entityId, labelPosition);
+  }
+
   /** The realm an army comes from: the structure that raised it, by the one name the map and event text use. */
   private resolveHomeRealmName(army: ArmyData): string {
     if (!this.store || army.owningStructureId === null || army.owningStructureId === undefined) return "";
@@ -2647,7 +2654,7 @@ export class ArmyManager {
       const instanceData = this.armyModel.getInstanceData(numericEntityId);
 
       if (instanceData?.isMoving) {
-        this.updateArmyCompactLabel(army, instanceData.position);
+        this.moveArmyCompactLabel(army.entityId, instanceData.position);
       }
 
       // Only attachment-bearing armies need the sync, so hoist the membership check here to avoid allocating the
