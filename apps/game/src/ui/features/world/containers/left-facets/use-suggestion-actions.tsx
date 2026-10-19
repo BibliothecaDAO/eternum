@@ -1,24 +1,13 @@
 import { actNowRefusal, canIssueOrders } from "@/utils/can-issue-orders";
-import { useFactView } from "@/hooks/use-fact-view";
-import { playerStructuresView } from "@/sync/fact-views";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { usePopoverStore } from "@/hooks/store/use-popover-store";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
-import { ProductionModal } from "@/ui/features/settlement";
-import {
-  getRealmInfo,
-  Position,
-  structureMapPosition,
-  configManager,
-  resolveUseSimpleCost,
-} from "@bibliothecadao/eternum";
+import { getRealmInfo, configManager, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { useQuery } from "@/hooks/helpers/use-query";
-import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
-import { useCallback, useRef, useState } from "react";
+import { type BuildingType, type ResourcesIds } from "@bibliothecadao/types";
+import { useCallback } from "react";
+import { create } from "zustand";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 import { getPlayerName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -29,19 +18,28 @@ type OrderSuggestion = EmpireSuggestion & { action: Exclude<EmpireSuggestion["ac
 export const isOrderSuggestion = (suggestion: EmpireSuggestion): suggestion is OrderSuggestion =>
   suggestion.action !== "upgrade";
 
+/**
+ * The steps being sent, one set for the game: Next up, the Build order panel and the suggestions panel offer the same
+ * step, and it sends once, whichever of them presses it, until its send ends.
+ */
+const usePendingSuggestions = create<{ ids: readonly string[] }>(() => ({ ids: [] }));
+
+/** Marks a step as sending; false when it already is. */
+const beginPendingSuggestion = (suggestionId: string): boolean => {
+  if (usePendingSuggestions.getState().ids.includes(suggestionId)) return false;
+  usePendingSuggestions.setState(({ ids }) => ({ ids: [...ids, suggestionId] }));
+  return true;
+};
+
+const completePendingSuggestion = (suggestionId: string): void =>
+  usePendingSuggestions.setState(({ ids }) => ({ ids: ids.filter((id) => id !== suggestionId) }));
+
 /** A step's build submits against its realm without changing the current selection. */
 export const useSuggestionActions = () => {
   const { setup } = useGame();
-  const { isMapView } = useQuery();
-  const goToStructure = useGoToStructure(setup);
   const mode = useGameModeConfig();
-  const pendingSuggestionIdsRef = useRef(new Set<string>());
-  const [pendingSuggestionIds, setPendingSuggestionIds] = useState<string[]>([]);
-
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const playerStructures = useFactView(playerStructuresView);
+  const pendingSuggestionIds = usePendingSuggestions((state) => state.ids);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-  const openSurface = usePopoverStore((state) => state.openSurface);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
@@ -77,25 +75,6 @@ export const useSuggestionActions = () => {
     [runAutoBuildSuggestion],
   );
 
-  const beginPendingSuggestion = useCallback((suggestionId: string) => {
-    if (pendingSuggestionIdsRef.current.has(suggestionId)) return false;
-
-    const next = new Set(pendingSuggestionIdsRef.current);
-    next.add(suggestionId);
-    pendingSuggestionIdsRef.current = next;
-    setPendingSuggestionIds(Array.from(next));
-    return true;
-  }, []);
-
-  const completePendingSuggestion = useCallback((suggestionId: string) => {
-    if (!pendingSuggestionIdsRef.current.has(suggestionId)) return;
-
-    const next = new Set(pendingSuggestionIdsRef.current);
-    next.delete(suggestionId);
-    pendingSuggestionIdsRef.current = next;
-    setPendingSuggestionIds(Array.from(next));
-  }, []);
-
   const handleSuggestionClick = useCallback(
     async (suggestion: OrderSuggestion) => {
       if (!beginPendingSuggestion(suggestion.id)) return;
@@ -106,7 +85,7 @@ export const useSuggestionActions = () => {
         completePendingSuggestion(suggestion.id);
       }
     },
-    [beginPendingSuggestion, completePendingSuggestion, runSuggestionClick],
+    [runSuggestionClick],
   );
 
   return { handleSuggestionClick, pendingSuggestionIds };
