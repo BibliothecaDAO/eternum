@@ -56,7 +56,7 @@ export const AccountCard = ({ session }: { session: Session }) => {
           onOpen={() => toggle("name")}
         />
         <SettingRow icon="edit" name={PROFILE_WORDS.portrait} onOpen={() => toggle("portrait")} />
-        <SettingRow icon="discord" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
+        <SettingRow icon="lock" name={PROFILE_WORDS.signInMethods} value={<SignInMethods session={session} />} />
         <SettingRow
           icon="backpack"
           name={WALLET_WORDS.payoutWallet}

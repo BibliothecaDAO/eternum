@@ -43,7 +43,7 @@ const COMPACT_TAB_IMAGES = {
   standings: "victory",
   map: "map",
   log: "news",
-  chat: "discord",
+  chat: "chat",
   details: "explore",
 } as const satisfies Record<string, IconMeaning>;
 
@@ -256,11 +256,12 @@ const TabButton = ({
       aria-controls={active && SHEET_TABS.has(tab.id) ? "compact-hud-sheet" : undefined}
       onClick={() => onToggle(tab.id)}
       className={cn(
-        "relative flex min-h-14 min-w-0 flex-1 items-center justify-center rounded-lg p-2 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
+        "relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg p-1 transition-[background-color,color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:scale-[0.97] active:bg-gold/15",
         active ? "bg-gold/15 text-gold" : "text-gold/75",
       )}
     >
-      <SemanticIcon name={tab.image} alt="" aria-hidden="true" className="h-9 w-9 object-contain" />
+      <SemanticIcon name={tab.image} size={28} />
+      <span className="max-w-full truncate text-hud-label">{tab.label}</span>
       {tab.badge !== undefined && tab.badge > 0 && (
         <span className="absolute right-1/4 top-0">
           <UnreadFeedBadge count={tab.badge} />

@@ -62,3 +62,10 @@ it("draws the Details tab's empty state with the explore painting, not a broken 
     false,
   );
 });
+
+it("names each tab in words under its painting, and paints Chat as chat, not as Discord's logo", () => {
+  const tabs = [...host.querySelectorAll('nav[aria-label="HUD tabs"] button')];
+  expect(tabs.map((button) => button.textContent)).toEqual(["Empire", "Map", "Log", "Chat", "Details"]);
+  expect(tab("Chat").querySelector("img")?.dataset.icon).toBe("chat");
+  expect(host.querySelector('[data-icon="discord"]')).toBeNull();
+});

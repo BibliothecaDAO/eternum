@@ -33,6 +33,9 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     const button = (word: string) =>
       [...document.querySelectorAll("button")].find((candidate) => candidate.textContent === word);
     expect(container.textContent).toContain("Discord · email");
+    // How the player signs in is not a way to Discord: no row of the account wears Discord's logo.
+    expect(container.querySelector('[data-icon="discord"]')).toBeNull();
+    expect(container.querySelector('[data-icon="lock"]')).not.toBeNull();
     await act(async () => button("Sign out")!.click());
     expect(document.body.textContent).toContain("Sign out?");
     // The question opens in the kit's sheet, which docks as a panel on a desktop: never a modal of its own.
