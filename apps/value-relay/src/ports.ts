@@ -189,6 +189,7 @@ export const relayOperation = <A>(operation: string, run: () => Promise<A>): Rel
   });
 
 export const relayServiceErrors = [
+  "ledger_head_behind_anchor",
   "shard_abi_unavailable",
   "frontier_funding_missing",
   "frontier_funding_differs_from_game",

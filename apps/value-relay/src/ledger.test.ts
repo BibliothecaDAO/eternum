@@ -238,7 +238,7 @@ it("fails the read, without a rewind, when the RPC answers a head below the anch
   rpc.events.mockResolvedValue({ events: [] });
   await expect(
     Effect.runPromise(ledgerChestChanges("https://ledger.test", "0x10", 1002, null, { number: 1001, hash: "0xa" })),
-  ).rejects.toThrow();
+  ).rejects.toMatchObject({ operation: "ledger_head_behind_anchor" });
   expect(rpc.events).not.toHaveBeenCalled();
   const caughtUp = await Effect.runPromise(
     ledgerChestChanges("https://ledger.test", "0x10", 1000, null, { number: 1000, hash: "0xa" }),
