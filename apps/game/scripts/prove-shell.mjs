@@ -75,6 +75,8 @@ const END = {
   musicOn: `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") === "true"`,
   signOutAsked: `[...document.querySelectorAll("[data-kit-sheet]")].some((sheet) => sheet.innerText.includes("Sign out?"))`,
   docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.world") && a.target === "_blank")`,
+  // Realms' marketplace, a place of the bar (a phone's tabs) that opens its own site in a new tab.
+  market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://market.realms.world/" && a.target === "_blank")`,
   // A post of the Scroll, or the terms from What's new's footer, read under What's new's place.
   news: `location.pathname.startsWith("/scroll/") && ${placeLit("What's new")}`,
   terms: `location.pathname === "/terms" && ${placeLit("What's new")}`,
@@ -94,6 +96,7 @@ const flows = (layout, persona) => {
     blitzboard: { steps: blitz, end: END.blitzBoard, outage: RATINGS_DOWN },
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
     guide: { steps: [tab("You"), link("How to play")], end: END.docs },
+    market: { steps: [link("Market")], end: END.market },
     news: { steps: [tab("What's new"), press("first")], end: END.news },
     terms: { steps: [tab("What's new"), link("Terms of Service")], end: END.terms },
   };

@@ -40,7 +40,7 @@ const SHEET_PAGES = {
 
 /**
  * The bars at their limits: on the desktop, the longest name an account takes beside Play's install notice, at the
- * desktop's narrowest width and a laptop's; on a phone, the four places at the narrowest phone the app is held to.
+ * desktop's narrowest width and a laptop's; on a phone, the places at the narrowest phone the app is held to.
  */
 const BAR_CASES = [
   { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"], desktop: true, place: "Play" },
@@ -176,8 +176,18 @@ const sheetPageChecks = (page) => (b) => {
       places: document.querySelectorAll('[data-band="bar"] [data-role="tab"]').length,
       // The places lit as the page's own, by their word ("You: Maelis" is You), and any place whose word is cut.
       lit: [...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].map((tab) => (tab.getAttribute("aria-label") ?? tab.innerText).split(":")[0].trim()),
+      // A word cut short, pushed off the screen, or wrapped onto a second line.
       placesCut: [...document.querySelectorAll('[data-role="tab"]')]
-        .filter((tab) => tab.scrollWidth > tab.clientWidth + 1 || tab.getBoundingClientRect().right > innerWidth + 1)
+        .filter((tab) => {
+          const texts = document.createTreeWalker(tab, NodeFilter.SHOW_TEXT);
+          const lines = new Set();
+          while (texts.nextNode()) {
+            const word = document.createRange();
+            word.selectNodeContents(texts.currentNode);
+            for (const rect of word.getClientRects()) if (rect.width > 0) lines.add(Math.round(rect.top));
+          }
+          return tab.scrollWidth > tab.clientWidth + 1 || tab.getBoundingClientRect().right > innerWidth + 1 || lines.size > 1;
+        })
         .map((tab) => tab.innerText.trim()),
       playerRightGap: bar && player ? Math.round(bar.right - player.right) : null,
     };

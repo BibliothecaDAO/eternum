@@ -131,7 +131,7 @@ it.each([
   );
   const lab = await renderLab(`/lab/app/first-visit/${page}`);
   const places = [...lab.querySelectorAll('[data-role="tab"]')];
-  expect(places).toHaveLength(4);
+  expect(places).toHaveLength(5);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
 });

@@ -59,11 +59,22 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
       "Play",
       "Season",
       "What's new",
+      "Market",
       "You",
     ]);
     const current = places.filter((place) => place.getAttribute("aria-current") === "page");
     expect(current.map((place) => [place.textContent, place.getAttribute("href")])).toEqual([
       ["What's new", "/scroll"],
+    ]);
+  });
+
+  it("leads to Realms' marketplace in a new tab from the bar, and only from the bar", async () => {
+    const page = await open(width);
+    const market = [...page.querySelectorAll<HTMLAnchorElement>("a")].filter((link) =>
+      link.href.startsWith("https://market.realms.world"),
+    );
+    expect(market.map((link) => [link.dataset.role, link.textContent, link.href, link.target, link.rel])).toEqual([
+      ["tab", "Market", "https://market.realms.world/", "_blank", "noopener noreferrer"],
     ]);
   });
 

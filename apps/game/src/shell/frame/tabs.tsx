@@ -2,7 +2,6 @@ import { WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -10,7 +9,7 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { AppTopBar } from "@/ui/design-system/kit/app-elements";
+import { AppLink, AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { WHATS_NEW_PATH } from "../news/posts";
 import { Lockup } from "./lockup";
@@ -21,10 +20,14 @@ type Place = { to: string; word: string; icon: IconMeaning; matches: readonly st
 /** You: the player's place, at the end of both bars. */
 const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matches: ["/profile", "/results"] };
 
+/** Realms' marketplace: a site of its own, so it opens in a new tab and is never the current place. */
+const MARKET_TAB: Place = { to: "https://market.realms.world/", word: WORDS.market, icon: "trade", matches: [] };
+
 /**
- * The app's four places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
+ * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
  * now, Season where the player stands, What's new what changed and the Scroll's posts (with the legal pages its footer
- * leads to), You the player, their finished games and everything about the account.
+ * leads to), Market the trading of Realms' items on its own site, You the player, their finished games and everything
+ * about the account.
  */
 const TABS: readonly Place[] = [
   { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },
@@ -35,6 +38,7 @@ const TABS: readonly Place[] = [
     icon: "chronicles",
     matches: [WHATS_NEW_PATH, "/terms", "/privacy", "/credits"],
   },
+  MARKET_TAB,
   YOU_TAB,
 ];
 
@@ -78,7 +82,7 @@ const TabIcon = ({ tab, current, size }: { tab: Place; current: boolean; size: n
   return <SemanticIcon name={Icon} size={size} className={current ? undefined : "brightness-[.8] grayscale-[.6]"} />;
 };
 
-/** The phone's foot: the four places in thumb reach. */
+/** The phone's foot: the places in thumb reach, each as wide as its word and the rest shared, so no word wraps. */
 export const TabBar = () => {
   const active = useActiveTab();
   return (
@@ -89,19 +93,19 @@ export const TabBar = () => {
       {TABS.map((tab) => {
         const current = active === tab.to;
         return (
-          <Link
+          <AppLink
             key={tab.to}
             to={tab.to}
             data-role="tab"
             aria-current={current ? "page" : undefined}
             className={cn(
-              "flex min-h-12 flex-1 flex-col items-center justify-center gap-[3px] font-ui text-sm font-semibold",
+              "flex min-h-12 flex-auto flex-col items-center justify-center gap-[3px] whitespace-nowrap font-ui text-sm font-semibold",
               current ? "text-kit-peach" : "text-kit-muted",
             )}
           >
             <TabIcon tab={tab} current={current} size={28} />
             {tab.word}
-          </Link>
+          </AppLink>
         );
       })}
     </nav>
@@ -109,8 +113,8 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season and What's new with
- * their icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
+ * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season, What's new and Market
+ * with their icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
  * signed in, else You). It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step
  * keeps the lockup and the notice alone.
  */

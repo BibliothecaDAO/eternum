@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type ButtonHTMLAttributes, type ReactNode, useId } from "react";
+import { type AnchorHTMLAttributes, type ButtonHTMLAttributes, type ReactNode, useId } from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
 
 import { BACK } from "./words";
@@ -117,6 +117,10 @@ export const AppField = ({
   );
 };
 
+/** A link from the app: the app's own pages (a path) open in place, another site (its address) in a new tab. */
+export const AppLink = ({ to, ...rest }: { to: string } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href">) =>
+  to.startsWith("/") ? <Link to={to} {...rest} /> : <a href={to} target="_blank" rel="noopener noreferrer" {...rest} />;
+
 /** One place of the app's bar: where it leads, its word, its icon (or the player's portrait), and whether it is here. */
 type AppBarPlace = {
   to: string;
@@ -160,7 +164,7 @@ export const AppTopBar = ({
 );
 
 const AppBarLink = ({ place }: { place: AppBarPlace }) => (
-  <Link
+  <AppLink
     to={place.to}
     data-role="tab"
     aria-current={place.current ? "page" : undefined}
@@ -180,7 +184,7 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) => (
         {place.label}
       </>
     )}
-  </Link>
+  </AppLink>
 );
 
 /** A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised. */

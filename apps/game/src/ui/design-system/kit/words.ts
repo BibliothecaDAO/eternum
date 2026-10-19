@@ -360,6 +360,8 @@ export const WORDS = {
   season: SEASON,
   /** What changed in the game and the Scroll's posts: a place of its own. */
   whatsNew: "What's new",
+  /** Realms' marketplace, a site of its own: the bar's one place outside the app. */
+  market: "Market",
   /** The player's own place: their card, their finished games, Settings. */
   you: "You",
   signIn: SIGN_IN,
@@ -385,7 +387,6 @@ export const FOOTER_WORDS = {
   community: "Community",
   realms: "Realms",
   legal: "Legal",
-  marketplace: "Marketplace",
   terms: "Terms of Service",
   privacy: "Privacy Policy",
   credits: "Credits and licences",

@@ -1,22 +1,18 @@
+import { AppLink } from "@/ui/design-system/kit/app-elements";
 import { FOOTER_WORDS } from "@/ui/design-system/kit/words";
-import { Link } from "react-router-dom";
 
 import { COMMUNITY } from "../community";
 
 type FooterLink = { word: string; to: string };
 
-/** Where realms.world's own sites live: the DAO, the token and trading stay there. */
+/** Where realms.world lives: the DAO and the token stay there; its marketplace is a place in the bar. */
 const REALMS_WORLD = "https://realms.world";
-const MARKETPLACE = "https://market.realms.world";
 
 const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   { title: FOOTER_WORDS.community, links: COMMUNITY.map((place) => ({ word: place.name, to: place.href })) },
   {
     title: FOOTER_WORDS.realms,
-    links: [
-      { word: "realms.world", to: REALMS_WORLD },
-      { word: FOOTER_WORDS.marketplace, to: MARKETPLACE },
-    ],
+    links: [{ word: "realms.world", to: REALMS_WORLD }],
   },
   {
     title: FOOTER_WORDS.legal,
@@ -39,7 +35,13 @@ export const AppFooter = () => (
         <nav key={column.title} aria-label={column.title} className="flex flex-col gap-2">
           <b className="mb-1 font-ui text-sm text-kit-gold">{column.title}</b>
           {column.links.map((link) => (
-            <FooterAnchor key={link.to} link={link} />
+            <AppLink
+              key={link.to}
+              to={link.to}
+              className="flex min-h-8 items-center font-ui text-sm text-kit-cream hover:text-kit-gold2"
+            >
+              {link.word}
+            </AppLink>
           ))}
         </nav>
       ))}
@@ -47,17 +49,3 @@ export const AppFooter = () => (
     <p className="mt-10 border-t border-kit-line py-5 text-sm text-kit-muted">{FOOTER_WORDS.owner}</p>
   </footer>
 );
-
-/** The app's own pages open in place; other sites in a new tab. */
-const FooterAnchor = ({ link }: { link: FooterLink }) => {
-  const className = "flex min-h-8 items-center font-ui text-sm text-kit-cream hover:text-kit-gold2";
-  return link.to.startsWith("/") ? (
-    <Link to={link.to} className={className}>
-      {link.word}
-    </Link>
-  ) : (
-    <a href={link.to} target="_blank" rel="noopener noreferrer" className={className}>
-      {link.word}
-    </a>
-  );
-};
