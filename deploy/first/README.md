@@ -162,9 +162,10 @@ the Resend key. Dev has none and sends no alert email: its Resend quota is share
 The status monitor probes every minute. It emails only when the client (`play`), sign-in (`accounts`), game launches
 (`launch`) or a world (`shard:…`) has been **down**, not slow or behind, for ten minutes in a row; components that cross
 that mark in the same minute share one email. Their recovery is one more. At most four emails go out in any 24 hours,
-because the same Resend account sends sign-in codes; the fourth says when email resumes, and the status page shows
-everything meanwhile (`apps/status-monitor/src/alerts.ts`). What each alert means and the first commands to run:
-[ON-CALL.md](./ON-CALL.md).
+because the same Resend account sends sign-in codes. An email counts from when it is queued until a day after it was
+last handed to Resend, so one delayed by a Resend outage keeps its place; the fourth says the earliest time email can
+resume, and the status page shows everything meanwhile (`apps/status-monitor/src/alerts.ts`). What each alert means and
+the first commands to run: [ON-CALL.md](./ON-CALL.md).
 
 ## Teardown
 
