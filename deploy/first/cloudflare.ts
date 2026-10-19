@@ -6,6 +6,7 @@ import { archivedRevision, deploymentRevision } from "./revision";
 import { environments, root, type Inputs } from "./settings";
 import { deploymentEnvironment, reportFailure } from "./deploy";
 import { PublicError, deploymentStage } from "./errors";
+import { ADMIN_ACCESS, type AdminAccess } from "./admin-access";
 
 /**
  * Where a commit is exported, installed and built: several GB, so on the checkout's own disk. The system temp directory
@@ -13,14 +14,25 @@ import { PublicError, deploymentStage } from "./errors";
  */
 const EXPORTS = join(root, ".context", "deploy-exports");
 
+/**
+ * The private directory of a finished setup: its inputs, and the admin's Access, without which the admin Worker's deploy
+ * fails after the Workers before it are already live. Refused before anything is exported or deployed.
+ */
+export function setUpDirectory(directory: string) {
+  const store = new PrivateStore(directory, root, true);
+  const inputs = store.read<Inputs>("inputs.json");
+  if (!inputs?.cloudflareToken || !inputs.rpc) throw new PublicError("Run setup before publishing Cloudflare");
+  if (!store.read<AdminAccess>(ADMIN_ACCESS)?.audience)
+    throw new PublicError("Admin access is not set up yet; run setup with --apply before publishing Cloudflare");
+  return { store, inputs };
+}
+
 async function publish(environment: string | undefined, directory: string | undefined, revision: string | undefined) {
   const target = deploymentEnvironment(environment);
   deploymentStage("publish Cloudflare");
   if (!directory || !revision || !/^[0-9a-f]{40}$/.test(revision))
     throw new PublicError("A private directory and commit are required");
-  const store = new PrivateStore(directory, root, true);
-  const inputs = store.read<Inputs>("inputs.json");
-  if (!inputs?.cloudflareToken || !inputs.rpc) throw new PublicError("Run setup before publishing Cloudflare");
+  const { store, inputs } = setUpDirectory(directory);
   requireInstalledDependencies();
   const { Platform } = await import("./platform");
   const { deployWorkers, deployClient } = await import("./publish");
@@ -43,6 +55,7 @@ async function main() {
   deploymentStage("publish Cloudflare");
   if (!directory)
     throw new PublicError("Usage: pnpm run deploy:cloudflare <dev|production> /absolute/private-directory");
+  setUpDirectory(directory);
   const commit = await deploymentRevision(target);
   if (archivedRevision()) return publish(target, directory, commit);
   mkdirSync(EXPORTS, { recursive: true });
