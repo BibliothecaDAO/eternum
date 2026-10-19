@@ -7,6 +7,7 @@ import {
   ResourceMiningTypes,
   ResourcesIds,
   StructureType,
+  structureName,
 } from "@bibliothecadao/types";
 import { byStructureCategory } from "@/lib/structure-category-table";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
@@ -69,7 +70,7 @@ export function getBuildingDisplayName(
   }
 
   if (buildingType === BuildingType.ResourceAncientFragment) {
-    return "Fragment Mine";
+    return structureName(StructureType.Mine, 2);
   }
 
   if (buildingType === BuildingType.ResourceLabor) {
