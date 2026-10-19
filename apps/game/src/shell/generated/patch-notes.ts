@@ -73,7 +73,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "transfer",
           "title": "One Transfer window",
-          "line": "Transfer, Arrivals, Automation and Balances share one window. Send goods to several holdings at once, each total split evenly, or right-click a holding of yours on the map to send there. Each shipment goes on its own and says when it lands."
+          "line": "Transfer, Arrivals, Automation and Balances share one window. Send goods to several holdings at once, each total split evenly, or right-click a holding of yours on the map to send there. Each shipment goes on its own and says when it lands; one the game refused stays chosen for Send to try again."
         },
         {
           "kind": "new",
