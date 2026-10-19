@@ -13,9 +13,11 @@ use super::Deployment;
 
 const HIT_ROOT: u256 = 19635;
 const MISS_ROOT: u256 = 1126;
+const EMPTY_ROOT: u256 = 1;
 
-fn explore(d: Deployment, key: ExplorerKey, root: u256, at: u64) -> bool {
-    play(
+fn explore(d: Deployment, key: ExplorerKey, root: u256, at: u64) {
+    let mut spy = snforge_std::spy_events();
+    let applied = play(
         d.games,
         TestAction {
             game_id: key.game_id,
@@ -24,7 +26,11 @@ fn explore(d: Deployment, key: ExplorerKey, root: u256, at: u64) -> bool {
         },
         root,
         at,
-    )
+    );
+    if !applied {
+        let rejected = super::play_fixture::rejection(ref spy, d.games);
+        panic!("Explore refused: {}", rejected.reason);
+    }
 }
 
 fn open(d: Deployment, key: ExplorerKey, coord: Coord, at: u64) -> bool {
@@ -83,7 +89,7 @@ fn explore_reserves_one_common_share_and_open_pays_home_once_without_relics_or_t
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let coord = destination(d, key);
     let before = lords(d, game_id, army.owner);
-    assert!(explore(d, key, HIT_ROOT, 360));
+    explore(d, key, HIT_ROOT, 360);
     assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, army.coord);
     let (chest_key, chest) = found(d, key, coord);
     let relics = IRelicsDispatcher { contract_address: d.games };
@@ -141,11 +147,16 @@ fn the_same_roll_on_known_terrain_or_a_miss_never_places_a_chest() {
         if known {
             map(d).reveal(tile_key(game_id, coord), 2);
         }
-        assert!(explore(d, key, if known {
+        explore(d, key, if known {
             HIT_ROOT
         } else {
-            MISS_ROOT
-        }, 360));
+            EMPTY_ROOT
+        }, 360);
+        let terrain = map(d).tile(tile_key(game_id, coord)).unwrap().data;
+        assert!(terrain / crate::map::BIOME_SCALE % crate::map::BYTE_RANGE != 0);
+        if known {
+            assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, coord);
+        }
         let occupied = map(d).occupancy(tile_key(game_id, coord));
         if let Some(occupied) = occupied {
             assert!(occupied.category != crate::taxonomy::CHEST_OCCUPIER);
@@ -186,7 +197,7 @@ fn no_pool_or_a_fully_reserved_pool_does_not_create_an_unfunded_chest() {
             0
         };
         let coord = destination(d, key);
-        assert!(explore(d, key, HIT_ROOT, 360));
+        explore(d, key, HIT_ROOT, 360);
         if let Some(occupied) = map(d).occupancy(tile_key(game_id, coord)) {
             assert!(occupied.category != crate::taxonomy::CHEST_OCCUPIER);
         }
@@ -211,7 +222,7 @@ fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_t
             crate::state::write().map_rules.empty_reveals.write((game_id, 1, day), Some(7));
         },
     );
-    assert!(explore(d, key, HIT_ROOT, 360));
+    explore(d, key, HIT_ROOT, 360);
     let (_, chest) = found(d, key, coord);
     assert_eq!(chest.amount, 7);
     let common = snforge_std::interact_with_state(
@@ -237,7 +248,7 @@ fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_t
 fn a_nonadjacent_army_cannot_consume_the_reservation_and_rollover_cannot_pay_an_old_hold() {
     let (d, game_id, key) = super::registrar::setup_frontier_chests();
     let coord = destination(d, key);
-    assert!(explore(d, key, HIT_ROOT, 360));
+    explore(d, key, HIT_ROOT, 360);
     let (chest_key, chest) = found(d, key, coord);
     let (other, _) = super::deploy_player(2, super::GUARDIAN);
     assert!(
