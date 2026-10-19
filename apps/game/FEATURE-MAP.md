@@ -598,14 +598,17 @@ receipt over native fixture facts.
 ## Frontier beast guards
 
 Standing Frontier sites share their beast identity between the map model, hover plate and selected-site card. Ruins keep
-their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Beasts show Wolf for the lowly
-encounter and Goblin for the stronger encounter. Both draw a Knight T1 count from their depth's preset ranges. The
-initial count preserves their identity after losses. Cleared sites do not show beasts.
+their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Beasts show Minotaur for the
+lowly encounter and Cyclops for the stronger encounter. Both draw a Knight T1 count from their depth's preset ranges.
+The initial count preserves their identity after losses. Cleared sites do not show beasts.
 
-`/lab/models?family=beasts` compares the three new species studies with shipped beasts. **Set** switches to
-standing-site compositions or Beasts; **View**, **Turn** and **Light** inspect them. The footer compares the old and new
-plates at HUD size. Pick a **Site** and, for Beasts, **Beast strength**, then **Select site** to inspect its production
-card. `pnpm --dir apps/game prove:beasts https://127.0.0.1:4218 <evidence-parent>` drives these controls, records the
-rendered parts and icon sizes, captures each result and releases the page. `verify:beasts` checks delivered geometry,
-materials, footprint and source provenance. `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports the
-saved Blender sources without modifying production.
+`/lab/models?family=beasts` shows the five production beasts, including the approved Troll and Cyclops. Wyvern, Hydra
+and Minotaur creature studies have separate comparisons. **Set → Ruin depths** (`group=ruins`) shows all four production
+ruin compositions at their exact runtime scales; **Set** also switches to standing-site compositions or roaming beasts;
+**View**, **Turn** and **Light** inspect them. The footer compares the old and new plates at HUD size. Pick a **Site**
+and, for Beasts, **Beast strength**, then **Select site** to inspect its production card.
+`pnpm --dir apps/game prove:beasts https://127.0.0.1:4218 <evidence-parent>` drives these controls, records the rendered
+parts and icon sizes, captures each result and releases the page. `verify:beasts` checks delivered geometry, materials,
+footprint and source provenance. `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports the saved
+Blender sources without modifying production. `verify:fallen-realm` reads the runtime depth table, checks decoded
+beast/ruin triangles for zero masonry contacts and checks both roaming beasts against the tile footprint.

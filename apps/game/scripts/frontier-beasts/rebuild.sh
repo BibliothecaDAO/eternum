@@ -9,6 +9,7 @@ cd "$root"
 names="troll wyvern hydra minotaur cyclops"
 variant=${2:-refined}
 case "$variant" in refined|creatures) ;; *) echo 'Choose refined or creatures'; exit 1;; esac
+if [[ "$variant" = creatures ]]; then names="wyvern hydra minotaur"; fi
 source_directory="$variant/"
 for name in $names; do
   blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier-beasts/export-beast.py -- \

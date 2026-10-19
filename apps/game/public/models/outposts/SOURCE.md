@@ -10,7 +10,7 @@ The approved camp, Canvas & Thatch village, beasts, shrine, well and ruin use pa
 | beasts.glb   | beasts.blend                |     2,963 |          5 |  93,592 |
 | shrine.glb   | shrine.blend                |     1,816 |          3 |  73,524 |
 | well.glb     | well.blend                  |     5,068 |          3 | 103,684 |
-| ruin.glb     | ruin.blend                  |      3752 |          3 |  101536 |
+| ruin.glb     | ruin.blend                  |      3228 |          3 |   97152 |
 
 These are decoded asset counts, not frame measurements. The village has a 480² painted color atlas, 240² tangent normal
 atlas and vertex contact shading. The other outposts use 480² contact shading and 128² normal detail. ETC1S color, UASTC
@@ -41,6 +41,12 @@ Set `OUTPOST_BLENDER` to Blender 5.2.1's executable if it is not on PATH. The as
 verifies bounds/codecs/budgets and rejects a merged-away ownership surface. Runtime lab and live-game paths are in
 [FEATURE-MAP.md](../../../FEATURE-MAP.md).
 
-`ruin.glb` uses packed `ruin.blend`: 3752 triangles, three primitives, 101536 bytes. Violet fissures are recessed in its
-walls; low rubble occupies the court. The runtime beast placement and depth table are unchanged. Run
+`ruin.glb` uses packed `ruin.blend`: 3228 triangles, three primitives, 97152 bytes. Violet fissures are recessed in its
+walls; the court is clear of loose rubble. The runtime beast placement and depth table are unchanged. Run
 `pnpm --dir apps/game verify:fallen-realm` for the four exact-scale collision gates.
+
+The beast courtyard refinement removes the loose central stones and widens the surviving wall plan by 18%, bounded
+inside a 0.85 hex apothem. Beast scales and wall heights are unchanged. `scripts/outposts/widen-ruin-courtyard.py`
+applies that source edit from the prior packed ruin to a separate output source; normal delivery rebuilds read the
+committed `ruin.blend` through the existing exporter. The read-only `verify:fallen-realm` gate checks decoded
+deliveries.

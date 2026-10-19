@@ -1,6 +1,7 @@
 """Author the five lab sculpts from anatomical section cages, then paint the unified surfaces."""
 
 import math
+import runpy
 import sys
 from pathlib import Path
 
@@ -924,9 +925,16 @@ class Sculpt:
 
 if __name__ == "__main__":
     species = sys.argv[sys.argv.index("--") + 1]
-    sculpt = Sculpt(species)
-    if sculpt.reptile:
-        sculpt.reptile_body()
+    if species in {"troll", "cyclops"}:
+        creature_type = runpy.run_path(
+            str(Path(__file__).with_name("sculpt-creatures.py"))
+        )["Creature"]
+        sculpt = creature_type(species)
+        getattr(sculpt, species)()
     else:
-        sculpt.biped()
+        sculpt = Sculpt(species)
+        if sculpt.reptile:
+            sculpt.reptile_body()
+        else:
+            sculpt.biped()
     sculpt.finish()

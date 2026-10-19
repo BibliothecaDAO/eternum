@@ -2,8 +2,8 @@
 
 The five production beasts come from the packed Blender sources in `apps/game/asset-sources/frontier-beasts/refined/`.
 Each source retains its sculpt and painted textures. The matching `*-paint.png` files and prompts live beside the
-sources. `apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these refined sculpts; the packed `.blend` files
-are the inputs to delivery rebuilds.
+sources. `apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these production sculpts, dispatching the approved
+Troll and Cyclops to `sculpt-creatures.py`; the packed `.blend` files are the inputs to delivery rebuilds.
 
 | Species  | Editable source under `refined/` | Production delivery under `public/models/frontier/` |
 | -------- | -------------------------------- | --------------------------------------------------- |
@@ -41,8 +41,11 @@ ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textu
 standing depth beasts are Troll, Wyvern and the three-headed Hydra; the two roaming encounters use Minotaur and Cyclops.
 Species art does not define combat tiers. Both the model and player-facing identity use that shared resolver.
 
+Troll and Cyclops use the owner-approved creature sculpts. The Wyvern, Hydra and Minotaur creature variants remain lab
+studies; `rebuild.sh <fresh-absolute-directory> creatures` rebuilds those three separately.
+
 The ruin, shrines and wells belong to the [outpost family](../outposts/SOURCE.md). The ruin delivery is
 `/models/outposts/ruin.glb`; the beast is a separate model. `pnpm --dir apps/game verify:fallen-realm` is a read-only
-geometry check of the delivered ruin and depth beasts. It reports tile fit and masonry intersections at the specified
-runtime scales; its result must be rerun after model changes. A passing beast footprint/source check alone does not
-establish ruin clearance.
+geometry check of the delivered ruin and depth beasts. It reads the shared runtime depth table and checks all four ruin
+placements, plus both roaming beasts without a structure. It reports tile fit and masonry intersections; rerun it after
+model changes. A passing beast footprint/source check alone does not establish ruin clearance.

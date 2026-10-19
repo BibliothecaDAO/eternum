@@ -523,12 +523,13 @@ class Creature(Sculpt):
         bpy.context.scene["sculptTriangles"] = sum(
             len(p.vertices) - 2 for p in obj.data.polygons
         )
-        painting = DESTINATION / f"{self.species}-paint.png"
+        destination = SOURCE / ("refined" if self.species in {"troll", "cyclops"} else "creatures")
+        painting = destination / f"{self.species}-paint.png"
         if painting.exists():
             apply_paint(obj, painting)
         bpy.context.preferences.filepaths.save_version = 0
         bpy.ops.wm.save_as_mainfile(
-            filepath=str(DESTINATION / f"{self.species}.blend"), compress=True
+            filepath=str(destination / f"{self.species}.blend"), compress=True
         )
 
 

@@ -4,21 +4,18 @@ import draco from "draco3dgltf";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const assetId = process.argv[2];
-if (!/^beast-(troll|wyvern|hydra)$/.test(assetId ?? "")) {
-  throw new Error("Provide beast-troll, beast-wyvern or beast-hydra");
-}
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
   "draco3d.decoder": await draco.createDecoderModule(),
 });
-const ruinPath = process.argv[3] ?? fileURLToPath(new URL("../../public/models/outposts/ruin.glb", import.meta.url));
-const scale = process.argv[4] === undefined ? undefined : Number(process.argv[4]);
-if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0)) throw new Error("Scale must be positive");
-const ruin = await readGeometry("fallen-realm-ruin", ruinPath);
-const beast = await readGeometry(assetId);
-const measurement = measurePlacement({ assetId, ruin, beast, scale });
-console.log(JSON.stringify(measurement));
-if (measurement.passed === false) process.exitCode = 1;
+
+/** Read delivered triangles without changing either model. Roaming beasts have no ruin. */
+export async function measureBeastPlacement(species, scale, ruinPath) {
+  if (!Number.isFinite(scale) || scale <= 0) throw new Error("Scale must be positive");
+  const assetId = `beast-${species}`;
+  const ruin = ruinPath ? await readGeometry("ruin", ruinPath) : { vertices: [], triangles: [] };
+  const beast = await readGeometry(assetId);
+  return measurePlacement({ assetId, ruin, beast, scale });
+}
 
 async function readGeometry(name, override) {
   const path = override ?? fileURLToPath(new URL(`../../public/models/frontier/${name}.glb`, import.meta.url));

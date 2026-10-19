@@ -7,6 +7,7 @@ import {
   frontierBeast,
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
+  FALLEN_REALM_DEPTHS,
   type BeastBand,
 } from "@/three/structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
@@ -31,8 +32,9 @@ const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale })
   label: name,
   parts: [{ path: FRONTIER_BEASTS[beast].path, scale }],
 }));
+const STUDY_BEASTS = MODEL_BEASTS.filter(({ beast }) => beast !== "troll" && beast !== "cyclops");
 const SPECIES_MODELS = Object.fromEntries(
-  MODEL_BEASTS.map(({ beast, name, scale }) => [
+  STUDY_BEASTS.map(({ beast, name, scale }) => [
     `species-${beast}`,
     [
       { label: `${name} · current`, parts: [{ path: FRONTIER_BEASTS[beast].path, scale }] },
@@ -40,7 +42,7 @@ const SPECIES_MODELS = Object.fromEntries(
     ] satisfies readonly LineupAsset[],
   ]),
 );
-const CREATURE_MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale }) => ({
+const CREATURE_MODELS: readonly LineupAsset[] = STUDY_BEASTS.map(({ beast, name, scale }) => ({
   label: name,
   parts: [{ path: `/models/frontier/creatures/beast-${beast}.glb`, scale }],
 }));
@@ -71,6 +73,13 @@ const LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
   creatures: CREATURE_MODELS,
   sites: SITE_MODELS,
   beasts: BEAST_MODELS,
+  ruins: FALLEN_REALM_DEPTHS.map(({ beast, scale }, depth) => ({
+    label: `${BEAST_NAMES[beast]} · depth ${depth}`,
+    parts: [
+      { path: FALLEN_REALM_RUIN_PATH, scale: 1 },
+      { path: FRONTIER_BEASTS[beast].path, scale },
+    ],
+  })),
   ...SPECIES_MODELS,
 };
 
@@ -159,12 +168,13 @@ export function FrontierBeastLab() {
           Set{" "}
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
             <option value="models">Five production species</option>
-            <option value="creatures">Five creature studies</option>
-            {MODEL_BEASTS.map(({ beast, name }) => (
+            <option value="creatures">Creature studies</option>
+            {STUDY_BEASTS.map(({ beast, name }) => (
               <option key={beast} value={`species-${beast}`}>
                 {name} · comparison
               </option>
             ))}
+            <option value="ruins">Ruin depths</option>
             <option value="sites">Standing sites</option>
             <option value="beasts">Roaming beasts</option>
           </select>

@@ -33,7 +33,7 @@ verifier checks decoded Draco positions with a 0.001 tolerance. Production trans
 | beasts.blend                | beasts.glb   |      2963 |          5 |  93592 |
 | shrine.blend                | shrine.glb   |      1816 |          3 |  73524 |
 | well.blend                  | well.glb     |      5068 |          3 | 103684 |
-| ruin.blend                  | ruin.glb     |      3752 |          3 | 101536 |
+| ruin.blend                  | ruin.glb     |      3228 |          3 |  97152 |
 
 These are exact delivered asset counts, not frame measurements. The small-landmark ceiling is 6296 triangles, five
 primitives and 257144 bytes, based on the existing well/ruin family.
@@ -64,9 +64,9 @@ triangles, primitives, payload and separate ownership cloth.
 The runtime lab's visible placement and ownership controls provide the model proof described in
 [FEATURE-MAP.md](../../FEATURE-MAP.md). The lab is part of the client; no separate comparison viewer is required.
 
-The ruin has broken paving and low central rubble. Jagged cracks open through the masonry, with violet cores recessed
-inside the walls. The exposed rafter faces outward. Beast meshes, their shared origin and the four runtime scales remain
-unchanged; `pnpm --dir apps/game verify:fallen-realm` verifies zero triangle contacts at each scale.
+The ruin has an open court and widened perimeter masonry. Jagged cracks open through the masonry, with violet cores
+recessed inside the walls. The exposed rafter faces outward. Beast meshes, their shared origin and the four runtime
+scales remain unchanged; `pnpm --dir apps/game verify:fallen-realm` verifies zero triangle contacts at each scale.
 
 ## Canvas & Thatch village
 
@@ -99,3 +99,9 @@ Normal exports read the packed source. To intentionally rebuild the source from 
 with `--background --python apps/game/scripts/outposts/author-village.py` from the repository root, then use the export
 wrapper above. This replaces later manual source edits. The former village B source and builder path are removed;
 earlier village studies remain in review evidence and repository history.
+
+The beast courtyard refinement removes the loose central stones and widens the surviving wall plan by 18%, bounded
+inside a 0.85 hex apothem. Beast scales and wall heights are unchanged. `scripts/outposts/widen-ruin-courtyard.py`
+applies that source edit from the prior packed ruin to a separate output source; normal delivery rebuilds read the
+committed `ruin.blend` through the existing exporter. The read-only `verify:fallen-realm` gate checks decoded
+deliveries.

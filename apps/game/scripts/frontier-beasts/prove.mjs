@@ -6,7 +6,7 @@ import { runProof, waitFor } from "../prove-run.mjs";
 export async function proveBeasts(b, out, records, baseUrl, only) {
   await b.run("set", "viewport", "1600", "1000");
   for (const scenario of [
-    ...["troll", "wyvern", "hydra", "minotaur", "cyclops"].flatMap((beast) => [
+    ...["wyvern", "hydra", "minotaur"].flatMap((beast) => [
       { name: `${beast}-gameplay`, group: `species-${beast}`, focus: "lineup", models: 2, species: beast },
       { name: `${beast}-sculpt`, group: `species-${beast}`, focus: "1", models: 2, species: beast },
       {
@@ -19,8 +19,18 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         lighting: "sunset",
       },
     ]),
-    { name: "creatures-gameplay", group: "creatures", focus: "lineup", models: 5, species: "troll" },
+    { name: "creatures-gameplay", group: "creatures", focus: "lineup", models: 3, species: "troll" },
     { name: "models-gameplay", group: "models", focus: "lineup", models: 5, species: "troll" },
+    { name: "ruins-gameplay", group: "ruins", focus: "lineup", models: 8, species: "troll" },
+    ...[0, 1, 2, 3].map((depth) => ({
+      name: `ruin-depth-${depth}`,
+      group: "ruins",
+      focus: String(depth),
+      models: 8,
+      species: ["troll", "wyvern", "hydra", "hydra"][depth],
+      depth: String(depth),
+    })),
+    { name: "approved-troll", group: "models", focus: "0", models: 5, species: "troll" },
     { name: "standing-sites", group: "sites", focus: "lineup", models: 7, species: "troll" },
     {
       name: "lowly-beast",
@@ -99,7 +109,8 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
           aboveCanvas: Number(getComputedStyle(label).zIndex) > Number(getComputedStyle(canvas).zIndex),
         }));
       })()`);
-      const expectedLabels = focus === "lineup" ? (scenario.group === "sites" ? 4 : scenario.models) : 1;
+      const expectedLabels =
+        focus === "lineup" ? (["sites", "ruins"].includes(scenario.group) ? 4 : scenario.models) : 1;
       record.checks.push({
         check: "names are visible above the model canvas",
         ok: labels.length === expectedLabels && labels.every((label) => label.width > 0 && label.aboveCanvas),
