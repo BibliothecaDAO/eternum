@@ -426,6 +426,10 @@ export const CHAT_WORDS = {
   chat: "Chat",
   message: "Message",
   signInToRead: "Sign in to read the lobby's chat.",
+  /** A lobby's chat with no message yet. */
+  empty: "Nobody has written yet.",
+  /** Under the chat of a reader the room does not let write. */
+  registeredWrite: "Players registered in this Blitz write here.",
   rateLimited: "A few messages a second at most. Wait a moment.",
   refused: "That message was not sent.",
 } as const;
@@ -461,8 +465,10 @@ export const SEASON_WORDS = {
   vp: "points",
   /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
-  /** Frontier's board before any realm is on it. */
-  boardEmpty: "No realm on the board yet.",
+  /** Frontier's board before any realm is on it, and how to get on it. */
+  boardEmpty: "No realm on the board yet. Found one from Play.",
+  /** A player with no realm on Frontier's board this season. */
+  notOnBoard: "Not on Frontier's board yet",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */
@@ -472,7 +478,7 @@ export const RATING_WORDS = {
   /** A Realms account with no linked wallet carries no rating (not 0, not 1000). */
   unlinked: "Link a wallet in Settings to carry a rating.",
   /** Blitz's board before anyone has a rating. */
-  noneRated: "No one has a rating yet.",
+  noneRated: "No one has a rating yet. A paid Blitz gives one.",
 } as const;
 
 /** You and Settings: their rows and groups, Settings' sheets and confirms. */

@@ -85,7 +85,6 @@ const AppButtonFace = ({
     data-kind={kind}
     data-size={size}
     data-tone={tone}
-    data-key={step && busy === undefined ? "Enter" : undefined}
   >
     {icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />}
     <span>{busy ?? children}</span>
@@ -249,20 +248,17 @@ export const AppPanel = ({
 );
 
 /**
- * An age as a tall column on its painting: its numeral and its name over what it holds (Play's games of that age), in
- * the age's accent, the painting showing above.
+ * An age as a tall column on its painting: its name over what it holds (Play's games of that age), in the age's
+ * accent, the painting showing above.
  */
 export const AppAgeColumn = ({
   age,
   painting,
-  numeral,
   name,
   children,
 }: {
   age: Age;
   painting: Painting;
-  /** "Age II". */
-  numeral: string;
   name: string;
   children: ReactNode;
 }) => (
@@ -274,7 +270,6 @@ export const AppAgeColumn = ({
       sizes="(min-width: 1024px) 25vw, 100vw"
     />
     <div className="app-age-column__body">
-      <span className="app-age-column__numeral">{numeral}</span>
       <h2 className="app-age-column__name">{name}</h2>
       {children}
     </div>
@@ -288,7 +283,6 @@ export const AppAgeColumn = ({
 export const AppGameCard = ({
   age,
   painting,
-  eyebrow,
   title,
   facts,
   verb,
@@ -297,7 +291,6 @@ export const AppGameCard = ({
 }: {
   age: Age;
   painting: Painting;
-  eyebrow?: ReactNode;
   title: ReactNode;
   facts?: ReactNode;
   verb?: ReactNode;
@@ -308,7 +301,6 @@ export const AppGameCard = ({
   <article className={cn("app-game-card", className)} data-age={age} data-size={size}>
     <img className="app-game-card__painting" alt="" {...paintingSources(painting)} sizes="50vw" />
     <div className="app-game-card__body">
-      {eyebrow && <span className="app-game-card__eyebrow">{eyebrow}</span>}
       <h3 className="app-game-card__title">{title}</h3>
       {facts && <div className="app-game-card__facts">{facts}</div>}
       {verb && <div className="app-game-card__verb">{verb}</div>}
@@ -532,7 +524,7 @@ export const AppPortrait = ({
 export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: To; aside?: ReactNode }) => (
   <header className="app-page-head">
     {back !== undefined && (
-      <Link to={back} data-role="back" data-key="Esc" aria-label={BACK} className="app-page-head__back">
+      <Link to={back} data-role="back" aria-label={BACK} className="app-page-head__back">
         <Icon name="arrow-left" size={22} />
         {BACK}
       </Link>

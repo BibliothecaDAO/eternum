@@ -139,3 +139,23 @@ it("asks a signed-out reader to sign in, and opens no room", async () => {
   expect(chat.text()).toContain("Sign in to read the lobby's chat.");
   expect(FakeRoom.last).toBeNull();
 });
+
+it("says an empty room is empty, and tells a reader who may not write who writes there", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ messages: [] })),
+  );
+  const chat = await mount();
+  await act(async () =>
+    FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:0x52:blitz-1630", canWrite: false }),
+  );
+  expect(chat.lines()).toEqual([]);
+  expect(chat.text()).toContain("Nobody has written yet.");
+  expect(chat.text()).toContain("Players registered in this Blitz write here.");
+  expect(chat.field()).toBeNull();
+  await act(async () =>
+    FakeRoom.last!.deliver({ type: "joined:zone", zoneId: "slot:0x52:blitz-1630", canWrite: true }),
+  );
+  expect(chat.text()).not.toContain("Players registered in this Blitz write here.");
+  expect(chat.field()).not.toBeNull();
+});

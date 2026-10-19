@@ -162,7 +162,6 @@ export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { class
         painting={age.painting}
         size="lead"
         className="h-full"
-        eyebrow={`${WORDS.age} ${age.numeral}`}
         title={titleOf(item)}
         facts={<ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />}
         verb={<ItemVerbButton item={item} signedIn={signedIn} lead />}

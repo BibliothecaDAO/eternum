@@ -73,13 +73,14 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 
 On a desktop, every page stands on its painting (the age or mode it shows, else the app's landscape) under the app
 sheet's bar: the lockup, Play and Season with their icons, the page's notice, and the player (name and portrait, or You)
-at its right end. `Esc` goes back, its key shown beside Back (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`,
-`shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A
-full-screen step (sign-in, a lobby) keeps the bar with the lockup alone. Every page's content starts at the top, under
-the bar; a painting is its ground, never space above it. `Enter` presses the page's step button (the one marked as its
-step) when it is enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are
-a tab bar at the foot. The app's notice (offline, an update ready, or Install, which only Play offers) sits in the
-desktop's top bar before You, and on a phone just above the foot.
+at its right end. `Esc` goes back and `Enter` takes the page's step, neither key printed on its button
+(`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and
+`AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A full-screen step (sign-in, a lobby) keeps the bar with the
+lockup alone. Every page's content starts at the top, under the bar; a painting is its ground, never space above it.
+`Enter` presses the page's step button (the one marked as its step) when it is enabled, nothing has focus that answers
+Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an
+update ready, or Install, which only Play offers) sits in the desktop's top bar before You, and on a phone just above
+the foot.
 
 | Feature                                                                                                                                                                                                 | Route                                      | How to reach it                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

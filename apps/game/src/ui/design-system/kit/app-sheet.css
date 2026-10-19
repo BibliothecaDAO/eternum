@@ -74,30 +74,6 @@
   opacity: 0.8;
   cursor: progress;
 }
-/* ── Key: the key that presses a control on a desktop (`data-key`), drawn after its word and never read as part of
-   it; a phone has none. ── */
-[data-key]::after {
-  content: attr(data-key) / "";
-  margin-left: theme(spacing.1);
-  border: 1px solid var(--app-line-strong);
-  border-bottom-width: 2px;
-  border-radius: var(--app-radius-chip);
-  padding: 0 theme(spacing[1.5]);
-  font-family: var(--app-face-label);
-  font-size: var(--app-text-label);
-  line-height: var(--app-line-label);
-  font-weight: var(--app-weight-label);
-  color: var(--app-muted);
-}
-.app-button[data-kind="primary"][data-key]::after {
-  border-color: rgb(0 0 0 / 0.3);
-  color: var(--app-dark);
-}
-@media (max-width: 1023px) {
-  [data-key]::after {
-    content: none;
-  }
-}
 
 /* ── Field: label, value, a helping or failing line. ── */
 .app-field {
@@ -408,6 +384,15 @@
   border-radius: var(--app-radius-panel);
   box-shadow: var(--app-shadow-panel);
 }
+/* A phone stacks the columns: each keeps a band of its painting, short, so its games come up into the first screen. */
+@media (max-width: 1023px) {
+  .app-age-column {
+    min-height: 0;
+  }
+  .app-age-column__body {
+    padding-top: theme(spacing.16);
+  }
+}
 .app-age-column__painting {
   position: absolute;
   inset: 0;
@@ -423,12 +408,6 @@
   margin-top: auto;
   background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
   padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
-}
-.app-age-column__numeral {
-  font-family: var(--app-face-label);
-  font-size: var(--app-text-label);
-  font-weight: var(--app-weight-label);
-  color: rgb(var(--app-age));
 }
 .app-age-column__name {
   font-family: var(--app-face-title);
@@ -488,12 +467,6 @@
   justify-content: flex-end;
   gap: theme(spacing.2);
   padding: theme(spacing.6);
-}
-.app-game-card__eyebrow {
-  font-family: var(--app-face-label);
-  font-size: var(--app-text-label);
-  font-weight: var(--app-weight-label);
-  color: rgb(var(--app-age));
 }
 .app-game-card__title {
   font-family: var(--app-face-title);

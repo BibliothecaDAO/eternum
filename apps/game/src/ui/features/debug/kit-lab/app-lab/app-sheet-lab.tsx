@@ -474,7 +474,6 @@ const GameCardSection = () => (
           age="frontier"
           painting="frontier-mist"
           size="lead"
-          eyebrow="Age II · Now"
           title="Frontier"
           facts={
             <>
@@ -491,7 +490,6 @@ const GameCardSection = () => (
         <AppGameCard
           age="blitz"
           painting="blitz-spires"
-          eyebrow="Age I"
           title="Blitz 16:30"
           facts={<AppChip tone="warn">Entry closes in 2h 4m</AppChip>}
           verb={
@@ -503,7 +501,6 @@ const GameCardSection = () => (
         <AppGameCard
           age="eternum"
           painting="eternum-restoration"
-          eyebrow="Age III"
           title="Eternum"
           facts={<AppChip>Opens in 6 days</AppChip>}
         />

@@ -19,6 +19,8 @@ const SETTLE_MS = 2_000;
 /** The pages on the app sheet, each over the fixture state it is checked in. */
 const SHEET_PAGES = {
   play: "home",
+  // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
+  "play-seated": "blitz-seat",
   lobby: "entry-choose/blitz/slot-blitz-1630",
   // A launched game's lobby: its roster, the player's own seat ringed, and Enter.
   "lobby-game": "blitz-seat/blitz/game-0x5245414c4d53-7",
@@ -148,6 +150,16 @@ const sheetPageChecks = (desktop) => (b) => {
         .filter((image) => !(image.complete && image.naturalWidth > 0))
         .map((image) => image.currentSrc || image.src),
       goldVerbs: document.querySelectorAll('.app-button[data-kind="primary"], .frontier-primary').length,
+      // A phone's first screen ends where its notice or foot row begins: a control straddling that edge is half hidden.
+      cutAtEdge: (() => {
+        const bands = ["notice", "foot", "tabs"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
+        if (!body || bands.length === 0) return [];
+        const edge = Math.min(...bands.map((band) => band.getBoundingClientRect().top));
+        return [...body.querySelectorAll("a[href], button")]
+          .map((control) => ({ word: control.innerText.trim().slice(0, 30), rect: control.getBoundingClientRect() }))
+          .filter(({ rect }) => rect.height > 0 && rect.top < edge - 1 && rect.bottom > edge + 1)
+          .map(({ word, rect }) => word + " " + Math.round(rect.top) + "→" + Math.round(rect.bottom) + " at " + Math.round(edge));
+      })(),
       places: document.querySelectorAll('[data-band="bar"] [data-role="tab"]').length,
       playerRightGap: bar && player ? Math.round(bar.right - player.right) : null,
     };
@@ -156,6 +168,7 @@ const sheetPageChecks = (desktop) => (b) => {
     { check: "nothing spills out of its block", ok: measure.spill <= 1, measure },
     { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
+    ...(desktop ? [] : [{ check: "no control cut by the phone's notice or foot", ok: measure.cutAtEdge.length === 0 }]),
     ...(desktop
       ? [
           ...barChecks(b),

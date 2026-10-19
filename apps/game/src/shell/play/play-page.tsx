@@ -92,7 +92,7 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-/** One age's column: its painting, its numeral and name, then its games in its well. */
+/** One age's column: its painting and its name, then its games in its well. */
 const AgeColumn = ({
   mode,
   facts,
@@ -104,7 +104,7 @@ const AgeColumn = ({
 }) => {
   const age = ageOf(mode);
   return (
-    <AppAgeColumn age={mode} painting={age.painting} numeral={`${WORDS.age} ${age.numeral}`} name={age.name}>
+    <AppAgeColumn age={mode} painting={age.painting} name={age.name}>
       <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
     </AppAgeColumn>
   );

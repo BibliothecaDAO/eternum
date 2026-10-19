@@ -72,12 +72,14 @@ export const BlitzLobbyPage = () => {
       title={lobbyTitle(row)}
       aside={chips}
       tabs={false}
-      foot={desktop ? undefined : action}
+      // A phone's foot row holds a game's one button; a slot's entry is a whole panel, so it stands in the page.
+      foot={!desktop && row.kind === "game" ? action : undefined}
       painting={BLITZ.painting}
     >
       {/* The Ledger's three columns from 1280px; narrower, who is in and the entry share the width, the chat under them. */}
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 xl:grid-cols-12">
         {!desktop && chips}
+        {!desktop && row.kind === "slot" && action}
         <AppPanel title={BLITZ_WORDS.whoIsIn} icon="people" className="xl:col-span-5">
           {row.kind === "slot" ? (
             <RegisteredCount slot={row.slot} closed={isClosedSlot(row, facts.now)} />

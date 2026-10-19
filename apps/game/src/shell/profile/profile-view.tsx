@@ -15,7 +15,6 @@ import { Panel } from "@/ui/design-system/kit/panel";
 import { Title } from "@/ui/design-system/kit/title";
 import { Figure } from "@/ui/design-system/kit/figure";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { AgeLabel } from "../play/age-label";
 import { ageOf } from "../play/ages";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
@@ -80,13 +79,15 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
       <Title level="plate" as="h2" className="max-w-full px-4 leading-none">
         <PlayerName account={account} />
       </Title>
-      <p className="flex items-center gap-2 text-sm text-kit-muted">
-        {standing && <OrderEmblem order={standing.order} size={20} />}
-        <b className="font-body text-kit-gold">{standing ? `#${standing.rank}` : "—"}</b>
-        {SEASON_WORDS.of} {formatAmount(field)} ·
-        <AgeLabel numeral={frontier.numeral} />
-        <span className="text-kit-cream">{frontier.name}</span>
-      </p>
+      {standing ? (
+        <p className="flex items-center gap-2 text-sm text-kit-muted">
+          <OrderEmblem order={standing.order} size={20} />
+          <b className="font-body text-kit-gold">{`#${standing.rank}`}</b>
+          {SEASON_WORDS.of} {formatAmount(field)} ·<span className="text-kit-cream">{frontier.name}</span>
+        </p>
+      ) : (
+        <p className="text-sm text-kit-muted">{SEASON_WORDS.notOnBoard}</p>
+      )}
       {own && <OwnRatingLine />}
     </section>
   );
@@ -118,23 +119,25 @@ const ProfileBanner = ({ account, own }: { account: string; own: boolean }) => {
   );
 };
 
-/** The one figure: the season rank of the field, with the age it was earned in. */
+/** The one figure: the season rank of the field on Frontier's board, or that the player is not on it yet. */
 const SeasonFigure = ({ account }: { account: string }) => {
   const { own, field } = useSeasonStanding(account);
-  const frontier = ageOf("frontier");
   return (
     <section className="flex items-center gap-3 plate p-3">
       <SemanticIcon name="victory" size={30} />
-      <Figure as="span" size="heading" tone="gold">
-        {own ? `#${own.rank}` : "—"}
-      </Figure>
-      <span className="text-base text-kit-muted">
-        {SEASON_WORDS.of} {formatAmount(field)}
-      </span>
-      <span className="ml-auto flex items-center gap-2">
-        <AgeLabel numeral={frontier.numeral} />
-        <span className="font-body text-base font-bold text-kit-cream">{frontier.name}</span>
-      </span>
+      {own ? (
+        <>
+          <Figure as="span" size="heading" tone="gold">
+            {`#${own.rank}`}
+          </Figure>
+          <span className="text-base text-kit-muted">
+            {SEASON_WORDS.of} {formatAmount(field)}
+          </span>
+          <span className="ml-auto font-body text-base font-bold text-kit-cream">{ageOf("frontier").name}</span>
+        </>
+      ) : (
+        <span className="text-base text-kit-muted">{SEASON_WORDS.notOnBoard}</span>
+      )}
     </section>
   );
 };

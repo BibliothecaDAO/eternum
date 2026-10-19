@@ -22,7 +22,8 @@ const HOLD_LINES: Partial<Record<ChatHold, string>> = {
 /**
  * The lobby's chat, under the countdown on a desktop and under the registered count on a phone: its messages, oldest at
  * the top, read by any signed-in player, and the field for one the room lets write (a player registered in the slot),
- * Enter or the keyboard's Send sending. A reader sees no field.
+ * Enter or the keyboard's Send sending. A reader sees no field, and the line that says who writes; an empty room
+ * says so.
  */
 export const LobbyChatPanel = ({
   slot,
@@ -40,11 +41,19 @@ export const LobbyChatPanel = ({
         <ServiceFailure service="chat" error={new Error("lobby chat closed")} />
       ) : (
         <>
-          <Messages messages={chat.messages} />
+          {chat.messages.length > 0 ? (
+            <Messages messages={chat.messages} />
+          ) : (
+            <p className="py-2 text-app-body text-app-muted">{CHAT_WORDS.empty}</p>
+          )}
           {chat.hold && HOLD_LINES[chat.hold] && (
             <p className="text-app-label text-app-warn">{HOLD_LINES[chat.hold]}</p>
           )}
-          {chat.canWrite && <Composer send={chat.send} />}
+          {chat.canWrite ? (
+            <Composer send={chat.send} />
+          ) : (
+            <p className="text-app-label text-app-muted">{CHAT_WORDS.registeredWrite}</p>
+          )}
         </>
       )}
     </AppPanel>
@@ -59,7 +68,7 @@ const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
     list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [messages.length]);
   return (
-    <ol ref={list} className="flex h-64 flex-col gap-1.5 overflow-y-auto py-2 text-app-body text-app-ink">
+    <ol ref={list} className="flex max-h-64 flex-col gap-1.5 overflow-y-auto py-2 text-app-body text-app-ink">
       {messages.map((message) => (
         <li key={message.id} className="break-words">
           <b className="mr-2 text-app-accent">

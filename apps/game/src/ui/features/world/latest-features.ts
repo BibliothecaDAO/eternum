@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Clearer app pages for new players",
+    description:
+      "Season names each board's own season and says how to get on an empty board. A lobby's chat says when nobody has written and who can write, and on a phone the entry sits in the page instead of over the chat. Buttons no longer print their keys, and You says when you are not on Frontier's board yet.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-19",
     title: "Season's empty boards speak",
     description:
       "A Season board with no one on it yet says so instead of standing empty, the desktop bar's name reads as You to screen readers, and the game's doorway starts at the top on a phone.",

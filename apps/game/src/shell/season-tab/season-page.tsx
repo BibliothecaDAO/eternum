@@ -1,7 +1,7 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { useState } from "react";
 
-import { AppChip, AppEmpty, AppFigure, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppChip, AppEmpty, AppFigure, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
 import { DAY, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
@@ -27,21 +27,12 @@ const ROWS_SHOWN = { phone: 12, desktop: 10 } as const;
  * both side by side; a phone switches between them. The player's own finished games are on You.
  */
 export const SeasonPage = () => {
-  const { season } = useSeason();
   const phone = useLayout() === "phone";
+  // Frontier and Blitz each run their own season: the page is Season, and each board names its own.
   return (
-    <PageFrame
-      title={season ? seasonTitle(season) : WORDS.season}
-      aside={season && <DayChip season={season} />}
-      painting="season-citadel"
-    >
+    <PageFrame title={WORDS.season} painting="season-citadel">
       <div className="flex flex-col gap-6">
-        {phone && (
-          <span className="flex items-center justify-between gap-3">
-            <h1 className="text-app-title text-app-ink">{season ? seasonTitle(season) : WORDS.season}</h1>
-            {season && <DayChip season={season} />}
-          </span>
-        )}
+        {phone && <h1 className="text-app-title text-app-ink">{WORDS.season}</h1>}
         <Standing />
         {phone ? <PhoneBoards /> : <DesktopBoards />}
       </div>
@@ -75,10 +66,12 @@ const PhoneBoards = () => {
   );
 };
 
-/** The season's day by the hourglass, "Day 12", on the clock. */
-const DayChip = ({ season }: { season: DirectoryGame }) => {
+/** Frontier's own season and its day by the hourglass, "Season 1 · Day 4", on the clock. */
+const FrontierDay = ({ season }: { season: DirectoryGame }) => {
   const now = useNowSeconds();
-  return <AppChip icon="hourglass">{`${DAY} ${directoryDay(season, now).day ?? "—"}`}</AppChip>;
+  return (
+    <AppChip icon="hourglass">{`${seasonTitle(season)} · ${DAY} ${directoryDay(season, now).day ?? "—"}`}</AppChip>
+  );
 };
 
 /** The live Frontier season, the player's own if they have a realm in one. */
@@ -118,7 +111,7 @@ const Standing = () => {
   );
 };
 
-/** Frontier's board under Frontier's painting, with its day; no season running is said once on the plains. */
+/** Frontier's board under Frontier's painting, with its season and day; no season running is said once on the plains. */
 const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
   const { season, directory } = useSeason();
   const frontier = ageOf("frontier");
@@ -130,7 +123,13 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
     );
   return (
     <div data-age="frontier">
-      <AppPanel title={frontier.name} icon="leaderboard" painting={frontier.painting} flush>
+      <AppPanel
+        title={frontier.name}
+        icon="leaderboard"
+        painting={frontier.painting}
+        cue={season && <FrontierDay season={season} />}
+        flush
+      >
         <FrontierBoard rowsShown={rowsShown} />
       </AppPanel>
     </div>
@@ -153,7 +152,18 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   if (!season) return directory.isPending ? <Loading /> : null;
   if (board.isPending) return <Loading />;
   const rows = board.data?.mode === "frontier" ? boardRows(board.data.entries, player, rowsShown) : [];
-  if (rows.length === 0) return <AppEmpty icon="leaderboard" line={SEASON_WORDS.boardEmpty} />;
+  if (rows.length === 0)
+    return (
+      <AppEmpty
+        icon="leaderboard"
+        line={SEASON_WORDS.boardEmpty}
+        action={
+          <AppButton kind="secondary" icon="play" to="/">
+            {WORDS.play}
+          </AppButton>
+        }
+      />
+    );
   return (
     <div>
       {rows.map(({ entry, own }) => (
