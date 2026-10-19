@@ -7,7 +7,10 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 import { installActiveGameClient } from "@/sync/active-game-client";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HoldingsList, useHoldings } from "@/ui/features/world/hud/holdings";
+import { HudFoot, LeftColumn } from "@/ui/features/world/hud/desktop-hud";
+import { useIdleArmies } from "@/ui/features/world/hud/idle-armies";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
+import { BuildTag } from "@/ui/layouts/build-tag";
 import { RealmCard } from "@/ui/features/world/hud/realm-card";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -22,7 +25,8 @@ import { installFixtureGame, PLAYER } from "./fixture-game";
 /**
  * Dev only: the Blitz and Eternum HUD's panels as a player sees them, the real components on the deploy fixture's
  * realm in the War room skin, at /lab/kit/panels: the left column (the holdings, the selected realm's card and the
- * minimap), which a spectated game does not show, or the top bar alone with `?part=top-header` (it selects for the
+ * minimap), which a spectated game does not show, or the desktop HUD's left column and foot where they sit on the
+ * screen with `?part=hud`, or the top bar alone with `?part=top-header` (it selects for the
  * page, so it never shares one with the holdings), or the picked tile alone with `?tile=army|empty` (the sites
  * fixture's army beside its camp, a bare forest), or the realm view's building panel with
  * `?tile=castle|building|production` (the realm's castle with its level-up, a farm with what it makes, a wood mill
@@ -44,7 +48,9 @@ const ColumnLab = () => {
   return (
     <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
       <div className="flex min-h-screen flex-col items-start gap-6 bg-[#0b1418] p-6 text-gold">
-        {params.get("part") === "top-header" ? (
+        {params.get("part") === "hud" ? (
+          <HudStage />
+        ) : params.get("part") === "top-header" ? (
           <div data-lab="top-header">
             <TopHeader />
           </div>
@@ -58,6 +64,20 @@ const ColumnLab = () => {
     </GameProvider>
   );
 };
+
+/**
+ * The desktop HUD's left side and foot over a stand-in for the map: the real left column (the holdings, the card, the
+ * minimap at the bottom left), the order bubbles and the build tag, where they sit at the viewport's size. The right
+ * rail reads the live game, so the chat lab draws it instead.
+ */
+const HudStage = () => (
+  <div data-lab="hud" className="fixed inset-0">
+    <canvas className="absolute inset-0 h-full w-full bg-[#0b1418]" />
+    <LeftColumn />
+    <HudFoot idleArmies={useIdleArmies()} />
+    <BuildTag />
+  </div>
+);
 
 const LabHoldings = () => {
   const holdings = useHoldings();
