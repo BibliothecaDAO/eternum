@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { create } from "zustand";
 
 type TooltipPlacement = "top" | "left" | "right" | "bottom";
@@ -100,3 +100,37 @@ export const useTooltipStore = create<TooltipStore>()((set) => ({
           : tooltip,
     }),
 }));
+
+/**
+ * A tooltip that stays current for as long as it is open: `show` puts `content` up, each later render puts the new
+ * content in its place (same anchor, same side) while the open tooltip is still this one, and `hide` or unmounting
+ * takes it down only if it is. A tooltip that has since taken its place is never overwritten or cleared.
+ */
+export const useLiveTooltip = (content: ReactNode, position: TooltipPlacement) => {
+  const shown = useRef<ReactNode>(null);
+  const isOurs = () => shown.current !== null && useTooltipStore.getState().tooltip?.content === shown.current;
+
+  useEffect(() => {
+    const open = useTooltipStore.getState().tooltip;
+    if (!open || !isOurs() || open.content === content) return;
+    shown.current = content;
+    useTooltipStore.getState().setTooltip({ ...open, content });
+  }, [content]);
+
+  useEffect(() => {
+    return () => {
+      if (isOurs()) useTooltipStore.getState().setTooltip(null);
+    };
+  }, []);
+
+  return {
+    show: () => {
+      shown.current = content;
+      useTooltipStore.getState().setTooltip({ content, position });
+    },
+    hide: () => {
+      if (isOurs()) useTooltipStore.getState().setTooltip(null);
+      shown.current = null;
+    },
+  };
+};

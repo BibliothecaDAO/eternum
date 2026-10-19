@@ -5,7 +5,7 @@ import { CompactBuildingCard } from "./compact-building-card";
 import { getConstructionBuildingGroups } from "./construction-groups";
 import { usePlayResourceSound } from "@/audio";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
+import { useLiveTooltip } from "@/hooks/store/use-tooltip-store";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -1103,7 +1103,6 @@ export const BuildingCard = ({
   gives?: string | null;
 }) => {
   const lane = useCompactLane();
-  const setTooltip = useTooltipStore((state) => state.setTooltip);
   const hover = (
     <BuildingHover
       name={buildingName}
@@ -1115,6 +1114,8 @@ export const BuildingCard = ({
       requirements={requirements}
     />
   );
+  // The open hover follows the card's current readings, not the ones it opened on.
+  const tooltip = useLiveTooltip(hover, "right");
   // Pausing and destroying act on the buildings of this type already built: with none, neither is offered.
   const onDestroy = count > 0 ? destroyAny : undefined;
   const onPauseResumeAll = count > 0 ? pauseResumeAny : undefined;
@@ -1211,8 +1212,8 @@ export const BuildingCard = ({
             label={`About ${buildingName}`}
             kind="quiet"
             size="sm"
-            onMouseEnter={() => setTooltip({ content: hover, position: "right" })}
-            onMouseLeave={() => setTooltip(null)}
+            onMouseEnter={tooltip.show}
+            onMouseLeave={tooltip.hide}
           />
         </>
       }
