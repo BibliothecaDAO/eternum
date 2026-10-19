@@ -1,7 +1,7 @@
 import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packages/identity/src/address";
 import { RelayFailure } from "./failure";
 import { hash, shortString, type RpcProvider } from "starknet";
-import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
+import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { rpcAt } from "../../../packages/value-ledger/src/rpc";
 
 export interface ShardConnection {
@@ -193,8 +193,18 @@ export class ShardReader {
   private async assertChain(provider: RpcProvider) {
     if (!sameFelt(await provider.getChainId(), this.connection.chainId)) throw new Error("shard_chain_differs");
   }
+  /**
+   * Every RowSet path the Games contract emits at a block: its own, and those of each registered release's logic
+   * classes, which it runs by library call and which emit from its address under their own event enums.
+   */
   private async prefixes(provider: RpcProvider, number: number) {
-    return rowSetPrefixes(await readShardAbi(provider, this.connection.gamesAddress, number));
+    const address = this.connection.gamesAddress;
+    const prefixes = rowSetPrefixes(await readShardAbi(provider, address, number));
+    for (const classHash of await releaseClasses(provider, address, number))
+      prefixes.push(...(await logicClassPrefixes(provider, classHash)));
+    const unique = new Map(prefixes.map((prefix) => [prefix.map(felt).join(), prefix]));
+    if (!unique.size) throw new Error("rowset_abi_unavailable");
+    return [...unique.values()];
   }
 
   private rows(receipt: ShardReceipt, prefixes: string[][]): ValueRow[] {
@@ -235,6 +245,33 @@ const valueEventFilters = (prefixes: string[][]): string[][][] => {
   return [...byDepth.values()].map((keys) => [...keys, ["0x1"], VALUE_MODELS.map(shortString.encodeShortString)]);
 };
 
+/** Each logic class's RowSet paths, by class hash: class content is immutable, and a path is a few felts. */
+const logicPrefixes = new Map<string, string[][]>();
+const logicClassPrefixes = async (provider: RpcProvider, classHash: string) => {
+  let prefixes = logicPrefixes.get(classHash);
+  if (!prefixes) {
+    prefixes = rowSetPrefixes(await readClassAbi(provider, classHash));
+    logicPrefixes.set(classHash, prefixes);
+  }
+  return prefixes;
+};
+
+/** The logic and migration classes of every release the Games contract has registered by a block. */
+const releaseClasses = async (provider: RpcProvider, address: string, number: number): Promise<string[]> => {
+  const call = (entrypoint: string, calldata: string[]) =>
+    provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
+  const [current] = await call("current_release", []);
+  const classes = new Set<string>();
+  for (let release = 1n; release <= BigInt(current ?? "0"); release++) {
+    // Release: 17 logic classes, then the migration class (zero when the release migrates nothing).
+    const hashes = await call("release", [release.toString()]);
+    if (hashes.length !== 18) throw new Error("invalid_release_classes");
+    for (const classHash of hashes) if (BigInt(classHash) !== 0n) classes.add(felt(classHash));
+  }
+  return [...classes];
+};
+
+/** The RowSet paths one class declares; a class that emits no RowSet declares none. */
 const rowSetPrefixes = (raw: unknown): string[][] => {
   const abi = typeof raw === "string" ? JSON.parse(raw) : raw;
   if (!Array.isArray(abi)) throw new Error("shard_event_abi_unavailable");
@@ -265,7 +302,6 @@ const rowSetPrefixes = (raw: unknown): string[][] => {
     }
   };
   for (const root of events.filter((event) => !referenced.has(event.name))) walk(root, [], new Set());
-  if (!prefixes.length) throw new Error("rowset_abi_unavailable");
   return prefixes;
 };
 const rowFrame = (data: string[]) => {

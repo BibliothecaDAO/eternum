@@ -1,4 +1,4 @@
-import { shortString } from "starknet";
+import { hash, shortString } from "starknet";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
@@ -17,6 +17,7 @@ const rpc = vi.hoisted(() => ({
   events: vi.fn(),
   contract: vi.fn(),
   receipt: vi.fn(),
+  call: vi.fn(),
 }));
 vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
@@ -29,6 +30,7 @@ vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
     getClassHashAt: rpc.classHash,
     getClassByHash: rpc.contract,
     getTransactionReceipt: rpc.receipt,
+    callContract: rpc.call,
   }),
 }));
 const address = "0x10";
@@ -60,6 +62,8 @@ beforeEach(() => {
   rpc.contract.mockResolvedValue({ abi });
   rpc.receipt.mockResolvedValue(receipt());
   rpc.events.mockResolvedValue({ events: [emitted()] });
+  // A shard with no release registered: the Games class alone declares its events.
+  rpc.call.mockResolvedValue(["0x0"]);
 });
 it("reads a confirmed debit receipt and pays exact wei to the resolved account's wallet", async () => {
   const f = fixture();
@@ -247,4 +251,84 @@ it("does not fetch the full class again when the next alarm creates another read
   rpc.classHash.mockResolvedValue("0xfff");
   await fixture().reader.page(10, 10, null);
   expect(rpc.contract).toHaveBeenCalledTimes(2);
+});
+
+it("reads a Blitz result that a release's logic class emits under its own event enum", async () => {
+  // Game 10 of dev chain DEV_18dfa7f2b475f083, as its shard emitted it at block 75,043: the prizes logic runs by library
+  // call from the Games contract and emits under BlitzEvent, a path the Games class itself does not declare.
+  const chainId = "0x4445565f31386466613766326234373566303833";
+  const blitzResult = {
+    from_address: address,
+    keys: [
+      hash.getSelectorFromName("BlitzEvent"),
+      hash.getSelectorFromName("RowSet"),
+      "0x1",
+      shortString.encodeShortString("BlitzResult"),
+    ],
+    data: [
+      "0x1",
+      "0xa",
+      "0x5",
+      "0x1",
+      "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0",
+      "0x1",
+      "0x1",
+      "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd",
+    ],
+    transaction_hash: "0xbeef",
+    block_number: 10,
+    block_hash: "0xa",
+  };
+  const rowSet = (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!;
+  const prizesLogic = [
+    {
+      type: "event",
+      name: "prizes::Event",
+      kind: "enum",
+      variants: [{ name: "BlitzEvent", type: "prizes::BlitzResultState::Event", kind: "nested" }],
+    },
+    {
+      type: "event",
+      name: "prizes::BlitzResultState::Event",
+      kind: "enum",
+      variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
+    },
+    rowSet,
+  ];
+  rpc.chain.mockResolvedValue(chainId);
+  rpc.contract.mockImplementation(async (classHash: string) => ({
+    abi: BigInt(classHash) === 0x77n ? prizesLogic : abi,
+  }));
+  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
+    entrypoint === "current_release" ? ["0x1"] : [...Array(17).fill("0x77"), "0x0"],
+  );
+  // The node returns an event only when every key position the filter names matches it.
+  rpc.events.mockImplementation(async ({ keys }: { keys: string[][] }) => ({
+    events: keys.every(
+      (allowed, index) =>
+        !allowed.length || allowed.some((key) => BigInt(key) === BigInt(blitzResult.keys[index] ?? "0x-1")),
+    )
+      ? [blitzResult]
+      : [],
+  }));
+  const reader = new ShardReader({ chainId, rpcUrl: "https://shard.test/rpc", gamesAddress: address });
+  const ports = shardWithdrawalPorts(reader, fixture().bindings);
+  const results = [];
+  let cursor: string | null = null;
+  do {
+    const page: { results: readonly unknown[]; next?: string | null } = await Effect.runPromise(
+      ports.eventsPage(10, 10, cursor),
+    );
+    results.push(...page.results);
+    cursor = page.next ?? null;
+  } while (cursor);
+  expect(results).toEqual([
+    {
+      chainId,
+      gameId: 10,
+      rows: [{ wallet: "0x269cb810bc22316f8e6a53d164398e83f8255f7e980621f6083e5f7bad74fa0", rank: 1 }],
+      commitment: "0x3712465ef7b04dd2fbf16ed51b0fd17c6f2c88a3f5e1b2887eeabf07cb353fd",
+      blockNumber: 10,
+    },
+  ]);
 });
