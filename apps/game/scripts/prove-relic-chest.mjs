@@ -1,3 +1,4 @@
+import { proveFrontierChestRoute } from "./prove-frontier-chest-route.mjs";
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -41,6 +42,11 @@ try {
       const browser = createBrowserSession("relic-chest-" + Date.now(), { profile, headed: false });
       let devtools;
       try {
+        if (game === "frontier") {
+          records.push(await proveFrontierChestRoute(browser, { port, backend, out }));
+          writeFileSync(join(out, "proof.json"), JSON.stringify({ ok: false, records }, null, 2) + "\n");
+          continue;
+        }
         browser.run([
           "open",
           `https://127.0.0.1:${port}/lab/relic-chest?capture=1&rendererMode=${backend}&gameMode=${game}`,
@@ -85,94 +91,47 @@ try {
         check(sealed.renderer === (backend === "webgpu-auto" ? "webgpu" : "webgl2-fallback"), "Wrong backend");
         check(sealed.plate.includes(game === "frontier" ? "Reward Chest" : "Relic Crate"), "Wrong chest label");
         check(sealed.rewards.length === 0 && sealed.mapRewards.length === 0, "Sealed chest leaks relics");
-        let revealed, receipt, lucky, luckyOpened, expired, expiredOpened;
-        if (game === "blitz") {
-          check(
-            sealed.text.includes("Three relics. Open to reveal them.") && sealed.text.includes("250"),
-            "Missing sealed panel or points",
-          );
-          await capture("focused-sealed");
-          await click("[data-chest-panel] button", "Open");
-          await pause(750);
-          revealed = await read(snapshot);
-          const war = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
-          check(
-            revealed.rewards.join("|") === war.join("|") && revealed.text.includes("Crate opened"),
-            "Opening receipt differs",
-          );
-          check(
-            revealed.mapRewards.length === 3 &&
-              revealed.mapRewards.every((icon, index) => icon.opacity > 0.2 && icon.name === war[index]),
-            "Opening did not reveal the exact awarded icons",
-          );
-          await capture("reveal");
-          await pause(2400);
-          receipt = await read(snapshot);
-          check(
-            receipt.rewards.join("|") === war.join("|") && receipt.mapRewards.length === 0,
-            "Reveal cleanup or persistent receipt failed",
-          );
-          await capture("receipt");
-          browser.click("Reset chest");
-          browser.run(["select", '[aria-label="Fixture pack"]', "Fortress"]);
-          browser.run(["click", 'input[type="checkbox"]']);
-          browser.click("Focus relic chest");
-          lucky = await read(snapshot);
-          check(lucky.rewards.length === 0 && lucky.mapRewards.length === 0, "Lucky pack leaked");
-          await click("[data-chest-panel] button", "Open");
-          luckyOpened = await read(snapshot);
-          check(
-            luckyOpened.rewards.join("|") ===
-              "Structure Defense Relic II|Damage Reduction Relic II|Troop Production Relic II",
-            "Lucky opening differs from its actual pack",
-          );
-        } else {
-          check(
-            sealed.text.includes("17 LORDS") && sealed.text.includes("Expires at day rollover"),
-            "Missing reservation",
-          );
-          await capture("focused-funded");
-          await click("[data-chest-panel] button", "Open");
-          await pause(750);
-          revealed = await read(snapshot);
-          check(
-            revealed.rewards.length === 0 && revealed.text.includes("17 LORDS paid to the army's realm"),
-            "Wrong LORDS receipt",
-          );
-          check(
-            revealed.mapRewards.length === 1 &&
-              revealed.mapRewards[0].name === "17 LORDS" &&
-              revealed.mapRewards[0].opacity > 0.2,
-            "Wrong LORDS reveal",
-          );
-          await capture("reveal");
-          await pause(2400);
-          receipt = await read(snapshot);
-          check(
-            receipt.text.includes("17 LORDS paid to the army's realm") && receipt.mapRewards.length === 0,
-            "LORDS cleanup or receipt failed",
-          );
-          await capture("receipt");
-          browser.click("Reset chest");
-          browser.click("Advance to day rollover");
-          browser.click("Focus relic chest");
-          expired = await read(snapshot);
-          check(
-            expired.text.includes("0 LORDS") && expired.text.includes("Reservation expired"),
-            "Expired chest still advertises reward",
-          );
-          await capture("expired");
-          await click("[data-chest-panel] button", "Open");
-          await pause(750);
-          expiredOpened = await read(snapshot);
-          check(
-            expiredOpened.text.includes("No LORDS paid") &&
-              expiredOpened.mapRewards.length === 0 &&
-              expiredOpened.rewards.length === 0,
-            "Expired chest invented a reward",
-          );
-          await capture("expired-receipt");
-        }
+        let revealed, receipt, lucky, luckyOpened;
+        check(
+          sealed.text.includes("Three relics. Open to reveal them.") && sealed.text.includes("250"),
+          "Missing sealed panel or points",
+        );
+        await capture("focused-sealed");
+        await click("[data-chest-panel] button", "Open");
+        await pause(750);
+        revealed = await read(snapshot);
+        const war = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
+        check(
+          revealed.rewards.join("|") === war.join("|") && revealed.text.includes("Crate opened"),
+          "Opening receipt differs",
+        );
+        check(
+          revealed.mapRewards.length === 3 &&
+            revealed.mapRewards.every((icon, index) => icon.opacity > 0.2 && icon.name === war[index]),
+          "Opening did not reveal the exact awarded icons",
+        );
+        await capture("reveal");
+        await pause(2400);
+        receipt = await read(snapshot);
+        check(
+          receipt.rewards.join("|") === war.join("|") && receipt.mapRewards.length === 0,
+          "Reveal cleanup or persistent receipt failed",
+        );
+        await capture("receipt");
+        browser.click("Reset chest");
+        browser.run(["select", '[aria-label="Fixture pack"]', "Fortress"]);
+        browser.run(["click", 'input[type="checkbox"]']);
+        browser.click("Focus relic chest");
+        lucky = await read(snapshot);
+        check(lucky.rewards.length === 0 && lucky.mapRewards.length === 0, "Lucky pack leaked");
+        await click("[data-chest-panel] button", "Open");
+        luckyOpened = await read(snapshot);
+        check(
+          luckyOpened.rewards.join("|") ===
+            "Structure Defense Relic II|Damage Reduction Relic II|Troop Production Relic II",
+          "Lucky opening differs from its actual pack",
+        );
+
         browser.click("Reset chest");
         browser.click("Close 3D proof");
         browser.run([
@@ -190,8 +149,6 @@ try {
           receipt,
           lucky,
           luckyOpened,
-          expired,
-          expiredOpened,
           released: true,
           errors,
         });

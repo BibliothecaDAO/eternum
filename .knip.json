@@ -192,7 +192,8 @@
       },
       "entry": [
         "src/main.tsx",
-        "src/ui/features/debug/kit-lab/render-model.ts"
+        "src/ui/features/debug/kit-lab/render-model.ts",
+        "scripts/relic-chest-route-fixture.mjs"
       ]
     },
     "apps/herald": {

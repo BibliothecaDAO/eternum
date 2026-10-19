@@ -8,9 +8,11 @@ presentation using the production instanced model, opening pool, panel and nativ
 
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
-day-rollover expiry; opening credits the army’s home realm and leaves a receipt. `/lab/relic-chest?gameMode=frontier`
-exercises funded and expired openings through the same panel, model, caller and native story listener. The proof command
-above covers both formats and renderers; it uses local facts, not a live transaction.
+day-rollover expiry; opening credits the army’s home realm and leaves a receipt in Frontier’s selection sheet, including
+when the opened tile is selected again. The proof command above enters the real Frontier `/g/<chain>/<game>/map` route
+and its mounted HUD, selects through map clicks, checks missing metadata, amount/expiry, Open and the receipt, and
+crosses day rollover. It uses local reward facts, a fixture release catalogue and a non-signing command transport; it
+does not prove a live payout. Blitz retains its visual lab proof. Both renderer backends are checked.
 
 ## Cleared-site standard
 

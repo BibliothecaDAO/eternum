@@ -23,5 +23,5 @@ export const useChestOpeningStore = create<ChestOpeningState>((set) => ({
     }),
 }));
 
-export const useChestOpening = (hex: { col: number; row: number }): ChestOpening | null =>
-  useChestOpeningStore((state) => state.openings[chestHexKey({ x: hex.col, y: hex.row })] ?? null);
+export const useChestOpening = (hex: { col: number; row: number } | null): ChestOpening | null =>
+  useChestOpeningStore((state) => (hex ? (state.openings[chestHexKey({ x: hex.col, y: hex.row })] ?? null) : null));

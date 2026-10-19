@@ -1,9 +1,6 @@
-import { ChestTileDetails } from "./chest-tile-details";
+import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
 import { useTileAt } from "@/hooks/helpers/use-tile-at";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
-import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
-import { useAdjacentOwnExplorer } from "@/ui/features/military/chest/use-adjacent-own-explorer";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
@@ -17,7 +14,7 @@ import { StructureBannerEntityDetail } from "@/ui/features/world/components/enti
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   biomeTypeOf,
   hasTileOccupier,
@@ -177,39 +174,6 @@ const SelectedWorldmapEntityContent = ({
     ),
     biome: <ArmyBiomeCard armyEntityId={occupierEntityId} biome={biome} onSimulateBattle={handleSimulateBattle} />,
   });
-};
-
-// The crate panel opens with the player's adjacent explorer; the contract accepts no other opener.
-const ChestTilePanel = ({
-  rewardChestId,
-  opening,
-  selectedHex,
-  coordsLabel,
-  headerAction,
-}: {
-  rewardChestId?: ID;
-  opening: ReturnType<typeof useChestOpening>;
-  selectedHex: HexPosition;
-  coordsLabel?: string;
-  headerAction?: ReactNode;
-}) => {
-  const account = useAccountStore((state) => state.account);
-  const explorerId = useAdjacentOwnExplorer(selectedHex);
-  const canOpen = Boolean(account) && explorerId !== null;
-  // The world map is the one opener: it plays a chest's moment where the game has one.
-  const handleOpen = useCallback(() => {
-    if (explorerId !== null) requestChestOpening({ explorerId, hex: selectedHex });
-  }, [explorerId, selectedHex]);
-  return (
-    <ChestTileDetails
-      rewardChestId={rewardChestId}
-      coordsLabel={coordsLabel}
-      headerAction={headerAction}
-      opening={opening}
-      onOpen={canOpen ? handleOpen : undefined}
-      openBlockedReason={canOpen ? undefined : "Move one of your armies next to the crate."}
-    />
-  );
 };
 
 /** An army's biome card, its own troop type's row lit. */

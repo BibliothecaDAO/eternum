@@ -10,14 +10,15 @@ import { reachMark } from "../depth-art";
 
 import { HudButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
 
-/** The map tile the player tapped, when it holds a spire. */
-export const useSelectedTileObject = (): { kind: "spire"; tile: TileSpatialRenderable } | null => {
+/** The selected loose map object; its card is mounted by Frontier on both HUD layouts. */
+export const useSelectedTileObject = (): { kind: "spire" | "chest"; tile: TileSpatialRenderable } | null => {
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const hexes = useMemo(() => (selectedHex ? [selectedHex] : []), [selectedHex]);
   const [tile] = useWorldSpatialTiles(hexes);
   if (!isMapView || !tile) return null;
   if (tile.occupierType === TileOccupier.Spire) return { kind: "spire", tile };
+  if (tile.occupierType === TileOccupier.Chest) return { kind: "chest", tile };
   return null;
 };
 

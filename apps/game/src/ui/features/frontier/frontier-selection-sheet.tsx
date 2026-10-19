@@ -1,5 +1,9 @@
 import { SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
 import { structureName } from "@bibliothecadao/types";
+import { useQuery } from "@/hooks/helpers/use-query";
+import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
+import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
+import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { FrontierSpireSheet } from "./frontier-spire-sheet";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -19,9 +23,9 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 /**
  * What the player tapped, as its Frontier card: an open plot of the realm the build sheet, the keep its upgrade sheet,
  * a standing building its type's Upgrade sheet, a standing site or another player's army the tile card, a Shrine or
- * Well its card, a spire its own. A cleared site shows its receipt, even with an army on the tile. Other empty tiles
- * and armies the dock already shows open no card. The result of
- * the player's own attack stands in the card's place until it is closed.
+ * Well its card, a spire or reward chest its own. Cleared sites and opened chests keep their receipts on the tile.
+ * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
+ * shows open no card. The player's own attack result stands in the card's place until it is closed.
  */
 export const FrontierSelectionSheet = ({
   rules,
@@ -33,6 +37,10 @@ export const FrontierSelectionSheet = ({
   /** Opens Research, for a card whose next step is there. */
   onResearch: () => void;
 }) => {
+  const { isMapView } = useQuery();
+  const selectedHex = useUIStore((state) => state.selectedHex);
+  const mapLayer = useUIStore((state) => state.mapLayer);
+  const opening = useChestOpening(selectedHex);
   const fight = useFightResult();
   const openPlot = useOpenPlot(realm);
   const target = useSelectedTarget();
@@ -65,6 +73,17 @@ export const FrontierSelectionSheet = ({
       </HudSheet>
     );
   if (mapSite) return <MapSiteCard selected={mapSite} onClose={close} />;
+  if (selectedHex && isMapView && !mapLayer && (tileObject?.kind === "chest" || opening?.kind === "lords"))
+    return (
+      <HudSheet label="Reward Chest" onClose={close}>
+        <ChestTilePanel
+          rewardChestId={tileObject?.kind === "chest" ? tileObject.tile.occupierId : undefined}
+          opening={opening}
+          selectedHex={selectedHex}
+          coordsLabel={formatTilePanelTitle("Chest Tile", selectedHex)}
+        />
+      </HudSheet>
+    );
   if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;
   if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
   if (realm && building)

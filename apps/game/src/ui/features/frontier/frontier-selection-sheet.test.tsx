@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { tiles } = vi.hoisted(() => ({
-  tiles: { current: [] as { occupierType: number; hexCoords: object }[] },
+  tiles: { current: [] as { occupierType: number; occupierId?: number; hexCoords: object }[] },
 }));
 vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => tiles.current }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
@@ -11,10 +11,15 @@ vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () 
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
 vi.mock("./sites/tile-card", () => ({ TileCard: () => null, useSelectedTarget: () => null }));
 vi.mock("./upgrade/castle-upgrade", () => ({ CastleUpgrade: () => null, useKeepSelected: () => null }));
+vi.mock("@/ui/features/military/chest/use-adjacent-own-explorer", () => ({ useAdjacentOwnExplorer: () => 201 }));
 vi.mock("./research/selected-building", () => ({ useSelectedBuildingRow: () => null }));
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useChestOpeningStore } from "@/hooks/store/use-chest-opening-store";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
+import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
 import { campBeside } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { expeditionSpireTile, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -142,5 +147,95 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
   } finally {
     act(() => root.unmount());
     useUIStore.getState().selectOnMap(null);
+  }
+});
+
+it("selects a Frontier chest, follows missing metadata and expiry, opens through the world bridge and retains its receipt", async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const { store } = campBeside();
+  const chestHex = { col: 4, row: 5 };
+  const chestTile = { occupierType: TileOccupier.Chest, occupierId: 900, hexCoords: { ...chestHex, alt: false } };
+  tiles.current = [chestTile];
+  useAccountStore.setState({ account: { address: "0x111" } as never });
+  useChainTimeStore.setState({ nowMs: 350_000 });
+  useChestOpeningStore.setState({ openings: {} });
+  useUIStore.getState().selectOnMap({ kind: "hex", hex: chestHex });
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const setup = { store } as never;
+  const request = vi.fn(({ explorerId, hex }) => {
+    expect(explorerId).toBe(201);
+    expect(hex).toEqual(chestHex);
+    tiles.current = [];
+    store.applyEvent({
+      model: "StoryEvent",
+      key: "0x400",
+      value: {
+        game_id: 1,
+        timestamp: 350,
+        story: {
+          RewardChestOpened: {
+            explorer_id: explorerId,
+            structure_id: 7,
+            coord: { alt: false, x: hex.col, y: hex.row },
+            amount: 17,
+          },
+        },
+      },
+    });
+  });
+  const stop = onChestOpenRequest(request);
+  try {
+    await act(async () =>
+      root.render(
+        <GameProvider value={setup} account={{ address: "0x111" } as never}>
+          <ChestOpenings />
+          <FrontierSelectionSheet rules={readExpeditionRules(store, 1)!} realm={null} onResearch={() => undefined} />
+        </GameProvider>,
+      ),
+    );
+    expect(host.querySelector('[data-kit-sheet][aria-label="Reward Chest"]')).not.toBeNull();
+    expect(host.textContent).toContain("Syncing chest reward");
+    await act(async () =>
+      store.applyFacts([
+        {
+          model: "SiteChest",
+          key: "0xcce5",
+          value: {
+            game_id: 1,
+            entity_id: 900,
+            tier: 0,
+            amount: "17",
+            reservation_day: "0",
+          },
+        },
+      ] as never),
+    );
+    expect(host.textContent).toContain("17 LORDS");
+    expect(host.textContent).toContain("Expires at day rollover");
+    await act(async () => useChainTimeStore.setState({ nowMs: 400_000 }));
+    expect(host.textContent).toContain("0 LORDS");
+    expect(host.textContent).toContain("Reservation expired");
+    await act(async () => useChainTimeStore.setState({ nowMs: 350_000 }));
+    const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Open")!;
+    expect(open.disabled).toBe(false);
+    await act(async () => open.click());
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(host.textContent).toContain("17 LORDS paid to the army's realm");
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Open")).toBe(false);
+    await act(async () => useUIStore.getState().closeSelectedTile());
+    expect(host.querySelector('[aria-label="Reward Chest"]')).toBeNull();
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: chestHex }));
+    expect(host.textContent).toContain("17 LORDS paid to the army's realm");
+    await act(async () => useUIStore.getState().setMapLayer(true));
+    expect(host.querySelector('[aria-label="Reward Chest"]')).toBeNull();
+  } finally {
+    stop();
+    act(() => root.unmount());
+    host.remove();
+    useUIStore.getState().selectOnMap(null);
+    useUIStore.getState().setMapLayer(false);
+    useAccountStore.setState({ account: null });
   }
 });
