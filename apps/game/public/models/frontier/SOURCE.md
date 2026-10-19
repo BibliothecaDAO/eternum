@@ -41,8 +41,9 @@ ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textu
 standing depth beasts are Troll, Wyvern and the three-headed Hydra; the two roaming encounters use Minotaur and Cyclops.
 Species art does not define combat tiers. Both the model and player-facing identity use that shared resolver.
 
-Troll and Cyclops use the owner-approved creature sculpts. The Wyvern, Hydra and Minotaur creature variants remain lab
-studies; `rebuild.sh <fresh-absolute-directory> creatures` rebuilds those three separately.
+Troll and Cyclops use the owner-approved creature sculpts. Wyvern and Hydra studies and their editable sources live in
+`asset-sources/lab/frontier-beasts/`, outside deployment. The local lab serves their GLBs at `/lab/frontier-beasts/`;
+`rebuild.sh <fresh-absolute-directory> creatures` rebuilds those two separately. The rejected Minotaur study is removed.
 
 The ruin, shrines and wells belong to the [outpost family](../outposts/SOURCE.md). The ruin delivery is
 `/models/outposts/ruin.glb`; the beast is a separate model. `pnpm --dir apps/game verify:fallen-realm` is a read-only

@@ -9,10 +9,13 @@ cd "$root"
 names="troll wyvern hydra minotaur cyclops"
 variant=${2:-refined}
 case "$variant" in refined|creatures) ;; *) echo 'Choose refined or creatures'; exit 1;; esac
-if [[ "$variant" = creatures ]]; then names="wyvern hydra minotaur"; fi
-source_directory="$variant/"
+source_directory="apps/game/asset-sources/frontier-beasts/refined"
+if [[ "$variant" = creatures ]]; then
+  names="wyvern hydra"
+  source_directory="apps/game/asset-sources/lab/frontier-beasts"
+fi
 for name in $names; do
   blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier-beasts/export-beast.py -- \
-    "apps/game/asset-sources/frontier-beasts/$source_directory$name.blend" "$output/raw/$name.glb" > "$output/$name-export.log" 2>&1
+    "$source_directory/$name.blend" "$output/raw/$name.glb" > "$output/$name-export.log" 2>&1
   node apps/game/scripts/outposts/optimize-outpost.mjs "$output/raw/$name.glb" "$output/beast-$name.glb" > "$output/$name-compress.log" 2>&1
 done

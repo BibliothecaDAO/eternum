@@ -9,9 +9,13 @@ import { labArtwork } from "./lab-artwork";
 async function fixture(enabled: boolean) {
   const root = await mkdtemp(join(tmpdir(), "lab-artwork-"));
   const original = await readFile(new URL("../asset-sources/lab/rss-icons/history/stone.png", import.meta.url));
+  const model = await readFile(new URL("../asset-sources/lab/frontier-beasts/beast-wyvern.glb", import.meta.url));
   await mkdir(join(root, "asset-sources/lab/rss-icons/history"), { recursive: true });
+  await mkdir(join(root, "asset-sources/lab/frontier-beasts"), { recursive: true });
   await mkdir(join(root, "public"));
   await writeFile(join(root, "asset-sources/lab/rss-icons/history/stone.png"), original);
+  await writeFile(join(root, "asset-sources/lab/frontier-beasts/beast-wyvern.glb"), model);
+  await writeFile(join(root, "asset-sources/lab/frontier-beasts/wyvern.blend"), "editable source");
   await writeFile(join(root, "asset-sources/private.png"), "private master");
   await writeFile(join(root, "public/shipped.png"), original);
   await writeFile(join(root, "index.html"), "<h1>Lab artwork</h1>");
@@ -24,11 +28,11 @@ async function fixture(enabled: boolean) {
     server: { host: "127.0.0.1", port: 0, watch: null },
     preview: { host: "127.0.0.1", port: 0 },
   };
-  return { root, original, config };
+  return { root, original, model, config };
 }
 
 it.each(["dev", "preview"])("serves exact archived bytes only to the local %s lab", async (mode) => {
-  const { root, original, config } = await fixture(true);
+  const { root, original, model, config } = await fixture(true);
   const server =
     mode === "dev" ? await createServer(config).then((server) => server.listen()) : await previewAfterBuild(config);
   try {
@@ -41,6 +45,14 @@ it.each(["dev", "preview"])("serves exact archived bytes only to the local %s la
     const head = await fetch(url, { method: "HEAD" });
     expect(head.headers.get("Content-Length")).toBe(String(original.length));
     expect(await head.text()).toBe("");
+    const glb = await fetch(`${origin}lab/frontier-beasts/beast-wyvern.glb`);
+    expect(glb.status).toBe(200);
+    expect(glb.headers.get("Content-Type")).toBe("model/gltf-binary");
+    expect(Buffer.from(await glb.arrayBuffer())).toEqual(model);
+    expect(
+      (await fetch(`${origin}lab/frontier-beasts/wyvern.blend`, { headers: { Accept: "application/octet-stream" } }))
+        .status,
+    ).toBe(404);
     expect((await fetch(`${origin}lab/%2e%2e%2Fprivate.png`)).status).toBe(403);
     expect((await fetch(`${origin}lab/%invalid.png`)).status).toBe(400);
     expect((await fetch(`${origin}lab/missing.png`, { headers: { Accept: "image/png" } })).status).toBe(404);
@@ -63,6 +75,16 @@ it("builds only shipped files and never serves the archive in a production previ
       headers: { Accept: "image/png" },
     });
     expect(response.status).toBe(404);
+    await expect(readFile(join(root, "dist/lab/frontier-beasts/beast-wyvern.glb"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+    expect(
+      (
+        await fetch(`${server.resolvedUrls!.local[0]}lab/frontier-beasts/beast-wyvern.glb`, {
+          headers: { Accept: "model/gltf-binary" },
+        })
+      ).status,
+    ).toBe(404);
   } finally {
     await close(server);
     await rm(root, { recursive: true, force: true });

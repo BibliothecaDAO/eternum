@@ -15,7 +15,7 @@ SOURCE = BASE["SOURCE"]
 join = BASE["join"]
 mesh = BASE["mesh"]
 apply_paint = BASE["apply_paint"]
-DESTINATION = SOURCE / "creatures"
+DESTINATION = SOURCE.parent / "lab" / "frontier-beasts"
 
 
 class Creature(Sculpt):
@@ -130,152 +130,6 @@ class Creature(Sculpt):
                 [0.035, 0.024, 0.001],
                 "stone",
             )
-
-    def minotaur(self):
-        self.surface(
-            "Sloping bison trunk",
-            [
-                ((0, 0.22, 0.66), 0.12, 0.14),
-                ((0, 0.17, 0.85), 0.19, 0.20),
-                ((0, 0.12, 1.10), 0.24, 0.25),
-                ((0, 0.08, 1.34), 0.25, 0.23),
-                ((0, 0.04, 1.48), 0.21, 0.17),
-                ((0, -0.08, 1.43), 0.16, 0.13),
-            ],
-        )
-        self.surface(
-            "Lowered bull skull",
-            [
-                ((0, -0.10, 1.30), 0.16, 0.16),
-                ((0, -0.22, 1.25), 0.21, 0.19),
-                ((0, -0.32, 1.12), 0.18, 0.17),
-                ((0, -0.44, 1.00), 0.14, 0.12),
-                ((0, -0.51, 0.94), 0.13, 0.075),
-                ((0, -0.53, 0.92), 0.10, 0.04),
-            ],
-        )
-        for side in [-1, 1]:
-            step = -0.10 if side == -1 else 0.10
-            self.surface(
-                "Long bovine hock",
-                [
-                    ((side * 0.14, 0.16, 0.84), 0.11, 0.13),
-                    ((side * 0.22, 0.07 + step, 0.67), 0.11, 0.12),
-                    ((side * 0.23, -0.03 + step, 0.48), 0.065, 0.07),
-                    ((side * 0.22, 0.13 + step, 0.25), 0.046, 0.05),
-                    ((side * 0.24, 0.06 + step, 0.12), 0.044, 0.05),
-                    ((side * 0.25, -0.01 + step, 0.06), 0.055, 0.045),
-                ],
-            )
-            for split in [-1, 1]:
-                x = side * 0.25 + split * 0.035
-                self.surface(
-                    "Cloven weight bearing hoof",
-                    [
-                        ((x, 0.04 + step, 0.10), 0.039, 0.05),
-                        ((x, -0.025 + step, 0.06), 0.042, 0.055),
-                        ((x, -0.10 + step, 0.035), 0.040, 0.025),
-                    ],
-                    "hoof",
-                    False,
-                    16,
-                    1,
-                )
-            self.surface(
-                "Folded slender forelimb",
-                [
-                    ((side * 0.19, -0.10, 1.19), 0.085, 0.09),
-                    ((side * 0.31, -0.18, 1.04), 0.075, 0.07),
-                    ((side * 0.34, -0.24, 0.85), 0.05, 0.055),
-                    ((side * 0.25, -0.29, 0.78), 0.045, 0.05),
-                    ((side * 0.18, -0.33, 0.86), 0.052, 0.045),
-                ],
-            )
-            for i in range(3):
-                x = side * (0.15 + i * 0.025)
-                self.surface(
-                    "Curled fingers",
-                    [
-                        ((x, -0.31, 0.87), 0.018, 0.018),
-                        ((x, -0.36, 0.84), 0.017, 0.016),
-                        ((x, -0.37, 0.80), 0.012, 0.012),
-                    ],
-                    sides=12,
-                    subdivision=1,
-                )
-            self.ridge(
-                "Broad swept bull horn",
-                [
-                    (side * 0.14, -0.20, 1.28),
-                    (side * 0.29, -0.18, 1.29),
-                    (side * 0.44, -0.15, 1.24),
-                    (side * 0.53, -0.13, 1.28),
-                    (side * 0.57, -0.14, 1.40),
-                ],
-                [0.065, 0.061, 0.043, 0.025, 0.001],
-            )
-            self.surface(
-                "Lateral bovine ear",
-                [
-                    ((side * 0.15, -0.20, 1.16), 0.05, 0.045),
-                    ((side * 0.27, -0.15, 1.15), 0.06, 0.025),
-                    ((side * 0.32, -0.12, 1.18), 0.002, 0.002),
-                ],
-            )
-        self.surface(
-            "Switching tail",
-            [
-                ((0, 0.31, 0.80), 0.045, 0.045),
-                ((-0.14, 0.40, 0.79), 0.030, 0.030),
-                ((-0.29, 0.42, 0.92), 0.023, 0.022),
-                ((-0.33, 0.36, 1.06), 0.014, 0.015),
-            ],
-        )
-        self.ridge(
-            "Tail tuft",
-            [(-0.33, 0.36, 1.10), (-0.35, 0.37, 1.04), (-0.35, 0.40, 0.96)],
-            [0.035, 0.049, 0.001],
-            "mane",
-        )
-        self.unify_skin()
-        self.relief("hide")
-        for side in [-1, 1]:
-            self.eye(side * 0.105, 1.18, 0.026)
-            self.ridge(
-                "Broad nostril",
-                [(side * 0.065, -0.516, 0.987), (side * 0.07, -0.535, 0.960)],
-                [0.022, 0.022],
-                "dark",
-            )
-            for row in range(6):
-                for col in range(4):
-                    z = 1.44 - row * 0.09
-                    x = side * (0.06 + col * 0.055)
-                    y = 0.09 + 0.13 * math.sin(col / 3 * math.pi / 2)
-                    self.ridge(
-                        "Swept shaggy mane lock",
-                        [
-                            (x, y, z),
-                            (x + side * 0.025, y + 0.045, z - 0.085),
-                            (x + side * 0.014, y + 0.02, z - 0.18),
-                        ],
-                        [0.042, 0.047, 0.001],
-                        "mane",
-                    )
-            for i in range(6):
-                x = side * (0.12 + 0.025 * i)
-                z = 1.28 - 0.042 * i
-                self.ridge(
-                    "Hanging cheek mane",
-                    [
-                        (x, -0.20, z),
-                        (x + side * 0.018, -0.25, z - 0.09),
-                        (x + side * 0.006, -0.22, z - 0.18),
-                    ],
-                    [0.035, 0.040, 0.001],
-                    "mane",
-                )
-        self.mouth([(-0.08, 0.925), (0, 0.91), (0.08, 0.925)])
 
     def cyclops(self):
         self.base = (0.46, 0.29, 0.12)
@@ -519,11 +373,11 @@ class Creature(Sculpt):
             vertex.co.z = max(0.012, vertex.co.z)
         bpy.context.scene["species"] = self.species
         bpy.context.scene["deliveryScale"] = 0.8
-        bpy.context.scene["concept"] = "creatures/concept.png"
+        bpy.context.scene["concept"] = "apps/game/asset-sources/lab/frontier-beasts/concept.png"
         bpy.context.scene["sculptTriangles"] = sum(
             len(p.vertices) - 2 for p in obj.data.polygons
         )
-        destination = SOURCE / ("refined" if self.species in {"troll", "cyclops"} else "creatures")
+        destination = SOURCE / "refined" if self.species in {"troll", "cyclops"} else DESTINATION
         painting = destination / f"{self.species}-paint.png"
         if painting.exists():
             apply_paint(obj, painting)

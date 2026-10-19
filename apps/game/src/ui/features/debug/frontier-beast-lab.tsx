@@ -32,19 +32,19 @@ const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale })
   label: name,
   parts: [{ path: FRONTIER_BEASTS[beast].path, scale }],
 }));
-const STUDY_BEASTS = MODEL_BEASTS.filter(({ beast }) => beast !== "troll" && beast !== "cyclops");
+const STUDY_BEASTS = MODEL_BEASTS.filter(({ beast }) => beast === "wyvern" || beast === "hydra");
 const SPECIES_MODELS = Object.fromEntries(
   STUDY_BEASTS.map(({ beast, name, scale }) => [
     `species-${beast}`,
     [
       { label: `${name} · current`, parts: [{ path: FRONTIER_BEASTS[beast].path, scale }] },
-      { label: `${name} · creature study`, parts: [{ path: `/models/frontier/creatures/beast-${beast}.glb`, scale }] },
+      { label: `${name} · creature study`, parts: [{ path: `/lab/frontier-beasts/beast-${beast}.glb`, scale }] },
     ] satisfies readonly LineupAsset[],
   ]),
 );
 const CREATURE_MODELS: readonly LineupAsset[] = STUDY_BEASTS.map(({ beast, name, scale }) => ({
   label: name,
-  parts: [{ path: `/models/frontier/creatures/beast-${beast}.glb`, scale }],
+  parts: [{ path: `/lab/frontier-beasts/beast-${beast}.glb`, scale }],
 }));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
@@ -107,12 +107,9 @@ export function FrontierBeastLab() {
   const [band, setBand] = useState<BeastBand>("lowly");
   const [depth, setDepth] = useState(0);
   useEffect(() => {
-    if (!group.startsWith("species-")) return;
-    const species = group.split("-")[1];
-    const roaming = species === "minotaur" || species === "cyclops";
-    setSite(roaming ? 3 : 2);
-    setBand(species === "cyclops" ? "stronger" : "lowly");
-    setDepth(species === "wyvern" ? 1 : species === "hydra" ? 2 : 0);
+    if (!SPECIES_MODELS[group]) return;
+    setSite(2);
+    setDepth(group === "species-wyvern" ? 1 : 2);
   }, [group]);
   const beast = frontierBeast(depth, SITES[site].category, band);
   const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;

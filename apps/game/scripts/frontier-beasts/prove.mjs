@@ -6,7 +6,7 @@ import { runProof, waitFor } from "../prove-run.mjs";
 export async function proveBeasts(b, out, records, baseUrl, only) {
   await b.run("set", "viewport", "1600", "1000");
   for (const scenario of [
-    ...["wyvern", "hydra", "minotaur"].flatMap((beast) => [
+    ...["wyvern", "hydra"].flatMap((beast) => [
       { name: `${beast}-gameplay`, group: `species-${beast}`, focus: "lineup", models: 2, species: beast },
       { name: `${beast}-sculpt`, group: `species-${beast}`, focus: "1", models: 2, species: beast },
       {
@@ -19,7 +19,7 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         lighting: "sunset",
       },
     ]),
-    { name: "creatures-gameplay", group: "creatures", focus: "lineup", models: 3, species: "troll" },
+    { name: "creatures-gameplay", group: "creatures", focus: "lineup", models: 2, species: "troll" },
     { name: "models-gameplay", group: "models", focus: "lineup", models: 5, species: "troll" },
     { name: "ruins-gameplay", group: "ruins", focus: "lineup", models: 8, species: "troll" },
     ...[0, 1, 2, 3].map((depth) => ({
@@ -92,7 +92,7 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
       if (scenario.group.startsWith("species-") && focus === "lineup") {
         const expected = [
           `/models/frontier/beast-${scenario.species}.glb`,
-          `/models/frontier/creatures/beast-${scenario.species}.glb`,
+          `/lab/frontier-beasts/beast-${scenario.species}.glb`,
         ];
         record.checks.push({
           check: "current and creature study drawn together",

@@ -1,20 +1,38 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import draco from "draco3dgltf";
 import { it, expect } from "vitest";
 import { FRONTIER_BEASTS } from "../../src/three/structures/frontier-beast";
 
-const deliveries = ["troll", "wyvern", "hydra", "minotaur", "cyclops"].flatMap((species) => [
-  { species, directory: "", sourceDirectory: "refined/" },
-  ...(["troll", "cyclops"].includes(species)
-    ? []
-    : [{ species, directory: "creatures/", sourceDirectory: "creatures/" }]),
-]);
+const deliveries = [
+  ...Object.keys(FRONTIER_BEASTS).map((species) => ({
+    species,
+    directory: "public/models/frontier",
+    sourceDirectory: "asset-sources/frontier-beasts/refined",
+  })),
+  ...["wyvern", "hydra"].map((species) => ({
+    species,
+    directory: "asset-sources/lab/frontier-beasts",
+    sourceDirectory: "asset-sources/lab/frontier-beasts",
+  })),
+];
+
+it("keeps only the two pending studies and their editable sculpts in the lab archive", () => {
+  const files = readdirSync(new URL("../../asset-sources/lab/frontier-beasts/", import.meta.url));
+  expect(files.filter((file) => /\.(glb|blend)$/.test(file)).sort()).toEqual([
+    "beast-hydra.glb",
+    "beast-wyvern.glb",
+    "hydra.blend",
+    "wyvern.blend",
+  ]);
+  expect(files.some((file) => file.includes("minotaur"))).toBe(false);
+});
+
 for (const { species, directory, sourceDirectory } of deliveries) {
-  it(`${directory}${species}: delivered sculpt fits the hex and retains paint, normals and editable provenance`, async () => {
-    const path = new URL(`../../public/models/frontier/${directory}beast-${species}.glb`, import.meta.url);
+  it(`${directory}/${species}: delivered sculpt fits the hex and retains paint, normals and editable provenance`, async () => {
+    const path = new URL(`../../${directory}/beast-${species}.glb`, import.meta.url);
     const bytes = readFileSync(path);
     expect(bytes.length).toBeLessThanOrEqual(324508);
     const io = new NodeIO()
@@ -36,8 +54,7 @@ for (const { species, directory, sourceDirectory } of deliveries) {
       maxY = -Infinity;
     for (let i = 0; i < positions.getCount(); i++) {
       const [x, y, z] = positions.getElement(i, []);
-      if (sourceDirectory)
-        expect(Math.hypot(x, z) * FRONTIER_BEASTS[species].maxScale).toBeLessThanOrEqual(Math.sqrt(3) / 2 + 0.001);
+      expect(Math.hypot(x, z) * FRONTIER_BEASTS[species].maxScale).toBeLessThanOrEqual(Math.sqrt(3) / 2 + 0.001);
       minY = Math.min(minY, y);
       maxY = Math.max(maxY, y);
       for (let side = 0; side < 6; side++)
@@ -49,9 +66,7 @@ for (const { species, directory, sourceDirectory } of deliveries) {
     expect(minY).toBeLessThan(0.03);
     expect(maxY).toBeGreaterThan(0.7);
     for (const texture of root.listTextures()) expect(texture.getMimeType()).toBe("image/ktx2");
-    const source = readFileSync(
-      new URL(`../../asset-sources/frontier-beasts/${sourceDirectory}${species}.blend`, import.meta.url),
-    );
+    const source = readFileSync(new URL(`../../${sourceDirectory}/${species}.blend`, import.meta.url));
     const model = root.listNodes().find((node) => node.getMesh());
     expect(model.getExtras().sourceSha256).toBe(createHash("sha256").update(source).digest("hex"));
     expect(model.getScale()).toEqual([1, 1, 1]);

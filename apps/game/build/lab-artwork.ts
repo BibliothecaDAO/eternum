@@ -7,6 +7,7 @@ const CONTENT_TYPES: Record<string, string> = {
   ".png": "image/png",
   ".webp": "image/webp",
   ".json": "application/json",
+  ".glb": "model/gltf-binary",
 };
 
 /** Local lab comparisons share their original URLs without becoming deployment assets. */
