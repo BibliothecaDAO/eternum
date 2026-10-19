@@ -1,0 +1,132 @@
+.cleared-site-lab {
+  height: var(--lab-viewport-height, 100vh);
+  display: flex;
+  flex-direction: column;
+  background: #142420;
+  color: #ece8d7;
+  font-family: "Exo 2", sans-serif;
+}
+.cleared-site-lab header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #8e794d;
+}
+.cleared-site-lab header div {
+  margin-right: auto;
+}
+.cleared-site-lab h1,
+.cleared-site-lab h2 {
+  font-family: Cinzel, serif;
+}
+.cleared-site-lab h1 {
+  font-size: 24px;
+}
+.cleared-site-lab p,
+.cleared-site-lab footer,
+.cleared-site-lab small {
+  color: #bfcac1;
+}
+.cleared-site-lab select,
+.cleared-site-lab button {
+  background: #213b34;
+  border: 1px solid #64776a;
+  border-radius: 5px;
+  padding: 7px 12px;
+}
+.cleared-site-lab button[aria-pressed="true"] {
+  border-color: #e3c47b;
+}
+.cleared-site-lab :focus-visible {
+  outline: 2px solid #e3c47b;
+  outline-offset: 3px;
+}
+.cleared-site-stage {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+}
+.cleared-site-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.cleared-site-loading {
+  position: absolute;
+  z-index: 1;
+  top: 20px;
+  left: 24px;
+}
+.cleared-site-choices {
+  position: absolute;
+  z-index: 1;
+  bottom: 18px;
+  left: 15%;
+  right: 15%;
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+}
+.cleared-site-receipt {
+  position: absolute;
+  z-index: 2;
+  right: 24px;
+  top: 20px;
+  width: 280px;
+  padding: 20px;
+  background: #112b25f2;
+  border: 1px solid #ba9c5c;
+  border-radius: 7px;
+  box-shadow: 0 10px 24px #0005;
+}
+.cleared-site-receipt h2 {
+  font-size: 22px;
+  margin: 3px 0 16px;
+}
+.cleared-site-status {
+  color: #d4bd83;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.cleared-site-receipt .cleared-site-close {
+  float: right;
+  padding: 0 7px;
+}
+.cleared-site-rewards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 12px 0;
+}
+.cleared-site-rewards span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cleared-site-receipt small {
+  display: block;
+  line-height: 1.4;
+}
+.cleared-site-lab footer {
+  padding: 12px 24px;
+  font-size: 13px;
+  border-top: 1px solid #43584e;
+}
+@media (max-width: 700px) {
+  .cleared-site-lab header {
+    gap: 12px;
+    padding: 10px;
+  }
+  .cleared-site-receipt {
+    width: 235px;
+    right: 10px;
+    padding: 12px;
+  }
+  .cleared-site-choices {
+    left: 8px;
+    right: 8px;
+  }
+}

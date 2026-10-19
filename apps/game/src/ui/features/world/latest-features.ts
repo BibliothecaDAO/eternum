@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Cleared site visual study",
+    description:
+      "The model lab compares a planted standard with today's guarded sites. Select either model to preview its reward panel.",
+    type: "feature",
+    readMore: "/lab/models?family=cleared-sites",
+  },
+  {
+    date: "2026-10-19",
     title: "A shorter Settings",
     description:
       "Settings no longer lists every key: Keyboard shortcuts opens them with Show, and Back returns. Frame rate and the renderer sit together under Video & Graphics.",

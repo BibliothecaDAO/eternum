@@ -6,6 +6,20 @@ needs an adjacent own army (the panel otherwise says "Move next to it"). `/lab/r
 presentation using the production instanced model, opening pool, panel and native opening story. Run
 `pnpm --dir apps/game prove:relic-chest --port 4199 --out <fresh-dir>` for both renderer captures and behavior proof.
 
+## Cleared-site visual study
+
+Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped camp
+or stragglers with the proposed standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
+Click a model or its selection button to open the reward example; Close site dismisses it. The marker is a lab-only
+asset. Live movement and exact credited receipts await the contract change; the example reads the existing native site
+fixture and shared payout/XP formulas.
+
+Proof: serve the client, open that URL with `&evidence=/absolute/new/capture/directory`, then run
+`scripts/frontier/prove-cleared-site.playwright.js` through the browser connection with the page as its argument. It
+selects both site kinds and clicks the flag at both camera distances, checks the full-reward and XP-only examples and
+model requests, saves four captures and closes each WebGL page. Strip the file's final semicolon when passing its
+function as browser code. Keep the returned result beside the captures. Reuse this proof when revising the marker.
+
 What a player can do and how they get there, so a report or a screenshot can be reproduced. Update it in the change that
 adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. In the dev
 build, `/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and
