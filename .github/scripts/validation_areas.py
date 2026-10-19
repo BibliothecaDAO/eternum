@@ -92,7 +92,8 @@ AREAS = {
         "packages/db/**",
         "packages/chain/**",
         "packages/identity/**",
-        "contracts/common/addresses/**"
+        "contracts/common/addresses/**",
+        "deploy/first/environments.json"
     ],
     "native": [
         ".github/workflows/test-native.yml",

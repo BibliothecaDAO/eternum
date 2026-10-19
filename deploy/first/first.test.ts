@@ -105,12 +105,14 @@ test.each([
   expect(() => validateInputs({ ...input, rpc }, environments.dev)).toThrow();
 });
 
-test("positive integral deposit and duration required; production asks for public cold accounts only", () => {
+test("positive integral deposit and duration required; a cold-admin target asks for public cold accounts only", () => {
   for (const amount of ["0", "-1", "1.1", "1e6", (2n ** 128n).toString()])
     expect(() => validateInputs({ ...input, amount }, environments.dev)).toThrow();
   expect(() => validateInputs({ ...input, blitzEnd: input.blitzStart }, environments.dev)).toThrow();
-  expect(() => validateInputs(input, environments.production)).toThrow("public cold");
-  expect(() => validateInputs({ ...input, admin: "0x9", treasury: "0xa" }, environments.production)).not.toThrow();
+  const cold = { ...environments.production, coldAdmin: true };
+  expect(() => validateInputs(input, cold)).toThrow("public cold");
+  expect(() => validateInputs({ ...input, admin: "0x9", treasury: "0xa" }, cold)).not.toThrow();
+  expect(() => validateInputs(input, environments.production)).not.toThrow();
 });
 
 test("dry run inspects every step, including unavailable ones, and never calls a write", async () => {
@@ -313,15 +315,16 @@ test("fixed salt deploy resumes after a lost acknowledgement without declaring o
   );
 });
 
-test("setup keeps only missing role calls and uses the environment's two preset ids", async () => {
+test("setup keeps only missing role calls; production registers exactly dev's presets on the ledger they share", async () => {
   const dev = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
-  expect(
-    dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["1", "2"]);
+  const presets = (calls: typeof dev) => calls.filter((call) => call.entrypoint === "register_preset");
+  expect(presets(dev).map((call) => (call.calldata as string[])[0])).toEqual(["1", "2"]);
   const production = setupCalls(environments.production, assets, "0x33", 4000, 9000, 1);
-  expect(
-    production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
-  ).toEqual(["2", "5"]);
+  // Ledger preset ids are global: any other id or economics would be refused as "Registered preset differs".
+  expect(presets(production)).toEqual(presets(dev));
+  expect(production.find((call) => call.entrypoint === "open_season")).toEqual(
+    dev.find((call) => call.entrypoint === "open_season"),
+  );
   expect(production.some((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid")).toBe(false);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);

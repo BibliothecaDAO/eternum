@@ -16,8 +16,9 @@ entered; it reports those steps as unavailable. Later dry runs use the saved cre
 The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Resend key, the whole-token Frontier
 deposit, and four UTC dates: Frontier start/end and Blitz start/end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a
 default. The Frontier start must be on its army tick and its duration must contain whole day bags. An invalid end prints
-its two nearest valid alternatives without changing it. All four dates and the deposit are shown before transactions.
-Production additionally asks for the **public** cold-admin and treasury addresses. It never asks for their keys.
+its two nearest valid alternatives without changing it. All four dates and the deposit are shown before transactions. A
+target with `coldAdmin` additionally asks for the **public** cold-admin and treasury addresses. It never asks for their
+keys. No target uses it while production runs on test tokens.
 
 The first account step prints one deployer address to fund with about **250 STRK**, then stops. Run the same apply
 command after funding it. The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor,
@@ -47,12 +48,12 @@ never the response text. The Resend key needs the environment's verified email s
 also used in the browser build and is therefore public to players.
 
 `environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
-SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public `mainnet.json` asset addresses and
-requires a reviewed `deploy/release/production.json`, SSH alias `realms-production` and its own working tunnel/host
-before first deployment. The command does not format a disk, invent production host credentials or move a live shard
-onto an unreviewed endpoint. On a fresh host, run the existing `deploy/athanor/host/bootstrap.sh` through sudo as its
-operator after preparing its backup disk and tunnel token; `OPERATOR` defaults to that sudo user. This infrastructure
-prerequisite is separate from the five mainnet/shard keys.
+SSH alias `realms-dev`, and the existing dev tunnel. Production reads the book `environments.json` names for it, which
+is dev's `dev.json` while production runs on test tokens, and requires a reviewed `deploy/release/production.json`, SSH
+alias `realms-production` and its own working tunnel/host before first deployment. The command does not format a disk,
+invent production host credentials or move a live shard onto an unreviewed endpoint. On a fresh host, run the existing
+`deploy/athanor/host/bootstrap.sh` through sudo as its operator after preparing its backup disk and tunnel token;
+`OPERATOR` defaults to that sudo user. This infrastructure prerequisite is separate from the five mainnet/shard keys.
 
 The box needs git access to this repository, Docker Buildx and Compose. Image builds install their pinned compiler.
 Contract builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. No mainnet
@@ -73,14 +74,15 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 3. Deploy missing accounts and transfer only missing initial relay/monitor reserves.
 4. Build the ledger, rating token and collectible release artifacts on the box. Save the public artifacts privately.
 5. Declare missing classes and deploy absent contracts at deterministic salts. Dev creates devLords, devChest,
-   devCosmetics and the fresh rating token; production reuses its LORDS, rating token and collections. The MMR
-   contract's fixed token name is shared with production. Publish only public contract addresses to the environment
-   book, retaining the Realms collection and unrelated fields.
+   devCosmetics and the fresh rating token. Production reads a book whose five contracts already exist, so it deploys
+   nothing and only checks that its admin and relay hold their roles. The MMR contract's fixed token name is shared with
+   production. Publish only public contract addresses to the environment book, retaining the Realms collection and
+   unrelated fields.
 6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
    each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
    in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
-   future; an existing matching season is preserved after its start. Production writes public unsigned calls to
-   `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
+   future; an existing matching season is preserved after its start. A `coldAdmin` target writes public unsigned calls
+   to `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
    original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
    already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
