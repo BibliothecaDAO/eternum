@@ -7813,10 +7813,11 @@ export default class WorldmapScene extends WarpTravel {
     const animationContext = this.getAnimationVisibilityContext();
     this.syncWorldmapZoomSnapshot(deltaTime);
     super.update(deltaTime);
-    this.mapPlates.update(this.camera, window.innerWidth, window.innerHeight);
     runWithFrameWorkOwner("armies:update", () =>
       this.armyManager.update(deltaTime, animationContext, this.animationsPaused),
     );
+    // After the armies, so a marching army's plate stands where it is drawn this frame.
+    this.mapPlates.update(this.camera, window.innerWidth, window.innerHeight);
     this.structureManager.updateAnimations(deltaTime, animationContext, this.animationsPaused);
     this.spireManager.update(this.animationsPaused ? 0 : deltaTime, this.camera);
     if (!this.animationsPaused) {
