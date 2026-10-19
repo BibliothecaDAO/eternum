@@ -17,7 +17,12 @@ export const useDeployRing = (
 ): { center: { col: number; row: number } | null; ring: DeployTile[] } => {
   const { setup } = useGame();
   const home = structure ? structureMapPosition(setup.store, structure) : null;
-  const neighbors = useMemo(() => (home ? getNeighborHexes(home.x, home.y) : []), [home?.x, home?.y]);
+  const col = home?.x;
+  const row = home?.y;
+  const neighbors = useMemo(
+    () => (col === undefined || row === undefined ? [] : getNeighborHexes(col, row)),
+    [col, row],
+  );
   const tiles = useWorldSpatialTiles(neighbors);
   const ring = useMemo(() => {
     if (!structure) return [];
@@ -28,5 +33,5 @@ export const useDeployRing = (
       return tile ? safeInteger(tile.occupierId) : undefined;
     }).map((tile) => ({ ...tile, biome: tileAt(tile)?.biome }));
   }, [setup.store, structure, tiles]);
-  return { center: home ? { col: home.x, row: home.y } : null, ring };
+  return { center: col === undefined || row === undefined ? null : { col, row }, ring };
 };
