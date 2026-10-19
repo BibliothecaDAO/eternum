@@ -1,4 +1,4 @@
-import { validateInputs } from "./dates";
+import { setupQuestions, validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -109,8 +109,15 @@ test("positive integral deposit and duration required; production asks for publi
   for (const amount of ["0", "-1", "1.1", "1e6", (2n ** 128n).toString()])
     expect(() => validateInputs({ ...input, amount }, environments.dev)).toThrow();
   expect(() => validateInputs({ ...input, blitzEnd: input.blitzStart }, environments.dev)).toThrow();
-  expect(() => validateInputs(input, environments.production)).toThrow("public cold");
-  expect(() => validateInputs({ ...input, admin: "0x9", treasury: "0xa" }, environments.production)).not.toThrow();
+  expect(() => validateInputs({ ...input, alertEmail: "oncall@example.test" }, environments.production)).toThrow(
+    "public cold",
+  );
+  expect(() =>
+    validateInputs(
+      { ...input, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" },
+      environments.production,
+    ),
+  ).not.toThrow();
 });
 
 test("dry run inspects every step, including unavailable ones, and never calls a write", async () => {
@@ -381,6 +388,29 @@ test("every service uses one RPC; deployer and cold admin keys never enter Worke
   });
   const admin = workers.find((worker) => worker.id === "admin")!;
   expect(() => workerSecrets(admin, input, secrets, keys, undefined)).toThrow("Admin access is not set up yet");
+});
+
+test("setup asks for an alert email on production only, and dev's inputs can never hold one", () => {
+  const asked = (environment: keyof typeof environments) =>
+    setupQuestions(environments[environment]).map(([name]) => name);
+  expect(asked("dev")).toEqual([
+    "cloudflareToken",
+    "rpc",
+    "resend",
+    "amount",
+    "frontierStart",
+    "frontierEnd",
+    "blitzStart",
+    "blitzEnd",
+  ]);
+  expect(asked("production")).toContain("alertEmail");
+  for (const alertEmail of ["oncall@example.test", ""])
+    expect(() => validateInputs({ ...input, alertEmail }, environments.dev)).toThrow("Dev sends no alert email");
+  const production = { ...input, admin: "0x9", treasury: "0xa" };
+  expect(() => validateInputs(production, environments.production)).toThrow("Production needs the alert email");
+  expect(() => validateInputs({ ...production, alertEmail: "not-an-address" }, environments.production)).toThrow(
+    "Production needs the alert email",
+  );
 });
 
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {

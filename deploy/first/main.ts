@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { validateInputs } from "./dates";
+import { setupQuestions, validateInputs } from "./dates";
 import { deploymentRevision } from "./revision";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
@@ -108,21 +108,9 @@ async function prompt(label: string) {
   });
 }
 async function collectInputs(context: Deployment) {
-  const inputs: Inputs = {
-    cloudflareToken: await prompt("Cloudflare token"),
-    rpc: await prompt("Alchemy mainnet URL"),
-    resend: await prompt("Resend key"),
-    alertEmail: await prompt("Alert email (where the status monitor reports incidents)"),
-    amount: await prompt("Frontier deposit in whole tokens"),
-    frontierStart: await prompt("Frontier start, YYYY-MM-DDTHH:MM:SSZ"),
-    frontierEnd: await prompt("Frontier end, YYYY-MM-DDTHH:MM:SSZ"),
-    blitzStart: await prompt("Blitz start, YYYY-MM-DDTHH:MM:SSZ"),
-    blitzEnd: await prompt("Blitz end, YYYY-MM-DDTHH:MM:SSZ"),
-  };
-  if (context.target.coldAdmin) {
-    inputs.admin = await prompt("Public cold admin account address (never its key)");
-    inputs.treasury = await prompt("Public treasury address");
-  }
+  const answers: Partial<Record<keyof Inputs, string>> = {};
+  for (const [name, question] of setupQuestions(context.target)) answers[name] = await prompt(question);
+  const inputs = answers as Inputs;
   validateInputs(inputs, context.target);
   context.store.write("inputs.json", inputs);
   reload(context);

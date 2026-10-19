@@ -14,7 +14,7 @@ export interface Inputs extends SeasonDates {
   cloudflareToken: string;
   rpc: string;
   resend: string;
-  /** Where the status monitor emails incidents; private directories set up before alerts may not have one yet. */
+  /** Where the status monitor emails incidents: production's only, required there and refused on dev. */
   alertEmail?: string;
   amount: string;
   admin?: string;
