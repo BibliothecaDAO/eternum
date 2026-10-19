@@ -2,6 +2,7 @@ import { formatAmount, formatOrdinal, formatPoints } from "@bibliothecadao/types
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
+import { displayPlayerName } from "@bibliothecadao/eternum";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import type { HeraldFrontierLeaderboardEntry, HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { usePlayerProfile } from "@/hooks/use-player-profile";
@@ -267,10 +268,17 @@ const BlitzOutcome = ({
   </div>
 );
 
-/** A player's portrait, large: their chosen one, else their account's. */
+/** A player's portrait, large: their chosen one, else their account's, named by the one name rule. */
 const PlayerPortrait = ({ account }: { account: string }) => {
   const profile = usePlayerProfile(account);
-  return <AppPortrait src={playerPortraitUrl(account, profile.portrait)} name={account} size="lg" own />;
+  return (
+    <AppPortrait
+      src={playerPortraitUrl(account, profile.portrait)}
+      name={displayPlayerName(account, profile.name)}
+      size="lg"
+      own
+    />
+  );
 };
 
 /** How the player's points were made, a row per kind with its icon, its count and its points; kinds with none left out. */

@@ -39,6 +39,8 @@ vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));
 
+import { displayPlayerName } from "@bibliothecadao/eternum";
+
 import { setViewportWidth } from "../frame/test-viewport";
 import { ResultsPage } from "./results-page";
 
@@ -93,6 +95,13 @@ it.each([390, 1440])(
     ]);
   },
 );
+
+it("names the player's portrait by the one name rule, never by their address", async () => {
+  const page = await open(1440);
+  const portrait = page.querySelector<HTMLElement>(".app-portrait")!;
+  expect(portrait.title).toBe(displayPlayerName("0xb7", null));
+  expect(portrait.title).not.toContain("0x");
+});
 
 it("opens the finished game's end map, watched, from See the end map", async () => {
   const page = await open(1440);
