@@ -18,6 +18,14 @@ const isEmailed = (componentId: string) =>
  */
 export const NOTICE_LIFETIME_SECONDS = 23 * 3600;
 
+/**
+ * At most this many emails in any 24 hours: the Resend account also sends players' sign-in codes, and on 10-17 an
+ * uncapped monitor's 340 emails blocked them. The last one allowed says so; changes after it wait, untold, for the window
+ * to free a place, and only the ones still true then are told. The status page always shows everything.
+ */
+export const DAILY_EMAILS = 4;
+const DAY_SECONDS = 24 * 3600;
+
 /** Where alerts go: the operator's address, through the Resend account the identity Worker already sends from. */
 export interface Alerting {
   apiKey: string;
@@ -34,48 +42,64 @@ export interface Notice {
   text: string;
 }
 
-/** The incidents told and not yet resolved, and the notices recorded and not yet confirmed sent. */
+/** The incidents told and not yet resolved, the notices recorded and not yet confirmed sent, and when each was recorded. */
 export interface AlertState {
   told: string[];
   outbox: Notice[];
+  /** Recording times of the last 24 hours' notices; a state written before the cap holds none. */
+  sent?: number[];
 }
 
-export const NO_ALERTS: AlertState = { told: [], outbox: [] };
+export const NO_ALERTS: AlertState = { told: [], outbox: [], sent: [] };
 
 /**
- * Records a notice for each sustained outage untold, and for each told one now resolved, beside the notices still
- * unconfirmed. The monitor writes this state before any send, so a notice is decided once, whatever happens to
- * a send or a later write. Without an address, nothing is recorded and the changes wait untold.
+ * Records one notice for the sustained outages newly untold, and one for the told ones now resolved, beside the notices
+ * still unconfirmed, within the daily cap. The monitor writes this state before any send, so a notice is decided once,
+ * whatever happens to a send or a later write. Without an address, nothing is recorded and the changes wait untold.
  */
 export function recordNotices(
   document: StatusDocument,
   previous: AlertState,
   alerting: Alerting | undefined,
 ): AlertState {
+  const now = document.checked_at;
   const told = new Set(previous.told.filter((id) => document.incidents.some((incident) => incident.id === id)));
+  const sent = (previous.sent ?? []).filter((at) => now - at < DAY_SECONDS);
   const outbox = previous.outbox.filter((notice) => {
-    const live = document.checked_at - notice.recorded_at < NOTICE_LIFETIME_SECONDS;
+    const live = now - notice.recorded_at < NOTICE_LIFETIME_SECONDS;
     if (!live) console.error(JSON.stringify({ event: "status_alert_expired", key: notice.key }));
     return live;
   });
-  const opened = document.incidents.filter(
-    (incident) => incident.status !== "resolved" && !told.has(incident.id) && isSustainedOutage(document, incident),
-  );
-  const resolved = document.incidents.filter((incident) => incident.status === "resolved" && told.has(incident.id));
-  if (!opened.length && !resolved.length) return { told: [...told], outbox };
+  const changes = [
+    {
+      news: "opened" as const,
+      incidents: document.incidents.filter(
+        (incident) => incident.status !== "resolved" && !told.has(incident.id) && isSustainedOutage(document, incident),
+      ),
+    },
+    {
+      news: "resolved" as const,
+      incidents: document.incidents.filter((incident) => incident.status === "resolved" && told.has(incident.id)),
+    },
+  ].filter((change) => change.incidents.length > 0);
+  if (!changes.length) return { told: [...told], outbox, sent };
   if (!alerting) {
-    console.error(JSON.stringify({ event: "status_alerts_unconfigured", untold: opened.length + resolved.length }));
-    return { told: [...told], outbox };
+    console.error(JSON.stringify({ event: "status_alerts_unconfigured", untold: countIncidents(changes) }));
+    return { told: [...told], outbox, sent };
   }
-  for (const incident of opened) {
-    told.add(incident.id);
-    outbox.push(noticeOf(alerting, incident, "opened", document.checked_at));
+  for (const change of changes) {
+    if (sent.length >= DAILY_EMAILS) {
+      console.error(JSON.stringify({ event: "status_alert_capped", untold: change.incidents.length }));
+      continue;
+    }
+    sent.push(now);
+    const limitEndsAt = sent.length === DAILY_EMAILS ? sent[0]! + DAY_SECONDS : null;
+    outbox.push(noticeOf(alerting, change.incidents, change.news, now, limitEndsAt));
+    for (const incident of change.incidents)
+      if (change.news === "opened") told.add(incident.id);
+      else told.delete(incident.id);
   }
-  for (const incident of resolved) {
-    told.delete(incident.id);
-    outbox.push(noticeOf(alerting, incident, "resolved", document.checked_at));
-  }
-  return { told: [...told], outbox };
+  return { told: [...told], outbox, sent };
 }
 
 /** Sends each recorded notice, exactly as recorded; returns the keys Resend confirmed. */
@@ -95,17 +119,37 @@ function isSustainedOutage(document: StatusDocument, incident: Incident) {
   );
 }
 
-function noticeOf(alerting: Alerting, incident: Incident, news: "opened" | "resolved", now: number): Notice {
-  const at = new Date((news === "resolved" ? incident.resolved_at! : incident.started_at) * 1000).toISOString();
+const countIncidents = (changes: readonly { incidents: readonly Incident[] }[]) =>
+  changes.reduce((total, change) => total + change.incidents.length, 0);
+
+/** One email for every incident that changed alike in one check; its key is fixed by those incidents and that change. */
+function noticeOf(
+  alerting: Alerting,
+  incidents: readonly Incident[],
+  news: "opened" | "resolved",
+  now: number,
+  limitEndsAt: number | null,
+): Notice {
+  const iso = (seconds: number) => new Date(seconds * 1000).toISOString();
+  const lines = incidents.map((incident) =>
+    [
+      `${incident.title}, ${news === "resolved" ? "resolved" : "since"} ${iso(news === "resolved" ? incident.resolved_at! : incident.started_at)}.`,
+      `Component: ${incident.components.join(", ")}.`,
+    ].join("\n"),
+  );
   return {
-    key: `${alerting.environment}:${incident.id}:${news}`,
+    key: `${alerting.environment}:${incidents.map((incident) => incident.id).join("+")}:${news}`,
     recorded_at: now,
     to: alerting.to,
-    subject: `[${alerting.environment}] ${news === "resolved" ? "Resolved: " : ""}${incident.title}`,
+    subject: `[${alerting.environment}] ${news === "resolved" ? "Resolved: " : ""}${incidents.map((incident) => incident.title).join("; ")}`,
     text: [
-      `${incident.title}, ${news === "resolved" ? "resolved" : "since"} ${at}.`,
-      `Component: ${incident.components.join(", ")}.`,
+      ...lines,
       "What it means and the first commands: deploy/first/ON-CALL.md, under that component.",
+      ...(limitEndsAt === null
+        ? []
+        : [
+            `Alert limit reached: no more email until ${iso(limitEndsAt)}. The status page shows every change meanwhile.`,
+          ]),
     ].join("\n"),
   };
 }

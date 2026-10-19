@@ -158,8 +158,13 @@ payouts require the owner. The gameplay report never controls shard admission.
 ## Alerts
 
 Setup asks for an alert email (`alertEmail` in `inputs.json`; add it there for a private directory set up before
-alerts). `deploy:cloudflare` gives it to the status monitor with the Resend key, and the monitor emails each component
-that stays down or degraded for two minutes, and its recovery. What each alert means and the first commands to run:
+alerts). `deploy:cloudflare` gives it to the status monitor with the Resend key. Dev keeps none and sends no email.
+
+The status monitor probes every minute. It emails only when the client (`play`), sign-in (`accounts`), game launches
+(`launch`) or a world (`shard:…`) has been **down**, not slow or behind, for ten minutes in a row; components that cross
+that mark in the same minute share one email. Their recovery is one more. At most four emails go out in any 24 hours,
+because the same Resend account sends sign-in codes; the fourth says when email resumes, and the status page shows
+everything meanwhile (`apps/status-monitor/src/alerts.ts`). What each alert means and the first commands to run:
 [ON-CALL.md](./ON-CALL.md).
 
 ## Teardown

@@ -7,12 +7,15 @@ status page. Only an outage players feel, which only the owner can end, is email
 - the component is `play`, `accounts`, `launch` or a world (`shard:<chain>`);
 - and it has been down, not merely degraded, for ten minutes without a break.
 
-The outage and its recovery are each emailed exactly once. Shorter outages, slowdowns and every other component stay on
-the status page; read it first. Each email is recorded in the monitor's state before it is sent and retried as recorded
-until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and logged as `status_alert_expired`
-(the status page still shows the incident), because past Resend's 24-hour key a resend could be a second email. The
-email names the component; find it below. Dev is `play.dev-realms.party` and the box's dev shard is `realms-dev`.
-Production is `play.realms.party`, and its Worker names drop `-staging`.
+The outage and its recovery are each emailed exactly once; components that cross the ten minutes in the same minute,
+such as a world and launches when the box stops, share one email, and so do their recoveries. At most four emails go out
+in any 24 hours (`status_alert_capped` in the log when one is held back): the fourth says when email resumes, and a
+change made meanwhile is emailed then only if it is still true. Shorter outages, slowdowns and every other component
+stay on the status page; read it first. Each email is recorded in the monitor's state before it is sent and retried as
+recorded until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and logged as
+`status_alert_expired` (the status page still shows the incident), because past Resend's 24-hour key a resend could be a
+second email. The email names the component; find it below. Dev is `play.dev-realms.party` and the box's dev shard is
+`realms-dev`. Production is `play.realms.party`, and its Worker names drop `-staging`.
 
 Commands for the box run there (`ssh realms-dev`). Worker logs need the Cloudflare token:
 `pnpm --dir <app> exec wrangler tail <worker>`.
