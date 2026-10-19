@@ -9,6 +9,7 @@ import {
   createBrowserSession,
   openPageDevTools,
   recordRpcSends,
+  setViewport,
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
 import { startClient } from "./client-playtest/client-server.mjs";
@@ -85,6 +86,9 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
   }
 
+  const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
+  if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
+
   return {
     baseUrl: option("--base-url", null),
     chainId: option("--chain-id", ""),
@@ -100,6 +104,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     stepSet,
     timeoutMs: integer("--timeout-ms", DEFAULTS.timeoutMs, 1),
     trace: argv.includes("--trace"),
+    viewport: { width: Number(viewport[1]), height: Number(viewport[2]) },
   };
 }
 
@@ -130,6 +135,8 @@ async function main(argv) {
   let options = null;
   try {
     options = readPlaytestOptions(argv, process.env.INIT_CWD ?? process.cwd());
+    setViewport(options.viewport);
+    output.viewport = options.viewport;
     runDir = allocateRunDirectory(options.outRoot, options.player ? "player" : "spectator");
     output.source = describeSource();
     output.stage = "starting the client";

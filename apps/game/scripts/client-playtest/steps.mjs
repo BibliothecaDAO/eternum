@@ -12,6 +12,7 @@ import {
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
+import { judgeHudLayout } from "./hud-layout.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -72,6 +73,7 @@ const BLITZ = { mode: "blitz", card: { heading: null, enter: "^Enter$" } };
 export const SPECTATOR_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "map-idle", play: keepTheViewBefore, settleMs: 10_000, verify: idledOn(inScene("map")) },
   { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(inScene("map")) },
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
@@ -123,6 +125,7 @@ const BLITZ_MAP = {
 const PLAYER_STEPS = [
   { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
   { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
   { name: "production", play: openAndCloseProduction, settleMs: 1_000, verify: sheetOpenedAndClosed("Production") },
   ...nextOrderSteps(),
@@ -144,7 +147,7 @@ function goTo(place, scene) {
   return async ({ browser }) => {
     const startedOn = browser.observe().timeOrigin;
     for (let presses = 1; presses <= PLACE_PRESSES; presses += 1) {
-      browser.click(place);
+      pressPlace(browser, place);
       if (await arrives(browser, place, scene)) {
         return { presses, reloaded: browser.observe().timeOrigin !== startedOn };
       }
@@ -174,7 +177,37 @@ function inScene(scene) {
 
 /** The route, the scene drawn and the lit place agree: a route on the map over a realm still drawn is not the map. */
 const isIn = (seen, place, scene) =>
-  seen.scene === scene && seen.rendered === scene && Boolean(seen.place?.startsWith(place));
+  seen.scene === scene &&
+  seen.rendered === scene &&
+  [place, PLACE_TABS[place]].some((name) => Boolean(name && seen.place?.startsWith(name)));
+
+/**
+ * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
+ * there; a phone's Frontier HUD has its own place bar's Map and Realm.
+ */
+const PLACE_TABS = { Map: "World", Realm: "Realm" };
+
+/** Presses the place bar's button where there is one (a phone), else the top bar's tab (a desktop). */
+function pressPlace(browser, place) {
+  try {
+    browser.click(place);
+  } catch {
+    browser.clickTab(PLACE_TABS[place]);
+  }
+}
+
+/** Where the HUD's standing parts sit on the map at rest. */
+async function readTheHudLayout({ browser }) {
+  return { layout: browser.hudLayout() };
+}
+
+/** The HUD laid out on the map (judgeHudLayout): its parts drawn, whole on the page, apart, each control reachable. */
+function hudLaidOut(onMap) {
+  return ({ seen, played }) => {
+    const scene = onMap({ seen });
+    return scene.status === "completed" ? judgeHudLayout(played.layout) : scene;
+  };
+}
 
 /** WASD round trip of 16 s; the view before and after are kept to prove the camera moved over the map. */
 async function panTheMap({ browser, extraScreenshot }) {
@@ -366,10 +399,23 @@ function armySelected({ seen, played }) {
     : failed(`${played.army} is not selected (pressed: ${seen.pressed.join(", ") || "none"})`);
 }
 
-/** Centres the army, taps its neighbours until one offers Explore, and confirms it; other offers are cancelled. */
+/**
+ * Centres the army and explores a tile beside it as a player does: on a desktop, hovers its neighbours until one's
+ * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one offers
+ * Explore on the order bar and confirms it, other offers cancelled.
+ */
 async function exploreBesideArmy({ browser, extraScreenshot }) {
   const army = await focusTheReadiestArmy(browser);
   if (!army) return { offered: [], army };
+  if (onADesktop()) {
+    const { target, scanned } = await findOrderTile(browser, "Explore");
+    const offered = scanned.map(({ verb }) => verb);
+    if (!target) return { army, offered };
+    const before = extraScreenshot("before");
+    const pressedAt = browser.observe().now;
+    browser.rightClick(target.offset);
+    return { army, offered, pressedAt, before, target: target.offset };
+  }
   const offered = [];
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
@@ -624,15 +670,19 @@ async function pollDevTools(read, timeoutMs) {
   return null;
 }
 
-/** Hovers tiles around the army until one's tooltip offers it a move or an explore, as a player reads it. */
-async function findOrderTile(browser) {
+/**
+ * Hovers tiles around the army until one's tooltip offers it one of `verbs` (a move or an explore), as a player reads
+ * it.
+ */
+async function findOrderTile(browser, ...verbs) {
+  const wanted = verbs.length > 0 ? verbs : ["Move", "Explore"];
   const scanned = [];
   for (const offset of ORDER_TILE_CANDIDATES) {
     browser.hover(offset);
     await sleep(HOVER_SETTLE_MS);
     const verb = browser.read(ORDER_TOOLTIP_TITLE);
     scanned.push({ offset, verb });
-    if (verb === "Move" || verb === "Explore") return { target: { offset, verb }, scanned };
+    if (wanted.includes(verb)) return { target: { offset, verb }, scanned };
   }
   return { target: null, scanned };
 }
@@ -916,18 +966,30 @@ function nextOrderSteps() {
 }
 
 function nextOrderStep(name, whileInFlight, expected, { refuse = false, needsOther = false } = {}) {
+  const play = withOrderInFlight(whileInFlight, { refuse, needsOther });
   return {
     name,
-    play: withOrderInFlight(whileInFlight, { refuse, needsOther }),
+    play: (input) => (onADesktop() ? { desktop: true } : play(input)),
     settleMs: 8_000,
     verify: ({ played, actionLatency, window }) =>
-      judgeNextOrder({
-        expected,
-        played,
-        orders: describeOrders({ armyTrace: actionLatency.armyMovement, ...window }),
-      }),
+      played.desktop
+        ? blocked(DESKTOP_ORDERS)
+        : judgeNextOrder({
+            expected,
+            played,
+            orders: describeOrders({ armyTrace: actionLatency.armyMovement, ...window }),
+          }),
   };
 }
+
+/** A desktop's HUD orders from the map itself, as Blitz's does: a right-click sends at once, nothing is queued. */
+const DESKTOP_ORDERS = "a desktop orders from the map at once: the queued next order is a phone's";
+
+/** The run plays at a desktop's width (the HUD's left column and contextual orders). */
+const onADesktop = () => VIEWPORT.width >= DESKTOP_MIN_WIDTH;
+
+/** The desktop width the HUD composes for (DESKTOP_MIN_PX). */
+const DESKTOP_MIN_WIDTH = 1024;
 
 /**
  * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once

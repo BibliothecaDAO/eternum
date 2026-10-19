@@ -1,6 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 
+import { HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
+
 const AGENT_BROWSER_RETRIES = 2;
 const AGENT_BROWSER_RETRY_DELAY_MS = 2_000;
 const RETRYABLE_COMMANDS = new Set(["console", "errors", "eval", "screenshot"]);
@@ -9,7 +11,11 @@ const TRANSIENT_FAILURE_PATTERNS = [
   "Failed to read: Resource temporarily unavailable",
   "daemon may be busy or unresponsive",
 ];
+/** The page's size, 1920 by 1080 unless the run asks for another (`--viewport`); steps read it as they play. */
 export const VIEWPORT = { width: 1920, height: 1080 };
+
+/** Plays the run at another page size. */
+export const setViewport = ({ width, height }) => Object.assign(VIEWPORT, { width, height });
 
 /**
  * One agent-browser session on one browser profile: commands as a player gives them, and reads of what the page shows.
@@ -51,6 +57,7 @@ export function createBrowserSession(session, { headed, profile }) {
     eval: evaluate,
     read,
     click: (name) => run(["find", "role", "button", "click", "--name", name, "--exact"]),
+    clickTab: (name) => run(["find", "role", "tab", "click", "--name", name, "--exact"]),
     press: (key) => run(["press", key]),
     tap: (offset) => run(["batch", ...tapCommands(offset)]),
     hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
@@ -59,6 +66,7 @@ export function createBrowserSession(session, { headed, profile }) {
     observe: () => read(OBSERVE_EXPRESSION),
     buttonTexts: () => read(BUTTON_TEXTS_EXPRESSION),
     armies: () => read(ARMIES_EXPRESSION),
+    hudLayout: () => read(HUD_LAYOUT_EXPRESSION),
     close: () => run(["close"], { allowFailure: true }),
   };
 }
@@ -93,7 +101,10 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   scene: /\\/(map|hex)$/.exec(location.pathname)?.[1] ?? null,
   rendered: window.__rendererDiagnostics?.sceneName ?? null,
   selection: window.__eternumMapSelection ?? null,
-  place: document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ?? null,
+  place:
+    document.querySelector('nav[aria-label="Places"] [aria-current="page"]')?.textContent.trim() ??
+    document.querySelector('[aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ??
+    null,
   dialogs: [...document.querySelectorAll('[role="dialog"]')].map((dialog) => dialog.getAttribute("aria-label")),
   pressed: [...document.querySelectorAll('button[aria-pressed="true"]')].map((button) => button.getAttribute("aria-label")),
   worldmapDistance: JSON.parse(localStorage.getItem("eternum-camera-zoom") ?? "null")?.state?.worldmapDistance ?? null,

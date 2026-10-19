@@ -320,3 +320,50 @@ describe("the Blitz order steps", () => {
     expect(verify({ seen: { ...onTheMap, selection: null }, played: { army: army(home, 6) } }).status).toBe("failed");
   });
 });
+
+describe("the HUD's layout on the map", () => {
+  const verify = verifyOf("hud-layout");
+  const desktop = { width: 1280, height: 800 };
+  // A Frontier desktop at 1280 by 800: the top bar's chip, the left column's strip, purse, armies and minimap, the
+  // rail's events and chat, a round place at the foot.
+  const parts = {
+    "uxplay #12 Season": { left: 676, top: 4, right: 893, bottom: 40 },
+    strip: { left: 12, top: 60, right: 332, bottom: 144 },
+    "LORDS 1,240": { left: 220, top: 150, right: 324, bottom: 178 },
+    Armies: { left: 12, top: 186, right: 332, bottom: 460 },
+    Minimap: { left: 12, top: 468, right: 332, bottom: 780 },
+    Events: { left: 948, top: 60, right: 1268, bottom: 110 },
+    Research: { left: 560, top: 720, right: 610, bottom: 790 },
+  };
+  const minimap = parts.Minimap;
+  const judged = (layout) =>
+    verify({ seen: onTheMap, played: { layout: { viewport: desktop, minimap, covered: [], ...layout } } });
+
+  it("completes with every part drawn whole on the page, none over another, every control reachable", () => {
+    expect(judged({ parts }).status).toBe("completed");
+  });
+
+  it("fails a desktop with no minimap", () => {
+    expect(judged({ parts, minimap: null }).reason).toBe("not drawn: the minimap");
+  });
+
+  it("fails a part pushed off the page, two parts over each other, or a control drawn over", () => {
+    expect(judged({ parts: { ...parts, Minimap: { ...minimap, bottom: 820 } } }).reason).toBe("off the page: Minimap");
+    expect(
+      judged({ parts: { ...parts, "LORDS 1,240": { ...parts["LORDS 1,240"], top: 180, bottom: 210 } } }).reason,
+    ).toBe("overlapping: LORDS 1,240 over Armies");
+    expect(judged({ parts, covered: ["Research: Research"] }).reason).toBe("covered controls: Research: Research");
+  });
+
+  it("fails a region holding more than seven parts, and holds one of seven", () => {
+    expect(judged({ parts, regions: { holdings: 4, commands: 7 } }).status).toBe("completed");
+    expect(judged({ parts, regions: { holdings: 4, commands: 8 } }).reason).toBe("more than seven parts: commands (8)");
+  });
+
+  it("fails off the map, however the HUD lies", () => {
+    const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
+    expect(
+      verify({ seen: onTheRealm, played: { layout: { viewport: desktop, parts, minimap, covered: [] } } }).status,
+    ).toBe("failed");
+  });
+});

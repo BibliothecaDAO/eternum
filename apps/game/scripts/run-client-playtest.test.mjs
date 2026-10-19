@@ -21,6 +21,11 @@ describe("allocateRunDirectory", () => {
 });
 
 describe("readPlaytestOptions", () => {
+  it("plays at 1920 by 1080 unless --viewport names another size", () => {
+    expect(readPlaytestOptions([]).viewport).toEqual({ width: 1920, height: 1080 });
+    expect(readPlaytestOptions(["--viewport", "1280x800"]).viewport).toEqual({ width: 1280, height: 800 });
+  });
+
   it("reads a spectator run with its defaults, paths taken from where the command was run", () => {
     expect(readPlaytestOptions(["--out", "runs", "--iterations", "2"], "/work")).toMatchObject({
       baseUrl: null,
@@ -44,6 +49,7 @@ describe("readPlaytestOptions", () => {
     expect(() => readPlaytestOptions(["--cpu-throttle", "0.5"])).toThrow(
       "--cpu-throttle must be an integer of at least 1",
     );
+    expect(() => readPlaytestOptions(["--viewport", "1440"])).toThrow(/--viewport takes <width>x<height>/);
     expect(() => readPlaytestOptions(["--steps", "burst"])).toThrow(
       '--steps takes spectator, unit-assets-spectator, knight-spectator, knight-blitz-spectator, player, ownership-rings, blitz-orders, blitz-spectator, blitz-burst, still-map, still-map-frozen-sun, blitz-still-map, blitz-still-map-frozen-sun, not "burst"',
     );

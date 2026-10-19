@@ -9,12 +9,19 @@
  * page does not draw (its `[data-lab]` mark missing) fails the run, so a broken surface never passes as a picture. The
  * desktop HUD's stage is also held to its bottom-left rule at each size (scripts/hud-sheet/clearance.mjs): the minimap in
  * the left column's corner, the foot between the columns.
+ *
+ * With `--hud-layout`, it holds the in-game HUD's desktop layout instead: each of HUD_LAYOUT_PAGES at each of the
+ * DESKTOPS sizes, read and judged as the playtest's `hud-layout` step judges a live map (judgeHudLayout: every part
+ * drawn whole on the page, none over another, every control reachable, at most seven parts a region), writing a picture
+ * each and `hud-layout.json`, and failing the run on any fault.
  */
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 
 import { hudClearanceProblems, READ_HUD_BOXES } from "../../../scripts/hud-sheet/clearance.mjs";
+
+import { HUD_LAYOUT_EXPRESSION, judgeHudLayout } from "./client-playtest/hud-layout.mjs";
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 const VIEWPORT = [1920, 1080];
@@ -44,9 +51,56 @@ export const SURFACES = [
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
 ];
 
+/**
+ * The lab pages the layout is held on: the one desktop HUD as each mode and viewer meets it (a Blitz player, a Blitz
+ * spectator while the game runs and once it has finished, a Frontier player), then Frontier's own moments on it (an
+ * army picked, a camp's card, Deploy, Research, the guide speaking, the purse with the guide, the last hour, a sheet).
+ */
+const HUD_LAYOUT_PAGES = [
+  "unified/blitz",
+  "unified/blitz-spectator",
+  "unified/blitz-finished",
+  "unified/frontier",
+  "hud/selected",
+  "hud/site-camp",
+  "hud/deploy",
+  "hud/research",
+  "hud/guide-deploy",
+  "hud/purse-guide",
+  "hud/last-hour",
+  "hud/production",
+];
+
+const holdHudLayout = ({ baseUrl, out, run }) => {
+  const results = [];
+  for (const [width, height] of DESKTOPS) {
+    run("set", "viewport", String(width), String(height));
+    for (const page of HUD_LAYOUT_PAGES) {
+      run("open", `${baseUrl}/lab/kit/${page}`, "--ignore-https-errors");
+      // The HUD mounts once the lab's game has opened its shard: wait for its column, then let the parts settle.
+      run("wait", "[data-hud-column]");
+      run("wait", HUD_SETTLE_MS);
+      const verdict = judgeHudLayout(JSON.parse(JSON.parse(run("eval", HUD_LAYOUT_EXPRESSION))));
+      run("screenshot", join(out, `hud-layout-${width}x${height}-${page.replace("/", "-")}.png`));
+      results.push({ size: `${width}x${height}`, page, ...verdict });
+      console.log(`${verdict.status} ${width}x${height} ${page}${verdict.reason ? `: ${verdict.reason}` : ""}`);
+    }
+  }
+  writeFileSync(join(out, "hud-layout.json"), JSON.stringify(results, null, 2));
+  return results.filter(({ status }) => status !== "completed");
+};
+
+/** How long the HUD's parts take to settle once its column is drawn (panels that size to what they read). */
+const HUD_SETTLE_MS = "1500";
+
 const main = () => {
   const { values } = parseArgs({
-    options: { "base-url": { type: "string" }, out: { type: "string" }, only: { type: "string" } },
+    options: {
+      "base-url": { type: "string" },
+      out: { type: "string" },
+      only: { type: "string" },
+      "hud-layout": { type: "boolean" },
+    },
   });
   if (!values["base-url"] || !values.out) throw new Error("Usage: --base-url <url> --out <dir> [--only a,b]");
   const only = values.only?.split(",");
@@ -54,6 +108,19 @@ const main = () => {
   mkdirSync(values.out, { recursive: true });
   const session = `hud-lab-${process.pid}`;
   const run = (...args) => runAgentBrowser(session, args);
+  if (values["hud-layout"]) {
+    let faults;
+    try {
+      faults = holdHudLayout({ baseUrl: values["base-url"], out: values.out, run });
+    } finally {
+      run("close");
+    }
+    if (faults.length > 0) {
+      console.error(`HUD layout faults: ${faults.length}`);
+      process.exit(1);
+    }
+    return;
+  }
   const missing = [];
   const broken = [];
   try {
