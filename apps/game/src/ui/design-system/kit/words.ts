@@ -95,7 +95,6 @@ export const SEASON = "Season";
 /** The season board's two number columns, named on their icons' tooltip. */
 export const SITES_CLEARED = "Sites cleared";
 export const LORDS_EARNED = "LORDS earned";
-export const GUIDE = "Guide";
 export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
 export const SETTINGS_WORDS = {
@@ -305,10 +304,6 @@ export const BACK = "Back";
 /** Looking at another realm, and stopping. */
 export const VISIT = "Visit";
 export const LEAVE = "Leave";
-
-/** The guide card's two verbs: go to what the line names, and on to the next line. */
-export const SHOW_ME = "Show me";
-export const NEXT = "Next";
 
 /** Filling an army's stamina for LORDS, a full refill only. */
 export const REFILL = "Refill";

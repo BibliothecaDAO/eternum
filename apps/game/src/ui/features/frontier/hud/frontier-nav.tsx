@@ -21,8 +21,7 @@ export type HudSurface =
   | "season"
   | "army"
   | "withdraw"
-  | "realms"
-  | "guide";
+  | "realms";
 
 /**
  * What the HUD has open. Opening a surface lets go of the tile, plot or building the player had tapped, so one sheet

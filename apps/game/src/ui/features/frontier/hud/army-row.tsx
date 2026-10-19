@@ -4,7 +4,6 @@ import { HudIconButton, HudMeter, HudPanel, HudPortrait, HudRow } from "@/ui/des
 import { ARMIES, STAMINA, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { guideTarget } from "../guide/guide-thread";
 import { xpLine, type XpGoal } from "./army-token";
 
 /**
@@ -24,7 +23,6 @@ export const ArmyRow = ({
   canBuyTier,
   selected,
   flyTarget,
-  guided = false,
   onPick,
   onUpgrade,
 }: {
@@ -39,8 +37,6 @@ export const ArmyRow = ({
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
-  /** The list's first army: the guide's lines about XP and stamina point at its figures. */
-  guided?: boolean;
   /** Absent on a visit: the row is shown, never picked. */
   onPick?: () => void;
   /** The army's sheet, where its XP buys a tier; absent on a visit. */
@@ -61,11 +57,7 @@ export const ArmyRow = ({
     title={
       <span className="flex items-center justify-between gap-2">
         <span className="truncate">{label}</span>
-        <span
-          data-tip={xpLine(xp, xpGoal)}
-          {...(guided ? guideTarget("army-xp") : {})}
-          className="flex shrink-0 items-center gap-1 tabular-nums text-hud-gold"
-        >
+        <span data-tip={xpLine(xp, xpGoal)} className="flex shrink-0 items-center gap-1 tabular-nums text-hud-gold">
           {`${formatAmount(xp)} ${XP}`}
         </span>
       </span>
@@ -73,7 +65,7 @@ export const ArmyRow = ({
     detail={
       <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
         <span>{troops === undefined ? "—" : troopCount(troops)}</span>
-        <span className="flex flex-1 items-center gap-2" {...(guided ? guideTarget("army-stamina") : {})}>
+        <span className="flex flex-1 items-center gap-2">
           <span className="min-w-8 flex-1">
             <HudMeter amount={stamina} tone="good" label={STAMINA} />
           </span>

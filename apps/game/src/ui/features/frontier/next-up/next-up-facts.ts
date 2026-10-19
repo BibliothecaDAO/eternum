@@ -2,12 +2,10 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
   configManager,
   entityMapPosition,
-  expeditionDepth,
   getBalance,
   getBuildingQuantity,
   getGuardsByStructure,
@@ -29,8 +27,6 @@ import {
   ResourcesIds,
   StructureType,
   TickIds,
-  type TroopTier,
-  type TroopType,
 } from "@bibliothecadao/types";
 import { knownBalance } from "@/ui/utils/utils";
 import { useMemo } from "react";
@@ -38,11 +34,56 @@ import { affordableUpgrades } from "../attributes/attributes";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import { dayClock } from "../hud/day-clock";
 import { readRealmStore } from "../realm-stores";
-import type { GuideFacts, GuideRules } from "./guide-script";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
-const GUIDE_MODELS = [
+/** What Frontier's Next up answers to: the player's realm and today's armies, read from the store at chain time. */
+export interface NextUpFacts {
+  /** The player's Frontier realm exists. */
+  realm: boolean;
+  /** The realm has a barracks. */
+  barracks: boolean;
+  /** Whole troops waiting at home; undefined while unknown. */
+  troopsAtHome: number | undefined;
+  /** Today's armies. */
+  armies: number;
+  /** One of the player's armies is selected. */
+  armySelected: boolean;
+  /** Every army of today lacks the stamina to explore. */
+  armiesTired: boolean;
+  /** An army of today stands beside a site whose guard still holds. */
+  guardInReach: boolean;
+  /** A guarded camp of today's region on the board, where Next up's button takes the map; null when there is none. */
+  camp: { x: number; y: number } | null;
+  /** An army's XP buys a tier of an attribute now. */
+  armyTierAffordable: boolean;
+  /** The realm can pay for its next castle level. */
+  castleAffordable: boolean;
+  /** The building whose first tier the realm can afford (Farm or Workshop), by its word; null for none. */
+  typeTierAffordable: string | null;
+  /** Today is in its last hour with an army still out. */
+  lastHour: boolean;
+  /** The store at its limit, where a payout or reveal no longer fits, by its word; null for none. */
+  storeFull: string | null;
+  /** No population is free: the next building that takes any is refused until a Hut stands. */
+  populationFull: boolean;
+  /** The rules a line states in numbers, read from the game's own; null without a realm. */
+  rules: NextUpRules | null;
+}
+
+/** The numbers Next up's lines state, each read from the preset the game runs on, never typed into a line. */
+export interface NextUpRules {
+  /** The population one Hut adds at its type's tier. */
+  hutAdds: number;
+  /** What an explore costs in stamina, and what comes back an hour. */
+  stamina: { explore: number; anHour: number };
+  /** The XP a reveal gives; unknown until the rules are served. */
+  xp: { reveal: number } | undefined;
+  /** The share of an army's troops Homecoming sends home when the day ends, in percent, at today's lowest tier. */
+  homecomingPercent: number;
+}
+
+const NEXT_UP_MODELS = [
   "Structure",
   "StructureBuildings",
   "ArmySlot",
@@ -58,46 +99,31 @@ const GUIDE_MODELS = [
   "BoardRules",
 ] as const;
 
-/**
- * What the guide answers to, read from the store at chain time; it never listens for events. The losing fight and the
- * season's end are told by the cards that host those lines.
- */
-export const useGuideFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): GuideFacts => {
+/** Next up's facts for the player's realm, recomputed as the store changes and the clock moves. */
+export const useNextUpFacts = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null): NextUpFacts => {
   const { setup } = useGame();
-  const revision = useNativeRevision(GUIDE_MODELS);
+  const revision = useNativeRevision(NEXT_UP_MODELS);
   const now = useNowSeconds();
   const tick = useCurrentDefaultTick();
-  const { isMapView } = useQuery();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId);
   return useMemo(
-    () => readGuideFacts(setup.store, rules, realm, { now, tick, onMap: isMapView, selected }),
+    () => readNextUpFacts(setup.store, rules, realm, { now, tick, selected }),
     // The revision is the recompute signal for store writes; the clocks for time passing.
-    [setup.store, rules, realm, now, tick, isMapView, selected, revision],
+    [setup.store, rules, realm, now, tick, selected, revision],
   );
 };
 
-const readGuideFacts = (
+const readNextUpFacts = (
   store: NativeFactStore,
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
-  clock: { now: number; tick: number; onMap: boolean; selected: number | null },
-): GuideFacts => {
-  if (!realm) return { ...NO_REALM, onMap: clock.onMap };
+  clock: { now: number; tick: number; selected: number | null },
+): NextUpFacts => {
+  if (!realm) return NO_REALM;
   const armies = liveHomeArmies(store, safeInteger(realm.entity_id), realm.game_id);
   const stamina = armies.flatMap((army) => {
     const troops = resolveExplorerTroops(store, army);
-    return troops
-      ? [
-          {
-            current: Number(StaminaManager.getStamina(troops, clock.tick).amount),
-            max: StaminaManager.getMaxStamina(
-              army.troops.category as TroopType,
-              army.troops.tier as TroopTier,
-              troops.staminaMax,
-            ),
-          },
-        ]
-      : [];
+    return troops ? [Number(StaminaManager.getStamina(troops, clock.tick).amount)] : [];
   });
   const exploreCost = configManager.getExploreStaminaCost();
   const progress = armies.flatMap((army) => {
@@ -109,44 +135,53 @@ const readGuideFacts = (
     entity_id: realm.entity_id,
   })?.population;
   return {
-    ...HOSTED,
-    populationFull:
-      population !== undefined && population.current >= population.max + configManager.getBasePopulationCapacity(),
-    armySelected: armies.some((army) => safeInteger(army.explorer_id) === clock.selected),
-    guardInReach: guardBesideAnArmy(store, realm.game_id, armies),
-    xpEarned: progress.some(({ xp }) => xp > 0),
-    lastHour: armies.length > 0 && dayClock(rules, clock.now).tone === "ember",
-    rules: readGuideRules(store, realm, progress),
     realm: true,
     barracks: getBuildingQuantity(safeInteger(realm.entity_id), BuildingType.ResourceKnightT1, store) > 0,
     troopsAtHome: troopsAtHome(store, realm, rules, clock.now, clock.tick),
     armies: armies.length,
-    armyActed: stamina.some((bar) => bar.current < bar.max),
+    armySelected: armies.some((army) => safeInteger(army.explorer_id) === clock.selected),
+    armiesTired: stamina.length === armies.length && stamina.length > 0 && stamina.every((left) => left < exploreCost),
+    guardInReach: guardBesideAnArmy(store, realm.game_id, armies),
     camp: guardedCampToday(store, rules, realm, clock.now),
-    castleAffordable: canAffordNextCastleLevel(store, realm, clock.tick),
-    onMap: clock.onMap,
-    armiesTired:
-      stamina.length === armies.length && stamina.length > 0 && stamina.every((bar) => bar.current < exploreCost),
     armyTierAffordable: armies.some((army) => canBuyAttributeTier(store, army)),
+    castleAffordable: canAffordNextCastleLevel(store, realm, clock.tick),
     typeTierAffordable: firstTypeTierAffordable(store, realm, clock.tick),
+    lastHour: armies.length > 0 && dayClock(rules, clock.now).tone === "ember",
     storeFull: fullStore(store, realm, rules, clock),
-    ...readSiteFirsts(store, realm.game_id),
-    armyBeyondSpire: armies.some(
-      (army) => expeditionDepth(rules, { y: entityMapPosition(store, army.game_id, army.explorer_id).y }) >= 1,
-    ),
+    populationFull:
+      population !== undefined && population.current >= population.max + configManager.getBasePopulationCapacity(),
+    rules: readNextUpRules(store, realm, progress),
   };
 };
 
+const NO_REALM: NextUpFacts = {
+  realm: false,
+  barracks: false,
+  troopsAtHome: undefined,
+  armies: 0,
+  armySelected: false,
+  armiesTired: false,
+  guardInReach: false,
+  camp: null,
+  armyTierAffordable: false,
+  castleAffordable: false,
+  typeTierAffordable: null,
+  lastHour: false,
+  storeFull: null,
+  populationFull: false,
+  rules: null,
+};
+
 /**
- * The numbers the guide's lines state, from the preset: a Hut's population at its type's tier (the contract's
- * hut_bonus), the stamina an explore, a tile's move at the least and an attack cost with what a tick's gain makes an
- * hour, the XP a reveal gives against an attribute's first tier, and Homecoming's share at today's lowest tier.
+ * The numbers Next up's lines state, from the preset: a Hut's population at its type's tier (the contract's
+ * hut_bonus), the stamina an explore costs with what a tick's gain makes an hour, the XP a reveal gives, and
+ * Homecoming's share at today's lowest tier.
  */
-const readGuideRules = (
+const readNextUpRules = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   progress: readonly NativeRows["ArmyProgress"][],
-): GuideRules => {
+): NextUpRules => {
   const hut = store.require("BuildingRule", { game_id: realm.game_id, category: BuildingType.WorkersHut });
   const board = store.get("BoardRules", { game_id: realm.game_id });
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
@@ -159,11 +194,9 @@ const readGuideRules = (
     hutAdds: hut.capacity_grant + (hut.capacity_grant * hutTier * (board?.population_step_bps ?? 0)) / 10_000,
     stamina: {
       explore: stamina.stamina_explore_stamina_cost,
-      move: configManager.getMinTravelStaminaCost(),
-      attack: stamina.stamina_attack_req,
       anHour: Math.round((stamina.stamina_gain_per_tick * 3_600) / configManager.getTick(TickIds.Armies)),
     },
-    xp: xp && { reveal: xp.reveal_xp, firstTier: xp.uncommon_xp },
+    xp: xp && { reveal: xp.reveal_xp },
     homecomingPercent: homecomingBps(homecoming) / 100,
   };
 };
@@ -194,22 +227,6 @@ const canBuyAttributeTier = (store: NativeFactStore, army: NativeRows["ExplorerT
   const progress = store.get("ArmyProgress", { game_id: army.game_id, explorer_id: army.explorer_id });
   const xpRules = store.get("ArmyProgressionRules", { game_id: army.game_id });
   return progress !== undefined && xpRules !== undefined && affordableUpgrades(progress, xpRules).length > 0;
-};
-
-/**
- * The expedition's sites as the guide's firsts read them, a site's kind being its structure's category: a site
- * cleared, a ruin or beasts standing in view, and a ruin cleared, whose chest has paid.
- */
-const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
-  const sites = [...store.inGame("ExpeditionSite", gameId)];
-  const isKind = (site: NativeRows["ExpeditionSite"], category: StructureType) =>
-    store.get("Structure", { game_id: gameId, entity_id: site.entity_id })?.base.category === category;
-  return {
-    siteCleared: sites.some((site) => site.clear),
-    ruin: sites.some((site) => !site.clear && isKind(site, StructureType.Ruin)),
-    beasts: sites.some((site) => !site.clear && isKind(site, StructureType.Beasts)),
-    chestPaid: sites.some((site) => site.clear && isKind(site, StructureType.Ruin)),
-  };
 };
 
 /** The Farm's or the Workshop's first tier, when its building stands and the realm holds its Essence and labor. */
@@ -267,45 +284,12 @@ const FULL_STORES = [
   { store: "troops" as const, word: TROOPS.toLowerCase() },
 ];
 
-/**
- * What the hosts tell: the fight on the open site card, the season's end on its card, and the HUD that Research is
- * open.
- */
-const HOSTED = { losingFight: false, seasonOver: false, researchOpen: false } as const;
-
-const NO_REALM: GuideFacts = {
-  ...HOSTED,
-  populationFull: false,
-  armySelected: false,
-  guardInReach: false,
-  xpEarned: false,
-  lastHour: false,
-  rules: null,
-  beasts: false,
-  typeTierAffordable: null,
-  chestPaid: false,
-  storeFull: null,
-  realm: false,
-  armyTierAffordable: false,
-  barracks: false,
-  troopsAtHome: undefined,
-  armies: 0,
-  armyActed: false,
-  camp: null,
-  castleAffordable: false,
-  onMap: false,
-  armiesTired: false,
-  siteCleared: false,
-  ruin: false,
-  armyBeyondSpire: false,
-};
-
 const guardedCampToday = (
   store: NativeFactStore,
   rules: ExpeditionRules,
   realm: NativeRows["Structure"],
   now: number,
-): GuideFacts["camp"] => {
+): NextUpFacts["camp"] => {
   for (const structure of store.inGame("Structure", realm.game_id)) {
     if (structure.base.category !== StructureType.Camp || structure.owner === realm.owner) continue;
     const position = structureMapPosition(store, structure);

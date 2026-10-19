@@ -113,7 +113,6 @@ const AREAS = {
     "ui/features/economy/banking",
     "ui/features/event-feed",
     "ui/features/frontier/upgrade",
-    "ui/features/frontier/guide",
     "ui/features/world/components/structure-edit-popup.tsx",
     "ui/features/world/containers/construction-modal.tsx",
     "ui/features/world/containers/military-modal.tsx",

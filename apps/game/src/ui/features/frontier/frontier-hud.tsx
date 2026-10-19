@@ -19,8 +19,6 @@ import { FrontierArmy } from "./army/frontier-army";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
-import { GuideProvider, GuideSlot, useGuideLines } from "./guide/frontier-guide";
-import { GuideLinesSheet } from "./guide/guide-lines-sheet";
 import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
@@ -32,6 +30,7 @@ import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
 import { FrontierDayClock } from "./hud/day-pill";
+import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -60,9 +59,9 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /**
- * Frontier's HUD, one set of parts in two compositions (HudBands): the strip with its clock line, a nav page or the
- * map, the guide when it speaks, the action bar while an army is selected, the dock and the place bar; on desktop also
- * the season's top five and chat docked open. Everything else opens from these as a sheet.
+ * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
+ * its stores, a nav page or the map, Next up, the action bar while an army is selected, the armies and the places.
+ * Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
@@ -161,7 +160,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <SettingsPanel />
         </HudSheet>
       )}
-      {surface === "guide" && <HudGuide onClose={close} />}
       {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
       {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
       {surface !== "season" && surface !== "withdraw" && (
@@ -175,77 +173,76 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     </>
   );
 
-  return (
-    <GuideProvider rules={rules} realm={visit ? null : realm} researchOpen={surface === "research"}>
-      {desktop ? (
-        <FrontierDesktop
-          season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
-          clock={<FrontierDayClock rules={rules} />}
-          realm={
-            (realm ?? visited) && (
-              <FrontierRealmPanel
-                rules={rules}
-                realm={(realm ?? visited)!}
-                own={realm && !visit ? realm : null}
-                labor={realmLabor?.plan.total ?? 0}
-                onSurface={setSurface}
-              />
-            )
-          }
-          armies={dock}
-          guide={<GuideSlot host="foot" />}
-          page={page}
-          stage={stage}
-          foot={
-            <>
-              {notices}
-              {action}
-            </>
-          }
-          places={
-            !(visit && realm) && (
-              <FrontierPlaces
-                surface={surface}
-                onSurface={setSurface}
-                research={realm ? canResearchNow(researchPlan) : undefined}
-              />
-            )
-          }
-        >
-          {sheets}
-        </FrontierDesktop>
-      ) : (
-        <HudBands
-          strip={
-            <>
-              {strip}
-              {!phonePageOpen && purse}
-            </>
-          }
-          page={page}
-          stage={stage}
-          guide={<GuideSlot host="foot" />}
-          notices={notices}
-          action={action}
-          dock={dock}
-          nav={
-            // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
-            !(visit && realm) && (
-              <FrontierNav
-                rules={rules}
-                realm={realm}
-                board={dockRealm}
-                surface={surface}
-                onSurface={setSurface}
-                unread={chat.unread}
-              />
-            )
-          }
-        >
-          {sheets}
-        </HudBands>
-      )}
-    </GuideProvider>
+  // Next up speaks to a player in their own realm: a visit or a spectator has none.
+  const nextUp = realm && !visit && <FrontierNextUp rules={rules} realm={realm} onSurface={setSurface} />;
+
+  return desktop ? (
+    <FrontierDesktop
+      season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
+      clock={<FrontierDayClock rules={rules} />}
+      realm={
+        (realm ?? visited) && (
+          <FrontierRealmPanel
+            rules={rules}
+            realm={(realm ?? visited)!}
+            own={realm && !visit ? realm : null}
+            labor={realmLabor?.plan.total ?? 0}
+            onSurface={setSurface}
+          />
+        )
+      }
+      armies={dock}
+      nextUp={nextUp}
+      page={page}
+      stage={stage}
+      foot={
+        <>
+          {notices}
+          {action}
+        </>
+      }
+      places={
+        !(visit && realm) && (
+          <FrontierPlaces
+            surface={surface}
+            onSurface={setSurface}
+            research={realm ? canResearchNow(researchPlan) : undefined}
+          />
+        )
+      }
+    >
+      {sheets}
+    </FrontierDesktop>
+  ) : (
+    <HudBands
+      strip={
+        <>
+          {strip}
+          {!phonePageOpen && purse}
+        </>
+      }
+      page={page}
+      stage={stage}
+      nextUp={nextUp}
+      notices={notices}
+      action={action}
+      dock={dock}
+      nav={
+        // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
+        !(visit && realm) && (
+          <FrontierNav
+            rules={rules}
+            realm={realm}
+            board={dockRealm}
+            surface={surface}
+            onSurface={setSurface}
+            unread={chat.unread}
+          />
+        )
+      }
+    >
+      {sheets}
+    </HudBands>
   );
 };
 
@@ -361,7 +358,6 @@ const HudMenu = ({
   onClose: () => void;
 }) => {
   const navigate = useNavigate();
-  const guide = useGuideLines();
   const rank = useSeasonRank();
   return (
     <MenuSheet
@@ -370,18 +366,11 @@ const HudMenu = ({
       onProduction={realm ? () => onOpen("production") : null}
       onSeason={() => onOpen("season")}
       realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
-      guide={guide && { on: guide.on, onOpen: () => onOpen("guide") }}
       onSettings={() => onOpen("settings")}
       onExit={() => navigate("/")}
       onClose={onClose}
     />
   );
-};
-
-/** The Menu's Guide: every line said so far, and the switch; nothing for a player the guide does not speak to. */
-const HudGuide = ({ onClose }: { onClose: () => void }) => {
-  const guide = useGuideLines();
-  return guide && <GuideLinesSheet on={guide.on} lines={guide.lines} onToggle={guide.toggle} onClose={onClose} />;
 };
 
 /**

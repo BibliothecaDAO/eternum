@@ -25,7 +25,6 @@ import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
-import { GuideSlot } from "../guide/frontier-guide";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt, type DockArmy, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
@@ -47,7 +46,6 @@ import {
   readSiteCard,
   type SiteAttack,
   type SiteCardPlan,
-  type SiteFight,
   storeAtLimit,
 } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
@@ -194,7 +192,6 @@ export const TileCard = ({
       xp={plan.xp}
       verb={verb}
       choices={actor ? undefined : choices}
-      guide={<GuideSlot host="site-card" facts={{ losingFight: cannotWin(plan.fight) }} />}
       onRealm={() => {
         onClose();
         goToPlace(false);
@@ -341,10 +338,6 @@ const readFightGain = (store: NativeFactStore, sent: FightSent, transactionHash:
 
 const armyIsGone = (store: NativeFactStore, armyId: number): boolean =>
   store.get("ExplorerTroops", { game_id: configManager.getActiveGameId(), explorer_id: armyId }) === undefined;
-
-/** A forecast the army does not win: it loses, or the fight stalls. */
-const cannotWin = (fight: SiteFight | undefined): boolean =>
-  fight !== undefined && fight.outcome !== "refused" && fight.outcome !== "wins";
 
 const wholeTroops = (army: NativeRows["ExplorerTroops"]): number =>
   Number(army.troops.count / BigInt(RESOURCE_PRECISION));

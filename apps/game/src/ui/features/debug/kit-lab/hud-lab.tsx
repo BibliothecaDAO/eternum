@@ -56,10 +56,10 @@ import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
-import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
-import { GuideLinesSheet } from "@/ui/features/frontier/guide/guide-lines-sheet";
-import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
-import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
+import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coach";
+import type { NextUpFacts } from "@/ui/features/frontier/next-up/next-up-facts";
+import type { NextStep } from "@/ui/features/world/hud/next-step";
+import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { type ComponentProps, useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
@@ -434,56 +434,27 @@ const OWN_ROW: SeasonListRow = {
   own: true,
 };
 
-/** The guide's lab lines, by the step they show. */
-const GUIDE_LINES = {
-  reveal: "first-reveal",
-  deploy: "deploy",
-  realm: "build-barracks",
-  rest: "rest",
-  fight: "losing-fight",
-  season: "season-over",
-} as const;
-
-const LAB_GUIDE_FACTS: GuideFacts = {
+/**
+ * What Next up reads on the lab's realm: barracks built, troops at home, the preset's numbers. Each state adds its
+ * armies, selection, hour and stores, and may say more (nextUp).
+ */
+const LAB_NEXT_UP_FACTS: NextUpFacts = {
   realm: true,
-  barracks: false,
+  barracks: true,
   troopsAtHome: 1_500,
   armies: 0,
-  armyActed: false,
-  armyTierAffordable: false,
-  camp: null,
-  siteCleared: false,
-  beasts: false,
-  castleAffordable: false,
-  onMap: true,
-  typeTierAffordable: null,
-  armiesTired: false,
-  ruin: false,
-  chestPaid: false,
-  armyBeyondSpire: false,
-  losingFight: true,
-  storeFull: null,
-  seasonOver: true,
-  populationFull: false,
   armySelected: false,
+  armiesTired: false,
   guardInReach: false,
-  xpEarned: false,
-  researchOpen: false,
+  camp: null,
+  armyTierAffordable: false,
+  castleAffordable: false,
+  typeTierAffordable: null,
   lastHour: false,
-  rules: {
-    hutAdds: 6,
-    stamina: { explore: 30, move: 10, attack: 30, anHour: 30 },
-    xp: { reveal: 2, firstTier: 100 },
-    homecomingPercent: 3,
-  },
+  storeFull: null,
+  populationFull: false,
+  rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
-
-/** The lines the guide has said by the season's end, as the Menu's Guide lists them to read again. */
-const LAB_GUIDE_SAID = Object.values(GUIDE_LINES).map((id) => {
-  const step = GUIDE_STEPS.find((candidate) => candidate.id === id);
-  if (!step) throw new Error(`No guide step ${id}`);
-  return { id, line: step.line(LAB_GUIDE_FACTS) };
-});
 
 const STATES = {
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
@@ -610,7 +581,7 @@ const STATES = {
       armyArt: ARMY_CHIP.art,
       army: { before: 1_498, after: 1_318 },
       guard: { before: 1_100, after: 0 },
-      gained: { pay: { icon: "labor", amount: 550 }, xp: 22 },
+      gained: { pay: { icon: "labor", amount: 550, storeFull: false }, xp: 22 },
     },
   },
   "fight-goes-on": {
@@ -757,32 +728,28 @@ const STATES = {
   "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
   "season-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "failed" },
   visiting: { clock: CLOCK, stores: STORES, armies: ARMIES, visiting: true },
-  guide: { clock: CLOCK, stores: STORES, armies: ARMIES, guide: "reveal" },
-  "guide-deploy": { clock: CLOCK, stores: STORES, armies: [], guide: "deploy" },
-  "guide-realm": { clock: CLOCK, stores: STORES, armies: [], guide: "realm" },
-  "guide-rest": { clock: CLOCK, stores: STORES, armies: ARMIES, guide: "rest" },
-  "guide-fight": {
+  "next-up-deploy": { clock: CLOCK, stores: STORES, armies: [] },
+  "next-up-barracks": { clock: CLOCK, stores: STORES, armies: [], nextUp: { barracks: false } },
+  "next-up-rest": { clock: CLOCK, stores: STORES, armies: ARMIES, nextUp: { armiesTired: true } },
+  "next-up-camp": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    guide: "fight",
+    nextUp: { camp: { x: 4, y: 9 }, guardInReach: true, armyTierAffordable: true },
+  },
+  "site-losing": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
       fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
     },
   },
-  "guide-season": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", guide: "season" },
-  "guide-lines": { clock: CLOCK, stores: STORES, armies: ARMIES, guideLines: true },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
-  // The purse and the guide at once, as a signed-in player meets them: the layout check holds them apart.
-  "purse-guide": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
-    guide: "deploy",
-  },
+  // The purse and Next up at once, as a signed-in player meets them: the layout check holds them apart.
+  "purse-next-up": { clock: CLOCK, stores: STORES, armies: [], purse: { lords: 1_240, realms: 2_000 } },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
   "value-menu": {
     clock: CLOCK,
@@ -897,7 +864,8 @@ const STATES = {
 type LabState = {
   /** The order bar offers Refill for its short stamina. */
   refill?: boolean;
-  guide?: keyof typeof GUIDE_LINES;
+  /** What Next up reads beyond the state's armies, selection, hour and stores. */
+  nextUp?: Partial<NextUpFacts>;
   results?: "today" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
@@ -922,8 +890,6 @@ type LabState = {
   realmDot?: "ember";
   offline?: boolean;
   menu?: boolean;
-  /** The Menu's Guide sheet: its switch on, and the lines said so far. */
-  guideLines?: boolean;
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
   /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
@@ -939,14 +905,11 @@ const noop = () => undefined;
 /**
  * Dev only: the Map HUD's states on the lab fixtures, at /lab/kit/hud/<state> (idle, selected, full, offline, menu,
  * empty, explore, move, wheat-short, stamina-short): the components the live HUD draws, on the handoff's fiction.
- * /lab/kit/hud/line-<step> speaks any of the guide's lines at the foot.
+ * Next up reads each state (next-up-deploy, next-up-barracks, next-up-rest, next-up-camp say more).
  */
 export const HudLab = () => {
   const { state = "idle" } = useParams();
-  const line = state.startsWith("line-") ? state.slice("line-".length) : undefined;
-  const lab: LabState = line ? STATES.idle : (STATES[state as keyof typeof STATES] ?? STATES.idle);
-  const footLine =
-    line ?? (lab.guide && lab.guide !== "fight" && lab.guide !== "season" ? GUIDE_LINES[lab.guide] : undefined);
+  const lab: LabState = STATES[state as keyof typeof STATES] ?? STATES.idle;
   const selected = lab.selected === undefined ? undefined : lab.armies[lab.selected];
   const desktop = useLayout() === "desktop";
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
@@ -1026,7 +989,7 @@ export const HudLab = () => {
           ) : undefined
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
-        guide={footLine && <LabGuide stepId={footLine} />}
+        nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} />}
         notices={lab.offline && <Notice icon="network-off" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
         action={
           <>
@@ -1081,9 +1044,7 @@ export const HudLab = () => {
         }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
-        {lab.results && (
-          <LabResults results={lab.results} guided={lab.guide === "season"} seasonLords={lab.seasonLords} />
-        )}
+        {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {lab.training && <LabTraining training={lab.training} />}
@@ -1134,14 +1095,7 @@ export const HudLab = () => {
             onClose={noop}
           />
         )}
-        {lab.site && (
-          <SiteCardView
-            {...lab.site}
-            guide={lab.guide === "fight" ? <LabGuide stepId={GUIDE_LINES.fight} /> : undefined}
-            onRealm={noop}
-            onClose={noop}
-          />
-        )}
+        {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.fight && (
           <Sheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
             <FightResultCard result={lab.fight} onClose={noop} />
@@ -1150,7 +1104,6 @@ export const HudLab = () => {
         {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
-        {lab.guideLines && <GuideLinesSheet on lines={LAB_GUIDE_SAID} onToggle={noop} onClose={noop} />}
         {lab.menu && (
           <MenuSheet
             rank="#12"
@@ -1158,7 +1111,6 @@ export const HudLab = () => {
             onSeason={noop}
             onProduction={noop}
             realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
-            guide={{ on: true, onOpen: noop }}
             onSettings={noop}
             onExit={noop}
             onClose={noop}
@@ -1358,24 +1310,26 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
   );
 };
 
-/** A guide line on the lab fixtures, by its step, with its thread to the control it names. */
-const LabGuide = ({ stepId }: { stepId: string }) => {
-  const card = useRef<HTMLElement>(null);
-  const step = GUIDE_STEPS.find(({ id }) => id === stepId);
-  if (!step) throw new Error(`No guide step ${stepId}`);
-  return (
-    <>
-      <GuideCard
-        ref={card}
-        mark={step.mark}
-        line={step.line(LAB_GUIDE_FACTS)}
-        onShowMe={step.place ? noop : undefined}
-        onNext={noop}
-      />
-      {step.target && <GuideThread from={card} target={step.target} />}
-    </>
-  );
-};
+/** Next up on the lab's realm at a state: the coach's steps, their buttons doing nothing. */
+const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
+  frontierCoachSteps(
+    {
+      ...LAB_NEXT_UP_FACTS,
+      armies: lab.armies.length,
+      armySelected: lab.selected !== undefined,
+      lastHour: lab.lastHour === true,
+      storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
+      ...lab.nextUp,
+    },
+    { pointer: desktop ? "mouse" : "touch", tips: true },
+  ).map((step) => ({
+    key: step.key,
+    kind: "order",
+    line: step.line,
+    verb: step.verb,
+    busy: false,
+    run: step.verb ? noop : null,
+  }));
 
 /**
  * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
@@ -1403,7 +1357,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
             />
           }
           armies={slots.dock}
-          guide={slots.guide}
+          nextUp={slots.nextUp}
           page={slots.page}
           stage={slots.stage}
           foot={
@@ -1465,12 +1419,11 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             xp={army.xp}
             canBuyTier={army.tier === true}
             selected={lab.selected === index}
-            guided={index === 0}
             onPick={noop}
             onUpgrade={lab.visiting ? undefined : noop}
           />
         ))}
-        {open > 0 && <OpenSlot label="Deploy" pulse={lab.armies.length === 0} guided wide onDeploy={noop} />}
+        {open > 0 && <OpenSlot label="Deploy" pulse={lab.armies.length === 0} wide onDeploy={noop} />}
       </ArmyList>
     );
   return (
@@ -1485,18 +1438,11 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           troops={army.troops}
           canBuyTier={army.tier === true}
           selected={lab.selected === index}
-          guided={index === 0}
           onPick={noop}
         />
       ))}
       {Array.from({ length: open }, (_, index) => (
-        <OpenSlot
-          key={index}
-          label="Deploy"
-          pulse={index === 0 && lab.armies.length === 0}
-          guided={index === 0}
-          onDeploy={noop}
-        />
+        <OpenSlot key={index} label="Deploy" pulse={index === 0 && lab.armies.length === 0} onDeploy={noop} />
       ))}
     </nav>
   );
@@ -1504,11 +1450,9 @@ const LabDock = ({ lab }: { lab: LabState }) => {
 
 const LabResults = ({
   results,
-  guided,
   seasonLords,
 }: {
   results: NonNullable<LabState["results"]>;
-  guided: boolean;
   seasonLords: LabState["seasonLords"];
 }) =>
   results === "over" || results === "over-strong" ? (
@@ -1532,7 +1476,6 @@ const LabResults = ({
           />
         )
       }
-      guide={guided ? <LabGuide stepId={GUIDE_LINES.season} /> : undefined}
       onSeason={noop}
       onExit={noop}
     />

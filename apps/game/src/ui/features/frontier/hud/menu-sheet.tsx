@@ -1,6 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, GUIDE, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
+import { EXIT, MENU, PRODUCTION, REALMS, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 const MENU_WORDS = {
@@ -8,15 +8,13 @@ const MENU_WORDS = {
   victory: SEASON,
   production: PRODUCTION,
   realm: REALMS,
-  guide: GUIDE,
   settings: SETTINGS,
 } as const;
 
 /**
- * The Menu: the ways that are not places (Today, Season with the player's rank, Production, the guide, Settings), then
- * Exit to the app and Resume, which closes the menu. Guide opens every line the guide has said so far, with its
- * switch; a player with no realm of their own has no guide and no Production. Realms, with a dot while their labor
- * waits, opens the Realm holder's labor where its facts are served.
+ * The Menu: the ways that are not places (Today, Season with the player's rank, Production, Settings), then Exit to the
+ * app and Resume, which closes the menu; a player with no realm of their own has no Production. Realms, with a dot
+ * while their labor waits, opens the Realm holder's labor where its facts are served.
  */
 export const MenuSheet = ({
   rank,
@@ -24,7 +22,6 @@ export const MenuSheet = ({
   onSeason,
   onProduction,
   realms,
-  guide,
   onSettings,
   onExit,
   onClose,
@@ -34,8 +31,6 @@ export const MenuSheet = ({
   onSeason: () => void;
   onProduction: (() => void) | null;
   realms?: { waiting: boolean; onOpen: () => void };
-  /** The guide's lines, with a tick while it is on; absent for a player it does not speak to. */
-  guide: { on: boolean; onOpen: () => void } | null;
   onSettings: () => void;
   onExit: () => void;
   onClose: () => void;
@@ -51,9 +46,6 @@ export const MenuSheet = ({
           badge={realms.waiting && <i aria-hidden className="size-2 rounded-full bg-hud-gold" />}
           onClick={realms.onOpen}
         />
-      )}
-      {guide && (
-        <MenuRow icon="guide" badge={guide.on && <SemanticIcon name="check" size={20} />} onClick={guide.onOpen} />
       )}
       <MenuRow icon="settings" onClick={onSettings} />
     </nav>

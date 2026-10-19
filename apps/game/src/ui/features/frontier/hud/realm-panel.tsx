@@ -6,7 +6,6 @@ import { REALM } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 
-import { guideTarget } from "../guide/guide-thread";
 import { RealmsChip } from "../value/lords-purse";
 import { LandingDelta, STORE_TONES, STORES, type StoreReading, storeLine } from "./status-strip";
 
@@ -48,11 +47,7 @@ export const RealmPanel = ({
       <span className="flex-1" />
       {labor > 0 && onRealms && <RealmsChip labor={labor} onOpen={onRealms} />}
     </div>
-    <ul
-      aria-label="Stores"
-      className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2"
-      {...guideTarget("stores")}
-    >
+    <ul aria-label="Stores" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {stores.map((store) => (
         <li key={store.kind} className="relative">
           <StoreRing store={store} onOpen={onOpenStores} />

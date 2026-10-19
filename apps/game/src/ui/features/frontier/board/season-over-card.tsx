@@ -46,7 +46,6 @@ export const SeasonOverCard = ({
   podium,
   totals,
   withdraw,
-  guide,
   onSeason,
   onExit,
 }: {
@@ -57,8 +56,6 @@ export const SeasonOverCard = ({
   totals: SeasonTotals | undefined;
   /** The realm's LORDS still to withdraw: this card covers the HUD, so the way out for them is here. */
   withdraw?: ReactNode;
-  /** The guide's line on the season's end. */
-  guide?: ReactNode;
   onSeason: () => void;
   onExit: () => void;
 }) => (
@@ -96,7 +93,6 @@ export const SeasonOverCard = ({
     )}
     <div className="min-h-2 flex-1" />
     <div className="w-full max-w-sm">{withdraw}</div>
-    <div className="w-full max-w-sm">{guide}</div>
     {/* Season beside, Exit the one verb, last and widest. */}
     <div className="grid w-full max-w-sm grid-cols-3 gap-2">
       <HudButton kind="secondary" icon="victory" onClick={onSeason}>

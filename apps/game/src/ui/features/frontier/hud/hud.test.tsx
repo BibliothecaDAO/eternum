@@ -250,18 +250,16 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank, Production, the guide's lines and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank, Production and Settings, and closes on Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
       onProduction: vi.fn(),
-      onGuide: vi.fn(),
       onSettings: vi.fn(),
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    const { onGuide, ...ways } = handlers;
-    act(() => root.render(<MenuSheet rank="#12" guide={{ on: true, onOpen: onGuide }} {...ways} />));
+    act(() => root.render(<MenuSheet rank="#12" {...handlers} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
@@ -272,7 +270,6 @@ describe("the Menu", () => {
       ["Today", handlers.onToday],
       ["Season", handlers.onSeason],
       ["Production", handlers.onProduction],
-      ["Guide", handlers.onGuide],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
       ["Resume", handlers.onClose],
@@ -282,9 +279,9 @@ describe("the Menu", () => {
     }
   });
 
-  it("offers a spectator no Production and no guide", () => {
+  it("offers a spectator no Production", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuSheet rank="—" guide={null} onProduction={null} {...ways} />));
+    act(() => root.render(<MenuSheet rank="—" onProduction={null} {...ways} />));
     const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
       (row) => row.textContent,
     );

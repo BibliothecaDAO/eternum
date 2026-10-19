@@ -5,13 +5,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLayout } from "@/shell/frame/layout";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
-import { Sweep } from "@/ui/motion/sweep";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
 import { useOpenArmySlots } from "../deploy/open-slots";
-import { useDeployPointed } from "../guide/guide-pointer";
 import { useWellRefill } from "../sites/well-refill";
 import { ArmyList, ArmyRow } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
@@ -46,22 +44,16 @@ export const ArmyDock = ({
   if (desktop)
     return (
       <ArmyList used={armies.length} allowed={armies.length + openCount}>
-        {armies.map((army, index) => (
-          <DockArmyRow
-            key={army.explorerId}
-            army={army}
-            pickable={own}
-            guided={own && index === 0}
-            onOpenArmy={own ? onOpenArmy : undefined}
-          />
+        {armies.map((army) => (
+          <DockArmyRow key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
         ))}
         {openCount > 0 && <DeploySlot realm={realm} pulse={armies.length === 0} wide />}
       </ArmyList>
     );
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
-      {armies.map((army, index) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} guided={own && index === 0} />
+      {armies.map((army) => (
+        <DockToken key={army.explorerId} army={army} pickable={own} />
       ))}
       {Array.from({ length: openCount }, (_, index) => (
         <DeploySlot
@@ -86,7 +78,7 @@ const useDockArmy = (army: DockArmy, pickable: boolean) => {
   };
 };
 
-const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boolean; guided: boolean }) => {
+const DockToken = ({ army, pickable }: { army: DockArmy; pickable: boolean }) => {
   const { selected, stamina, onPick } = useDockArmy(army, pickable);
   return (
     <ArmyToken
@@ -100,7 +92,6 @@ const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boole
       canBuyTier={army.canBuyTier}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
-      guided={guided}
       onPick={onPick}
     />
   );
@@ -109,12 +100,10 @@ const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boole
 const DockArmyRow = ({
   army,
   pickable,
-  guided,
   onOpenArmy,
 }: {
   army: DockArmy;
   pickable: boolean;
-  guided: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, onPick } = useDockArmy(army, pickable);
@@ -132,7 +121,6 @@ const DockArmyRow = ({
       canBuyTier={army.canBuyTier}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
-      guided={guided}
       onPick={onPick}
       onUpgrade={onUpgrade}
     />
@@ -147,8 +135,8 @@ const useWellRefillShown = (army: DockArmy) => {
 };
 
 /**
- * An open slot; the first one takes the guide's sweep when it points at Deploy, and carries the wait of the army being
- * deployed once the Deploy sheet has closed. A desktop's list shows one, as a row.
+ * An open slot; the first one carries the wait of the army being deployed once the Deploy sheet has closed. A desktop's
+ * list shows one, as a row.
  */
 const DeploySlot = ({
   realm,
@@ -161,18 +149,14 @@ const DeploySlot = ({
   pulse: boolean;
   wide?: boolean;
 }) => {
-  const pointed = useDeployPointed();
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
   return (
-    <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">
-      <OpenSlot
-        label={DEPLOY}
-        filling={first && deploying ? DEPLOYING : undefined}
-        pulse={pulse}
-        guided={first}
-        wide={wide}
-        onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
-      />
-    </Sweep>
+    <OpenSlot
+      label={DEPLOY}
+      filling={first && deploying ? DEPLOYING : undefined}
+      pulse={pulse}
+      wide={wide}
+      onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
+    />
   );
 };

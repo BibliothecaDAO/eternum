@@ -11,7 +11,7 @@ const SAFE_AREA: CSSProperties = {
 
 /**
  * Frontier's HUD on a phone, in three bands: the strip on top, the map (or a nav page) in the middle, and the foot rows
- * read upward from the nav: the dock, the action bar, the notices, the guide. A docked sheet hides the guide. Sheets
+ * read upward from the nav: the dock, the action bar, the notices, Next up. A docked sheet hides Next up. Sheets
  * and moments render beside the bands and place themselves. A desktop has the HUD every mode shares
  * (FrontierDesktop).
  */
@@ -19,7 +19,7 @@ export const HudBands = ({
   strip,
   stage,
   page,
-  guide,
+  nextUp,
   notices,
   action,
   dock,
@@ -31,7 +31,7 @@ export const HudBands = ({
   stage?: ReactNode;
   /** A nav page: the middle band. */
   page?: ReactNode;
-  guide?: ReactNode;
+  nextUp?: ReactNode;
   notices?: ReactNode;
   action?: ReactNode;
   dock?: ReactNode;
@@ -40,7 +40,7 @@ export const HudBands = ({
 }) => (
   <div
     aria-label="Frontier HUD"
-    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-guide]]:hidden"
+    className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-next-up]]:hidden"
     style={SAFE_AREA}
   >
     <div className="relative">{strip}</div>
@@ -51,7 +51,7 @@ export const HudBands = ({
     ) : (
       <div className="relative min-h-0 flex-1">{stage}</div>
     )}
-    <div data-guide>{guide}</div>
+    <div data-next-up>{nextUp}</div>
     <div className="flex flex-col gap-1.5">
       {notices}
       {action}

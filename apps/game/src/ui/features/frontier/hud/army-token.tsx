@@ -5,8 +5,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
 
-import { guideTarget } from "../guide/guide-thread";
-
 const TOKEN = "relative flex h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl";
 const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
 
@@ -36,7 +34,6 @@ export const ArmyToken = ({
   canBuyTier,
   selected,
   flyTarget,
-  guided = false,
   onPick,
 }: {
   label: string;
@@ -52,8 +49,6 @@ export const ArmyToken = ({
   selected: boolean;
   /** Where a gain flies into the portrait. */
   flyTarget?: string;
-  /** The dock's first army: the guide's lines about XP and stamina point at its badge and its bar. */
-  guided?: boolean;
   /** Absent on a visit: the token is shown, never picked. */
   onPick?: () => void;
 }) => {
@@ -67,7 +62,6 @@ export const ArmyToken = ({
           role="img"
           aria-label={`${XP} ${formatAmount(xp)}`}
           data-tip={xpLine(xp, xpGoal)}
-          {...(guided ? guideTarget("army-xp") : {})}
           className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
         >
           {formatAmount(xp)}
@@ -83,7 +77,7 @@ export const ArmyToken = ({
           </span>
         )}
       </span>
-      <StaminaSegments stamina={stamina} guided={guided} />
+      <StaminaSegments stamina={stamina} />
       <span
         role="img"
         aria-label={`${TROOPS} ${formatAmount(troops)}`}
@@ -106,14 +100,12 @@ export const ArmyToken = ({
 };
 
 /**
- * An open army slot: a plus in a dashed ring that opens Deploy; the first one pulses while no army is out, and is where
- * the guide's Deploy line points.
+ * An open army slot: a plus in a dashed ring that opens Deploy; the first one pulses while no army is out.
  */
 export const OpenSlot = ({
   label,
   pulse,
   filling,
-  guided = false,
   wide = false,
   onDeploy,
 }: {
@@ -121,7 +113,6 @@ export const OpenSlot = ({
   pulse: boolean;
   /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
   filling?: string;
-  guided?: boolean;
   /** Desktop's full card: the plus with Deploy beside it. */
   wide?: boolean;
   onDeploy: () => void;
@@ -131,7 +122,6 @@ export const OpenSlot = ({
     aria-label={filling ?? label}
     aria-busy={filling !== undefined}
     disabled={filling !== undefined}
-    {...(guided ? guideTarget("open-slot") : {})}
     onClick={onDeploy}
     className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface")}
   >
@@ -147,13 +137,7 @@ export const OpenSlot = ({
   </button>
 );
 
-const StaminaSegments = ({
-  stamina,
-  guided,
-}: {
-  stamina: { current: number; max: number } | undefined;
-  guided: boolean;
-}) => {
+const StaminaSegments = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => {
   const filled = STAMINA_SEGMENTS * (staminaFill(stamina) ?? 0);
   return (
     <span
@@ -161,7 +145,6 @@ const StaminaSegments = ({
       aria-label={STAMINA}
       aria-valuenow={stamina?.current}
       aria-valuemax={stamina?.max}
-      {...(guided ? guideTarget("army-stamina") : {})}
       className="flex w-full gap-0.5 px-1.5"
     >
       {Array.from({ length: STAMINA_SEGMENTS }, (_, index) => (

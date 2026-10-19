@@ -13,7 +13,6 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { GuideSlot } from "../guide/frontier-guide";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
@@ -186,7 +185,6 @@ export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSea
       podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
       totals={own && seasonTotals(own)}
       withdraw={withdraw}
-      guide={<GuideSlot host="season-over" facts={{ seasonOver: true }} />}
       onSeason={onSeason}
       onExit={() => navigate("/")}
     />

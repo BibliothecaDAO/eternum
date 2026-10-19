@@ -34,7 +34,6 @@ import {
 import type { OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import type { ReactNode } from "react";
 
-import { guideTarget } from "../guide/guide-thread";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
@@ -84,7 +83,6 @@ export const SiteCardView = ({
   xp,
   verb,
   choices,
-  guide,
   receipt,
   onRealm,
   onClose,
@@ -101,8 +99,6 @@ export const SiteCardView = ({
   xp: number | undefined;
   verb: SiteVerb | null;
   choices?: readonly SiteChoice[];
-  /** The guide's line when it speaks about this fight. */
-  guide?: ReactNode;
   receipt?: ReactNode;
   /** The way to make room when the payout does not all fit. */
   onRealm?: () => void;
@@ -135,7 +131,6 @@ export const SiteCardView = ({
         </Plate>
       </div>
       {receipt}
-      {guide}
       <Verb
         verb={verb}
         site={word}
@@ -231,7 +226,7 @@ const FightPlate = ({
   fight: SiteFight | undefined;
   beast: Pick<FrontierBeast, "beast"> | undefined;
 }) => (
-  <span {...guideTarget("forecast")} className="flex flex-1">
+  <span className="flex flex-1">
     <Plate>
       <Forecast fight={fight} size="plate" guardIcon={beast ? beastMeaning(beast.beast) : "troops"} />
     </Plate>
