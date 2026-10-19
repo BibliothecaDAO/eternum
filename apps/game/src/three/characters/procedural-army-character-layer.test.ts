@@ -145,6 +145,39 @@ describe("production Knight presentation", () => {
   });
 });
 
+describe("the Knight's close-up switch", () => {
+  it("takes its near rig inside 11 units and keeps it out to 13, so a small zoom in the closest band rebuilds nothing", async () => {
+    const proof = recoveryFixture();
+    proof.loaded.add("crowd");
+    proof.loaded.add("hero");
+    const at = (distance: number) => ({ ...proof.mid, distanceToCameraSquared: distance * distance });
+    const detail = () => runtime.updateActorConfig.mock.lastCall?.[1].humanoid.renderDetail;
+    try {
+      proof.layer.sync([at(20)], 0);
+      await vi.waitFor(() => expect(proof.layer.hasActor(42)).toBe(true));
+      expect(runtime.createActor.mock.lastCall?.[0].humanoid.renderDetail).toBe("crowd");
+
+      proof.layer.sync([at(11.5)], 0);
+      expect(runtime.updateActorConfig).not.toHaveBeenCalled();
+      proof.layer.sync([at(10.5)], 0);
+      expect(detail()).toBe("hero");
+
+      // Zooming out a little, still inside the closest band, keeps the near rig.
+      proof.layer.sync([at(12.5)], 0);
+      proof.layer.sync([at(11.5)], 0);
+      proof.layer.sync([at(12.9)], 0);
+      expect(runtime.updateActorConfig).toHaveBeenCalledTimes(1);
+
+      proof.layer.sync([at(13.5)], 0);
+      expect(detail()).toBe("crowd");
+      proof.layer.sync([at(12.5)], 0);
+      expect(runtime.updateActorConfig).toHaveBeenCalledTimes(2);
+    } finally {
+      proof.layer.dispose();
+    }
+  });
+});
+
 describe("visible asset request recovery", () => {
   it("retries a rejected skin on leave/return, not on frames, motion, colour or another unit sharing the need", async () => {
     const proof = recoveryFixture();
