@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
 const generator = fileURLToPath(new URL("./generate-patch-notes.mjs", import.meta.url));
-const FRONT = '---\ntitle: "Season one"\nsummary: "Frontier opens: a new land."\n---\n';
+const FRONT = '---\ntitle: "Season alpha"\nsummary: "Frontier opens: a new land."\n---\n';
 const RELEASE = `${FRONT}
 ## All modes
 
@@ -57,7 +57,7 @@ it("reads each release into its sections, newest first, and writes the same file
   expect(notesOf(first)).toStrictEqual([
     {
       date: "2026-10-29",
-      title: "Season one",
+      title: "Season alpha",
       summary: "Frontier opens: a new land.",
       modes: {
         all: [
@@ -85,7 +85,7 @@ it("reads each release into its sections, newest first, and writes the same file
     },
     {
       date: "2026-06-05",
-      title: "Season one",
+      title: "Season alpha",
       summary: "Frontier opens: a new land.",
       modes: {
         all: [],

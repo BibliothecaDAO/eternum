@@ -5,7 +5,7 @@ import type { PatchNote } from "../news/patch-notes";
 export const patchNotes = [
   {
     "date": "2026-10-29",
-    "title": "Season one",
+    "title": "Season alpha",
     "summary": "Frontier opens, the app and the HUD are new, and Blitz changes almost everywhere it meets the map.",
     "modes": {
       "all": [
