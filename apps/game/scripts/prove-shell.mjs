@@ -140,7 +140,7 @@ const LAB_PAGES = [
 ];
 
 /** Measured in the page: what a first-time viewer meets, read from the page's own bands. */
-const MEASURE = `(() => {
+export const MEASURE = `(() => {
   const root = document.querySelector("[data-layout]");
   if (!root) return { path: location.pathname, missing: "page" };
   const visible = (el) => { const b = el.getBoundingClientRect(); const s = getComputedStyle(el); return b.width > 2 && b.height > 2 && s.visibility !== "hidden" && s.opacity !== "0"; };
@@ -177,11 +177,21 @@ const MEASURE = `(() => {
   const body = band("body");
   // Where the page's content starts: its first words, controls, fields or pictures (its title row's or its body's: a
   // card's painting is the card) under the frame's edge, the desktop's bar or the phone's top row, so a spacer or a
-  // band that moves the whole body down counts as space, and so does the page's own painting, which stands behind the
-  // frame outside the body; and the body's left edge in the window (a column left for a rail would be a gutter).
+  // band that moves the whole body down counts as space; and the body's left edge in the window (a column left for a
+  // rail would be a gutter). A page's background is never content, wherever it is drawn: a picture hidden from
+  // assistive technology, or held to the window (fixed) rather than to a card, as sign-in's painting is inside its body.
   const frame = band("bar") ?? band("top");
   const frameEdge = frame ? frame.getBoundingClientRect().bottom : 0;
-  const shown = [band("title"), body].filter(Boolean).flatMap((part) => [...part.querySelectorAll("*")]).filter((el) => visible(el) && ([...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) || el.matches("a[href], button, input, select, textarea, img")));
+  const isBackground = (el) => {
+    for (let node = el; node && node !== root; node = node.parentElement)
+      if (node.getAttribute("aria-hidden") === "true" || getComputedStyle(node).position === "fixed") return true;
+    return false;
+  };
+  const isContent = (el) =>
+    [...el.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()) ||
+    el.matches("a[href], button, input, select, textarea") ||
+    (el.matches("img") && !isBackground(el));
+  const shown = [band("title"), body].filter(Boolean).flatMap((part) => [...part.querySelectorAll("*")]).filter((el) => visible(el) && isContent(el));
   return {
     path: location.pathname + location.search,
     controls: page.length,
