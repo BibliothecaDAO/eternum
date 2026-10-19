@@ -104,8 +104,15 @@ export default tseslint.config(
     },
   },
   {
-    // The failure owner is the one file that words a failure.
-    files: ["src/shell/service-failure.tsx"],
+    // The match HUD and the kit it draws with take their faces from the token file only.
+    files: ["src/ui/features/frontier/**/*.{ts,tsx}", "src/ui/design-system/kit/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, ...READABLE_RULES],
+    },
+  },
+  {
+    // The failure owner is the one file that words a failure; it comes after the kit's rules, which it narrows.
+    files: ["src/ui/design-system/kit/service-failure.tsx"],
     rules: {
       "no-restricted-syntax": [
         "error",
@@ -116,13 +123,6 @@ export default tseslint.config(
         { selector: `TemplateElement[value.raw=${COLOUR_LITERAL}]`, message: COLOUR_MESSAGE },
         ...OWNED_FORMATS.slice(0, 2),
       ],
-    },
-  },
-  {
-    // The match HUD and the kit it draws with take their faces from the token file only.
-    files: ["src/ui/features/frontier/**/*.{ts,tsx}", "src/ui/design-system/kit/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-syntax": ["error", NO_MUTATING_SORT, NO_RETIRED_TOKENS, ...READABLE_RULES],
     },
   },
   {
