@@ -35,6 +35,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Build cards are lighter, their numbers a hover away",
+    description:
+      "A Build card now shows the building, how many you have and its actions. Hover its ⓘ for a compact card: the population it takes, what one more gives, what it costs against what you hold (red while short), and what its production burns.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
+    title: "Structure colours removed",
+    description:
+      "Edit Structure renames a structure only. The colour you could give a structure, and its tint in the lists, are gone.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
     title: "Explore rows say what you found",
     description:
       'Events and the Log read "Explored: +100 Labor": what an explore found, without the tile\'s coordinates or the 5 points every tile scores.',

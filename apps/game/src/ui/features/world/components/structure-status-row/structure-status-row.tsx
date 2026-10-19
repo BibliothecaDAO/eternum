@@ -3,7 +3,6 @@ import { realmLevelNumber } from "@/ui/lib/realm-level";
 
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   StructureRealmActions,
   type StructureWithMetadata,
@@ -107,7 +106,6 @@ export const StructureStatusRow = memo(
     statsVariant = "default",
   }: StructureStatusRowProps) => {
     const capabilities = resolveStructureUiCapabilities(structure.structure);
-    const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
     const levelBadge =
       capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
@@ -210,19 +208,8 @@ export const StructureStatusRow = memo(
               <SemanticIcon name="edit" className="h-3 w-3" />
             </button>
           )}
-          <CategoryIcon
-            category={structure.category}
-            className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-hud-ink")}
-          />
-          {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
-          <span
-            className={cn(
-              "min-w-0 flex-1 truncate text-hud-strong ",
-              groupConfig ? groupConfig.textClass : "text-hud-ink",
-            )}
-          >
-            {structure.displayName}
-          </span>
+          <CategoryIcon category={structure.category} className="h-4 w-4 flex-shrink-0 text-hud-ink" />
+          <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{structure.displayName}</span>
           {hasAttention && (
             <span
               className="h-2 w-2 flex-shrink-0 rounded-full bg-hud-gold"

@@ -9,10 +9,6 @@ import {
   formatPopulationStatusLabel,
   formatUsedBuildingTilesLabel,
 } from "@/ui/features/world/containers/structure-status";
-import {
-  STRUCTURE_GROUP_CONFIG,
-  type StructureGroupColor,
-} from "@/ui/features/world/containers/top-header/structure-groups";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import {
   ID,
@@ -41,7 +37,6 @@ export type StructureWithMetadata = Structure & {
   populationCapacity: number;
   buildingTilesOccupied: number | null;
   buildingTilesTotal: number | null;
-  groupColor: StructureGroupColor | null;
   isFavorite: boolean;
   canUpgrade: boolean;
   /**
@@ -282,24 +277,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
           className={clsx("h-3.5 w-3.5", structure.isFavorite ? "opacity-100" : "opacity-40 grayscale")}
         />
       </button>
-      {structure.groupColor && (
-        <span
-          className={clsx(
-            "h-1.5 w-1.5 shrink-0 rounded-full",
-            STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? "",
-          )}
-        />
-      )}
-      <span
-        className={clsx(
-          "min-w-0 flex-1 truncate text-hud-strong",
-          structure.groupColor
-            ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-hud-ink")
-            : undefined,
-        )}
-      >
-        {structure.displayName}
-      </span>
+      <span className="min-w-0 flex-1 truncate text-hud-strong">{structure.displayName}</span>
       {levelAbbrev && (
         <span className="shrink-0 rounded-sm bg-hud-well px-1 text-hud-label uppercase tracking-wide text-hud-muted">
           {levelAbbrev}

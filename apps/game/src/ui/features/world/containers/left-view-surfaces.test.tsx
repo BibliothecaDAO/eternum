@@ -30,9 +30,6 @@ vi.mock("@/ui/features/world/containers/military-modal", async () => {
     ),
   };
 });
-vi.mock("@/ui/features/world/containers/top-header/structure-groups", () => ({
-  useStructureGroups: () => ({ structureGroups: {}, updateStructureGroup: () => {} }),
-}));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({}) }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRow: () => undefined }));
 

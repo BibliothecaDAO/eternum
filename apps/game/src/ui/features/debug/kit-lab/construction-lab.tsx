@@ -45,7 +45,8 @@ export function ConstructionLab() {
                 onClick={() => setSelected(building)}
                 count={count}
                 badge={<span>{count} built</span>}
-                toolTip={<p>Building model preview</p>}
+                entityId={undefined}
+                useSimpleCost={false}
                 requirements={[{ resource: ResourcesIds.Wood, current: 100, amount: 10 }]}
                 onBuild={() => setCounts({ ...counts, [building]: count + 1 })}
                 onDestroy={() => setCounts({ ...counts, [building]: Math.max(0, count - 1) })}

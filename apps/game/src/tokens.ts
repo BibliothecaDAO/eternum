@@ -441,16 +441,6 @@ export const HUD_SHEET = {
   good: "#66ddab",
   bad: "#ff7b6b",
   warn: "#f0b35a",
-  /**
-   * The player's six structure groups, by order, never by meaning: a group is a category the player picks, so its
-   * colour is no tone (a red group is no danger).
-   */
-  "group-1": "#f87171",
-  "group-2": "#fbbf24",
-  "group-3": "#4ade80",
-  "group-4": "#60a5fa",
-  "group-5": "#818cf8",
-  "group-6": "#a78bfa",
   /** Each kind of relic, what it works on: its chip's words, line and ground take this colour. */
   "relic-stamina": "#4ade80",
   "relic-damage": "#f87171",

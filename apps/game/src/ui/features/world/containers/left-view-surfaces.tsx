@@ -7,7 +7,6 @@ import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
 import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
-import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import { setEntityNameLocalStorage, configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { type ID } from "@bibliothecadao/types";
@@ -57,7 +56,6 @@ const ActiveViewSurface = () => {
 
 const StructureEditSurface = () => {
   const mode = useGameModeConfig();
-  const { structureGroups, updateStructureGroup } = useStructureGroups();
   const pendingRenameStructureEntityId = useUIStore((state) => state.pendingRenameStructureEntityId);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
   const bumpStructureNameVersion = useUIStore((state) => state.bumpStructureNameVersion);
@@ -94,10 +92,8 @@ const StructureEditSurface = () => {
       <StructureEditPopup
         currentName={pendingRenameMetadata.name}
         originalName={pendingRenameMetadata.originalName ?? pendingRenameMetadata.name}
-        groupColor={structureGroups[editingStructureId] ?? null}
         onConfirm={(newName) => handleNameChange(editingStructureId, newName)}
         onCancel={() => setPendingRenameStructureEntityId(null)}
-        onUpdateColor={(color) => updateStructureGroup(editingStructureId, color)}
       />
     </PopoverPanel>
   );

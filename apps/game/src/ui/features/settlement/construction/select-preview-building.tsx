@@ -14,17 +14,14 @@ import { BuildingThumbnail } from "./building-thumbnail";
 import { productionTimeLeft } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
 import { HudCard, HudChip, HudIconButton, HudPanel, HudSwitch, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { Headline } from "@/ui/design-system/molecules/headline";
-import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ProductionStatusBadge } from "@/ui/shared";
-import { adjustWonderLordsCost, getEntityIdFromKeys } from "@/ui/utils/utils";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { resolveBuildingRequirements } from "./construction-groups";
 import { type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
 import { describeBuildingGives } from "./building-gives";
-import { costLine } from "@/ui/design-system/kit/words";
+import { BuildingHover } from "./building-hover";
 import {
   buildRealmBuildingSummary,
   getMilitaryBuildingInfo,
@@ -35,8 +32,6 @@ import {
 import {
   configManager,
   divideByPrecision,
-  getBalance,
-  getBuildingCosts,
   getBuildingCount,
   getRealmInfo,
   ResourceManager,
@@ -59,7 +54,6 @@ import {
   formatPercent,
   resourceName,
 } from "@bibliothecadao/types";
-import clsx from "clsx";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -648,14 +642,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                             resource={resourceId}
                             productionStatus={productionStatus}
                             troopHint={troopHint}
-                            toolTip={
-                              <ResourceInfo
-                                buildingId={building}
-                                resourceId={resourceId}
-                                entityId={entityId}
-                                useSimpleCost={useSimpleCost}
-                              />
-                            }
+                            entityId={entityId}
+                            useSimpleCost={useSimpleCost}
                             disabled={disabled}
                             disabledReason={disabledReason}
                             count={count}
@@ -730,14 +718,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                             buildingName={resourceName(resourceId)}
                             resource={resourceId}
                             productionStatus={productionStatus}
-                            toolTip={
-                              <ResourceInfo
-                                buildingId={building}
-                                resourceId={resourceId}
-                                entityId={entityId}
-                                useSimpleCost={useSimpleCost}
-                              />
-                            }
+                            entityId={entityId}
+                            useSimpleCost={useSimpleCost}
                             disabled={disabled}
                             disabledReason={disabledReason}
                             count={count}
@@ -835,7 +817,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                     resource={configManager.getResourceBuildingProduced(building)}
                     isWorkersHut={isWorkersHut}
                     productionStatus={productionStatus}
-                    toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
+                    entityId={entityId}
+                    useSimpleCost={useSimpleCost}
                     disabled={disabled}
                     disabledReason={disabledReason}
                     count={count}
@@ -944,9 +927,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                               buildingName={`${BuildingTypeToString[building]}`}
                               resource={configManager.getResourceBuildingProduced(building)}
                               productionStatus={productionStatus}
-                              toolTip={
-                                <BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />
-                              }
+                              entityId={entityId}
+                              useSimpleCost={useSimpleCost}
                               disabled={!canBuild}
                               disabledReason={disabledReason}
                               count={count}
@@ -1065,7 +1047,8 @@ export const BuildingCard = ({
   resource,
   isWorkersHut,
   productionStatus,
-  toolTip,
+  entityId,
+  useSimpleCost,
   requirements,
   disabled = false,
   disabledReason,
@@ -1092,7 +1075,8 @@ export const BuildingCard = ({
   resource?: ResourcesIds;
   isWorkersHut?: boolean;
   productionStatus?: ResourceProductionStatus;
-  toolTip: React.ReactElement;
+  entityId: number | undefined;
+  useSimpleCost: boolean;
   /** Held / needed per resource, shown while the card is hovered. */
   requirements: ResourceRequirement[] | undefined;
   /**
@@ -1120,6 +1104,17 @@ export const BuildingCard = ({
 }) => {
   const lane = useCompactLane();
   const setTooltip = useTooltipStore((state) => state.setTooltip);
+  const hover = (
+    <BuildingHover
+      name={buildingName}
+      building={buildingId}
+      resource={resource}
+      entityId={entityId}
+      useSimpleCost={useSimpleCost}
+      gives={gives}
+      requirements={requirements}
+    />
+  );
   // Pausing and destroying act on the buildings of this type already built: with none, neither is offered.
   const onDestroy = count > 0 ? destroyAny : undefined;
   const onPauseResumeAll = count > 0 ? pauseResumeAny : undefined;
@@ -1169,7 +1164,7 @@ export const BuildingCard = ({
         }
         requirements={requirements}
         disabledReason={disabledReason}
-        details={toolTip}
+        details={hover}
         active={active}
         onPlace={canPlaceOnMap ? onClick : undefined}
         build={{ onClick: onBuild, disabled: buildDisabled || isDisabled, pending: buildLoading }}
@@ -1193,12 +1188,6 @@ export const BuildingCard = ({
     <HudCard
       title={buildingName}
       picture={<BuildingThumbnail building={buildingId} alt={buildingName} />}
-      detail={
-        <>
-          {gives && <span className="truncate text-hud-good">{gives}</span>}
-          <BuildingCostLines requirements={requirements} />
-        </>
-      }
       corner={
         <>
           {troopHint && (
@@ -1222,7 +1211,7 @@ export const BuildingCard = ({
             label={`About ${buildingName}`}
             kind="quiet"
             size="sm"
-            onMouseEnter={() => setTooltip({ content: toolTip, position: "right" })}
+            onMouseEnter={() => setTooltip({ content: hover, position: "right" })}
             onMouseLeave={() => setTooltip(null)}
           />
         </>
@@ -1266,306 +1255,6 @@ export const BuildingCard = ({
       refusal={showDisabledMessage ? disabledReason : undefined}
       onClick={handleClick}
     />
-  );
-};
-
-/** A card's cost, named, a line per resource: "10 Labor (you have 1,574)", red while short. */
-const BuildingCostLines = ({ requirements }: { requirements: ResourceRequirement[] | undefined }) => {
-  if (requirements === undefined) return <span>Cost unknown</span>;
-  if (requirements.length === 0) return <span>Free</span>;
-  return (
-    <ul>
-      {requirements.map(({ resource, amount, current }) => (
-        <li key={resource} className={clsx("truncate", current !== undefined && current < amount && "text-hud-bad")}>
-          {costLine(amount, current, resource)}
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-const ResourceInfo = ({
-  resourceId,
-  buildingId,
-  entityId,
-  useSimpleCost = false,
-}: {
-  resourceId: ResourcesIds;
-  buildingId: BuildingType;
-  entityId: ID | undefined;
-  useSimpleCost?: boolean;
-}) => {
-  const game = useGame();
-  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
-  const currentDefaultTick = useCurrentDefaultTick();
-  // Undefined when the recipe is unknown here: shown as "—", never as a free cost. Relics hold an empty recipe.
-  let cost = configManager.getRecipeInputs(resourceId, useSimpleCost);
-
-  const structure = useNativeRow(
-    "Structure",
-    entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
-  );
-  if (cost && resourceId == ResourcesIds.Donkey && structure?.metadata.has_wonder) {
-    cost = adjustWonderLordsCost(cost);
-  }
-
-  useNativeRow(
-    "StructureBuildings",
-    entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
-  );
-
-  const buildingCost = getBuildingCosts(entityId, game.setup.store, buildingId, useSimpleCost);
-
-  const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
-  const population = buildingPopCapacityConfig.population_cost;
-  const capacity = buildingPopCapacityConfig.capacity_grant;
-
-  const gives = structure ? describeBuildingGives(game.setup.store, structure, buildingId, capacity) : null;
-
-  const resourceById = useMemo(() => {
-    return resourceName(resourceId);
-  }, [resourceId]);
-
-  return (
-    <div className="flex flex-col gap-3 p-3">
-      <Headline className="mb-2 border-b border-hud-line pb-2">
-        <div className="flex justify-between items-center w-full gap-3">
-          <div className="flex items-center gap-2">
-            <ResourceIcon className="self-center" resource={resourceId} size="md" />
-            <h6 className="">{resourceById} Production</h6>
-          </div>
-        </div>
-      </Headline>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {resourceById && (
-          <div>
-            <h6 className="mb-1 text-hud-label text-hud-muted">Produces</h6>
-            <div className="flex items-center gap-2 mt-1">
-              <ResourceIcon className="self-center" resource={resourceId} size="xl" />
-              <h6 className="text-hud-title text-hud-good">{gives ?? "—"}</h6>
-            </div>
-          </div>
-        )}
-        <div>
-          {population !== 0 && (
-            <div className="mb-2">
-              <h6 className="mb-1 text-hud-label text-hud-muted">Population Cost</h6>
-              <h6 className="text-hud-title text-hud-accent">+{population}</h6>
-            </div>
-          )}
-
-          {capacity !== 0 && (
-            <div>
-              <h6 className="mb-1 text-hud-label text-hud-muted">Max Pop. Capacity Grant</h6>
-              <h6 className="text-hud-title text-hud-accent">+{capacity}</h6>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {cost === undefined ? (
-        <>
-          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Cost</h6>
-          <p className="text-hud-muted">—</p>
-        </>
-      ) : (
-        cost.length > 0 && (
-          <>
-            <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Cost</h6>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.keys(cost).map((resourceId) => {
-                const balance = getBalance(
-                  entityId,
-                  cost[Number(resourceId)].resource,
-                  currentDefaultTick,
-                  game.setup.store,
-                );
-                return (
-                  <ResourceCost
-                    key={resourceId}
-                    type="horizontal"
-                    resourceId={cost[Number(resourceId)].resource}
-                    amount={cost[Number(resourceId)].amount}
-                    balance={balance.balance}
-                    size="lg"
-                  />
-                );
-              })}
-            </div>
-          </>
-        )
-      )}
-
-      {buildingCost === undefined && <p>Building Creation Cost: —</p>}
-      {buildingCost && buildingCost.length > 0 && (
-        <>
-          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Building Creation Cost</h6>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.keys(buildingCost).map((resourceId, index) => {
-              const balance = getBalance(
-                entityId,
-                buildingCost[Number(resourceId)].resource,
-                currentDefaultTick,
-                game.setup.store,
-              );
-              return (
-                <ResourceCost
-                  key={index}
-                  type="horizontal"
-                  resourceId={buildingCost[Number(resourceId)].resource}
-                  amount={buildingCost[Number(resourceId)].amount}
-                  balance={balance.balance}
-                  size="lg"
-                />
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-const BuildingInfo = ({
-  buildingId,
-  entityId,
-  useSimpleCost = false,
-}: {
-  buildingId: BuildingType;
-  entityId: ID | undefined;
-  useSimpleCost?: boolean;
-}) => {
-  const name = BuildingTypeToString[buildingId as keyof typeof BuildingTypeToString];
-  const game = useGame();
-  useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Building", "RealmKnowledge"]);
-  const currentDefaultTick = useCurrentDefaultTick();
-
-  const resourceProduced = configManager.getResourceBuildingProduced(buildingId);
-
-  const buildingCost = getBuildingCosts(entityId, game.setup.store, buildingId, useSimpleCost);
-
-  const buildingPopCapacityConfig = configManager.getBuildingCategoryConfig(buildingId);
-  const population = buildingPopCapacityConfig.population_cost;
-  const capacity = buildingPopCapacityConfig.capacity_grant;
-
-  let ongoingCost: any[] = [];
-  if (resourceProduced !== undefined) {
-    const costs = configManager.getRecipeInputs(resourceProduced, useSimpleCost);
-    if (costs) {
-      ongoingCost = Object.values(costs); // Convert object to array
-    }
-  }
-
-  const structure = useNativeRow(
-    "Structure",
-    entityId === undefined ? undefined : { game_id: configManager.getActiveGameId(), entity_id: entityId },
-  );
-
-  // Ensure ongoingCost is an array before attempting to use adjustWonderLordsCost
-  if (
-    buildingId == BuildingType.ResourceDonkey &&
-    structure?.metadata.has_wonder &&
-    Array.isArray(ongoingCost) &&
-    ongoingCost.length > 0
-  ) {
-    ongoingCost = adjustWonderLordsCost(ongoingCost);
-  }
-
-  const gives =
-    structure && resourceProduced !== undefined
-      ? describeBuildingGives(game.setup.store, structure, buildingId, 0)
-      : null;
-
-  return (
-    <div className="flex flex-col gap-3 p-3">
-      <Headline className="mb-2 border-b border-hud-line pb-2">
-        <div className="flex justify-between items-center w-full gap-3">
-          <div className="flex items-center gap-2">
-            <h6>{name}</h6>
-          </div>
-        </div>
-      </Headline>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          {population !== 0 && (
-            <div className="mb-2">
-              <h6 className="mb-1 text-hud-label text-hud-muted">Population Cost</h6>
-              <span className="text-hud-title text-hud-accent">+{population}</span>
-            </div>
-          )}
-          {capacity !== 0 && (
-            <div>
-              <h6 className="mb-1 text-hud-label text-hud-muted">Max Population Grant</h6>
-              <span className="text-hud-title text-hud-accent">+{capacity}</span>
-            </div>
-          )}
-        </div>
-        <div>
-          {resourceProduced !== undefined && gives && (
-            <div>
-              <h6 className="mb-1 text-hud-label text-hud-muted">Produces</h6>
-              <div className="flex items-center gap-2 mt-1">
-                <ResourceIcon withTooltip={false} className="self-center" resource={resourceProduced} size="sm" />
-                <span className="text-hud-title text-hud-good">{gives}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {Array.isArray(ongoingCost) && ongoingCost.length > 0 ? (
-        <>
-          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Cost</h6>
-          <div className="grid grid-cols-2 gap-2">
-            {ongoingCost.map((costItem, index) => {
-              if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
-              const balance = getBalance(entityId, costItem.resource, currentDefaultTick, game.setup.store);
-              return (
-                <ResourceCost
-                  key={`ongoing-cost-${index}`}
-                  type="horizontal"
-                  resourceId={costItem.resource}
-                  amount={costItem.amount}
-                  balance={balance.balance}
-                />
-              );
-            })}
-          </div>
-        </>
-      ) : resourceProduced !== undefined && !useSimpleCost ? ( // Show only if production exists and not labor mode
-        <div className="border-t border-hud-divider pt-2 text-hud-label italic text-hud-muted">
-          No ongoing resource costs in this mode.
-        </div>
-      ) : null}
-
-      {buildingCost === undefined && <p>Building Creation Cost: —</p>}
-      {buildingCost && buildingCost.length > 0 && (
-        <>
-          <h6 className="border-t border-hud-divider pt-2 text-hud-label text-hud-muted">Building Creation Cost</h6>
-          <div className="grid grid-cols-2 gap-2">
-            {Object.keys(buildingCost).map((resourceId, index) => {
-              const balance = getBalance(
-                entityId,
-                buildingCost[Number(resourceId)].resource,
-                currentDefaultTick,
-                game.setup.store,
-              );
-              return (
-                <ResourceCost
-                  key={`fixed-cost-${index}`}
-                  type="horizontal"
-                  resourceId={buildingCost[Number(resourceId)].resource}
-                  amount={buildingCost[Number(resourceId)].amount}
-                  balance={balance.balance}
-                />
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
   );
 };
 

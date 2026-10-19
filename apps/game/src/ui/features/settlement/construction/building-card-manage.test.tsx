@@ -31,7 +31,8 @@ const controlsOf = (count: number, lane: "portrait" | null) => {
         resource={ResourcesIds.Wheat}
         onClick={() => {}}
         active={false}
-        toolTip={<span />}
+        entityId={undefined}
+        useSimpleCost={false}
         requirements={[]}
         count={count}
         onBuild={() => {}}

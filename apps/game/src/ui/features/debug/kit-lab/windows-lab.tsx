@@ -77,10 +77,8 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
       <StructureEditPopup
         currentName="Egonal"
         originalName="Egonal"
-        groupColor={null}
         onConfirm={() => undefined}
         onCancel={() => undefined}
-        onUpdateColor={() => undefined}
       />
     ),
   },

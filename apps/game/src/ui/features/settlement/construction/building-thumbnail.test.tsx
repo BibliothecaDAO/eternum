@@ -86,7 +86,8 @@ describe("construction model thumbnails", () => {
         buildingName="Farm"
         active={false}
         onClick={() => {}}
-        toolTip={<p>Farm</p>}
+        entityId={undefined}
+        useSimpleCost={false}
         requirements={[{ resource: ResourcesIds.Wood, current: 20, amount: 10 }]}
       />,
     );

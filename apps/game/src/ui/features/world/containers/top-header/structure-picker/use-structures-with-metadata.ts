@@ -2,7 +2,6 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { buildingTilesView } from "@/sync/fact-views";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
-import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
   countOccupiedBuildingTilesByStructure,
   resolveAvailableBuildingTiles,
@@ -47,7 +46,6 @@ export const useStructuresWithMetadata = ({
   // A day's rollover ends yesterday's armies with no row changing, so the live-army count also follows the clock.
   const armiesClock = useCoarseCurrentDefaultTick(10);
   const { favorites } = useFavoriteStructures();
-  const { structureGroups } = useStructureGroups();
 
   const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
@@ -96,7 +94,6 @@ export const useStructuresWithMetadata = ({
               occupiedBuildingTiles,
             })
           : null;
-      const groupColor = structureGroups[structure.entityId] ?? null;
       const isFavorite = favoritesSet.has(structure.entityId);
 
       const packedCounts: bigint[] = [
@@ -129,21 +126,10 @@ export const useStructuresWithMetadata = ({
         populationCapacity,
         buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
         buildingTilesTotal: buildingTileSummary?.total ?? null,
-        groupColor,
         isFavorite,
         canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
         buildingCounts,
       };
     });
-  }, [
-    structures,
-    store,
-    revision,
-    structureGroups,
-    nameUpdateVersion,
-    favoritesSet,
-    mode,
-    buildingTileCountsByStructure,
-    armiesClock,
-  ]);
+  }, [structures, store, revision, nameUpdateVersion, favoritesSet, mode, buildingTileCountsByStructure, armiesClock]);
 };
