@@ -56,6 +56,7 @@ jobs:
             EVERY_AREA=true
           fi
           echo "Measuring $HEAD_SHA from $BASE_SHA"
+          echo "base=$BASE_SHA" >> "$GITHUB_OUTPUT"
           export EVERY_AREA BASE_SHA
           python3 - <<'PYTHON'
           import json, os, subprocess, sys
@@ -69,6 +70,17 @@ jobs:
                   print(f"{area}={str(enabled).lower()}", file=output)
           print(json.dumps(selected, sort_keys=True))
           PYTHON
+      # Only the commits a pull request's event adds: a push to it adds those after its previous head, a new pull
+      # request all of its own. Commits already on a branch are not judged again, and the landing push to next carries
+      # only commits its pull request already passed.
+      - name: Refuse AI authorship and trailers in the commits a pull request adds
+        if: github.event_name == 'pull_request' && github.event.action != 'reopened' && steps.paths.outputs.base != ''
+        env:
+          ADDED_AFTER: ${{ github.event.action == 'synchronize' && github.event.before || steps.paths.outputs.base }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --quiet --no-tags --filter=blob:none origin "$ADDED_AFTER" || true
+          python3 .github/scripts/check_commit_attribution.py "$ADDED_AFTER" "$HEAD_SHA"
 
   static:
     uses: ./.github/workflows/static.yml
