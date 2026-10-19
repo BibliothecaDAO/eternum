@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
-import { WHATS_NEW_PATH } from "./news/posts";
+import { WHATS_NEW_PATH } from "./frame/tabs";
 import { Panel } from "@/ui/design-system/kit/panel";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
@@ -71,7 +71,7 @@ const LegalPage = ({ title, updated, sections }: { title: string; updated: strin
     </article>
   );
   return (
-    <PageFrame back={WHATS_NEW_PATH} title={title} footer>
+    <PageFrame back={WHATS_NEW_PATH} title={title}>
       {desktop ? (
         <div className="grid grid-cols-[20rem_minmax(0,theme(maxWidth.prose))] justify-center gap-10">
           <Contents title={title} sections={sections} />

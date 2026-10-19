@@ -38,6 +38,11 @@ const SHEET_PAGES = {
   "whats-new": { path: "home/scroll", place: "What's new" },
 };
 
+/** The socials realms.world links, in its order, each with its official mark (src/shell/community.ts). */
+const SOCIALS = ["X", "Discord", "Telegram", "CoinGecko", "GitHub"].map(
+  (name) => `${name} /tokens/brand-${name.toLowerCase()}.svg`,
+);
+
 /**
  * The bars at their limits: on the desktop, the longest name an account takes beside Play's install notice, at the
  * desktop's narrowest width and a laptop's; on a phone, the places at the narrowest phone the app is held to.
@@ -190,12 +195,21 @@ const sheetPageChecks = (page) => (b) => {
         })
         .map((tab) => tab.innerText.trim()),
       playerRightGap: bar && player ? Math.round(bar.right - player.right) : null,
+      // The footer the page ends on: each social's word and the official mark before it.
+      socials: [...document.querySelectorAll('[data-band="footer"] nav[aria-label="Community"] a')].map(
+        (link) => link.innerText.trim() + " " + (link.querySelector("img")?.getAttribute("src") ?? "no mark"),
+      ),
     };
   })()`);
   return [
     { check: "nothing spills out of its block", ok: measure.spill <= 1, measure },
     { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
+    {
+      check: "a page with the places ends on the footer and its socials' marks; a full-screen step has none",
+      ok: JSON.stringify(measure.socials) === JSON.stringify(place === null ? [] : SOCIALS),
+      measure: measure.socials,
+    },
     {
       check: "its place is the one lit, or a full-screen step lights none",
       ok: JSON.stringify(measure.lit) === JSON.stringify(place === null ? [] : [place]),

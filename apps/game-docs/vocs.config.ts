@@ -259,17 +259,7 @@ export default defineConfig({
     },
     {
       text: "Changelog",
-      collapsed: true,
-      items: [
-        { text: "5 June 2026", link: "/changelog/5-june-2026" },
-        { text: "28 March 2026", link: "/changelog/28-march-2026" },
-        { text: "18 February 2026", link: "/changelog/18-february-2026" },
-        { text: "31 January 2026", link: "/changelog/31-january-2026" },
-        { text: "8 December 2025", link: "/changelog/8-december-2025" },
-        { text: "14 November 2025", link: "/changelog/14-november-2025" },
-        { text: "7 November 2025", link: "/changelog/7-november-2025" },
-        { text: "3 September 2025", link: "/changelog/3-september-2025" },
-      ],
+      link: "/changelog",
     },
   ],
 });

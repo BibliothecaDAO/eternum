@@ -8,10 +8,10 @@ const { icons } = read("catalog");
 const meanings = read("semantic-map");
 const resources = read("resources");
 const verdicts = Object.fromEntries(
-  [...icons.map(({ id }) => `faceted/${id}`), "official/lords"].map((key) => [
-    key,
-    { verdict: "equal", reason: "Validation fixture" },
-  ]),
+  [
+    ...icons.map(({ id }) => `faceted/${id}`),
+    ...Object.values(meanings).flatMap((entry) => (entry.token ? [`official/${entry.token}`] : [])),
+  ].map((key) => [key, { verdict: "equal", reason: "Validation fixture" }]),
 );
 const valid = () => structuredClone({ icons, meanings, resources, verdicts });
 test("every semantic meaning and all 58 resources have reviewed artwork", () =>
@@ -70,6 +70,18 @@ test("LORDS rejects a rotated mark, a redirected resource and a leftover paintin
   const leftover = valid();
   leftover.icons.push({ id: "lords" });
   assert.throws(() => validateIcons(leftover), /Remove the painted LORDS asset/);
+});
+
+test("an official mark ships only as a brand of its own name, and only reviewed", () => {
+  const stray = valid();
+  stray.meanings.gold = { token: "gold", label: "Gold", family: "Resources" };
+  assert.throws(() => validateIcons(stray), /Unexpected token mark: gold/);
+  const renamed = valid();
+  renamed.meanings["brand-x"].token = "brand-discord";
+  assert.throws(() => validateIcons(renamed), /Unexpected token mark: brand-x/);
+  const unreviewed = valid();
+  delete unreviewed.verdicts["official/brand-telegram"];
+  assert.throws(() => validateIcons(unreviewed), /Review Telegram/);
 });
 
 test("reward tiers reject the map-crate mapping and another band's artwork", () => {

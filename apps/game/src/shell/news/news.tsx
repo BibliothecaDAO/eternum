@@ -1,70 +1,62 @@
-import { formatContentDay } from "@bibliothecadao/types";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 import { Icon } from "@/ui/design-system/icon";
-import { AppPanel, AppRow } from "@/ui/design-system/kit/app-elements";
+import { AppLink, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
 import { NEWS_WORDS, WORDS } from "@/ui/design-system/kit/words";
-import { latestFeatures } from "@/ui/features/world/latest-features";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { postHref, postKind, postPainting, publishedPosts } from "./posts";
+import { patchNotes } from "../generated/patch-notes";
+import { changedSections, PatchHead, type PatchNote, PatchSection, patchSection, ReleaseRows } from "./patch-notes";
+
+/** The game's full rules, on the docs site: the notes say what changed, the docs say everything. */
+const FULL_RULES = "https://docs.realms.world";
 
 /**
- * What's new (spec 13), a place of its own in the bar and the Scroll's address: the game's latest changes, each with
- * what it does for the player, and the Scroll's posts, each opening its page, newest first in both. The desktop shows
- * them side by side; a phone stacks them. It ends on the footer, which holds the community and the legal pages.
+ * What's new (spec 13), a place of its own in the bar: the game's patch notes, the page's whole width. A release's head
+ * with the link to the full rules, a tab per section it changed (All modes, then Frontier, Blitz, Eternum) over that
+ * section on its painting, then every release, newest first. It ends on the footer.
  */
 export const WhatsNewPage = () => {
   const phone = useLayout() === "phone";
+  const [shown, setShown] = useState(0);
+  const note = patchNotes[shown];
   return (
-    <PageFrame title={WORDS.whatsNew} footer>
+    <PageFrame title={WORDS.whatsNew}>
       <div className="flex flex-col gap-6">
         {phone && <h1 className="text-app-title text-app-ink">{WORDS.whatsNew}</h1>}
-        <div
-          className={phone ? "flex flex-col gap-6" : "grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-6"}
-        >
-          <ChangesPanel />
-          <ScrollPanel />
-        </div>
+        <Release key={note.date} note={note} />
+        <AppPanel icon="calendar" title={NEWS_WORDS.releases} flush>
+          <ReleaseRows notes={patchNotes} shown={shown} onShow={setShown} />
+        </AppPanel>
       </div>
     </PageFrame>
   );
 };
 
-/** The game's latest changes, each read whole in its row after its day, so a phone gives the words its width. */
-const ChangesPanel = () => (
-  <AppPanel icon="tools" title={NEWS_WORDS.changes} flush>
-    {latestFeatures.map((change) => (
-      <AppRow
-        key={`${change.date}:${change.title}`}
-        title={change.title}
-        detail={`${formatContentDay(change.date)} · ${change.description}`}
-      />
-    ))}
-  </AppPanel>
-);
-
-/** The Scroll's posts under the cover of its newest; each opens its page. */
-export const ScrollPanel = () => {
-  const navigate = useNavigate();
-  const newest = publishedPosts[0];
+/** One release: its head, a tab per section it changed (the first chosen), and the chosen section. */
+const Release = ({ note }: { note: PatchNote }) => {
+  const sections = changedSections(note);
+  const [section, setSection] = useState(sections[0]);
   return (
-    <AppPanel icon="chronicles" title={NEWS_WORDS.scroll} painting={newest ? postPainting(newest) : undefined} flush>
-      {publishedPosts.map((post) => (
-        <AppRow
-          key={post.slug}
-          title={post.title}
-          detail={`${postKind(post)} · ${NEWS_WORDS.minutes(post.readingTimeMinutes)}`}
-          trail={
-            <>
-              {formatContentDay(post.date)}
-              <Icon name="arrow-right" size={18} />
-            </>
-          }
-          onClick={() => navigate(postHref(post))}
-        />
-      ))}
-    </AppPanel>
+    <>
+      <AppPanel icon="book" title={NEWS_WORDS.patchNotes} cue={<FullRulesLink />}>
+        <PatchHead note={note} />
+      </AppPanel>
+      <AppTabs
+        tabs={sections.map((mode) => ({ key: mode, label: patchSection(mode).name }))}
+        value={section}
+        onChange={setSection}
+        label={NEWS_WORDS.patchNotes}
+      />
+      <PatchSection note={note} mode={section} />
+    </>
   );
 };
+
+const FullRulesLink = () => (
+  <AppLink to={FULL_RULES} className="flex items-center gap-2 text-app-strong text-app-ink hover:underline">
+    {NEWS_WORDS.fullRules}
+    <Icon name="external-link" size={18} />
+  </AppLink>
+);

@@ -28,7 +28,7 @@ type PageFrameProps = {
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
-  /** The three places; a full-screen step (sign-in, entering a match) has none. */
+  /** The places, and the footer the page ends on; a full-screen step (sign-in, entering a match) has neither. */
   tabs?: boolean;
   /** Play, the one page that offers to install the app. */
   offersInstall?: boolean;
@@ -39,8 +39,6 @@ type PageFrameProps = {
   painting?: Painting;
   /** The painting lit brighter: a stage, as the first visit is drawn. */
   stage?: boolean;
-  /** A page that scrolls ends on the footer: What's new, a post, the legal pages. */
-  footer?: boolean;
   children: ReactNode;
 };
 
@@ -67,7 +65,7 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({ back, title, notice, foot, tabs = true, footer = false, children }: PageFrameProps) => (
+const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFrameProps) => (
   <div className="flex h-dvh flex-col">
     <header
       data-band="top"
@@ -77,7 +75,7 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, footer = false, ch
     </header>
     <main data-band="body" className="min-h-0 flex-1 overflow-y-auto px-gutter pb-4">
       {children}
-      {footer && <AppFooter />}
+      {tabs && <AppFooter />}
     </main>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-gutter pb-2">
@@ -109,7 +107,6 @@ const DesktopFrame = ({
   tabs = true,
   painting = APP_LANDSCAPE,
   stage = false,
-  footer = false,
   children,
 }: PageFrameProps) => {
   useDesktopKeys({ back });
@@ -127,7 +124,7 @@ const DesktopFrame = ({
           {children}
         </main>
         {foot ? <div data-band="foot">{foot}</div> : null}
-        {footer && <AppFooter />}
+        {tabs && <AppFooter />}
       </div>
     </div>
   );

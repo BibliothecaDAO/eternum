@@ -89,6 +89,8 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     for (const control of controlsIn(container))
       expect(control.closest("[data-band]"), control.outerHTML).not.toBeNull();
 
+    // Every page with the places ends on the footer; a full-screen step has neither.
+    expect(band(container, "footer") !== null).toBe(!isStep);
     // Back leads every page opened from another, and only those.
     const back = container.querySelectorAll('[data-role="back"]');
     expect(back.length).toBe(isTabPage ? 0 : 1);
@@ -147,11 +149,11 @@ describe("a page's notice", () => {
     const notice = band(container, "notice")!;
     expect(notice.closest('[data-band="bar"]')).not.toBeNull();
     expect(notice.nextElementSibling!.textContent).toContain("You");
-    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body"]);
+    expect(bandOrder(container).filter((name) => name !== "notice")).toEqual(["bar", "body", "footer"]);
   });
 
   it("sits above the phone's foot, under the content", async () => {
     const container = await renderNotice(390);
-    expect(bandOrder(container)).toEqual(["top", "body", "notice", "tabs"]);
+    expect(bandOrder(container)).toEqual(["top", "body", "footer", "notice", "tabs"]);
   });
 });

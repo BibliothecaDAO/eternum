@@ -99,7 +99,6 @@ it.each([
   ["doorway/waiting", "Starts"],
   ["doorway/preparing", "Preparing… 17/24"],
   ["terms", "Terms of Service"],
-  ["scroll/infrastructure-autonomous-worlds", "Newer"],
   ["no-such-page", "Nothing here"],
 ])("draws the fixture page %s", async (page, words) => {
   vi.stubGlobal(
@@ -119,10 +118,9 @@ it("draws a new account's refused name as refused", async () => {
   expect(lab.querySelector('input[aria-invalid="true"]')).not.toBeNull();
 });
 
-// The pages this file draws for real: the reading pages under What's new, and an unknown path, which no place holds.
+// The pages this file draws for real: a reading page under What's new, and an unknown path, which no place holds.
 it.each([
   ["terms", ["What's new"]],
-  ["scroll/infrastructure-autonomous-worlds", ["What's new"]],
   ["no-such-page", []],
 ])("lights the place of the page it draws at %s, as the app does", async (page, lit) => {
   vi.stubGlobal(

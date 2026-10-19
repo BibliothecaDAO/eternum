@@ -11,7 +11,7 @@ type Age = {
   painting: Painting;
 };
 
-export const AGES: readonly Age[] = [
+const AGES: readonly Age[] = [
   {
     mode: "blitz",
     numeral: "I",

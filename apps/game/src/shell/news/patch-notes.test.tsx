@@ -47,8 +47,3 @@ it("groups a mode's changes New, Balance, Fixes, each read whole with a moved nu
   ]);
   expect(page.querySelector(".app-row__trail s")?.textContent).toBe("0.03");
 });
-
-it("says so when the release left the mode as it was", async () => {
-  const page = await render([]);
-  expect(page.textContent).toBe("No changes in this patch");
-});

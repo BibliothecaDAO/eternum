@@ -1,0 +1,5 @@
+<!-- Source: apps/web/src/site/data/socials.ts (Telegram, as realms.world shows it; links https://t.me/+UpfCtj7qEO9hZjU1) -->
+<!-- Geometry unchanged, framed to the mark by its viewBox; white currentColor for external image use on the dark client. -->
+<svg viewBox="0.433 -0.767 22.234 22.234" fill="currentColor" color="#fff" xmlns="http://www.w3.org/2000/svg">
+<path d="M21.95 3.21c.26-1.2-.84-1.86-1.9-1.43L2.04 8.93C.81 9.42.83 10.18 1.84 10.49l4.62 1.44L17.2 5.16c.51-.31.97-.14.59.2l-8.7 7.85-.33 4.83c.48 0 .69-.22.96-.48l2.3-2.24 4.78 3.53c.88.49 1.52.24 1.74-.82L21.95 3.21Z"/>
+</svg>

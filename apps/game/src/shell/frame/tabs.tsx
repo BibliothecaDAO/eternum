@@ -11,11 +11,13 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { AppLink, AppTopBar } from "@/ui/design-system/kit/app-elements";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { WHATS_NEW_PATH } from "../news/posts";
 import { Lockup } from "./lockup";
 import { usePageAddress } from "./page-address";
 
 type Place = { to: string; word: string; icon: IconMeaning; matches: readonly string[] };
+
+/** What's new's address, which realms.world links. */
+export const WHATS_NEW_PATH = "/scroll";
 
 /** You: the player's place, at the end of both bars. */
 const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matches: ["/profile", "/results"] };
@@ -25,9 +27,8 @@ const MARKET_TAB: Place = { to: "https://market.realms.world/", word: WORDS.mark
 
 /**
  * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
- * now, Season where the player stands, What's new what changed and the Scroll's posts (with the legal pages its footer
- * leads to), Market the trading of Realms' items on its own site, You the player, their finished games and everything
- * about the account.
+ * now, Season where the player stands, What's new the patch notes (and the legal pages, read from the footer), Market
+ * the trading of Realms' items on its own site, You the player, their finished games and everything about the account.
  */
 const TABS: readonly Place[] = [
   { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },

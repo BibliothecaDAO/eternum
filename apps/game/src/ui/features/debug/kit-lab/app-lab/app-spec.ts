@@ -68,18 +68,10 @@ export const APP_SPEC: readonly SpecPage[] = [
   {
     page: "What's new",
     route: "/scroll",
-    job: "The Scroll's posts and the latest changes, newest first.",
-    primary: "Open a post.",
+    job: "The patch notes: a release's changes by section (All modes, Frontier, Blitz, Eternum), every release.",
+    primary: "Choose a section's tab.",
     verdict: "keep",
-    why: "Takes in the post: on a desktop the list and the post read side by side.",
-  },
-  {
-    page: "A post",
-    route: "/scroll/:post",
-    job: "One post in a reading column, with the Scroll's other posts beside it.",
-    primary: "Read; Newer and Older.",
-    verdict: "merge",
-    why: "The list's reading pane on a desktop: one News page with the post open.",
+    why: "The Scroll left the app (owner, 19 October): its posts are on realms.world.",
   },
   {
     page: "Terms, Privacy, Credits",

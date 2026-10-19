@@ -688,27 +688,19 @@ export const LEVEL_WORDS = {
   all: { word: "All", line: "Plus every clear, fight and build" },
 } as const;
 
-/** What's new: its two lists, a post's stepper and reading time, and the legal pages' date. */
+/** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {
-  /** The game's latest changes, the first of What's new's lists. */
-  changes: "Latest changes",
-  newer: "Newer",
-  older: "Older",
   updated: "Updated",
-  /** A post's reading time: "4min". */
-  minutes: (count: number) => `${count}min`,
   /** A release's notes for players, one section per mode. */
   patchNotes: "Patch notes",
+  /** A release's first section: what changed in every mode. */
+  allModes: "All modes",
   /** The kinds of change a mode's section groups. */
   kinds: { new: "New", balance: "Balance", fix: "Fixes" },
-  /** A mode this release leaves as it was. */
-  unchanged: "No changes in this patch",
-  /** The patches before the one on show. */
-  earlier: "Earlier patches",
-  /** The Scroll, the posts read inside What's new. */
-  scroll: "The Scroll",
-  thoughtPiece: "Thought piece",
-  update: "Update",
+  /** Every release's notes, newest first. */
+  releases: "Releases",
+  /** The link from the patch notes to the game's full rules, on the docs site. */
+  fullRules: "Full rules",
 } as const;
 
 /** The app's own states: install, update, offline, a page that does not exist. */

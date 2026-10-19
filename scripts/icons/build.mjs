@@ -14,7 +14,8 @@ const [{ icons }, meanings, resources, verdicts] = await Promise.all([
   read("verdicts"),
 ]);
 validateIcons({ icons, meanings, resources, verdicts });
-await assertIconFill(`${repo}/apps/game/public/tokens/lords.svg`, "official LORDS");
+for (const { token, label } of Object.values(meanings).filter((entry) => entry.token))
+  await assertIconFill(`${repo}/apps/game/public/tokens/${token}.svg`, `official ${label}`);
 const rewardIds = [
   ...new Set(Object.values(meanings).flatMap((entry) => (entry.rewardChest ? [entry.rewardChest] : []))),
 ];

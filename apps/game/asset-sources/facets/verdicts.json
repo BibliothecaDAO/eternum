@@ -970,5 +970,30 @@
   "faceted/beast-t3": {
     "verdict": "beats shipped",
     "reason": "Swept horns and a broad ridged brow distinguish the highest combat-tier study without relying on tiny markings."
+  },
+  "official/brand-x": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for X in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
+    "officialSource": "apps/web/src/site/data/socials.ts"
+  },
+  "official/brand-discord": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for Discord in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
+    "officialSource": "apps/web/src/site/data/socials.ts"
+  },
+  "official/brand-telegram": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for Telegram in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
+    "officialSource": "apps/web/src/site/data/socials.ts"
+  },
+  "official/brand-github": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for GitHub in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
+    "officialSource": "apps/web/src/site/data/socials.ts"
+  },
+  "official/brand-coingecko": {
+    "verdict": "beats shipped",
+    "reason": "Nothing shipped for CoinGecko in the footer before. The official mark as realms.world shows it, geometry unchanged from its source (apps/web/src/site/data/socials.ts); white currentColor, as LORDS.",
+    "officialSource": "apps/web/src/site/data/socials.ts"
   }
 }

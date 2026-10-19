@@ -1,10 +1,9 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import { formatContentDay } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { latestFeatures } from "@/ui/features/world/latest-features";
+import { patchNotes } from "../generated/patch-notes";
 
 vi.hoisted(() => vi.stubGlobal("fetch", async () => new Response(null, { status: 401 })));
 // Signed out: What's new is read by anyone.
@@ -15,12 +14,29 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { WhatsNewPage } from "./news";
-import { publishedPosts } from "./posts";
 
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
   await unmount?.();
   unmount = null;
+});
+
+/** A release as a player reads it: its name, then each section it changed, in order, its changes New, Balance, Fixes. */
+const SECTIONS = [
+  ["all", "All modes"],
+  ["frontier", "Frontier"],
+  ["blitz", "Blitz"],
+  ["eternum", "Eternum"],
+] as const;
+const KINDS = ["new", "balance", "fix"];
+const asRead = (note: (typeof patchNotes)[number]) => ({
+  title: note.title,
+  sections: SECTIONS.filter(([mode]) => note.modes[mode].length > 0).map(([mode, name]) => [
+    name,
+    [...note.modes[mode]]
+      .sort((left, right) => KINDS.indexOf(left.kind) - KINDS.indexOf(right.kind))
+      .map((change) => [change.title, change.line]),
+  ]),
 });
 
 const Where = () => <output data-where>{useLocation().pathname}</output>;
@@ -78,30 +94,67 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
     ]);
   });
 
-  it("reads each latest change whole, and opens a post of the Scroll on its page", async () => {
+  it("shows a release under a tab per section it changed, in order, and any release picked from the list", async () => {
     const page = await open(width);
-    const changes = [...panel(page, "Latest changes").querySelectorAll(".app-row")];
-    expect(changes.map((row) => row.querySelector(".app-row__detail")?.textContent)).toEqual(
-      latestFeatures.map((change) => `${formatContentDay(change.date)} · ${change.description}`),
+    const tabs = () => [...page.querySelectorAll<HTMLButtonElement>('[role="tablist"] [role="tab"]')];
+    const shown = () => {
+      const section = [...page.querySelectorAll<HTMLElement>(".app-panel")].find((each) =>
+        each.querySelector("section[aria-label]"),
+      )!;
+      return [
+        section.querySelector("h2")?.textContent,
+        [...section.querySelectorAll(".app-row")].map((row) => [
+          row.querySelector(".app-row__title")?.textContent,
+          row.querySelector(".app-row__detail")?.textContent,
+        ]),
+      ];
+    };
+    const readAll = async () => {
+      const sections = [];
+      for (const tab of tabs()) {
+        await act(async () => tab.click());
+        sections.push(shown());
+      }
+      return { title: panel(page, "Patch notes").querySelector("h3")?.textContent, sections };
+    };
+    expect(tabs().map((tab) => tab.getAttribute("aria-selected"))[0]).toBe("true");
+    expect(await readAll()).toEqual(asRead(patchNotes[0]));
+    const releases = [...panel(page, "Releases").querySelectorAll<HTMLButtonElement>(".app-row button")];
+    expect(releases.map((release) => release.querySelector(".app-row__title")?.textContent)).toEqual(
+      patchNotes.map((note) => note.title),
     );
-    const posts = [...panel(page, "The Scroll").querySelectorAll<HTMLButtonElement>(".app-row button")];
-    expect(posts.map((post) => post.querySelector(".app-row__title")?.textContent)).toEqual(
-      publishedPosts.map((post) => post.title),
-    );
-    await act(async () => posts[0].click());
-    expect(page.querySelector("[data-where]")!.textContent).toBe(`/scroll/${publishedPosts[0].slug}`);
+    await act(async () => releases.at(-1)!.click());
+    expect(await readAll()).toEqual(asRead(patchNotes.at(-1)!));
   });
 
-  it("ends on the footer's community links", async () => {
+  it("leads from the patch notes to the full rules on the docs site, in a new tab", async () => {
+    const page = await open(width);
+    const rules = panel(page, "Patch notes").querySelector<HTMLAnchorElement>(".app-panel__cue a")!;
+    expect([rules.textContent, rules.href, rules.target]).toEqual([
+      "Full rules",
+      "https://docs.realms.world/",
+      "_blank",
+    ]);
+  });
+
+  it("ends on the footer: the socials realms.world links, each with its official mark", async () => {
     const page = await open(width);
     const community = [
       ...page.querySelectorAll<HTMLAnchorElement>('[data-band="footer"] nav[aria-label="Community"] a'),
     ];
-    expect(community.map((link) => [link.textContent, link.getAttribute("href"), link.target])).toEqual([
-      ["Discord", "https://discord.gg/realmsworld", "_blank"],
-      ["X", "https://x.com/LootRealms", "_blank"],
-      ["Telegram", "https://t.me/+UpfCtj7qEO9hZjU1", "_blank"],
-      ["GitHub", "https://github.com/BibliothecaDAO", "_blank"],
+    expect(
+      community.map((link) => [
+        link.textContent,
+        link.getAttribute("href"),
+        link.target,
+        link.querySelector("img")?.getAttribute("src"),
+      ]),
+    ).toEqual([
+      ["X", "https://x.com/LootRealms", "_blank", "/tokens/brand-x.svg"],
+      ["Discord", "https://discord.gg/realmsworld", "_blank", "/tokens/brand-discord.svg"],
+      ["Telegram", "https://t.me/+UpfCtj7qEO9hZjU1", "_blank", "/tokens/brand-telegram.svg"],
+      ["CoinGecko", "https://www.coingecko.com/en/coins/lords", "_blank", "/tokens/brand-coingecko.svg"],
+      ["GitHub", "https://github.com/BibliothecaDAO", "_blank", "/tokens/brand-github.svg"],
     ]);
   });
 });

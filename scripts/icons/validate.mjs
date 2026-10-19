@@ -11,7 +11,7 @@ export function validateIcons({ icons, meanings, resources, verdicts }) {
       continue;
     }
     if (entry.token) {
-      if (name !== "lords") throw new Error(`Unexpected token mark: ${name}`);
+      if (!isOfficialMark(name, entry)) throw new Error(`Unexpected token mark: ${name}`);
       continue;
     }
     if (!paintings.has(entry.art)) throw new Error(`Missing painting for ${name}: ${entry.art}`);
@@ -55,9 +55,19 @@ export function validateIcons({ icons, meanings, resources, verdicts }) {
       if (meanings[name]?.art !== name) throw new Error(`${name} must use its own level painting`);
     }
   }
-  for (const [id, key] of [...icons.map(({ id }) => [id, `faceted/${id}`]), ["LORDS", "official/lords"]]) {
+  const marks = Object.values(meanings).flatMap((entry) =>
+    entry.token ? [[entry.label, `official/${entry.token}`]] : [],
+  );
+  for (const [id, key] of [...icons.map(({ id }) => [id, `faceted/${id}`]), ...marks]) {
     const review = verdicts[key];
     if (!review || !["equal", "beats shipped"].includes(review.verdict) || !review.reason?.trim())
       throw new Error(`Review ${id}: a missing, worse or unexplained verdict cannot ship.`);
   }
 }
+
+/**
+ * An official mark shown as its owner publishes it, never painted: the LORDS token, and the brands the footer links
+ * (`brand-<name>`, its own file). Each still needs its review.
+ */
+const isOfficialMark = (name, entry) =>
+  name === "lords" || (entry.family === "Brands" && name.startsWith("brand-") && entry.token === name);

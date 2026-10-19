@@ -12,8 +12,6 @@ import { rewardKey } from "../season-tab/reward";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
-import { PostPage } from "../news/post-page";
-import { WhatsNewOptionPage } from "@/ui/features/debug/kit-lab/patch-notes-lab/whats-new-options";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
@@ -97,8 +95,6 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="profile/settings" element={<SettingsPage />} />
         <Route path="p/:address" element={<PlayerPage />} />
         <Route path="scroll" element={<WhatsNewPage />} />
-        <Route path="scroll/:post" element={<PostPage />} />
-        <Route path="whats-new/:option" element={<WhatsNewOptionPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="credits" element={<CreditsPage />} />

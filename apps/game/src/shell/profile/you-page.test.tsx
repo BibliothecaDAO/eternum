@@ -46,7 +46,10 @@ const body = (page: HTMLElement) => page.querySelector('[data-band="body"]')!;
 
 it("offers a signed-out reader Sign in and How to play on the Blitz guide in a new tab", async () => {
   const page = await open("/profile", 390);
-  const controls = [...body(page).querySelectorAll("a, button")].map((control) => control.textContent);
+  // The page's own controls: the footer every page ends on is the frame's, checked with it.
+  const controls = [...body(page).querySelectorAll("a, button")]
+    .filter((control) => !control.closest('[data-band="footer"]'))
+    .map((control) => control.textContent);
   expect(controls).toEqual(["Sign in", "How to play"]);
   const docs = body(page).querySelector<HTMLAnchorElement>("a")!;
   expect([docs.href, docs.target]).toEqual(["https://docs.realms.world/blitz/key-concepts", "_blank"]);

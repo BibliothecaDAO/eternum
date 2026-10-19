@@ -77,8 +77,9 @@ const END = {
   docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.world") && a.target === "_blank")`,
   // Realms' marketplace, a place of the bar (a phone's tabs) that opens its own site in a new tab.
   market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://market.realms.world/" && a.target === "_blank")`,
-  // A post of the Scroll, or the terms from What's new's footer, read under What's new's place.
-  news: `location.pathname.startsWith("/scroll/") && ${placeLit("What's new")}`,
+  // What's new under its place, a section's tab chosen and that section's changes shown under its name.
+  news: `location.pathname === "/scroll" && ${placeLit("What's new")} && [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].some((tab) => tab.innerText.trim() === "Blitz") && [...document.querySelectorAll(".app-panel h2")].some((name) => name.innerText.trim() === "Blitz")`,
+  // The terms, read from the footer, under What's new's place.
   terms: `location.pathname === "/terms" && ${placeLit("What's new")}`,
   signIn: `location.pathname === "/sign-in" && new URLSearchParams(location.search).get("next") === "/profile"`,
   lobby: `location.pathname.startsWith("/blitz/") && document.querySelector('[data-band="body"]')`,
@@ -97,7 +98,7 @@ const flows = (layout, persona) => {
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
     guide: { steps: [tab("You"), link("How to play")], end: END.docs },
     market: { steps: [link("Market")], end: END.market },
-    news: { steps: [tab("What's new"), press("first")], end: END.news },
+    news: { steps: [tab("What's new"), view("Blitz")], end: END.news },
     terms: { steps: [tab("What's new"), link("Terms of Service")], end: END.terms },
   };
   if (persona === "new-visitor")
@@ -132,7 +133,6 @@ const LAB_PAGES = [
   ["home", "profile"],
   ["home", "profile/settings"],
   ["home", "scroll"],
-  ["home", "scroll/infrastructure-autonomous-worlds"],
   ["first-visit", "terms"],
   ["first-visit", "privacy"],
   ["first-visit", "credits"],
