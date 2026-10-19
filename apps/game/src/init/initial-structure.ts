@@ -5,7 +5,6 @@ import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecada
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 
 import { resetEntryDestination, settleEntryDestination } from "@/game-entry/entry-destination";
-import { mapRouteHex } from "@/play/navigation/play-route";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
 
 import { resolveInitialStructureSelection } from "../sync/initial-structure-selection";
@@ -74,7 +73,7 @@ const chooseInitialStructure = (setup: SetupResult, state: AppStore): void => {
 
   const worldMapPosition = Position.fromContract({ x: selectedStructure.coord_x, y: selectedStructure.coord_y });
   state.setStructureEntityId(selectedStructure.entity_id, { spectator, worldMapPosition });
-  settleEntryDestination(mapRouteHex(worldMapPosition));
+  settleEntryDestination(worldMapPosition);
   markGameEntryMilestone("initial-structure-selected");
 };
 

@@ -1,3 +1,4 @@
+import { configManager } from "@bibliothecadao/eternum";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -18,6 +19,8 @@ const settle = () => act(async () => void (await new Promise((resolve) => setTim
 
 it("keeps a dragged minimap view when its parent republishes the same camera hex, and follows a new one", async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  // A drag tells the map where to look as a Position, which reads the same centre as the minimap.
+  vi.spyOn(configManager, "getMapCenter").mockReturnValue(0);
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -60,5 +63,6 @@ it("keeps a dragged minimap view when its parent republishes the same camera hex
   } finally {
     await act(async () => root.unmount());
     host.remove();
+    vi.restoreAllMocks();
   }
 });

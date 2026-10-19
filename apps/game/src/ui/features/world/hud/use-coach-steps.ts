@@ -23,6 +23,7 @@ import {
   getBalance,
   getTileAt,
   lostArmyLine,
+  Position,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -105,6 +106,9 @@ const toNextStep = (step: CoachStep, act: (action: ButtonAct) => void): NextStep
   };
 };
 
+/** A coach hex is the projection's, in contract coordinates: the place the map is asked to show. */
+const coachPlace = (hex: { col: number; row: number }): Position => Position.fromContract({ x: hex.col, y: hex.row });
+
 /**
  * What a coach step's button does: open Military on the realm it names, open Build, open a crate beside an army (on
  * the map; from another view the army is shown there first), or select the army on the map with its target's card
@@ -123,10 +127,10 @@ const useCoachAct = () => {
         return;
       case "open-crate":
         if (isMapView) requestChestOpening({ explorerId: action.armyId, hex: action.hex });
-        else selectArmy(action.armyId, action.hex);
+        else selectArmy(action.armyId, coachPlace(action.hex));
         return;
       case "go":
-        selectArmy(action.armyId, action.target);
+        selectArmy(action.armyId, action.target && coachPlace(action.target));
         return;
     }
   };

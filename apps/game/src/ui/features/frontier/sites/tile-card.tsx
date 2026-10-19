@@ -13,7 +13,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner } from "@bibliothecadao/eternum";
+import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner, Position } from "@bibliothecadao/eternum";
 import {
   safeInteger,
   type GameClientSetup,
@@ -277,7 +277,11 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
       art: army.art,
       troops: army.troops,
       fight,
-      onPick: () => requestArmySelection(army.explorerId, selected.tile.hexCoords),
+      onPick: () =>
+        requestArmySelection(
+          army.explorerId,
+          Position.fromContract({ x: selected.tile.hexCoords.col, y: selected.tile.hexCoords.row }),
+        ),
     };
   });
 };

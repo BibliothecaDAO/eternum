@@ -14,22 +14,20 @@ const spectateSession = vi.fn(() => false);
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => spectateSession() }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   Position: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).Position,
-  configManager: { getActiveGameId: () => 1, getMapCenter: () => 0 },
+  // The real map centre: a site's contract hex and the hex the map shows differ by it.
+  configManager: { getActiveGameId: () => 1, getMapCenter: () => 2147483646 },
   structureMapPosition: (_store: unknown, structure: { entity_id: number }) => ({
     x: structure.entity_id,
     y: 8850,
   }),
 }));
 
-// The route's hex needs the map's centre from a synchronized config; here it is the contract position as it stands.
-vi.mock("@/play/navigation/play-route", () => ({
-  mapRouteHex: (position: { getContract: () => { x: number; y: number } }) => {
-    const { x, y } = position.getContract();
-    return { col: x, row: y };
-  },
-}));
-
 const { followInitialStructure } = await import("./initial-structure");
+// Position reads the centre from the package's own config: the same real centre as above.
+const actual = await vi.importActual<typeof import("@bibliothecadao/eternum")>("@bibliothecadao/eternum");
+vi.spyOn(actual.configManager, "getMapCenter").mockReturnValue(2147483646);
+const { cameraHexOf } = await import("@/three/scenes/worldmap-camera-target");
+type Position = import("@bibliothecadao/eternum").Position;
 const { whenEntryDestinationSettled } = await import("@/game-entry/entry-destination");
 const { useAccountStore } = await import("@/hooks/store/use-account-store");
 const setAccount = (account: { address: string } | null) => useAccountStore.setState({ account: account as never });
@@ -116,7 +114,9 @@ describe("initial structure", () => {
       await Promise.resolve();
       return destination;
     };
-    const siteOf = (entityId: number) => ({ col: entityId, row: 8850 });
+    // The realm's site as the camera takes it: its contract hex (structureMapPosition) minus the map centre.
+    const siteOf = (entityId: number) => ({ col: entityId - 2147483646, row: 8850 - 2147483646 });
+    const shown = (destination: unknown) => cameraHexOf(destination as Position);
 
     it("is the player's realm once their own scope brings it", async () => {
       Object.assign(ui, { structureEntityId: 0, isSpectating: false });
@@ -129,7 +129,7 @@ describe("initial structure", () => {
 
       store.applyScope({ actor: PLAYER, expedition: {} }, [structure(2790, PLAYER)]);
 
-      expect(await settled()).toEqual(siteOf(2790));
+      expect(shown(await settled())).toEqual(siteOf(2790));
       stop();
     });
 
@@ -155,7 +155,7 @@ describe("initial structure", () => {
 
       store.applyScope({ visit: "0x99", expedition: {} }, [structure(5, "0x99")]);
 
-      expect(await settled()).toEqual(siteOf(5));
+      expect(shown(await settled())).toEqual(siteOf(5));
       stop();
     });
   });

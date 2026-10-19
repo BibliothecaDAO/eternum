@@ -63,7 +63,7 @@ export const useSelectArmyOnMap = () => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const navigateToMapView = useNavigateToMapView();
-  return (entityId: ID, forSite: { col: number; row: number } | null = null) => {
+  return (entityId: ID, forSite: Position | null = null) => {
     if (!isMapView) {
       navigateToMapView(
         Position.fromContract(entityMapPosition(setup.store, configManager.getActiveGameId(), entityId)),

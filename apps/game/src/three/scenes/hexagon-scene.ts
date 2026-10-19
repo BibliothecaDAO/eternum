@@ -947,7 +947,8 @@ export abstract class HexagonScene {
     }
   }
 
-  public moveCameraToColRow(col: number, row: number, duration: number = 2) {
+  /** Moves the camera onto one of this scene's own hexes. The world map takes map positions instead (moveCameraToMapPosition). */
+  protected moveCameraToColRow(col: number, row: number, duration: number = 2) {
     const { x, y, z } = this.hexSpace.positionForHex({ col, row });
 
     const newTarget = new Vector3(x, y, z);

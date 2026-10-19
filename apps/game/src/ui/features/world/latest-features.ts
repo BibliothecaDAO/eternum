@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Show the crate shows the crate",
+    description:
+      "Show the crate, Show on a camp or Hyperstructure, and picking an army from a site's card frame your army and its target on the map, instead of sending the camera far off into the fog.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-19",
     title: "Build cards are lighter, their numbers a hover away",
     description:
       "A Build card now shows the building, how many you have and its actions. Hover its ⓘ for a compact card: the population it takes, what one more gives, what it costs against what you hold (red while short), and what its production burns.",

@@ -463,7 +463,12 @@ describe("an army picked from a site's card", () => {
   it("asks the map for that army and names the site's tile, so the card stays open with the army as its actor", () => {
     const { host, unmount } = renderCard("beside");
     const asked: unknown[] = [];
-    const hear = () => asked.push(takeArmySelectRequest());
+    // The site's place as the map reads it: the tile's contract hex, carried as a Position.
+    const hear = () => {
+      const request = takeArmySelectRequest();
+      const site = request?.forSite?.getContract();
+      asked.push({ entityId: request?.entityId, forSite: site && { col: site.x, row: site.y } });
+    };
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
     const rows = [...host.querySelectorAll<HTMLButtonElement>(".ui-row__choose")].filter((row) =>
       row.textContent?.startsWith("Army"),

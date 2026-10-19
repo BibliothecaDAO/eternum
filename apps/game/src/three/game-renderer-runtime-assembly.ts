@@ -1,3 +1,4 @@
+import { Position } from "@bibliothecadao/eternum";
 import HUDScene from "@/three/scenes/hud-scene";
 import type { MapControls } from "three/addons/controls/MapControls.js";
 import { createRendererControlBridgeRuntime } from "./renderer-control-bridge-runtime";
@@ -74,7 +75,10 @@ function createGameRendererControlBridgeRuntime(input: CreateGameRendererRuntime
       input.resolveRuntimeState().labelRuntime?.markDirty();
     },
     moveCameraToColRow: (col, row, duration) => {
-      input.resolveRuntimeState().worldmapScene?.moveCameraToColRow(col, row, duration);
+      // The dev tools type a scene hex: a normalized map position.
+      input
+        .resolveRuntimeState()
+        .worldmapScene?.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), duration);
     },
     moveCameraToXYZ: (x, y, z, duration) => {
       input.resolveRuntimeState().worldmapScene?.moveCameraToXYZ(x, y, z, duration);

@@ -13,6 +13,7 @@ import {
   hasTileOccupier,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
+  Position,
 } from "@bibliothecadao/eternum";
 import { HexPosition, TileOccupier } from "@bibliothecadao/types";
 import {
@@ -388,7 +389,8 @@ export const HexMinimap = ({
   const dispatchCameraMove = useCallback((centerX: number, centerY: number) => {
     if (typeof window === "undefined") return;
     const { col, row } = pixelToOffset(centerX, centerY);
-    window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: { col, row } }));
+    // The minimap draws scene hexes: the map position it names is a normalized one.
+    window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: Position.fromNormalized({ x: col, y: row }) }));
   }, []);
 
   const cameraMoveRafRef = useRef<number | null>(null);

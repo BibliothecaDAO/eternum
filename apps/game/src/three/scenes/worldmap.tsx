@@ -265,6 +265,7 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
+import { cameraHexOf } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
@@ -901,12 +902,12 @@ export default class WorldmapScene extends WarpTravel {
     if (distanceChanged) nextState.cameraDistance = nextCameraDistance;
     useUIStore.setState(nextState);
   };
-  private minimapCameraMoveTarget: { col: number; row: number } | null = null;
+  private minimapCameraMoveTarget: Position | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
   private minimapCameraMoveHandler = (event: Event) => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
-    const detail = (event as CustomEvent<{ col: number; row: number }>).detail;
-    if (!detail) return;
+    const detail = (event as CustomEvent<Position>).detail;
+    if (!(detail instanceof Position)) return;
     this.minimapCameraMoveTarget = detail;
     this.minimapCameraMoveThrottled?.();
   };
@@ -1865,7 +1866,7 @@ export default class WorldmapScene extends WarpTravel {
       if (!target) {
         return;
       }
-      this.moveCameraToColRow(target.col, target.row, 0.25);
+      this.moveCameraToMapPosition(target, 0.25);
     }, 16);
 
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
@@ -2111,9 +2112,11 @@ export default class WorldmapScene extends WarpTravel {
     useCameraZoomStore.getState().setWorldmapDistance(settled);
   }
 
-  public override moveCameraToColRow(col: number, row: number, duration: number = 2) {
-    if (!this.reachWorldOrigin({ col, row })) return;
-    super.moveCameraToColRow(col, row, duration);
+  /** Moves the camera onto a map position, by the one conversion every camera target goes through. */
+  public moveCameraToMapPosition(position: Position, duration: number = 2): void {
+    const hex = cameraHexOf(position);
+    if (!this.reachWorldOrigin(hex)) return;
+    super.moveCameraToColRow(hex.col, hex.row, duration);
   }
 
   /**
@@ -2144,7 +2147,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private moveCameraToRouteWorldPosition(routeWorldPosition: HexPosition): void {
     const { col, row } = routeWorldPosition;
-    this.moveCameraToColRow(col, row, 0);
+    this.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), 0);
   }
 
   private requestURLLocationRefreshIfNeeded(shouldRequestRefresh: boolean): void {
@@ -4108,7 +4111,7 @@ export default class WorldmapScene extends WarpTravel {
   private async openOnEntryDestination(): Promise<void> {
     if (resolvePlayRouteWorldPosition(window.location)) return;
     const destination = await whenEntryDestinationSettled();
-    if (destination) this.moveCameraToColRow(destination.col, destination.row, 0);
+    if (destination) this.moveCameraToMapPosition(destination, 0);
   }
 
   /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
@@ -8337,21 +8340,26 @@ export default class WorldmapScene extends WarpTravel {
    * Selects the army the HUD asked for. Asked from a site's card, the card stays open on that site with the army as
    * its actor: the attack's preview, or what the army lacks.
    */
-  private async selectRequestedArmy(entityId: number, forSite: HexPosition | null): Promise<void> {
+  private async selectRequestedArmy(entityId: number, forSite: Position | null): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
     await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
     if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
-    this.frameOnOpenMap(forSite ? [position, forSite] : [position]);
-    if (forSite) this.openTargetCardForSelectedArmy(forSite);
+    const army = Position.fromNormalized({ x: position.col, y: position.row });
+    this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
+    if (!forSite) return;
+    const site = forSite.getContract();
+    this.openTargetCardForSelectedArmy({ col: site.x, row: site.y });
   }
 
   /**
    * Frames hexes in the map's open area, between the HUD's columns and above its order bubbles, instead of the screen's
    * centre, which those cover: their midpoint lands at the open area's centre, at the same zoom and angle.
    */
-  private frameOnOpenMap(hexes: HexPosition[]): void {
+  private frameOnOpenMap(positions: Position[]): void {
+    const hexes = positions.map(cameraHexOf);
+    if (!this.reachWorldOrigin(hexes[0])) return;
     const points = hexes.map((hex) => this.hexSpace.positionForHex(hex));
     const middle = points
       .reduce((sum, point) => sum.add(new Vector3(point.x, point.y, point.z)), new Vector3())
@@ -8377,7 +8385,10 @@ export default class WorldmapScene extends WarpTravel {
     resolvedPosition: { col: number; row: number },
     account: ContractAddress,
   ): Promise<void> {
-    this.moveCameraToColRow(resolvedPosition.col, resolvedPosition.row, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    this.moveCameraToMapPosition(
+      Position.fromNormalized({ x: resolvedPosition.col, y: resolvedPosition.row }),
+      SHORTCUT_NAVIGATION_DURATION_SECONDS,
+    );
 
     try {
       await this.refreshChunksAfterShortcutNavigation(resolvedPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
@@ -8956,7 +8967,7 @@ export default class WorldmapScene extends WarpTravel {
       spectator: this.state.isSpectating,
     });
 
-    this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+    this.moveCameraToMapPosition(worldMapPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
     void this.refreshChunksAfterShortcutNavigation(
       { col: normalizedPosition.x, row: normalizedPosition.y },
       SHORTCUT_NAVIGATION_DURATION_SECONDS,
@@ -8986,7 +8997,7 @@ export default class WorldmapScene extends WarpTravel {
         worldMapPosition,
         spectator: this.state.isSpectating,
       });
-      this.moveCameraToColRow(normalizedPosition.x, normalizedPosition.y, SHORTCUT_NAVIGATION_DURATION_SECONDS);
+      this.moveCameraToMapPosition(worldMapPosition, SHORTCUT_NAVIGATION_DURATION_SECONDS);
       void this.refreshChunksAfterShortcutNavigation(
         { col: normalizedPosition.x, row: normalizedPosition.y },
         SHORTCUT_NAVIGATION_DURATION_SECONDS,
