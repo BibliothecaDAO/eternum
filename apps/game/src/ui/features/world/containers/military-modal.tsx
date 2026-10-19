@@ -125,7 +125,6 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
         <div className={cn(showsDeploy && "min-h-0 flex-1 overflow-y-auto overscroll-contain")}>
           <UnifiedArmyCreationBody
             key={bodyKey}
-            embedded
             shown={showsDeploy}
             structureId={safeInteger(focusedRealmId)}
             isExplorer={initialIsExplorer}

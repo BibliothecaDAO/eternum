@@ -5,12 +5,6 @@ export enum LeftView {
   MilitaryView,
   EntityView,
   ConstructionView,
-  BridgeView,
-  HyperstructuresView,
-  StoryEvents,
-  ResourceTable,
-  RelicsView,
-  PredictionMarket,
 }
 
 export type BattleViewInfo = {

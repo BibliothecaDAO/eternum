@@ -25,11 +25,6 @@ type UnifiedArmyCreationBodyProps = UnifiedArmyCreationProps & {
    * Deploy included, so no hidden choice can be sent.
    */
   shown?: boolean;
-  /**
-   * Kept for call-site compatibility. The legacy popup chrome has been removed;
-   * the parent Military modal provides the window shell.
-   */
-  embedded?: boolean;
 };
 
 export const UnifiedArmyCreationBody = ({
@@ -39,7 +34,6 @@ export const UnifiedArmyCreationBody = ({
   direction,
   initialGuardSlot,
   followSelectedStructure,
-  embedded = true,
   shown = true,
 }: UnifiedArmyCreationBodyProps) => {
   const mode = useGameModeConfig();
