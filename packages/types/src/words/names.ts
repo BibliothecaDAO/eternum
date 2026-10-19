@@ -1,3 +1,5 @@
+import { foldEntityId } from "../types/common";
+
 /**
  * A nameless place's name on its plate (the owner, 18 October 2026: "name the camps so a little number -> text algo (check
  * the lore), client only of course, it'd make the world more lively. But not too long names"): one word of two halves
@@ -66,17 +68,16 @@ const SECOND = [
   "watch",
 ] as const;
 
-/** The id's two 32-bit halves (its namespace and serial), mixed so neighbouring serials land far apart. */
-const mix = (entityId: number): number => {
-  let hash = (entityId % 2 ** 32) ^ Math.imul(Math.floor(entityId / 2 ** 32), 0x9e3779b1);
-  hash = Math.imul(hash ^ (hash >>> 16), 0x85ebca6b);
+/** An id's folded word, mixed so neighbouring serials land far apart. */
+const mix = (word: number): number => {
+  let hash = Math.imul(word ^ (word >>> 16), 0x85ebca6b);
   hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
   return (hash ^ (hash >>> 16)) >>> 0;
 };
 
 /** A camp's, a rift's or a ruin's name: one word of two halves, "Grimhold", "Ashreach". */
 export const siteName = (entityId: number): string => {
-  const hash = mix(entityId);
+  const hash = mix(foldEntityId(entityId));
   const first = FIRST[hash % FIRST.length];
   let second = Math.floor(hash / FIRST.length) % SECOND.length;
   // A doubled letter at the join reads badly ("Gloommere"): the next ending that does not double one takes its place.
@@ -114,6 +115,6 @@ const BAND = [
  * Wardens", the same on every client. Its own mix of the id, so an army and a place of one id never share a word.
  */
 export const armyName = (entityId: number): string => {
-  const hash = mix(entityId ^ 0x5bd1e995);
+  const hash = mix(foldEntityId(entityId, 0x5bd1e995));
   return `${FIRST[hash % FIRST.length]} ${BAND[Math.floor(hash / FIRST.length) % BAND.length]}`;
 };

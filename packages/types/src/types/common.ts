@@ -180,6 +180,15 @@ export function ID(id: number | string): ID {
   return Number(id);
 }
 
+/**
+ * An entity id as one 32-bit word to hash: its home namespace (the high half) mixed into its serial (the low half).
+ * Bitwise operators and Math.imul keep only a number's low 32 bits, so an id hashed directly loses its home, and every
+ * home's Nth army hashes alike. `seed` gives each use its own word for one id.
+ */
+export function foldEntityId(entityId: ID, seed = 0): number {
+  return ((entityId % 2 ** 32) ^ seed ^ Math.imul(Math.floor(entityId / 2 ** 32), 0x9e3779b1)) >>> 0;
+}
+
 export function ContractAddress(address: string | bigint): ContractAddress {
   return BigInt(address);
 }

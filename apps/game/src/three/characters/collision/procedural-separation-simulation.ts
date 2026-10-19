@@ -1,3 +1,5 @@
+import { foldEntityId } from "@bibliothecadao/types";
+
 import type { ProceduralCollisionProfile, ProceduralCollisionProxy } from "./procedural-collision-profile";
 
 export interface ProceduralSeparationSimulationConfig {
@@ -469,7 +471,8 @@ function resolveProxyCenter(body: ProceduralSeparationBody, proxy: ProceduralCol
 }
 
 function resolveCoincidentNormal(leftId: number, rightId: number): { x: number; z: number } {
-  const hash = Math.imul(leftId ^ 0x9e3779b9, 16_777_619) ^ Math.imul(rightId, 2_246_822_519);
+  const hash =
+    Math.imul(foldEntityId(leftId, 0x9e3779b9), 16_777_619) ^ Math.imul(foldEntityId(rightId), 2_246_822_519);
   const angle = ((hash >>> 0) / 0x1_0000_0000) * Math.PI * 2;
   return { x: Math.cos(angle), z: Math.sin(angle) };
 }

@@ -50,6 +50,9 @@ jobs:
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 
+      - name: Hold the client and its packages to the lint guards
+        run: pnpm --dir ./apps/game lint:guards
+
       - name: Check the patch notes are rendered from their releases
         working-directory: apps/game
         run: node scripts/generate-patch-notes.mjs && git diff --exit-code src/shell/generated/patch-notes.ts

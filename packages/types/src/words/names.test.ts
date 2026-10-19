@@ -37,6 +37,13 @@ describe("an army's generated name, read off its id", () => {
     expect(new Set(ids.slice(0, 200).map(armyName)).size).toBeGreaterThan(150);
   });
 
+  it("gives every home's army of one serial its own name", () => {
+    // An army id is its home's namespace times 2^32 plus its serial: the home must reach the name.
+    const secondArmies = Array.from({ length: 60 }, (_, home) => (home + 1) * 2 ** 32 + 2);
+    expect(armyName(1 * 2 ** 32 + 2)).not.toBe(armyName(2 * 2 ** 32 + 2));
+    expect(new Set(secondArmies.map(armyName)).size).toBeGreaterThan(50);
+  });
+
   it("never gives an army and a place of one id the same first word", () => {
     const shared = ids.filter(
       (id) => armyName(id).split(" ")[0] === siteName(id).match(/^[A-Z][a-z]+?(?=[a-z]*$)/)?.[0],

@@ -40,6 +40,7 @@
     "lab:frontier": "bun scripts/frontier-lab-facts.ts .lab/frontier-rules.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint:guards": "node ./scripts/lint-guards.mjs",
     "playtest": "node ./scripts/run-client-playtest.mjs",
     "styles:inventory": "node ./scripts/style-inventory.mjs",
     "preview": "vite preview",
