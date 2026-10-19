@@ -67,7 +67,7 @@ export const CompactBuildingCard = ({
         </HudButton>
       </div>
       <div className="mt-2 flex flex-col gap-1">
-        <p className="text-hud-label text-hud-muted">Cost · owned / needed</p>
+        <p className="text-hud-label text-hud-muted">Cost</p>
         <RequirementChips requirements={requirements} />
         {disabledReason && <p className="text-hud-muted">{disabledReason}</p>}
       </div>

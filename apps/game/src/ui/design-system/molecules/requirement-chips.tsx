@@ -1,7 +1,8 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import { ResourcesIds, formatExact, formatCharge, resourceName } from "@bibliothecadao/types";
+import { ResourcesIds, formatExact } from "@bibliothecadao/types";
+import { costLine } from "@/ui/design-system/kit/words";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 
 export interface ResourceRequirement {
@@ -13,7 +14,7 @@ export interface ResourceRequirement {
   incoming?: { amount: number; etaSeconds: number } | null;
 }
 
-/** Every cost the HUD shows reads the same way: held / needed per resource, in bad while short. */
+/** A cost as chips, one per resource, each read as every cost reads (costLine), in bad while short. */
 export const RequirementChips = ({
   requirements,
   className,
@@ -31,11 +32,11 @@ export const RequirementChips = ({
       return (
         <span
           key={`${req.resource}-${req.amount}`}
-          data-tip={`${resourceName(req.resource)} — need ${formatCharge(req.amount)}${incomingTitle}`}
+          data-tip={`${costLine(req.amount, req.current, req.resource)}${incomingTitle}`}
         >
           <HudChip tone={isMet ? undefined : "bad"}>
             <ResourceIcon withTooltip={false} resource={req.resource} size="xs" />
-            {req.current === undefined ? "—" : formatExact(Math.floor(req.current))} / {formatCharge(req.amount)}
+            {costLine(req.amount, req.current)}
             {req.incoming && <span className="text-hud-good">↑</span>}
           </HudChip>
         </span>

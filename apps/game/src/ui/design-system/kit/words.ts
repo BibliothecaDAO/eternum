@@ -12,6 +12,8 @@ import {
   relicEffect,
   type ResourcesIds,
   formatCharge,
+  formatExact,
+  resourceName,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
@@ -105,6 +107,15 @@ export const needsFree = (need: string, noun: string, free: string) => `Needs ${
 export const needsOverLimit = (need: string, noun: string, limit: string) =>
   `Needs ${need} ${noun}, the store holds ${limit}`;
 export const inTime = (duration: string) => `in ${duration}`;
+/**
+ * Every cost the HUD shows, the cost first and then what is held, as a newcomer reads it: "10 Labor (you have 1,574)".
+ * Where a painting already names the resource (a cost chip) the noun is left out: "10 (you have 1,574)".
+ */
+export const costLine = (amount: number, held: number | undefined, resource?: ResourcesIds): string => {
+  const noun = resource === undefined ? "" : ` ${resourceName(resource)}`;
+  const holding = held === undefined ? "" : ` (you have ${formatExact(Math.floor(held))})`;
+  return `${formatCharge(amount)}${noun}${holding}`;
+};
 /** A tier that is a choice of two sides waits for one: "Choose Drill or Rations". */
 export const chooseOne = (first: string, second: string) => `Choose ${first} or ${second}`;
 /** A castle row waits for the one before it: "Needs Ethereal I". */

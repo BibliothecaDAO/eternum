@@ -23,7 +23,8 @@ import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automat
 import { resolveBuildingRequirements } from "./construction-groups";
 import { type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
-import { describeBuildingGives, describeCostLine } from "./building-gives";
+import { describeBuildingGives } from "./building-gives";
+import { costLine } from "@/ui/design-system/kit/words";
 import {
   buildRealmBuildingSummary,
   getMilitaryBuildingInfo,
@@ -1276,7 +1277,7 @@ const BuildingCostLines = ({ requirements }: { requirements: ResourceRequirement
     <ul>
       {requirements.map(({ resource, amount, current }) => (
         <li key={resource} className={clsx("truncate", current !== undefined && current < amount && "text-hud-bad")}>
-          {describeCostLine(resource, amount, current)}
+          {costLine(amount, current, resource)}
         </li>
       ))}
     </ul>
