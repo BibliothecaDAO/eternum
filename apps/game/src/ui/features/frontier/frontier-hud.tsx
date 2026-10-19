@@ -9,6 +9,7 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -79,23 +80,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const desktop = useLayout() === "desktop";
   const researchPlan = useResearchPlan(realm);
   const seasonRank = useSeasonRank();
-  // A phone opens chat as a page; a desktop has the shared rail's chat strip.
-  const chat = useGameChat(!desktop && surface === "chat");
-  const chatPane = useChatKey(() => {
-    if (!desktop) setSurface("chat");
-  });
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
-  // A phone's nav page starts right under the strip, where the purse hangs: the purse waits while one is open.
-  const phonePageOpen = !desktop && (surface === "chat" || surface === "research" || surface === "season");
-  const chatPage = (
-    <ChatPage
-      gameZoneId={chat.gameZoneId}
-      signedIn={chat.initializer !== null}
-      onSignIn={chat.requestSignIn}
-      pane={chatPane}
-    />
-  );
   const openArmy = (explorerId: number) => {
     // The army opens on its HUD surface, not on a tile card.
     useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: null });
@@ -118,9 +104,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     />
   );
   const page =
-    surface === "chat" && !desktop ? (
-      chatPage
-    ) : surface === "research" && realm ? (
+    surface === "research" && realm ? (
       <FrontierResearch rules={rules} realm={realm} />
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onBack={close} />
@@ -214,34 +198,102 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {sheets}
     </FrontierDesktop>
   ) : (
-    <HudBands
-      strip={
-        <>
-          {strip}
-          {!phonePageOpen && purse}
-        </>
-      }
+    <FrontierPhoneHud
+      rules={rules}
+      realm={realm}
+      board={dockRealm}
+      visiting={visit !== null}
+      surface={surface}
+      onSurface={setSurface}
+      strip={strip}
+      purse={purse}
       page={page}
       stage={stage}
       nextUp={nextUp}
       notices={notices}
       action={action}
       dock={dock}
+    >
+      {sheets}
+    </FrontierPhoneHud>
+  );
+};
+
+/**
+ * Frontier's HUD on a phone, in its bands, and the one owner of its chat: the chat key and the place bar's Chat open
+ * the chat page, and the place bar counts what is unread. A desktop's chat is the shared rail's own strip, so each
+ * composition holds the chat's lifecycle once, and moving between them hands it over whole.
+ */
+const FrontierPhoneHud = ({
+  rules,
+  realm,
+  board,
+  visiting,
+  surface,
+  onSurface,
+  strip,
+  purse,
+  page,
+  children,
+  ...bands
+}: {
+  rules: ExpeditionRules;
+  realm: NativeRows["Structure"] | null;
+  /** The realm the dock reads: the player's, or the one visited. */
+  board: NativeRows["Structure"] | null;
+  visiting: boolean;
+  surface: HudSurface | null;
+  onSurface: (surface: HudSurface | null) => void;
+  strip: ReactNode;
+  purse: ReactNode;
+  page: ReactNode;
+  stage: ReactNode;
+  nextUp: ReactNode;
+  notices: ReactNode;
+  action: ReactNode;
+  dock: ReactNode;
+  children: ReactNode;
+}) => {
+  const chat = useGameChat(surface === "chat");
+  const chatPane = useChatKey(() => onSurface("chat"));
+  // A nav page starts right under the strip, where the purse hangs: the purse waits while one is open.
+  const pageOpen = surface === "chat" || surface === "research" || surface === "season";
+  return (
+    <HudBands
+      {...bands}
+      strip={
+        <>
+          {strip}
+          {!pageOpen && purse}
+        </>
+      }
+      page={
+        surface === "chat" ? (
+          <ChatPage
+            gameZoneId={chat.gameZoneId}
+            signedIn={chat.initializer !== null}
+            onSignIn={chat.requestSignIn}
+            pane={chatPane}
+          />
+        ) : (
+          page
+        )
+      }
       nav={
         // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
-        !(visit && realm) && (
+        !(visiting && realm) && (
           <FrontierNav
             rules={rules}
             realm={realm}
-            board={dockRealm}
+            board={board}
             surface={surface}
-            onSurface={setSurface}
+            onSurface={onSurface}
             unread={chat.unread}
           />
         )
       }
     >
-      {sheets}
+      {children}
     </HudBands>
   );
 };

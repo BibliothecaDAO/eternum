@@ -19,15 +19,13 @@ import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
 
 /**
- * The game's chat room: joined once the player is signed in, its history loaded on connect, its unread count, and the
- * room marked read while `open`. Every HUD that hosts chat reads it here, so the count matches what the room holds.
+ * The game's chat room as the player stands in it: signed in or not, the room's name (game ids repeat across shards,
+ * so a room is named by its shard's chain and the game), the zone shown, and what joining it takes.
  */
-export function useGameChat(open: boolean) {
+const useGameChatRoom = () => {
   const { status } = useIdentitySession();
   const signedIn = status === "signed-in";
-  const requestSignIn = useRequestSignIn();
   const game = getActiveGame();
-  // A game room is named by its shard's chain and the game: game ids repeat across shards.
   const gameZoneId = game ? `game:0x${BigInt(game.chainId).toString(16)}:${configManager.getActiveGameId()}` : "";
   const zoneId = useRealtimeChatSelector((state) =>
     state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
@@ -36,18 +34,39 @@ export function useGameChat(open: boolean) {
     () => (signedIn ? { baseUrl: window.location.origin, joinZones: gameZoneId ? [gameZoneId] : [] } : null),
     [signedIn, gameZoneId],
   );
+  return { status, gameZoneId, zoneId, initializer };
+};
+
+/**
+ * The game's chat connection, held once for the whole game, whichever HUD composition draws chat (a desktop's rail, a
+ * phone's page or sheet): it joins the room once the player is signed in and loads the room's history on connect, so
+ * the strip shows the last message before chat was ever opened. Mounted once beside the HUD; a layout change swaps
+ * the views, never the connection, so the room, its history and its unread count carry over.
+ */
+export function GameChatConnection() {
+  const { initializer, zoneId } = useGameChatRoom();
   useRealtimeChatInitializer(initializer);
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
-  const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
-  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
-  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
-
-  // The strip shows the last message before the chat was ever opened, so history loads on connect.
   useEffect(() => {
     if (initializer && connection === "connected" && hasGameChat) void loadWorldHistory({ zoneId, limit: 10 });
   }, [initializer, connection, hasGameChat, loadWorldHistory, zoneId]);
+  return null;
+}
+
+/**
+ * The game's chat as a view reads it: the room, the connection, its last message and unread count, and the room
+ * marked read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
+ */
+export function useGameChat(open: boolean) {
+  const { status, gameZoneId, zoneId, initializer } = useGameChatRoom();
+  const requestSignIn = useRequestSignIn();
+  const connection = useRealtimeChatSelector((state) => state.connectionStatus);
+  const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
+  const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
+  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   useEffect(() => {
     setShellOpen(open);
     return () => setShellOpen(false);

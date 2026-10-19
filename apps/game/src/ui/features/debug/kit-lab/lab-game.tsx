@@ -1,9 +1,11 @@
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { GameChatConnection } from "@/ui/features/world/containers/hud-chat-window";
 import { saveGameProfile, setActiveGame } from "@/runtime/world/store";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { openShard } from "@bibliothecadao/eternum/shard";
+import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 
 import presetRules from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
@@ -49,7 +51,12 @@ export const LabGame = ({
       value={{ store, systemCalls: systemCalls?.(store) ?? {} } as unknown as GameClientSetup}
       account={{ address: PLAYER } as never}
     >
-      {shardOpen && children(store)}
+      {shardOpen && (
+        <>
+          <GameChatConnection />
+          {children(store)}
+        </>
+      )}
     </GameProvider>
   );
 };
@@ -91,7 +98,8 @@ const useLabShard = (preset: number) => {
 
 /**
  * The fixture game as the mode plays it (its preset), ended a while ago for a finished game, with what the whole HUD
- * reads that the fixture leaves out: the realm's buildings and population, and the preset's building rules.
+ * reads that the fixture leaves out: the realm's buildings and population, the preset's building rules, and the realm's
+ * upgrade recipes (labor and wheat, more each level).
  */
 const installLabGame = (preset: number, finished: boolean): NativeFactStore => {
   const store = installFixtureGame();
@@ -118,6 +126,18 @@ const installLabGame = (preset: number, finished: boolean): NativeFactStore => {
       model: "BuildingRule",
       key: `0x6${category}`,
       value: { ...rule, category, game_id: 1 },
+    })),
+    ...[1, 2, 3].map((level) => ({
+      model: "UpgradeRecipe",
+      key: `0xc${level}`,
+      value: {
+        game_id: 1,
+        level,
+        costs: [
+          { resource_type: ResourcesIds.Labor, amount: String(BigInt(level * 3_000) * BigInt(RESOURCE_PRECISION)) },
+          { resource_type: ResourcesIds.Wheat, amount: String(BigInt(level * 2_000) * BigInt(RESOURCE_PRECISION)) },
+        ],
+      },
     })),
   ] as never);
   return store;

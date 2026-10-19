@@ -10,6 +10,7 @@ import { AutomationManager } from "../features/infrastructure/automation/automat
 import { TransferAutomationManager } from "../features/infrastructure/automation/transfer-automation-manager";
 import { ContextMenu } from "../features/world/components/context-menu/context-menu";
 import { CompactHud } from "../features/world/containers/compact-hud";
+import { GameChatConnection } from "../features/world/containers/hud-chat-window";
 import { LeftViewSurfaces } from "../features/world/containers/left-view-surfaces";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { DesktopHud } from "../features/world/hud/desktop-hud";
@@ -114,7 +115,8 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
  * the orders as bubbles between them.
  * Below `lg` the columns collapse into CompactHud: one tab bar and one sheet, laid out for the phone's orientation.
  * The Build / Logistics / Military surfaces and every other popover hang off their own trigger on both layouts.
- * A Frontier game has its own HUD instead of these regions.
+ * A Frontier game has its own HUD instead of these regions. The game's chat connection is held once, beside whichever
+ * HUD draws: a layout change swaps the views, never the connection.
  */
 const HUD = () => {
   const expeditionRules = useExpeditionRules();
@@ -123,6 +125,7 @@ const HUD = () => {
   const hud = hudFor(mode, expeditionRules !== null);
   return (
     <>
+      <GameChatConnection />
       {/* A Frontier game opens its own surfaces (deploy, build) from its HUD; the other modes share these. */}
       {hud === "frontier" && expeditionRules ? (
         <FrontierHud rules={expeditionRules} />
