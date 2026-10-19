@@ -22,8 +22,12 @@ AREAS = {
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
         "apps/game/**",
-        # apps/game/scripts/capture-hud-lab.mjs holds the HUD stage to the sheet's bottom-left rule.
-        "scripts/hud-sheet/clearance.mjs",
+        # The client job's own checkers, which its workflow runs through root package.json scripts.
+        "scripts/hud-sheet/**",
+        "scripts/icons/**",
+        "scripts/shell-tokens/**",
+        "scripts/words/**",
+        "scripts/check-forbidden-hosts*",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
         "apps/launch-service/migrations/0007_game_entry.sql",
@@ -31,8 +35,6 @@ AREAS = {
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
-        # Building thumbnails and workshop asset tests use the icon normalizer.
-        "scripts/icons/normalize.mjs",
         "deploy/first/environments.json",
         "contracts/l2/ledger/scripts/chest-preset.js",
         "contracts/l2/ledger/schema/**",

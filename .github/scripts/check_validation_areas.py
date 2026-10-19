@@ -5,15 +5,19 @@ naming each miss.
 A pull request runs only the areas its diff selects, so an area must cover every file its code and tests read:
 otherwise a change to that file skips the checks that read it and first shows on next. The
 reads found are relative module specifiers and relative path literals (fixtures opened with `new URL(..., import.meta
-.url)`), resolved from the file that names them.
+.url)`), resolved from the file that names them. An area's checks also run the files its workflows' commands name,
+directly or through a package.json script, so those files and their reads count too.
 
 Every tracked file under .github must have an owner (an area, STATIC or SHARED), and a local workflow or action must
 belong to the area that runs it: the area whose validation.yml job calls it, or each owner of the workflow using it.
 """
 from functools import cache
+import fnmatch
+import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 
@@ -28,6 +32,8 @@ SOURCES = (".ts", ".tsx", ".js", ".mjs", ".cjs")
 JOB = re.compile(r"^  ([\w-]+):\s*$")
 LOCAL_USE = re.compile(r"^\s*(?:- )?uses:\s*\./(\.github/(?:workflows/[\w.-]+\.ya?ml|actions/[\w.-]+))\s*$")
 RELATIVE = re.compile(r"""["'`](\.\.?/[^"'`\s$]*)(\$?)""")
+# Programs whose path arguments name the files a command runs.
+RUNNERS = {"node", "bun", "python3", "python", "bash", "sh", "tsx"}
 # Extensionless and compiled-extension specifiers resolve to the source file beside them.
 CANDIDATES = ("", ".ts", ".tsx", ".js", ".mjs", "/index.ts", "/index.tsx", "/index.js")
 
@@ -69,6 +75,89 @@ def resolve(directory, reference):
     return None
 
 
+def steps(workflow_text):
+    """Each (working directory, command text) of a workflow's run steps."""
+    found, directory, block, indent = [], ".", None, 0
+    for line in workflow_text.splitlines():
+        stripped = line.strip()
+        if block is not None:
+            if stripped and len(line) - len(line.lstrip()) <= indent:
+                found.append((directory, "\n".join(block)))
+                block = None
+            else:
+                block.append(stripped)
+                continue
+        if stripped.startswith("- "):
+            directory = "."
+            stripped = stripped[2:]
+        if stripped.startswith("working-directory:"):
+            directory = stripped.split(":", 1)[1].strip()
+        elif stripped.startswith("run:"):
+            command = stripped[4:].strip()
+            if command in ("|", ">-", ">", "|-"):
+                block, indent = [], len(line) - len(line.lstrip())
+            else:
+                found.append((directory, command))
+    if block is not None:
+        found.append((directory, "\n".join(block)))
+    return found
+
+
+def package_scripts(directory):
+    path = ROOT / directory / "package.json"
+    return json.loads(path.read_text()).get("scripts", {}) if path.is_file() else {}
+
+
+def ran_files(directory, command, scripts_of=package_scripts, depth=0):
+    """The tracked files a shell command runs from a directory, following pnpm scripts into their package.json."""
+    found = set()
+    for simple in re.split(r"&&|\|\||;|\||\n", command):
+        try:
+            words = shlex.split(simple)
+        except ValueError:
+            continue
+        while words and re.fullmatch(r"\w+=.*", words[0]):
+            words = words[1:]
+        if not words:
+            continue
+        if words[0] == "cd" and len(words) > 1:
+            directory = os.path.normpath(os.path.join(directory, words[1]))
+        elif words[0] == "pnpm" and depth < 5:
+            found |= pnpm_ran(directory, words[1:], scripts_of, depth)
+        elif words[0] in RUNNERS:
+            for word in words[1:]:
+                found |= tracked_matches(os.path.normpath(os.path.join(directory, word)))
+    return found
+
+
+def pnpm_ran(directory, arguments, scripts_of, depth):
+    """What a pnpm invocation runs when it names a script of the package at its --dir."""
+    while arguments[:1] and arguments[0] in ("--dir", "-C"):
+        directory, arguments = os.path.normpath(os.path.join(directory, arguments[1])), arguments[2:]
+    if arguments[:1] == ["run"]:
+        arguments = arguments[1:]
+    script = scripts_of(directory).get(arguments[0]) if arguments else None
+    return ran_files(directory, script, scripts_of, depth + 1) if script else set()
+
+
+def tracked_matches(path):
+    """A tracked file a path or glob argument names; directories and flags name none."""
+    if any(character in path for character in "*?["):
+        return {name for name in tracked() if fnmatch.fnmatch(name, path)}
+    return {path} if path in tracked() else set()
+
+
+def workflow_runs(area):
+    """Each (workflow, file) the area's own workflows run."""
+    return {
+        (workflow, path)
+        for workflow in sorted(name for name in tracked() if name.startswith(".github/workflows/"))
+        if area in owners(workflow)
+        for directory, command in steps((ROOT / workflow).read_text())
+        for path in ran_files(directory, command)
+    }
+
+
 def misses(sources):
     """Each (area, reader, read path) where the code an area's checks run reads a path outside that area."""
     found = []
@@ -76,7 +165,9 @@ def misses(sources):
         if area in UNCHECKED:
             continue
         covered = SHARED + patterns
-        entries = [name for name in sources if matches(name, patterns)]
+        runs = workflow_runs(area)
+        found += [(area, workflow, path) for workflow, path in sorted(runs) if not matches(path, covered)]
+        entries = [name for name in sources if matches(name, patterns)] + sorted({path for _, path in runs})
         found += [(area, reader, path) for reader, path in reachable_reads(entries) if not matches(path, covered)]
     return found
 
