@@ -10,15 +10,7 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import {
-  BUILD,
-  DEPLOY,
-  DEPLOYING,
-  marchLine,
-  NO_TROOPS_AT_HOME,
-  revealSendsLine,
-  TROOPS,
-} from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, DEPLOYING, marchLine, NO_TROOPS_AT_HOME, TROOPS } from "@/ui/design-system/kit/words";
 import {
   type DeployTile,
   RealmHexDeployMap,
@@ -39,7 +31,6 @@ export const DeployView = ({
   onCount,
   wheatCost,
   march,
-  revealYield,
   ring,
   canDeploy,
   sending,
@@ -55,10 +46,8 @@ export const DeployView = ({
   amount: { most: number; held: number };
   onCount: (count: number) => void;
   wheatCost: number | undefined;
-  /** The tiles the wheat left at home lets the army march; the line shows only where it is given. */
-  march?: number;
-  /** What each reveal sends home; the line shows only where it is given. */
-  revealYield?: number;
+  /** The tiles the wheat left at home lets the army march; unknown is undefined. */
+  march: number | undefined;
   ring:
     | {
         center: { col: number; row: number };
@@ -87,9 +76,6 @@ export const DeployView = ({
         onChange={onCount}
       />
     </div>
-    {revealYield !== undefined && count !== undefined && count > 0 && (
-      <p className="text-hud-label text-hud-muted">{revealSendsLine(revealYield, count === 1)}</p>
-    )}
     {troopsAtHome === 0 ? (
       <>
         <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />

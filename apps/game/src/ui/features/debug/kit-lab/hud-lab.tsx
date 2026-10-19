@@ -146,16 +146,11 @@ type LabOrder = {
   wheat: { cost: number; held: number | undefined; wait: number | undefined };
 };
 
-/**
- * A city's deploy: 6,200 troops at home, 2 wheat a troop. `figures` is the owner's pick between the three Deploy
- * options: only the price ("bare"), the price and how far the army can march (the default), or those and what each
- * reveal sends home ("yield").
- */
+/** A city's deploy: 6,200 troops at home, 2 wheat a troop. */
 type LabDeploy = {
   count: number;
   troopsAtHome: number;
   wheat: number;
-  figures?: "bare" | "yield";
 };
 
 const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
@@ -513,8 +508,6 @@ const STATES = {
     order: { ...EXPLORE, stamina: { cost: 30, held: 10, wait: 40 * 60 } },
   },
   deploy: { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: DEPLOY },
-  "deploy-bare": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, figures: "bare" } },
-  "deploy-yield": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, figures: "yield" } },
   "deploy-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, count: 1 } },
   "deploy-wheat": {
     clock: CLOCK,
@@ -1158,7 +1151,7 @@ export const HudLab = () => {
   );
 };
 
-/** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile, and a tenth of each troop sent home a reveal. */
+/** Deploy on the fiction, live: 2 wheat a troop, 0.02 a troop a tile. */
 const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
   const [count, setCount] = useState(deploy.count);
   const [chosen, setChosen] = useState<Direction | null>(Direction.EAST);
@@ -1172,8 +1165,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
       wheatCost={count * 2}
-      march={deploy.figures === "bare" ? undefined : count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
-      revealYield={deploy.figures === "yield" ? count / 10 : undefined}
+      march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}
       canDeploy={count > 0}
       sending={false}

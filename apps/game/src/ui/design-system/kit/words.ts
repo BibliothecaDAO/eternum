@@ -252,12 +252,6 @@ export const marchLine = (tiles: number) =>
     ? `Leaves no ${WHEAT} to march`
     : `Leaves wheat to march ${tiles === 1 ? "1 tile" : `${formatAmount(tiles)} tiles`}`;
 
-/** What each reveal of a new army sends home; a lone troop scouts, and its reveals send nothing. */
-export const revealSendsLine = (amount: number, scout: boolean) =>
-  scout
-    ? "A scout's reveals send nothing home"
-    : `Each reveal sends home ${formatAmount(amount)} ${ESSENCE.toLowerCase()} or ${LABOR}`;
-
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
