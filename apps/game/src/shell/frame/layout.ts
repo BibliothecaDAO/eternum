@@ -16,5 +16,8 @@ const subscribe = (onChange: () => void) => {
 
 const currentLayout = (): Layout => (window.matchMedia(DESKTOP_QUERY).matches ? "desktop" : "phone");
 
+/** The layout now, for code outside React (the map's input): the same answer `useLayout` gives. */
+export const layoutNow = (): Layout => (typeof window === "undefined" ? "phone" : currentLayout());
+
 // A server render has no viewport; it draws the phone, the first layout.
 export const useLayout = (): Layout => useSyncExternalStore(subscribe, currentLayout, () => "phone");

@@ -14,11 +14,11 @@ import { useUISound } from "@/audio/hooks/useUISound";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameClock } from "./game-clock";
 import { AttentionPill } from "./attention-pill";
-import { IdentityChip } from "./identity-chip";
+import { IdentityChip, type SeasonGoal } from "./identity-chip";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-export const TopHeader = memo(() => {
+export const TopHeader = memo(({ season }: { season?: SeasonGoal }) => {
   const lane = useCompactLane();
   const { setup } = useGame();
 
@@ -100,7 +100,7 @@ export const TopHeader = memo(() => {
     <>
       <HudHeaderLayout
         lane={lane}
-        identity={<IdentityChip compact={lane !== null} />}
+        identity={<IdentityChip compact={lane !== null} season={season} />}
         clock={<GameClock compact={lane !== null} />}
         // On a desktop Next up, atop the rail, is the one queue of what needs the player (the owner's ruling, 16
         // October 2026); the phone, which has no Next up yet, keeps the pill.

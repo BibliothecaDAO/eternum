@@ -7,7 +7,7 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 import { installActiveGameClient } from "@/sync/active-game-client";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { HoldingsList, useHoldings } from "@/ui/features/world/hud/holdings";
-import { HudFoot, LeftColumn } from "@/ui/features/world/hud/desktop-hud";
+import { LeftColumn, OrdersFoot } from "@/ui/features/world/hud/desktop-hud";
 import { HudMinimap } from "@/ui/features/world/hud/minimap";
 import { BuildTag } from "@/ui/layouts/build-tag";
 import { RealmCard } from "@/ui/features/world/hud/realm-card";
@@ -75,7 +75,7 @@ const HudStage = () => {
     <div data-lab="hud" className="fixed inset-0">
       <canvas className="absolute inset-0 h-full w-full bg-[#0b1418]" />
       <LeftColumn />
-      <HudFoot />
+      <OrdersFoot />
       <BuildTag />
     </div>
   );

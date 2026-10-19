@@ -8,7 +8,6 @@ import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useLayout } from "@/shell/frame/layout";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -25,6 +24,9 @@ import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
 import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
+import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
+import { canResearchNow } from "./research/research-plan";
+import { useResearchPlan } from "./research/research-reader";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
@@ -73,19 +75,17 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const [surface, setSurface] = useHudSurface();
   const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
-  // Desktop docks chat beside the map when its Chat slot opens it, and starts with it closed as a phone does, so the
-  // guide and the map's lower left are clear on the first screen; a phone opens it as a page.
-  const [chatDocked, setChatDocked] = useState(false);
-  const chat = useGameChat(desktop ? chatDocked : surface === "chat");
-  const chatPane = useChatKey(() => (desktop ? setChatDocked(true) : setSurface("chat")));
+  const researchPlan = useResearchPlan(realm);
+  const seasonRank = useSeasonRank();
+  // A phone opens chat as a page; a desktop has the shared rail's chat strip.
+  const chat = useGameChat(!desktop && surface === "chat");
+  const chatPane = useChatKey(() => {
+    if (!desktop) setSurface("chat");
+  });
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   // A phone's nav page starts right under the strip, where the purse hangs: the purse waits while one is open.
   const phonePageOpen = !desktop && (surface === "chat" || surface === "research" || surface === "season");
-  const onSurface = (next: HudSurface | null) =>
-    desktop && (next === "chat" || (next === null && surface === "chat"))
-      ? setChatDocked((docked) => !docked)
-      : setSurface(next);
   const chatPage = (
     <ChatPage
       gameZoneId={chat.gameZoneId}
@@ -100,109 +100,157 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     setSurface("army");
   };
 
+  const strip = (
+    <FrontierStrip
+      rules={rules}
+      realm={realm ?? visited}
+      onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
+    />
+  );
+  const purse = realm && !visit && (
+    <RealmPurse
+      realm={realm}
+      laborWaiting={realmLabor?.plan.total ?? 0}
+      onWithdraw={() => setSurface("withdraw")}
+      onRealms={() => setSurface("realms")}
+    />
+  );
+  const page =
+    surface === "chat" && !desktop ? (
+      chatPage
+    ) : surface === "research" && realm ? (
+      <FrontierResearch rules={rules} realm={realm} />
+    ) : surface === "season" ? (
+      <FrontierSeason rules={rules} onBack={close} />
+    ) : undefined;
+  const stage = dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />;
+  const notices = (
+    <>
+      <ClearedRuinChest />
+      <OfflineNotice />
+      <SceneFailureNotice />
+    </>
+  );
+  const action = (
+    <>
+      {dockRealm && (
+        <ArmyAction rules={rules} realm={dockRealm} desktop={desktop} onOpenArmy={() => setSurface("army")} />
+      )}
+      <RealmVisitFoot home={realm} />
+    </>
+  );
+  const dock = dockRealm && <DockFor realm={dockRealm} />;
+  const sheets = (
+    <>
+      <FrontierSurfaces realm={realm} />
+      <FrontierSelectionSheet rules={rules} realm={realm} onResearch={() => setSurface("research")} />
+      {surface === "menu" && (
+        <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
+      )}
+      {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
+      {surface === "realms" && realm && !visit && (
+        <FrontierRealms labor={realmLabor} onRealm={() => setSurface("production")} onClose={close} />
+      )}
+      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
+      {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
+      {surface === "settings" && (
+        <HudSheet label={SETTINGS} onClose={close}>
+          <SettingsPanel />
+        </HudSheet>
+      )}
+      {surface === "guide" && <HudGuide onClose={close} />}
+      {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
+      {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
+      {surface !== "season" && surface !== "withdraw" && (
+        <SeasonOver
+          withdraw={realm && !visit && <SeasonWithdraw realm={realm} onOpen={() => setSurface("withdraw")} />}
+          onSeason={() => setSurface("season")}
+        />
+      )}
+      {realm && !visit && <DayDone rules={rules} realm={realm} />}
+      <BuildingsInFlight />
+    </>
+  );
+
   return (
     <GuideProvider rules={rules} realm={visit ? null : realm} researchOpen={surface === "research"}>
-      <HudBands
-        strip={
-          <>
-            <FrontierStrip
-              rules={rules}
-              realm={realm ?? visited}
-              onOpenStores={realm && !visit ? () => setSurface("production") : undefined}
-            />
-            {realm && !visit && !phonePageOpen && (
-              <RealmPurse
-                realm={realm}
-                laborWaiting={realmLabor?.plan.total ?? 0}
-                onWithdraw={() => setSurface("withdraw")}
-                onRealms={() => setSurface("realms")}
+      {desktop ? (
+        <FrontierDesktop
+          season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
+          strip={strip}
+          purse={purse}
+          armies={dock}
+          guide={<GuideSlot host="foot" />}
+          page={page}
+          stage={stage}
+          foot={
+            <>
+              {notices}
+              {action}
+            </>
+          }
+          places={
+            !(visit && realm) && (
+              <FrontierPlaces
+                surface={surface}
+                onSurface={setSurface}
+                research={realm ? canResearchNow(researchPlan) : undefined}
               />
-            )}
-          </>
-        }
-        page={
-          surface === "chat" && !desktop ? (
-            chatPage
-          ) : surface === "research" && realm ? (
-            <FrontierResearch rules={rules} realm={realm} />
-          ) : surface === "season" ? (
-            <FrontierSeason rules={rules} onBack={close} />
-          ) : undefined
-        }
-        stage={dockRealm && !visit && <LastHour rules={rules} realm={dockRealm} />}
-        guide={<GuideSlot host="foot" />}
-        notices={
-          <>
-            <ClearedRuinChest />
-            <OfflineNotice />
-            <SceneFailureNotice />
-          </>
-        }
-        action={
-          <>
-            {dockRealm && <ArmyAction rules={rules} realm={dockRealm} onOpenArmy={() => setSurface("army")} />}
-            <RealmVisitFoot home={realm} />
-          </>
-        }
-        dock={dockRealm && <DockFor realm={dockRealm} />}
-        nav={
-          // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
-          !(visit && realm) && (
-            <FrontierNav
-              rules={rules}
-              realm={realm}
-              board={dockRealm}
-              surface={surface}
-              onSurface={onSurface}
-              unread={chat.unread}
-            />
-          )
-        }
-        chat={desktop && chatDocked && chatPage}
-      >
-        <FrontierSurfaces realm={realm} />
-        <FrontierSelectionSheet rules={rules} realm={realm} onResearch={() => setSurface("research")} />
-        {surface === "menu" && (
-          <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
-        )}
-        {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
-        {surface === "realms" && realm && !visit && (
-          <FrontierRealms labor={realmLabor} onRealm={() => setSurface("production")} onClose={close} />
-        )}
-        {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
-        {surface === "production" && realm && <FrontierProduction rules={rules} realm={realm} onClose={close} />}
-        {surface === "settings" && (
-          <HudSheet label={SETTINGS} onClose={close}>
-            <SettingsPanel />
-          </HudSheet>
-        )}
-        {surface === "guide" && <HudGuide onClose={close} />}
-        {surface === "today" && <FrontierToday rules={rules} realm={realm} onOpenArmy={openArmy} onClose={close} />}
-        {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
-        {surface !== "season" && surface !== "withdraw" && (
-          <SeasonOver
-            withdraw={realm && !visit && <SeasonWithdraw realm={realm} onOpen={() => setSurface("withdraw")} />}
-            onSeason={() => setSurface("season")}
-          />
-        )}
-        {realm && !visit && <DayDone rules={rules} realm={realm} />}
-        <BuildingsInFlight />
-      </HudBands>
+            )
+          }
+        >
+          {sheets}
+        </FrontierDesktop>
+      ) : (
+        <HudBands
+          strip={
+            <>
+              {strip}
+              {!phonePageOpen && purse}
+            </>
+          }
+          page={page}
+          stage={stage}
+          guide={<GuideSlot host="foot" />}
+          notices={notices}
+          action={action}
+          dock={dock}
+          nav={
+            // A player's visit trades the nav for its Leave; a spectator, with no realm to go back to, keeps it.
+            !(visit && realm) && (
+              <FrontierNav
+                rules={rules}
+                realm={realm}
+                board={dockRealm}
+                surface={surface}
+                onSurface={setSurface}
+                unread={chat.unread}
+              />
+            )
+          }
+        >
+          {sheets}
+        </HudBands>
+      )}
     </GuideProvider>
   );
 };
 
 /**
- * The action bar's army row: with an order pending, its costs and verb; otherwise the selected army's status, a tap
- * opening the army. A full realm's phone board adds its Buildings row.
+ * The action bar's army row: on a phone, with an order pending, its costs and verb; otherwise the selected army's
+ * status, a tap opening the army. A full realm's phone board adds its Buildings row. A desktop shows the status alone:
+ * its orders go from the map.
  */
 const ArmyAction = ({
   rules,
   realm,
+  desktop,
   onOpenArmy,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
+  /** A desktop orders from the map itself, as Blitz does: no order bar, the selected army's state alone. */
+  desktop: boolean;
   onOpenArmy: () => void;
 }) => {
   const armies = useDockArmies(realm);
@@ -210,6 +258,7 @@ const ArmyAction = ({
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const nextOrder = useUIStore((state) => state.entityActions.nextOrder);
   const selected = armies.find((army) => army.explorerId === selectedId);
+  if (desktop) return selected ? <SelectedArmyBar army={selected} onOpen={onOpenArmy} /> : null;
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;

@@ -1988,3 +1988,11 @@ button.ui-card__choose:disabled {
   mask-image: radial-gradient(circle at center, rgb(0 0 0 / 0.5) 24%, transparent 82%);
   opacity: 0.24;
 }
+
+/* A docked sheet or nav page takes the right rail's place on a desktop: the rail steps aside under it. */
+@media (min-width: 1024px) {
+  body:has([data-kit-sheet]) [data-hud-rail],
+  body:has([data-page]) [data-hud-rail] {
+    visibility: hidden;
+  }
+}

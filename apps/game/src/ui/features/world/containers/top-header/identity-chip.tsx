@@ -17,7 +17,7 @@ import { Popover } from "@/ui/design-system/molecules/popover";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
-import { ContractAddress, formatExact, formatPoints } from "@bibliothecadao/types";
+import { ContractAddress, formatPoints } from "@bibliothecadao/types";
 
 import { type ReactNode, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +30,7 @@ import {
 } from "./identity-chip-state";
 import { LEADERBOARD_POPOVER_ID, LeaderboardSurface } from "@/ui/features/social/components/social-board";
 import { useSocialStore } from "@/ui/features/social/components/use-social-store";
+import { SEASON } from "@/ui/design-system/kit/words";
 import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 
 const useIdentityChipState = (): IdentityChipState => {
@@ -56,12 +57,22 @@ const useIdentityChipState = (): IdentityChipState => {
   }, [gameplayAddress, player, players, provisioningError, session, standingsByAddress, status, structures]);
 };
 
-/** Player identity opens the leaderboard, a session without a name opens the sign-in flow's name step; other states keep their sign-in surface. */
-export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
+/**
+ * What a mode whose players are ranked over a season (Frontier) puts in the chip in place of the game's points goal:
+ * the player's place on the season's board, and the way to that board.
+ */
+export type SeasonGoal = { rank: string; onOpen: () => void };
+
+/**
+ * Player identity opens the leaderboard (or, given a `season`, the season's board), a session without a name opens the
+ * sign-in flow's name step; other states keep their sign-in surface.
+ */
+export const IdentityChip = ({ compact = false, season }: { compact?: boolean; season?: SeasonGoal }) => {
   const state = useIdentityChipState();
   const popoverId = state.kind === "player" ? LEADERBOARD_POPOVER_ID : IDENTITY_POPOVER_ID;
   const isOpen = usePopoverStore((popovers) => popovers.openId === popoverId);
 
+  if (state.kind === "player" && season) return <SeasonChip name={state.name} season={season} />;
   if (state.kind === "player") return <PlayerChipTrigger state={state} isOpen={isOpen} compact={compact} />;
   const readings = compact ? [<CompactState key="state" kind={state.kind} />] : stateReadings(state);
   if (state.kind === "unnamed") {
@@ -79,6 +90,26 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
     </Popover>
   );
 };
+
+/** A season's player's chip: their name and place on the season's board, which it opens. */
+const SeasonChip = ({ name, season }: { name: string; season: SeasonGoal }) => (
+  <HudPill
+    label={`${name}, ${SEASON} ${season.rank}`}
+    onPress={season.onOpen}
+    className="pointer-events-auto min-w-0 max-w-full whitespace-nowrap"
+  >
+    {[
+      <span key="name" className="flex items-center gap-1.5">
+        <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+        <span className="max-w-36 truncate">{name}</span>
+      </span>,
+      ...(season.rank ? [<span key="rank">{season.rank}</span>] : []),
+      <span key="goal" className="text-hud-muted">
+        {SEASON}
+      </span>,
+    ]}
+  </HudPill>
+);
 
 /** A player's chip: name, rank and points; its hover says how the game is won and scored, and it opens the leaderboard. */
 const PlayerChipTrigger = (props: {

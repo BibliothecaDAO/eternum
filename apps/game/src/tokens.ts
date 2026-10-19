@@ -568,29 +568,17 @@ export const HUD_LAYOUT = {
   "details-least": "120px",
   "chat-cap": "45vw",
   /**
-   * The Frontier HUD's frame on a desktop (hud-bands): the status strip, the page beside the map, its top and its room
-   * (from that top down to the base band: 76px + 16px), the stage between the columns, the guide's place, the action
-   * foot, the dock, the places and the chat.
+   * Frontier's places on the desktop HUD (FrontierDesktop): a nav page in the rail's place, its top and its room (from
+   * that top down to the base band: 76px + 16px), and the stage between the columns.
    */
-  "frontier-strip": "560px",
   "frontier-page": "440px",
   "frontier-page-top": "76px",
   "frontier-page-room": "calc(100% - 92px)",
   "frontier-stage-top": "150px",
   "frontier-stage-bottom": "140px",
-  "frontier-guide": "380px",
-  "frontier-guide-left": "236px",
-  "frontier-guide-bottom": "300px",
-  "frontier-foot": "520px",
-  "frontier-dock": "220px",
-  "frontier-nav": "460px",
-  "frontier-chat": "380px",
-  /** The Frontier HUD's cards: an army token, an army sheet's row, its kind card, a site card, an order bar's side button. */
+  /** The Frontier HUD's cards: an army token, a site card. */
   "frontier-token": "72px",
-  "frontier-row": "52px",
-  "frontier-kind": "76px",
   "frontier-card": "92px",
-  "frontier-side": "104px",
 } as const;
 
 /**

@@ -18,6 +18,10 @@ import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
+import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
+import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { LabGame } from "./lab-game";
+import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
@@ -56,7 +60,7 @@ import { GuideCard } from "@/ui/features/frontier/guide/guide-card";
 import { GuideLinesSheet } from "@/ui/features/frontier/guide/guide-lines-sheet";
 import { type GuideFacts, GUIDE_STEPS } from "@/ui/features/frontier/guide/guide-script";
 import { GuideThread } from "@/ui/features/frontier/guide/guide-thread";
-import { useRef, useState } from "react";
+import { type ComponentProps, useRef, useState } from "react";
 import { RefillButton, RefillConfirm } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { type HeldRealm, planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
@@ -769,6 +773,14 @@ const STATES = {
   "guide-season": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", guide: "season" },
   "guide-lines": { clock: CLOCK, stores: STORES, armies: ARMIES, guideLines: true },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
+  // The purse and the guide at once, as a signed-in player meets them: the layout check holds them apart.
+  "purse-guide": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: 2_000 },
+    guide: "deploy",
+  },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
   "value-menu": {
     clock: CLOCK,
@@ -935,6 +947,8 @@ export const HudLab = () => {
     line ?? (lab.guide && lab.guide !== "fight" && lab.guide !== "season" ? GUIDE_LINES[lab.guide] : undefined);
   const selected = lab.selected === undefined ? undefined : lab.armies[lab.selected];
   const desktop = useLayout() === "desktop";
+  // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
+  useHudMode("frontier");
   const chatPane = useRef<HTMLElement>(null);
   const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
   return (
@@ -944,7 +958,9 @@ export const HudLab = () => {
         data-lab="frontier"
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
-      <HudBands
+      <LabBands
+        desktop={desktop}
+        lab={lab}
         strip={
           <>
             <StatusStrip clock={lab.clock} stores={[...lab.stores]} />
@@ -1023,7 +1039,7 @@ export const HudLab = () => {
                 onOpen={noop}
               />
             )}
-            {lab.order && (
+            {lab.order && !desktop && (
               <OrderBar
                 {...lab.order}
                 revealYield={500}
@@ -1033,13 +1049,13 @@ export const HudLab = () => {
                 onGo={noop}
               />
             )}
-            {selected && !lab.order && (
+            {selected && (desktop || !lab.order) && (
               <ArmyStatusBar stamina={selected.stamina} secondsToFull={2 * HOUR} revealYield={500} />
             )}
             {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
           </>
         }
-        dock={!lab.order && <LabDock lab={lab} />}
+        dock={(desktop || !lab.order) && <LabDock lab={lab} />}
         nav={
           !lab.visiting && (
             <PlaceNav
@@ -1061,7 +1077,6 @@ export const HudLab = () => {
             />
           )
         }
-        chat={desktop && chat}
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
         {lab.results && (
@@ -1147,7 +1162,7 @@ export const HudLab = () => {
             onClose={noop}
           />
         )}
-      </HudBands>
+      </LabBands>
     </>
   );
 };
@@ -1359,6 +1374,56 @@ const LabGuide = ({ stepId }: { stepId: string }) => {
     </>
   );
 };
+
+/**
+ * The HUD's slots in the lab as the game composes them: on a phone today's bands; on a desktop the HUD every mode
+ * shares (FrontierDesktop) on the lab's game, its top bar, rail and minimap the game's own, Frontier's panels the lab's.
+ */
+const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & { desktop: boolean; lab: LabState }) =>
+  desktop ? (
+    <LabGame preset={FRONTIER_PRESET}>
+      {() => (
+        <FrontierDesktop
+          season={{ rank: "#12", onOpen: noop }}
+          strip={slots.strip}
+          armies={slots.dock}
+          guide={slots.guide}
+          page={slots.page}
+          stage={slots.stage}
+          foot={
+            <>
+              {slots.notices}
+              {slots.action}
+            </>
+          }
+          places={
+            !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
+          }
+        >
+          {slots.children}
+        </FrontierDesktop>
+      )}
+    </LabGame>
+  ) : (
+    <HudBands {...slots} />
+  );
+
+/** Frontier's preset, so the lab's game plays as a Frontier game. */
+const FRONTIER_PRESET = 5;
+
+/** The place a lab state has open, as the desktop's round places light it. */
+const labSurface = (lab: LabState): HudSurface | null =>
+  lab.menu
+    ? "menu"
+    : lab.season
+      ? "season"
+      : lab.tree
+        ? "research"
+        : lab.production
+          ? "production"
+          : lab.results === "today" || lab.results === "today-earlier" || lab.results === "today-failed"
+            ? "today"
+            : null;
 
 /**
  * The armies on the lab, as ArmyDock draws them: a phone's row of tokens with an open slot for each army still to

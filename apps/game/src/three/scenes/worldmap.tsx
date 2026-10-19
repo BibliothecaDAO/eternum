@@ -271,6 +271,7 @@ import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-or
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
 import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
+import { layoutNow } from "@/shell/frame/layout";
 import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
@@ -2381,12 +2382,14 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Whether this game's HUD carries the order's verb (Frontier's). There a click names the order's tile and the HUD
-   * confirms it, and the pointer never moves a named order. The other modes' HUD has no verb: the order under the
-   * pointer is the preview. In every mode a right-click (a long-press) sends the order at once.
+   * Whether this game's HUD carries the order's verb: Frontier's on a phone, which has no pointer to hover. There a tap
+   * names the order's tile and the HUD confirms it, and the pointer never moves a named order. Elsewhere (Blitz, and
+   * Frontier on a desktop: the owner, 19 October 2026, "I dont see on desktop why it wouldnt be contextual the explore")
+   * the HUD has no verb: the order under the pointer is the preview. In every mode a right-click (a long-press) sends
+   * the order at once.
    */
   private hudCarriesOrderVerb(): boolean {
-    return hudFor(getGameModeId(), true) === "frontier";
+    return hudFor(getGameModeId(), true) === "frontier" && layoutNow() === "phone";
   }
 
   /**
