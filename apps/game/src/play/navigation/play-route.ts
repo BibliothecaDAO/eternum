@@ -68,7 +68,8 @@ const buildSearch = (searchParams: URLSearchParams): string => {
  */
 export const requestsDiagnostics = (searchParams: URLSearchParams): boolean => searchParams.get("logs") === "1";
 
-function parseRendererOptions(
+/** What an address asks of the renderer: a backend (`rendererMode`) and diagnostics (`logs=1`), carried route to route. */
+export function parseRendererOptions(
   searchParams: URLSearchParams,
 ): Pick<PlayRouteDescriptor, "rendererMode" | "verboseLogs"> {
   const rendererMode = searchParams.get("rendererMode");

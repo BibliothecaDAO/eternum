@@ -42,6 +42,7 @@ import {
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
 
+import { parseRendererOptions } from "@/play/navigation/play-route";
 import { resolveGameEntryTarget } from "./game-entry-navigation";
 import { isSelectedWorldEntityWaitAborted, waitForSelectedWorldEntityState } from "./selected-world-entity-wait";
 
@@ -434,6 +435,7 @@ export const GameEntryModal = ({
         structureEntityId: useUIStore.getState().structureEntityId,
         worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
         isSpectateMode: spectate,
+        renderer: parseRendererOptions(new URLSearchParams(window.location.search)),
       });
 
       navigate(entryTarget.url);

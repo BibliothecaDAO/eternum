@@ -476,6 +476,7 @@ export function evaluatePlaytestSummary(summary, options = {}) {
     ) {
       failures.push(describeRun(result, "stalled after renderer-init-started without completion or fallback"));
     }
+    failures.push(...rendererMismatches(result));
     if (hasWebGpuFallback(result)) {
       if (!result.diagnostics?.fallbackReason) {
         failures.push(describeRun(result, "fallback happened without a fallback reason"));
@@ -676,6 +677,27 @@ function toMb(bytes) {
 
 function isFiniteNumber(value) {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+/**
+ * A run is evidence of the renderer it is labelled with only if that renderer ran: the renderer must have been asked
+ * for the run's mode (a request the page lost before the renderer read it runs the default), and a WebGL run must
+ * have run WebGL.
+ */
+function rendererMismatches(result) {
+  const diagnostics = result.diagnostics;
+  if (!diagnostics || !result.rendererMode) return [];
+  const mismatches = [];
+  if (diagnostics.requestedMode !== result.rendererMode)
+    mismatches.push(
+      describeRun(
+        result,
+        `the renderer was asked for ${diagnostics.requestedMode ?? "nothing"}, not ${result.rendererMode}`,
+      ),
+    );
+  if (result.rendererMode === "webgpu-force-webgl" && diagnostics.activeMode !== "webgl2-fallback")
+    mismatches.push(describeRun(result, `WebGL was asked for, but ${diagnostics.activeMode ?? "no renderer"} ran`));
+  return mismatches;
 }
 
 function hasRendererCompletedOrFallback(result) {

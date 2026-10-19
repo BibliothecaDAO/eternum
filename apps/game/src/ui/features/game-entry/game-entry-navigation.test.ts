@@ -64,6 +64,18 @@ describe("resolveGameEntryTarget", () => {
     expect(enter(true).url).toBe(`/g/0xa1/1/map?col=${normalized.col}&row=${normalized.row}&spectate=true`);
   });
 
+  it("carries the renderer request the entry was opened with to the map, where the renderer reads it", () => {
+    const url = resolveGameEntryTarget({
+      chainId: "0xa1",
+      gameId: 3,
+      structureEntityId: 0,
+      worldMapReturnPosition: null,
+      isSpectateMode: true,
+      renderer: { rendererMode: "webgpu-force-webgl", verboseLogs: true },
+    }).url;
+    expect(url).toBe("/g/0xa1/3/map?spectate=true&rendererMode=webgpu-force-webgl&logs=1");
+  });
+
   it("falls back to a canonical map route when bootstrap did not seed a structure target", () => {
     expect(
       resolveGameEntryTarget({

@@ -277,11 +277,26 @@ describe("evaluatePlaytestSummary", () => {
     ok: true,
     expectedSteps: ["map-idle"],
     steps: [{ name: "map-idle", verdict: { status: "completed" } }],
-    diagnostics: { activeMode: "webgpu" },
+    diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
     metrics: { entryReadyMs: 2500, worldInteractiveMs: 3500 },
     rendererMode: "webgpu-auto",
     iteration: 1,
   };
+
+  it("fails a run whose renderer is not the one it is labelled with: a lost request, or WebGL asked for and not run", () => {
+    // unified-hud-3's "WebGL" run: the request was lost on the way, and WebGPU ran.
+    const lost = {
+      ...bootedRun,
+      rendererMode: "webgpu-force-webgl",
+      diagnostics: { activeMode: "webgpu", requestedMode: "webgpu-auto" },
+    };
+    expect(evaluatePlaytestSummary({ results: [lost] }).failures).toEqual([
+      "webgpu-force-webgl #1: the renderer was asked for webgpu-auto, not webgpu-force-webgl",
+      "webgpu-force-webgl #1: WebGL was asked for, but webgpu ran",
+    ]);
+    const webgl = { ...lost, diagnostics: { activeMode: "webgl2-fallback", requestedMode: "webgpu-force-webgl" } };
+    expect(evaluatePlaytestSummary({ results: [webgl] }).ok).toBe(true);
+  });
 
   it("rejects a bootstrapped game that never becomes interactive", () => {
     const result = { ...bootedRun, metrics: { entryReadyMs: 2500, worldInteractiveMs: null } };
