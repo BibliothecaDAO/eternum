@@ -264,7 +264,14 @@ import { cameraHexOf } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
 import { whenEntryDestinationSettled } from "@/game-entry/entry-destination";
-import { ORDER_REQUEST_EVENT, orderOnTap, readOrderRequest, stepBackOnEscape } from "./worldmap-order-request";
+import {
+  attackConfirmsOnTileCard,
+  ORDER_REQUEST_EVENT,
+  orderOnTap,
+  orderVerbOnHud,
+  readOrderRequest,
+  stepBackOnEscape,
+} from "./worldmap-order-request";
 import { hudFor } from "@/ui/layouts/hud-for";
 import { layoutNow } from "@/shell/frame/layout";
 import { type OrderTip, orderFood, orderTip } from "@/ui/features/frontier/hud/order-tip";
@@ -2352,14 +2359,15 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Whether this game's HUD carries the order's verb: Frontier's on a phone, which has no pointer to hover. There a tap
-   * names the order's tile and the HUD confirms it, and the pointer never moves a named order. Elsewhere (Blitz, and
-   * Frontier on a desktop: the owner, 19 October 2026, "I dont see on desktop why it wouldnt be contextual the explore")
-   * the HUD has no verb: the order under the pointer is the preview. In every mode a right-click (a long-press) sends
-   * the order at once.
+   * Whether this game's HUD carries the order's verb (orderVerbOnHud): there the pointer never moves a named order. In
+   * every mode a right-click (a long-press) sends the order at once.
    */
   private hudCarriesOrderVerb(): boolean {
-    return hudFor(getGameModeId(), true) === "frontier" && layoutNow() === "phone";
+    return orderVerbOnHud({ frontier: this.isFrontierHud(), layout: layoutNow() });
+  }
+
+  private isFrontierHud(): boolean {
+    return hudFor(getGameModeId(), true) === "frontier";
   }
 
   /**
@@ -3148,14 +3156,13 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionHoveredHex(null);
   }
 
-  /**
-   * Whether the attack is confirmed on the target's tile card, the HUD's sheet for the selected tile. A standing
-   * expedition site always is. Where the HUD carries the order's verb (Frontier), so is an army's attack on another
-   * army: one surface for whatever an army attacks. A realm's own guard attacking still opens the older preview.
-   */
   private confirmsAttackOnTileCard(target: { type: ActorType; id: ID }, attackerIsArmy: boolean): boolean {
-    if (this.isStandingExpeditionSite(target.id)) return true;
-    return this.hudCarriesOrderVerb() && attackerIsArmy && target.type === ActorType.Explorer;
+    return attackConfirmsOnTileCard({
+      frontier: this.isFrontierHud(),
+      standingSite: this.isStandingExpeditionSite(target.id),
+      attackerIsArmy,
+      targetIsArmy: target.type === ActorType.Explorer,
+    });
   }
 
   /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */

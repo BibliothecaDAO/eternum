@@ -1,7 +1,13 @@
 import { ActionType } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
-import { orderOnTap, pinsOrder, stepBackOnEscape } from "./worldmap-order-request";
+import {
+  attackConfirmsOnTileCard,
+  orderOnTap,
+  orderVerbOnHud,
+  pinsOrder,
+  stepBackOnEscape,
+} from "./worldmap-order-request";
 
 const step = (actionType: ActionType) => ({ hex: { col: 0, row: 0 }, actionType });
 const tap = (path: ReturnType<typeof step>[] | undefined, standingSite = false) =>
@@ -49,5 +55,41 @@ describe("Escape on the world map", () => {
   it("closes an open navigation view before the selection where the HUD shows those views", () => {
     expect(stepBackOnEscape({ ...shared, navigationViewOpen: true })).toBe("close-view");
     expect(stepBackOnEscape({ ...shared, navigationViewOpen: false })).toBe("clear-selection");
+  });
+});
+
+describe("where an attack is confirmed", () => {
+  const attack = (
+    frontier: boolean,
+    against: { standingSite?: boolean; targetIsArmy?: boolean; attackerIsArmy?: boolean },
+  ) =>
+    attackConfirmsOnTileCard({
+      frontier,
+      standingSite: against.standingSite ?? false,
+      attackerIsArmy: against.attackerIsArmy ?? true,
+      targetIsArmy: against.targetIsArmy ?? false,
+    });
+
+  it("confirms a Frontier army's attack on an army on the tile card, on a desktop as on a phone", () => {
+    expect(orderVerbOnHud({ frontier: true, layout: "desktop" })).toBe(false);
+    expect(attack(true, { targetIsArmy: true })).toBe(true);
+  });
+
+  it("confirms an attack on a standing site on its tile card in every mode", () => {
+    expect(attack(true, { standingSite: true })).toBe(true);
+    expect(attack(false, { standingSite: true })).toBe(true);
+  });
+
+  it("keeps the preview for Blitz's army attacks and for a realm's own guard", () => {
+    expect(attack(false, { targetIsArmy: true })).toBe(false);
+    expect(attack(true, { targetIsArmy: true, attackerIsArmy: false })).toBe(false);
+  });
+});
+
+describe("the HUD's order verb", () => {
+  it("is Frontier's on a phone only: a desktop and Blitz preview the order under the pointer", () => {
+    expect(orderVerbOnHud({ frontier: true, layout: "phone" })).toBe(true);
+    expect(orderVerbOnHud({ frontier: true, layout: "desktop" })).toBe(false);
+    expect(orderVerbOnHud({ frontier: false, layout: "phone" })).toBe(false);
   });
 });

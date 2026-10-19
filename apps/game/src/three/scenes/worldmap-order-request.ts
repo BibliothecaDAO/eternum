@@ -65,3 +65,28 @@ export const stepBackOnEscape = ({
   if (hudCarriesOrderVerb) return orderPinned ? "cancel-order" : "clear-selection";
   return navigationViewOpen ? "close-view" : "clear-selection";
 };
+
+/**
+ * Whether the HUD carries the order's verb: Frontier's on a phone, which has no pointer to hover. There a tap names the
+ * order's tile and the HUD confirms it. Elsewhere (Blitz, and Frontier on a desktop: the owner, 19 October 2026, "I
+ * dont see on desktop why it wouldnt be contextual the explore") the order under the pointer is the preview.
+ */
+export const orderVerbOnHud = ({ frontier, layout }: { frontier: boolean; layout: "phone" | "desktop" }): boolean =>
+  frontier && layout === "phone";
+
+/**
+ * Whether an attack is confirmed on the target's tile card, the HUD's sheet for the selected tile, rather than the
+ * attack preview. A standing expedition site always is. In Frontier, on every layout, so is an army's attack on another
+ * army: one surface for whatever an army attacks. A realm's own guard attacking still opens the preview.
+ */
+export const attackConfirmsOnTileCard = ({
+  frontier,
+  standingSite,
+  attackerIsArmy,
+  targetIsArmy,
+}: {
+  frontier: boolean;
+  standingSite: boolean;
+  attackerIsArmy: boolean;
+  targetIsArmy: boolean;
+}): boolean => standingSite || (frontier && attackerIsArmy && targetIsArmy);
