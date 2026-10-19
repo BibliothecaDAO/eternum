@@ -83,6 +83,7 @@ export function FrontierBeastLab() {
     structureName: "",
     structureType: SITES[site].category,
     isMine: false,
+    isAlly: false,
     owner: { address: 0n, ownerName: "", guildName: "" },
     frontierBeast: beast,
     guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: strength }],
