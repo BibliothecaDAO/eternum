@@ -42,13 +42,23 @@ export interface StructurePlate {
   place?: string;
   /** What taking it gives, said in words: "1,200 Essence", "50 Labor". */
   reward?: string;
-  /** Guard slots in slot order; empty when it stands undefended. */
-  guards: PlateTroops[];
+  /**
+   * Guard slots in slot order; empty when it stands undefended. Null where the game grants no guard slots and it holds
+   * none (a Frontier realm: nobody can attack it), so its plate has no guard row.
+   */
+  guards: PlateTroops[] | null;
   /** Troops on their way to it (the player's own reinforcements), soonest first, at most three. */
   arrivals: { troops: PlateTroops; secondsLeft: number }[];
   /** Its kind's painting, drawn only as the pin of a plate with no room. */
   icon: IconMeaning;
 }
+
+/**
+ * The guards a structure has to tell its plate: none where the game grants no guard slots and it holds none (a Frontier
+ * realm, which nobody can attack), so its plate has no guard row; else its guards, empty when it stands undefended.
+ */
+export const guardsToTell = <T>(guards: T[], gameHasGuardSlots: boolean): T[] | undefined =>
+  guards.length > 0 || gameHasGuardSlots ? guards : undefined;
 
 /** What taking a camp or a rift gives: an amount of a unit ("Essence", "Labor"). */
 export interface PlateReward {
@@ -101,10 +111,11 @@ export const buildStructurePlate = (
   reward?: PlateReward,
 ): StructurePlate => {
   const named = NAMED.has(structure.structureType) && structure.structureName.trim().length > 0;
-  const guards = (structure.guardArmies ?? [])
-    .filter((guard) => guard.count > 0)
-    .toSorted((a, b) => a.slot - b.slot)
-    .map((guard) => ({ type: troopType(guard.category), tier: tierOf(guard.tier), count: guard.count }));
+  const guards =
+    structure.guardArmies
+      ?.filter((guard) => guard.count > 0)
+      .toSorted((a, b) => a.slot - b.slot)
+      .map((guard) => ({ type: troopType(guard.category), tier: tierOf(guard.tier), count: guard.count })) ?? null;
   return {
     kind: "structure",
     relation: relationOf(structure),

@@ -1617,7 +1617,7 @@ const PlateAt = ({
 const PlatesSection = () => (
   <Element
     name="Map plate"
-    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player over troops; opened, player | home, then troops, then its stamina bar and exact x/y on its own row. A realm: player | name over its guard; opened, its slots and arrivals (time first). A camp or rift: its lore name over its guard; opened, its owner, kind and what it holds."
+    rule="Two short rows at rest, three opened, every row at one size and height, never an id. An army: player over troops; opened, player | home, then troops, then its stamina bar and exact x/y on its own row. A realm: player | name over its guard; opened, its slots and arrivals (time first). A Frontier realm: player | name alone, since nobody can attack it. A camp or rift: its lore name over its guard; opened, its owner, kind and what it holds."
     sheet={
       <div className="flex flex-wrap items-end gap-4">
         <PlateAt plate={ARMY} />
@@ -1629,6 +1629,7 @@ const PlatesSection = () => (
         <PlateAt plate={CAMP} />
         <PlateAt plate={CAMP} open />
         <PlateAt plate={{ ...REALM, relation: "ally", owner: "Kestrel", name: "Šommun", guards: [] }} />
+        <PlateAt plate={{ ...REALM, relation: "own", owner: "djizus", name: "Niziz", guards: null }} />
         <div className="mp !static">
           <div className="mp-at !static" data-relation="enemy">
             <Pin plate={ARMY} />

@@ -95,7 +95,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
-import { buildStructurePlate } from "../map-plates/map-plate-model";
+import { buildStructurePlate, guardsToTell } from "../map-plates/map-plate-model";
 import { holdsGrowingReward, readPlateReward } from "../map-plates/plate-reward";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
@@ -602,9 +602,7 @@ export class StructureManager {
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
       attachments: cosmetic.attachments,
       siteKind: this.resolveSiteKind(renderable.entityId, renderInfo.type),
-      // A structure without guards in a game that grants no guard slots has none to report: no guard row. A Frontier
-      // site's guard is its strength.
-      guardArmies: guards.length > 0 || configManager.hasGuardSlots() ? this.resolveGuardArmies(guards) : undefined,
+      guardArmies: guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots()),
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
       attackedFromDegrees: battleDirections?.attackedFromDegrees,

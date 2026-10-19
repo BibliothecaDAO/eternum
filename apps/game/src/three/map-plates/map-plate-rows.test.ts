@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { plateSize } from "./map-plate-layout";
-import type { ArmyPlate, StructurePlate } from "./map-plate-model";
+import type { ArmyPlate, PlateTroops, StructurePlate } from "./map-plate-model";
 import { plateRows, restingStamina, type PlateSegment } from "./map-plate-rows";
 
 /** A plate's rows as a player reads them: a troop stack as its tier and count, a divider as "|". */
@@ -32,17 +32,19 @@ const army: ArmyPlate = {
   stamina: { current: 84, max: 150 },
 };
 
+const slots: PlateTroops[] = [
+  { type: "crossbowman", tier: 1, count: 516 },
+  { type: "knight", tier: 2, count: 301 },
+  { type: "paladin", tier: 3, count: 638 },
+];
+
 const realm: StructurePlate = {
   kind: "structure",
   relation: "enemy",
   owner: "Moonhand",
   name: "Xeswet",
   named: true,
-  guards: [
-    { type: "crossbowman", tier: 1, count: 516 },
-    { type: "knight", tier: 2, count: 301 },
-    { type: "paladin", tier: 3, count: 638 },
-  ],
+  guards: slots,
   arrivals: [],
   icon: "realm",
 };
@@ -99,7 +101,7 @@ describe("what a map plate says (two short rows at rest, three at most opened, n
 
   it("rests a realm on its player and name over its guard total, and says no strength", () => {
     expect(read(realm, false)).toEqual(["Moonhand | Xeswet", "1,455 guard"]);
-    expect(read({ ...realm, guards: [realm.guards[0]] }, false)).toEqual(["Moonhand | Xeswet", "T1 516"]);
+    expect(read({ ...realm, guards: [slots[0]] }, false)).toEqual(["Moonhand | Xeswet", "T1 516"]);
   });
 
   it("opens a realm on its guard slots in attack order, and the troops on their way, each time before its troops", () => {
@@ -114,6 +116,16 @@ describe("what a map plate says (two short rows at rest, three at most opened, n
 
   it("says Undefended in words where nothing guards it", () => {
     expect(read({ ...realm, guards: [] }, false)).toEqual(["Moonhand | Xeswet", "Undefended"]);
+  });
+
+  it("gives a realm no guard row in a game with no guard slots (Frontier), and keeps a guarded site's guard", () => {
+    const frontierRealm = { ...realm, relation: "own", owner: "djizus", name: "Niziz", guards: null } as const;
+    expect(read(frontierRealm, false)).toEqual(["djizus | Niziz"]);
+    expect(read(frontierRealm, true)).toEqual(["djizus | Niziz"]);
+    expect(plateSize(frontierRealm, false).height).toBe(24 + 6);
+    expect(read({ ...rift, guards: null }, false)).toEqual(["Duskmere"]);
+    expect(read({ ...rift, guards: null, reward: undefined }, true)).toEqual(["The Vanguard", "Duskmere Essence Rift"]);
+    expect(read(rift, false)).toEqual(["Duskmere", "T2 300"]);
   });
 
   it("rests a rift or a camp on its lore name over its guard; opened, its owner, kind and what it holds", () => {

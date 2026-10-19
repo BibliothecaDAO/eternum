@@ -10,7 +10,7 @@ import {
   type TerrainBenchmarkStage,
 } from "@/three/debug/procedural-terrain-benchmark-renderer";
 import { MapPlateLayer, type MapPlateScope } from "@/three/map-plates/map-plate-layer";
-import { buildArmyPlate, buildStructurePlate, type MapPlate } from "@/three/map-plates/map-plate-model";
+import { buildArmyPlate, buildStructurePlate, guardsToTell, type MapPlate } from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 
 type MapZoom = "play" | "close";
@@ -21,7 +21,8 @@ type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
  * on the real map renderer, over a fixture world: 48 real realms in a dense block and real camp, rift, hyperstructure
  * and knight models between them. The address holds the view, so a capture is reproducible: `zoom` (play or close),
  * `hover` or `select` an entity by its id, `focus` one to centre the camera on it (a hovered one is centred too),
- * `busy=1` for an army beside every realm (a full Blitz in one view), and `rendererMode=webgpu-force-webgl` for WebGL.
+ * `busy=1` for an army beside every realm (a full Blitz in one view), `game=frontier` for a Frontier world (no guard
+ * slots: a realm holds no guard and nothing marches home to it), and `rendererMode=webgpu-force-webgl` for WebGL.
  * Pointer hover on a tile and click work too; Escape clears the selection.
  */
 export const MapLabelLabView = () => {
@@ -37,9 +38,10 @@ export const MapLabelLabView = () => {
   const hovered = pointerHover ?? params.get("hover");
   const busy = params.get("busy") === "1";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
+  const frontier = params.get("game") === "frontier";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
-  usePlates(world, overlayRef, canvasRef, hovered, selected, setCounts);
+  usePlates(world, frontier, overlayRef, canvasRef, hovered, selected, setCounts);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);
@@ -156,6 +158,7 @@ const useMapWorld = (
  */
 const usePlates = (
   world: World | null,
+  frontier: boolean,
   overlayRef: React.RefObject<HTMLDivElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   hovered: string | null,
@@ -173,7 +176,7 @@ const usePlates = (
       scopes[entity.kind === "army" ? "army" : "structure"].setLabel({
         entityId: entity.entityId,
         position: entity.anchor,
-        plate: plateOf(entity),
+        plate: plateOf(entity, frontier),
       });
     }
     let frame = 0;
@@ -190,7 +193,7 @@ const usePlates = (
       plates.dispose();
       setLayer(undefined);
     };
-  }, [world, overlayRef, canvasRef, setCounts]);
+  }, [world, frontier, overlayRef, canvasRef, setCounts]);
   useEffect(() => {
     if (!layer || !world) return;
     const entity = world.entities.find((candidate) => String(candidate.entityId) === hovered);
@@ -212,8 +215,12 @@ const STRUCTURE_TYPES = {
 
 const CATEGORY = { crossbowman: "Crossbowman", knight: "Knight", paladin: "Paladin" } as const;
 
-/** A fixture thing as the world map's managers would hand it to the layer: their own builders, their own fields. */
-const plateOf = (entity: MapLabelEntity): MapPlate => {
+/**
+ * A fixture thing as the world map's managers would hand it to the layer: their own builders, their own fields. In a
+ * Frontier world a realm or a hyperstructure holds no guard and no troops march home; its sites keep their guards.
+ */
+const plateOf = (entity: MapLabelEntity, frontier: boolean): MapPlate => {
+  const settled = frontier && (entity.kind === "realm" || entity.kind === "hyperstructure");
   const owner = { address: entity.owner === null ? 0n : 1n, ownerName: entity.owner ?? "", guildName: "" };
   const isMine = entity.relation === "own";
   const isAlly = entity.relation === "ally";
@@ -243,13 +250,16 @@ const plateOf = (entity: MapLabelEntity): MapPlate => {
       isMine,
       isAlly,
       owner,
-      guardArmies: entity.guards.map((slot, index) => ({
-        slot: index,
-        category: CATEGORY[slot.type],
-        tier: slot.tier,
-        count: slot.count,
-      })),
-      incomingTroopArrivals: (entity.arrivals ?? []).map((arrival) => ({
+      guardArmies: guardsToTell(
+        (settled ? [] : entity.guards).map((slot, index) => ({
+          slot: index,
+          category: CATEGORY[slot.type],
+          tier: slot.tier,
+          count: slot.count,
+        })),
+        !frontier,
+      ),
+      incomingTroopArrivals: ((settled ? undefined : entity.arrivals) ?? []).map((arrival) => ({
         structureEntityId: entity.entityId,
         resourceId: getTroopResourceId(CATEGORY[arrival.troops.type], `T${arrival.troops.tier}`),
         troopType: CATEGORY[arrival.troops.type],

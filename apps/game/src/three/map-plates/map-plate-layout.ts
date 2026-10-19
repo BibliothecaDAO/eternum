@@ -22,18 +22,20 @@ const overlaps = (a: PlateBox, b: PlateBox) =>
 
 /**
  * Stacks overlapping plates instead of covering them: in priority order, each plate rises in steps of its height until
- * it is clear, at most `maxSteps` times; one still overlapping after that is dropped (drawn as a pin). Returns each
- * kept plate's lift.
+ * it is clear, as far as `maxSteps` steps of its height, or of a two-row plate's when it is shorter (a one-row Frontier
+ * realm clears its armies as a two-row realm does); one still overlapping after that is dropped (drawn as a pin).
+ * Returns each kept plate's lift.
  */
 export const stack = (boxes: readonly PlateBox[], maxSteps = 2): Map<string, number> => {
   const kept: PlateBox[] = [];
   const lifts = new Map<string, number>();
   for (const box of boxes.toSorted((a, b) => b.priority - a.priority)) {
-    for (let step = 0; step <= maxSteps; step++) {
-      const lifted = { ...box, y: box.y - step * (box.height + GAP) };
+    const reach = maxSteps * (Math.max(box.height, TWO_ROWS) + GAP);
+    for (let lift = 0; lift <= reach; lift += box.height + GAP) {
+      const lifted = { ...box, y: box.y - lift };
       if (kept.some((other) => overlaps(other, lifted))) continue;
       kept.push(lifted);
-      lifts.set(box.id, step * (box.height + GAP));
+      lifts.set(box.id, lift);
       break;
     }
   }
@@ -45,6 +47,8 @@ const ROW_HEIGHT = 24;
 const PLATE_PADDING_Y = 6;
 const PLATE_PADDING_X = 6 + 8 + 3 + 1;
 const READING_GAP = 6;
+/** A two-row plate's height: every plate at rest has two rows but one with no guard to tell (a Frontier realm). */
+const TWO_ROWS = 2 * ROW_HEIGHT + PLATE_PADDING_Y;
 /** An army's resting stamina bar under its rows: its height and margins (map-plates.css .mp-plate__stamina). */
 const RESTING_STAMINA = 3 + 1 + 2;
 

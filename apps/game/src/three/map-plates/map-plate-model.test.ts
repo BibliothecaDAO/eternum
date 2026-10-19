@@ -2,7 +2,7 @@ import { StructureType, siteName } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { stack, type PlateBox } from "./map-plate-layout";
-import { attackOrder, buildArmyPlate, buildStructurePlate, restingGuard } from "./map-plate-model";
+import { attackOrder, buildArmyPlate, buildStructurePlate, guardsToTell, restingGuard } from "./map-plate-model";
 
 const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = {}) => ({
   entityId: 29,
@@ -37,6 +37,15 @@ describe("a map plate's facts", () => {
       { type: "crossbowman", tier: 1, count: 516 },
       { type: "paladin", tier: 3, count: 638 },
     ]);
+  });
+
+  it("keeps a structure with no guard to tell (a game with no guard slots) apart from one that stands undefended", () => {
+    expect(buildStructurePlate(structure({ guardArmies: undefined })).guards).toBeNull();
+    expect(buildStructurePlate(structure({ guardArmies: [] })).guards).toEqual([]);
+    const slot = { slot: 0, category: "Knight", tier: 2, count: 300 };
+    expect(guardsToTell([], false)).toBeUndefined();
+    expect(guardsToTell([], true)).toEqual([]);
+    expect(guardsToTell([slot], false)).toEqual([slot]);
   });
 
   it("names a nameless thing by its lore name and kind, never its id, nobody's as the Vanguard's, with its reward", () => {
@@ -121,18 +130,27 @@ describe("a map plate's facts", () => {
 });
 
 describe("plate stacking", () => {
-  const box = (id: string, x: number, priority: number): PlateBox => ({
+  // A plate stands on its thing's anchor (its bottom); two-row plate at rest: two 24px rows and the frame's 6px.
+  const box = (id: string, x: number, priority: number, height = 54, anchor = 300): PlateBox => ({
     id,
     x,
-    y: 100,
+    y: anchor - height,
     width: 100,
-    height: 24,
+    height,
     priority,
   });
 
   it("lifts an overlapping plate clear of the one kept, and drops it when two lifts are not enough", () => {
     const lifts = stack([box("a", 0, 3), box("b", 10, 2), box("c", 20, 1), box("d", 30, 0)]);
-    expect([lifts.get("a"), lifts.get("b"), lifts.get("c"), lifts.has("d")]).toEqual([0, 27, 54, false]);
+    expect([lifts.get("a"), lifts.get("b"), lifts.get("c"), lifts.has("d")]).toEqual([0, 57, 114, false]);
+  });
+
+  it("lets a one-row plate (a Frontier realm) rise as far as a two-row plate, in steps of its own height", () => {
+    // An army on the realm's tile, and a one-row plate above it to the side: the realm clears both 99px up, past the
+    // 66px its own two steps reach; a two-row realm clears them at 114px.
+    const around = [box("army", 0, 3, 60), box("beside", 60, 2, 30, 235)];
+    expect(stack([...around, box("realm", 0, 1, 30)]).get("realm")).toBe(99);
+    expect(stack([...around, box("realm", 0, 1)]).get("realm")).toBe(114);
   });
 
   it("leaves a plate that stands clear where it is", () => {

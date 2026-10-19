@@ -39,7 +39,8 @@ type PlateRow = readonly PlateSegment[];
  *   comes from joins the player as on that realm's plate ("clientlane | Stolsli"), and its stamina keeps its own row
  *   under the troops, the bar with its exact "84/150" (owner, map labels 2026-10-18).
  * - A realm or a hyperstructure: its player and its name, then its guard. Opened: the guard slots in attack order, and
- *   a row of troops on their way, each time before its troops.
+ *   a row of troops on their way, each time before its troops. In a game with no guard slots (Frontier) a realm has no
+ *   guard to tell, so no guard row: nobody can attack it (owner, map labels 2026-10-19).
  * - A camp or a rift: its lore name, then its guard. Opened: its owner, its name and kind, and what it holds beside its
  *   guard.
  */
@@ -63,22 +64,24 @@ const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
     : [[{ kind: "owner", text: plate.owner }], [{ kind: "troops", troops: plate.troops }]];
 
 const placeRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
-  const rows: PlateRow[] = [whose(plate.owner, plate.name), guard(plate.guards, open)];
+  const rows: PlateRow[] = [whose(plate.owner, plate.name)];
+  if (plate.guards) rows.push(guard(plate.guards, open));
   if (open && plate.arrivals.length > 0) rows.push(arrivals(plate));
   return rows;
 };
 
 const siteRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
   const name: PlateSegment = plate.place ? { kind: "title", text: plate.place } : { kind: "word", text: plate.name };
-  if (!open) return [[name], guard(plate.guards, false)];
+  if (!open) return plate.guards ? [[name], guard(plate.guards, false)] : [[name]];
   // Three rows at most: what it holds, and troops on their way to one of the player's own sites, follow its guard.
   const holds = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
-  return [
+  const rows: PlateRow[] = [
     [{ kind: "owner", text: plate.owner }],
     plate.place ? [name, { kind: "word", text: plate.name }] : [name],
-    [...guard(plate.guards, true), ...holds, ...arriving],
+    [...(plate.guards ? guard(plate.guards, true) : []), ...holds, ...arriving],
   ];
+  return rows.filter((row) => row.length > 0);
 };
 
 /**
