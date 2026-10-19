@@ -22,18 +22,18 @@ vi.mock("@/ui/features/world/containers/left-facets/use-structure-actions", () =
 }));
 
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { useHudKeys } from "./hud-keys";
-import { IdleArmiesButton, idleArmiesRefusal, idleArmyIds, nextIdleArmy } from "./idle-armies";
+import { idleArmiesRefusal, idleArmyIds, nextIdleArmy } from "./idle-armies";
 import { useNextUpShows } from "./next-up-shows";
 
-/** The HUD's keys and its Idle button, with the idle armies as the hook reads them in the view given. */
+/** The HUD's keys, with the idle armies as the hook reads them in the view given. */
 const Keys = ({ idle = [], onWorldMap = true }: { idle?: number[]; onWorldMap?: boolean }) => {
   const idleArmies = { ids: idle, refusal: idleArmiesRefusal(onWorldMap, idle.length) };
   useHudKeys({ idleArmies });
   return (
     <>
-      <IdleArmiesButton idle={idleArmies} />
       <button type="button">A HUD button</button>
       <div role="tab" tabIndex={0} aria-label="A tab" />
       <input aria-label="A field" />
@@ -51,8 +51,6 @@ const hearSelections = () => {
   window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
   return { ids, stop: () => window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, hear) };
 };
-
-const idleButton = () => host.querySelector<HTMLButtonElement>('button[aria-keyshortcuts="I"]')!;
 
 let host: HTMLDivElement;
 let root: Root;
@@ -127,28 +125,35 @@ describe("the desktop HUD's keys", () => {
     expect(actions.build).toHaveBeenCalledTimes(1);
   });
 
-  it("selects the next idle army with I or the Idle button on the world map", () => {
+  it("cycles the idle armies with I on the world map, with no button to press", () => {
     const selected = hearSelections();
     act(() => root.render(<Keys idle={[7, 9]} />));
+    expect(host.querySelector('[aria-keyshortcuts="I"]')).toBeNull();
+    // From no army selected to the first; from each to the next; from the last back to the first.
     press("i");
-    act(() => idleButton().click());
+    act(() => useUIStore.setState({ mapSelection: { kind: "army", entityId: 7 } } as never));
+    press("i");
+    act(() => useUIStore.setState({ mapSelection: { kind: "army", entityId: 9 } } as never));
+    press("i");
     selected.stop();
-    expect(selected.ids).toEqual([7, 7]);
+    expect(selected.ids).toEqual([7, 9, 7]);
+    expect(
+      getShortcutManager()
+        .getShortcuts()
+        .find(({ key }) => key === "i")?.description,
+    ).toBe("Select the next idle army");
   });
 
-  it("selects no army from the realm view: I passes, and the Idle button is shut with its reason", () => {
+  it("selects no army from the realm view: I passes", () => {
     const selected = hearSelections();
     act(() => root.render(<Keys idle={[7, 9]} onWorldMap={false} />));
     const key = new KeyboardEvent("keydown", { key: "i", bubbles: true, cancelable: true });
     act(() => {
       document.body.dispatchEvent(key);
     });
-    act(() => idleButton().click());
     selected.stop();
     expect(selected.ids).toEqual([]);
     expect(key.defaultPrevented).toBe(false);
-    expect(idleButton().disabled).toBe(true);
-    expect(idleButton().dataset.tip).toBe("Armies are picked on the world map");
   });
 });
 

@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Idle armies by key only",
+    description:
+      "The Idle armies button is gone from the foot of the map for now. Its shortcut still selects your next army waiting at full stamina; find it with the other shortcuts in Settings.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
     title: "Show the crate shows the crate",
     description:
       "Show the crate, Show on a camp or Hyperstructure, and picking an army from a site's card frame your army and its target on the map, instead of sending the camera far off into the fog.",

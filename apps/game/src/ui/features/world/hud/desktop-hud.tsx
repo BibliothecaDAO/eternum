@@ -8,7 +8,7 @@ import { ActionBubbles } from "./action-bubbles";
 import { GuidedRail } from "./guided-rail";
 import { HoldingsList, useHoldings } from "./holdings";
 import { useHudKeys } from "./hud-keys";
-import { type IdleArmies, IdleArmiesButton, useIdleArmies } from "./idle-armies";
+import { useIdleArmies } from "./idle-armies";
 import { HudMinimap } from "./minimap";
 import { RealmCard } from "./realm-card";
 
@@ -20,8 +20,7 @@ import { RealmCard } from "./realm-card";
  *     the minimap pinned to the bottom-left corner, a square that gives way down to its least height when the column
  *     runs short. A spectator sees the standings and the minimap;
  *   - right, the guided rail: Next up, the events, the picked tile's details, chat;
- *   - the four orders as round bubbles at the foot, between the columns, with Idle armies beside them for a player, or
- *     above them where the room between the columns is too narrow for both;
+ *   - the four orders as round bubbles at the foot, between the columns;
  *   - its keys (`useHudKeys`): B P M T open the workspaces, Space takes Next up's step, I selects the next idle army.
  *     They are never drawn.
  *
@@ -36,24 +35,20 @@ export const DesktopHud = () => {
     <>
       <LeftColumn />
       <GuidedRail />
-      <HudFoot idleArmies={idleArmies} />
+      <HudFoot />
     </>
   );
 };
 
-/** The orders as round bubbles at the foot, between the columns; Idle armies beside them, or above when there is no room. */
-export const HudFoot = ({ idleArmies }: { idleArmies: IdleArmies }) => {
-  const ordersAllowed = useUIStore(canIssueOrders);
-  return (
-    <div
-      {...HUD_FOOT_MARK}
-      className="pointer-events-none fixed bottom-5 left-hud-foot right-hud-foot z-hud-foot flex flex-wrap-reverse items-end justify-center gap-4"
-    >
-      <ActionBubbles />
-      {ordersAllowed && <IdleArmiesButton idle={idleArmies} className="mb-7" />}
-    </div>
-  );
-};
+/** The orders as round bubbles at the foot, between the columns. */
+export const HudFoot = () => (
+  <div
+    {...HUD_FOOT_MARK}
+    className="pointer-events-none fixed bottom-5 left-hud-foot right-hud-foot z-hud-foot flex items-end justify-center"
+  >
+    <ActionBubbles />
+  </div>
+);
 
 export const LeftColumn = () => {
   const ordersAllowed = useUIStore(canIssueOrders);

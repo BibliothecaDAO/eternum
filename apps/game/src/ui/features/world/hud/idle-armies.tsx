@@ -6,8 +6,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { selectableArmiesView } from "@/sync/fact-views";
 import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -89,25 +87,3 @@ export const selectNextIdleArmy = (idle: readonly number[]) => {
   const next = nextIdleArmy(idle, selection?.kind === "army" ? Number(selection.entityId) : null);
   if (next !== null) requestArmySelection(next);
 };
-
-/** The minimap's Idle armies button: how many wait, and `I` or a click selects the next one; shut with its reason. */
-export const IdleArmiesButton = ({ idle, className }: { idle: IdleArmies; className?: string }) => (
-  <div className={cn("pointer-events-auto", className)}>
-    <HudPill>
-      {[
-        <HudButton
-          key="idle"
-          kind="secondary"
-          size="sm"
-          icon="military"
-          disabled={idle.refusal !== null}
-          onClick={() => selectNextIdleArmy(idle.ids)}
-          aria-keyshortcuts="I"
-          data-tip={idle.refusal ?? "Select the next idle army"}
-        >
-          Idle {idle.ids.length}
-        </HudButton>,
-      ]}
-    </HudPill>
-  </div>
-);
