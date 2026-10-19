@@ -85,7 +85,7 @@ export const CompactBuildingCard = ({
                 Place on map
               </HudButton>
             )}
-            {production.onClick && count > 0 && (
+            {production.onClick && (
               <HudButton
                 kind="secondary"
                 disabled={production.disabled || production.pending}
@@ -94,7 +94,7 @@ export const CompactBuildingCard = ({
                 {production.pending ? "Updating…" : production.paused ? "Resume all" : "Pause all"}
               </HudButton>
             )}
-            {destroy.onClick && count > 0 && (
+            {destroy.onClick && (
               <HudButton kind="danger" disabled={destroy.disabled || destroy.pending} onClick={destroy.onClick}>
                 {destroy.pending ? "Destroying…" : "Destroy one"}
               </HudButton>

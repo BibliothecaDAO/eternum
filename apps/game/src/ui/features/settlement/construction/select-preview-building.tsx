@@ -1073,10 +1073,10 @@ export const BuildingCard = ({
   buildDisabled,
   buildLoading,
   count = 0,
-  onDestroy,
+  onDestroy: destroyAny,
   destroyDisabled,
   destroyLoading,
-  onPauseResumeAll,
+  onPauseResumeAll: pauseResumeAny,
   pauseResumeAllDisabled,
   pauseResumeAllLoading,
   allPaused,
@@ -1119,6 +1119,9 @@ export const BuildingCard = ({
 }) => {
   const lane = useCompactLane();
   const setTooltip = useTooltipStore((state) => state.setTooltip);
+  // Pausing and destroying act on the buildings of this type already built: with none, neither is offered.
+  const onDestroy = count > 0 ? destroyAny : undefined;
+  const onPauseResumeAll = count > 0 ? pauseResumeAny : undefined;
   const isDisabled = disabled;
   const showDisabledMessage = isDisabled && disabledReason;
   const effectiveRemainingSeconds = productionStatus?.timeRemainingSeconds ?? null;
@@ -1209,7 +1212,7 @@ export const BuildingCard = ({
               </span>
             </HudChip>
           )}
-          {isWorkersHut && <HudChip>{count}</HudChip>}
+          {isWorkersHut && count > 0 && <HudChip>{count}</HudChip>}
           {productionBadge ||
             (resource !== undefined && <ResourceIcon withTooltip={false} resource={resource} size="lg" />)}
           {badge}
