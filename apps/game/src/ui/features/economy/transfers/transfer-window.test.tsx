@@ -17,7 +17,7 @@ const world = vi.hoisted(() => ({
   applied: [] as Array<{ to: bigint; resources: Array<{ resource_type: number; amount: bigint }> }>,
   scheduled: vi.fn(),
   notices: { success: vi.fn(), warning: vi.fn(), failed: vi.fn() },
-  sides: { wheat: 100, donkeys: 10, knights: 0, listeners: new Set<() => void>() },
+  sides: { wheat: 100, donkeys: 10, knights: 0, to: "realm", listeners: new Set<() => void>() },
   /** While set, the game's answers wait for it: a shipment the player can act around before its outcome. */
   hold: null as Promise<void> | null,
   /** Chain time the window reads. */
@@ -154,7 +154,7 @@ vi.mock("./use-transfer-sides", () => ({
       sourceName: "Home",
       destinationNames: destinationIds.map((id) => NAMES.get(id) ?? String(id)),
       sourceRole: "realm",
-      destinationRoles: destinationIds.map(() => "realm"),
+      destinationRoles: destinationIds.map(() => world.sides.to),
       goods: [
         { resource: ResourcesIds.Wheat, have: wheat, weightKg: 1 },
         { resource: ResourcesIds.Donkey, have: donkeys, weightKg: 0 },
@@ -183,6 +183,7 @@ beforeEach(() => {
   world.sides.wheat = 100;
   world.sides.donkeys = 10;
   world.sides.knights = 0;
+  world.sides.to = "realm";
   world.hold = null;
   world.now = NOW;
   host = document.createElement("div");
@@ -321,6 +322,18 @@ describe("the transfer window's send", () => {
       [A, 5],
       [B, 5],
     ]);
+  });
+
+  it("prefills the next destination by the owner's rules again once a send has fully landed", async () => {
+    // A realm sending to a rift: the rule loads the rift's donkeys.
+    world.sides.to = "rift";
+    await open([A]);
+    const prefilled = field(`${DONKEYS}: total to send`)!.value;
+    expect(Number(prefilled)).toBeGreaterThan(0);
+    await send();
+    expect(world.applied.map(({ to }) => Number(to))).toEqual([A]);
+    await toggle(A);
+    expect(field(`${DONKEYS}: total to send`)!.value).toBe(prefilled);
   });
 
   it("treats a send the shard refused as unsent, and sends it again", async () => {

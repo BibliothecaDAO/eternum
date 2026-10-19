@@ -92,15 +92,15 @@ const revised = (draft: Draft, change: Partial<Omit<Draft, "revision">>): Draft 
 
 /**
  * A send's outcome on the draft it was sent from: what landed leaves, and the refused shipments stay with exactly their
- * goods. A draft the player has changed since is theirs: the outcome leaves it as it is (its notices still say what
- * landed).
+ * goods; once everything landed, the next destinations chosen are prefilled again. A draft the player has changed since
+ * is theirs: the outcome leaves it as it is (its notices still say what landed).
  */
 const settled = (draft: Draft, sentRevision: number, refused: Shipment[], goods: Good[]): Draft =>
   draft.revision !== sentRevision
     ? draft
     : revised(draft, {
         ends: { ...draft.ends, destinationIds: refused.map((shipment) => shipment.destinationId) },
-        edited: plansFor(refused, goods),
+        edited: refused.length > 0 ? plansFor(refused, goods) : null,
       });
 
 /** The ends after a pick: a source moves off the destinations; a destination toggles. */
