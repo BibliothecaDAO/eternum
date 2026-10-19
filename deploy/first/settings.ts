@@ -23,10 +23,3 @@ export interface Inputs extends SeasonDates {
 export function addressBook(target: Target): Record<string, string> {
   return JSON.parse(readFileSync(resolve(root, "contracts/common/addresses", target.book), "utf8"));
 }
-/**
- * Whether this deployment target owns the ledger in its book: production always, and dev unless production reads dev's
- * book. It is packages/chain's `ownsValueLedger` over the same table; the deploy commands start from an export of this
- * directory without dependencies (entry.test.ts), so they cannot import that package.
- */
-export const ownsValueLedger = (target: Target) =>
-  target.environment === "production" || environments.production.book !== environments.dev.book;

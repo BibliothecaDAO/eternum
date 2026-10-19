@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
 import { buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
-import { addressBook, root, WEI, type Environment, type Inputs, type Target } from "./settings";
+import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { seconds } from "./dates";
 import { PublicError } from "./errors";
@@ -109,13 +109,6 @@ export async function deployAsset(
   if (BigInt(deployed.address) !== BigInt(address)) throw new PublicError("Deployment address differs from fixed salt");
   return address;
 }
-/**
- * The STRK the deployer starts with: it funds the relay (30) and monitor (1), deploys the three accounts and, when the
- * book lacks them, declares and deploys the value contracts (about 84 STRK measured on dev's first deployment). A book
- * that names all five contracts needs no contract deployment.
- */
-export const startingReserve = (target: Target) =>
-  (Object.keys(existingAssets(target)).length === 5 ? 50n : 250n) * WEI;
 export function existingAssets(target: Target): Partial<Assets> {
   const book = addressBook(target);
   return Object.fromEntries(
@@ -128,36 +121,19 @@ export function existingAssets(target: Target): Partial<Assets> {
     }).filter(([, value]) => value && BigInt(value) > 0n),
   );
 }
-export const LEDGER_ROLES = {
-  admin: "0x0",
-  operator: hash.getSelectorFromName("OPERATOR_ROLE"),
-  pauser: hash.getSelectorFromName("PAUSER_ROLE"),
-} as const;
-export async function hasLedgerRole(
-  provider: Pick<RpcProvider, "callContract">,
-  ledger: string,
-  role: string,
-  address: string,
-  block: number | "latest" = "latest",
-) {
-  const result = await provider.callContract(
-    { contractAddress: ledger, entrypoint: "has_role", calldata: [role, address] },
-    block,
-  );
-  if (result.length !== 1 || ![0n, 1n].includes(BigInt(result[0]!))) throw new PublicError("Invalid role read");
-  return BigInt(result[0]!) === 1n;
-}
 export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string, admin: string, operator: string) {
   for (const [role, address] of [
-    [LEDGER_ROLES.admin, admin],
-    [LEDGER_ROLES.operator, operator],
-  ] as const)
-    if (!(await hasLedgerRole(provider, ledger, role, address)))
-      throw new PublicError(
-        "Existing ledger belongs to different accounts; restore its original private directory, or for production on dev's ledger run shared-ledger first",
-      );
+    ["0x0", admin],
+    [hash.getSelectorFromName("OPERATOR_ROLE"), operator],
+  ]) {
+    const result = await provider.callContract(
+      { contractAddress: ledger, entrypoint: "has_role", calldata: [role!, address!] },
+      "latest",
+    );
+    if (result.length !== 1 || BigInt(result[0]!) !== 1n)
+      throw new PublicError("Existing ledger belongs to different accounts; restore its original private directory");
+  }
 }
-
 export function publishAssets(target: Target, assets: Assets) {
   const path = join(root, "contracts/common/addresses", target.book);
   const book = addressBook(target);
@@ -194,7 +170,7 @@ export function setupCalls(
     call(assets.mmr, "grant_role", [hash.getSelectorFromName("UPDATER_ROLE"), assets.ledger]),
     call(assets.chests, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.cosmetics, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
-    call(assets.ledger, "grant_role", [LEDGER_ROLES.pauser, pauser]),
+    call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
     ...(target.freshAssets
       ? [
           ...preset.bands.map((band: { metadata: number }) =>

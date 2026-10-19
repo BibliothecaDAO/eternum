@@ -12,7 +12,7 @@ import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { ownsValueLedger, root, WEI } from "./settings";
+import { root, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
@@ -154,9 +154,9 @@ export function seasonSteps(context: Season): Step[] {
       inspect: async () => {
         if (!context.assets) return wait("Deployed services needed");
         const phases = await currentCalendar(context);
-        if (ownsValueLedger(context.target)) await requireBlitzSeason(context);
+        await requireBlitzSeason(context);
         return {
-          done: calendarPhases(context).every((name) => phases.some((phase) => phase.phase === name)),
+          done: ["frontier", "blitz"].every((name) => phases.some((phase) => phase.phase === name)),
           detail: phases.length
             ? phases.map((phase) => `${phase.phase} ${phase.startsAt} to ${phase.endsAt}`).join("; ")
             : "set missing phases from saved dates",
@@ -164,8 +164,8 @@ export function seasonSteps(context: Season): Step[] {
       },
       apply: async () => {
         const phases = await currentCalendar(context);
-        if (ownsValueLedger(context.target)) await requireBlitzSeason(context);
-        for (const phase of calendarPhases(context)) {
+        await requireBlitzSeason(context);
+        for (const phase of ["frontier", "blitz"]) {
           if (phases.some((existing) => existing.phase === phase)) continue;
           const begins = seconds(phase === "frontier" ? context.inputs!.frontierStart : context.inputs!.blitzStart);
           const ends = seconds(phase === "frontier" ? context.inputs!.frontierEnd : context.inputs!.blitzEnd);
@@ -277,9 +277,6 @@ export function seasonSteps(context: Season): Step[] {
   ];
 }
 
-/** The calendar phases this environment runs: no paid Blitz on a ledger another environment owns. */
-const calendarPhases = (context: Season) => (ownsValueLedger(context.target) ? ["frontier", "blitz"] : ["frontier"]);
-
 async function poolPublished(context: Season) {
   const state = await funding(context);
   if (!state?.funded) return false;
@@ -290,10 +287,8 @@ async function poolPublished(context: Season) {
   if (!budget || BigInt(String(budget.pool)) === 0n) return false;
   if (BigInt(String(budget.pool)) !== BigInt(context.inputs!.amount))
     throw new PublicError("Published pool differs from the deposit");
-  if (ownsValueLedger(context.target)) {
-    const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
-    if (!slots.slots.length) return false;
-  }
+  const slots = await service<{ slots: unknown[] }>(context, "/api/slots");
+  if (!slots.slots.length) return false;
   await service(context, "/api/value/health");
   await service(context, "/api/operator/monitor/health");
   return true;
