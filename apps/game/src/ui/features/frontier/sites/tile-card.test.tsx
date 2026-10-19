@@ -145,15 +145,18 @@ const renderCard = (army: "beside" | "far") => {
 describe("the tile card", () => {
   it("names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
     const { host, attack, button, unmount } = renderCard("beside");
-    expect(host.querySelector('section[aria-label="Camp"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="troops 1,100"]')).not.toBeNull();
-    expect(button("Attack")).toBeUndefined();
+    try {
+      expect(host.querySelector('section[aria-label="Camp"]')).not.toBeNull();
+      expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
+      expect(button("Attack")).toBeUndefined();
 
-    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-    expect(button("Attack")?.disabled).toBe(false);
-    await act(async () => button("Attack")!.click());
-    expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
-    unmount();
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+      expect(button("Attack")?.disabled).toBe(false);
+      await act(async () => button("Attack")!.click());
+      expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
+    } finally {
+      unmount();
+    }
   });
 
   it("offers Move by the order that leads beside the site, never by a tile another army of the player holds", () => {
