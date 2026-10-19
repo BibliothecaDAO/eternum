@@ -14,17 +14,17 @@ import "./cleared-site-lab.css";
 /** The shipped standard and receipt beside the standing site, over native fixture facts. */
 export function ClearedSiteLab() {
   const [params, setParams] = useSearchParams();
-  const kind: ClearedSiteStudy = params.get("site") === "stragglers" ? "stragglers" : "camp";
+  const kind: ClearedSiteStudy = params.get("site") === "beasts" ? "beasts" : "camp";
   const distance = params.get("distance") === "8" ? 8 : 20;
   const host = useRef<HTMLDivElement>(null);
   const [selected, select] = useState<boolean | null>(null);
   const [loaded, setLoaded] = useState("");
   const [error, setError] = useState<string | null>(null);
   const signature = `${kind}:${distance}`;
-  const fixture = useMemo(() => campBeside(kind === "camp" ? "Camp" : "Stragglers"), [kind]);
-  const reward = siteReward(kind === "camp" ? "Camp" : "Stragglers", fixture.site);
+  const fixture = useMemo(() => campBeside(kind === "camp" ? "Camp" : "Beasts"), [kind]);
+  const reward = siteReward(kind === "camp" ? "Camp" : "Beasts", fixture.site);
   const cleared = useMemo(() => {
-    const source = campBeside(kind === "camp" ? "Camp" : "Stragglers");
+    const source = campBeside(kind === "camp" ? "Camp" : "Beasts");
     source.store.applyFacts([
       {
         model: "ExpeditionSite",
@@ -81,7 +81,7 @@ export function ClearedSiteLab() {
           Site{" "}
           <select aria-label="Site" value={kind} onChange={(event) => change("site", event.target.value)}>
             <option value="camp">{structureName(StructureType.Camp)}</option>
-            <option value="stragglers">{structureName(StructureType.Stragglers)}</option>
+            <option value="beasts">{structureName(StructureType.Beasts)}</option>
           </select>
         </label>
         <label>

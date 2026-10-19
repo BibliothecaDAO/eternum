@@ -13,7 +13,7 @@ const STRUCTURE_MARKER_KIND: Record<StructureType, StrategicStructureMarkerKind>
   [StructureType.Camp]: "village",
   [StructureType.Rift]: "mine",
   [StructureType.Ruin]: "realm",
-  [StructureType.Stragglers]: "village",
+  [StructureType.Beasts]: "village",
 };
 
 /** The plainest marker: what a structure of a category this client does not know is drawn as. */

@@ -342,7 +342,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     address,
     structure_id: String(index + 1),
     rank: index + 1,
-    sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, stragglers: 0 },
+    sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
     chests_earned: chests,
     rewards: { lords: String(lords), essence: "0", labor: "0" },
     deepest_depth: 2,

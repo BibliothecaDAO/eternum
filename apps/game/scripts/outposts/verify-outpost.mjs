@@ -26,7 +26,7 @@ for (const node of document.getRoot().listNodes()) {
   if (node.getWorldMatrix().some((value, index) => Math.abs(value - identity[index]) > 1e-6))
     throw new Error("Bake every production transform for structure instancing");
 }
-if (["camp.glb", "village.glb", "stragglers.glb"].includes(basename(path)) || basename(path).startsWith("village-")) {
+if (["camp.glb", "village.glb", "beasts.glb"].includes(basename(path)) || basename(path).startsWith("village-")) {
   const cloth = document
     .getRoot()
     .listNodes()

@@ -731,9 +731,9 @@
     "verdict": "equal",
     "reason": "Order of Enlightenment: original emblem silhouette and identifying colour remain readable at 24 and 32 px, with painted depth and no gilded frame."
   },
-  "faceted/stragglers": {
+  "faceted/beasts": {
     "verdict": "equal",
-    "reason": "Stragglers: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "reason": "Beasts: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
   },
   "faceted/ruin": {
     "verdict": "equal",

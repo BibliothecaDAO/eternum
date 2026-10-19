@@ -394,8 +394,8 @@ pub mod MapLogic {
                     .chest;
                 Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
             };
-            let (camp, rift, stragglers) = crate::progression::scouting_bonus(progress);
-            let mut result = crate::discovery::frontier(rules, camp, rift, stragglers, day.empty_reveals, ruin, seed);
+            let (camp, rift, beasts) = crate::progression::scouting_bonus(progress);
+            let mut result = crate::discovery::frontier(rules, camp, rift, beasts, day.empty_reveals, ruin, seed);
             if let crate::discovery::Discovery::Ruin(chest) = result {
                 if !crate::logic::lords_budget::try_reserve(key.game_id, chest, context) {
                     result = crate::discovery::Discovery::None;

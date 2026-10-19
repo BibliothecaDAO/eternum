@@ -19,7 +19,7 @@ import { ATTRIBUTES, FIND_KINDS, FULL, STAMINA, TROOPS, UPGRADE, UPGRADING, XP }
 import type { ReactNode } from "react";
 
 export type AttributeKey = "battle" | "logistics" | "scouting" | "homecoming";
-type ScoutKind = "camp" | "rift" | "stragglers";
+type ScoutKind = "camp" | "rift" | "beasts";
 
 const ATTRIBUTE_KEYS: AttributeKey[] = ["battle", "logistics", "scouting", "homecoming"];
 const MARKS: Record<AttributeKey, IconMeaning> = {
@@ -28,8 +28,8 @@ const MARKS: Record<AttributeKey, IconMeaning> = {
   scouting: "order-detection",
   homecoming: "order-enlightenment",
 };
-const KIND_ICONS: Record<ScoutKind, IconMeaning> = { camp: "camp", rift: "rift", stragglers: "troops" };
-const KINDS: ScoutKind[] = ["camp", "rift", "stragglers"];
+const KIND_ICONS: Record<ScoutKind, IconMeaning> = { camp: "camp", rift: "rift", beasts: "troops" };
+const KINDS: ScoutKind[] = ["camp", "rift", "beasts"];
 
 /** One attribute of the army: its tier, and for Scouting the kind each tier above common went to. */
 type AttributeState = { tier: Tier; kinds?: readonly ScoutKind[] };
@@ -39,7 +39,7 @@ type AttributeState = { tier: Tier; kinds?: readonly ScoutKind[] };
  * the refill's place, its four attributes as rows (the Aspect's mark and word, the tier as frame and pips, the next
  * tier's XP price lit when affordable, a tick at legendary), then the chosen row: the tier now and next, what it
  * changes, the stamina a purchase refills (what fits of it), and Upgrade with the XP price, or the XP held against it.
- * Buying Scouting chooses its kind: camps, rifts or stragglers, each with its find rate before and after.
+ * Buying Scouting chooses its kind: camps, rifts or beasts, each with its find rate before and after.
  */
 export const ArmySheet = ({
   name,

@@ -84,6 +84,10 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         ruin_guard_lower: 1,
         ruin_guard_upper: 2,
         guard_step: 1,
+        beast_weak_lower: 300,
+        beast_weak_upper: 350,
+        beast_strong_lower: 450,
+        beast_strong_upper: 550,
       },
     },
     {

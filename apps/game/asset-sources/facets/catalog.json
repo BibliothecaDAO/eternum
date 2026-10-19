@@ -2540,10 +2540,10 @@
       }
     },
     {
-      "id": "stragglers",
-      "label": "Stragglers",
+      "id": "beasts",
+      "label": "Beasts",
       "family": "Structures",
-      "prompt": "prompts/stragglers.txt"
+      "prompt": "prompts/beasts.txt"
     },
     {
       "id": "shrine",

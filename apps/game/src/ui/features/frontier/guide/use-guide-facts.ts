@@ -198,7 +198,7 @@ const canBuyAttributeTier = (store: NativeFactStore, army: NativeRows["ExplorerT
 
 /**
  * The expedition's sites as the guide's firsts read them, a site's kind being its structure's category: a site
- * cleared, a ruin or stragglers standing in view, and a ruin cleared, whose chest has paid.
+ * cleared, a ruin or beasts standing in view, and a ruin cleared, whose chest has paid.
  */
 const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   const sites = [...store.inGame("ExpeditionSite", gameId)];
@@ -207,7 +207,7 @@ const readSiteFirsts = (store: NativeFactStore, gameId: number) => {
   return {
     siteCleared: sites.some((site) => site.clear),
     ruin: sites.some((site) => !site.clear && isKind(site, StructureType.Ruin)),
-    stragglers: sites.some((site) => !site.clear && isKind(site, StructureType.Stragglers)),
+    beasts: sites.some((site) => !site.clear && isKind(site, StructureType.Beasts)),
     chestPaid: sites.some((site) => site.clear && isKind(site, StructureType.Ruin)),
   };
 };
@@ -281,7 +281,7 @@ const NO_REALM: GuideFacts = {
   xpEarned: false,
   lastHour: false,
   rules: null,
-  stragglers: false,
+  beasts: false,
   typeTierAffordable: null,
   chestPaid: false,
   storeFull: null,

@@ -24,11 +24,11 @@ pub enum Attribute {
 pub enum ScoutingKind {
     Camp,
     Rift,
-    Stragglers,
+    Beasts,
 }
 
 /// An army's unspent XP and its tier in each attribute, from 1 (common) to 5 (legendary). `scouting_kinds` holds the
-/// kind each Scouting tier above common applies to, two bits per tier from uncommon up: 1 camp, 2 rift, 3 stragglers.
+/// kind each Scouting tier above common applies to, two bits per tier from uncommon up: 1 camp, 2 rift, 3 beasts.
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ArmyProgress {
     pub xp: u32,
@@ -159,7 +159,7 @@ pub fn buy_tier(ref progress: ArmyProgress, rules: ArmyProgressionRules, command
         let code: u8 = match command.kind.expect('Scouting needs a kind') {
             ScoutingKind::Camp => 1,
             ScoutingKind::Rift => 2,
-            ScoutingKind::Stragglers => 3,
+            ScoutingKind::Beasts => 3,
         };
         progress.scouting_kinds += code * scouting_kind_shift(tier);
     } else {
@@ -179,23 +179,23 @@ fn scouting_kind_shift(tier: u8) -> u8 {
     }
 }
 
-/// What the army's Scouting tiers add to camp, rift and straggler find rates, in basis points of each kind's base rate.
+/// What the army's Scouting tiers add to camp, rift and beast find rates, in basis points of each kind's base rate.
 pub fn scouting_bonus(progress: ArmyProgress) -> (u32, u32, u32) {
     let mut camp = 0;
     let mut rift = 0;
-    let mut stragglers = 0;
+    let mut beasts = 0;
     let mut tier = 2;
     while tier <= progress.scouting {
         let increment = crate::rules::scouting_increment_bps(tier);
         match progress.scouting_kinds / scouting_kind_shift(tier) % 4 {
             1 => camp += increment,
             2 => rift += increment,
-            3 => stragglers += increment,
+            3 => beasts += increment,
             _ => panic!("missing Scouting kind"),
         }
         tier += 1;
     }
-    (camp, rift, stragglers)
+    (camp, rift, beasts)
 }
 
 /// A clear pays 2.5 x the square root of the guard's starting strength in whole troops, rounded down: exactly

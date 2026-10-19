@@ -16,7 +16,7 @@ describe("a structure's guard slots", () => {
     expect(getStructureDefenseSlotLimit(StructureType.Hyperstructure)).toBe(4);
     expect(getStructureDefenseSlotLimit(StructureType.Camp)).toBe(1);
     expect(getStructureDefenseSlotLimit(StructureType.Rift)).toBe(1);
-    expect(getStructureDefenseSlotLimit(StructureType.Stragglers)).toBe(1);
+    expect(getStructureDefenseSlotLimit(StructureType.Beasts)).toBe(1);
   });
 
   it("are unknown, never zero, for a category this build does not know", () => {

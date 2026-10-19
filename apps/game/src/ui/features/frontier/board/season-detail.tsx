@@ -12,7 +12,7 @@ import {
   RIFT,
   RUIN,
   SEASON,
-  STRAGGLERS,
+  BEASTS,
   VISIT,
 } from "@/ui/design-system/kit/words";
 
@@ -20,7 +20,7 @@ import {
 export type SeasonDetail = {
   rank: number;
   order: number;
-  sites: { total: number; camps: number; rifts: number; ruins: number; stragglers: number };
+  sites: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests: number;
   lords: number;
   /** The deepest reach beyond the spire, 1 to 3; 0 for a realm that never went through. */
@@ -31,7 +31,7 @@ export type SeasonDetail = {
 
 /**
  * A row tapped (wireframe 13): the realm's Order, name and rank, its sites cleared by kind (camp, rift, ruin,
- * stragglers), chests, LORDS and the deepest reach, what it earned, and one verb: Visit. The player's own row has
+ * beasts), chests, LORDS and the deepest reach, what it earned, and one verb: Visit. The player's own row has
  * nothing to visit.
  */
 export const SeasonDetailSheet = ({
@@ -71,8 +71,8 @@ export const SeasonDetailSheet = ({
         <HudChip icons={["ruin"]} label={RUIN}>
           {formatAmount(detail.sites.ruins)}
         </HudChip>
-        <HudChip icons={["troops"]} label={STRAGGLERS}>
-          {formatAmount(detail.sites.stragglers)}
+        <HudChip icons={["troops"]} label={BEASTS}>
+          {formatAmount(detail.sites.beasts)}
         </HudChip>
       </div>
       <div className="flex items-center justify-center gap-1.5">

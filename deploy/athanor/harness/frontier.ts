@@ -63,11 +63,11 @@ import {
 // Frontier's own day unit: the evidence's time scale is how much faster a run's unit is.
 const DESIGN_DAY_UNIT_SECONDS = 14_400;
 const precision = BigInt(RESOURCE_PRECISION);
-/** Every guarded Frontier site an army may attack: camps, rifts, stragglers and the day's ruin. */
+/** Every guarded Frontier site an army may attack: camps, rifts, beasts and the day's ruin. */
 const GUARDED_SITES = new Set<number>([
   StructureType.Camp,
   StructureType.Rift,
-  StructureType.Stragglers,
+  StructureType.Beasts,
   StructureType.Ruin,
 ]);
 

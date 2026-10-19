@@ -42,12 +42,12 @@ export const seasonDay = (rules: ExpeditionRules, timestamp: number): number | n
   dayOf(rules, timestamp)?.index ?? null;
 
 /** A guarded Frontier site's kind is its structure category. */
-export type SiteKind = "Camp" | "Rift" | "Ruin" | "Stragglers";
+export type SiteKind = "Camp" | "Rift" | "Ruin" | "Beasts";
 const SITE_KINDS = new Map<number, SiteKind>([
   [StructureType.Camp, "Camp"],
   [StructureType.Rift, "Rift"],
   [StructureType.Ruin, "Ruin"],
-  [StructureType.Stragglers, "Stragglers"],
+  [StructureType.Beasts, "Beasts"],
 ]);
 export const siteKindOf = (category: number): SiteKind => {
   const kind = SITE_KINDS.get(category);
@@ -58,7 +58,7 @@ export const siteKindOf = (category: number): SiteKind => {
 /**
  * What clearing a site still pays home in resources, as the contract's site_reward computes it from the guard it
  * started with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. A cleared
- * site has paid and pays nothing again (the contract refuses a second payout); stragglers pay only XP; a ruin pays its
+ * site has paid and pays nothing again (the contract refuses a second payout); beasts pay only XP; a ruin pays its
  * chest.
  */
 export const siteReward = (

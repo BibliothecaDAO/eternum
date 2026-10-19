@@ -84,7 +84,7 @@ type AttackTarget =
 
 /**
  * The map tile the player tapped, when something an army can attack stands on it: a standing expedition site (a
- * camp, rift, ruin or stragglers), or an army that is not the player's own.
+ * camp, rift, ruin or beasts), or an army that is not the player's own.
  */
 export const useSelectedTarget = (): AttackTarget | null => {
   const { setup } = useGame();
@@ -299,7 +299,7 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
   });
 };
 
-/** What a camp or rift pays home and what of it fits; a ruin pays its chest, stragglers only XP. */
+/** What a camp or rift pays home and what of it fits; a ruin pays its chest, beasts only XP. */
 const sitePay = (plan: SiteCardPlan) => {
   const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
   return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;

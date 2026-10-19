@@ -64,7 +64,7 @@
     "CHOICE_RATIONS": 1,
     "KIND_CAMPS": 0,
     "KIND_RIFTS": 1,
-    "KIND_STRAGGLERS": 2,
+    "KIND_BEASTS": 2,
     "HUT": 1,
     "WORKSHOP": 25,
     "BARRACKS": 28,
@@ -2764,9 +2764,9 @@
       ],
       "members": [
         {
-          "name": "stragglers_bps",
+          "name": "beasts_bps",
           "type": "core::integer::u16",
-          "id": "0x7374726167676c6572735f627073",
+          "id": "0x6265617374735f627073",
           "feltLength": 1
         },
         {
@@ -5945,10 +5945,34 @@
           "type": "core::integer::u32",
           "id": "0x67756172645f73746570",
           "feltLength": 1
+        },
+        {
+          "name": "beast_weak_lower",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7765616b5f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_weak_upper",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7765616b5f7570706572",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_strong_lower",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7374726f6e675f6c6f776572",
+          "feltLength": 1
+        },
+        {
+          "name": "beast_strong_upper",
+          "type": "core::integer::u16",
+          "id": "0x62656173745f7374726f6e675f7570706572",
+          "feltLength": 1
         }
       ],
       "keyLength": 2,
-      "valueLength": 13,
+      "valueLength": 17,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -5958,6 +5982,10 @@
           "ruinGuardLower": "ruin_guard_lower",
           "ruinGuardUpper": "ruin_guard_upper",
           "guardStep": "guard_step",
+          "beastWeakLower": "beast_weak_lower",
+          "beastWeakUpper": "beast_weak_upper",
+          "beastStrongLower": "beast_strong_lower",
+          "beastStrongUpper": "beast_strong_upper",
           "chestOdds": "chest",
           "revealSiteNeighbors": "reveal_site_neighbors",
           "entryStamina": "entry_stamina"
@@ -8593,7 +8621,7 @@
           "type": "world_native::relics::SiteChest"
         },
         {
-          "name": "Stragglers",
+          "name": "Beasts",
           "type": "()"
         },
         {
@@ -8703,6 +8731,22 @@
         {
           "name": "guard_step",
           "type": "core::integer::u32"
+        },
+        {
+          "name": "beast_weak_lower",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_weak_upper",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_strong_lower",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "beast_strong_upper",
+          "type": "core::integer::u16"
         }
       ]
     },
@@ -8769,7 +8813,7 @@
       "name": "world_native::expeditions::FrontierDiscoveryRules",
       "members": [
         {
-          "name": "stragglers_bps",
+          "name": "beasts_bps",
           "type": "core::integer::u16"
         },
         {
@@ -10673,7 +10717,7 @@
           "type": "()"
         },
         {
-          "name": "Stragglers",
+          "name": "Beasts",
           "type": "()"
         }
       ]
@@ -12987,5 +13031,5 @@
       ]
     }
   },
-  "identity": "cda2c0bd065119fa4fe8cf14ecd34aa6aac6ede29635170fcac5b4c34dc12314"
+  "identity": "79a5da7d64269fa2a1324357c98475bad2c36b45398e51aa5665a6f66834a6e7"
 }

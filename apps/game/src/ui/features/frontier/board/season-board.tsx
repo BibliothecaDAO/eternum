@@ -157,7 +157,7 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
     camps: entry.sites_cleared.camps,
     rifts: entry.sites_cleared.rifts,
     ruins: entry.sites_cleared.ruins,
-    stragglers: entry.sites_cleared.stragglers,
+    beasts: entry.sites_cleared.beasts,
   },
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),

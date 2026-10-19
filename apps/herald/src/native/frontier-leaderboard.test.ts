@@ -29,12 +29,12 @@ function story(name: string, value: Record<string, unknown>, index: number, owne
     value: { owner, story: { [name]: value } },
   };
 }
-const CATEGORY = { Camp: 7, Rift: 9, Ruin: 10, Stragglers: 11 } as const;
+const CATEGORY = { Camp: 7, Rift: 9, Ruin: 10, Beasts: 11 } as const;
 const REWARD = {
   Camp: { resource_type: 23, amount: "500000000000" },
   Rift: { resource_type: 38, amount: "3000000000000" },
   Ruin: { resource_type: 37, amount: "200000000000" },
-  Stragglers: null,
+  Beasts: null,
 } as const;
 const clear = (kind: keyof typeof CATEGORY, index: number, owner = 10) =>
   story("SitePayout", { category: CATEGORY[kind], reward: REWARD[kind] }, index, owner);
@@ -47,7 +47,7 @@ describe("Frontier season standings", () => {
     expect(entry.rewards.lords).toBe("400");
   });
 
-  it("counts 3 camps, a rift, a ruin and stragglers from stories after site deletion; duplicates and order do not change it", () => {
+  it("counts 3 camps, a rift, a ruin and beasts from stories after site deletion; duplicates and order do not change it", () => {
     const { read } = facts();
     const history = [
       clear("Camp", 0),
@@ -55,7 +55,7 @@ describe("Frontier season standings", () => {
       clear("Camp", 2),
       clear("Rift", 3),
       clear("Ruin", 4),
-      clear("Stragglers", 6),
+      clear("Beasts", 6),
       story("ExplorationReward", { resource_type: 38, amount: "6000000000000" }, 5),
     ];
     const board = buildFrontierLeaderboard(read, "1", history);
@@ -63,7 +63,7 @@ describe("Frontier season standings", () => {
       structure_id: "1",
       deepest_depth: 2,
       order: 3,
-      sites_cleared: { total: 6, camps: 3, rifts: 1, ruins: 1, stragglers: 1 },
+      sites_cleared: { total: 6, camps: 3, rifts: 1, ruins: 1, beasts: 1 },
       chests_earned: 1,
       rewards: { lords: "200", labor: "1500000000000", essence: "9000000000000" },
     });

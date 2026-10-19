@@ -259,11 +259,11 @@ it("renders the site's recorded kind and payout without a current structure", ()
         structure_id: 3,
         explorer_id: 7,
         site_id: 9,
-        category: StructureType.Stragglers,
+        category: StructureType.Beasts,
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: "Stragglers cleared", description: "Army · XP only" });
+  ).toMatchObject({ title: "Beasts cleared", description: "Army · XP only" });
 });
 
 describe("every story the chain can tell", () => {

@@ -52,7 +52,7 @@ function settledPlayers(structures: Row[]): Map<string, Standing> {
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
         rank: 0,
-        sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, stragglers: 0 },
+        sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,
         rewards: { lords: "0", essence: "0", labor: "0" },
         deepest_depth: number(record(structure.metadata).deepest_depth),
@@ -82,8 +82,8 @@ function creditSiteClear(player: Standing, payout: Row, event: HeraldHistoryEven
       counts.ruins++;
       player.entry.chests_earned++;
       break;
-    case "Stragglers":
-      counts.stragglers++;
+    case "Beasts":
+      counts.beasts++;
       break;
   }
   counts.total++;

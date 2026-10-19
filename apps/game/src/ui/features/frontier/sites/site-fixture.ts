@@ -24,7 +24,7 @@ const SITE_CATEGORY: Record<SiteKind, StructureType> = {
   Camp: StructureType.Camp,
   Rift: StructureType.Rift,
   Ruin: StructureType.Ruin,
-  Stragglers: StructureType.Stragglers,
+  Beasts: StructureType.Beasts,
 };
 
 export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {

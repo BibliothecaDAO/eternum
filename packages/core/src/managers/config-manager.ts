@@ -433,7 +433,7 @@ export class ClientConfigManager {
       // A Frontier site stands behind the one guard it was found with.
       [StructureType.Rift]: 1,
       [StructureType.Ruin]: 1,
-      [StructureType.Stragglers]: 1,
+      [StructureType.Beasts]: 1,
     };
   }
   getResourceBridgeFeeSplitConfig() {

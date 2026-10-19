@@ -8,7 +8,7 @@ async (page) => {
   page.on("pageerror", onError);
   try {
     await page.setViewportSize({ width: 1500, height: 1000 });
-    for (const kind of ["camp", "stragglers"]) {
+    for (const kind of ["camp", "beasts"]) {
       for (const distance of [20, 8]) {
         const url = new URL(
           `/lab/models?family=cleared-sites&site=${kind}&distance=${distance}&rendererMode=webgpu-force-webgl`,

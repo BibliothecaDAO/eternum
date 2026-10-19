@@ -34,9 +34,9 @@ const ATTRIBUTE_OF: Record<AttributeKey, Attribute> = {
   scouting: "Scouting",
   homecoming: "Homecoming",
 };
-const KIND_KEYS: Record<ScoutingKind, ScoutKey> = { Camp: "camp", Rift: "rift", Stragglers: "stragglers" };
-const KIND_OF: Record<ScoutKey, ScoutingKind> = { camp: "Camp", rift: "Rift", stragglers: "Stragglers" };
-type ScoutKey = "camp" | "rift" | "stragglers";
+const KIND_KEYS: Record<ScoutingKind, ScoutKey> = { Camp: "camp", Rift: "rift", Beasts: "beasts" };
+const KIND_OF: Record<ScoutKey, ScoutingKind> = { camp: "Camp", rift: "Rift", beasts: "Beasts" };
+type ScoutKey = "camp" | "rift" | "beasts";
 
 /**
  * The selected army over the game's facts: its XP, stamina and four attribute tiers, each next tier's XP price, what a
@@ -136,6 +136,6 @@ const kindRates = (progress: ArmyProgressFacts): Record<ScoutKey, readonly [stri
   return {
     camp: [rate(bonus.Camp), rate(bonus.Camp + next)],
     rift: [rate(bonus.Rift), rate(bonus.Rift + next)],
-    stragglers: [rate(bonus.Stragglers), rate(bonus.Stragglers + next)],
+    beasts: [rate(bonus.Beasts), rate(bonus.Beasts + next)],
   };
 };

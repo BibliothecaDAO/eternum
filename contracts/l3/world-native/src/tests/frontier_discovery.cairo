@@ -10,7 +10,7 @@ fn rules() -> FrontierDiscoveryRules {
 }
 fn bucket(result: Discovery) -> felt252 {
     match result {
-        Discovery::Stragglers => 0,
+        Discovery::Beasts => 0,
         Discovery::Camp => 1,
         Discovery::Rift => 2,
         Discovery::Ruin(_) => 3,
@@ -27,7 +27,7 @@ fn within(actual: u32, target: u32, tolerance: u32) -> bool {
 fn frontier_draws_the_ruled_odds_over_100k_reveals() {
     let preset = super::preset_projection::frontier_discovery_rules();
     assert_eq!(
-        (preset.stragglers_bps, preset.camp_bps, preset.rift_bps, preset.ruin_bps, preset.shrine_bps, preset.well_bps),
+        (preset.beasts_bps, preset.camp_bps, preset.rift_bps, preset.ruin_bps, preset.shrine_bps, preset.well_bps),
         (600, 400, 400, 100, 300, 300),
     );
     let mut counts: Felt252Dict<u32> = Default::default();
@@ -46,13 +46,13 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
 }
 
 #[test]
-fn scouting_raises_its_chosen_kind_without_changing_stragglers() {
+fn scouting_raises_its_chosen_kind_without_changing_beasts() {
     let rules = rules();
     for sample in 0_u64..20000 {
         let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), 0x53434f5554 + Into::<u64, u256>::into(sample));
         let boosted = frontier(rules, 0, 10000, 0, 0, Some(CHEST), 0x53434f5554 + Into::<u64, u256>::into(sample));
-        // The table is ordered stragglers first, so Scouting never moves a straggler draw.
-        assert_eq!(base == Discovery::Stragglers, boosted == Discovery::Stragglers);
+        // The table is ordered beasts first, so Scouting never moves a beast draw.
+        assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
     }
 }
 
@@ -89,7 +89,7 @@ fn the_floor_draws_only_kinds_still_allowed() {
         let session = frontier(locked, 0, 0, 0, empty, None, 0x464c4f4f52 + Into::<u64, u256>::into(sample));
         if empty == 7 {
             assert!(
-                session == Discovery::Camp || session == Discovery::Rift || session == Discovery::Stragglers,
+                session == Discovery::Camp || session == Discovery::Rift || session == Discovery::Beasts,
                 "floor drew a kind that is not allowed",
             );
         }
@@ -138,12 +138,12 @@ fn shrine_and_well_appear_only_once_researched() {
 }
 
 #[test]
-fn every_scouting_tier_on_stragglers_doubles_only_their_rate() {
+fn every_scouting_tier_on_beasts_doubles_only_their_rate() {
     let rules = rules();
     let mut found = 0_u32;
     for sample in 0_u64..100000 {
         let seed = 0x5354524147474c455253 + Into::<u64, u256>::into(sample);
-        if frontier(rules, 0, 0, 10000, 0, Some(CHEST), seed) == Discovery::Stragglers {
+        if frontier(rules, 0, 0, 10000, 0, Some(CHEST), seed) == Discovery::Beasts {
             found += 1;
         }
     }

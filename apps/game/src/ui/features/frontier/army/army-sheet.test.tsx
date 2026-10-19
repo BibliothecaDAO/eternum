@@ -51,7 +51,7 @@ const render = (
         refillOnBuy={30}
         chosen={chosen}
         onChoose={() => {}}
-        kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], stragglers: ["6%", "6.6%"] }}
+        kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], beasts: ["6%", "6.6%"] }}
         kind="rift"
         onKind={onKind}
         sending={false}

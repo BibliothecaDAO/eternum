@@ -562,7 +562,7 @@ export class EternumProvider extends EventEmitter {
     props: SystemProps.SystemSigner & {
       explorerId: number;
       attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
-      scoutingKind?: "Camp" | "Rift" | "Stragglers";
+      scoutingKind?: "Camp" | "Rift" | "Beasts";
     },
   ) {
     return this.submitCommand(

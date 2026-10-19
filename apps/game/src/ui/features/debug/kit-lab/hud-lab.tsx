@@ -383,7 +383,7 @@ const CASTLE_NODES = [
 
 const TODAY_LOG = [
   { id: "a", at: NOW - 24 * 60, text: "Army 1 cleared a camp" },
-  { id: "b", at: NOW - 46 * 60, text: "Army 2 cleared stragglers" },
+  { id: "b", at: NOW - 46 * 60, text: "Army 2 cleared beasts" },
   { id: "c", at: NOW - 55 * 60, text: "Army 1 cleared a rift" },
 ];
 
@@ -448,7 +448,7 @@ const LAB_GUIDE_FACTS: GuideFacts = {
   armyTierAffordable: false,
   camp: null,
   siteCleared: false,
-  stragglers: false,
+  beasts: false,
   castleAffordable: false,
   onMap: true,
   typeTierAffordable: null,
@@ -535,11 +535,11 @@ const STATES = {
     armies: ARMIES,
     site: { ...CAMP_CARD, pay: { icon: "labor", amount: 550, fits: 120 } },
   },
-  "site-stragglers": {
+  "site-beasts": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Stragglers", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   "site-ruin-lose": {
@@ -613,7 +613,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     fight: {
-      site: "Stragglers",
+      site: "Beasts",
       verdict: "guard-holds",
       armyArt: ARMY_CHIP.art,
       army: { before: 500, after: 432 },
@@ -994,7 +994,7 @@ export const HudLab = () => {
                     rank: 2,
                     order: 2,
 
-                    sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
+                    sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
                     chests: 9,
                     lords: 640,
                     reach: 0,
@@ -1226,7 +1226,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
       refillOnBuy={30}
       chosen={army.chosen}
       onChoose={noop}
-      kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], stragglers: ["6%", "6.6%"] }}
+      kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], beasts: ["6%", "6.6%"] }}
       kind="rift"
       onKind={noop}
       sending={false}
@@ -1326,7 +1326,7 @@ const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | 
           kinds={
             scouts ? (
               <KindChoice
-                rates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], stragglers: ["6%", "6.6%"] }}
+                rates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], beasts: ["6%", "6.6%"] }}
                 lifted="rift"
                 onKind={noop}
               />

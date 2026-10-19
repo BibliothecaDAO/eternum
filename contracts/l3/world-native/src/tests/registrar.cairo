@@ -1848,7 +1848,7 @@ fn assert_capture_at(
                     camp_bps: 4000,
                     rift_bps: 1,
                     ruin_bps: 1,
-                    stragglers_bps: 0,
+                    beasts_bps: 0,
                     shrine_bps: 0,
                     well_bps: 0,
                     empty_reveal_limit: 7,
@@ -1863,9 +1863,13 @@ fn assert_capture_at(
                     ruin_guard_lower: 2000,
                     ruin_guard_upper: 4000,
                     guard_step: 1,
+                    beast_weak_lower: 1,
+                    beast_weak_upper: 1,
+                    beast_strong_lower: 2,
+                    beast_strong_upper: 2,
                     reveal_percent: 10 + index * 5,
-                    site_guard_lower: index + 1,
-                    site_guard_upper: index + 1,
+                    site_guard_lower: index + 3,
+                    site_guard_upper: index + 3,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
                     chest: ChestTiers { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
@@ -1988,7 +1992,7 @@ fn assert_capture_at(
     let guards = IGuardsDispatcher { contract_address: d.games };
     assert_eq!(
         guards.guard(GuardKey { game_id, structure_id: camp_id, slot: 0 }).troops.count,
-        (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION,
+        (Into::<u8, u128>::into(depth) + 3) * RESOURCE_PRECISION,
     );
     let essence = ResourceSlot { game_id, entity_id: 1, resource_type: 38 };
     if let Some(room) = labor_room {
@@ -2012,7 +2016,7 @@ fn assert_capture_at(
             crate::logic::expeditions::expedition_site(camp).unwrap()
         },
     );
-    assert_eq!(site_before.initial_guard_count, (Into::<u8, u128>::into(depth) + 1) * RESOURCE_PRECISION);
+    assert_eq!(site_before.initial_guard_count, (Into::<u8, u128>::into(depth) + 3) * RESOURCE_PRECISION);
     assert!(site_before.clear.is_none());
     assert_eq!((site_before.col, site_before.row, site_before.alt), (coord.x, coord.y, coord.alt));
     let camp_credit = labor_room.unwrap_or(site_before.initial_guard_count / 2);
@@ -2233,9 +2237,13 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
                     ruin_guard_lower: 2000,
                     ruin_guard_upper: 4000,
                     guard_step: 1,
+                    beast_weak_lower: 1,
+                    beast_weak_upper: 1,
+                    beast_strong_lower: 2,
+                    beast_strong_upper: 2,
                     reveal_percent: depth + 1,
-                    site_guard_lower: depth + 1,
-                    site_guard_upper: depth + 1,
+                    site_guard_lower: depth + 3,
+                    site_guard_upper: depth + 3,
                     reveal_site_neighbors: false,
                     entry_stamina: if depth == 0 {
                         0
@@ -2500,7 +2508,7 @@ fn setup_frontier_chests_with_preset(
                     camp_bps: 1,
                     rift_bps: 0,
                     ruin_bps: 0,
-                    stragglers_bps: 4000,
+                    beasts_bps: 4000,
                     shrine_bps: 0,
                     well_bps: 0,
                     empty_reveal_limit: 7,
@@ -2540,6 +2548,10 @@ fn setup_frontier_chests_with_preset(
                     ruin_guard_lower: 2000,
                     ruin_guard_upper: 4000,
                     guard_step: 1,
+                    beast_weak_lower: 1,
+                    beast_weak_upper: 1,
+                    beast_strong_lower: 2,
+                    beast_strong_upper: 2,
                     reveal_percent: 1,
                     site_guard_lower: 3,
                     site_guard_upper: 3,
@@ -2604,7 +2616,7 @@ fn setup_frontier_chests_with_preset(
 pub fn assert_zero_pool_never_funds_a_ruin_or_payout_over_a_day() {
     let (_, frontier) = super::preset_projection::current_definition("frontier");
     let rules = crate::expeditions::FrontierDiscoveryRules {
-        stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+        beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     // The fixture registers preset 1: zero funding is not a behavior tied to the deployment-check id.
     let (d, game_id, key) = setup_frontier_chests_with_preset(Some(rules), frontier);
@@ -2769,7 +2781,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
 }
 
 #[test]
-fn a_straggler_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
+fn a_beast_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
     let (d, game_id, key) = setup_frontier_chests();
     let army = strong_frontier_army(d, game_id, key);
     let coord = crate::geometry::neighbor(army.coord, 0);
@@ -2778,13 +2790,7 @@ fn a_straggler_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
     let structures = IStructureOperationsDispatcher { contract_address: d.games };
     let id = structures
         .create_discovery(
-            game_id,
-            1,
-            coord,
-            crate::discovery::Discovery::Stragglers,
-            123,
-            360,
-            crate::commands::action_context(context),
+            game_id, 1, coord, crate::discovery::Discovery::Beasts, 123, 360, crate::commands::action_context(context),
         );
     stop_cheat_caller_address(d.games);
     let site_key = ResourceKey { game_id, entity_id: id };
@@ -2811,7 +2817,7 @@ fn a_straggler_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
 #[test]
 fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
     let rules = crate::expeditions::FrontierDiscoveryRules {
-        stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+        beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
     let context = crate::tests::context(d.games, game_id);
@@ -2855,7 +2861,7 @@ fn an_exhausted_budget_never_funds_a_ruin_or_payout() {
 #[test]
 fn frontier_finds_at_most_one_ruin_a_day_and_holds_its_chest_against_the_budget() {
     let ruins_only = crate::expeditions::FrontierDiscoveryRules {
-        stragglers_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
+        beasts_bps: 1, camp_bps: 0, rift_bps: 0, ruin_bps: 8000, shrine_bps: 0, well_bps: 0, empty_reveal_limit: 7,
     };
     let (d, game_id, key) = setup_frontier_chests_with_rules(Some(ruins_only));
     let context = crate::tests::context(d.games, game_id);
@@ -3385,7 +3391,7 @@ fn frontier_floor_counts_seven_player_reveals_across_armies_and_depths_then_rese
 }
 
 #[test]
-fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis() {
+fn frontier_sites_persist_the_seeded_guard_and_initial_count() {
     let d = setup();
     let (preset_id, preset) = super::preset_projection::current_definition("frontier");
     registry(d).register_preset(preset_id, preset);
@@ -3401,7 +3407,7 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
             (crate::discovery::Discovery::Camp, crate::taxonomy::CAMP_CATEGORY, 0_u32),
             (crate::discovery::Discovery::Rift, crate::taxonomy::RIFT_CATEGORY, 1),
             (crate::discovery::Discovery::Ruin(any_chest()), crate::taxonomy::RUIN_CATEGORY, 2),
-            (crate::discovery::Discovery::Stragglers, crate::taxonomy::STRAGGLERS_CATEGORY, 3),
+            (crate::discovery::Discovery::Beasts, crate::taxonomy::BEASTS_CATEGORY, 3),
         ] {
             let coord = crate::troops::Coord {
                 alt: false, x: 100 + offset, y: depth_index * preset.settlement.spacing + preset.settlement.spacing / 2,
@@ -3413,6 +3419,19 @@ fn frontier_sites_store_the_seeded_category_and_depth_tier_with_the_count_basis(
                 .guard(GuardKey { game_id, structure_id: id, slot: 0 });
             let expected = crate::troops::frontier_guard(category, depth, seed, context.rules.unbox(), 360);
             assert_eq!(guard.troops, expected);
+            if category == crate::taxonomy::BEASTS_CATEGORY {
+                let ranges = array![
+                    (300_u128, 350_u128, 450_u128, 550_u128), (900, 1050, 1350, 1650), (2400, 2800, 3600, 4400),
+                    (6000, 7000, 9000, 11000),
+                ];
+                let (weak_lower, weak_upper, strong_lower, strong_upper) = *ranges.at(depth_index);
+                let count = guard.troops.count / RESOURCE_PRECISION;
+                assert!(
+                    (count >= weak_lower && count <= weak_upper) || (count >= strong_lower && count <= strong_upper),
+                );
+                assert_eq!(guard.troops.category, crate::troops::TroopType::Knight);
+                assert_eq!(guard.troops.tier, crate::troops::TroopTier::T1);
+            }
             let site = snforge_std::interact_with_state(
                 d.games,
                 || {

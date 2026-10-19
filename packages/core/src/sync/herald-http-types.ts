@@ -147,7 +147,7 @@ export interface HeraldFrontierLeaderboardEntry {
   address: string;
   structure_id: string;
   rank: number;
-  sites_cleared: { total: number; camps: number; rifts: number; ruins: number; stragglers: number };
+  sites_cleared: { total: number; camps: number; rifts: number; ruins: number; beasts: number };
   chests_earned: number;
   rewards: { lords: string; essence: string; labor: string };
   deepest_depth: number;

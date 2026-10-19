@@ -1,7 +1,7 @@
 import { REALM_ASSETS } from "../structures/realm-design";
 import {
   ChestModelPath,
-  STRAGGLERS_MODEL_PATH,
+  BEASTS_MODEL_PATH,
   SHARED_BUILDING_MODEL_PATHS,
   SPIRE_MODEL_PATH,
   getStructureModelPaths,
@@ -28,7 +28,7 @@ const BUILDING_LABELS: Record<string, string> = {
   empire: "Realm · Empire",
   village: "Village · Canvas & Thatch",
   camp: "Camp · Canvas and stockade",
-  stragglers: "Stragglers · Stranded company",
+  beasts: "Beasts · Stranded company",
   archerrange: "Archery range",
   castle1: "Hall / Holy site",
   fishery: "Fishery",
@@ -40,7 +40,7 @@ const BUILDING_LABELS: Record<string, string> = {
 export const TERRAIN_LAB_BUILDINGS = [
   ...new Set([
     ...SHARED_BUILDING_MODEL_PATHS,
-    STRAGGLERS_MODEL_PATH,
+    BEASTS_MODEL_PATH,
     FALLEN_REALM_RUIN_PATH,
     "/models/outposts/shrine.glb",
     "/models/outposts/well.glb",

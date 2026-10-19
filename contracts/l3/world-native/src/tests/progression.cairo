@@ -49,10 +49,10 @@ fn each_scouting_tier_raises_the_kind_chosen_for_it_by_its_relative_increment() 
 }
 
 #[test]
-fn every_scouting_tier_may_raise_stragglers_once_they_exist() {
+fn every_scouting_tier_may_raise_beasts_once_they_exist() {
     let mut progress = ArmyProgress { xp: 1500, ..crate::progression::initial() };
     for _ in 0_u8..4 {
-        crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Stragglers));
+        crate::progression::buy_tier(ref progress, rules(), scout(ScoutingKind::Beasts));
     }
     assert_eq!(crate::progression::scouting_bonus(progress), (0, 0, 10000));
 }
@@ -428,7 +428,7 @@ fn training_starts_only_later_armies_at_their_realms_tiers_and_full_at_their_log
 fn trained_scouting_carries_every_choice_from_the_lodge() {
     let mut learned = 0;
     for kind in array![
-        crate::research::KIND_RIFTS, crate::research::KIND_CAMPS, crate::research::KIND_STRAGGLERS,
+        crate::research::KIND_RIFTS, crate::research::KIND_CAMPS, crate::research::KIND_BEASTS,
         crate::research::KIND_RIFTS,
     ] {
         learned = crate::research::learn(learned, crate::research::ROW_SCOUTS_LODGE, kind);

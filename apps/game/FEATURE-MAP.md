@@ -9,7 +9,7 @@ presentation using the production instanced model, opening pool, panel and nativ
 ## Cleared-site standard
 
 Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped camp
-or stragglers with the production standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
+or beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
 Click a model or its selection button to open the reward panel; Close site dismisses it. The selected standard uses the
 production receipt component over native clear-result facts.
 
@@ -322,7 +322,7 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                             |
 | Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                            |
-| Stragglers              | Frontier Map → select a discovered stranded company beside its broken cart.                                                                                                     |
+| Beasts              | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                                                                     |
 | Shrine                  | Frontier Map → select a discovered sun arch. Its site card offers the attribute reward when eligible; use removes the site.                                                     |
 | Well                    | Frontier Map → select a discovered stone well. Its site card offers stamina when eligible; use removes the site.                                                                |
 | Ownership and placement | `/lab` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
@@ -331,7 +331,7 @@ With the local client running, open `/lab?evidence=/absolute/capture/directory` 
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the
 trailing statement semicolon when supplying it as an expression). The directory must exist. It drives the visible
 controls, checks delivered model responses, captures the six models on grassland and a tropical-coast transition, and
-checks red/green ownership on camp, village and stragglers. Save its returned verification JSON beside the 15 captures.
+checks red/green ownership on camp, village and beasts. Save its returned verification JSON beside the 15 captures.
 Each capture blanks its page immediately. Stop the client afterward and retain the evidence.
 
 Asset gates: `pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs`. For live inspection, open
@@ -561,18 +561,18 @@ read the credited resource and XP, including with an army standing there. The no
 The receipt remains after a snapshot reload. Yesterday’s sites leave the current region with the new day.
 
 `/lab/models?family=cleared-sites&rendererMode=webgpu-force-webgl` compares the production standard with the standing
-camp and stragglers, at gameplay and detail distance. Both use the game renderer; the selected standard uses the
+camp and beasts, at gameplay and detail distance. Both use the game renderer; the selected standard uses the
 production receipt over native fixture facts.
 
 ## Frontier beast guards
 
 Standing Frontier sites share their beast identity between the map model, hover plate and selected-site card. Ruins keep
-their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Stragglers show Troll, Wolf or
+their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Beasts show Troll, Wolf or
 Goblin for their existing combat class. Combat tiers, counts and forecasts are unchanged. Cleared sites do not show
 beasts.
 
 `/lab/models?family=beasts` compares the three new species studies with shipped beasts. **Set** switches to
-standing-site compositions or Stragglers; **View**, **Turn** and **Light** inspect them. The footer compares the old and
+standing-site compositions or Beasts; **View**, **Turn** and **Light** inspect them. The footer compares the old and
 new plates at HUD size. Pick a **Site** and **Combat class**, then **Select site** to inspect its production card.
 `pnpm --dir apps/game prove:beasts https://127.0.0.1:4218 <evidence-parent>` drives these controls, records the rendered
 parts and icon sizes, captures each result and releases the page. `verify:beasts` checks delivered geometry, materials,

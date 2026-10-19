@@ -24,7 +24,7 @@ export interface FightSent {
 }
 
 /**
- * What a victory paid: the reward as the clear's own payout record names it (none for stragglers or a ruin), marked
+ * What a victory paid: the reward as the clear's own payout record names it (none for beasts or a ruin), marked
  * when the store that received it stands at its limit, so some of it did not fit; and the clear's XP.
  */
 export interface FightGain {

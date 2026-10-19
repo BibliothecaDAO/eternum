@@ -939,9 +939,9 @@
       "label": "Travel",
       "family": "Actions"
     },
-    "stragglers": {
-      "art": "stragglers",
-      "label": "Stragglers",
+    "beasts": {
+      "art": "beasts",
+      "label": "Beasts",
       "family": "Structures"
     },
     "shrine": {

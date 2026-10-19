@@ -1,16 +1,16 @@
 # Outposts
 
-The approved camp, Canvas & Thatch village, stragglers, shrine, well and ruin use packed Blender sources in
+The approved camp, Canvas & Thatch village, beasts, shrine, well and ruin use packed Blender sources in
 [asset-sources/outposts](../../../asset-sources/outposts/SOURCE.md).
 
-| Runtime file   | Source                      | Triangles | Primitives |   Bytes |
-| -------------- | --------------------------- | --------: | ---------: | ------: |
-| camp.glb       | camp.blend                  |     3,047 |          4 |  91,312 |
-| village.glb    | village-canvas-thatch.blend |     6,149 |          3 | 213,200 |
-| stragglers.glb | stragglers.blend            |     2,963 |          5 |  93,592 |
-| shrine.glb     | shrine.blend                |     1,816 |          3 |  73,524 |
-| well.glb       | well.blend                  |     5,068 |          3 | 103,684 |
-| ruin.glb       | ruin.blend                  |      3752 |          3 |  101536 |
+| Runtime file | Source                      | Triangles | Primitives |   Bytes |
+| ------------ | --------------------------- | --------: | ---------: | ------: |
+| camp.glb     | camp.blend                  |     3,047 |          4 |  91,312 |
+| village.glb  | village-canvas-thatch.blend |     6,149 |          3 | 213,200 |
+| beasts.glb   | beasts.blend                |     2,963 |          5 |  93,592 |
+| shrine.glb   | shrine.blend                |     1,816 |          3 |  73,524 |
+| well.glb     | well.blend                  |     5,068 |          3 | 103,684 |
+| ruin.glb     | ruin.blend                  |      3752 |          3 |  101536 |
 
 These are decoded asset counts, not frame measurements. The village has a 480² painted color atlas, 240² tangent normal
 atlas and vertex contact shading. The other outposts use 480² contact shading and 128² normal detail. ETC1S color, UASTC
@@ -20,9 +20,9 @@ Blender Z=0 exports as glTF Y=0, at the sampled terrain top; scale is one inside
 transforms are identity. All six are static. The well has modeled water ripples and highlights; MapSiteManager does not
 update animations.
 
-Camps, villages and stragglers use SettlementModel's existing per-instance ownership colors. Their cloth is a separate
+Camps, villages and beasts use SettlementModel's existing per-instance ownership colors. Their cloth is a separate
 single-material mesh with `relationshipCloth=trim`; the modeled gold sun stays separate and unchanged. Camp roof edging
-joins the same ownership surface. Other canvas, timber, roofs and the stragglers' worn cloaks retain their authored
+joins the same ownership surface. Other canvas, timber, roofs and the beasts' worn cloaks retain their authored
 materials. These sites have no realm order assignment, so they do not use the realm-order atlas. Shrine and well use
 MapSiteManager's ordinary InstancedModel path and disappear when their tile occupancy is consumed.
 
@@ -31,7 +31,7 @@ Rebuild fresh exports into an external directory, then copy the six verified del
 ```sh
 export OUTPOST_BUILD_DIR=/absolute/path/outside/the/checkout
 bash apps/game/scripts/outposts/rebuild-outposts.sh "$OUTPOST_BUILD_DIR"
-for asset in camp village stragglers shrine well ruin; do
+for asset in camp village beasts shrine well ruin; do
   cp "$OUTPOST_BUILD_DIR/models/$asset.glb" "apps/game/public/models/outposts/$asset.glb"
 done
 pnpm --dir apps/game verify:assets scripts/outposts/outpost-assets.test.mjs

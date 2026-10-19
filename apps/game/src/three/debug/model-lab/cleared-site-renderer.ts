@@ -1,7 +1,7 @@
 import { Box3, Color, Matrix4, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
-import { CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH } from "../../constants/scene-constants";
+import { CAMP_MODEL_PATH, BEASTS_MODEL_PATH } from "../../constants/scene-constants";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { resetGameEnd } from "../../effects/endgame/state";
 import {
@@ -13,7 +13,7 @@ import { gltfLoader } from "../../utils/utils";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 
-export type ClearedSiteStudy = "camp" | "stragglers";
+export type ClearedSiteStudy = "camp" | "beasts";
 import { CLEARED_SITE_MODEL_PATH } from "../../constants/scene-constants";
 
 /** Existing world renderer, terrain, camera and ownership material; only the proposed marker is a lab asset. */
@@ -87,7 +87,7 @@ export async function mountClearedSiteStudy(
     resize();
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
-    const paths = [settings.kind === "camp" ? CAMP_MODEL_PATH : STRAGGLERS_MODEL_PATH, CLEARED_SITE_MODEL_PATH];
+    const paths = [settings.kind === "camp" ? CAMP_MODEL_PATH : BEASTS_MODEL_PATH, CLEARED_SITE_MODEL_PATH];
     for (const [slot, path] of paths.entries()) {
       const gltf = await gltfLoader.loadAsync(path);
       const model = new SettlementModel(gltf, 1);

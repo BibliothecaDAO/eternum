@@ -45,7 +45,7 @@ pub const DORMANT_SPIRE_OCCUPIER: u8 = 45;
 
 pub const RIFT_CATEGORY: u8 = 9;
 pub const RUIN_CATEGORY: u8 = 10;
-pub const STRAGGLERS_CATEGORY: u8 = 11;
+pub const BEASTS_CATEGORY: u8 = 11;
 pub const RIFT_OCCUPIER: u8 = 42;
 pub const RUIN_OCCUPIER: u8 = 43;
-pub const STRAGGLERS_OCCUPIER: u8 = 44;
+pub const BEASTS_OCCUPIER: u8 = 44;

@@ -55,7 +55,7 @@ const KEEP_NAMES: Record<StructureType, string> = {
   [StructureType.BitcoinMine]: "Mine",
   [StructureType.Rift]: "Rift",
   [StructureType.Ruin]: "Ruin",
-  [StructureType.Stragglers]: "Stragglers",
+  [StructureType.Beasts]: "Beasts",
 };
 
 export function getBuildingDisplayName(

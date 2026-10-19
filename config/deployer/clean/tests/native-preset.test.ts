@@ -293,7 +293,7 @@ describe("native presets", () => {
       FRONTIER_PRESET_ID,
     );
     expect(preset.economy.discovery.unwrap()).toEqual({
-      stragglers_bps: 600,
+      beasts_bps: 600,
       camp_bps: 400,
       rift_bps: 400,
       ruin_bps: 100,
@@ -340,6 +340,27 @@ describe("native presets", () => {
     expect(laborPaid("madara.blitz", 4)).toEqual([]);
     expect(laborPaid("madara.frontier", FRONTIER_PRESET_ID)).toEqual([26]);
     expect(laborPaid("madara.eternum", 3).length).toBeGreaterThan(0);
+  });
+
+  test("Frontier carries separate weak and stronger beast ranges at each depth", () => {
+    const preset = buildNativePreset(
+      loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
+      FRONTIER_PRESET_ID,
+    );
+    expect(
+      preset.settlement.depths.map((depth) => [
+        depth.beast_weak_lower,
+        depth.beast_weak_upper,
+        depth.beast_strong_lower,
+        depth.beast_strong_upper,
+      ]),
+    ).toEqual([
+      [300, 350, 450, 550],
+      [900, 1050, 1350, 1650],
+      [2400, 2800, 3600, 4400],
+      [6000, 7000, 9000, 11000],
+    ]);
+    expect(preset.economy.discovery.unwrap()).toMatchObject({ beasts_bps: 600 });
   });
 
   test("Frontier armies merge but never recruit guards: troop management on, every guard slot closed", () => {

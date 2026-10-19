@@ -59,7 +59,7 @@ export const homecomingReturn = (wholeTroops: number, homecomingTier: number): n
   Math.floor((Math.floor(wholeTroops) * homecomingBps(homecomingTier)) / 10_000);
 
 /** The kinds a Scouting tier can raise, by the code progression.cairo packs for each (1, 2, 3). */
-const SCOUTING_KINDS = ["Camp", "Rift", "Stragglers"] as const;
+const SCOUTING_KINDS = ["Camp", "Rift", "Beasts"] as const;
 export type ScoutingKind = (typeof SCOUTING_KINDS)[number];
 
 /**
@@ -78,7 +78,7 @@ export const scoutingKindsOf = (scouting: number, packed: number): ScoutingKind[
  * scouting_bonus sums each tier's increment onto the kind chosen for it.
  */
 export const scoutingBonusBps = (scouting: number, packed: number): Record<ScoutingKind, number> => {
-  const bonus: Record<ScoutingKind, number> = { Camp: 0, Rift: 0, Stragglers: 0 };
+  const bonus: Record<ScoutingKind, number> = { Camp: 0, Rift: 0, Beasts: 0 };
   scoutingKindsOf(scouting, packed).forEach((kind, index) => (bonus[kind] += scoutingIncrementBps(index + 2)));
   return bonus;
 };

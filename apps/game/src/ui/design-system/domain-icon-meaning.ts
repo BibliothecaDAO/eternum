@@ -64,7 +64,7 @@ const structureMeanings = {
   [StructureType.BitcoinMine]: "bitcoin-mine",
   [StructureType.Rift]: "rift",
   [StructureType.Ruin]: "ruin",
-  [StructureType.Stragglers]: "stragglers",
+  [StructureType.Beasts]: "beasts",
 } satisfies Record<StructureType, IconMeaning>;
 export function structureMeaning(category: StructureType): IconMeaning {
   return structureMeanings[category];

@@ -40,7 +40,7 @@ const TILE_OCCUPANT_KINDS: Record<TileOccupier, TileOccupantKind> = {
   [TileOccupier.Well]: "map-site",
   [TileOccupier.Rift]: "structure",
   [TileOccupier.Ruin]: "structure",
-  [TileOccupier.Stragglers]: "structure",
+  [TileOccupier.Beasts]: "structure",
   [TileOccupier.DormantSpire]: "map-site",
 };
 

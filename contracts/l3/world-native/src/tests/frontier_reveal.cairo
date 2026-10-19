@@ -2,7 +2,7 @@ use crate::expeditions::{ExpeditionSite, site_reward};
 use crate::exploration_rewards::reveal_reward;
 use crate::resources::{ESSENCE, LABOR};
 use crate::rules::RESOURCE_PRECISION;
-use crate::taxonomy::{RIFT_CATEGORY, RUIN_CATEGORY, STRAGGLERS_CATEGORY};
+use crate::taxonomy::{BEASTS_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY};
 use crate::troops::{TroopTier, Troops};
 
 #[test]
@@ -70,7 +70,7 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         site_reward(RIFT_CATEGORY, site).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
-    assert!(site_reward(STRAGGLERS_CATEGORY, site).is_none());
+    assert!(site_reward(BEASTS_CATEGORY, site).is_none());
     assert!(site_reward(RUIN_CATEGORY, site).is_none());
 }
 
@@ -112,7 +112,7 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
 fn every_guarded_site_keeps_its_receipt_and_only_releases_its_blocker() {
     for (entity_id, category) in array![
         (1_u64, crate::taxonomy::CAMP_OCCUPIER), (2_u64, crate::taxonomy::RIFT_OCCUPIER),
-        (3_u64, crate::taxonomy::RUIN_OCCUPIER), (4_u64, crate::taxonomy::STRAGGLERS_OCCUPIER),
+        (3_u64, crate::taxonomy::RUIN_OCCUPIER), (4_u64, crate::taxonomy::BEASTS_OCCUPIER),
     ] {
         let key = crate::resources::ResourceKey { game_id: 1, entity_id };
         let coord = crate::troops::Coord { alt: false, x: entity_id.try_into().unwrap(), y: 10 };

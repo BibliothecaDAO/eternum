@@ -43,8 +43,8 @@ it.each([0n, 1n, 10_000_000_000n, 550_000_000_000n])(
   },
 );
 
-it("shows only XP for stragglers, and no receipt for a standing site", () => {
-  const { store } = campBeside("Stragglers");
+it("shows only XP for beasts, and no receipt for a standing site", () => {
+  const { store } = campBeside("Beasts");
   expect(readClearedSite(store, 1, SITE_TILE)).toBeNull();
   clear(store, null);
   const markup = renderToStaticMarkup(<SiteReceipt selected={readClearedSite(store, 1, SITE_TILE)!} />);

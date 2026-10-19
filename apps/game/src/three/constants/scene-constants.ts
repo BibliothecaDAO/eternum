@@ -51,7 +51,7 @@ const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
 export const CLEARED_SITE_MODEL_PATH = "/models/outposts/cleared-standard.glb";
 export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
-export const STRAGGLERS_MODEL_PATH = "/models/outposts/stragglers.glb";
+export const BEASTS_MODEL_PATH = "/models/outposts/beasts.glb";
 export const REALM_MODEL_PATHS = {
   [RealmLevelNames.Settlement]: REALM_PATHS[0],
   [RealmLevelNames.City]: REALM_PATHS[1],
@@ -65,7 +65,7 @@ export function isRealmModelPath(path: string): boolean {
 
 export function isSettlementModelPath(path: string): boolean {
   return (
-    [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, STRAGGLERS_MODEL_PATH, CLEARED_SITE_MODEL_PATH].includes(path) ||
+    [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, BEASTS_MODEL_PATH, CLEARED_SITE_MODEL_PATH].includes(path) ||
     isRealmModelPath(path)
   );
 }
@@ -90,7 +90,7 @@ export const structureTypeToBuildingType: Record<StructureType, BuildingType> = 
   [StructureType.BitcoinMine]: BuildingType.ResourceLabor,
   [StructureType.Rift]: BuildingType.ResourceEssence,
   [StructureType.Ruin]: BuildingType.ResourceLabor,
-  [StructureType.Stragglers]: BuildingType.ResourceLabor,
+  [StructureType.Beasts]: BuildingType.ResourceLabor,
 };
 
 export const castleLevelToRealmCastle: Record<RealmLevels, RealmLevelNames> = {
@@ -184,7 +184,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
-    [StructureType.Stragglers]: [STRAGGLERS_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
+    [StructureType.Beasts]: [BEASTS_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
   };
 }
 

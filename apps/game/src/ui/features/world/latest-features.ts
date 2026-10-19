@@ -854,7 +854,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-13",
     title: "A cleared site pays on screen",
     description:
-      "Fixed clearing a camp, a rift, stragglers or a ruin passing in silence: the guard now falls with its dust, what the site paid flies home to its counter, and a ruin's chest opens, with the losses of the attack that won it.",
+      "Fixed clearing a camp, a rift, beasts or a ruin passing in silence: the guard now falls with its dust, what the site paid flies home to its counter, and a ruin's chest opens, with the losses of the attack that won it.",
     type: "fix",
   },
   {
@@ -966,7 +966,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-13",
     title: "Sites show their strength",
     description:
-      "Changed the plate over a Frontier camp, rift, ruin or band of stragglers: it now reads the site's kind and the strength of its guard, such as Camp 1.2k, instead of a long id, and is always shown. The wide second label with its empty picture frame is gone, and plates sit just over the roof so they no longer cover a unit standing behind.",
+      "Changed the plate over a Frontier camp, rift, ruin or band of beasts: it now reads the site's kind and the strength of its guard, such as Camp 1.2k, instead of a long id, and is always shown. The wide second label with its empty picture frame is gone, and plates sit just over the roof so they no longer cover a unit standing behind.",
     type: "improvement",
   },
   {
@@ -1141,7 +1141,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-10-12",
     title: "Map draws around Frontier sites",
     description:
-      "Fixed the map going black on newly explored tiles, or failing to load, once a Rift, a Ruin or Stragglers was in view. Ruins and Stragglers on water now stand on their own island like camps.",
+      "Fixed the map going black on newly explored tiles, or failing to load, once a Rift, a Ruin or Beasts was in view. Ruins and Beasts on water now stand on their own island like camps.",
     type: "fix",
   },
   {

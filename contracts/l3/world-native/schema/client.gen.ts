@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "cda2c0bd065119fa4fe8cf14ecd34aa6aac6ede29635170fcac5b4c34dc12314";
+export const nativeFactSchemaIdentity = "79a5da7d64269fa2a1324357c98475bad2c36b45398e51aa5665a6f66834a6e7";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "BATTLE_UNCOMMON_BPS": 1000,
@@ -65,7 +65,7 @@ export const nativeResearchConstants = {
   "CHOICE_RATIONS": 1,
   "KIND_CAMPS": 0,
   "KIND_RIFTS": 1,
-  "KIND_STRAGGLERS": 2,
+  "KIND_BEASTS": 2,
   "HUT": 1,
   "WORKSHOP": 25,
   "BARRACKS": 28,
@@ -86,7 +86,7 @@ export enum NativeStructureCategory {
   BitcoinMine = 8,
   Rift = 9,
   Ruin = 10,
-  Stragglers = 11,
+  Beasts = 11,
 }
 /** Tile occupiers named in src/taxonomy.cairo. */
 export enum NativeTileOccupier {
@@ -122,7 +122,7 @@ export enum NativeTileOccupier {
   DormantSpire = 45,
   Rift = 42,
   Ruin = 43,
-  Stragglers = 44,
+  Beasts = 44,
 }
 export const nativeTilePackingConstants = {
   "BIOME_SCALE": "0x20000000000",
@@ -180,7 +180,7 @@ export interface NativeRows {
   ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly percent: bigint; readonly percent_max: bigint; readonly weight: bigint })[] };
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly fixed_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
-  FrontierDiscoveryRules: { readonly game_id: number; readonly stragglers_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
+  FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_found: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly account_daily_limit: number };
   LaborGrant: { readonly realm_id: number; readonly day: bigint; readonly game_id: number; readonly account: bigint; readonly home: bigint; readonly amount: bigint };
@@ -250,7 +250,7 @@ export interface NativeRows {
   ResourceRule: { readonly game_id: number; readonly resource_type: number; readonly unit_weight: bigint; readonly realm_rate: bigint; readonly village_rate: bigint };
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
-  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly ruin_guard_lower: number; readonly ruin_guard_upper: number; readonly guard_step: number };
+  DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly ruin_guard_lower: number; readonly ruin_guard_upper: number; readonly guard_step: number; readonly beast_weak_lower: number; readonly beast_weak_upper: number; readonly beast_strong_lower: number; readonly beast_strong_upper: number };
   GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number }) | null; readonly map_center_offset: number };
@@ -537,7 +537,7 @@ export const nativeFactModels = {
     "scope": "game",
     "fields": {
       "game_id": "u32",
-      "stragglers_bps": "u16",
+      "beasts_bps": "u16",
       "camp_bps": "u16",
       "rift_bps": "u16",
       "ruin_bps": "u16",
@@ -1856,7 +1856,11 @@ export const nativeFactModels = {
       },
       "ruin_guard_lower": "u32",
       "ruin_guard_upper": "u32",
-      "guard_step": "u32"
+      "guard_step": "u32",
+      "beast_weak_lower": "u16",
+      "beast_weak_upper": "u16",
+      "beast_strong_lower": "u16",
+      "beast_strong_upper": "u16"
     }
   },
   "GameRelease": {

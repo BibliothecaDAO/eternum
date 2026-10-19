@@ -23,8 +23,8 @@ export interface GuideFacts {
   camp: { x: number; y: number } | null;
   /** A site of the expedition has been cleared. */
   siteCleared: boolean;
-  /** Stragglers stand in view. */
-  stragglers: boolean;
+  /** Beasts stand in view. */
+  beasts: boolean;
   /** The realm can pay for its next castle level. */
   castleAffordable: boolean;
   /** The player is looking at the expedition map, not the realm. */
@@ -190,10 +190,10 @@ export const GUIDE_STEPS: readonly GuideStep[] = [
     when: (facts) => facts.siteCleared,
   },
   {
-    id: "first-stragglers",
+    id: "first-beasts",
     mark: "speaking",
-    line: say("Stragglers. They went too far, long ago. Learn from them."),
-    when: (facts) => facts.stragglers,
+    line: say("Beasts. Easier prey than the guards at camps, rifts and ruins."),
+    when: (facts) => facts.beasts,
   },
   {
     id: "come-home",

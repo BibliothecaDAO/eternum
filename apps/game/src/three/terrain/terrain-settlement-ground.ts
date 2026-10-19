@@ -5,14 +5,14 @@ import type { TerrainCellInput, TerrainPageRequest } from "./terrain-types";
 import { isTerrainWaterBiome } from "./terrain-water";
 import { isEtherealTerrainCell } from "./terrain-surface-presentation";
 
-// Which structures stand on dry ground. Built settlements do, Frontier's ruin (a fallen realm) and stragglers (a camp)
+// Which structures stand on dry ground. Built settlements do, Frontier's ruin (a fallen realm) and beasts (a camp)
 // among them; the rest stand on the tile as it is. A new category fails typecheck here until it is placed.
 const RECLAIMS_LAND_FROM_WATER: Record<StructureType, boolean> = {
   [StructureType.Realm]: true,
   [StructureType.Village]: true,
   [StructureType.Camp]: true,
   [StructureType.Ruin]: true,
-  [StructureType.Stragglers]: true,
+  [StructureType.Beasts]: true,
   [StructureType.Hyperstructure]: false,
   [StructureType.Bank]: false,
   [StructureType.Mine]: false,

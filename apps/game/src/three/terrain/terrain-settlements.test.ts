@@ -36,7 +36,7 @@ describe("terrain settlement influence", () => {
     const categories = Object.values(StructureType).filter(
       (value): value is StructureType => typeof value === "number",
     );
-    expect(categories).toContain(StructureType.Stragglers);
+    expect(categories).toContain(StructureType.Beasts);
     for (const category of categories) {
       const influence = resolveTerrainSettlementInfluence(anchor(category, RealmLevels.Settlement));
       expect(influence.radiusScale).toBeGreaterThan(0);

@@ -34,7 +34,7 @@ export type ExplorerRewardSystemUpdate = {
 };
 /**
  * A site cleared, as its payout story and the winning exchange before it tell it (one transaction): what the site was,
- * what it paid home in whole units (stragglers pay only XP, a ruin its chest), where it stood and what the fight cost.
+ * what it paid home in whole units (beasts pay only XP, a ruin its chest), where it stood and what the fight cost.
  */
 export type SitePayoutSystemUpdate = {
   explorerId: ID;

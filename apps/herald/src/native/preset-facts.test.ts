@@ -77,6 +77,30 @@ function applyRegistration(world: ReturnType<typeof setup>, preset: ReturnType<t
 }
 
 describe("verified preset configuration facts", () => {
+  it("projects both beast strength ranges and renamed discovery odds into client facts", () => {
+    const world = setup();
+    const preset = registration();
+    applyRegistration(world, preset);
+    world.native.applyReceipt(world.fold, receipt(launch(preset)), 11, 0);
+    const store = new NativeFactStore();
+    for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
+      store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
+    }
+    expect(store.require("FrontierDiscoveryRules", { game_id: 1 }).beasts_bps).toBe(600);
+    const ranges = [
+      [300, 350, 450, 550],
+      [900, 1050, 1350, 1650],
+      [2400, 2800, 3600, 4400],
+      [6000, 7000, 9000, 11000],
+    ];
+    for (const [depth, expected] of ranges.entries()) {
+      const rule = store.require("DepthRules", { game_id: 1, depth });
+      expect([rule.beast_weak_lower, rule.beast_weak_upper, rule.beast_strong_lower, rule.beast_strong_upper]).toEqual(
+        expected,
+      );
+    }
+  });
+
   it("carries Frontier stamina from registration through facts to client costs and Logistics bars", () => {
     const world = setup();
     const preset = registration();
@@ -162,7 +186,7 @@ describe("verified preset configuration facts", () => {
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
     expect(
-      ["stragglers_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) => Number(discovery[key])),
+      ["beasts_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) => Number(discovery[key])),
     ).toEqual([600, 400, 400, 100, 7]);
     expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual([
       [2000, 4000],

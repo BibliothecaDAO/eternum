@@ -77,8 +77,8 @@ const TRAINING: Partial<Record<number, { attribute: Attribute; mark: IconMeaning
   [research.ROW_HEARTH]: { attribute: "Homecoming", mark: "order-enlightenment" },
 };
 
-type ScoutKey = "camp" | "rift" | "stragglers";
-const SCOUT_KEYS: ScoutKey[] = ["camp", "rift", "stragglers"];
+type ScoutKey = "camp" | "rift" | "beasts";
+const SCOUT_KEYS: ScoutKey[] = ["camp", "rift", "beasts"];
 
 /**
  * A building type's Upgrade sheet over the game's facts: its tier now and next, its two sides with what each adds to
@@ -263,7 +263,7 @@ const HutGives = ({ store, realm, tier }: { store: NativeFactStore; realm: Nativ
 
 /** Each kind's find-rate bonus a new army starts with from the lodge, now and with the next tier on that kind. */
 const lodgeRates = (view: TypeRowView): Record<ScoutKey, readonly [string, string]> => {
-  const bonus: Record<ScoutKey, number> = { camp: 0, rift: 0, stragglers: 0 };
+  const bonus: Record<ScoutKey, number> = { camp: 0, rift: 0, beasts: 0 };
   for (let at = 1; at <= view.tier; at++)
     bonus[SCOUT_KEYS[researchChoice(view.learned, research.ROW_SCOUTS_LODGE, at)]!] += scoutingIncrementBps(at + 1);
   const next = scoutingIncrementBps(researchTier(view.learned, research.ROW_SCOUTS_LODGE) + 2);
@@ -271,7 +271,7 @@ const lodgeRates = (view: TypeRowView): Record<ScoutKey, readonly [string, strin
   return {
     camp: [rate(bonus.camp), rate(bonus.camp + next)],
     rift: [rate(bonus.rift), rate(bonus.rift + next)],
-    stragglers: [rate(bonus.stragglers), rate(bonus.stragglers + next)],
+    beasts: [rate(bonus.beasts), rate(bonus.beasts + next)],
   };
 };
 

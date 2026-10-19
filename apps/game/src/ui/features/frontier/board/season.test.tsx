@@ -80,7 +80,7 @@ describe("the season list", () => {
     const detail = {
       rank: 2,
       order: 2,
-      sites: { total: 132, camps: 70, rifts: 43, ruins: 9, stragglers: 10 },
+      sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
       chests: 9,
       lords: 640,
       reach: 0,

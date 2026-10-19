@@ -242,7 +242,7 @@ const Nouns = () => (
         [StructureType.Mine, 2],
         [StructureType.Hyperstructure],
         [StructureType.Rift],
-        [StructureType.Stragglers],
+        [StructureType.Beasts],
       ].map(([type, kind]) => ({
         input: `${type}${kind ? ` · kind ${kind}` : ""}`,
         cells: [structureName(type, kind)],

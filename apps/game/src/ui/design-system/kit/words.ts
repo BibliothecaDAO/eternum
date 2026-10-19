@@ -170,7 +170,7 @@ export const xpToward = (held: string, price: string, tier: string) =>
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 /** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */
-export const FIND_KINDS = ["Find camps", "Find rifts", "Find stragglers"] as const;
+export const FIND_KINDS = ["Find camps", "Find rifts", "Find beasts"] as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const CAMP = "Camp";
@@ -183,7 +183,7 @@ export const GUARD = "guard";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
-export const STRAGGLERS = "Stragglers";
+export const BEASTS = "Beasts";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";

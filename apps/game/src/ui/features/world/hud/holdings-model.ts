@@ -26,7 +26,7 @@ const KINDS: Array<{ kind: StructureType; plural: string }> = [
   { kind: StructureType.Hyperstructure, plural: "Hyperstructures" },
   { kind: StructureType.Bank, plural: "Banks" },
   { kind: StructureType.Ruin, plural: "Ruins" },
-  { kind: StructureType.Stragglers, plural: "Stragglers" },
+  { kind: StructureType.Beasts, plural: "Beasts" },
 ];
 const KIND_RANK = new Map(KINDS.map(({ kind }, index) => [kind, index]));
 

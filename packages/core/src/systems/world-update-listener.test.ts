@@ -87,7 +87,7 @@ describe("native scene updates", () => {
     story("0xb", 9, StructureType.Camp, { resource_type: 23, amount: "550000000000" });
     expect(payout).not.toHaveBeenCalled();
     battle("0xb", 9);
-    story("0xc", 10, StructureType.Stragglers, null);
+    story("0xc", 10, StructureType.Beasts, null);
     battle("0xc", 10);
     expect(payout.mock.calls.map(([update]) => update)).toEqual([
       {
@@ -99,7 +99,7 @@ describe("native scene updates", () => {
         coord: { x: 40, y: 12 },
         troopsLost: 420,
       },
-      expect.objectContaining({ siteId: 10, kind: "Stragglers", reward: null }),
+      expect.objectContaining({ siteId: 10, kind: "Beasts", reward: null }),
     ]);
 
     // A payout the next battle does not answer is a contract bug, never a guess: another site's battle, another
