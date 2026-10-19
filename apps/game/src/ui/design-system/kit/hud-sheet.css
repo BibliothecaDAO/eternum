@@ -1064,23 +1064,34 @@ button.ui-relic:focus-visible {
   color: var(--hud-bad);
 }
 
-/* ── Window footer: what the task costs or says on the left, its way out and its one verb on the right, the verb last. */
-.ui-window__foot:empty {
-  display: none;
-}
-.ui-window__foot {
+/* ── Actions: a row of buttons with its one verb last. The verb stands alone at the right edge; the way out and any
+   other button sit at the left edge, then what the task costs or says (owner, 19 October 2026: "details on the left
+   please attack stays on the right"). Every window's foot, every confirm and the combat forecast use it. ── */
+.ui-actions {
   display: flex;
   align-items: center;
   gap: theme(spacing.2);
-  border-top: 1px solid var(--hud-divider);
-  padding: theme(spacing.3) theme(spacing.4);
 }
-.ui-window__note {
-  margin-right: auto;
+.ui-actions__note {
+  order: 1;
+  min-width: 0;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-line-label);
   font-weight: var(--hud-weight-label);
+}
+.ui-actions > :last-child:not(.ui-actions__note) {
+  order: 2;
+  margin-left: auto;
+}
+
+/* ── Window footer: the window's actions, under a rule. ── */
+.ui-window__foot:empty {
+  display: none;
+}
+.ui-window__foot {
+  border-top: 1px solid var(--hud-divider);
+  padding: theme(spacing.3) theme(spacing.4);
 }
 
 /* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */

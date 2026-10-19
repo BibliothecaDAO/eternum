@@ -17,6 +17,7 @@ import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
+  HudActions,
   HudBubble,
   HudBanner,
   HudButton,
@@ -1482,7 +1483,7 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
 const WindowSection = () => (
   <Element
     name="Window"
-    rule="A panel the size of a task: its title bar with a way out (dragging it moves the window), its body, which scrolls within the window, and a foot with what it costs on the left, the way out and the one verb on the right. Four sizes, by what it holds: task, page, workspace, and fit, as large as its content (a table)."
+    rule="A panel the size of a task: its title bar with a way out (dragging it moves the window), its body, which scrolls within the window, and a foot of actions: the way out and what it costs on the left, the one verb alone on the right (the combat forecast's Details and Attack too). Four sizes, by what it holds: task, page, workspace, and fit, as large as its content (a table)."
     sheet={
       <div className="flex flex-col items-start gap-4">
         <HudWindow title="Edit structure" icon="edit" size="task" onClose={() => undefined}>
@@ -1500,6 +1501,13 @@ const WindowSection = () => (
           </HudWindowFoot>
           <HudTroopAmount name="Paladins" value={1_000} most={1_800} held={2_000} onChange={() => undefined} />
         </HudWindow>
+        <div className="ui ui-popover w-72 rounded-xl p-3">
+          <span className="text-hud-label text-hud-muted">The combat forecast's foot</span>
+          <HudActions className="mt-2">
+            <HudButton kind="secondary">Details</HudButton>
+            <HudButton kind="primary">Attack</HudButton>
+          </HudActions>
+        </div>
         <HudWindow title="Leaderboard" icon="victory" size="fit" onClose={() => undefined}>
           <HudTableHead cols={TABLE_COLS}>
             <span>Rank</span>

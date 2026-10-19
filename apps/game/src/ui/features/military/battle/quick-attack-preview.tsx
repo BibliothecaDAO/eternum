@@ -5,7 +5,7 @@ import { type MouseEvent, useEffect, useMemo, useState } from "react";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { HudActions, HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -560,7 +560,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         </div>
       )}
 
-      <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
+      <HudActions className="modal-no-drag mt-2">
         <HudButton kind="secondary" onClick={handleShowDetails}>
           Details
         </HudButton>
@@ -573,7 +573,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         >
           {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
         </HudButton>
-      </div>
+      </HudActions>
     </div>
   );
 };

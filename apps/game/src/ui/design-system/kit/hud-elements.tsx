@@ -1215,7 +1215,7 @@ export const HudWindow = ({
       <WindowFootContext.Provider value={foot}>
         <div className="ui-window__body">{children}</div>
       </WindowFootContext.Provider>
-      <footer ref={setFoot} className="ui-window__foot" />
+      <footer ref={setFoot} className="ui-window__foot ui-actions" />
     </section>
   );
 };
@@ -1254,15 +1254,15 @@ export const HudSheet = ({ label, onClose, children }: { label: string; onClose:
         <WindowFootContext.Provider value={foot}>
           <div className="ui-sheet__body">{children}</div>
         </WindowFootContext.Provider>
-        <footer ref={setFoot} className="ui-window__foot" />
+        <footer ref={setFoot} className="ui-window__foot ui-actions" />
       </section>
     </>
   );
 };
 
 /**
- * The one way to fill a window's or a sheet's foot: what it costs on the left, then the way out and the one verb, the
- * verb last.
+ * The one way to fill a window's or a sheet's foot, as actions (HudActions): the way out on the left with what it
+ * costs, the one verb, last, alone on the right.
  * It is drawn where its state lives, anywhere in the window's body (as the body's first child when the verb is known at
  * the top), and lands in the window's foot.
  */
@@ -1271,12 +1271,20 @@ export const HudWindowFoot = ({ note, children }: { note?: ReactNode; children?:
   if (!foot) return null;
   return createPortal(
     <>
-      <span className="ui-window__note">{note}</span>
+      <span className="ui-actions__note">{note}</span>
       {children}
     </>,
     foot,
   );
 };
+
+/**
+ * A row of buttons outside a window (the combat forecast's): the way out and any other button on the left, the one
+ * verb, last, alone on the right. `className` places it, never its look.
+ */
+export const HudActions = ({ className, children }: { className?: string; children: ReactNode }) => (
+  <div className={cn("ui-actions", className)}>{children}</div>
+);
 
 /** A question that stops the task: what it does and costs, the way back, and the verb (red when it cannot be undone). */
 export const HudConfirm = ({
@@ -1302,8 +1310,7 @@ export const HudConfirm = ({
       <span className="ui-confirm__question">{question}</span>
       {children}
     </div>
-    <footer className="ui-window__foot">
-      <span className="ui-window__note" />
+    <footer className="ui-window__foot ui-actions">
       <HudButton kind="quiet" onClick={onBack}>
         {back}
       </HudButton>

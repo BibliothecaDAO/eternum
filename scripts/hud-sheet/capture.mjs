@@ -3,7 +3,8 @@
  * page (/lab/kit unless `--page` names another, such as /lab/kit/area-d) in a real browser at 1920 wide and saves each
  * sheet element on it (every one, or those named) as `<name>.png` in a new run directory under the evidence directory,
  * with the run's record beside them. Each element is also checked for ring badges drawn over each other or over a
- * neighbouring ring, and the run is incomplete when one is. The lab must be served at the base URL; the command
+ * neighbouring ring, and for a row of actions whose verb is not alone at its right edge or whose other buttons are not
+ * at its left; the run is incomplete when one is. The lab must be served at the base URL; the command
  * starts no server and closes its browser session whatever happens.
  */
 import { join } from "node:path";
@@ -48,6 +49,27 @@ const ringsOverlapping = (selector) => `(() => {
   );
 })()`;
 
+/**
+ * Every row of actions in `selector` whose buttons stand out of place: the verb (its last button) must end at the row's
+ * right edge, and its other buttons must start at its left edge, packed there (the sheet's .ui-actions).
+ */
+const actionsOutOfPlace = (selector) => `(() => {
+  const misplaced = [];
+  for (const row of document.querySelectorAll(${JSON.stringify(`${selector} .ui-actions`)})) {
+    const buttons = [...row.children].filter((child) => child.matches("button") && child.getBoundingClientRect().width > 0);
+    if (buttons.length === 0) continue;
+    const style = getComputedStyle(row);
+    const box = row.getBoundingClientRect();
+    const left = box.left + parseFloat(style.paddingLeft);
+    const right = box.right - parseFloat(style.paddingRight);
+    const verb = buttons.at(-1).getBoundingClientRect();
+    if (Math.abs(verb.right - right) > 1) misplaced.push(buttons.at(-1).innerText + " ends " + Math.round(right - verb.right) + " px from the right edge");
+    const others = buttons.slice(0, -1).map((button) => button.getBoundingClientRect());
+    if (others.length > 0 && Math.abs(others[0].left - left) > 1) misplaced.push(buttons[0].innerText + " starts " + Math.round(others[0].left - left) + " px from the left edge");
+  }
+  return misplaced;
+})()`;
+
 await runProof(
   { parent, name: "hud-sheet-capture", baseUrl, where: (record) => ({ element: record.name }) },
   async (b, out, records) => {
@@ -70,6 +92,12 @@ await runProof(
       b.run("screenshot", selector, record.file);
       const overlapping = b.evaluate(ringsOverlapping(selector));
       record.checks.push({ check: "ring badges clear", ok: overlapping.length === 0, overlapping });
+      const misplaced = b.evaluate(actionsOutOfPlace(selector));
+      record.checks.push({
+        check: "each verb alone at the right, the way out at the left",
+        ok: misplaced.length === 0,
+        misplaced,
+      });
       record.ready = true;
     }
   },

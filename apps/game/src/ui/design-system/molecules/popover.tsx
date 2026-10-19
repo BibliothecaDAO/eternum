@@ -296,7 +296,7 @@ export const SurfaceFrame = ({
       <HudIconButton icon="close" label="Close" kind="quiet" onClick={onClose} />
     </header>
     <div className={cn("ui-window__body", bodyClassName)}>{children}</div>
-    {footer && <footer className="ui-window__foot">{footer}</footer>}
+    {footer && <footer className="ui-window__foot ui-actions">{footer}</footer>}
   </section>
 );
 
