@@ -697,6 +697,14 @@ export const NEWS_WORDS = {
   updated: "Updated",
   /** A post's reading time: "4min". */
   minutes: (count: number) => `${count}min`,
+  /** A release's notes for players, one section per mode. */
+  patchNotes: "Patch notes",
+  /** The kinds of change a mode's section groups. */
+  kinds: { new: "New", balance: "Balance", fix: "Fixes" },
+  /** A mode this release leaves as it was. */
+  unchanged: "No changes in this patch",
+  /** The patches before the one on show. */
+  earlier: "Earlier patches",
   /** The Scroll, the posts read inside What's new. */
   scroll: "The Scroll",
   thoughtPiece: "Thought piece",

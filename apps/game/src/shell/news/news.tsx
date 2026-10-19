@@ -46,7 +46,7 @@ const ChangesPanel = () => (
 );
 
 /** The Scroll's posts under the cover of its newest; each opens its page. */
-const ScrollPanel = () => {
+export const ScrollPanel = () => {
   const navigate = useNavigate();
   const newest = publishedPosts[0];
   return (
