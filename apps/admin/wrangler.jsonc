@@ -1,6 +1,7 @@
 // The operator page of one environment, behind Cloudflare Access on its admin hostname (deploy/first's
 // environments.json `admin`). deploy/first creates its D1 database and Access applications, and installs its secrets:
-// OPERATOR_TOKEN, ACCESS_TEAM_DOMAIN, ACCESS_AUD and, on production, ADMIN_WRITERS.
+// OPERATOR_TOKEN, ACCESS_TEAM_DOMAIN, ACCESS_AUD and, on production, ADMIN_WRITERS. It reaches the launch Worker by
+// service binding: a plain fetch to a route on its own zone would skip that Worker and reach the client's Pages.
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "realms-admin",
@@ -17,6 +18,7 @@
       "vars": { "ADMIN_ENVIRONMENT": "dev" },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-admin-staging", "migrations_dir": "migrations" }],
       "r2_buckets": [{ "binding": "STATUS", "bucket_name": "realms-status-staging" }],
+      "services": [{ "binding": "LAUNCH", "service": "realms-launch-staging" }],
     },
     "production": {
       "name": "realms-admin",
@@ -25,6 +27,7 @@
       "vars": { "ADMIN_ENVIRONMENT": "production" },
       "d1_databases": [{ "binding": "DB", "database_name": "realms-admin-production", "migrations_dir": "migrations" }],
       "r2_buckets": [{ "binding": "STATUS", "bucket_name": "realms-status" }],
+      "services": [{ "binding": "LAUNCH", "service": "realms-launch" }],
     },
   },
 }

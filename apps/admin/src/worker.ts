@@ -8,6 +8,7 @@ export default {
     return adminApp({
       config: adminConfigOf(env),
       audit: new AuditLog(env.DB),
+      launch: (input, init) => env.LAUNCH.fetch(input, init),
       send: (input, init) => fetch(input, init),
       now: () => Date.now(),
     }).fetch(request);

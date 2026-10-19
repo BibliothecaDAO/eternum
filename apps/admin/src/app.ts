@@ -9,6 +9,9 @@ import { deploysView, gamesView } from "./views";
 interface AdminDependencies {
   config: AdminConfig;
   audit: AuditLog;
+  /** The environment's launch Worker, by its service binding. */
+  launch: typeof fetch;
+  /** Everything else: Access keys and the client's Pages. */
   send: typeof fetch;
   now: () => number;
 }
@@ -85,9 +88,10 @@ const readBody = async (context: AdminContext, carriesBody: boolean): Promise<st
   return text;
 };
 
-export const adminApp = ({ config, audit, send, now }: AdminDependencies) => {
+export const adminApp = (dependencies: AdminDependencies) => {
+  const { config, audit, send, now } = dependencies;
   const app = new Hono<{ Variables: { identity: AccessIdentity } }>();
-  const launch = new LaunchService(config, send);
+  const launch = new LaunchService(config, dependencies.launch);
 
   // Every API call proves its Access identity; a write also comes from the page, and on production from a writer.
   app.use("/api/*", async (context, next) => {

@@ -10,6 +10,8 @@ export interface AdminBindings {
   ASSETS: Fetcher;
   DB: D1Database;
   STATUS: R2Bucket;
+  /** The environment's launch Worker. */
+  LAUNCH: Fetcher;
   ADMIN_ENVIRONMENT: string;
   ACCESS_TEAM_DOMAIN: string;
   ACCESS_AUD: string;

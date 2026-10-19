@@ -3,13 +3,14 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Miniflare } from "miniflare";
+import { unstable_readConfig } from "wrangler";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import environments from "../../../deploy/first/environments.json";
 
 /**
  * Each environment's Worker as Cloudflare would run it: the bundle wrangler deploys for that environment, D1 and R2 in
- * workerd. Access, the launch services and the client are faked at the network edge.
+ * workerd. Access and the client are faked at the network edge, the launch Worker at its service binding.
  */
 const TEAM = "realms.cloudflareaccess.com";
 const AUD = "admin-aud";
@@ -83,9 +84,30 @@ const launchAnswer = (request: Request, body: string): Response => {
   }
   if (url.pathname === "/api/factory/version")
     return Response.json({ service: "launch", environment: "staging", version: "v-id", revision: "7ba76ed03a0" });
-  if (url.pathname === "/sw.js") return new Response(`self.REALMS_RELEASE = "7ba76ed03a0";\nprecache();`);
   return Response.json({ error: `unexpected ${url.pathname} ${body}` }, { status: 404 });
 };
+
+/**
+ * The client's Pages, which is all a public fetch reaches on the admin's own zone: Cloudflare skips the launch
+ * Worker's zone routes for a subrequest from the same zone.
+ */
+const pagesAnswer = (request: Request): Response => {
+  if (new URL(request.url).pathname === "/sw.js")
+    return new Response(`self.REALMS_RELEASE = "7ba76ed03a0";\nprecache();`);
+  return new Response("Method Not Allowed", { status: 405 });
+};
+
+/** The launch Worker the admin's wrangler environment binds as LAUNCH. */
+const launchBinding = (wranglerEnvironment: "staging" | "production") =>
+  unstable_readConfig({
+    config: new URL("../wrangler.jsonc", import.meta.url).pathname,
+    env: wranglerEnvironment,
+  }).services?.find((service: { binding: string; service: string }) => service.binding === "LAUNCH")?.service;
+const launchWorker = (wranglerEnvironment: "staging" | "production") =>
+  unstable_readConfig({
+    config: new URL("../../launch-service/wrangler.jsonc", import.meta.url).pathname,
+    env: wranglerEnvironment,
+  }).name;
 
 const statusState = (chainId: string) =>
   JSON.stringify({
@@ -119,7 +141,23 @@ const startAdmin = async (
     compatibilityFlags: ["nodejs_compat"],
     d1Databases: { DB: `admin-${wranglerEnvironment}` },
     r2Buckets: { STATUS: `status-${wranglerEnvironment}` },
-    serviceBindings: { ASSETS: () => new Response("the page") },
+    serviceBindings: {
+      ASSETS: () => new Response("the page"),
+      LAUNCH: async (request: Request) => {
+        const body = await request.text();
+        if (request.method !== "GET") {
+          if (launchRedirects)
+            return new Response(null, { status: 302, headers: { location: "https://elsewhere.test/" } });
+          launchCalls.push({
+            url: request.url,
+            method: request.method,
+            authorization: request.headers.get("authorization"),
+            body,
+          });
+        }
+        return launchAnswer(request, body);
+      },
+    },
     bindings: {
       ADMIN_ENVIRONMENT: wranglerEnvironment === "staging" ? "dev" : "production",
       ACCESS_TEAM_DOMAIN: TEAM,
@@ -130,18 +168,7 @@ const startAdmin = async (
       const url = new URL(request.url);
       if (url.host === TEAM && url.pathname === "/cdn-cgi/access/certs") return Response.json({ keys: publishedKeys });
       if (url.origin !== DEV && url.origin !== PRODUCTION) return new Response("unknown host", { status: 599 });
-      const body = await request.text();
-      if (request.method !== "GET") {
-        if (launchRedirects)
-          return new Response(null, { status: 302, headers: { location: "https://elsewhere.test/" } });
-        launchCalls.push({
-          url: request.url,
-          method: request.method,
-          authorization: request.headers.get("authorization"),
-          body,
-        });
-      }
-      return launchAnswer(request, body);
+      return pagesAnswer(request);
     },
   });
   const db = await worker.getD1Database("DB");
@@ -251,6 +278,12 @@ describe("who may call", () => {
 
   it("serves the page itself from the assets, without the API", async () => {
     expect(await (await dev.dispatchFetch("https://admin.test/")).text()).toBe("the page");
+  });
+});
+
+describe("launch binding", () => {
+  it.each(["staging", "production"] as const)("binds %s's admin to the same environment's launch Worker", (env) => {
+    expect(launchBinding(env)).toBe(launchWorker(env));
   });
 });
 
