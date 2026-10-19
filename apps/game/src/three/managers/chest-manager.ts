@@ -155,7 +155,7 @@ export class ChestManager {
     if (this.chestModel) this.chestModel.group.visible = ladder.structureModels;
     if (this.chestTransitions) this.chestTransitions.group.visible = ladder.structureModels;
     this.pointsRenderer?.setEnabled(ladder.entityIcons);
-    this.labelsGroup.visible = ladder.textLabels !== "none";
+    this.labelsGroup.visible = ladder.labels;
   }
 
   private initializePointsRenderer(): void {

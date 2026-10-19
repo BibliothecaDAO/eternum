@@ -36,7 +36,7 @@ const managerWithVisibleArmy = (stamina: number) => {
     activeArmyAttachmentEntities: new Set(),
     armyAttachmentSignatures: new Map(),
     staminaUnresolved: new Set(),
-    contentLadder: { textLabels: "full" },
+    contentLadder: { labels: true },
     labelPriorityContext: {},
     tempCompactLabelPosition: new Vector3(),
     selectedArmyForPath: null,

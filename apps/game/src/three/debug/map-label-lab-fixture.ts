@@ -98,9 +98,15 @@ export async function createMapLabelFixture(
       : realms[slot].relation === relation
         ? realms[slot]
         : (realms.find((realm) => realm.relation === relation) ?? null);
+  // The hex west of a realm, on its own row: beside the army south-west of it.
+  const west = (index: number) => {
+    const base = realmPositions[index];
+    const x = base.x - HEX_WIDTH;
+    return new Vector3(x, terrain.sampleSurface(x, base.z).height, base.z);
+  };
   const sites: MapLabelEntity[] = [];
   for (const camp of CAMPS) {
-    const ground = beside(camp.slot, 1);
+    const ground = camp.west ? west(camp.slot) : beside(camp.slot, 1);
     const anchor = await place(CAMP_MODEL_PATH, ground);
     sites.push({ ...siteEntity("camp", anchor, homeOf(camp.slot, camp.relation), camp), ground });
   }
@@ -142,8 +148,12 @@ export async function createMapLabelFixture(
 
 type Placement = { slot: number; relation: MapLabelRelation };
 
-/** Camps beside realms (south-east of them): the viewer's, other players', an ally's, and bandit camps. */
-const CAMPS: readonly (Placement & { guard: MapLabelTroops })[] = [
+/**
+ * Camps beside realms (south-east of them): the viewer's, other players', an ally's, and bandit camps. One stands west
+ * of the viewer's realm 20, on the tile beside its army: the owner's crowded pair (map labels 2026-10-19).
+ */
+const CAMPS: readonly (Placement & { guard: MapLabelTroops; west?: true })[] = [
+  { slot: 20, relation: "neutral", guard: { type: "paladin", tier: 1, count: 500 }, west: true },
   { slot: 18, relation: "own", guard: { type: "crossbowman", tier: 1, count: 300 } },
   { slot: 9, relation: "enemy", guard: { type: "crossbowman", tier: 3, count: 400 } },
   { slot: 12, relation: "enemy", guard: { type: "crossbowman", tier: 2, count: 350 } },

@@ -155,16 +155,11 @@ import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedur
 import { getRendererDiagnosticActiveMode } from "@/three/renderer-diagnostics";
 import { requireBiomeTypeFromId } from "@/three/managers/biome-colors";
 import { MapPlateLayer } from "@/three/map-plates/map-plate-layer";
+import { orderLineSize } from "@/three/map-plates/map-plate-layout";
 import { StrategicMarkerLayer, type StrategicArmyMarkerTier } from "@/three/managers/strategic-marker-layer";
 import { structureMarkerKind } from "./worldmap-structure-marker-kind";
 import { playerColorManager } from "@/three/systems/player-colors";
-import {
-  resolveWorldmapContentLadder,
-  type WorldmapContentLadder,
-  type WorldmapLabelPriorityContext,
-} from "./worldmap-content-ladder";
-import { followTopOwners, rankTopOwners } from "./worldmap-top-owners";
-import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "./worldmap-content-ladder";
 import type { TerrainUploadMetrics } from "@/three/terrain/procedural-terrain";
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { TerrainRoadAnchor, TerrainSettlementAnchor } from "@/three/terrain/terrain-types";
@@ -749,8 +744,6 @@ export default class WorldmapScene extends WarpTravel {
 
   private armyManager!: ArmyManager;
   private mapPlates!: MapPlateLayer;
-  /** The top owners the managers' label priority context last carried. */
-  private topOwners: ReadonlySet<string> = new Set();
   private readonly terrainMovementInteractionBuffer: TerrainMovementInteraction[] = [];
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
@@ -1013,7 +1006,10 @@ export default class WorldmapScene extends WarpTravel {
   /** Why each tile the selected army's rules looked at offers no order; set with its paths (updateEntityActionPaths). */
   private orderRefusals: Map<string, OrderRefusal> = new Map();
   /** The line under the pointer: the order a right-click sends at its tile, or why none. */
-  private readonly pointerOrderTip = new PointerOrderTip((hex) => this.placeOrderTip(hex));
+  private readonly pointerOrderTip = new PointerOrderTip(
+    (hex) => this.placeOrderTip(hex),
+    () => this.mapPlates.placeOrderLine(null),
+  );
   private readonly selectedArmyOrders = new SelectedArmyOrders({
     reach: (entityId) =>
       findArmyReach(requireActiveGameClient(), {
@@ -1701,45 +1697,21 @@ export default class WorldmapScene extends WarpTravel {
     this.mapSiteManager.setModelVisible(ladder.structureModels);
     this.strategicMarkers.setVisible(ladder.band === CameraView.Far);
     this.commitStrategicMarkers();
-    this.refreshLabelPriorityContext();
+    this.refreshSelectedPlate();
     this.syncStructureManagerGauges();
   }
 
-  private refreshLabelPriorityContext(): void {
-    const context = this.buildLabelPriorityContext();
-    this.armyManager.setLabelPriorityContext(context);
-    this.structureManager.setLabelPriorityContext(context);
-    this.mapPlates.setSelected(context.selectedEntityId);
-  }
-
-  private buildLabelPriorityContext(): WorldmapLabelPriorityContext {
-    const hovered = this.currentHoverLabelHex ? this.getHexagonEntity(this.currentHoverLabelHex) : undefined;
-    // The army taking orders, else what stands on the selected hex: a structure is selected by its hex alone.
+  /**
+   * The selected thing's plate stays open in its token's place: the army taking orders, else what stands on the selected
+   * hex (a structure is selected by its hex alone).
+   */
+  private refreshSelectedPlate(): void {
     const selectedHex = useUIStore.getState().selectedHex;
     const onSelectedHex = selectedHex ? this.getHexagonEntity(sceneHexOf(selectedHex)) : undefined;
     const selectedEntityId =
       getLiveWorldmapEntityActions().selectedEntityId ?? onSelectedHex?.army?.id ?? onSelectedHex?.structure?.id;
-    this.topOwners = rankTopOwners(this.game.store);
-    return {
-      isSpectator: isExplicitSpectateSession(),
-      topOwnerAddresses: this.topOwners,
-      selectedEntityId:
-        selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
-      hoveredEntityId: hovered?.army?.id ?? hovered?.structure?.id ?? null,
-    };
-  }
-
-  /**
-   * The mid band's top owners follow what they are ranked from: any fact or snapshot change, and the chain clock (share
-   * points accrue on it). The plates of players who enter or leave the top ten come and go then, not at the next hover;
-   * a ranking whose members did not change rebuilds nothing.
-   */
-  private registerTopOwnerWorldUpdateSubscriptions(): void {
-    this.addWorldUpdateSubscription(
-      followTopOwners(this.game.store, {
-        shown: () => this.topOwners,
-        onChange: () => this.refreshLabelPriorityContext(),
-      }),
+    this.mapPlates.setSelected(
+      selectedEntityId === undefined || selectedEntityId === null ? null : safeInteger(selectedEntityId),
     );
   }
 
@@ -1754,7 +1726,6 @@ export default class WorldmapScene extends WarpTravel {
     this.registerChestWorldUpdateSubscriptions();
     this.registerSitePayoutWorldUpdateSubscriptions();
     this.registerArmyProgressWorldUpdateSubscriptions();
-    this.registerTopOwnerWorldUpdateSubscriptions();
   }
 
   /**
@@ -2342,7 +2313,7 @@ export default class WorldmapScene extends WarpTravel {
       this.currentHoverLabelHex = null;
       this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
-      this.refreshLabelPriorityContext();
+      this.refreshSelectedPlate();
       return;
     }
     const { hexCoords } = hex;
@@ -2368,7 +2339,7 @@ export default class WorldmapScene extends WarpTravel {
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
     this.reconcileHoverLabels("hover");
-    this.refreshLabelPriorityContext();
+    this.refreshSelectedPlate();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
@@ -2405,7 +2376,13 @@ export default class WorldmapScene extends WarpTravel {
   private placeOrderTip(hexCoords: HexPosition): PlacedOrderTip | null {
     if (!this.hudCarriesOrderVerb() && this.selectedArmyId() === null) return null;
     const tip = this.nameOrderAt(hexCoords);
-    return tip && { ...tip, at: projectHexToScreen(hexCoords, this.camera) };
+    if (!tip) return null;
+    // The line stands beside its tile, clear of the opened plates (the plate layer places them together).
+    const at = this.mapPlates.placeOrderLine({
+      at: projectHexToScreen(hexCoords, this.camera),
+      size: orderLineSize(tip.line, tip.cost),
+    });
+    return at && { ...tip, at };
   }
 
   /** The army whose orders the map shows, or null when the selection is no army. */
@@ -8653,12 +8630,12 @@ export default class WorldmapScene extends WarpTravel {
       },
       onEntityActionsChanged: (nextEntityActions, previousEntityActions) => {
         this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions);
-        this.refreshLabelPriorityContext();
+        this.refreshSelectedPlate();
       },
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
-        this.refreshLabelPriorityContext();
+        this.refreshSelectedPlate();
       },
     });
     this.storeSubscriptions.push(
@@ -8798,7 +8775,7 @@ export default class WorldmapScene extends WarpTravel {
       onSelectedHexChanged: (selectedHex) => {
         this.state.selectedHex = selectedHex;
         this.showSelectedHexRing(selectedHex);
-        this.refreshLabelPriorityContext();
+        this.refreshSelectedPlate();
       },
       onSynced: (uiState) => {
         this.logInteractionDebug("sync_state_from_store", {

@@ -15,6 +15,8 @@ export interface PlateTroops {
   tier: 1 | 2 | 3;
   count: number;
   beast?: FrontierSpecies;
+  /** A guard slot's stamina, now and at most, when it is known: a structure's plate, opened, draws it. */
+  stamina?: { current: number; max: number };
 }
 
 /** An army's plate: its owner over its troops and stamina; opened, the realm it comes from. */
@@ -46,6 +48,8 @@ export interface StructurePlate {
   place?: string;
   /** What taking it gives, said in words: "1,200 Essence", "50 Labor". */
   reward?: string;
+  /** The same as an amount of a unit, for a mark that shows it (the lab's icon study). */
+  holding?: PlateReward;
   /**
    * Guard slots in slot order; empty when it stands undefended. Null where the game grants no guard slots and it holds
    * none (a Frontier realm: nobody can attack it), so its plate has no guard row.
@@ -126,6 +130,7 @@ export const buildStructurePlate = (
         tier: tierOf(guard.tier),
         count: guard.count,
         ...(structure.frontierBeast ? { beast: structure.frontierBeast.beast } : {}),
+        ...(guard.stamina && guard.stamina.max > 0 ? { stamina: guard.stamina } : {}),
       })) ?? null;
   return {
     kind: "structure",
@@ -140,6 +145,7 @@ export const buildStructurePlate = (
     named,
     place: named || structure.clearedSite ? undefined : siteName(Number(structure.entityId)),
     reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
+    holding: reward && reward.amount > 0 ? reward : undefined,
     icon: structure.clearedSite
       ? "flag"
       : structure.frontierBeast
@@ -175,18 +181,6 @@ export const buildArmyPlate = (
       ? undefined
       : { current: Math.max(0, Math.min(army.maxStamina, army.currentStamina)), max: army.maxStamina },
 });
-
-/**
- * A guard at rest, one number: a single slot as that slot (its troop type, tier and count); several as their total
- * count, their slots left to the opened plate; none, open.
- */
-export const restingGuard = (
-  guards: readonly PlateTroops[],
-): { kind: "slot"; slot: PlateTroops } | { kind: "total"; total: number } | { kind: "open" } => {
-  if (guards.length === 0) return { kind: "open" };
-  if (guards.length === 1) return { kind: "slot", slot: guards[0] };
-  return { kind: "total", total: guards.reduce((sum, slot) => sum + slot.count, 0) };
-};
 
 /**
  * Guard slots in the order an attacker meets them: the contract attacks the highest occupied slot first, slot zero last

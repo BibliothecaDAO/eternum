@@ -403,3 +403,59 @@ describe("the HUD's layout on the map", () => {
     ).toBe("failed");
   });
 });
+
+describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
+  const verify = STEP_SETS["blitz-plates"].steps.find((step) => step.name === "plates-hovered").verify;
+  const clear = { labels: 34, opened: 1, tokens: 33, orderLine: null, overlaps: [], crowded: [], things: [] };
+
+  it("completes when no reading holds a token, plate or order line over or crowding another", () => {
+    const played = {
+      readings: [
+        { offset: [65, -95], seen: clear },
+        { offset: [137, 0], seen: clear },
+      ],
+    };
+    expect(verify({ played }).status).toBe("completed");
+  });
+
+  it("fails on the first reading where two overlap or crowd, naming the tile hovered", () => {
+    const overlap = { ...clear, overlaps: [{ a: "djizus T1 1,501", b: "The Vanguard", gap: -12 }] };
+    const crowded = { ...clear, crowded: [{ a: "Attack", b: "Tamsin T2 700", gap: 2 }] };
+    expect(verify({ played: { readings: [{ offset: [137, 0], seen: overlap }] } })).toMatchObject({
+      status: "failed",
+      offset: [137, 0],
+      reason: "1 pairs overlap",
+    });
+    expect(verify({ played: { readings: [{ offset: null, seen: crowded }] } }).reason).toBe(
+      "1 pairs stand closer than 4px",
+    );
+  });
+
+  it("fails an opened plate that does not cover the token drawn for its thing before it opened", () => {
+    const token = { kind: "token", key: "army:5", open: false, text: "T3 600", x: 400, y: 500, w: 64, h: 46 };
+    const before = { ...clear, things: [token] };
+    const plate = (x, y) => ({ kind: "plate", key: "army:5", open: true, text: "Lord 3f2a", x, y, w: 174, h: 80 });
+    // Over the token: its middle (432, 523) under the plate.
+    const inPlace = { ...clear, things: [plate(345, 466)] };
+    expect(verify({ played: { before, readings: [{ offset: null, seen: inPlace }] } }).status).toBe("completed");
+    // 52px above it (the reviewer's crowded case): the token's middle is below the plate.
+    const far = { ...clear, things: [plate(345, 414)] };
+    expect(verify({ played: { before, readings: [{ offset: null, seen: far }] } }).reason).toBe(
+      "1 opened plates stand away from their thing's token",
+    );
+  });
+
+  it("calls a view with no label drawn blocked: an empty map proves nothing either way", () => {
+    const empty = { ...clear, labels: 0, opened: 0, tokens: 0 };
+    expect(verify({ played: { readings: [{ offset: null, seen: empty }] } }).status).toBe("blocked");
+  });
+
+  it("takes the readiest army first only in a seated player's list", () => {
+    const names = (set) => STEP_SETS[set].steps.map((step) => step.name);
+    expect(names("blitz-plates")).not.toContain("select-army");
+    expect(names("blitz-plates-player").slice(0, 2)).toEqual(["open-world", "select-army"]);
+    // A Frontier session enters on the world map, as a player's does.
+    expect(names("frontier-plates").slice(0, 2)).toEqual(["enter-on-map", "plates"]);
+    expect(names("frontier-plates-player").slice(0, 2)).toEqual(["enter-on-map", "select-army"]);
+  });
+});

@@ -12,6 +12,7 @@ import {
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
+import { judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { judgeHudLayout } from "./hud-layout.mjs";
 
 /**
@@ -527,6 +528,52 @@ const BLITZ_SPECTATOR_STEPS = [
   { name: "steady", settleMs: 60_000, verify: drawn("map") },
 ];
 
+/**
+ * The map's labels in a live Blitz or Frontier game (map labels, owner 2026-10-19: "the label placement on the map need
+ * work"): read at the map's own zoom, then with each tile round the centre hovered (its plate opens in its token's
+ * place), then the same at the closest zoom. No reading may hold a token, plate or order line over or crowding another,
+ * or an opened plate away from its token. A seated player's list first takes the readiest army with Tab, so each hovered
+ * tile also shows the army's order line beside it.
+ */
+const plateSteps = ({ opening, onMap }, { selectArmy }) => [
+  ...opening,
+  ...(selectArmy
+    ? [{ name: "select-army", play: selectTheArmyByTab, settleMs: 2_000, verify: armyOfferedOrders }]
+    : []),
+  { name: "plates", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+  { name: "plates-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+  { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 1_000, verify: zoomedAllTheWayIn(onMap) },
+  { name: "plates-close", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+  { name: "plates-close-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+];
+
+/** Long enough for a frame to place the plates after the view or the hovered tile changed. */
+const PLATES_SETTLE_MS = 1_500;
+
+/**
+ * The labels as drawn, once on the still view, or once per tile of the ring round the centre with it hovered, after a
+ * reading before any hover: each opened plate is measured against its token there.
+ */
+const readThePlates =
+  ({ hover }) =>
+  async ({ browser, extraScreenshot }) => {
+    const before = hover ? browser.read(PLATES_EXPRESSION) : null;
+    const readings = [];
+    for (const offset of hover ? NEIGHBOUR_RING : [null]) {
+      if (offset) browser.hover(offset);
+      await sleep(PLATES_SETTLE_MS);
+      readings.push({ offset, seen: browser.read(PLATES_EXPRESSION) });
+      if (offset) extraScreenshot(`hover-${offset.join("_")}`);
+    }
+    return { before, readings };
+  };
+
+/** Every reading of the step clear: the first that is not names the step's failure, with what it saw. */
+function platesClear({ played }) {
+  const verdicts = played.readings.map(({ offset, seen }) => ({ offset, ...judgePlates(seen, played.before) }));
+  return verdicts.find((verdict) => verdict.status !== "completed") ?? completed({ readings: verdicts });
+}
+
 /** Blitz switches between the world map and the realm's tiles with V (the header's Local / World). */
 async function toTheWorldMap({ browser }) {
   const onMap = (seen) => seen.playable && seen.scene === "map" && seen.rendered === "map";
@@ -901,6 +948,10 @@ export const STEP_SETS = {
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
   "blitz-burst": { game: BLITZ, steps: BLITZ_BURST_STEPS },
+  "blitz-plates": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: false }) },
+  "blitz-plates-player": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: true }) },
+  "frontier-plates": { game: FRONTIER, steps: plateSteps(FRONTIER_MAP, { selectArmy: false }) },
+  "frontier-plates-player": { game: FRONTIER, steps: plateSteps(FRONTIER_MAP, { selectArmy: true }) },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

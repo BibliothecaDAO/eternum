@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { PerspectiveCamera, Vector3 } from "three";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HUD_COLUMN_MARK } from "../utils/labels/hud-clearance";
 import { MapPlateLayer } from "./map-plate-layer";
+import { plateSize } from "./map-plate-layout";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";
+import { tokenSize } from "./map-plate-token";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -47,7 +49,12 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
   };
   const plateOf = (text: string) =>
     [...container.querySelectorAll<HTMLElement>(".mp-at")].find((element) => element.textContent?.includes(text));
-  const isOpen = (text: string) => plateOf(text)?.querySelector('[data-open="true"]') !== null;
+  const isOpen = (text: string) => Boolean(plateOf(text)?.querySelector('[data-open="true"]'));
+  const isToken = (text: string) => Boolean(plateOf(text)?.querySelector(".mp-token"));
+  const placeOf = (element: HTMLElement) => {
+    const [, x, y] = /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(element.style.transform)!;
+    return { x: Number(x), y: Number(y) };
+  };
 
   beforeEach(() => {
     container = document.createElement("div");
@@ -79,9 +86,12 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     });
     armies.setLabel({ entityId: 2, position: new Vector3(3, 0, 0), plate: army });
     await frame();
-    expect(plateOf("Wyvern")!.textContent).toBe("Wyvern2,800");
-    expect(plateOf("Wyvern")!.querySelector('[data-icon="beast-wyvern"]')).not.toBeNull();
-    expect(plateOf("Tamsin")!.textContent).toContain("T1");
+    // At rest, its token: the species' portrait and the guard's count, no tier chip; the army's token keeps its tier.
+    const beastToken = plateOf("2,800")!.querySelector<HTMLElement>(".mp-token")!;
+    expect(beastToken.textContent).toBe("2,800");
+    expect(beastToken.querySelector('[data-icon="beast-wyvern"]')).not.toBeNull();
+    expect(beastToken.getAttribute("aria-label")).toBe("Wyvern 2,800");
+    expect(plateOf("1,321")!.textContent).toContain("T1");
     structures.setHover(1);
     await frame();
     expect([...plateOf("Wyvern")!.querySelectorAll(".mp-plate__row")].map((row) => row.textContent)).toEqual([
@@ -91,34 +101,47 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     ]);
   });
 
-  it("draws a thing's plate over it, and follows the thing as it moves", async () => {
+  it("draws every thing as its token right over it, and follows the thing as it moves", async () => {
     const armies = layer.createScope("army");
     armies.setLabel({ entityId: 2, position: new Vector3(0, 0, 0), plate: army });
     await frame();
-    const before = plateOf("Tamsin")!.style.transform;
-    expect(before).toMatch(/^translate\(400px, /);
+    expect(isToken("1,321")).toBe(true);
+    const before = plateOf("1,321")!;
+    expect(placeOf(before).x).toBe(Math.round(400 - tokenSize(army).width / 2));
+    expect(before.style.transform).not.toBe("");
+    const first = before.style.transform;
 
     armies.setLabel({ entityId: 2, position: new Vector3(2, 0, 0), plate: army });
     await frame();
-    expect(plateOf("Tamsin")!.style.transform).not.toBe(before);
-    expect(plateOf("Tamsin")!.style.display).toBe("");
+    expect(plateOf("1,321")!.style.transform).not.toBe(first);
+    expect(plateOf("1,321")!.style.display).toBe("");
   });
 
-  it("opens the plate whose tile is hovered, and keeps the selected one open, ringed", async () => {
+  it("opens the hovered thing's plate in its token's place, and keeps the selected one open, ringed", async () => {
     const structures = layer.createScope("structure");
     structures.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
     await frame();
-    expect(isOpen("Niziz")).toBe(false);
+    const token = container.querySelector<HTMLElement>(".mp-at")!;
+    expect(token.querySelector(".mp-token")).not.toBeNull();
+    // Where the token was drawn, before anything opened.
+    const drawnToken = { ...placeOf(token), ...tokenSize(realm) };
 
     structures.setHover(1);
     await frame();
-    // Opened, the guard total gives way to its slots in the order an attacker meets them.
+    // Opened: the token gives way to the plate, standing on the token's foot, its slots in attack order.
     expect(isOpen("Niziz")).toBe(true);
+    expect(plateOf("Niziz")!.querySelector(".mp-token")).toBeNull();
     expect(plateOf("Niziz")!.textContent).toContain("›");
+    const size = plateSize(realm, "open");
+    const plate = placeOf(plateOf("Niziz")!);
+    // On the token's foot, its middle over the token's (to the pixel each was rounded to).
+    expect(Math.abs(plate.x + size.width / 2 - (drawnToken.x + drawnToken.width / 2))).toBeLessThanOrEqual(1);
+    expect(Math.abs(plate.y + size.height - (drawnToken.y + drawnToken.height))).toBeLessThanOrEqual(1);
 
     structures.clearHover();
     await frame();
-    expect(isOpen("Niziz")).toBe(false);
+    expect(container.querySelector(".mp-token")).not.toBeNull();
+    expect(container.querySelector('[data-open="true"]')).toBeNull();
 
     layer.setSelected(1);
     await frame();
@@ -144,8 +167,7 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     await frame();
     expect(isOpen("Niziz")).toBe(true);
     expect(isOpen("clientlane")).toBe(true);
-    expect(plateOf("clientlane")!.textContent).toContain("Stolsli");
-    // Its stamina on its own row under its troops, as at rest: three rows, the last its exact reading.
+    // Its stamina on its own row under its troops: three rows, the last its exact reading.
     const rows = [...plateOf("clientlane")!.querySelectorAll(".mp-plate__row")];
     expect(rows).toHaveLength(3);
     expect(rows[2].textContent).toBe("60/120");
@@ -153,26 +175,52 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
 
     structures.clearHover();
     await frame();
-    expect(isOpen("Niziz")).toBe(false);
+    expect(container.querySelectorAll('[data-open="true"]')).toHaveLength(1);
     expect(isOpen("clientlane")).toBe(true);
   });
 
-  it("drops the plates of things no longer placed, and only its own scope's", async () => {
+  it("leaves out 'player | home' on the player's own army while selected, not while its tile is hovered", async () => {
+    const armies = layer.createScope("army");
+    armies.setLabel({
+      entityId: 2,
+      position: new Vector3(0, 0, 0),
+      plate: { ...army, relation: "own", owner: "djizus" },
+    });
+    armies.setHover(2);
+    await frame();
+    expect(plateOf("1,321")!.textContent).toContain("djizus");
+
+    armies.clearHover();
+    layer.setSelected(2);
+    await frame();
+    // Its troops, then its stamina: two rows.
+    const rows = [...plateOf("1,321")!.querySelectorAll(".mp-plate__row")].map((row) => row.textContent);
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toBe("60/120");
+    expect(plateOf("1,321")!.textContent).not.toContain("djizus");
+  });
+
+  it("drops the labels of things no longer placed, and only its own scope's", async () => {
     const armies = layer.createScope("army");
     const structures = layer.createScope("structure");
     armies.setLabel({ entityId: 2, position: new Vector3(-3, 0, 0), plate: army });
-    armies.setLabel({ entityId: 4, position: new Vector3(3, 0, 0), plate: { ...army, owner: "Oren" } });
+    armies.setLabel({
+      entityId: 4,
+      position: new Vector3(3, 0, 0),
+      plate: { ...army, troops: { ...army.troops, count: 77 } },
+    });
     structures.setLabel({ entityId: 2, position: new Vector3(0, 0, 3), plate: realm });
     await frame();
+    expect(layer.labelCount).toBe(3);
 
     armies.retainOnly([2]);
     await frame();
-    expect(plateOf("Oren")).toBeUndefined();
-    expect(plateOf("Tamsin")).toBeDefined();
-    expect(plateOf("Niziz")).toBeDefined();
+    expect(plateOf("77")).toBeUndefined();
+    expect(plateOf("1,321")).toBeDefined();
+    expect(layer.labelCount).toBe(2);
   });
 
-  it("hides its plates while another scene is on screen", async () => {
+  it("hides its labels while another scene is on screen", async () => {
     layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
     await frame();
     const element = container.querySelector<HTMLElement>('[data-role="map-plates"]')!;
@@ -183,20 +231,22 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(element.style.display).toBe("");
   });
 
-  it("places a plate React committed after a frame had already run, on a still map", async () => {
+  it("places a label React committed after a frame had already run, on a still map", async () => {
     const structures = layer.createScope("structure");
     structures.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
-    // A game frame runs before the layer's React root commits the new plate.
+    // A game frame runs before the layer's React root commits the new label.
     layer.update(camera, 800, 600);
     await frame();
-    expect(plateOf("Niziz")!.style.display).toBe("");
-    expect(plateOf("Niziz")!.style.transform).toMatch(/^translate\(400px, /);
+    const element = container.querySelector<HTMLElement>(".mp-at")!;
+    expect(element.style.display).toBe("");
+    expect(placeOf(element).x).toBe(Math.round(400 - tokenSize(realm).width / 2));
   });
 
-  it("moves its plates when the camera's projection changes and its place does not", async () => {
+  it("moves its labels when the camera's projection changes and its place does not", async () => {
     layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(2, 0, 0), plate: realm });
     await frame();
-    const before = plateOf("Niziz")!.style.transform;
+    const element = container.querySelector<HTMLElement>(".mp-at")!;
+    const before = element.style.transform;
     const zoomed = camera.clone();
     zoomed.zoom = 2;
     zoomed.updateProjectionMatrix();
@@ -204,29 +254,152 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
       await Promise.resolve();
     });
     layer.update(zoomed, 800, 600);
-    expect(plateOf("Niziz")!.style.transform).not.toBe(before);
+    expect(element.style.transform).not.toBe(before);
   });
 
-  it("steps a plate beside a HUD column it would reach under", async () => {
+  it("steps a token beside a HUD column it would reach under", async () => {
     const column = document.createElement("aside");
     Object.entries(HUD_COLUMN_MARK).forEach(([name, value]) => column.setAttribute(name, value));
-    column.getBoundingClientRect = () => ({ left: 0, right: 300, top: 0, bottom: 600 }) as DOMRect;
+    column.getBoundingClientRect = () =>
+      ({ x: 0, y: 0, left: 0, width: 390, right: 390, top: 0, height: 600, bottom: 600 }) as DOMRect;
     document.body.append(column);
+    try {
+      // Its thing on the open map 10px right of the column: its token would reach under it, so it stands beside it.
+      layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
+      await frame();
+      expect(placeOf(container.querySelector<HTMLElement>(".mp-at")!).x).toBe(390);
+    } finally {
+      column.remove();
+    }
+  });
+
+  it("lays a token out at its drawn size once it is on the page, not at its estimate", async () => {
     const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth")!;
     Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
       configurable: true,
       get(this: HTMLElement) {
-        return this.classList.contains("mp-at") ? 300 : 0;
+        return this.classList.contains("mp-token") ? 200 : 0;
       },
     });
     try {
-      // Anchored on the open map 100px right of the column, 300px wide: it would reach 50px under it.
       layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
       await frame();
-      expect(plateOf("Niziz")!.style.translate).toBe("50px 0");
+      // Drawn 200px wide: centred over its thing, 100px to either side.
+      expect(placeOf(container.querySelector<HTMLElement>(".mp-at")!).x).toBe(300);
     } finally {
       Object.defineProperty(HTMLElement.prototype, "offsetWidth", width);
-      column.remove();
     }
+  });
+
+  it("places the order line beside its tile, and the token it covers steps aside until it goes", async () => {
+    layer.createScope("structure").setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
+    await frame();
+    const element = container.querySelector<HTMLElement>(".mp-at")!;
+    const { y } = placeOf(element);
+    const at = layer.placeOrderLine({ at: { x: 400, y: y - 30 }, size: { width: 80, height: 40 } });
+    expect(at).toEqual({ x: 412, y: y - 4 });
+    expect(element.dataset.yields).toBe("true");
+
+    layer.placeOrderLine(null);
+    expect(element.dataset.yields).toBe("false");
+  });
+});
+
+describe("a plate's drawn size, as the layer weighs it frame after frame (review-plate-icons-4)", () => {
+  const ownArmy: ArmyPlate = { ...army, relation: "own", owner: "djizus" };
+  const camera = new PerspectiveCamera(50, 800 / 600, 0.1, 100);
+  camera.position.set(0, 10, 10);
+  camera.lookAt(0, 0, 0);
+  const restore: (() => void)[] = [];
+
+  /**
+   * The real layer over a still map, its thing at the middle of the screen, the HUD's columns leaving a corridor 13px
+   * wider than the plate's estimate (room for it and its 6px gaps, with 1px over), the plate drawn `extra` px wider than
+   * that estimate and its token 74×50. Each frame passes RELAYOUT_MS, so every frame lays out again.
+   */
+  const stage = (view: "selected" | "open", extra: number) => {
+    const estimate = plateSize(ownArmy, view);
+    const drawn = { width: estimate.width + extra, height: estimate.height };
+    for (const [property, value] of [
+      ["offsetWidth", (element: HTMLElement) => (element.classList.contains("mp-token") ? 74 : drawn.width)],
+      ["offsetHeight", (element: HTMLElement) => (element.classList.contains("mp-token") ? 50 : drawn.height)],
+    ] as const) {
+      const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, property)!;
+      Object.defineProperty(HTMLElement.prototype, property, {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.classList.contains("mp-token") || this.classList.contains("mp-plate") ? value(this) : 0;
+        },
+      });
+      restore.push(() => Object.defineProperty(HTMLElement.prototype, property, original));
+    }
+    const corridor = estimate.width + 13;
+    const columns = [0, 400 + corridor / 2].map((x) => {
+      const column = document.createElement("aside");
+      Object.entries(HUD_COLUMN_MARK).forEach(([name, value]) => column.setAttribute(name, value));
+      const width = 400 - corridor / 2;
+      column.getBoundingClientRect = () =>
+        ({ x, y: 0, width, height: 600, left: x, right: x + width, top: 0, bottom: 600 }) as DOMRect;
+      document.body.append(column);
+      return column;
+    });
+    restore.push(() => columns.forEach((column) => column.remove()));
+    let now = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => (now += 501));
+    restore.push(() => vi.restoreAllMocks());
+    const container = document.createElement("div");
+    document.body.append(container);
+    const layer = new MapPlateLayer(() => container);
+    restore.push(() => container.remove());
+    restore.push(() => act(async () => layer.dispose()) as unknown as void);
+    const scope = layer.createScope("army");
+    scope.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: ownArmy });
+    const frame = async () => {
+      await act(async () => {
+        await Promise.resolve();
+        layer.update(camera, 800, 600);
+      });
+      return container.querySelector<HTMLElement>(".mp-at")!.dataset.view;
+    };
+    const frames = async (count: number) => {
+      const views: (string | undefined)[] = [];
+      for (let index = 0; index < count; index += 1) views.push(await frame());
+      return views;
+    };
+    const ask = () => (view === "selected" ? layer.setSelected(1) : scope.setHover(1));
+    return { frames, ask, columns };
+  };
+
+  afterEach(async () => {
+    for (const undo of restore.splice(0).reverse()) await undo();
+  });
+
+  for (const view of ["selected", "open"] as const) {
+    it(`keeps a ${view} plate that is drawn too wide for its place closed, frame after frame, on a still map`, async () => {
+      const { frames, ask } = stage(view, 2);
+      await frames(2);
+      ask();
+      // It opens once at its estimate, is drawn 2px wider, and stays its token from then on: no flicker, no redraws.
+      const views = await frames(10);
+      expect(views.slice(2)).toEqual(Array(8).fill("token"));
+      expect(views.filter((shown, index) => index > 0 && shown !== views[index - 1]).length).toBeLessThanOrEqual(1);
+    });
+
+    it(`keeps a ${view} plate that fits open, frame after frame`, async () => {
+      const { frames, ask } = stage(view, 0);
+      await frames(2);
+      ask();
+      expect(await frames(10)).toEqual(Array(10).fill(view));
+    });
+  }
+
+  it("opens a plate it closed once the room it needs is there", async () => {
+    const { frames, ask, columns } = stage("selected", 2);
+    await frames(2);
+    ask();
+    expect((await frames(6)).at(-1)).toBe("token");
+    // The HUD's columns go: the plate is weighed at its drawn size, which now fits.
+    columns.forEach((column) => column.remove());
+    expect(await frames(4)).toEqual(Array(4).fill("selected"));
   });
 });

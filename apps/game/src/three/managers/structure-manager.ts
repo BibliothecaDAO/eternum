@@ -31,19 +31,16 @@ import {
 } from "@/three/perf/worldmap-render-diagnostics";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import {
-  EMPTY_LABEL_PRIORITY_CONTEXT,
-  resolveWorldmapContentLadder,
-  shouldShowTextLabel,
-  type WorldmapContentLadder,
-  type WorldmapLabelPriorityContext,
-} from "@/three/scenes/worldmap-content-ladder";
+import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "@/three/scenes/worldmap-content-ladder";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "@/three/terrain/terrain-surface";
 import { gltfLoader, isAddressEqualToAccount } from "@/three/utils/utils";
 import { FELT_CENTER } from "@/ui/config";
+import { getGuardStaminaSnapshot } from "@/ui/features/military/utils/guard-stamina";
 import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
 import {
   divideByPrecision,
+  getBlockTimestamp,
+  getGuardsByStructure,
   getIsBlitz,
   getStructureInfoFromTileOccupier,
   getStructureName,
@@ -213,12 +210,6 @@ interface VisibleStructurePassScratch {
   dirtyModels: Set<StructureModel>;
 }
 
-// A running battle cooldown (troop_guards.*.battle_cooldown_end in native store) is the structure's
-// "under attack" fact: its guards fought and the penalty timer is still counting down.
-function isStructureUnderAttack(structure: StructureInfo): boolean {
-  return (structure.battleTimerLeft ?? 0) > 0;
-}
-
 function isWithinBounds(hexCoords: { col: number; row: number }, bounds: WorldSpatialBounds): boolean {
   return (
     hexCoords.col >= bounds.minCol &&
@@ -281,7 +272,6 @@ export class StructureManager {
   private plates: MapPlateScope;
   // Ids the manager has asked the compact renderer to show; the label tier gate is re-evaluated against it.
   private readonly compactLabelIds = new Set<ID>();
-  private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
   private visibilityManager?: CentralizedVisibilityManager;
   private currentChunkBounds?: { box: Box3; sphere: Sphere };
   private chunkAssetPrewarmPromises: Map<string, Promise<void>> = new Map();
@@ -669,6 +659,34 @@ export class StructureManager {
     }));
   }
 
+  /**
+   * A structure as its plate says it now: each guard slot with its stamina at the chain's second, read when the plate
+   * is said and never cached, as a holding is (owner, map labels 2026-10-19: "we do need to see army stamina on structure
+   * hover"). The guards are read through `getGuardsByStructure`, the one rule that resolves a guard's inline bar and its
+   * game's cap (Frontier's, with no tier bonus). The plates are said again each second (`refreshLivePlates`), so it
+   * follows regeneration.
+   */
+  private withGuardStamina(structure: StructureInfo): StructureInfo {
+    if (!this.store || !structure.guardArmies?.length) return structure;
+    const row = this.store.get("Structure", {
+      game_id: configManager.getActiveGameId(),
+      entity_id: structure.entityId,
+    });
+    const guards = row && getGuardsByStructure(row, this.store);
+    if (!guards) return structure;
+    const now = getBlockTimestamp().currentDefaultTick;
+    const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
+    return {
+      ...structure,
+      guardArmies: structure.guardArmies.map((guard) => {
+        const stamina = bySlot.get(guard.slot);
+        return stamina && stamina.max > 0
+          ? { ...guard, stamina: { current: stamina.current, max: stamina.max } }
+          : guard;
+      }),
+    };
+  }
+
   private handleCameraViewChange = (view: CameraView) => {
     if (this.currentCameraView === view) {
       this.updateShadowFlags();
@@ -690,7 +708,7 @@ export class StructureManager {
   private applyContentLadder(): void {
     const ladder = this.contentLadder;
     this.setStructureModelsVisible(ladder.structureModels);
-    if (ladder.textLabels === "none") {
+    if (!ladder.labels) {
       this.clearStructureCompactLabels();
     } else {
       this.syncVisibleStructureTextLabels();
@@ -718,14 +736,6 @@ export class StructureManager {
     this.cosmeticStructureModels.forEach((models) => models.forEach(callback));
   }
 
-  /** Mid-band label facts (spectator, top-10 owners, selection, hover) pushed by the scene. */
-  public setLabelPriorityContext(context: WorldmapLabelPriorityContext): void {
-    this.labelPriorityContext = context;
-    if (this.contentLadder.textLabels === "priority") {
-      this.syncVisibleStructureTextLabels();
-    }
-  }
-
   private syncVisibleStructureTextLabels(): void {
     const structureWindow = this.visibleStructureWindow;
     if (!structureWindow) return;
@@ -739,26 +749,10 @@ export class StructureManager {
   /** Re-applies the label gate to one committed-visible structure, touching the renderer only on a flip. */
   private syncStructureCompactLabel(structure: StructureInfo): void {
     if (!this.previousVisibleIds.has(structure.entityId)) return;
-    if (this.shouldShowStructureTextLabel(structure) === this.compactLabelIds.has(structure.entityId)) return;
+    // Every structure wears its label (its token, its plate on hover or selection) wherever the band draws labels.
+    if (this.contentLadder.labels === this.compactLabelIds.has(structure.entityId)) return;
 
     this.updateStructureCompactLabel(structure, this.resolveStructureCompactLabelPosition(structure));
-  }
-
-  private shouldShowStructureTextLabel(structure: StructureInfo): boolean {
-    // A standing site wears its plate wherever plates are drawn: its guard's strength is what the player weighs an
-    // army against, and a phone has no hover to ask for it.
-    if (structure.siteKind !== undefined && this.contentLadder.textLabels !== "none") return true;
-    return shouldShowTextLabel(
-      this.contentLadder.textLabels,
-      {
-        entityId: structure.entityId,
-        isMine: structure.isMine,
-        isAlly: structure.isAlly,
-        ownerAddress: structure.owner.address,
-        underAttack: isStructureUnderAttack(structure),
-      },
-      this.labelPriorityContext,
-    );
   }
 
   private resolveStructureCompactLabelPosition(structure: StructureInfo): Vector3 {
@@ -1755,7 +1749,7 @@ export class StructureManager {
 
   /** The one place a plate is set: the band's text tier gates it for every caller. */
   private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
-    if (!this.shouldShowStructureTextLabel(structure)) {
+    if (!this.contentLadder.labels) {
       this.removeStructureCompactLabel(structure.entityId);
       return;
     }
@@ -1764,7 +1758,7 @@ export class StructureManager {
       entityId: structure.entityId,
       position,
       plate: buildStructurePlate(
-        structure,
+        this.withGuardStamina(structure),
         useChainTimeStore.getState().getNowSeconds(),
         this.store && readPlateReward(this.store, structure),
       ),
@@ -1774,13 +1768,14 @@ export class StructureManager {
   }
 
   /**
-   * Says again the plates whose holding grows with time (a rift's Essence, a camp's Labor); unchanged words cost no
-   * render.
+   * Says again the plates that change with time: a holding that grows (a rift's Essence, a camp's Labor), a guard's
+   * stamina as it regenerates. Unchanged words cost no render.
    */
-  private refreshGrowingRewardPlates(): void {
+  private refreshLivePlates(): void {
     for (const entityId of this.compactLabelIds) {
       const structure = this.resolveStructureInfoByEntityId(entityId);
-      if (structure && holdsGrowingReward(structure)) this.refreshStructurePlate(structure);
+      if (structure && (holdsGrowingReward(structure) || (structure.guardArmies?.length ?? 0) > 0))
+        this.refreshStructurePlate(structure);
     }
   }
 
@@ -2074,7 +2069,7 @@ export class StructureManager {
   private startTimedLabelUpdates(): void {
     this.timedLabelInterval = setInterval(() => {
       this.recomputeTimedLabelDataForAllStructures();
-      this.refreshGrowingRewardPlates();
+      this.refreshLivePlates();
     }, 1000);
   }
 

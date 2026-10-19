@@ -20,17 +20,20 @@ const tile = {
   at: { x: 200, y: 200 },
 };
 
-const pointer = new PointerOrderTip(() => {
-  const tip = orderTip({
-    path: tile.path,
-    exploreStamina: 21,
-    food: { wheat: 0, fish: 0 },
-    explored: true,
-    refusal: tile.refusal,
-    staminaWait: undefined,
-  });
-  return tip && { ...tip, at: tile.at };
-});
+const pointer = new PointerOrderTip(
+  () => {
+    const tip = orderTip({
+      path: tile.path,
+      exploreStamina: 21,
+      food: { wheat: 0, fish: 0 },
+      explored: true,
+      refusal: tile.refusal,
+      staminaWait: undefined,
+    });
+    return tip && { ...tip, at: tile.at };
+  },
+  () => {},
+);
 
 const shownLine = (): string | null => {
   const tooltip = useTooltipStore.getState().tooltip;

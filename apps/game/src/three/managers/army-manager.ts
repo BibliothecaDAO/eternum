@@ -29,13 +29,7 @@ import {
   setWorldmapRenderGauge,
 } from "@/three/perf/worldmap-render-diagnostics";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
-import {
-  EMPTY_LABEL_PRIORITY_CONTEXT,
-  resolveWorldmapContentLadder,
-  shouldShowTextLabel,
-  type WorldmapContentLadder,
-  type WorldmapLabelPriorityContext,
-} from "@/three/scenes/worldmap-content-ladder";
+import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "@/three/scenes/worldmap-content-ladder";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/terrain-surface";
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
@@ -200,7 +194,6 @@ export class ArmyManager {
   private armyPaths: Map<ID, Position[]> = new Map();
   private currentCameraView: CameraView;
   private contentLadder: WorldmapContentLadder;
-  private labelPriorityContext: WorldmapLabelPriorityContext = EMPTY_LABEL_PRIORITY_CONTEXT;
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private store?: NativeFactStore;
@@ -2836,30 +2829,16 @@ export class ArmyManager {
     this.resyncVisibleArmyCompactLabels();
   }
 
-  /** Mid-band label priority (selection, hover, spectator, top-10) comes from the scene. */
-  public setLabelPriorityContext(context: WorldmapLabelPriorityContext): void {
-    this.labelPriorityContext = context;
-    if (this.contentLadder.textLabels === "priority") this.resyncVisibleArmyCompactLabels();
-  }
-
   private resyncVisibleArmyCompactLabels(): void {
     for (const army of this.visibleArmyRecords()) this.refreshArmyCompactLabel(army);
   }
 
+  /**
+   * Every army wears its label (its token, its plate on hover or selection) wherever the band draws labels; the
+   * player's own numbered armies at any zoom, since that is how they are told apart.
+   */
   private shouldShowArmyCompactLabel(army: ArmyData): boolean {
-    // The player's own numbered armies always wear their plate: it is how they are told apart at any zoom.
-    if (this.resolveOwnArmyNumber(army) !== undefined) return true;
-    return shouldShowTextLabel(
-      this.contentLadder.textLabels,
-      {
-        entityId: this.toNumericId(army.entityId),
-        isMine: army.isMine,
-        isAlly: arePlayersAllied(this.store, accountAddress(), army.owner.address),
-        ownerAddress: army.owner.address,
-        underAttack: army.attackedFromDegrees !== undefined,
-      },
-      this.labelPriorityContext,
-    );
+    return this.contentLadder.labels || this.resolveOwnArmyNumber(army) !== undefined;
   }
 
   public isArmySelectable(entityId: ID): boolean {

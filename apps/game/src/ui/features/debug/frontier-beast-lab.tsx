@@ -11,6 +11,7 @@ import {
   type BeastBand,
 } from "@/three/structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
+import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
 import { SiteCardView } from "../frontier/sites/site-card-view";
@@ -236,8 +237,9 @@ export function FrontierBeastLab() {
           <button onClick={() => setPanel(true)}>Select site</button>
         </div>
         <div data-after>
-          <small>Selected plate</small>
-          <Plate plate={plate} open />
+          <small>Selected plate, and its token at rest</small>
+          <Plate plate={plate} view="open" />
+          <Token plate={plate} />
         </div>
         <div className="beast-icon-studies">
           <small>Species portraits · 20 px</small>

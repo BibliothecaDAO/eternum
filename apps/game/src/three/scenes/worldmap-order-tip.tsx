@@ -5,13 +5,9 @@ import type { OrderTip } from "@/ui/features/frontier/hud/order-tip";
 import type { HexPosition } from "@bibliothecadao/types";
 
 /**
- * The tip sits under the tile it names, beside the pointer and inside the screen: above the tile is the map plate's
- * place (a tile's plate opens on hover), and the tip never covers it.
+ * A tile's line and where it stands on screen (its top left): beside its tile, clear of the map's opened plates, as the
+ * plate layer places it (`MapPlateLayer.placeOrderLine`).
  */
-const TIP_OFFSET = { x: 12, y: 26 };
-const TIP_ROOM = { width: 280, height: 56, top: 56, edge: 8 };
-
-/** A tile's line and where the tile sits on screen. */
 export type PlacedOrderTip = OrderTip & { at: { x: number; y: number } };
 
 /**
@@ -23,8 +19,14 @@ export class PointerOrderTip {
   private hex: HexPosition | null = null;
   private taken = false;
 
-  /** `place` names the tile's order, or why none, and where the tile is on screen now; null where there is no line. */
-  constructor(private readonly place: (hex: HexPosition) => PlacedOrderTip | null) {}
+  /**
+   * `place` names the tile's order, or why none, and where its line stands now; null where there is no line. `gone` is
+   * told whenever the line goes, so what made room for it can take its place again.
+   */
+  constructor(
+    private readonly place: (hex: HexPosition) => PlacedOrderTip | null,
+    private readonly gone: () => void,
+  ) {}
 
   /** The pointer came to a tile, or left the map (null). */
   point(hex: HexPosition | null): void {
@@ -41,11 +43,14 @@ export class PointerOrderTip {
   /** A click took the tile: its preview or its order stands where the line was, until the pointer moves on. */
   take(): void {
     this.taken = true;
+    this.gone();
     showOrderTip(null);
   }
 
   private say(): void {
-    showOrderTip(this.hex && this.place(this.hex));
+    const tip = this.hex && this.place(this.hex);
+    if (!tip) this.gone();
+    showOrderTip(tip);
   }
 }
 
@@ -60,7 +65,7 @@ const showsAnotherTip = (): boolean => {
 
 /**
  * A highlighted tile's name on the app's one tooltip, as a chip's name is: the map has no element under the pointer,
- * so the scene says the line and where the tile is on screen. Null takes the line away, and only the line.
+ * so the scene says the line and where it stands. Null takes the line away, and only the line.
  */
 function showOrderTip(tip: PlacedOrderTip | null): void {
   const store = useTooltipStore.getState();
@@ -76,10 +81,7 @@ function showOrderTip(tip: PlacedOrderTip | null): void {
         {tip.cost && <HudCost line={tip.cost} />}
       </>
     ),
-    fixed: {
-      x: Math.max(TIP_ROOM.edge, Math.min(tip.at.x + TIP_OFFSET.x, window.innerWidth - TIP_ROOM.width)),
-      y: Math.max(TIP_ROOM.top, Math.min(tip.at.y + TIP_OFFSET.y, window.innerHeight - TIP_ROOM.height)),
-    },
+    fixed: tip.at,
   };
   store.setTooltip(shown);
 }

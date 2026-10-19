@@ -1,5 +1,6 @@
 import { siteName } from "@bibliothecadao/types";
-import { Pin, Plate } from "@/three/map-plates/map-plates";
+import { Token } from "@/three/map-plates/map-plate-token";
+import { Plate } from "@/three/map-plates/map-plates";
 import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
 import { Icon, SvgIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
@@ -65,7 +66,7 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
   return tip ? <HudTip line={tip.line} cost={tip.cost ?? undefined} /> : null;
 };
 
-/** A plate as the plate layer places it, standing in the page. */
+/** A thing as the plate layer draws it, standing in the page: its token, or its plate opened. */
 const PlateAt = ({
   plate,
   open = false,
@@ -77,7 +78,7 @@ const PlateAt = ({
 }) => (
   <div className="mp !static !overflow-visible">
     <div className="mp-at !static" data-relation={plate.relation} data-selected={selected}>
-      <Plate plate={plate} open={open} />
+      {open || selected ? <Plate plate={plate} view={selected ? "selected" : "open"} /> : <Token plate={plate} />}
     </div>
   </div>
 );
@@ -267,7 +268,7 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
           </OnMap>
           <OnMap
             name="Plates"
-            when="Over every realm, army, camp and rift: two rows at rest, the rest on hover (the hover card)."
+            when="Over every realm, army, camp and rift: its token at rest, its plate in the token's place on hover."
           >
             <div className="flex items-end gap-3">
               <PlateAt plate={CAMP} />
@@ -276,11 +277,6 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
             <div className="flex items-end gap-3">
               <PlateAt plate={ENEMY_ARMY} />
               <PlateAt plate={ENEMY_ARMY} open />
-              <div className="mp !static">
-                <div className="mp-at !static" data-relation="enemy">
-                  <Pin plate={ENEMY_ARMY} />
-                </div>
-              </div>
             </div>
           </OnMap>
           <OnMap

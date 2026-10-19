@@ -179,10 +179,9 @@ export const FIND_KINDS = ["Find camps", "Find rifts", "Find beasts"] as const;
 export const CAMP = "Camp";
 export const RIFT = "Rift";
 export const RUIN = "Ruin";
-/** A map plate's words: a thing with no guard, the troops on their way to one, what a guard's total counts. */
+/** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
-export const GUARD = "guard";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";

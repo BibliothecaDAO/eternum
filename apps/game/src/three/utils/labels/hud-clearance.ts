@@ -40,14 +40,16 @@ export function openMapArea(viewport: { width: number; height: number }, root: P
   };
 }
 
+/** The HUD's side columns on screen. */
+export const hudColumnRects = (root: ParentNode = document): DOMRect[] =>
+  [...root.querySelectorAll(`[${HUD_COLUMN_ATTRIBUTE}]`)].map((column) => column.getBoundingClientRect());
+
 /** No label is wider than twice this, so one anchored farther from a column never reaches under it. */
 const WIDEST_HALF_LABEL_PX = 240;
 
 /** Shifts each world label that reaches under a HUD column back beside it; called after the labels are placed. */
 export function keepLabelsBesideHudColumns(labels: HTMLElement, root: ParentNode = document): void {
-  const columns = [...root.querySelectorAll(`[${HUD_COLUMN_ATTRIBUTE}]`)].map((column) =>
-    column.getBoundingClientRect(),
-  );
+  const columns = hudColumnRects(root);
   for (const label of labels.children) {
     if (!(label instanceof HTMLElement)) continue;
     const anchor = labelAnchor(label);

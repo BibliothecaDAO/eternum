@@ -3,12 +3,17 @@ import { createRoot, type Root } from "react-dom/client";
 import { type Camera, Matrix4, Vector3 } from "three";
 
 import "./map-plates.css";
-import { keepLabelsBesideHudColumns } from "../utils/labels/hud-clearance";
-import { plateSize, stack, type PlateBox } from "./map-plate-layout";
+import { hudColumnRects } from "../utils/labels/hud-clearance";
+import { placePlates, plateSize, type OrderLineAsk, type PlateThing } from "./map-plate-layout";
 import type { MapPlate } from "./map-plate-model";
-import { Pin, Plate } from "./map-plates";
+import type { PlateView } from "./map-plate-rows";
+import { Token, tokenSize } from "./map-plate-token";
+import { Plate } from "./map-plates";
 
-/** What a manager hands the layer for one of its things: where its plate stands in the world, and what it says. */
+/**
+ * What a manager hands the layer for one of its things: where its token stands in the world (its label point, right
+ * above it), and what its plate says.
+ */
 export interface MapPlateInput {
   entityId: ID;
   position: Vector3;
@@ -34,23 +39,37 @@ interface PlateEntry {
   entityId: ID;
   plate: MapPlate;
   position: Vector3;
-  resting: { width: number; height: number };
-  opened: { width: number; height: number };
+  /**
+   * Each view's size, the one the layout weighs: estimated from its words until the view is drawn, then as last drawn,
+   * kept while it is not on the page. A plate closed because its drawn size does not fit stays closed on a still map,
+   * never reopened at the smaller estimate it outgrew. A content change makes a new entry; a web font loading
+   * estimates them afresh.
+   */
+  sizes: Record<PlateView | "token", { width: number; height: number }>;
 }
 
-/** How much a thing's place in the stack is worth: selected, hovered, yours, then what threatens you. */
+/** A plate's sizes before any is drawn, from its words' measure. */
+const estimates = (plate: MapPlate): PlateEntry["sizes"] => ({
+  token: tokenSize(plate),
+  open: plateSize(plate, "open"),
+  selected: plateSize(plate, "selected"),
+});
+
+/** How much a thing's place is worth: yours, then what threatens you. */
 const RELATION_PRIORITY = { own: 60, enemy: 40, ally: 30, neutral: 10 } as const;
 const KIND_PRIORITY = { army: 8, structure: 5 } as const;
 
 /** What the layer cannot observe (the HUD's columns, a plate's drawn width) is read again at least this often. */
 const RELAYOUT_MS = 500;
+/** The HUD's bar across the top of the screen: the order line stays under it. */
+const SCREEN_TOP = 56;
 
 /**
- * The map's plates (map-plates.tsx) over the world renderer: one DOM layer under the HUD, one React root for the plates'
- * content, and per frame only their screen positions, written straight to each element. Where plates meet they stack
- * upward, two steps at most, then drop to a pin; an opened plate (its tile hovered, or selected) stands over the rest,
- * and the plates it would cover step aside. The managers decide which things carry a plate (the zoom band's gate);
- * the layer decides only where each stands.
+ * The map's labels over the world renderer (map labels, the owner's plan D of 2026-10-19: "icons everywhere, full plate
+ * on hover"): one DOM layer under the HUD, one React root for their content, and per frame only their screen positions,
+ * written straight to each element. Every thing is its token (map-plate-token.tsx), right above it; hovered or selected,
+ * its full plate (map-plates.tsx) replaces the token in place, and the order line stands beside its tile (`placePlates`).
+ * The managers decide which things carry a label (the zoom band's gate); the layer decides only where each stands.
  */
 export class MapPlateLayer {
   private readonly element: HTMLDivElement;
@@ -59,8 +78,11 @@ export class MapPlateLayer {
   private readonly elements = new Map<string, HTMLDivElement>();
   private hovered: string | null = null;
   private selected: ID | null = null;
-  /** Plates the last layout left without room: drawn as pins. */
-  private pinned = new Set<string>();
+  /** Things hovered or selected whose plate the layout could not open clear of the others: they stay their token. */
+  private closed = new Set<string>();
+  private orderLineAsk: OrderLineAsk | null = null;
+  private orderLineAt: { x: number; y: number } | null = null;
+  private lastFrame: { camera: Camera; width: number; height: number } | null = null;
   private renderQueued = false;
   private layoutDirty = true;
   private readonly lastView = new Matrix4();
@@ -75,7 +97,14 @@ export class MapPlateLayer {
     this.element.className = "mp";
     this.element.dataset.role = "map-plates";
     this.root = createRoot(this.element);
+    document.fonts?.addEventListener("loadingdone", this.estimateAfresh);
   }
+
+  /** A web font loaded: every label's words measure differently, so each view is weighed from its estimate again. */
+  private readonly estimateAfresh = (): void => {
+    for (const entry of this.entries.values()) entry.sizes = estimates(entry.plate);
+    this.layoutDirty = true;
+  };
 
   /** The world map shows its plates while it is the scene on screen; another scene hides them. */
   public setVisible(visible: boolean): void {
@@ -100,6 +129,17 @@ export class MapPlateLayer {
       },
       dispose: () => this.removeEntries(ownKeys()),
     };
+  }
+
+  /**
+   * Where the map's order line goes for the tile under the pointer (`ask.at`, on screen): beside the tile, clear of the
+   * opened plates; the tokens under it step aside until it goes (null). Null when no frame was laid out yet.
+   */
+  public placeOrderLine(ask: OrderLineAsk | null): { x: number; y: number } | null {
+    this.orderLineAsk = ask;
+    this.layoutDirty = true;
+    if (this.lastFrame) this.layout(this.lastFrame.camera, this.lastFrame.width, this.lastFrame.height);
+    return ask && this.orderLineAt;
   }
 
   /** The selected thing's plate stays open, ringed in gold. */
@@ -136,11 +176,13 @@ export class MapPlateLayer {
     this.lastView.copy(camera.matrixWorld);
     this.lastProjection.copy(camera.projectionMatrix);
     this.lastLayoutAt = now;
+    this.lastFrame = { camera, width, height };
     this.layout(camera, width, height);
   }
 
-  public get plateCount(): number {
-    return this.entries.size - this.pinned.size;
+  /** How many things carry a label (a token, or its plate opened). */
+  public get labelCount(): number {
+    return this.entries.size;
   }
 
   public get domNodeCount(): number {
@@ -148,6 +190,7 @@ export class MapPlateLayer {
   }
 
   public dispose(): void {
+    document.fonts?.removeEventListener("loadingdone", this.estimateAfresh);
     this.entries.clear();
     this.elements.clear();
     // The root unmounts after the frame that asked for it, never inside a React render.
@@ -171,8 +214,7 @@ export class MapPlateLayer {
       entityId: input.entityId,
       plate: input.plate,
       position: input.position.clone(),
-      resting: plateSize(input.plate, false),
-      opened: plateSize(input.plate, true),
+      sizes: estimates(input.plate),
     });
     this.invalidate();
   }
@@ -189,12 +231,15 @@ export class MapPlateLayer {
     this.invalidate();
   }
 
-  /** The opened plates: the hovered tile's, and the selected thing's, which hovering elsewhere never closes. */
-  private openKeys(): ReadonlySet<string> {
-    const open = new Set<string>();
-    if (this.hovered && this.entries.has(this.hovered)) open.add(this.hovered);
-    for (const entry of this.entries.values()) if (entry.entityId === this.selected) open.add(entry.key);
-    return open;
+  /** How a thing asks to be drawn: its plate selected (which hovering elsewhere never closes) or hovered; else its token. */
+  private askedViewOf(entry: PlateEntry): PlateView | "token" {
+    if (entry.entityId === this.selected) return "selected";
+    return entry.key === this.hovered ? "open" : "token";
+  }
+
+  /** How a thing is drawn: as it asks, but its token where the layout could not open its plate clear of the others. */
+  private viewOf(entry: PlateEntry): PlateView | "token" {
+    return this.closed.has(entry.key) ? "token" : this.askedViewOf(entry);
   }
 
   /** The plates' content changed: draw it again, and lay it out on the next frame. */
@@ -209,7 +254,6 @@ export class MapPlateLayer {
   }
 
   private render(): void {
-    const open = this.openKeys();
     this.root.render(
       <>
         {[...this.entries.values()].map((entry) => (
@@ -222,84 +266,86 @@ export class MapPlateLayer {
               this.layoutDirty = true;
             }}
             className="mp-at"
+            data-key={entry.key}
+            data-view={this.viewOf(entry)}
             data-relation={entry.plate.relation}
             data-selected={entry.entityId === this.selected}
-            style={{ display: "none", zIndex: open.has(entry.key) ? 5 : this.pinned.has(entry.key) ? 0 : 1 }}
+            style={{ display: "none", zIndex: this.viewOf(entry) === "token" ? 1 : 5 }}
           >
-            {this.pinned.has(entry.key) ? (
-              <Pin plate={entry.plate} />
-            ) : (
-              <Plate plate={entry.plate} open={open.has(entry.key)} />
-            )}
+            {drawn(entry, this.viewOf(entry))}
           </div>
         ))}
       </>,
     );
   }
 
-  private layout(camera: Camera, width: number, height: number): void {
-    const open = this.openKeys();
+  /** Each thing on screen, where its token stands; a thing off screen is hidden. */
+  private onScreen(camera: Camera, width: number, height: number): { entry: PlateEntry; x: number; y: number }[] {
     const placed: { entry: PlateEntry; x: number; y: number }[] = [];
     for (const entry of this.entries.values()) {
       this.point.copy(entry.position).project(camera);
       const x = ((this.point.x + 1) / 2) * width;
       const y = ((1 - this.point.y) / 2) * height;
-      const onScreen = this.point.z < 1 && x > -60 && x < width + 60 && y > -60 && y < height + 60;
-      const element = this.elements.get(entry.key);
-      if (!onScreen) {
-        if (element) element.style.display = "none";
+      if (this.point.z < 1 && x > -60 && x < width + 60 && y > -60 && y < height + 60) {
+        placed.push({ entry, x, y });
         continue;
       }
-      placed.push({ entry, x, y });
+      const element = this.elements.get(entry.key);
+      if (element) element.style.display = "none";
     }
-    const boxes: PlateBox[] = placed.map(({ entry, x, y }) => {
-      const size = open.has(entry.key) ? entry.opened : entry.resting;
+    return placed;
+  }
+
+  /**
+   * A thing's size in a view, as the layout weighs it: as drawn when its element shows that view now (the layout keeps
+   * what is drawn apart, not an estimate of it), else as it was last drawn, else its estimate (`PlateEntry.sizes`).
+   */
+  private sizeOf(entry: PlateEntry, view: PlateView | "token"): { width: number; height: number } {
+    const element = this.elements.get(entry.key);
+    const drawn = element?.dataset.view === view ? element.firstElementChild : null;
+    if (drawn instanceof HTMLElement && drawn.offsetWidth > 0)
+      entry.sizes[view] = { width: drawn.offsetWidth, height: drawn.offsetHeight };
+    return entry.sizes[view];
+  }
+
+  private layout(camera: Camera, width: number, height: number): void {
+    const things: PlateThing[] = this.onScreen(camera, width, height).map(({ entry, x, y }) => {
+      const asked = this.askedViewOf(entry);
       return {
         id: entry.key,
-        x: x - size.width / 2,
-        y: y - size.height,
-        width: size.width,
-        height: size.height,
-        priority:
-          (entry.entityId === this.selected ? 1000 : 0) +
-          (entry.key === this.hovered ? 500 : 0) +
-          RELATION_PRIORITY[entry.plate.relation] +
-          KIND_PRIORITY[entry.plate.kind],
+        at: { x, y },
+        token: this.sizeOf(entry, "token"),
+        opened: asked === "token" ? undefined : this.sizeOf(entry, asked),
+        priority: RELATION_PRIORITY[entry.plate.relation] + KIND_PRIORITY[entry.plate.kind],
+        openRank: asked === "selected" ? 2 : asked === "open" ? 1 : 0,
       };
     });
-    const lifts = stack(boxes);
-    const openBoxes = boxes.filter((box) => open.has(box.id));
-    const pinned = new Set(placed.filter(({ entry }) => !lifts.has(entry.key)).map(({ entry }) => entry.key));
-    for (const { entry, x, y } of placed) {
-      const element = this.elements.get(entry.key);
-      if (!element) continue;
-      const lift = lifts.get(entry.key);
-      const box = boxes.find((candidate) => candidate.id === entry.key)!;
-      const yields =
-        !open.has(entry.key) &&
-        lift !== undefined &&
-        openBoxes.some((openBox) =>
-          intersects({ ...box, y: box.y - lift }, { ...openBox, y: openBox.y - (lifts.get(openBox.id) ?? 0) }),
-        );
-      element.style.display = "";
-      element.style.transform =
-        lift === undefined
-          ? `translate(${x}px, ${y}px) translate(-50%, -50%)`
-          : `translate(${x}px, ${y - lift}px) translate(-50%, -100%)`;
-      element.dataset.yields = String(yields);
-    }
-    keepLabelsBesideHudColumns(this.element);
-    if (!sameSet(pinned, this.pinned)) {
-      this.pinned = pinned;
+    const { spots, orderLine, closed } = placePlates(
+      things,
+      { width, height, columns: hudColumnRects(), top: SCREEN_TOP },
+      this.orderLineAsk,
+    );
+    this.orderLineAt = orderLine;
+    if (!sameKeys(closed, this.closed)) {
+      this.closed = closed;
       this.invalidate();
+    }
+    for (const [key, spot] of spots) {
+      const element = this.elements.get(key);
+      if (!element) continue;
+      element.style.display = spot.shape === "none" ? "none" : "";
+      if (spot.shape === "none") continue;
+      element.style.transform = `translate(${Math.round(spot.x)}px, ${Math.round(spot.y)}px)`;
+      element.dataset.yields = String(spot.shape === "token" && spot.yields);
     }
   }
 }
 
-const intersects = (a: Omit<PlateBox, "id" | "priority">, b: Omit<PlateBox, "id" | "priority">) =>
-  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+/** A thing as drawn: its token at rest, its plate opened. */
+const drawn = (entry: PlateEntry, view: PlateView | "token") =>
+  view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} view={view} />;
 
-const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
+const sameKeys = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
   a.size === b.size && [...a].every((key) => b.has(key));
 
 /** Two plates draw the same: a plate built again from unchanged facts costs no render. */

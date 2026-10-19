@@ -10,6 +10,9 @@ import {
   type TerrainBenchmarkStage,
 } from "@/three/debug/procedural-terrain-benchmark-renderer";
 import { MapPlateLayer, type MapPlateScope } from "@/three/map-plates/map-plate-layer";
+import { orderLineSize } from "@/three/map-plates/map-plate-layout";
+import { PointerOrderTip } from "@/three/scenes/worldmap-order-tip";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { buildArmyPlate, buildStructurePlate, guardsToTell, type MapPlate } from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 
@@ -17,13 +20,16 @@ type MapZoom = "play" | "close";
 type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
 
 /**
- * The map label lab (`/lab/map-labels`): the map's plates (three/map-plates, the production layer the world map draws)
+ * The map label lab (`/lab/map-labels`): the map's labels (three/map-plates, the production layer the world map draws)
  * on the real map renderer, over a fixture world: 48 real realms in a dense block and real camp, rift, hyperstructure
- * and knight models between them. The address holds the view, so a capture is reproducible: `zoom` (play or close),
- * `hover` or `select` an entity by its id, `focus` one to centre the camera on it (a hovered one is centred too),
- * `busy=1` for an army beside every realm (a full Blitz in one view), `game=frontier` for a Frontier world (no guard
- * slots: a realm holds no guard and nothing marches home to it), and `rendererMode=webgpu-force-webgl` for WebGL.
- * Pointer hover on a tile and click work too; Escape clears the selection.
+ * and knight models between them. Every thing is its token; its plate opens in the token's place on hover or selection
+ * (the owner's plan D). The address holds the view, so a capture is reproducible: `zoom` (play or close), `hover` or
+ * `select` an entity by its id, `focus` one to centre the camera on it (a hovered one is centred too), `busy=1` for an
+ * army beside every realm (a full Blitz in one view), `game=frontier` for a Frontier world (no guard slots: a realm
+ * holds no guard and nothing marches home to it), `panel=0` to hide the lab's panel (for a phone), and
+ * `rendererMode=webgpu-force-webgl` for WebGL. Pointer hover on a tile and click work too; Escape clears the selection.
+ * With a thing selected, the hovered tile shows the map's order line ("Attack", or "Transfer troops" on the player's
+ * own), said and placed as the world map says and places it.
  */
 export const MapLabelLabView = () => {
   const [params, setParams] = useSearchParams();
@@ -34,14 +40,16 @@ export const MapLabelLabView = () => {
   const [world, setWorld] = useState<World | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pointerHover, setPointerHover] = useState<string | null>(null);
-  const [counts, setCounts] = useState({ plates: 0, nodes: 0 });
+  const [counts, setCounts] = useState({ labels: 0, nodes: 0 });
   const hovered = pointerHover ?? params.get("hover");
   const busy = params.get("busy") === "1";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const frontier = params.get("game") === "frontier";
+  const panel = params.get("panel") !== "0";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
-  usePlates(world, frontier, overlayRef, canvasRef, hovered, selected, setCounts);
+  const layer = usePlates(world, frontier, overlayRef, canvasRef, hovered, selected, setCounts);
+  useOrderLine(world, layer, overlayRef, hovered, selected);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);
@@ -65,7 +73,11 @@ export const MapLabelLabView = () => {
         onClick={() => set("select", pointerHover)}
       />
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
-      <aside className="absolute right-3 top-3 z-10 w-[19rem] rounded-lg border border-white/20 bg-black/90 p-3 text-sm text-white">
+      <Tooltip />
+      <aside
+        hidden={!panel}
+        className="absolute right-3 top-3 z-10 w-[19rem] rounded-lg border border-white/20 bg-black/90 p-3 text-sm text-white"
+      >
         <div className="mb-1.5 flex items-center gap-1.5">
           <span className="w-16 opacity-80">Zoom</span>
           {(["play", "close"] as const).map((key) => (
@@ -81,10 +93,10 @@ export const MapLabelLabView = () => {
           ))}
         </div>
         <p className="leading-snug opacity-90">
-          The production plates (three/map-plates). Hover a tile to open its plate; click to select it.
+          Every thing is its token; hover a tile to open its plate in the token's place, click to select it.
         </p>
         <p className="mt-2 opacity-80" data-role="label-counts">
-          {counts.plates} plates · {counts.nodes} DOM nodes
+          {counts.labels} labels · {counts.nodes} DOM nodes
         </p>
       </aside>
       {error && <p className="absolute left-4 top-4 z-10 rounded bg-black/80 p-3 text-red-300">{error}</p>}
@@ -163,7 +175,7 @@ const usePlates = (
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   hovered: string | null,
   selected: string | null,
-  setCounts: (counts: { plates: number; nodes: number }) => void,
+  setCounts: (counts: { labels: number; nodes: number }) => void,
 ) => {
   const [layer, setLayer] = useState<{ layer: MapPlateLayer; scopes: Record<"army" | "structure", MapPlateScope> }>();
   useEffect(() => {
@@ -172,20 +184,13 @@ const usePlates = (
     if (!world || !overlay || !canvas) return;
     const plates = new MapPlateLayer(() => overlay);
     const scopes = { army: plates.createScope("army"), structure: plates.createScope("structure") };
-    for (const entity of world.entities) {
-      scopes[entity.kind === "army" ? "army" : "structure"].setLabel({
-        entityId: entity.entityId,
-        position: entity.anchor,
-        plate: plateOf(entity, frontier),
-      });
-    }
     let frame = 0;
     const tick = () => {
       plates.update(world.stage.camera, canvas.clientWidth, canvas.clientHeight);
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    const counter = window.setInterval(() => setCounts({ plates: plates.plateCount, nodes: plates.domNodeCount }), 500);
+    const counter = window.setInterval(() => setCounts({ labels: plates.labelCount, nodes: plates.domNodeCount }), 500);
     setLayer({ layer: plates, scopes });
     return () => {
       cancelAnimationFrame(frame);
@@ -193,7 +198,17 @@ const usePlates = (
       plates.dispose();
       setLayer(undefined);
     };
-  }, [world, frontier, overlayRef, canvasRef, setCounts]);
+  }, [world, overlayRef, canvasRef, setCounts]);
+  // Every thing carries its label, at its label point, as the world map's managers hand theirs to the layer.
+  useEffect(() => {
+    if (!layer || !world) return;
+    for (const entity of world.entities)
+      layer.scopes[entity.kind === "army" ? "army" : "structure"].setLabel({
+        entityId: entity.entityId,
+        position: entity.anchor,
+        plate: plateOf(entity, frontier),
+      });
+  }, [layer, world, frontier]);
   useEffect(() => {
     if (!layer || !world) return;
     const entity = world.entities.find((candidate) => String(candidate.entityId) === hovered);
@@ -204,6 +219,45 @@ const usePlates = (
   useEffect(() => {
     layer?.layer.setSelected(selected === null ? null : (Number(selected) as ID));
   }, [layer, selected]);
+  return layer?.layer ?? null;
+};
+
+/**
+ * The map's order line for the hovered tile while another thing is selected, said as the world map says it
+ * (`PointerOrderTip`) and placed by the plate layer; the layer's place is on the overlay, the tooltip's on the page.
+ */
+const useOrderLine = (
+  world: World | null,
+  plates: MapPlateLayer | null,
+  overlayRef: React.RefObject<HTMLDivElement | null>,
+  hovered: string | null,
+  selected: string | null,
+) => {
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    const target = world?.entities.find((candidate) => String(candidate.entityId) === hovered);
+    if (!world || !plates || !overlay || !target || selected === null || hovered === selected) return;
+    const order =
+      target.relation === "own" ? { line: "Transfer troops", cost: null } : { line: "Attack", cost: "30 stamina" };
+    const point = new Vector3();
+    const tip = new PointerOrderTip(
+      () => {
+        point.copy(target.ground).project(world.stage.camera);
+        const at = { x: ((point.x + 1) / 2) * overlay.clientWidth, y: ((1 - point.y) / 2) * overlay.clientHeight };
+        const place = plates.placeOrderLine({ at, size: orderLineSize(order.line, order.cost) });
+        const page = overlay.getBoundingClientRect();
+        return place && { ...order, at: { x: place.x + page.left, y: place.y + page.top } };
+      },
+      () => plates.placeOrderLine(null),
+    );
+    tip.point({ col: 0, row: 0 });
+    // The camera settles after the view opens: the line is said again, as the map's scene says it on a camera move.
+    const timer = window.setInterval(() => tip.refresh(), 250);
+    return () => {
+      window.clearInterval(timer);
+      tip.point(null);
+    };
+  }, [world, plates, overlayRef, hovered, selected]);
 };
 
 const STRUCTURE_TYPES = {
@@ -256,6 +310,8 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean): MapPlate => {
           category: CATEGORY[slot.type],
           tier: slot.tier,
           count: slot.count,
+          // A guard slot's stamina, as the map would read it (getGuardStaminaSnapshot): some rested, some spent.
+          stamina: { current: 20 + ((slot.count * 13 + index * 41) % 100), max: 120 },
         })),
         !frontier,
       ),

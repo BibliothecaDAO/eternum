@@ -1,19 +1,12 @@
-import { formatDuration, formatExact } from "@bibliothecadao/types";
-import { ARRIVING, GUARD, UNDEFENDED } from "@/ui/design-system/kit/words";
+import { formatDuration } from "@bibliothecadao/types";
+import { ARRIVING, UNDEFENDED } from "@/ui/design-system/kit/words";
 
-import {
-  attackOrder,
-  restingGuard,
-  type ArmyPlate,
-  type MapPlate,
-  type PlateTroops,
-  type StructurePlate,
-} from "./map-plate-model";
+import { attackOrder, type ArmyPlate, type MapPlate, type PlateTroops, type StructurePlate } from "./map-plate-model";
 
 /**
  * One reading on a plate, in the HUD panel's voice: a player in the side's colour, a place's own name as a title, a
  * kind in plain words, a label (a reward, a state, what a number counts) in the panel's label colour, a time as its
- * cue, a count in white, a troop stack as its painting, tier chip and count, an army's stamina as its bar and "x/y".
+ * cue, a troop stack as its painting, tier chip and count, an army's stamina as its bar and "x/y".
  */
 export type PlateSegment =
   | { kind: "owner"; text: string }
@@ -21,7 +14,6 @@ export type PlateSegment =
   | { kind: "word"; text: string }
   | { kind: "label"; text: string }
   | { kind: "cue"; text: string }
-  | { kind: "count"; text: string }
   | { kind: "troops"; troops: PlateTroops }
   | { kind: "stamina"; current: number; max: number }
   /** Between the guard slots, in the order an attacker meets them. */
@@ -32,58 +24,55 @@ export type PlateSegment =
 type PlateRow = readonly PlateSegment[];
 
 /**
- * What a plate says, row by row (the owner's rounds 5 and 6 of the map labels, the sheet's round 3): at rest two short
- * rows, opened (its tile hovered, or selected) at most three, from the most important fact down. No id anywhere.
- *
- * - An army: its player, then its troops, a tight stamina bar under them (`restingStamina`). Opened: the realm it
- *   comes from joins the player as on that realm's plate ("clientlane | Stolsli"), and its stamina keeps its own row
- *   under the troops, the bar with its exact "84/150" (owner, map labels 2026-10-18).
- * - A realm or a hyperstructure: its player and its name, then its guard. Opened: the guard slots in attack order, and
- *   a row of troops on their way, each time before its troops. In a game with no guard slots (Frontier) a realm has no
- *   guard to tell, so no guard row: nobody can attack it (owner, map labels 2026-10-19).
- * - A camp or a rift: its lore name, then its guard. Opened: its owner, its name and kind, and what it holds beside its
- *   guard.
+ * How a plate is drawn, opened in its token's place: its tile hovered, or it selected. A selected army of the player's
+ * own leaves out "player | home": the player knows it is theirs (owner, map labels 2026-10-19).
  */
-export const plateRows = (plate: MapPlate, open: boolean): PlateRow[] =>
-  plate.kind === "army" ? armyRows(plate, open) : plate.named ? placeRows(plate, open) : siteRows(plate, open);
+export type PlateView = "open" | "selected";
 
 /**
- * An army at rest: how full its stamina is (0 to 1), drawn as a tight bar under its troops, with no number (owner,
- * sheet round 5); opened, its stamina is a reading with its exact "x/y". None for anything else, or unknown stamina.
+ * What a plate says opened, row by row (the owner's rounds 5 and 6 of the map labels, the sheet's round 3), at most
+ * three, from the most important fact down. No id anywhere. At rest a thing is its token (map-plate-token.tsx).
+ *
+ * - An army: "player | home realm" as on that realm's plate ("clientlane | Stolsli"), then its troops, then its stamina
+ *   on its own row, the bar with its exact "84/150" (owner, map labels 2026-10-18). The player's own army, selected, is
+ *   its troops and stamina alone.
+ * - A realm or a hyperstructure: "player | name", its guard slots in attack order, each with its stamina under it, and
+ *   a row of troops on their way, each time before its troops. In a game with no guard slots (Frontier) a realm has no
+ *   guard to tell, so no guard row: nobody can attack it (owner, map labels 2026-10-19).
+ * - A camp or a rift: its owner, its lore name and kind, and its guard with what it holds beside it.
  */
-export const restingStamina = (plate: MapPlate, open: boolean): number | null =>
-  plate.kind === "army" && !open && plate.stamina ? plate.stamina.current / plate.stamina.max : null;
+export const plateRows = (plate: MapPlate, view: PlateView): PlateRow[] => {
+  if (plate.kind === "army") return armyRows(plate, view === "selected" && plate.relation === "own");
+  return plate.named ? placeRows(plate) : siteRows(plate);
+};
 
-const armyRows = (plate: ArmyPlate, open: boolean): PlateRow[] =>
-  open
-    ? [
-        whose(plate.owner, plate.homeName),
-        [{ kind: "troops", troops: plate.troops }],
-        ...(plate.stamina ? [[{ kind: "stamina", ...plate.stamina } as const]] : []),
-      ]
-    : [[{ kind: "owner", text: plate.owner }], [{ kind: "troops", troops: plate.troops }]];
+const armyRows = (plate: ArmyPlate, mine: boolean): PlateRow[] => [
+  ...(mine ? [] : [whose(plate.owner, plate.homeName)]),
+  [{ kind: "troops", troops: plate.troops }],
+  ...(plate.stamina ? [[{ kind: "stamina", ...plate.stamina } as const]] : []),
+];
 
-const placeRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
+const placeRows = (plate: StructurePlate): PlateRow[] => {
   const rows: PlateRow[] = [whose(plate.owner, plate.name)];
-  if (plate.guards) rows.push(guard(plate.guards, open));
-  if (open && plate.arrivals.length > 0) rows.push(arrivals(plate));
+  if (plate.guards) rows.push(guard(plate.guards));
+  if (plate.arrivals.length > 0) rows.push(arrivals(plate));
   return rows;
 };
 
-const siteRows = (plate: StructurePlate, open: boolean): PlateRow[] => {
+const siteRows = (plate: StructurePlate): PlateRow[] => {
+  // A beast's site is named by its species, its place and kind above it (the base's beast identity).
   const name: PlateSegment = plate.beast
     ? { kind: "title", text: plate.beast }
     : plate.place
       ? { kind: "title", text: plate.place }
       : { kind: "word", text: plate.name };
-  if (!open) return plate.guards ? [[name], guard(plate.guards, false)] : [[name]];
   // Three rows at most: what it holds, and troops on their way to one of the player's own sites, follow its guard.
   const holds = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
   const rows: PlateRow[] = [
     [{ kind: "owner", text: plate.beast ? [plate.place, plate.name].filter(Boolean).join(" ") : plate.owner }],
     !plate.beast && plate.place ? [name, { kind: "word", text: plate.name }] : [name],
-    [...(plate.guards ? guard(plate.guards, true) : []), ...holds, ...arriving],
+    [...(plate.guards ? guard(plate.guards) : []), ...holds, ...arriving],
   ];
   return rows.filter((row) => row.length > 0);
 };
@@ -98,23 +87,16 @@ const whose = (owner: string, realm: string): PlateRow => [
 ];
 
 /**
- * A guard: none, "Undefended"; at rest one number (a single slot as its troop stack, several as their total, "1,731
- * guard"); opened, every slot in the order an attacker meets them.
+ * A guard: none, "Undefended"; else every slot in the order an attacker meets them, each with its stamina under it
+ * where it is known (owner, map labels 2026-10-19 13:00Z: "we do need to see army stamina on structure hover").
  */
-const guard = (guards: readonly PlateTroops[], open: boolean): PlateSegment[] => {
-  const resting = restingGuard(guards);
-  if (resting.kind === "open") return [{ kind: "label", text: UNDEFENDED }];
-  if (resting.kind === "slot") return [{ kind: "troops", troops: resting.slot }];
-  if (!open)
-    return [
-      { kind: "count", text: formatExact(resting.total) },
-      { kind: "label", text: GUARD },
-    ];
-  return attackOrder(guards).flatMap((slot, index) => [
-    ...(index > 0 ? [{ kind: "next" } as const] : []),
-    { kind: "troops", troops: slot } as const,
-  ]);
-};
+const guard = (guards: readonly PlateTroops[]): PlateSegment[] =>
+  guards.length === 0
+    ? [{ kind: "label", text: UNDEFENDED }]
+    : attackOrder(guards).flatMap((slot, index) => [
+        ...(index > 0 ? [{ kind: "next" } as const] : []),
+        { kind: "troops", troops: slot } as const,
+      ]);
 
 /** Troops on their way, each when it arrives and then what arrives: "Arriving 13m T2 300". */
 const arrivals = (plate: StructurePlate): PlateSegment[] => [

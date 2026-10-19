@@ -40,7 +40,14 @@ export interface StructureInfo {
   usesFallbackCosmeticSkin?: boolean;
   attachments?: CosmeticAttachmentTemplate[];
   // Live presentation facts derived from native store
-  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number }>;
+  guardArmies?: Array<{
+    slot: number;
+    category: string | null;
+    tier: number;
+    count: number;
+    /** The slot's stamina, now and at most, where it is read (the battle preview's guard stamina, at the chain's tick). */
+    stamina?: { current: number; max: number };
+  }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
   incomingTroopArrivals?: IncomingTroopArrival[];
   attackedFromDegrees?: number; // Degrees from which this structure has been attacked
