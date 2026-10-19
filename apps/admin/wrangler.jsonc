@@ -9,6 +9,8 @@
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // No preview URL per version: the page is reachable only on its Access-protected hostname.
+  "preview_urls": false,
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "env": {
     "staging": {

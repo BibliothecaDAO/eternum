@@ -26,6 +26,8 @@ const NAME = /^[a-z0-9-]{1,64}$/;
 /** One write the page may send: the launch route it calls and how the audit names it. */
 interface Action {
   method: "POST" | "PUT";
+  /** The page's path for it, under ACTIONS; the catch-all run action is listed last so it matches last. */
+  pattern: string;
   devOnly?: boolean;
   carriesBody: boolean;
   route: (params: Record<string, string>) => { path: string; action: string } | null;
@@ -40,33 +42,38 @@ const isFromThisPage = (context: Context) => context.req.header("origin") === ne
 const isGameEnvironment = (value: string | undefined) => GAME_ENVIRONMENTS.some((id) => id === value);
 const named = (value: string | undefined): value is string => value !== undefined && NAME.test(value);
 
-const WRITES: Record<string, Action> = {
-  "test-blitz": {
+const WRITES: Action[] = [
+  {
     method: "POST",
+    pattern: "test-blitz",
     devOnly: true,
     carriesBody: true,
     route: () => ({ path: "/api/factory/test-blitz", action: "Free test Blitz" }),
   },
-  "open-slot": {
+  {
     method: "POST",
+    pattern: "slots",
     carriesBody: true,
     route: () => ({ path: "/api/slots", action: "Open Blitz slot" }),
   },
-  "refund-slot": {
+  {
     method: "POST",
+    pattern: "slots/:name/refund",
     carriesBody: false,
     route: ({ name }) => (named(name) ? { path: `/api/slots/${name}/refund`, action: `Refund slot ${name}` } : null),
   },
-  "set-phase": {
+  {
     method: "PUT",
+    pattern: "calendar/:phase",
     carriesBody: true,
     route: ({ phase }) =>
       phase === "frontier" || phase === "blitz"
         ? { path: `/api/factory/calendar/${phase}`, action: `Set ${phase} phase` }
         : null,
   },
-  "run-action": {
+  {
     method: "POST",
+    pattern: ":kind/:game/:name/:verb",
     carriesBody: false,
     route: ({ kind, game, name, verb }) =>
       isGameEnvironment(game) &&
@@ -75,7 +82,7 @@ const WRITES: Record<string, Action> = {
         ? { path: `/api/factory/${kind}/${game}/${name}/actions/${verb}`, action: `${verb} ${kind} ${name}` }
         : null,
   },
-};
+];
 
 /** A request's body as the launch service will read it: absent, or one JSON object within the limit. */
 const readBody = async (context: AdminContext, carriesBody: boolean): Promise<string | null> => {
@@ -126,8 +133,7 @@ export const adminApp = (dependencies: AdminDependencies) => {
   app.get("/api/deploys", async (context) => context.json(await deploysView(config, launch, send)));
   app.get("/api/audit", async (context) => context.json({ actions: await audit.latest(100) }));
 
-  const write = (name: keyof typeof WRITES) => async (context: AdminContext) => {
-    const action = WRITES[name]!;
+  const write = (action: Action) => async (context: AdminContext) => {
     const route = action.route(context.req.param());
     if (!route || (action.devOnly && config.environment !== "dev")) return context.notFound();
     let body: string | null;
@@ -161,11 +167,7 @@ export const adminApp = (dependencies: AdminDependencies) => {
     return new Response(answer.body, { status: answer.status, headers: { "content-type": "application/json" } });
   };
 
-  app.post(`${ACTIONS}test-blitz`, write("test-blitz"));
-  app.post(`${ACTIONS}slots`, write("open-slot"));
-  app.post(`${ACTIONS}slots/:name/refund`, write("refund-slot"));
-  app.put(`${ACTIONS}calendar/:phase`, write("set-phase"));
-  app.post(`${ACTIONS}:kind/:game/:name/:verb`, write("run-action"));
+  for (const action of WRITES) app.on(action.method, `${ACTIONS}${action.pattern}`, write(action));
 
   return app;
 };

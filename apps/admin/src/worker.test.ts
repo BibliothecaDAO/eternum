@@ -285,6 +285,15 @@ describe("launch binding", () => {
   it.each(["staging", "production"] as const)("binds %s's admin to the same environment's launch Worker", (env) => {
     expect(launchBinding(env)).toBe(launchWorker(env));
   });
+
+  it.each(["staging", "production"] as const)(
+    "serves %s's admin on its Access hostname only, with no preview URL",
+    (env) => {
+      expect(
+        unstable_readConfig({ config: new URL("../wrangler.jsonc", import.meta.url).pathname, env }).preview_urls,
+      ).toBe(false);
+    },
+  );
 });
 
 describe("screens", () => {
