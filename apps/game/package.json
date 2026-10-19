@@ -149,7 +149,6 @@
     "marked": "^17.0.2",
     "meshoptimizer": "^1.1.1",
     "rollup-plugin-visualizer": "^6.0.3",
-    "sanitize-html": "^2.17.0",
     "typescript-eslint": "^8.53.1",
     "vite": "catalog:game",
     "vite-plugin-mkcert": "^1.17.6",
