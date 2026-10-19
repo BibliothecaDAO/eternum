@@ -31,6 +31,15 @@ const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale })
   label: name,
   parts: [{ path: FRONTIER_BEASTS[beast].path, scale }],
 }));
+const REFINEMENTS = Object.fromEntries(
+  MODEL_BEASTS.map(({ beast, name, scale }) => [
+    `refined-${beast}`,
+    [
+      { label: `${name} · current`, parts: [{ path: FRONTIER_BEASTS[beast].path, scale }] },
+      { label: `${name} · refined study`, parts: [{ path: `/models/frontier/studies/beast-${beast}.glb`, scale }] },
+    ] satisfies readonly LineupAsset[],
+  ]),
+);
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
   { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
@@ -56,13 +65,14 @@ const BEAST_MODELS = (["lowly", "stronger"] as const).map((band) => {
 export function FrontierBeastLab() {
   const [params, setParams] = useSearchParams();
   const group = params.get("group") ?? "models";
-  const lineup = group === "sites" ? SITE_MODELS : group === "beasts" ? BEAST_MODELS : MODELS;
+  const lineup =
+    REFINEMENTS[group] ?? (group === "sites" ? SITE_MODELS : group === "beasts" ? BEAST_MODELS : MODELS);
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
   const settings: LineupSettings = {
     focus,
-    distance: focus === "lineup" ? 20 : 6,
+    distance: focus === "lineup" ? (REFINEMENTS[group] ? 10 : 20) : 3.5,
     yaw: Number(params.get("yaw") ?? 30),
     lighting: params.get("lighting") === "sunset" ? "sunset" : "day",
   };
@@ -76,6 +86,14 @@ export function FrontierBeastLab() {
   const [site, setSite] = useState(2);
   const [band, setBand] = useState<BeastBand>("lowly");
   const [depth, setDepth] = useState(0);
+  useEffect(() => {
+    if (!group.startsWith("refined-")) return;
+    const species = group.slice("refined-".length);
+    const roaming = species === "minotaur" || species === "cyclops";
+    setSite(roaming ? 3 : 2);
+    setBand(species === "cyclops" ? "stronger" : "lowly");
+    setDepth(species === "wyvern" ? 1 : species === "hydra" ? 2 : 0);
+  }, [group]);
   const beast = frontierBeast(depth, SITES[site].category, band);
   const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;
   const plate = buildStructurePlate({
@@ -100,7 +118,7 @@ export function FrontierBeastLab() {
         renderer.current = value;
         value.update(latest.current);
         setReady(true);
-        setStatus("Loaded · game renderer, world scale");
+        setStatus("Loaded · game renderer, world scale · refinements await owner review");
       })
       .catch((error) => {
         if (!controller.signal.aborted) setStatus(`Error: ${String(error)}`);
@@ -129,7 +147,12 @@ export function FrontierBeastLab() {
         <label>
           Set{" "}
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
-            <option value="models">Five species</option>
+            <option value="models">Five current species</option>
+            {MODEL_BEASTS.map(({ beast, name }) => (
+              <option key={beast} value={`refined-${beast}`}>
+                {name} · compare refinement
+              </option>
+            ))}
             <option value="sites">Standing sites</option>
             <option value="beasts">Roaming beasts</option>
           </select>

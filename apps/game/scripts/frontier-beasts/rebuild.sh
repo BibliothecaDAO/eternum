@@ -6,8 +6,14 @@ case "$output" in /*) ;; *) echo 'Use an absolute output directory'; exit 1;; es
 if [[ -e "$output" ]]; then echo 'Choose a fresh output directory'; exit 1; fi
 mkdir -p "$output/raw"
 cd "$root"
-for name in minotaur cyclops; do
+variant=${2:-current}
+case "$variant" in
+  current) names="minotaur cyclops"; source_directory="" ;;
+  refined) names="troll wyvern hydra minotaur cyclops"; source_directory="refined/" ;;
+  *) echo 'Choose current or refined'; exit 1 ;;
+esac
+for name in $names; do
   blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier-beasts/export-beast.py -- \
-    "apps/game/asset-sources/frontier-beasts/$name.blend" "$output/raw/$name.glb" > "$output/$name-export.log" 2>&1
+    "apps/game/asset-sources/frontier-beasts/$source_directory$name.blend" "$output/raw/$name.glb" > "$output/$name-export.log" 2>&1
   node apps/game/scripts/outposts/optimize-outpost.mjs "$output/raw/$name.glb" "$output/beast-$name.glb" > "$output/$name-compress.log" 2>&1
 done

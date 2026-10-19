@@ -3,9 +3,22 @@ import { fileURLToPath } from "node:url";
 import { runProof, waitFor } from "../prove-run.mjs";
 
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
-export async function proveBeasts(b, out, records, baseUrl) {
+export async function proveBeasts(b, out, records, baseUrl, only) {
   await b.run("set", "viewport", "1600", "1000");
   for (const scenario of [
+    ...["troll", "wyvern", "hydra", "minotaur", "cyclops"].flatMap((beast) => [
+      { name: `${beast}-comparison`, group: `refined-${beast}`, focus: "lineup", models: 2, species: beast },
+      { name: `${beast}-sculpt`, group: `refined-${beast}`, focus: "1", models: 2, species: beast },
+      {
+        name: `${beast}-rear`,
+        group: `refined-${beast}`,
+        focus: "1",
+        models: 2,
+        species: beast,
+        yaw: "180",
+        lighting: "sunset",
+      },
+    ]),
     { name: "models-gameplay", group: "models", focus: "lineup", models: 5, species: "troll" },
     { name: "standing-sites", group: "sites", focus: "lineup", models: 7, species: "troll" },
     {
@@ -28,7 +41,7 @@ export async function proveBeasts(b, out, records, baseUrl) {
     },
     { name: "wyvern-panel", group: "models", focus: "1", models: 5, species: "wyvern", depth: "1", panel: true },
     { name: "hydra-panel", group: "models", focus: "2", models: 5, species: "hydra", depth: "2", panel: true },
-  ]) {
+  ].filter((scenario) => !only || scenario.name === only)) {
     const record = { name: scenario.name, ready: false, presses: [], checks: [] };
     records.push(record);
     try {
@@ -42,6 +55,8 @@ export async function proveBeasts(b, out, records, baseUrl) {
       for (const [label, value] of [
         ["Set", scenario.group],
         ["View", scenario.focus],
+        ["Turn", scenario.yaw ?? "30"],
+        ["Light", scenario.lighting ?? "day"],
       ]) {
         await b.run("select", `select[aria-label="${label}"]`, value);
         record.presses.push({
@@ -56,13 +71,24 @@ export async function proveBeasts(b, out, records, baseUrl) {
       const focus = scenario.focus === "lineup" ? "lineup" : Number(scenario.focus);
       const rendered = await waitFor(
         b,
-        `(() => {const node=document.querySelector('[data-lineup-rendered]');if(!node)return false;const value=JSON.parse(node.dataset.lineupRendered);return value.focus===${JSON.stringify(focus)}&&value.models===${scenario.models}&&value.calls>0;})()`,
+        `(() => {const node=document.querySelector('[data-lineup-rendered]');if(!node)return false;const value=JSON.parse(node.dataset.lineupRendered);return value.focus===${JSON.stringify(focus)}&&value.models===${scenario.models}&&value.yaw===${Number(scenario.yaw ?? 30)}&&value.lighting===${JSON.stringify(scenario.lighting ?? "day")}&&value.calls>0;})()`,
         15000,
       );
       const actual = await b.evaluate(
         `(() => {const node=document.querySelector('[data-lineup-rendered]');return node?JSON.parse(node.dataset.lineupRendered):null;})()`,
       );
       record.checks.push({ check: "controls reached the rendered model selection", ok: rendered, actual });
+      if (scenario.group.startsWith("refined-") && focus === "lineup") {
+        const expected = [
+          `/models/frontier/beast-${scenario.species}.glb`,
+          `/models/frontier/studies/beast-${scenario.species}.glb`,
+        ];
+        record.checks.push({
+          check: "current and refined deliveries both drawn",
+          ok: expected.every((path) => actual?.drawnAssets.includes(path)),
+          actual: actual?.drawnAssets,
+        });
+      }
       if (focus === "lineup")
         record.checks.push({ check: "every model part was drawn", ok: actual?.drawnParts.length === scenario.models });
       const labels = await b.evaluate(`(() => {
@@ -135,6 +161,7 @@ export async function proveBeasts(b, out, records, baseUrl) {
       await b.run("open", "about:blank");
     }
   }
+  if (records.length === 0) throw new Error("No beast proof scenario matched");
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = process.argv[2] ?? "https://127.0.0.1:4218";
@@ -145,6 +172,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       baseUrl,
       where: (record) => ({ name: record.name }),
     },
-    (b, out, records) => proveBeasts(b, out, records, baseUrl),
+    (b, out, records) => proveBeasts(b, out, records, baseUrl, process.argv[4]),
   );
 }

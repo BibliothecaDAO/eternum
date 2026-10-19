@@ -1,5 +1,5 @@
 import "./static-model-lineup.css";
-import { Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
+import { Box3, Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { CAMERA_CONFIG, LOCAL_CAMERA_ZOOM } from "../../constants/rendering";
@@ -44,6 +44,7 @@ export async function mountStaticLineup(
   controls.maxDistance = 35;
   const models: InstancedModel[] = [];
   const positions: Vector3[] = [];
+  const heights: number[] = [];
   const parts: { scale: number; z: number; slot: number }[] = [];
   container.classList.add("model-lineup");
   const labels = lineup.map((asset) => {
@@ -102,7 +103,8 @@ export async function mountStaticLineup(
       model.setMatrixAt(0, matrix);
     });
     const x = next.focus === "lineup" ? 0 : positions[next.focus].x;
-    controls.target.set(x, environment.terrain.sampleSurface(x, 0).height + 0.4, 0);
+    const height = next.focus === "lineup" ? 0.8 : heights[next.focus];
+    controls.target.set(x, environment.terrain.sampleSurface(x, 0).height + height / 2, 0);
     const pitch = LOCAL_CAMERA_ZOOM.pitchRadians;
     camera.position
       .copy(controls.target)
@@ -119,9 +121,11 @@ export async function mountStaticLineup(
     for (const [slot, asset] of lineup.entries()) {
       const x = (slot - (lineup.length - 1) / 2) * Math.sqrt(3) * 1.5;
       positions.push(new Vector3(x, environment.terrain.sampleSurface(x, 0).height, 0));
+      heights.push(0);
       for (const part of asset.parts) {
         const gltf = await gltfLoader.loadAsync(part.path);
         signal.throwIfAborted();
+        heights[slot] = Math.max(heights[slot], new Box3().setFromObject(gltf.scene).max.y * (part.scale ?? 1));
         const model = new InstancedModel(gltf, 1, false, asset.label);
         models.push(model);
         parts.push({ scale: part.scale ?? 1, z: part.z ?? 0, slot });
