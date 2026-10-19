@@ -1,6 +1,6 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { useIsWatching } from "@/utils/can-issue-orders";
 import type { EventsFilter } from "./event-stories";
 
 /** Each filter's word, and what it shows, on its hover. */
@@ -18,7 +18,7 @@ const FILTERS: { id: EventsFilter; word: string; tip: string }[] = [
 export const EventsFilterSwitch = () => {
   const [filter, choose] = useEventsFilter();
   // A spectator has nothing of their own: Mine is not offered while they watch.
-  const watching = useUIStore((state) => state.isSpectating);
+  const watching = useIsWatching();
   return (
     <span role="group" aria-label="Event filter" className="inline-flex items-center gap-1">
       {FILTERS.filter(({ id }) => !(watching && id === "mine")).map(({ id, word, tip }) => (

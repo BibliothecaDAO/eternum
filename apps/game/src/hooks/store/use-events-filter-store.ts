@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useIsWatching } from "@/utils/can-issue-orders";
 import type { EventsFilter } from "@/ui/features/event-feed/event-stories";
 
 /** What a player has not chosen yet: the important events. */
@@ -36,7 +36,7 @@ const useEventsFilterStore = create<EventsFilterState>()(
 export const useEventsFilter = (): [EventsFilter, (filter: EventsFilter) => void] => {
   const player = playerKey(useAccountStore((state) => state.account?.address ?? null));
   const chosen = useEventsFilterStore((state) => state.byPlayer[player] ?? DEFAULT_FILTER);
-  const watching = useUIStore((state) => state.isSpectating);
+  const watching = useIsWatching();
   const choose = useEventsFilterStore((state) => state.choose);
   return [watching && chosen === "mine" ? "all" : chosen, (next) => choose(player, next)];
 };

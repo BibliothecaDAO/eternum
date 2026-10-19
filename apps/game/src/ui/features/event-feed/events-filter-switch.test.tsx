@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it } from "vitest";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { resolveSpectateIntent } from "@/utils/spectator-session";
 import { EventsFilterSwitch } from "./events-filter-switch";
 
 const signIn = (address: string) => act(() => useAccountStore.setState({ account: { address } as never }));
@@ -33,5 +34,23 @@ it("starts on Important, keeps each player's choice, and shows one choice in eve
     expect(localStorage.getItem("eternum-events-filter")).toContain('"0xa1":"mine"');
   } finally {
     act(() => roots.forEach((root) => root.unmount()));
+  }
+});
+
+it("offers a viewer who entered to spectate no Mine, and shows their kept Mine as All", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  signIn("0xc3");
+  act(() => root.render(<EventsFilterSwitch />));
+  try {
+    press(host, "Mine");
+    act(() => resolveSpectateIntent({ search: "?spectate=true" }));
+    act(() => root.render(<EventsFilterSwitch key="watching" />));
+    expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Important", "All"]);
+    expect(pressed(host)).toEqual(["All"]);
+  } finally {
+    resolveSpectateIntent({ search: "" });
+    act(() => root.unmount());
   }
 });

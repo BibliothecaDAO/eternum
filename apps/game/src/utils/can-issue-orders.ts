@@ -6,12 +6,22 @@ import { isExplicitSpectateSession } from "./spectator-session";
 import { configManager, getBlockTimestamp } from "@bibliothecadao/eternum";
 
 /**
- * Whether this viewer plays this game: not spectating, and the game not over. Surfaces that only a player has are
- * shown on it; React surfaces can subscribe with useUIStore(canIssueOrders). Whether an order can be sent right now is
- * the other half of the gate, actNowRefusal.
+ * Whether this viewer watches the game rather than plays it: the HUD spectates, or the session was entered to spectate
+ * (`?spectate=true`) whatever the account owns. A watcher has nothing of their own in the game.
+ */
+const isWatching = (state: { isSpectating: boolean } = useUIStore.getState()): boolean =>
+  state.isSpectating || isExplicitSpectateSession();
+
+/** The same, for a rendered surface. */
+export const useIsWatching = (): boolean => useUIStore(isWatching);
+
+/**
+ * Whether this viewer plays this game: not watching, and the game not over. Surfaces that only a player has are shown
+ * on it; React surfaces can subscribe with useUIStore(canIssueOrders). Whether an order can be sent right now is the
+ * other half of the gate, actNowRefusal.
  */
 export function canIssueOrders(state: { isSpectating: boolean } = useUIStore.getState()): boolean {
-  return !state.isSpectating && !isExplicitSpectateSession() && !configManager.isGameOver();
+  return !isWatching(state) && !configManager.isGameOver();
 }
 
 /**

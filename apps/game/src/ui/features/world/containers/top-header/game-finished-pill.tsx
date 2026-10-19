@@ -1,4 +1,3 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { skipGameEnd } from "@/three/effects/endgame/state";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -6,6 +5,7 @@ import { requireActiveGame } from "@/runtime/world/store";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { Popover } from "@/ui/design-system/molecules/popover";
+import { useIsWatching } from "@/utils/can-issue-orders";
 
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,7 +19,7 @@ const GAME_FINISHED_POPOVER_ID = "game-finished";
 export const GameFinishedPill = () => {
   const isOpen = usePopoverStore((state) => state.openId === GAME_FINISHED_POPOVER_ID);
   const togglePopover = usePopoverStore((state) => state.toggle);
-  const watching = useUIStore((state) => state.isSpectating);
+  const watching = useIsWatching();
   const navigate = useNavigate();
   const goToResults = useCallback(() => {
     const game = requireActiveGame();
