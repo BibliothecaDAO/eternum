@@ -234,6 +234,18 @@ it("rediscovers a chest request inserted behind the cursor by an L2 rewrite", as
   expect(page.rewind).toBe(true);
 });
 
+it("fails the read, without a rewind, when the RPC answers a head below the anchor", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  await expect(
+    Effect.runPromise(ledgerChestChanges("https://ledger.test", "0x10", 1002, null, { number: 1001, hash: "0xa" })),
+  ).rejects.toThrow();
+  expect(rpc.events).not.toHaveBeenCalled();
+  const caughtUp = await Effect.runPromise(
+    ledgerChestChanges("https://ledger.test", "0x10", 1000, null, { number: 1000, hash: "0xa" }),
+  );
+  expect(caughtUp).toMatchObject({ rewind: false, head: 1000 });
+});
+
 it("refuses a ledger event page whose head changes while it is read", async () => {
   rpc.events.mockImplementation(async () => {
     rpc.block.mockResolvedValue({ status: "ACCEPTED_ON_L2", block_number: 1000, block_hash: "0xb", timestamp: 1000 });

@@ -195,10 +195,10 @@ const eventCheckpoint = async (
   const saved = previous ?? (page?.hash ? { number: page.head, hash: page.hash } : undefined);
   const fresh = { head: latest.number, hash: latest.hash, token: "" };
   if (!saved) return { cursor: fresh, rewind: fromBlock > 0 || page !== null };
-  if (
-    saved.number > latest.number ||
-    BigInt((await readConfirmedLedgerHead(provider, saved.number)).hash) !== BigInt(saved.hash)
-  )
+  // A head below the anchor proves nothing: a load-balanced RPC can answer from a node a block behind. Only a different
+  // hash at the anchored block is a rewrite.
+  if (saved.number > latest.number) throw new Error("ledger_head_behind_anchor");
+  if (BigInt((await readConfirmedLedgerHead(provider, saved.number)).hash) !== BigInt(saved.hash))
     return { cursor: fresh, rewind: true };
   if (!page) return { cursor: fresh, rewind: false };
   if (page.head !== saved.number || page.hash !== saved.hash) throw new Error("ledger_cursor_anchor_differs");
