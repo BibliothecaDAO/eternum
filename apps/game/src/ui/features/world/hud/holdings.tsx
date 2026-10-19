@@ -93,7 +93,10 @@ const HoldingSearch = ({ holdings }: { holdings: Holdings }) =>
     />
   ) : null;
 
-const NoHoldingsMatch = () => <p className="px-2 py-3 text-hud-body text-hud-muted">No holding matches.</p>;
+/** Why the list is empty: nothing matches what was searched, or nothing is held. */
+const EmptyHoldings = ({ searched }: { searched: boolean }) => (
+  <p className="px-2 py-3 text-hud-body text-hud-muted">{searched ? "No holding matches." : "You hold nothing."}</p>
+);
 
 /**
  * The holdings panel: the kinds held as tabs (from the second kind), each its painting and count, the lit kind's
@@ -131,7 +134,7 @@ export const HoldingsList = ({ holdings }: { holdings: Holdings }) => {
             onStar={toggleFavorite}
           />
         ))}
-        {holdings.visible.length === 0 && <NoHoldingsMatch />}
+        {holdings.visible.length === 0 && <EmptyHoldings searched={holdings.query.trim() !== ""} />}
       </div>
     </HudPanel>
   );

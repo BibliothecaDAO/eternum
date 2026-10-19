@@ -86,6 +86,17 @@ describe("the holdings search", () => {
     expect(shownNames()).toEqual(["Copper Mine"]);
   });
 
+  it("says nothing matches only once something was searched, and that nothing is held otherwise", () => {
+    facts.structures = [];
+    render();
+    expect(host.querySelector('[role="tabpanel"]')!.textContent).toBe("You hold nothing.");
+
+    facts.structures = realms(12);
+    render();
+    type("Nowhere");
+    expect(host.querySelector('[role="tabpanel"]')!.textContent).toBe("No holding matches.");
+  });
+
   it("stops filtering once its kind falls under the search's threshold and the field goes", () => {
     facts.structures = realms(12);
     render();
