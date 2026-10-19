@@ -232,7 +232,6 @@ function UnitModelLabView() {
             {settings.family === "ships" && <option value="study">Blender fleet concepts</option>}
             <option value="current">Current character runtime</option>
             <option value="default">Default game GLBs</option>
-            <option value="legacy">Older alternatives</option>
             {settings.family === "knight" && <option value="comparison">Previous / current side by side</option>}
           </select>
         </label>
@@ -484,7 +483,7 @@ function UnitModelLabView() {
             ? ["T1 and T2 use horse mounts.", "T3 uses the existing dragon rider. Switch to Move to inspect flight."]
             : [
                 "Compare all three tiers using the same camera and lighting.",
-                "Switch source to inspect the original GLBs and older alternatives.",
+                "Switch source to inspect the original GLBs.",
               ]
         ).map((note) => (
           <p key={note}>{note}</p>

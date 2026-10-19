@@ -609,8 +609,7 @@ function resolveFootAnimationMode(action: ModelLabSettings["action"]): "idle" | 
 
 function assetPath(settings: ModelLabSettings, tier: ShipTier): string {
   if (settings.family === "ships") return "/models/units/ship.glb";
-  if (settings.source === "default") return `/models/units/default_${settings.family}_lvl${tier}.glb`;
-  return `/models/units/${settings.family === "crossbowman" ? "archer" : settings.family}${tier}.glb`;
+  return `/models/units/default_${settings.family}_lvl${tier}.glb`;
 }
 
 function countTriangles(group: Group): number {

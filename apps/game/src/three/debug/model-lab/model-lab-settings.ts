@@ -29,7 +29,7 @@ type ModelLabBiomeId = keyof typeof MODEL_LAB_BIOMES;
 export interface ModelLabSettings {
   family: "ships" | ShipArmyClass;
   army: ShipArmyClass;
-  source: "study" | "current" | "default" | "legacy" | "comparison";
+  source: "study" | "current" | "default" | "comparison";
   tier: ShipTier;
   detail: "hero" | "crowd";
   compare: boolean;
@@ -47,11 +47,7 @@ export interface ModelLabSettings {
 
 export function readModelLabSettings(params: URLSearchParams): ModelLabSettings {
   const family = choice(params.get("family"), ["ships", "knight", "crossbowman", "paladin"] as const, "ships");
-  const requestedSource = choice(
-    params.get("source"),
-    ["study", "current", "default", "legacy", "comparison"] as const,
-    "study",
-  );
+  const requestedSource = choice(params.get("source"), ["study", "current", "default", "comparison"] as const, "study");
   const source = isSourceOffered(requestedSource, family) ? requestedSource : "current";
   const action = choice(params.get("action"), listModelLabActions(family), "idle");
   const speed = Number(params.get("speed") ?? 1);
