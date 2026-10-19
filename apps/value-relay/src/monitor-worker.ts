@@ -216,10 +216,14 @@ const legacyFault = async (
   const page =
     stream === "paidClaims"
       ? await Effect.runPromise(
-          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock)),
+          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.paidClaims(cursor.page, cursor.fromBlock, cursor.anchor)),
         )
       : await Effect.runPromise(
-          onIdentityChain(env.L2_RPC_URL, env.IDENTITY, reads.postedResults(cursor.page, cursor.fromBlock)),
+          onIdentityChain(
+            env.L2_RPC_URL,
+            env.IDENTITY,
+            reads.postedResults(cursor.page, cursor.fromBlock, cursor.anchor),
+          ),
         );
   const index = page.rows.findIndex((value) =>
     paid
