@@ -391,10 +391,13 @@ async function exploreBesideArmy({ browser, extraScreenshot }) {
   return { army, offered };
 }
 
-/** The client's record of the explore, and the screen around the explored tile before Enter against after settling. */
-async function explored({ played, actionLatency, screenshot }) {
+/**
+ * The client's record of the explore, the screen around the explored tile before Enter against after settling, and the
+ * army's plate read while it settled.
+ */
+async function explored({ played, actionLatency, screenshot, probe }) {
   const tileChange = played.before ? await meanViewChange(played.before, screenshot, tileRegion(played.target)) : null;
-  return judgeExplore({ ...played, tileChange }, actionLatency.clientActions);
+  return judgeExplore({ ...played, tileChange, plateStamina: probe.plateStamina }, actionLatency.clientActions);
 }
 
 /** A 120×100 patch centred on a tile tapped at `offset` from the screen centre. */

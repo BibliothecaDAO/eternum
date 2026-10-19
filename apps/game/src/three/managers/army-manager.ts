@@ -188,7 +188,6 @@ export class ArmyManager {
   private scale: Vector3;
   private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
   private renderChunkSize: RenderChunkSize;
-  private visibleArmies: ArmyData[] = [];
   private visibleArmyOrder: ID[] = [];
   private visibleArmyOrderIndices: Map<ID, number> = new Map();
   private visibleArmyIndices: Map<ID, number> = new Map();
@@ -1088,11 +1087,15 @@ export class ArmyManager {
     this.visibleArmyOrderIndices = state.indices;
   }
 
-  private refreshVisibleArmyCollection(): void {
-    this.visibleArmies = this.visibleArmyOrder
-      .map((entityId) => this.armyPresentations.get(entityId))
-      .filter((army): army is ArmyData => Boolean(army));
-    setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
+  /**
+   * The visible armies' records, each read through its id as it is used. A walk replaces an army's record, so a list
+   * of records kept between renders would draw a walking army's plate from a record its stamina no longer reaches.
+   */
+  private *visibleArmyRecords(): Generator<ArmyData> {
+    for (const entityId of this.visibleArmyOrder) {
+      const army = this.armyPresentations.get(entityId);
+      if (army) yield army;
+    }
   }
 
   /** Terrain pages can arrive after an army is placed; a marching army keeps its path and lands on the new surface. */
@@ -1131,8 +1134,8 @@ export class ArmyManager {
     const shouldFlushBuffers = this.visibleArmyBuffersDirty;
     this.visibleArmyPresentationDirty = false;
     this.visibleArmyBuffersDirty = false;
-    this.refreshVisibleArmyCollection();
-    this.syncVisibleArmyAttachments(this.visibleArmies);
+    setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
+    this.syncVisibleArmyAttachments();
     this.updateArmyAttachmentTransforms();
     if (shouldFlushBuffers) {
       this.updateVisibleArmyBuffers();
@@ -1346,9 +1349,9 @@ export class ArmyManager {
       .join("|");
   }
 
-  private syncVisibleArmyAttachments(visibleArmies: ArmyData[]): void {
+  private syncVisibleArmyAttachments(): void {
     syncArmyAttachmentState({
-      visibleArmies,
+      visibleArmies: this.visibleArmyRecords(),
       activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
       armyAttachmentSignatures: this.armyAttachmentSignatures,
       toNumericId: (entityId) => this.toNumericId(entityId),
@@ -1363,11 +1366,11 @@ export class ArmyManager {
       return;
     }
 
-    this.visibleArmies.forEach((army) => {
+    for (const army of this.visibleArmyRecords()) {
       const entityId = this.toNumericId(army.entityId);
       // Phase 3.2: skip non-attachment armies before building the input object.
       if (!this.activeArmyAttachmentEntities.has(entityId)) {
-        return;
+        continue;
       }
       const instanceData = this.armyModel.getInstanceData(entityId);
       syncArmyAttachmentTransformState({
@@ -1387,7 +1390,7 @@ export class ArmyManager {
         updateAttachmentTransforms: (trackedEntityId, baseTransform, mountTransforms) =>
           this.attachmentManager.updateAttachmentTransforms(trackedEntityId, baseTransform, mountTransforms),
       });
-    });
+    }
   }
 
   private removeTrackedArmyAttachments(entityId: ID): void {
@@ -2062,7 +2065,7 @@ export class ArmyManager {
 
   public collectVisibleTerrainMovementInteractions(target: TerrainMovementInteraction[]): void {
     let interactionCount = 0;
-    for (const army of this.visibleArmies) {
+    for (const army of this.visibleArmyRecords()) {
       const entityId = this.toNumericId(army.entityId);
       const instance = this.armyModel.getInstanceData(entityId);
       if (!instance) continue;
@@ -2387,7 +2390,7 @@ export class ArmyManager {
 
     // Map-first boot prepares a hidden map before handing off to the requested scene.
     if (this.contentLadder.armyModels && !useUIStore.getState().showBlankOverlay) {
-      this.visibleArmies.forEach((army) => this.collectProceduralArmyPresentation(army, animationContext));
+      for (const army of this.visibleArmyRecords()) this.collectProceduralArmyPresentation(army, animationContext);
     }
     this.proceduralArmyCharacterLayer.sync(this.proceduralArmyPresentationBuffer, deltaTime);
     this.syncProceduralArmyRepresentationVisibility();
@@ -2646,8 +2649,7 @@ export class ArmyManager {
       return;
     }
 
-    for (let i = 0; i < this.visibleArmies.length; i++) {
-      const army = this.visibleArmies[i];
+    for (const army of this.visibleArmyRecords()) {
       const numericEntityId = this.toNumericId(army.entityId);
       const instanceData = this.armyModel.getInstanceData(numericEntityId);
 
@@ -2784,10 +2786,6 @@ export class ArmyManager {
       this.refreshArmyInstance(army, slot, modelType);
     });
 
-    this.visibleArmies = this.visibleArmyOrder
-      .map((id) => this.armyPresentations.get(id))
-      .filter((army): army is ArmyData => Boolean(army));
-
     this.armyModel.flushInstanceUploads();
     this.syncVisibleSlots();
   }
@@ -2845,7 +2843,7 @@ export class ArmyManager {
   }
 
   private resyncVisibleArmyCompactLabels(): void {
-    this.visibleArmies.forEach((army) => this.refreshArmyCompactLabel(army));
+    for (const army of this.visibleArmyRecords()) this.refreshArmyCompactLabel(army);
   }
 
   private shouldShowArmyCompactLabel(army: ArmyData): boolean {

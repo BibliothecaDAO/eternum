@@ -493,6 +493,30 @@ describe("judgeExplore", () => {
     expect(judgeExplore(pressed(41.5), [action])).toEqual({ status: "completed", action, tileChange: 41.5 });
   });
 
+  it("fails an explore whose army's plate climbed back to an older bar while it settled", () => {
+    const action = explore({ store_applied: 1190, rendered: 1230 }, { transactionHash: "0xabc" });
+    // Army 2's third explore on dev Frontier (c6006261cbb): 90, then its first explore's 120 for a second, then 60.
+    const staleWalk = [
+      [500, 90],
+      [1000, 90],
+      [1500, 120],
+      [2000, 120],
+      [2500, 60],
+    ];
+    expect(judgeExplore({ ...pressed(41.5), plateStamina: staleWalk }, [action]).reason).toBe(
+      "the army's plate read 90 stamina, then 120: a bar it no longer has",
+    );
+    // The bar paid, then regenerating; a reading before the press and a deselected plate are not judged.
+    const paidThenRegenerating = [
+      [500, 150],
+      [1000, 90],
+      [1500, null],
+      [2000, 60],
+      [2500, 61],
+    ];
+    expect(judgeExplore({ ...pressed(41.5), plateStamina: paidThenRegenerating }, [action]).status).toBe("completed");
+  });
+
   it("fails an applied explore the screen never showed, or the client never marked rendered", () => {
     const applied = explore({ store_applied: 1190 }, { transactionHash: "0xabc" });
     expect(judgeExplore(pressed(41.5), [applied]).reason).toBe("the client never marked the reveal rendered");

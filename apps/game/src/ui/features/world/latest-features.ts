@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Army plates keep up while marching",
+    description:
+      "While an army walks to a tile it explored or moved to, its plate shows the stamina it has now. It no longer flashes an older, higher number for a second.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-19",
     title: "Craft Yard workshop",
     description:
       "Workshops now show the Craft Yard with an open work area, a smaller workbench and fitted clay roofs. Construction cards show the same building; central keeps retain their own models.",

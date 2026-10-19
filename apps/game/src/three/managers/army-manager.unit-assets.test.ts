@@ -16,7 +16,10 @@ it("requests characters only for eligible units in the visible scene and uses ca
   const presented: { entityId: number; distanceToCameraSquared: number }[][] = [];
   const manager = Object.assign(Object.create(ArmyManager.prototype), {
     contentLadder: { armyModels: true, proceduralCharacters: false },
-    visibleArmies: [{ entityId: 42, category: TroopType.Knight, tier: TroopTier.T1, color: "#ffffff" }],
+    armyPresentations: new Map([
+      [42, { entityId: 42, category: TroopType.Knight, tier: TroopTier.T1, color: "#ffffff" }],
+    ]),
+    visibleArmyOrder: [42],
     proceduralArmyPresentationBuffer: [],
     proceduralArmyPresentations: new Map(),
     desiredProceduralArmyEntityIds: new Set(),

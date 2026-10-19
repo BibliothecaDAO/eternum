@@ -10,6 +10,8 @@ const MAX_LOAD_AVERAGE = 12;
 const JANK_FRAME_MS = 1000 / 30;
 // A revealed tile turns from fog to terrain; the same patch of screen, unchanged, differs by a few levels at most.
 const REVEALED_TILE_CHANGE_MIN = 12;
+// The most a bar regenerates between two of the probe's half-second readings (a Blitz army gains about 0.4 a second).
+const PLATE_STAMINA_RISE_MAX = 5;
 // The discrete inputs a player feels; pointer enter/leave and hover events would only repeat the click's numbers.
 const TIMED_INPUTS = new Set(["click", "keydown", "pointerdown", "wheel"]);
 export const RENDERER_MODES = ["webgpu-auto", "webgpu-force-webgl"];
@@ -184,7 +186,8 @@ export const failed = (reason, details = {}) => ({ status: "failed", reason, ...
 
 /**
  * An explore is evidence only when Explore was offered and pressed, the client's own record of that press carries a
- * hash, and its outcome was applied. Move offered instead, or nothing, is a refusal, never an explore.
+ * hash, its outcome was applied, and the army's plate never climbed back up while it settled (`plateStamina`, the
+ * probe's [time, reading] pairs). Move offered instead, or nothing, is a refusal, never an explore.
  */
 export function judgeExplore(played, clientActions) {
   if (played.army === null) return blocked("the player has no army on the HUD");
@@ -205,8 +208,21 @@ export function judgeExplore(played, clientActions) {
   if (!(played.tileChange >= REVEALED_TILE_CHANGE_MIN)) {
     return failed(`the explored tile did not visibly change on screen (${played.tileChange})`, { action });
   }
+  const climb = plateStaminaClimb(played.plateStamina ?? [], played.pressedAt);
+  if (climb) {
+    return failed(`the army's plate read ${climb.from} stamina, then ${climb.to}: a bar it no longer has`, { action });
+  }
   // `rendered` is the client's marker (a rAF callback after the terrain page rebuilt); the screenshot is what showed.
   return completed({ action, tileChange: played.tileChange });
+}
+
+/** The first rise between two readings after `since` that regeneration cannot make, or null. */
+function plateStaminaClimb(readings, since) {
+  const read = readings.filter(([t, stamina]) => t >= since && stamina !== null).map(([, stamina]) => stamina);
+  for (let at = 1; at < read.length; at += 1) {
+    if (read[at] - read[at - 1] > PLATE_STAMINA_RISE_MAX) return { from: read[at - 1], to: read[at] };
+  }
+  return null;
 }
 
 /**

@@ -16,6 +16,7 @@
     loafs: [],
     messages: [],
     models: [],
+    plateStamina: [],
     steps: [],
   };
   let drawsThisFrame = 0;
@@ -58,9 +59,16 @@
   // Every map label is drawn inside #labelrenderer, whichever renderer draws it; its element count is what they cost the
   // page's layout and style work.
   const labelNodes = () => document.getElementById("labelrenderer")?.getElementsByTagName("*").length ?? null;
+  // The selected army's stamina as its plate reads it ("Stamina 84 of 150"), or null while no army plate is selected.
+  const selectedPlateStamina = () => {
+    const label = document.querySelector('[data-selected="true"] .mp-stamina')?.getAttribute("aria-label");
+    const reading = label ? /^Stamina ([\d,]+) of/.exec(label) : null;
+    return reading ? Number(reading[1].replaceAll(",", "")) : null;
+  };
   setInterval(() => {
     push(state.heap, [performance.now(), usedHeapBytes()]);
     push(state.labelNodes, [performance.now(), labelNodes()]);
+    push(state.plateStamina, [performance.now(), selectedPlateStamina()]);
   }, HEAP_SAMPLE_MS);
 
   const observe = (type, options, record) => {
@@ -204,6 +212,7 @@
         messages: after(state.messages, (entry) => entry.arrived),
         models: state.models,
         now: performance.now(),
+        plateStamina: after(state.plateStamina, ([t]) => t),
         steps: after(state.steps, (entry) => entry.t),
         timeOrigin: performance.timeOrigin,
         timeline: window.__eternumGameEntryTimeline ?? [],
