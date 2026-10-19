@@ -359,6 +359,48 @@ it("reads a release laid out with one more logic class than today, from the Game
   expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
 });
 
+it("pays a withdrawal the relics logic emits under its own event enum, read from its transaction receipt", async () => {
+  // The relics logic runs by library call and writes LordsWithdrawal rows under RelicEvent, as the committed schema
+  // lists ([RelicEvent, RowSet]); the Games class itself declares only the direct RowSet path the base fixture uses.
+  const RELICS_LOGIC = "0x88";
+  const debit = event();
+  const relicDebit = { ...debit, keys: [hash.getSelectorFromName("RelicEvent"), ...debit.keys] };
+  rpc.receipt.mockResolvedValue({ ...receipt(), events: [relicDebit] });
+  rpc.contract.mockImplementation(async (classHash: string) => ({
+    abi:
+      BigInt(classHash) === BigInt(RELICS_LOGIC)
+        ? [
+            {
+              type: "event",
+              name: "relics::Event",
+              kind: "enum",
+              variants: [{ name: "RelicEvent", type: "relics::RelicState::Event", kind: "nested" }],
+            },
+            {
+              type: "event",
+              name: "relics::RelicState::Event",
+              kind: "enum",
+              variants: [{ name: "RowSet", type: "fixture::RowSet", kind: "nested" }],
+            },
+            (abi as { name: string }[]).find((item) => item.name === "fixture::RowSet")!,
+          ]
+        : [...abi, ...gamesAbi],
+  }));
+  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) =>
+    entrypoint === "current_release" ? ["0x1"] : [...Array(17).fill(RELICS_LOGIC), "0x0"],
+  );
+  const withdrawal = await Effect.runPromise(fixture().ports.withdrawal("0x1", "0xabc"));
+  expect(withdrawal).toEqual({
+    blockNumber: 10,
+    chainId: "0x1",
+    seasonId: 3,
+    transactionHash: "0xabc",
+    realmsId: "0x2",
+    amount: "17000000000000000000",
+    confirmedAt: 1000,
+  });
+});
+
 it("reads a full page's headers in batches the shard RPC accepts, checking each against its parent", async () => {
   rpc.events.mockResolvedValue({ events: [] });
   rpc.header.mockImplementation(async (number: number) => ({
