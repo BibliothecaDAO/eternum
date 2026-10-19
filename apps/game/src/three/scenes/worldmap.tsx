@@ -1401,7 +1401,6 @@ export default class WorldmapScene extends WarpTravel {
       this.reconcileHoverLabelsForProjectionChanges(changes);
       this.refreshTerrainPropOccupancy();
       this.syncStructureMarkers(changes);
-      this.showSuggestedArmyDeployment();
     });
     const unsubscribeTerrainEcology = bindWorldmapTerrainEcologyRefresh({
       onStructureChanged: (current) => {
@@ -3329,33 +3328,6 @@ export default class WorldmapScene extends WarpTravel {
     else if (type === ActionType.Chest) this.onChestSelection(path, selectedEntityId);
     else this.onArmySpireTravel(path, selectedEntityId);
     return true;
-  }
-
-  private showSuggestedArmyDeployment(): void {
-    const intent = useUIStore.getState();
-    if (intent.suggestedArmyDeploymentStructureId === null) return;
-    const structure = this.worldSpatialProjection.getStructure(intent.suggestedArmyDeploymentStructureId);
-    if (!structure) return;
-    intent.setSuggestedArmyDeploymentStructureId(null);
-    if (!canIssueOrders()) return;
-    const normalized = Position.fromContract({
-      x: structure.hexCoords.col,
-      y: structure.hexCoords.row,
-    }).getNormalized();
-    this.onStructureSelection(structure.entityId, { col: normalized.x, row: normalized.y });
-    const points = [...getLiveWorldmapEntityActions().actionPaths.values()]
-      .filter((path) => ActionPaths.getActionType(path) === ActionType.CreateArmy)
-      .map((path) => {
-        const target = path[path.length - 1].hex;
-        const hex = Position.fromContract({ x: target.col, y: target.row }).getNormalized();
-        return projectHexToScreen({ col: hex.x, row: hex.y }, this.camera);
-      });
-    points.sort(
-      (a, b) =>
-        Math.hypot(a.x - window.innerWidth / 2, a.y - window.innerHeight / 2) -
-        Math.hypot(b.x - window.innerWidth / 2, b.y - window.innerHeight / 2),
-    );
-    showArmyDeploymentTooltip(points[0] ?? null);
   }
 
   // actionPath is not normalized
@@ -8704,12 +8676,6 @@ export default class WorldmapScene extends WarpTravel {
     );
     this.storeSubscriptions.push(
       useUIStore.subscribe(
-        (state) => state.suggestedArmyDeploymentStructureId,
-        () => this.showSuggestedArmyDeployment(),
-      ),
-    );
-    this.storeSubscriptions.push(
-      useUIStore.subscribe(
         (state) => state.isSpectating,
         (spectating) => {
           if (!spectating) return;
@@ -8729,7 +8695,6 @@ export default class WorldmapScene extends WarpTravel {
     this.storeSubscriptions.push(offerSelectedArmyOrdersAtOutcome((entityId) => this.offerOrdersAtOutcome(entityId)));
     this.storeSubscriptions.push(onPlayRouteBootStarted(() => this.announceEntryReadinessWhileShown()));
     this.syncMapLayer();
-    this.showSuggestedArmyDeployment();
     this.bindRouteOwnedRefreshLifecycle();
     this.bindPersistedZoomPreferenceLifecycle();
 

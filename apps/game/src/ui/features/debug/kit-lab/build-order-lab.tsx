@@ -9,8 +9,10 @@ import {
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
+import { BuildOrderRow, BuildOrderView } from "@/ui/features/world/hud/build-order-panel";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
+import { DEFAULT_BUILD_ORDER_TEXT } from "@bibliothecadao/eternum/automation";
 import { type ReactNode, useState } from "react";
 
 /**
@@ -19,37 +21,6 @@ import { type ReactNode, useState } from "react";
  * how to play for a newcomer. Everything here is fixture data drawn with the HUD's own elements: the proposal, before
  * any of it is built.
  */
-
-/** The default order as a player would write it: "<how many> <building>" a line, under the rank it starts at. */
-const DEFAULT_ORDER = `Settlement:
-2 farm
-City:
-4 farm
-1 wood
-1 coal
-1 copper
-2 wood
-2 coal
-2 copper
-1 military
-Kingdom:
-8 farm
-3 wood
-3 coal
-3 copper
-4 wood
-4 coal
-4 copper
-3 military
-Empire:
-12 farm
-5 wood
-5 coal
-5 copper
-6 wood
-6 coal
-6 copper
-5 military`;
 
 /** A player's own order, pasted in: coal and copper first, then farms. */
 const COAL_RUSH = `Name: Coal rush
@@ -129,10 +100,10 @@ const StepRow = ({ step }: { step: RealmStep }) => (
 );
 
 /**
- * The panel: its order at its head (a dropdown once there is more than one), then one row per realm whose next step
- * can be taken now; a realm waiting on resources, or done with the order, has no row.
+ * Phase 2, proposed: the order at the panel's head becomes a dropdown once a player has an order of their own, and
+ * Import an order sits at its foot.
  */
-const BuildOrderPanel = ({ phase }: { phase: 1 | 2 }) => {
+const ImportedOrdersPanel = () => {
   const [order, setOrder] = useState<OrderKey>("default");
   return (
     <HudPanel
@@ -140,32 +111,59 @@ const BuildOrderPanel = ({ phase }: { phase: 1 | 2 }) => {
       title="Build order"
       icon="build"
       cue={
-        phase === 1 ? (
-          <span className="text-hud-label text-hud-muted">{ORDERS.default.name}</span>
-        ) : (
-          <HudSelect
-            label="Build order"
-            value={order}
-            onChange={setOrder}
-            options={(Object.keys(ORDERS) as OrderKey[]).map((key) => ({ value: key, label: ORDERS[key].name }))}
-          />
-        )
+        <HudSelect
+          label="Build order"
+          value={order}
+          onChange={setOrder}
+          options={(Object.keys(ORDERS) as OrderKey[]).map((key) => ({ value: key, label: ORDERS[key].name }))}
+        />
       }
       bodyClassName="flex flex-col"
     >
       {ORDERS[order].steps.map((step) => (
         <StepRow key={step.realm} step={step} />
       ))}
-      {phase === 2 && (
-        <div className="flex pt-2">
-          <HudButton kind="quiet" size="sm" icon="plus">
-            Import an order
-          </HudButton>
-        </div>
-      )}
+      <div className="flex pt-2">
+        <HudButton kind="quiet" size="sm" icon="plus">
+          Import an order
+        </HudButton>
+      </div>
     </HudPanel>
   );
 };
+
+/** Phase 1 as built: the game's own panel and rows, on three realms' steps worded as the default order words them. */
+const PHASE_ONE_STEPS = [
+  {
+    realmName: "Egonal",
+    label: "Build wood camp",
+    reason: "Wood camps: 1 of 2 built.",
+    icon: "wood",
+    verb: "Build",
+  },
+  {
+    realmName: "Stolsli",
+    label: "Level up realm",
+    reason: "It can level up now.",
+    icon: "upgrade",
+    verb: "Level up to Kingdom",
+  },
+  {
+    realmName: "Grimwatch",
+    label: "Build worker hut",
+    reason: "Population 5 of 6: a worker hut makes room for more.",
+    icon: "workers-hut",
+    verb: "Build",
+  },
+] satisfies ({ verb: string; icon: IconMeaning } & Parameters<typeof BuildOrderRow>[0]["step"])[];
+
+const PhaseOnePanel = () => (
+  <BuildOrderView orderName="Default">
+    {PHASE_ONE_STEPS.map(({ verb, ...step }) => (
+      <BuildOrderRow key={step.realmName} step={step} verb={verb} busy={false} refusal={null} onPress={run} />
+    ))}
+  </BuildOrderView>
+);
 
 /** Phase 2's import: an order pasted as text, read line by line, each refusal naming its line. */
 const ImportWindow = () => (
@@ -214,15 +212,15 @@ export const BuildOrderLab = () => {
       </Shown>
       <Shown
         name="Phase 1 · the panel"
-        line="Under Next up in the rail, on the default order, for every realm: only a step it can take now, never one done. Stolsli's level-up and Grimwatch's hut are the two rules that always come first."
+        line="Built (build-order-3): the game's own panel, under Next up in a Blitz's rail, on the default order. For every realm only a step it can take now, never one done; Stolsli's level-up and Grimwatch's hut are the two rules that always come first."
       >
-        <BuildOrderPanel phase={1} />
+        <PhaseOnePanel />
       </Shown>
       <Shown
         name="Phase 2 · a player's orders"
         line="The dropdown once a player has imported an order: pick Coal rush and Egonal's step changes. Import an order opens the window beside it."
       >
-        <BuildOrderPanel phase={2} />
+        <ImportedOrdersPanel />
       </Shown>
       <Shown
         name="Phase 2 · importing"
@@ -235,7 +233,9 @@ export const BuildOrderLab = () => {
         line="The default order (left) in the same text a player writes and shares, and a player's own (right). Two rules need no line: level up when the realm can, and a worker hut when population is 3 from full."
       >
         <div className="flex items-start gap-3">
-          <pre className="rounded border border-white/10 p-3 font-mono text-xs text-white/80">{DEFAULT_ORDER}</pre>
+          <pre className="rounded border border-white/10 p-3 font-mono text-xs text-white/80">
+            {DEFAULT_BUILD_ORDER_TEXT}
+          </pre>
           <pre className="rounded border border-white/10 p-3 font-mono text-xs text-white/80">{COAL_RUSH}</pre>
         </div>
       </Shown>

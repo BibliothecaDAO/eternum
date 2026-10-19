@@ -1,21 +1,17 @@
-import { BuildingType, ResourcesIds, formatCount, formatPercent, type ID } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, type ID } from "@bibliothecadao/types";
+
+import { type BuildOrder, type BuildOrderBuilding, type BuildOrderStep, DEFAULT_BUILD_ORDER } from "./build-order";
 
 export type EmpireSuggestionAction =
   | "build-copper"
   | "build-coal"
-  | "build-first"
   | "build-military"
-  | "build-market"
   | "build-wheat"
   | "build-wood"
   | "build-worker-hut"
-  | "deploy-explorer"
-  | "expand-population"
-  | "garrison"
   | "upgrade";
 
 export type BlitzBuildKey = "copper" | "coal" | "military" | "wheat" | "wood" | "workerHut";
-type BlitzResourceBuildKey = "wood" | "coal" | "copper";
 
 type BlitzBuildability = {
   canBuild: boolean;
@@ -48,14 +44,9 @@ export type BlitzRealmSuggestionInput = {
   isBlitzActive: boolean;
   canAffordUpgrade: boolean;
   hasAvailableBuildingTile: boolean;
-  buildingTilesOccupied: number | null;
   buildingCounts: BlitzBuildingCounts;
   population: number;
   populationCapacity: number;
-  occupiedGuards: number;
-  maxGuards: number;
-  occupiedExplorers: number;
-  maxExplorers: number;
   militaryTarget?: BlitzMilitaryTarget | null;
   buildability: Record<BlitzBuildKey, BlitzBuildability>;
 };
@@ -69,30 +60,10 @@ export type BlitzSuggestionDraft = {
   buildingTypeHint?: BuildingType;
   resourceHint?: ResourcesIds;
   reason?: string;
-  emphasis: "primary" | "secondary";
   priority: number;
 };
 
-const BLITZ_TARGETS = {
-  foundationWheat: 2,
-  resourcesPerRealmLevel: 2,
-};
-
 const MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT = 3;
-// Always nudge toward keeping at least this many explorer armies on the map.
-// Deploying requires picking a hex, so the suggestion only opens the army modal.
-const EXPLORER_DEPLOYMENT_TARGET = 2;
-const MILITARY_TARGETS_BY_REALM_LEVEL = [0, 1, 3, 5];
-// Wheat farm target by realm level (index = realm level). Levels beyond the
-// last entry clamp to the final value. Scales the food economy with the realm
-// instead of jumping straight from the foundation (2) to a flat sprint target.
-const WHEAT_TARGETS_BY_REALM_LEVEL = [2, 4, 8, 12];
-const RESOURCE_BUILD_ORDER: BlitzResourceBuildKey[] = ["wood", "coal", "copper"];
-const RESOURCE_BUILD_LABELS: Record<BlitzResourceBuildKey, string> = {
-  wood: "wood camps",
-  coal: "coal mines",
-  copper: "copper mines",
-};
 
 const BUILD_TARGETS: Record<
   BlitzBuildKey,
@@ -146,59 +117,15 @@ const BUILD_TARGETS: Record<
   },
 };
 
-const isPopulationPressured = ({ population, populationCapacity }: BlitzRealmSuggestionInput) =>
-  populationCapacity > 0 && populationCapacity - population <= MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT;
-
-const canBuild = (input: BlitzRealmSuggestionInput, key: BlitzBuildKey) => input.buildability[key]?.canBuild === true;
-
-const hasFoundationEconomy = ({ buildingCounts }: BlitzRealmSuggestionInput) =>
-  buildingCounts.wheat >= BLITZ_TARGETS.foundationWheat &&
-  buildingCounts.wood > 0 &&
-  buildingCounts.coal > 0 &&
-  buildingCounts.copper > 0;
-
-const resolveRealmResourceTarget = ({ realmLevel }: BlitzRealmSuggestionInput) =>
-  Math.max(0, realmLevel * BLITZ_TARGETS.resourcesPerRealmLevel);
-
-const resolveSyncedResourceBuildKey = (input: BlitzRealmSuggestionInput): BlitzResourceBuildKey | null => {
-  const resourceTarget = resolveRealmResourceTarget(input);
-  if (resourceTarget <= 0) return null;
-
-  for (let targetCount = 1; targetCount <= resourceTarget; targetCount += 1) {
-    const nextResourceKey = RESOURCE_BUILD_ORDER.find((key) => input.buildingCounts[key] < targetCount);
-    if (nextResourceKey) return nextResourceKey;
-  }
-
-  return null;
+/** An order's building, as the realm's own count and build target name it. */
+const ORDER_KEYS: Record<BuildOrderBuilding, BlitzBuildKey> = {
+  farm: "wheat",
+  wood: "wood",
+  coal: "coal",
+  copper: "copper",
+  hut: "workerHut",
+  military: "military",
 };
-
-const resolveMilitaryTargetCount = ({ realmLevel }: BlitzRealmSuggestionInput) => {
-  const clampedLevel = Math.max(0, Math.min(realmLevel, MILITARY_TARGETS_BY_REALM_LEVEL.length - 1));
-  return MILITARY_TARGETS_BY_REALM_LEVEL[clampedLevel] ?? 0;
-};
-
-const resolveWheatTargetCount = ({ realmLevel }: BlitzRealmSuggestionInput) => {
-  const clampedLevel = Math.max(0, Math.min(realmLevel, WHEAT_TARGETS_BY_REALM_LEVEL.length - 1));
-  return WHEAT_TARGETS_BY_REALM_LEVEL[clampedLevel] ?? BLITZ_TARGETS.foundationWheat;
-};
-
-const hasRealmLevelBuildingTargets = (input: BlitzRealmSuggestionInput) => {
-  const resourceTarget = resolveRealmResourceTarget(input);
-  const militaryTargetCount = resolveMilitaryTargetCount(input);
-  const militaryTargetMet =
-    !input.militaryTarget || militaryTargetCount === 0 || input.militaryTarget.count >= militaryTargetCount;
-
-  return (
-    hasFoundationEconomy(input) &&
-    input.buildingCounts.wood >= resourceTarget &&
-    input.buildingCounts.coal >= resourceTarget &&
-    input.buildingCounts.copper >= resourceTarget &&
-    militaryTargetMet
-  );
-};
-
-const shouldSuggestGuard = (input: BlitzRealmSuggestionInput) =>
-  input.maxGuards > 0 && input.occupiedGuards === 0 && hasRealmLevelBuildingTargets(input);
 
 const createBaseSuggestion = (
   input: BlitzRealmSuggestionInput,
@@ -213,7 +140,6 @@ const createBaseSuggestion = (
   action,
   label,
   reason,
-  emphasis: action === "expand-population" ? "secondary" : "primary",
   priority,
 });
 
@@ -223,7 +149,6 @@ const createBuildSuggestion = (
   reason: string,
 ): BlitzSuggestionDraft => {
   const target = BUILD_TARGETS[key];
-
   if (key === "military" && input.militaryTarget) {
     return {
       ...createBaseSuggestion(input, target.action, `Build ${input.militaryTarget.label}`, target.priority, reason),
@@ -231,7 +156,6 @@ const createBuildSuggestion = (
       resourceHint: input.militaryTarget.resource,
     };
   }
-
   return {
     ...createBaseSuggestion(input, target.action, target.label, target.priority, reason),
     buildingTypeHint: target.buildingType,
@@ -239,118 +163,79 @@ const createBuildSuggestion = (
   };
 };
 
-const canSubmitBuildSuggestion = (input: BlitzRealmSuggestionInput, key: BlitzBuildKey) =>
-  input.hasAvailableBuildingTile && canBuild(input, key);
-
+/** A build the realm can submit now: a free plot and the cost held, as the construction window would send it. */
 const resolveBuildSuggestion = (
   input: BlitzRealmSuggestionInput,
   key: BlitzBuildKey,
   reason: string,
-): BlitzSuggestionDraft | null => {
-  if (!canSubmitBuildSuggestion(input, key)) return null;
-
-  return createBuildSuggestion(input, key, reason);
-};
+): BlitzSuggestionDraft | null =>
+  input.hasAvailableBuildingTile && input.buildability[key]?.canBuild === true
+    ? createBuildSuggestion(input, key, reason)
+    : null;
 
 /** How many of a target are built, in words: "1 of 4 built". */
 const builtOf = (count: number, target: number): string => `${count} of ${target} built`;
 
-const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  if (!input.canAffordUpgrade) return null;
+const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
+  input.canAffordUpgrade ? createBaseSuggestion(input, "upgrade", "Level up realm", 0, "It can level up now.") : null;
 
-  return createBaseSuggestion(input, "upgrade", "Level up realm", 0, "It can level up now.");
+const isPopulationPressured = ({ population, populationCapacity }: BlitzRealmSuggestionInput) =>
+  populationCapacity > 0 && populationCapacity - population <= MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT;
+
+const resolvePopulationSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
+  isPopulationPressured(input)
+    ? resolveBuildSuggestion(
+        input,
+        "workerHut",
+        `Population ${input.population} of ${input.populationCapacity}: a worker hut makes room for more.`,
+      )
+    : null;
+
+/** What a step counts, in words: "Wood camps", "Knight T1 buildings". */
+const STEP_NAMES: Record<Exclude<BuildOrderBuilding, "military">, string> = {
+  farm: "Wheat farms",
+  wood: "Wood camps",
+  coal: "Coal mines",
+  copper: "Copper mines",
+  hut: "Worker huts",
+};
+const stepName = (input: BlitzRealmSuggestionInput, building: BuildOrderBuilding): string =>
+  building === "military" ? `${input.militaryTarget?.label ?? "T1 military"} buildings` : STEP_NAMES[building];
+
+/** How many of a step's building the realm has; a realm with no military worth its biome has none to build. */
+const builtFor = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): number | null => {
+  const key = ORDER_KEYS[step.building];
+  if (key !== "military") return input.buildingCounts[key];
+  return input.militaryTarget ? input.militaryTarget.count : null;
 };
 
-const resolvePopulationSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  if (!isPopulationPressured(input)) return null;
-
+/**
+ * The order's next step for the realm: the first step of its rank or lower it has not met, offered only once it can be
+ * taken. An order is a sequence: a step waiting on resources holds the ones after it.
+ */
+const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOrder): BlitzSuggestionDraft | null => {
+  const next = order.steps.find((step) => {
+    const built = builtFor(input, step);
+    return step.rank <= input.realmLevel && built !== null && built < step.count;
+  });
+  if (!next) return null;
   return resolveBuildSuggestion(
     input,
-    "workerHut",
-    `Population ${input.population} of ${input.populationCapacity}: a worker hut makes room for more.`,
+    ORDER_KEYS[next.building],
+    `${stepName(input, next.building)}: ${builtOf(builtFor(input, next) ?? 0, next.count)}.`,
   );
 };
 
-const resolveWheatSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  const wheatTarget = resolveWheatTargetCount(input);
-  if (input.buildingCounts.wheat >= wheatTarget) {
-    return null;
-  }
-
-  const missing = wheatTarget - input.buildingCounts.wheat;
-  return resolveBuildSuggestion(
-    input,
-    "wheat",
-    `Build ${formatCount(missing, "farm")} for steady wheat (${builtOf(input.buildingCounts.wheat, wheatTarget)}).`,
-  );
-};
-
-const resolveResourceSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  const resourceKey = resolveSyncedResourceBuildKey(input);
-  if (!resourceKey) return null;
-
-  const resourceTarget = resolveRealmResourceTarget(input);
-  const resourceCount = input.buildingCounts[resourceKey];
-  const resourceLabel = RESOURCE_BUILD_LABELS[resourceKey];
-
-  return resolveBuildSuggestion(
-    input,
-    resourceKey,
-    `Build more ${resourceLabel} (${builtOf(resourceCount, resourceTarget)}).`,
-  );
-};
-
-const resolveMilitarySuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  const target = input.militaryTarget;
-  if (!target) return null;
-
-  const targetCount = resolveMilitaryTargetCount(input);
-  if (targetCount <= 0) return null;
-  if (target.count >= targetCount) return null;
-
-  const bonusLabel =
-    typeof target.bonusPercent === "number" && target.bonusPercent > 0
-      ? ` for ${formatPercent(target.bonusPercent / 100, { signed: true })} biome bonus`
-      : "";
-
-  return resolveBuildSuggestion(
-    input,
-    "military",
-    `Build more ${target.label}${bonusLabel} (${builtOf(target.count, targetCount)}).`,
-  );
-};
-
-const resolveGarrisonSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  if (!shouldSuggestGuard(input)) return null;
-
-  return createBaseSuggestion(input, "garrison", "Garrison realm", 100, "No defenders stationed.");
-};
-
-const resolveExplorerDeploymentSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  if (input.maxExplorers <= 0) return null;
-  if (input.occupiedExplorers >= EXPLORER_DEPLOYMENT_TARGET) return null;
-
-  // We can't auto-pick a deploy hex, so this only opens the army modal.
-  return createBaseSuggestion(
-    input,
-    "deploy-explorer",
-    "Deploy explorer army",
-    15,
-    `${input.occupiedExplorers} of ${EXPLORER_DEPLOYMENT_TARGET} armies in the field: deploy another to explore.`,
-  );
-};
-
-export const buildBlitzRealmSuggestions = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft[] => {
+/**
+ * A realm's one next step in a running Blitz: level up whenever it can, a worker hut whenever population is 3 from
+ * full, then the order's next step. The default order is the owner's.
+ */
+export const buildBlitzRealmSuggestions = (
+  input: BlitzRealmSuggestionInput,
+  order: BuildOrder = DEFAULT_BUILD_ORDER,
+): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
-
   const suggestion =
-    resolveUpgradeSuggestion(input) ??
-    resolvePopulationSuggestion(input) ??
-    resolveWheatSuggestion(input) ??
-    resolveExplorerDeploymentSuggestion(input) ??
-    resolveResourceSuggestion(input) ??
-    resolveMilitarySuggestion(input) ??
-    resolveGarrisonSuggestion(input);
-
+    resolveUpgradeSuggestion(input) ?? resolvePopulationSuggestion(input) ?? resolveOrderSuggestion(input, order);
   return suggestion ? [suggestion] : [];
 };

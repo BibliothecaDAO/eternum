@@ -29,7 +29,7 @@ type OrderSuggestion = EmpireSuggestion & { action: Exclude<EmpireSuggestion["ac
 export const isOrderSuggestion = (suggestion: EmpireSuggestion): suggestion is OrderSuggestion =>
   suggestion.action !== "upgrade";
 
-/** Build orders submit against their realm without changing the current selection. */
+/** A step's build submits against its realm without changing the current selection. */
 export const useSuggestionActions = () => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
@@ -44,20 +44,6 @@ export const useSuggestionActions = () => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
-
-  const focusRealm = useCallback(
-    async (realmId: ID, forceMap = false) => {
-      const target = playerStructures.find((structure) => structure.entityId === realmId);
-      if (target?.structure) {
-        const position = structureMapPosition(setup.store, target.structure);
-        if (!position) return;
-        await goToStructure(realmId, Position.fromContract(position), forceMap || isMapView);
-      } else {
-        setStructureEntityId(realmId);
-      }
-    },
-    [goToStructure, isMapView, playerStructures, setStructureEntityId],
-  );
 
   const runAutoBuildSuggestion = useCallback(
     async (suggestion: EmpireSuggestion) => {
@@ -86,42 +72,9 @@ export const useSuggestionActions = () => {
   const runSuggestionClick = useCallback(
     async (suggestion: OrderSuggestion) => {
       if (!canIssueOrders() || actNowRefusal()) return;
-
-      switch (suggestion.action) {
-        case "deploy-explorer":
-          await focusRealm(suggestion.realmId, true);
-          if (!canIssueOrders()) return;
-          usePopoverStore.getState().close();
-          useUIStore.getState().setSuggestedArmyDeploymentStructureId(safeInteger(suggestion.realmId));
-          return;
-        case "garrison":
-          await focusRealm(suggestion.realmId);
-          if (!canIssueOrders()) return;
-          setLeftNavigationView(LeftView.MilitaryView);
-          return;
-        case "build-wheat":
-        case "build-wood":
-        case "build-coal":
-        case "build-copper":
-        case "build-military":
-        case "build-market":
-        case "build-worker-hut":
-          await runAutoBuildSuggestion(suggestion);
-          return;
-        case "build-first":
-        case "expand-population":
-          await focusRealm(suggestion.realmId);
-          if (!canIssueOrders()) return;
-          setLeftNavigationView(LeftView.ConstructionView);
-          return;
-        default:
-          openSurface({
-            id: "production",
-            content: <ProductionModal preSelectedRealmId={safeInteger(suggestion.realmId)} />,
-          });
-      }
+      await runAutoBuildSuggestion(suggestion);
     },
-    [focusRealm, runAutoBuildSuggestion, setLeftNavigationView, openSurface],
+    [runAutoBuildSuggestion],
   );
 
   const beginPendingSuggestion = useCallback((suggestionId: string) => {

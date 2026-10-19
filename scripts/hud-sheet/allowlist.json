@@ -1,6 +1,6 @@
 {
   "apps/game/src/ui/design-system/atoms/checkbox.tsx": 6,
-  "apps/game/src/ui/design-system/atoms/hud-typography.ts": 13,
+  "apps/game/src/ui/design-system/atoms/hud-typography.ts": 11,
   "apps/game/src/ui/design-system/atoms/lib/utils.ts": 1,
   "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 17,
   "apps/game/src/ui/features/game-review/game-review-modal.tsx": 104,
@@ -9,7 +9,7 @@
   "apps/game/src/ui/features/world/containers/compact-hud.tsx": 35,
   "apps/game/src/ui/features/world/containers/left-facets/structure-actions-panel.tsx": 13,
   "apps/game/src/ui/features/world/containers/left-facets/structure-list-column.tsx": 1,
-  "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 5,
+  "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 4,
   "apps/game/src/ui/features/world/containers/left-facets/suggestions-panel.tsx": 9,
   "apps/game/src/ui/features/world/containers/top-header/hud-header-layout.tsx": 1,
   "apps/game/src/ui/features/world/hud/hud.css": 28

@@ -7,6 +7,7 @@ import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { ActionBubbles } from "./action-bubbles";
 import { GuidedRail } from "./guided-rail";
+import { BuildOrderPanel } from "./build-order-panel";
 import { HoldingsList, useHoldings } from "./holdings";
 import { useHudKeys } from "./hud-keys";
 import { useIdleArmies } from "./idle-armies";
@@ -29,7 +30,7 @@ import type { ReactNode } from "react";
  *
  * Nothing shows over the blank overlay.
  */
-export const DesktopHud = ({ buildOrder }: { buildOrder?: ReactNode }) => {
+export const DesktopHud = ({ buildOrder = <BuildOrderPanel /> }: { buildOrder?: ReactNode }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const idleArmies = useIdleArmies();
   useHudKeys({ idleArmies });
