@@ -9,15 +9,15 @@ status page. Only an outage players feel, which only the owner can end, is email
 
 The outage and its recovery are each emailed exactly once; components that cross the ten minutes in the same minute,
 such as a world and launches when the box stops, share one email, and so do their recoveries. At most four emails go out
-in any 24 hours (`status_alert_capped` in the log when one is held back), counted until a day after the latest each
-could have been accepted (a run hands emails to Resend only within 50 s of its check, `status_alert_deferred` for the
-rest), so a send delayed by a Resend outage or a slow send still counts: the fourth says the earliest time email can
-resume, and a change made meanwhile is emailed then only if it is still true. Shorter outages, slowdowns and every other
-component stay on the status page; read it first. Each email is recorded in the monitor's state before it is sent and
-retried as recorded until Resend confirms it; one Resend has not confirmed within 23 hours is dropped and logged as
-`status_alert_expired` (the status page still shows the incident), because past Resend's 24-hour key a resend could be a
-second email. The email names the component; find it below. Dev is `play.dev-realms.party` and the box's dev shard is
-`realms-dev`. Production is `play.realms.party`, and its Worker names drop `-staging`.
+in any 24 hours (`status_alert_capped` in the log when one is held back), each held until a day after an hour past its
+last hand-off to Resend, so a send delayed by a Resend outage, a slow send or a lost answer still counts: the fourth
+says the earliest time email can resume, and a change made meanwhile is emailed then only if it is still true. Shorter
+outages, slowdowns and every other component stay on the status page; read it first. Each email is recorded in the
+monitor's state before it is sent and retried as recorded until Resend confirms it; one Resend has not confirmed within
+23 hours is dropped and logged as `status_alert_expired` (the status page still shows the incident), because past
+Resend's 24-hour key a resend could be a second email. The email names the component; find it below. Dev is
+`play.dev-realms.party` and the box's dev shard is `realms-dev`. Production is `play.realms.party`, and its Worker names
+drop `-staging`.
 
 Commands for the box run there (`ssh realms-dev`). Worker logs need the Cloudflare token:
 `pnpm --dir <app> exec wrangler tail <worker>`.

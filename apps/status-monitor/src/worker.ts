@@ -1,6 +1,6 @@
 import { environmentL2, type ValueEnvironment } from "@realms-world/chain";
 import { Effect } from "effect";
-import { NO_ALERTS, recordNotices, SEND_SECONDS, sendNotices, type Alerting } from "./alerts";
+import { NO_ALERTS, recordNotices, sendNotices, type Alerting } from "./alerts";
 import { isStatusDocument, STATE_KEY, type MonitorState } from "./model";
 import { probeServices, type PublicValueTargets } from "./probes";
 import { nextMonitorState } from "./state";
@@ -24,13 +24,12 @@ interface Env {
 export const monitor = (
   bucket: R2Bucket,
   network: typeof fetch,
-  clock: () => number,
+  now: number,
   targets: PublicValueTargets,
   alerting?: Alerting,
 ) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const now = Math.floor(clock());
       const { object, previous } = yield* Effect.promise(() => readMonitorState(bucket));
       if (previous && Math.floor(previous.document.checked_at / 60) >= Math.floor(now / 60)) return;
       const result = yield* Effect.promise(() => probeServices(network, now, previous?.targets ?? [], targets));
@@ -39,9 +38,7 @@ export const monitor = (
       next.alerts = recordNotices(next.document, previous?.alerts ?? NO_ALERTS, alerting);
       const written = yield* Effect.promise(() => publishObservation(bucket, object, next));
       if (!alerting || next.alerts.outbox.length === 0) return;
-      const sent = yield* Effect.promise(() =>
-        sendNotices(next.alerts!.outbox, alerting.apiKey, network, clock, now + SEND_SECONDS),
-      );
+      const sent = yield* Effect.promise(() => sendNotices(next.alerts!.outbox, alerting.apiKey, network));
       if (sent.size === 0) return;
       const outbox = next.alerts.outbox.filter((notice) => !sent.has(notice.key));
       yield* Effect.promise(() => recordSent(bucket, written, { ...next, alerts: { ...next.alerts!, outbox } }));
@@ -82,7 +79,7 @@ const publishObservation = async (bucket: R2Bucket, object: { etag: string } | n
 export default {
   async scheduled(_controller: ScheduledController, env: Env) {
     try {
-      await monitor(env.STATUS_BUCKET, fetch, () => Date.now() / 1000, valueTargetsOf(env), alertingOf(env));
+      await monitor(env.STATUS_BUCKET, fetch, Math.floor(Date.now() / 1000), valueTargetsOf(env), alertingOf(env));
     } catch {
       console.error("status_monitor_failed");
       throw new Error("Status observation was not published");

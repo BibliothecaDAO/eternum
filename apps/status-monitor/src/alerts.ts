@@ -20,27 +20,21 @@ export const NOTICE_LIFETIME_SECONDS = 23 * 3600;
 
 /**
  * At most this many emails go out in any 24 hours: the Resend account also sends players' sign-in codes, and on 10-17
- * an uncapped monitor's 340 emails blocked them. A notice holds its place from when it is recorded until a day after the
- * last minute it was handed to Resend, which is when its email may have gone out: a send delayed by an outage, or one
- * whose answer was lost, keeps its place as long as it could still be delivered. The last notice allowed says so;
- * changes after it wait, untold, for a place, and only the ones still true then are told. The status page always shows
- * everything.
+ * an uncapped monitor's 340 emails blocked them. A notice holds its place from when it is recorded until a day after it
+ * could last have been accepted, which is the last time it was handed to Resend plus ACCEPTANCE_SECONDS. The last notice
+ * allowed says so; changes after it wait, untold, for a place, and only the ones still true then are told. The status
+ * page always shows everything.
  */
 export const DAILY_EMAILS = 4;
 const DAY_SECONDS = 24 * 3600;
 
 /**
- * A run hands notices to Resend only within this many seconds of its observation: a request still open then is aborted,
- * and what is left goes out on a later run. Requests run one after another, so this, not the observation time, bounds
- * when an email can be accepted.
+ * How long after a hand-off Resend may still accept that email. A request whose answer we never saw, even one we gave up
+ * on, can finish on Resend's side later; an hour is far beyond any acceptance seen. This is the cap's one assumption: no
+ * client can know when a lost request was accepted, and an unresolved one that never freed its place would close the cap
+ * for good.
  */
-export const SEND_SECONDS = 50;
-/**
- * How long after its observation a run's notices hold their places from: the send deadline, plus room for Resend to
- * finish a request that was aborted at it. A place lasts a day from here, so it covers the latest moment that run's email
- * could have been accepted.
- */
-export const RESERVED_SECONDS = 300;
+export const ACCEPTANCE_SECONDS = 3600;
 
 /** Where alerts go: the operator's address, through the Resend account the identity Worker already sends from. */
 export interface Alerting {
@@ -58,7 +52,7 @@ export interface Notice {
   text: string;
 }
 
-/** One notice's place in the daily cap: the latest moment its last run could have handed it to Resend. */
+/** One notice's place in the daily cap: the latest time Resend could have accepted it. */
 export interface Reservation {
   key: string;
   at: number;
@@ -91,10 +85,10 @@ export function recordNotices(
     if (!live) console.error(JSON.stringify({ event: "status_alert_expired", key: notice.key }));
     return live;
   });
-  // The monitor sends the whole outbox right after writing this state, so each queued notice may go out in this run.
-  const handOff = now + RESERVED_SECONDS;
+  // The monitor sends the whole outbox right after writing this state, so each queued notice is handed over now.
+  const acceptedBy = now + ACCEPTANCE_SECONDS;
   const places = new Map((previous.sent ?? []).map((place) => [place.key, place.at]));
-  for (const notice of outbox) places.set(notice.key, handOff);
+  for (const notice of outbox) places.set(notice.key, acceptedBy);
   const state = () => ({
     told: [...told],
     outbox,
@@ -124,10 +118,10 @@ export function recordNotices(
       continue;
     }
     // A place frees a day after its notice could last have been accepted: never sooner than a day after the earliest.
-    const limitEndsAt = held.length + 1 === DAILY_EMAILS ? Math.min(handOff, ...held) + DAY_SECONDS : null;
+    const limitEndsAt = held.length + 1 === DAILY_EMAILS ? Math.min(acceptedBy, ...held) + DAY_SECONDS : null;
     const notice = noticeOf(alerting, change.incidents, change.news, now, limitEndsAt);
     outbox.push(notice);
-    places.set(notice.key, handOff);
+    places.set(notice.key, acceptedBy);
     for (const incident of change.incidents)
       if (change.news === "opened") told.add(incident.id);
       else told.delete(incident.id);
@@ -135,26 +129,10 @@ export function recordNotices(
   return state();
 }
 
-/**
- * Sends each recorded notice, exactly as recorded, one after another until `deadline` (seconds by `clock`): a request
- * still open then is aborted, and later notices wait for the next run. Returns the keys Resend confirmed.
- */
-export async function sendNotices(
-  outbox: readonly Notice[],
-  apiKey: string,
-  network: typeof fetch,
-  clock: () => number,
-  deadline: number,
-) {
+/** Sends each recorded notice, exactly as recorded; returns the keys Resend confirmed. */
+export async function sendNotices(outbox: readonly Notice[], apiKey: string, network: typeof fetch) {
   const confirmed = new Set<string>();
-  for (const notice of outbox) {
-    const left = deadline - clock();
-    if (left <= 0) {
-      console.error(JSON.stringify({ event: "status_alert_deferred", key: notice.key }));
-      continue;
-    }
-    if (await sendNotice(notice, apiKey, network, AbortSignal.timeout(left * 1000))) confirmed.add(notice.key);
-  }
+  for (const notice of outbox) if (await sendNotice(notice, apiKey, network)) confirmed.add(notice.key);
   return confirmed;
 }
 
@@ -203,11 +181,10 @@ function noticeOf(
   };
 }
 
-async function sendNotice(notice: Notice, apiKey: string, network: typeof fetch, signal: AbortSignal) {
+async function sendNotice(notice: Notice, apiKey: string, network: typeof fetch): Promise<boolean> {
   try {
     const response = await network("https://api.resend.com/emails", {
       method: "POST",
-      signal,
       headers: {
         authorization: `Bearer ${apiKey}`,
         "content-type": "application/json",
