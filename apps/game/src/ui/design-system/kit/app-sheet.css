@@ -274,8 +274,10 @@
 }
 
 /* ── Tabs: views of one thing; the chosen one raised. ── */
+/* Tabs never run past their column: each word stays on one line, and the side padding narrows on a phone. */
 .app-tabs {
   display: inline-flex;
+  max-width: 100%;
   gap: theme(spacing.1);
   border: 1px solid var(--app-line);
   border-radius: var(--app-radius-control);
@@ -286,7 +288,8 @@
   position: relative;
   height: calc(var(--app-control) - 10px);
   border-radius: calc(var(--app-radius-control) - 4px);
-  padding: 0 theme(spacing.5);
+  padding: 0 clamp(theme(spacing.2), 3vw, theme(spacing.5));
+  white-space: nowrap;
   font-family: var(--app-face-strong);
   font-size: var(--app-text-label);
   font-weight: var(--app-weight-strong);
