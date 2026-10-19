@@ -60,8 +60,9 @@ const PhoneBoards = () => {
           { key: "frontier", label: ageOf("frontier").name },
           { key: "blitz", label: ageOf("blitz").name },
         ]}
-      />
-      {view === "frontier" ? <FrontierPanel rowsShown={ROWS_SHOWN.phone} /> : <BlitzBoard />}
+      >
+        {view === "frontier" ? <FrontierPanel rowsShown={ROWS_SHOWN.phone} /> : <BlitzBoard />}
+      </AppTabs>
     </>
   );
 };

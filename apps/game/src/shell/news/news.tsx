@@ -48,8 +48,9 @@ const Release = ({ note }: { note: PatchNote }) => {
         value={section}
         onChange={setSection}
         label={NEWS_WORDS.patchNotes}
-      />
-      <PatchSection note={note} mode={section} />
+      >
+        <PatchSection note={note} mode={section} />
+      </AppTabs>
     </>
   );
 };

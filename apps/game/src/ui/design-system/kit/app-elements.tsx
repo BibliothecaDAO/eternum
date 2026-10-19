@@ -1,6 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type AnchorHTMLAttributes, type ButtonHTMLAttributes, type ReactNode, useId } from "react";
+import { type AnchorHTMLAttributes, type ButtonHTMLAttributes, type KeyboardEvent, type ReactNode, useId } from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
 
 import { BACK } from "./words";
@@ -187,34 +187,71 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) => (
   </AppLink>
 );
 
-/** A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised. */
+/** The keys that move between tabs, by where each sends the choice from the chosen tab's index. */
+const TAB_KEYS: Record<string, (index: number, count: number) => number> = {
+  ArrowRight: (index, count) => (index + 1) % count,
+  ArrowLeft: (index, count) => (index - 1 + count) % count,
+  Home: () => 0,
+  End: (_index, count) => count - 1,
+};
+
+/**
+ * A switch between views of one thing (Blitz | Eternum, Off | Important | All); the chosen one raised, and the chosen
+ * view below it as its panel. One tab stop: the arrows, Home and End move the choice, as tabs do.
+ */
 export const AppTabs = <K extends string>({
   tabs,
   value,
   onChange,
   label,
+  children,
 }: {
   tabs: readonly { key: K; label: string; dot?: boolean }[];
   value: K;
   onChange?: (key: K) => void;
   label: string;
-}) => (
-  <div className="app-tabs" role="tablist" aria-label={label}>
-    {tabs.map((tab) => (
-      <button
-        key={tab.key}
-        type="button"
-        role="tab"
-        aria-selected={tab.key === value}
-        className="app-tabs__tab"
-        onClick={() => onChange?.(tab.key)}
-      >
-        {tab.label}
-        {tab.dot && <i className="app-tabs__dot" aria-label="Something of yours" />}
-      </button>
-    ))}
-  </div>
-);
+  /** The chosen view. */
+  children?: ReactNode;
+}) => {
+  const id = useId();
+  const tabId = (key: K) => `${id}-tab-${key}`;
+  const choose = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const move = TAB_KEYS[event.key];
+    if (!move || !onChange) return;
+    event.preventDefault();
+    const next = move(index, tabs.length);
+    onChange(tabs[next].key);
+    (event.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
+  };
+  return (
+    <>
+      <div className="app-tabs" role="tablist" aria-label={label}>
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.key}
+            id={tabId(tab.key)}
+            type="button"
+            role="tab"
+            aria-selected={tab.key === value}
+            aria-controls={children === undefined ? undefined : `${id}-panel`}
+            tabIndex={tab.key === value ? 0 : -1}
+            className="app-tabs__tab"
+            onClick={() => onChange?.(tab.key)}
+            onKeyDown={(event) => choose(event, index)}
+          >
+            {tab.label}
+            {tab.dot && <i className="app-tabs__dot" aria-label="Something of yours" />}
+          </button>
+        ))}
+      </div>
+      {children !== undefined && (
+        <div role="tabpanel" id={`${id}-panel`} aria-labelledby={tabId(value)}>
+          {children}
+        </div>
+      )}
+    </>
+  );
+};
 
 /**
  * The app's one panel: its name (its icon before it, a cue at its end) over a rule, then its body. A panel about one
