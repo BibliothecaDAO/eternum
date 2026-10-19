@@ -11,6 +11,18 @@ import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { GameFinishedPill } from "./game-finished-pill";
 import { resolveGameClock } from "./game-clock-policy";
 
+/** The game's clock as the top bar reads it: its phase (not started, live, finished), its end and now. */
+const useGameClockReading = () => {
+  const { gameStartMainAt: startAt, gameEndAt: endAt } = useFactView(seasonClockView);
+  const now = useCurrentBlockTimestamp();
+  const armyTickSeconds = configManager.getTick(TickIds.Armies);
+  const clock = resolveGameClock({ startAt, endAt, now, armyTickSeconds, gameOver: configManager.isGameOver() });
+  return { clock, endAt, now };
+};
+
+/** Whether the game has finished, as the top bar's clock says it (its Game finished pill). */
+export const useGameFinished = (): boolean => useGameClockReading().clock.phase === "finished";
+
 const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "urgency-border-final"];
 
 /**
@@ -18,10 +30,7 @@ const URGENCY_CLASSES = ["urgency-border-warning", "urgency-border-critical", "u
  * only lights the scene), so the clock carries no day phase.
  */
 export const GameClock = memo(({ compact = false }: { compact?: boolean }) => {
-  const { gameStartMainAt: startAt, gameEndAt: endAt } = useFactView(seasonClockView);
-  const now = useCurrentBlockTimestamp();
-  const armyTickSeconds = configManager.getTick(TickIds.Armies);
-  const clock = resolveGameClock({ startAt, endAt, now, armyTickSeconds, gameOver: configManager.isGameOver() });
+  const { clock, endAt, now } = useGameClockReading();
   const remaining = clock.phase === "live" && endAt ? endAt - now : Infinity;
   const urgency = remaining <= 30 ? "final" : remaining <= 120 ? "critical" : remaining <= 300 ? "warning" : null;
   useEffect(() => {

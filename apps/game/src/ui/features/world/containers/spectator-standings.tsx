@@ -10,6 +10,7 @@ import { gameStructuresView } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
+import { useGameFinished } from "./top-header/game-clock";
 import { selectSpectatorStandings } from "./spectator-standings-model";
 
 /** Rank, player and points. */
@@ -40,6 +41,7 @@ function StandingsRows() {
   const navigate = useNavigateToMapView();
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
   const rows = selectSpectatorStandings(standings, selectedOwner);
+  const finished = useGameFinished();
 
   return (
     <>
@@ -73,7 +75,11 @@ function StandingsRows() {
           </HudTableRow>
         );
       })}
-      {!rows.length && <p className="px-3 py-4 text-hud-label text-hud-muted">No points scored yet</p>}
+      {!rows.length && (
+        <p className="px-3 py-4 text-hud-label text-hud-muted">
+          {finished ? "No points scored" : "No points scored yet"}
+        </p>
+      )}
     </>
   );
 }

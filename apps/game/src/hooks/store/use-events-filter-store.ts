@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { EventsFilter } from "@/ui/features/event-feed/event-stories";
 
 /** What a player has not chosen yet: the important events. */
@@ -28,12 +29,16 @@ const useEventsFilterStore = create<EventsFilterState>()(
   ),
 );
 
-/** The signed-in player's filter for Events and the Log, and how to change it; a spectator's is kept as anyone's. */
+/**
+ * The signed-in player's filter for Events and the Log, and how to change it; a spectator's is kept as anyone's. A
+ * spectator has nothing of their own to show, so Mine reads as All while they watch.
+ */
 export const useEventsFilter = (): [EventsFilter, (filter: EventsFilter) => void] => {
   const player = playerKey(useAccountStore((state) => state.account?.address ?? null));
-  const filter = useEventsFilterStore((state) => state.byPlayer[player] ?? DEFAULT_FILTER);
+  const chosen = useEventsFilterStore((state) => state.byPlayer[player] ?? DEFAULT_FILTER);
+  const watching = useUIStore((state) => state.isSpectating);
   const choose = useEventsFilterStore((state) => state.choose);
-  return [filter, (next) => choose(player, next)];
+  return [watching && chosen === "mine" ? "all" : chosen, (next) => choose(player, next)];
 };
 
 /** A player's key, the same however their address is written; one key for a viewer with no account. */

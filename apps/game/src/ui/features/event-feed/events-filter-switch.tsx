@@ -1,4 +1,5 @@
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import type { EventsFilter } from "./event-stories";
 
@@ -16,9 +17,11 @@ const FILTERS: { id: EventsFilter; word: string; tip: string }[] = [
 /** The player's one filter for Events and the Log: the same choice in both, remembered for them on this device. */
 export const EventsFilterSwitch = () => {
   const [filter, choose] = useEventsFilter();
+  // A spectator has nothing of their own: Mine is not offered while they watch.
+  const watching = useUIStore((state) => state.isSpectating);
   return (
     <span role="group" aria-label="Event filter" className="inline-flex items-center gap-1">
-      {FILTERS.map(({ id, word, tip }) => (
+      {FILTERS.filter(({ id }) => !(watching && id === "mine")).map(({ id, word, tip }) => (
         <HudButton
           key={id}
           kind="quiet"

@@ -1,3 +1,4 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { skipGameEnd } from "@/three/effects/endgame/state";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -18,6 +19,7 @@ const GAME_FINISHED_POPOVER_ID = "game-finished";
 export const GameFinishedPill = () => {
   const isOpen = usePopoverStore((state) => state.openId === GAME_FINISHED_POPOVER_ID);
   const togglePopover = usePopoverStore((state) => state.toggle);
+  const watching = useUIStore((state) => state.isSpectating);
   const navigate = useNavigate();
   const goToResults = useCallback(() => {
     const game = requireActiveGame();
@@ -47,7 +49,9 @@ export const GameFinishedPill = () => {
       <div className="flex flex-col gap-3">
         <span className="text-hud-title text-hud-ink">This game has ended</span>
         <span className="text-hud-body text-hud-ink">
-          Your place, the standings and rewards are on its Results page. The map stays open here. Escape skips the mist.
+          {watching
+            ? "The final standings are on its Results page. The map stays open here to scout. Escape skips the mist."
+            : "Your place, the standings and rewards are on its Results page. The map stays open here. Escape skips the mist."}
         </span>
         <HudButton kind="primary" onClick={goToResults}>
           See the results
