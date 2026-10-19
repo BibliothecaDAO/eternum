@@ -10,6 +10,7 @@ import {
   setChainProvenTimestampSource,
 } from "@bibliothecadao/eternum";
 import { getRelicInfo, ResourcesIds, TickIds, type Troops, formatWait } from "@bibliothecadao/types";
+import { relicShortName } from "@/ui/design-system/kit/words";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
@@ -100,7 +101,8 @@ it("renders every relic family from its facts and replaces the displayed expiry"
   };
   const host = document.createElement("div");
   const root = createRoot(host);
-  const damageName = getRelicInfo(ResourcesIds.DamageRelic1)!.name;
+  // Named as the held chip names it ("Damage I"), never the table's long name with its bonus after it.
+  const damageName = relicShortName(ResourcesIds.DamageRelic1);
   const captions = () => host.querySelectorAll("[title]");
   try {
     act(() =>
@@ -112,6 +114,8 @@ it("renders every relic family from its facts and replaces the displayed expiry"
       ),
     );
     expect(captions()).toHaveLength(8);
+    expect(host.textContent).not.toContain(getRelicInfo(ResourcesIds.DamageRelic1)!.name);
+    expect(host.textContent).not.toContain("·");
     expect(host.textContent).toContain(`${formatWait(30)} left`);
     army = { ...army, boosts: { ...army.boosts, incr_damage_dealt_end_at: 62 } };
     act(() => useChainTimeStore.getState().setHeartbeat({ timestamp: 61_000 }));

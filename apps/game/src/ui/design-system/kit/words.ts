@@ -868,6 +868,19 @@ export const relicShortName = (relicId: ResourcesIds): string => {
   return relic.name.replace(" Relic", "");
 };
 
+/** The title of a window that activates a relic: "Activate Stamina I". */
+export const activateRelic = (relicId: ResourcesIds): string => `Activate ${relicShortName(relicId)}`;
+
+/** Who would activate a relic: an army, named by the realm it came from ("Army of Egonal"), or a structure. */
+export const relicHolderLine = (isArmy: boolean, home: string | null): string =>
+  isArmy ? (home ? `${ARMY} of ${home}` : ARMY) : "Structure";
+
+/** A stamina relic on an army already at full stamina: it speeds a refill the army has not started. */
+export const STAMINA_FULL = {
+  line: "Stamina is full",
+  why: "This relic speeds the refill: it helps only if the army spends stamina while it works",
+} as const;
+
 /** A relic's activation as the game's relic rules set it: what it costs, and how long it works. */
 interface RelicActivation {
   essenceCost: number;

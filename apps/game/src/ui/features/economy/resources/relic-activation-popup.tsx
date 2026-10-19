@@ -2,6 +2,7 @@ import { HudButton, HudChip, HudNotice, HudRow, HudWindow, HudWindowFoot } from 
 import { useGame } from "@/hooks/context/game-context";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import React, { useState } from "react";
+import { activateRelic, relicShortName } from "@/ui/design-system/kit/words";
 
 import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../../relics/hooks/use-relic-activation";
 import {
@@ -84,7 +85,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   };
 
   return (
-    <HudWindow title="Activate Relic" icon="relics" size="task" onClose={onClose}>
+    <HudWindow title={activateRelic(relicResourceId)} icon="relics" size="task" onClose={onClose}>
       <HudWindowFoot>
         <HudButton kind="quiet" onClick={onClose} disabled={isLoading}>
           Cancel
@@ -102,7 +103,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         <HeldRelic relicId={relicResourceId} held={String(relicBalance)} />
         {relicInfo && (
           <HudRow
-            title={relicInfo.name}
+            title={relicShortName(relicResourceId)}
             detail={relicInfo.effectLine}
             trail={
               <span className="flex gap-1">

@@ -22,6 +22,9 @@ import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../h
 import { HeldRelic, RelicEssenceRequirement, RelicIncompatibilityNotice } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { getExplorerStaminaSnapshot } from "@/lib/army-stamina/source-resolution";
+import { activateRelic, relicHolderLine, STAMINA_FULL } from "@/ui/design-system/kit/words";
 
 /** A structure or army holding a relic, with how many it holds: one choice of who activates it. */
 export interface RelicHolderPreview {
@@ -74,10 +77,7 @@ const RelicActivationHolderCard = ({
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(holder.entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
-  const parentRealmLabel = (() => {
-    if (holder.parentStructureName) return holder.parentStructureName;
-    return holder.parentStructureId != null ? "Realm" : null;
-  })();
+  const staminaFull = useStaminaFull(isArmyHolder ? holder.troops : null);
 
   return (
     <HudPanel
@@ -88,8 +88,7 @@ const RelicActivationHolderCard = ({
     >
       <div className="flex flex-col gap-2">
         <HudRow
-          title={`ID: ${holder.entityId}`}
-          detail={isArmyHolder && parentRealmLabel ? `Parent Realm · ${parentRealmLabel}` : undefined}
+          title={relicHolderLine(isArmyHolder, holder.parentStructureName)}
           trail={
             <span className="flex gap-1">
               <HudChip tone={compatible ? "good" : "bad"}>{compatible ? "Compatible" : "Incompatible"}</HudChip>
@@ -107,6 +106,9 @@ const RelicActivationHolderCard = ({
           hasEnoughEssence={hasEnoughEssence}
         />
         {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={holder.recipientType} />}
+        {compatible && relicInfo?.type === "Stamina" && staminaFull && (
+          <HudNotice tone="warn" line={STAMINA_FULL.line} why={STAMINA_FULL.why} />
+        )}
         {activationError && <HudNotice tone="bad" line={activationError} />}
         <span className="flex justify-end">
           <HudButton
@@ -121,6 +123,13 @@ const RelicActivationHolderCard = ({
       </div>
     </HudPanel>
   );
+};
+
+/** Whether an army's stamina is at its most now: a relic that speeds the refill then has nothing to refill. */
+const useStaminaFull = (troops: Troops | null): boolean => {
+  const now = useCurrentDefaultTick();
+  const stamina = getExplorerStaminaSnapshot({ timestamp: now, liveTroops: troops });
+  return stamina !== null && stamina.current >= stamina.max;
 };
 
 const toEntityId = (value: unknown, fallback: ID): ID => {
@@ -285,7 +294,7 @@ export const RelicActivationSelector = ({
   };
 
   return (
-    <HudWindow title="Select Activation Target" icon="relics" size="task" onClose={onClose}>
+    <HudWindow title={activateRelic(relicResourceId)} icon="relics" size="task" onClose={onClose}>
       <div className="flex flex-col gap-3">
         <HeldRelic relicId={relicResourceId} held={visibleDisplayAmount} />
         {relicDescription && <p className="text-hud-label text-hud-muted">{relicDescription}</p>}
