@@ -22,6 +22,8 @@ AREAS = {
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
         "apps/game/**",
+        # apps/game/scripts/capture-hud-lab.mjs holds the HUD stage to the sheet's bottom-left rule.
+        "scripts/hud-sheet/clearance.mjs",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
         "apps/launch-service/migrations/0007_game_entry.sql",
