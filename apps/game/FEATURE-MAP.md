@@ -55,7 +55,8 @@ each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry 
 the player's place and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a
 release's patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
 sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts
-it on the lab's game: `blitz`, `frontier`, `blitz-spectator`, `blitz-finished`;
+it on the lab's game: `blitz`, `blitz-build-order` (four realms' steps in the rail's Build order place, under Next up: a
+stand-in until the Build order panel lands), `frontier`, `blitz-spectator`, `blitz-finished`;
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
 region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
