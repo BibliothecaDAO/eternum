@@ -826,6 +826,7 @@ export const HudRing = ({
  */
 export const HudRow = ({
   lead,
+  label,
   title,
   detail,
   trail,
@@ -836,6 +837,8 @@ export const HudRow = ({
   onClick,
 }: {
   lead?: ReactNode;
+  /** The name of the button that chooses the row, where its words say more than its name (an army's figures). */
+  label?: string;
   title: ReactNode;
   detail?: ReactNode;
   /**
@@ -859,6 +862,7 @@ export const HudRow = ({
           <button
             type="button"
             className="ui-row__choose"
+            aria-label={label}
             aria-pressed={selected}
             disabled={disabled}
             onClick={onClick}
@@ -889,6 +893,7 @@ export const HudRow = ({
     <button
       type="button"
       className="ui-row"
+      aria-label={label}
       role="option"
       aria-selected={selected}
       data-state={state}
@@ -1619,31 +1624,39 @@ export const HudBubble = ({
   </button>
 );
 
-/** How full a thing is (stamina, production, a load), from 0 to 1, in a tone; `filling` while it refills (stamina). */
+/**
+ * How full a thing is, in a tone; `filling` while it refills (stamina). Given as a `share` from 0 to 1 (production, a
+ * load), it reads as a percentage; given as an `amount` (an army's stamina), it reads as that amount of its maximum,
+ * so a reader of the meter gets the amount itself, as the phone's stamina segments give it (unknown reads as nothing).
+ */
 export const HudMeter = ({
   share,
+  amount,
   tone,
   label,
   filling = false,
 }: {
-  share: number;
   tone?: Tone;
   label: string;
   filling?: boolean;
-}) => (
-  <span
-    className="ui-meter block"
-    data-filling={filling || undefined}
-    role="meter"
-    aria-label={label}
-    aria-valuenow={Math.round(share * 100)}
-    aria-valuemin={0}
-    aria-valuemax={100}
-    data-tone={tone}
-  >
-    <i style={{ width: `${Math.min(1, Math.max(0, share)) * 100}%` }} />
-  </span>
-);
+} & ({ share: number; amount?: never } | { amount: { current: number; max: number } | undefined; share?: never })) => {
+  const exact = share === undefined;
+  const fill = exact ? (amount && amount.max > 0 ? amount.current / amount.max : 0) : share;
+  return (
+    <span
+      className="ui-meter block"
+      data-filling={filling || undefined}
+      role="meter"
+      aria-label={label}
+      aria-valuenow={exact ? amount?.current : Math.round(fill * 100)}
+      aria-valuemin={0}
+      aria-valuemax={exact ? amount?.max : 100}
+      data-tone={tone}
+    >
+      <i style={{ width: `${Math.min(1, Math.max(0, fill)) * 100}%` }} />
+    </span>
+  );
+};
 
 /** What a relic works on: its chip takes that kind's colour. */
 type RelicKind = "stamina" | "damage" | "damage-reduction" | "exploration" | "production";

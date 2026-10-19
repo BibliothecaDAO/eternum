@@ -258,11 +258,12 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 
-/** What an army's Homecoming sends home when its day ends (a screen reader's word; the screen shows Su and Tr). */
-export const RETURNED = "troops returned";
-
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
+/** A realm's armies, as a list's name. */
+export const ARMIES = "Armies";
+/** How many troops an army holds: "1 troop", "5,000 troops". */
+export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
 export const revealLine = (amount: string, resource: string) => `+${amount} ${resource}`;

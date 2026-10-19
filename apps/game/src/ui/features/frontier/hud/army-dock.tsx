@@ -1,4 +1,3 @@
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
@@ -14,12 +13,15 @@ import { attributeBadgeTarget } from "../attributes/attributes";
 import { useOpenArmySlots } from "../deploy/open-slots";
 import { useDeployPointed } from "../guide/guide-pointer";
 import { useWellRefill } from "../sites/well-refill";
+import { ArmyList, ArmyRow } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
 /**
- * The dock on a phone: one row with every slot the castle grants in view, the armies out today and then an open slot
- * for each army still to deploy. A visited realm shows its armies read-only and no open slot.
+ * The realm's armies today. On a phone, the dock: one row with every slot the castle grants in view, the armies out
+ * and then an open slot for each army still to deploy. On a desktop, the list down the left: a row each, then one
+ * Deploy while a slot is open, the header counting the slots that stand, and nothing when there is neither (a realm
+ * watched with no army out). A visited realm shows its armies read-only and no Deploy.
  */
 export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; armies: DockArmy[] }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -27,43 +29,50 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
   // Only the actor's own armies are pan targets: a visited realm's army regions are not streamed.
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
   const openSlots = useOpenArmySlots(realm);
-  const openCount = openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length);
-  // Desktop has the width for full cards down the left; a phone keeps one row of tokens.
-  const wide = useLayout() === "desktop";
-  return (
-    <nav aria-label="Armies" className={cn("pointer-events-auto flex gap-1.5", wide && "flex-col")}>
-      {armies.map((army, index) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} guided={own && index === 0} wide={wide} />
-      ))}
-      {ordersAllowed &&
-        Array.from({ length: openCount }, (_, index) => (
-          <DeploySlot
-            realm={realm}
-            key={openSlots?.[index]?.slot ?? `open-${index}`}
-            first={index === 0}
-            pulse={index === 0 && armies.length === 0}
-            wide={wide}
-          />
+  const openCount = ordersAllowed
+    ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
+    : 0;
+  const desktop = useLayout() === "desktop";
+  if (desktop && armies.length === 0 && openCount === 0) return null;
+  if (desktop)
+    return (
+      <ArmyList used={armies.length} allowed={armies.length + openCount}>
+        {armies.map((army, index) => (
+          <DockArmyRow key={army.explorerId} army={army} pickable={own} guided={own && index === 0} />
         ))}
+        {openCount > 0 && <DeploySlot realm={realm} pulse={armies.length === 0} wide />}
+      </ArmyList>
+    );
+  return (
+    <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
+      {armies.map((army, index) => (
+        <DockToken key={army.explorerId} army={army} pickable={own} guided={own && index === 0} />
+      ))}
+      {Array.from({ length: openCount }, (_, index) => (
+        <DeploySlot
+          realm={realm}
+          key={openSlots?.[index]?.slot ?? `open-${index}`}
+          first={index === 0}
+          pulse={index === 0 && armies.length === 0}
+        />
+      ))}
     </nav>
   );
 };
 
-const DockToken = ({
-  army,
-  pickable,
-  guided,
-  wide,
-}: {
-  army: DockArmy;
-  pickable: boolean;
-  guided: boolean;
-  wide: boolean;
-}) => {
+/** Picking an army on the dock or the list, and what it shows: selected, and its stamina as a refill sweeps it. */
+const useDockArmy = (army: DockArmy, pickable: boolean) => {
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorerId);
   const selectArmy = useSelectArmyOnMap();
-  const pick = () => selectArmy(army.explorerId);
-  const stamina = useWellRefillShown(army);
+  return {
+    selected,
+    stamina: useWellRefillShown(army),
+    onPick: pickable ? () => selectArmy(army.explorerId) : undefined,
+  };
+};
+
+const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boolean; guided: boolean }) => {
+  const { selected, stamina, onPick } = useDockArmy(army, pickable);
   return (
     <ArmyToken
       label={army.label}
@@ -71,15 +80,33 @@ const DockToken = ({
       art={army.art}
       xp={army.xp}
       xpGoal={army.xpGoal}
-      tiers={army.tiers}
       stamina={stamina}
       troops={army.troops}
       canBuyTier={army.canBuyTier}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
       guided={guided}
-      wide={wide ? { secondsToFull: army.secondsToFull, returnsHome: army.returnsHome } : undefined}
-      onPick={pickable ? pick : undefined}
+      onPick={onPick}
+    />
+  );
+};
+
+const DockArmyRow = ({ army, pickable, guided }: { army: DockArmy; pickable: boolean; guided: boolean }) => {
+  const { selected, stamina, onPick } = useDockArmy(army, pickable);
+  return (
+    <ArmyRow
+      label={army.label}
+      number={army.number}
+      art={army.art}
+      troops={army.troops}
+      stamina={stamina}
+      xp={army.xp}
+      xpGoal={army.xpGoal}
+      canBuyTier={army.canBuyTier}
+      selected={selected}
+      flyTarget={attributeBadgeTarget(army.explorerId)}
+      guided={guided}
+      onPick={onPick}
     />
   );
 };
@@ -91,20 +118,22 @@ const useWellRefillShown = (army: DockArmy) => {
   return army.stamina && { current: shown * army.stamina.max, max: army.stamina.max };
 };
 
-/** An open slot; the first one takes the guide's sweep when it points at Deploy. */
+/**
+ * An open slot; the first one takes the guide's sweep when it points at Deploy, and carries the wait of the army being
+ * deployed once the Deploy sheet has closed. A desktop's list shows one, as a row.
+ */
 const DeploySlot = ({
   realm,
-  first,
+  first = true,
   pulse,
-  wide,
+  wide = false,
 }: {
   realm: NativeRows["Structure"];
-  first: boolean;
+  first?: boolean;
   pulse: boolean;
-  wide: boolean;
+  wide?: boolean;
 }) => {
   const pointed = useDeployPointed();
-  // The army being deployed takes the first open slot: it carries the wait once the Deploy sheet has closed.
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
   return (
     <Sweep play={first ? pointed : 0} className="shrink-0 rounded-xl">

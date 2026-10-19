@@ -9,6 +9,7 @@ import { dayOf } from "@bibliothecadao/eternum";
 
 import { canResearchNow } from "../research/research-plan";
 import { secondsUntilHeld } from "./army-order";
+import { ArmyRow } from "./army-row";
 import { ArmyToken, OpenSlot, xpLine } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
@@ -142,31 +143,34 @@ describe("the army token", () => {
     expect(markup).toContain('data-tip="XP 8 of 100 · buys an Uncommon attribute tier"');
   });
 
-  it("writes XP beside the number on the wide card, over a bar toward the next tier, with a pip for each tier reached", () => {
+  it("reads an army on a desktop's list in words: its troops, its stamina exact, its XP with what it buys next", () => {
+    const onPick = vi.fn();
     act(() =>
       root.render(
-        <ArmyToken
-          label="Army 1"
+        <ArmyRow
+          label="Army 2"
+          number={2}
           art={undefined}
           xp={25}
           xpGoal={{ price: 100, tier: 2 }}
-          tiers={[2, 1, 3, 1]}
           stamina={{ current: 90, max: 150 }}
-          troops={984}
-          canBuyTier={false}
-          selected={false}
-          wide={{ secondsToFull: undefined, returnsHome: 0 }}
+          troops={1}
+          canBuyTier
+          selected
+          onPick={onPick}
         />,
       ),
     );
-    const xp = host.querySelector('[data-tip^="XP 25 of 100"]')!;
-    expect(xp.textContent).toBe("25 XP");
-    expect(xp.querySelector<HTMLElement>("b")!.style.width).toBe("25%");
-    // Battle at uncommon is one pip, Scouting at rare two; the attributes still at common show none.
-    expect(host.querySelector('[aria-label="Battle Uncommon"]')!.querySelectorAll("i")).toHaveLength(1);
-    expect(host.querySelector('[aria-label="Scouting Rare"]')!.querySelectorAll("i")).toHaveLength(2);
-    expect(host.querySelector('[aria-label^="Logistics"]')).toBeNull();
-    expect(host.querySelector('[aria-label^="Homecoming"]')).toBeNull();
+    expect(host.textContent).toBe("22Army 225 XP1 troop90/150");
+    // The meter reads the stamina itself, as the phone's token does, never a rounded share of it.
+    const meter = host.querySelector('[role="meter"]')!;
+    expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["90", "150"]);
+    expect(host.querySelector('[data-tip="XP 25 of 100 · buys an Uncommon attribute tier"]')).not.toBeNull();
+    // The button is named for the army alone, as a phone's token is, so a click by name finds it.
+    const row = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
+    expect(row.getAttribute("aria-pressed")).toBe("true");
+    act(() => row.click());
+    expect(onPick).toHaveBeenCalled();
   });
 
   it("is picked with a tap, and an open slot opens Deploy", () => {

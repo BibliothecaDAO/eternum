@@ -14,6 +14,7 @@ import {
   YOU,
 } from "@/ui/design-system/kit/words";
 import { ArmyStatusBar } from "@/ui/features/frontier/hud/action-bar";
+import { ArmyList, ArmyRow } from "@/ui/features/frontier/hud/army-row";
 import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
@@ -1359,43 +1360,57 @@ const LabGuide = ({ stepId }: { stepId: string }) => {
   );
 };
 
-/** The dock on the lab's armies: a row of tokens, or desktop's column of full cards. */
+/**
+ * The armies on the lab, as ArmyDock draws them: a phone's row of tokens with an open slot for each army still to
+ * deploy, or a desktop's list of rows with one Deploy (the header counts the slots).
+ */
 const LabDock = ({ lab }: { lab: LabState }) => {
-  const wide = useLayout() === "desktop";
+  const open = lab.visiting ? 0 : SLOTS - lab.armies.length;
+  const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
+  const stamina = (army: LabArmy) => (army.stamina === undefined ? undefined : { current: army.stamina, max: 150 });
+  if (useLayout() === "desktop")
+    return (
+      <ArmyList used={lab.armies.length} allowed={lab.armies.length + open}>
+        {lab.armies.map((army, index) => (
+          <ArmyRow
+            key={index}
+            label={`Army ${index + 1}`}
+            number={index + 1}
+            art={armyArt(army)}
+            troops={army.troops}
+            stamina={stamina(army)}
+            xp={army.xp}
+            canBuyTier={army.tier === true}
+            selected={lab.selected === index}
+            guided={index === 0}
+            onPick={noop}
+          />
+        ))}
+        {open > 0 && <OpenSlot label="Deploy" pulse={lab.armies.length === 0} guided wide onDeploy={noop} />}
+      </ArmyList>
+    );
   return (
-    <nav
-      aria-label="Armies"
-      className={wide ? "pointer-events-auto flex flex-col gap-1.5" : "pointer-events-auto flex gap-1.5"}
-    >
+    <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
       {lab.armies.map((army, index) => (
         <ArmyToken
           key={index}
           label={`Army ${index + 1}`}
-          art={army.troops === undefined ? undefined : ("knight-t1" as const)}
+          art={armyArt(army)}
           xp={army.xp}
-          stamina={army.stamina === undefined ? undefined : { current: army.stamina, max: 150 }}
+          stamina={stamina(army)}
           troops={army.troops}
           canBuyTier={army.tier === true}
           selected={lab.selected === index}
           guided={index === 0}
-          wide={
-            wide
-              ? {
-                  secondsToFull: index === 1 ? undefined : 2 * HOUR,
-                  returnsHome: army.troops && Math.floor(army.troops * 0.09),
-                }
-              : undefined
-          }
           onPick={noop}
         />
       ))}
-      {Array.from({ length: lab.visiting ? 0 : SLOTS - lab.armies.length }, (_, index) => (
+      {Array.from({ length: open }, (_, index) => (
         <OpenSlot
           key={index}
           label="Deploy"
           pulse={index === 0 && lab.armies.length === 0}
           guided={index === 0}
-          wide={wide}
           onDeploy={noop}
         />
       ))}
