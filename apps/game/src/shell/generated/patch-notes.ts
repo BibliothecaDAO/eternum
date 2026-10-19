@@ -13,19 +13,37 @@ export const patchNotes = [
           "kind": "new",
           "icon": "play",
           "title": "A new app",
-          "line": "Play, Season, What's new and You across the top, and Market opens Realms' marketplace."
+          "line": "Play, Season, What's new and You across the top, and Market opens Realms' marketplace. Play leads with your next step, then each mode's games; Season shows each mode's board and your Blitz rating; You holds your card, your finished games and Settings. A finished game opens Results on your score card, and a phone plays either way up."
         },
         {
           "kind": "new",
           "icon": "person",
           "title": "Sign in your way",
-          "line": "Sign in with Discord or a code sent to your email; link a wallet only to be paid."
+          "line": "Sign in with Discord or a code sent to your email, and choose the name every player sees. Settings lists your devices, up to eight, and removing one signs it out. Link a payout wallet (Ready, Braavos or Ready by email) with an emailed code; it can be paid at once."
         },
         {
           "kind": "new",
           "icon": "map",
           "title": "One HUD for every mode",
-          "line": "Frontier, Blitz and Eternum share one HUD, drawn with painted icons, with the orders as round buttons between its columns."
+          "line": "Your holdings on the left, one kind per tab, with a star to pin a realm; the selected realm's card and the minimap under them; Next up, the events, the picked tile and chat on the right. A phone shows Empire, Map, Log, Chat and Details as tabs."
+        },
+        {
+          "kind": "new",
+          "icon": "layers",
+          "title": "A new look",
+          "line": "Every panel and window, from Build to the leaderboard, is redrawn in one style and one readable typeface, with a painted icon for every resource, troop, relic and action. Structure colours are gone."
+        },
+        {
+          "kind": "new",
+          "icon": "star",
+          "title": "Next up",
+          "line": "The HUD names the one step that scores most now: open a crate beside your army, explore, take a camp, or level up first when an attack would wipe your army out. After a loss it says where to raise the next army."
+        },
+        {
+          "kind": "new",
+          "icon": "settings",
+          "title": "Keys",
+          "line": "B, P, M and T open Build, Production, Military and Transfer, Space takes Next up's step, and I selects your next army at full stamina. Settings keeps the list of keys behind Show."
         },
         {
           "kind": "new",
@@ -35,15 +53,123 @@ export const patchNotes = [
         },
         {
           "kind": "new",
-          "icon": "star",
-          "title": "Next up",
-          "line": "The HUD names the one step that scores most now, and the leaderboard shows each activity's points."
+          "icon": "map-realm",
+          "title": "Map labels",
+          "line": "Every army, realm, camp and rift wears a short label: an army's player, troops and stamina, a realm's player and rank, a camp's or rift's own name and guard. Hover a label for the rest."
         },
         {
           "kind": "new",
-          "icon": "map-realm",
-          "title": "Ownership rings and plates",
-          "line": "Select a structure to ring everything its owner holds; plates name what stands on the map."
+          "icon": "realm",
+          "title": "Ownership rings",
+          "line": "Select a structure to ring everything its owner holds, yours or another player's."
+        },
+        {
+          "kind": "new",
+          "icon": "explore",
+          "title": "What a right-click does",
+          "line": "With an army selected, hover a tile: it says what a right-click does there, what it costs and what it scores."
+        },
+        {
+          "kind": "new",
+          "icon": "transfer",
+          "title": "One Transfer window",
+          "line": "Transfer, Arrivals, Automation and Balances share one window. Send goods to several holdings at once, each total split evenly, or right-click a holding of yours on the map to send there. Each shipment goes on its own and says when it lands."
+        },
+        {
+          "kind": "new",
+          "icon": "military",
+          "title": "Deploy by troop column",
+          "line": "Deploying shows a column per troop with its three tiers in place, +500 and Max, and what it costs. The deploy map shows only the six tiles an army can step out onto."
+        },
+        {
+          "kind": "new",
+          "icon": "chronicles",
+          "title": "Events and the Log",
+          "line": "Events shows the game's three latest, the important ones first, with Mine and All a switch away. The Log tells each action once, in plain words, and a capture is told to both sides."
+        },
+        {
+          "kind": "new",
+          "icon": "leaderboard",
+          "title": "The leaderboard",
+          "line": "One ranked list of every player, kept current, each column with the points it grants. The top bar's chip shows your rank and points."
+        },
+        {
+          "kind": "new",
+          "icon": "build",
+          "title": "Build cards",
+          "line": "A card shows the building, how many you have and its actions. Hover it for what it costs against what you hold, what one more gives and what it burns."
+        },
+        {
+          "kind": "new",
+          "icon": "attack",
+          "title": "The attack forecast",
+          "line": "It names both sides, what each loses and who survives, and a certain loss says what to do instead."
+        },
+        {
+          "kind": "new",
+          "icon": "notifications",
+          "title": "Notifications",
+          "line": "Choose Off, Important or All. You are told when an army is rested and when a realm of yours is taken."
+        },
+        {
+          "kind": "new",
+          "icon": "victory",
+          "title": "The game's end",
+          "line": "A fractured veil spreads from the spires, and the map, its doorway and Game finished lead to Results, where standings stay final. Anyone can open a finished game's end map to scout how it stood."
+        },
+        {
+          "kind": "new",
+          "icon": "realm-3",
+          "title": "A redrawn world",
+          "line": "Realms grow by level, from Canvas & Thatch to the imperial citadel, with your Order on their banners. Villages, outposts, fallen realms, the T1 Knight and workshops have new models; mist marks the edge of explored land, and shadows hold still."
+        },
+        {
+          "kind": "new",
+          "icon": "chat",
+          "title": "Block a player",
+          "line": "Block a player in direct messages, and nothing they send reaches you; they are never told."
+        },
+        {
+          "kind": "fix",
+          "icon": "move",
+          "title": "Selection holds",
+          "line": "An army stays selected after its order lands, a selected structure that moves takes the selection with it, and closing a card keeps your place."
+        },
+        {
+          "kind": "fix",
+          "icon": "stamina",
+          "title": "Numbers stay put",
+          "line": "Stores and stamina no longer blank out after an action, and an army can take its next order as soon as the last one applies."
+        },
+        {
+          "kind": "fix",
+          "icon": "check",
+          "title": "One press, one send",
+          "line": "A second press no longer sends an action twice, and an action the game has not answered yet says so."
+        },
+        {
+          "kind": "fix",
+          "icon": "map",
+          "title": "A map that fails says so",
+          "line": "If the map cannot be drawn on the way in, the game says so and offers Open realm beside Try again, so your realm stays in reach."
+        },
+        {
+          "kind": "fix",
+          "icon": "chat",
+          "title": "Chat reconnects",
+          "line": "Chat comes back by itself after a dropped connection."
+        },
+        {
+          "kind": "fix",
+          "icon": "exploration-relic-1",
+          "title": "Relics end on time",
+          "line": "A timed relic starts when you apply it and ends at its last second."
+        },
+        {
+          "kind": "fix",
+          "icon": "watch",
+          "title": "Show frames both",
+          "line": "Show on a crate, a camp or a Hyperstructure frames your army and its target."
         }
       ],
       "frontier": [
@@ -51,37 +177,85 @@ export const patchNotes = [
           "kind": "new",
           "icon": "realm",
           "title": "Frontier opens",
-          "line": "A new land every day, and your realm keeps what it earns. Free to play, and no player can attack your realm."
+          "line": "A new land every day, and your realm keeps what it earns. Free to play: your realm is founded as you first enter, and no player can attack it."
         },
         {
           "kind": "new",
           "icon": "calendar",
           "title": "Days of 8 to 24 hours",
-          "line": "Each day lasts 8 to 24 hours, drawn for the whole season. When it ends, the map and every army on it are gone."
+          "line": "Each day lasts 8 to 24 hours, drawn for the whole season. When it ends, the map and every army on it are gone; your realm, its buildings and its research stay."
         },
         {
           "kind": "new",
-          "icon": "military",
-          "title": "Armies per realm",
-          "line": "A realm fields 3 armies at once; its castle raises that to 4, 5 and 6."
+          "icon": "realm-0",
+          "title": "Your realm",
+          "line": "A new realm starts with 1,500 troops, 4,500 wheat and 2,000 labor. Farms make wheat, barracks train troops, workshops make labor and each hut adds 6 population, which every other building takes. Each copy of a building costs more than the last, and pulling one down returns half its price."
+        },
+        {
+          "kind": "new",
+          "icon": "realm-3",
+          "title": "The castle",
+          "line": "Raise your castle for 4,000, 15,000, then 40,000 labor. Each level opens another ring of plots, 60 in all, fields one more army, from 3 to 6, and deploys more troops at once, from 3,000 to 60,000."
+        },
+        {
+          "kind": "new",
+          "icon": "research",
+          "title": "Research",
+          "line": "At the castle, each building type climbs from common to legendary for Essence and labor, and a tier lifts every building of the type at once. Farms and workshops make 25% more or store more, barracks train 25% more or deploy for a quarter less wheat, and each hut tier houses a quarter more. A choice is final for the season."
+        },
+        {
+          "kind": "new",
+          "icon": "war-hall",
+          "title": "Training buildings",
+          "line": "Once your barracks reach rare, raise one War hall, Supply yard, Scouts' lodge and Hearth. Each of their tiers starts every new army a tier higher in Battle, Logistics, Scouting or Homecoming."
+        },
+        {
+          "kind": "new",
+          "icon": "build",
+          "title": "Build on a plot",
+          "line": "Tap a plot to build there. Each card says what it makes, what locks it and why its price rose, a refused build says why and puts the fix on its button, and every building's panel shows what it makes and holds."
+        },
+        {
+          "kind": "new",
+          "icon": "deploy",
+          "title": "Deploy",
+          "line": "Barracks train for free, and each troop costs 2 wheat when it deploys, onto the tile you pick beside your realm. Two of your armies side by side can merge, keeping the lower stamina."
+        },
+        {
+          "kind": "new",
+          "icon": "map",
+          "title": "Frontier's screen",
+          "line": "One strip holds your stores and the day's clock, a card per army shows its strength, stamina and XP, and chat folds away while you command. Ysolde's guide walks you through your first day and says each rule once, with the game's numbers."
         },
         {
           "kind": "new",
           "icon": "stamina",
           "title": "Stamina",
-          "line": "An army holds 150 stamina and recovers 1 every 2 minutes. Revealing a tile costs 30, a step over known ground 10."
+          "line": "An army holds 120 stamina and recovers 1 every 2 minutes. Revealing a tile costs 20, a step over known ground 10, and an attack needs 30."
+        },
+        {
+          "kind": "new",
+          "icon": "lords",
+          "title": "Refill",
+          "line": "Refill an army's stamina for 1 LORDS a missing point."
         },
         {
           "kind": "new",
           "icon": "wheat",
           "title": "Wheat on the march",
-          "line": "Every step and every reveal costs 0.02 wheat per troop. A new realm starts with 4,500 wheat."
+          "line": "Every step and every reveal costs 0.02 wheat per troop."
+        },
+        {
+          "kind": "new",
+          "icon": "explore",
+          "title": "Explore for labor and Essence",
+          "line": "Each reveal pays Essence or labor by the army's size, more in the depths, and sends it home to your realm. Your realm's six neighbours start each day explored."
         },
         {
           "kind": "new",
           "icon": "camp",
           "title": "Sites to clear",
-          "line": "Camps, rifts and ruins hold the land's riches, and each shows its exact guard before you attack."
+          "line": "Camps, rifts, ruins and bands of stragglers hold the land's riches, and each shows its guard and its payout before you attack. A cleared site leaves a standard that armies can walk onto."
         },
         {
           "kind": "new",
@@ -91,15 +265,27 @@ export const patchNotes = [
         },
         {
           "kind": "new",
+          "icon": "attack",
+          "title": "Every fight ends on a result",
+          "line": "Victory, Army lost or Guard holds, with both sides' troops before and after and what a clear paid. Frontier asks before you disband an army."
+        },
+        {
+          "kind": "new",
+          "icon": "chest",
+          "title": "Chests",
+          "line": "A chest opens where you earn it: a relic, a cosmetic or a claim to LORDS."
+        },
+        {
+          "kind": "new",
           "icon": "lords",
           "title": "Ruins pay LORDS",
-          "line": "Clearing a ruin pays its chest in LORDS, priced each day from the season's pool."
+          "line": "Clearing a ruin pays its chest in LORDS, priced each day from the season's pool. The Season page shows the pool, today's price and its ceiling."
         },
         {
           "kind": "new",
           "icon": "star",
           "title": "Armies learn",
-          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5."
+          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, Scouting finds up to 40% more of a kind you pick."
         },
         {
           "kind": "new",
@@ -109,9 +295,33 @@ export const patchNotes = [
         },
         {
           "kind": "new",
-          "icon": "build",
-          "title": "Build to stay",
-          "line": "Research and the buildings on your realm's plots stay with it from one day to the next."
+          "icon": "mountain",
+          "title": "Ethereal depths",
+          "line": "Research opens the Ethereal depths; an army enters one from your realm's spire."
+        },
+        {
+          "kind": "new",
+          "icon": "flame",
+          "title": "Shrines and wells",
+          "line": "A shrine grants XP and a well refills an army's stamina."
+        },
+        {
+          "kind": "new",
+          "icon": "lords",
+          "title": "Your LORDS",
+          "line": "Withdraw the LORDS your realm holds to your payout wallet, until the season's claim window closes."
+        },
+        {
+          "kind": "new",
+          "icon": "labor",
+          "title": "Realm labor",
+          "line": "Realms in your payout wallet give labor once a day: add one by its number, then Claim all."
+        },
+        {
+          "kind": "new",
+          "icon": "chronicles",
+          "title": "Today and the season",
+          "line": "Today totals your day; Menu, Season ranks every realm, and you can visit one."
         }
       ],
       "blitz": [
@@ -133,7 +343,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "chest",
           "title": "Themed relic crates",
-          "line": "A crate holds one pack of three relics, named before you open it: War, Explore, Produce or Fortress. One crate in five holds its pack at level II."
+          "line": "A crate holds one pack of three relics, War, Explore, Produce or Fortress, revealed when you open it. One crate in five holds its pack at level II."
         },
         {
           "kind": "new",
@@ -149,9 +359,21 @@ export const patchNotes = [
         },
         {
           "kind": "new",
+          "icon": "lords",
+          "title": "Paid entry",
+          "line": "Blitz entry is paid in LORDS from your linked payout wallet, and free signup is gone. A slot shows how many registered; your entry reads Registered, then Seated, or Not seated and refunded."
+        },
+        {
+          "kind": "new",
           "icon": "calendar",
           "title": "Entry closes before the start",
-          "line": "Entry closes five minutes before the games start. A game opens on time once its whole roster is seated, in games of up to 24."
+          "line": "Entry closes five minutes before the games start. A game opens on time once its whole roster is seated, in games of up to 24; until then, every action says when play opens."
+        },
+        {
+          "kind": "new",
+          "icon": "chat",
+          "title": "The lobby",
+          "line": "Registered players write in their slot's lobby chat, and the roster shows each seat's rating."
         },
         {
           "kind": "new",
@@ -180,6 +402,18 @@ export const patchNotes = [
           "line": "A rated game moves your MMR however many play.",
           "from": "6 players",
           "to": "any"
+        },
+        {
+          "kind": "new",
+          "icon": "leaderboard",
+          "title": "Your MMR if it ended now",
+          "line": "In a paid, rated game the leaderboard shows each player's rating change if the game ended now."
+        },
+        {
+          "kind": "new",
+          "icon": "person",
+          "title": "Rewards follow your seat",
+          "line": "Results, chests and season prizes go to the wallet your seat was played with, even after you change your payout wallet."
         },
         {
           "kind": "balance",
@@ -227,18 +461,19 @@ export const patchNotes = [
         },
         {
           "kind": "fix",
-          "icon": "move",
-          "title": "Selection holds",
-          "line": "Your army stays selected after its order lands."
-        },
-        {
-          "kind": "fix",
-          "icon": "stamina",
-          "title": "Relics end on time",
-          "line": "A relic's bonus ends at its last second, not at the next tick."
+          "icon": "hyperstructure",
+          "title": "Captured hyperstructures pay at once",
+          "line": "A hyperstructure you take pays you from the moment you take it, and its shares follow it on every capture."
         }
       ],
-      "eternum": []
+      "eternum": [
+        {
+          "kind": "fix",
+          "icon": "trade",
+          "title": "Trade opens",
+          "line": "Opening Trade no longer stops the game, and every resource and relic in the market shows its painting."
+        }
+      ]
     }
   },
   {
