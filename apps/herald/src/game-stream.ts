@@ -241,18 +241,25 @@ export class GameStreamHub {
     this.logSnapshotSent(session, "scope", sent);
   }
 
-  /** Deletes route with their pre-delete rows; routing metadata never enters the wire message. */
+  /**
+   * A change reaches the states that held its row as well as those that hold it now, so a change that moves a row out
+   * of a scope reaches that scope and takes the row away. `previousRows` are the rows as subscribers held them before
+   * the change, required for every delete; routing metadata never enters the wire message.
+   */
   public publishDiff(
     gameId: string,
     input: Omit<Extract<HeraldStreamMessage, { type: "diff" }>, "epoch" | "seq" | "type">,
     rowKeys?: RowStreamKeys,
-    deletedRows: readonly FoldSet[] = [],
+    previousRows: readonly FoldSet[] = [],
   ): void {
     const game = this.games.get(gameId);
     if (!game) return;
-    if (rowKeys && input.del.length !== deletedRows.length)
-      throw new Error("Deleted rows require pre-delete routing metadata");
-    const named = rowKeys ? this.named(game, [...input.set, ...deletedRows], rowKeys) : undefined;
+    if (rowKeys) {
+      const held = new Set(previousRows.map(({ model, key }) => `${model}:${key}`));
+      if (input.del.some(({ model, key }) => !held.has(`${model}:${key}`)))
+        throw new Error("Deleted rows require pre-delete routing metadata");
+    }
+    const named = rowKeys ? this.named(game, [...input.set, ...previousRows], rowKeys) : undefined;
     this.publish(gameId, { ...input, type: "diff" }, named);
   }
 
