@@ -14,6 +14,8 @@ interface ConnectionState {
   lastSpatialHandshake: number;
   lastGlobalHandshake: number;
   lastConfirmedBlock: number | null;
+  /** The block the store's facts were last read at by a snapshot; diffs after it reach the client on the stream. */
+  snapshotBlock: number | null;
   lastConnectedAt: number;
   lastDisconnectedAt: number | null;
   reconnectAttempts: number;
@@ -26,6 +28,7 @@ interface ConnectionState {
   recordSpatialHandshake: () => void;
   recordGlobalHandshake: () => void;
   recordConfirmedHead: (block: number) => void;
+  recordSnapshotBlock: (block: number) => void;
   recordStreamReconnect: () => void;
   incrementReconnectAttempts: () => void;
   resetReconnectAttempts: () => void;
@@ -48,6 +51,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
   lastSpatialHandshake: 0,
   lastGlobalHandshake: 0,
   lastConfirmedBlock: null,
+  snapshotBlock: null,
   lastConnectedAt: Date.now(),
   lastDisconnectedAt: null,
   reconnectAttempts: 0,
@@ -115,6 +119,7 @@ export const useConnectionStore = create<ConnectionState>((set) => ({
     set({ lastGlobalUpdate: now, lastGlobalHandshake: now });
   },
   recordConfirmedHead: (lastConfirmedBlock) => set({ lastConfirmedBlock }),
+  recordSnapshotBlock: (snapshotBlock) => set({ snapshotBlock }),
   recordStreamReconnect: () => set((state) => ({ streamReconnectVersion: state.streamReconnectVersion + 1 })),
   incrementReconnectAttempts: () => set((state) => ({ reconnectAttempts: state.reconnectAttempts + 1 })),
   resetReconnectAttempts: () => set({ reconnectAttempts: 0 }),

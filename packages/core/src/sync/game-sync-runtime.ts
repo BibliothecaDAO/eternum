@@ -334,6 +334,7 @@ export class GameSyncRuntime {
         void replaced.then((applied) => {
           if (!applied || !current()) return;
           this.snapshotThroughBlock = throughBlock;
+          session.onSnapshotApplied?.(throughBlock);
           if (held) this.resyncListeners.forEach((listener) => listener(throughBlock));
         });
         firstSnapshot.resolve();

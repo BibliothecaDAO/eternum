@@ -41,23 +41,29 @@ export const useStructureAttention = () => {
 
 /**
  * The actions on guards naming the player (battles, raids, troops moved into a guard), once every read is done; null
- * while one is loading or has failed.
+ * while one is loading or has failed. Complete once each read's history reached the block the facts were read at.
  */
 const usePlayerCombatHistory = (): CombatHistory | null => {
   const player = useAccountStore((state) => state.account?.address);
   const streamGeneration = useConnectionStore((state) => state.lastGlobalHandshake);
+  const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
   const battles = useStoryEvents(COMBAT_HISTORY, "BattleEvent", player);
   const raids = useStoryEvents(COMBAT_HISTORY, "RaidEvent", player);
   const transfers = useStoryEvents(COMBAT_HISTORY, "TroopsTransferred", player);
-  const known = Boolean(player) && battles.isSuccess && raids.isSuccess && transfers.isSuccess;
+  const reads = [battles, raids, transfers];
+  const known = Boolean(player) && reads.every((read) => read.isSuccess);
+  const complete =
+    snapshotBlock !== null &&
+    reads.every((read) => read.completeThroughBlock !== null && read.completeThroughBlock >= snapshotBlock);
   return useMemo(
     () =>
       known
         ? {
             actions: guardActions([...battles.data, ...raids.data, ...transfers.data], streamGeneration),
             isPlayer: (address) => address !== null && isAddressEqualToAccount(address),
+            complete,
           }
         : null,
-    [known, battles.data, raids.data, transfers.data, streamGeneration],
+    [known, complete, battles.data, raids.data, transfers.data, streamGeneration],
   );
 };

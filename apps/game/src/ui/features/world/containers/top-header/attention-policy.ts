@@ -17,10 +17,15 @@ export interface GuardAction {
 /** Block (null while pre-confirmed, so newest), transaction and event: the order the contract wrote actions in. */
 type ChainPlace = { block: number | null; transactionIndex: number; eventIndex: number };
 
-/** The player's combat history once it is read: the actions on their structures' guards, and who the player is. */
+/**
+ * The player's combat history once it is read: the actions on their structures' guards, who the player is, and whether
+ * it is complete: Herald's history held every action through the block the store's facts were read at, so with what
+ * this stream has delivered since, no action behind the facts is unread.
+ */
 export interface CombatHistory {
   actions: readonly GuardAction[];
   isPlayer: (address: string | null) => boolean;
+  complete: boolean;
 }
 
 /**
@@ -56,20 +61,22 @@ function attackedStructures(now: number, guards: readonly NativeRows["Guard"][],
 }
 
 /**
- * The action behind a structure's current cooldown: its latest action, when that came over the current stream. Herald
- * sends an action's stories in the same gap-checked diff as its facts, and the client takes the stories first, so
- * within one stream no action newer than a live one is unread. Across a reconnect or a replacement snapshot that no
- * longer holds: the new facts may follow actions whose stories are not read yet. So a latest action read from history,
- * or delivered by an earlier stream, gives null, and the structure stays unclassified until one arrives live again.
+ * The action behind a structure's current cooldown: its latest action, when nothing newer can be unread. Herald sends
+ * an action's stories in the same gap-checked diff as its facts, and the client takes the stories first, so within one
+ * stream no action newer than a live one is unread. Across a reload, a reconnect or a replacement snapshot, the facts
+ * may follow actions whose stories are not read yet: until the history is complete, only a live action vouches, and
+ * the structure stays unclassified. Once it is, the latest confirmed or live action does (a pre-confirmed one from an
+ * earlier stream may never have landed).
  */
 function currentAction(combat: CombatHistory, structureId: number): GuardAction | null {
   const latest = combat.actions
     .filter((action) => action.structureId === structureId)
+    .filter((action) => !combat.complete || action.live || action.place.block !== null)
     .reduce<GuardAction | null>(
       (newest, action) => (!newest || isLater(action.place, newest.place) ? action : newest),
       null,
     );
-  return latest?.live ? latest : null;
+  return latest && (latest.live || combat.complete) ? latest : null;
 }
 
 /** Whether one action sits after another on the chain. */

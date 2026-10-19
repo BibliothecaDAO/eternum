@@ -126,3 +126,64 @@ it("does not reuse pre-disconnect live hits for an own-sortie cooldown in the re
   });
   expect(host.textContent).toBe("1");
 });
+
+/** A hostile battle on structure 1 as Herald's history returns it, and history complete through `through`. */
+const historyWithHostileHit =
+  (block: number, through: number) => async (_shard: unknown, _game: number, read: { model?: string }) => ({
+    items:
+      read.model === "BattleEvent"
+        ? [
+            {
+              block_number: block,
+              event_index: 0,
+              game_id: "1",
+              model: "BattleEvent",
+              transaction_hash: `0x${block.toString(16)}`,
+              transaction_index: 0,
+              value: {
+                game_id: 1,
+                attacker_id: 900,
+                defender_id: 1,
+                attacker: { player: "0xdef" },
+                defender: { player: "0xabc" },
+                timestamp: block,
+              },
+            },
+          ]
+        : [],
+    complete_through_block: through,
+    limit: 100,
+    offset: 0,
+    total: read.model === "BattleEvent" ? 1 : 0,
+  });
+
+const attackedAfterReload = async (historyThrough: number) => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  resetGameSyncStoryEvents();
+  Object.assign(world, { now: 60, end: 100 });
+  // The reload's snapshot read the facts at block 35: the guards' cooldown, set by the hit at 30.
+  useConnectionStore.getState().recordSnapshotBlock(35);
+  history.mockImplementation(historyWithHostileHit(30, historyThrough) as never);
+  const host = document.createElement("div");
+  root = createRoot(host);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+  await act(async () => {
+    root!.render(
+      <QueryClientProvider client={client}>
+        <Probe />
+      </QueryClientProvider>,
+    );
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  });
+  return host.textContent;
+};
+
+it("recovers an attack after a reload once history holds every story through the snapshot's block", async () => {
+  expect(await attackedAfterReload(40)).toBe("1");
+});
+
+it("stays silent after a reload while history is behind the snapshot's block", async () => {
+  expect(await attackedAfterReload(34)).toBe("0");
+});

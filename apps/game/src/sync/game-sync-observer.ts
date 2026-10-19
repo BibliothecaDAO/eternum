@@ -97,6 +97,7 @@ export const createGameSyncObserver = (input: GameSyncObserverInput): GameClient
     // A replacement snapshot starts the stream over as a reconnect does: history is read again, and what the earlier
     // stream delivered no longer vouches for the facts.
     onResynced: () => useConnectionStore.getState().recordGlobalHandshake(),
+    onSnapshotApplied: (block) => useConnectionStore.getState().recordSnapshotBlock(block),
     onConnection: (reachable) =>
       useConnectionStore.getState().setGlobalStatus(reachable ? "connected" : "reconnecting"),
     onLiveUpdate: recordGamewideLiveUpdate,

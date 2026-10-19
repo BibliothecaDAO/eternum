@@ -31,6 +31,8 @@ export interface GameClientObserver {
   onSubscriptionActive?: () => void;
   /** A replacement snapshot took the place of the store mid-stream: the facts no longer follow the stories delivered. */
   onResynced?: () => void;
+  /** A snapshot is in the store, the first or a replacement: the game as of `throughBlock`, the block it was read at. */
+  onSnapshotApplied?: (throughBlock: number) => void;
   /** Herald's stream is up (true), or lost and being retried (false): a named state, never a timeout. */
   onConnection?: (reachable: boolean) => void;
   /** A live delivery arrived: liveness, not content. */
@@ -124,6 +126,7 @@ export function createHeraldGameSyncSession(
     onTransactionEntitiesApplied: observer.onEntitiesApplied,
     onTransactionEntitiesReceived: observer.onDiffReceived,
     onSubscriptionActive: observer.onSubscriptionActive,
+    onSnapshotApplied: observer.onSnapshotApplied,
     onHead: observer.onHead,
     onTransaction: observer.onTransaction,
     scheduler: input.scheduler,

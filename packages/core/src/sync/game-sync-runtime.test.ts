@@ -282,6 +282,18 @@ describe("GameSyncRuntime recovery", () => {
     ]);
   });
 
+  it("reports the block each applied snapshot read the game at, the first and every replacement", async () => {
+    const harness = createSessionHarness({ snapshot: { Position: [] } });
+    const applied = vi.fn();
+    harness.session.onSnapshotApplied = applied;
+    const runtime = new GameSyncRuntime();
+    await runtime.startSession(harness.session);
+    harness.emitSnapshot({ Position: [fact("one", "Position", { x: 1 })] }, 40);
+    await flushMicrotasks();
+
+    expect(applied.mock.calls).toEqual([[0], [40]]);
+  });
+
   it("tells a wait that starts listening after a reconnect which block the applied snapshot reached", async () => {
     const memory = createMemoryStore();
     const harness = createSessionHarness({ store: memory.store, snapshot: { Position: [] } });

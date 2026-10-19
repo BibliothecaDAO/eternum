@@ -52,9 +52,11 @@ const reinforce = (block: number, structureId: number, by: Arrival = "live") =>
     { source: { Explorer: 5 }, target: { Guard: { structure_id: structureId, slot: 0 } } },
     by,
   );
-const history = (stories: Parameters<typeof guardActions>[0]): CombatHistory => ({
+/** `complete`: Herald's history held every story through the block the facts were read at. */
+const history = (stories: Parameters<typeof guardActions>[0], complete = false): CombatHistory => ({
   actions: guardActions(stories, STREAM),
   isPlayer: (address) => address === ME,
+  complete,
 });
 const attacked = (guards: NativeRows["Guard"][], combat: CombatHistory | null, now = 120) =>
   [
@@ -104,6 +106,23 @@ it("stays silent while the latest known action is read from history only: a newe
   expect(attacked([guard(1, 170)], history([...hostileHits, battle(110, 77, ME, THEM, "live", 1)]))).toEqual([]);
   expect(attacked([guard(1, 170)], null)).toEqual([]);
   expect(attacked([guard(1, 170)], history([]))).toEqual([]);
+});
+it("recovers an attack after a reload once history is complete through the block the facts were read at", () => {
+  const hostileHits = [battle(20, 1, THEM, ME, "history"), battle(30, 1, THEM, ME, "history")];
+  expect(attacked([guard(1, 170)], history(hostileHits, true))).toEqual([1]);
+  // The guards' own sortie at 110 is in the complete history: it set the cooldown, not the hits.
+  expect(attacked([guard(1, 170)], history([...hostileHits, battle(110, 77, ME, THEM, "history", 1)], true))).toEqual(
+    [],
+  );
+  expect(attacked([guard(1, 170)], history([...hostileHits, reinforce(110, 1, "history")], true))).toEqual([]);
+});
+it("passes over a pre-confirmed action an earlier stream delivered, which may never have landed", () => {
+  const unlanded = {
+    ...reinforce(0, 1, "history"),
+    position: { block: null, transactionIndex: 0, eventIndex: 0 },
+    confirmation: { preconfirmed: true },
+  };
+  expect(attacked([guard(1, 170)], history([battle(30, 1, THEM, ME, "history"), unlanded], true))).toEqual([1]);
 });
 it("flags a hostile hit that comes live after the player's own action", () => {
   expect(attacked([guard(1, 170)], history([battle(80, 1, ME, "0xformer"), battle(115, 1, THEM, ME)]))).toEqual([1]);

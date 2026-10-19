@@ -279,26 +279,33 @@ const latestStories = (events: StoryEventData[], limit: number): StoryEventData[
   return [...latest.values()].toSorted(newestOnChainFirst).slice(0, limit);
 };
 
+/** A read's stories, and the block Herald's history held every story through when it answered (null: not known). */
+interface StoryReadPage {
+  stories: StoryEventData[];
+  completeThroughBlock: number | null;
+}
+
 /** A read's page of Herald's history, as stories. */
 const fetchStoryRead = async (
   shard: ReturnType<typeof requireShard>,
   scope: StoryEventScope,
   { limit, story, owner, entityId }: StoryRead,
-): Promise<StoryEventData[]> => {
+): Promise<StoryReadPage> => {
   const page = await fetchHeraldGameHistory(shard, scope.gameId, {
     limit,
     ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
     owner,
     entityId,
   });
-  return page.items.flatMap((event) => {
+  const stories = page.items.flatMap((event) => {
     const story = historyStoryEvent(event, scope);
     return story ? [story] : [];
   });
+  return { stories, completeThroughBlock: page.complete_through_block };
 };
 
 /** Each read's query as it stands: React Query keeps the list the same object until one of them changes. */
-const sameResults = (results: UseQueryResult<StoryEventData[]>[]) => results;
+const sameResults = (results: UseQueryResult<StoryReadPage>[]) => results;
 
 /**
  * Stories as the stream delivers them, recovered from Herald's history: each read fetches history at each handshake
@@ -353,9 +360,9 @@ export const useStoryReads = (reads: StoryRead[]) => {
   useEffect(() => {
     reads.forEach((read, index) => {
       if (delivered[index].length === 0) return;
-      queryClient.setQueryData<StoryEventData[]>(
+      queryClient.setQueryData<StoryReadPage>(
         queryKeys[index],
-        (held) => held && latestStories([...delivered[index], ...held], read.limit),
+        (held) => held && { ...held, stories: latestStories([...delivered[index], ...held.stories], read.limit) },
       );
     });
   }, [delivered]);
@@ -364,7 +371,7 @@ export const useStoryReads = (reads: StoryRead[]) => {
     () =>
       latestStories(
         reads.flatMap((read, index) =>
-          latestStories([...delivered[index], ...(queries[index].data ?? [])], read.limit),
+          latestStories([...delivered[index], ...(queries[index].data?.stories ?? [])], read.limit),
         ),
         Number.POSITIVE_INFINITY,
       )
@@ -376,13 +383,13 @@ export const useStoryReads = (reads: StoryRead[]) => {
   return { data, queries };
 };
 
-/** One story read: its stories and its query's status. */
+/** One story read: its stories, its query's status, and the block its history was complete through. */
 export const useStoryEvents = (limit: number = 100, story?: string, owner?: string) => {
   const {
     data,
     queries: [query],
   } = useStoryReads([{ limit, story, owner }]);
-  return { ...query, data };
+  return { ...query, data, completeThroughBlock: query.data?.completeThroughBlock ?? null };
 };
 
 /** The season's winner once its SeasonEnded story is in history; null until then. */

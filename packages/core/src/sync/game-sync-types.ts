@@ -137,6 +137,8 @@ export interface GameSyncSessionStart {
   eventIdentityLimit?: number;
   now?: () => number;
   onSubscriptionActive?: () => void;
+  /** A snapshot is in the store, the first or a replacement: the game as of `throughBlock`, the block it was read at. */
+  onSnapshotApplied?: (throughBlock: number) => void;
   onLiveUpdate?: (kind: "entity" | "event") => void;
   onError?: (error: Error) => void;
   onEvent?: (event: GameSyncEvent, confirmation: GameSyncEventConfirmation) => void;
