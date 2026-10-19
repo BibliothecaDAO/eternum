@@ -1,4 +1,4 @@
-import { FRONTIER_BEAST_PATHS } from "./frontier-beast";
+import { FRONTIER_BEAST_PATHS, FRONTIER_BEASTS } from "./frontier-beast";
 import {
   BoxGeometry,
   Group,
@@ -18,7 +18,6 @@ import {
   getStructureModelPaths,
   VILLAGE_MODEL_PATH,
   CAMP_MODEL_PATH,
-  BEASTS_MODEL_PATH,
   CLEARED_SITE_MODEL_PATH,
   REALM_MODEL_PATHS,
 } from "../constants/scene-constants";
@@ -72,11 +71,11 @@ describe("gameplay villages", () => {
       CLEARED_SITE_MODEL_PATH,
     ]);
     expect(getStructureModelPaths()[StructureType.Beasts]).toEqual([
-      BEASTS_MODEL_PATH,
+      FRONTIER_BEASTS.minotaur.path,
       ...FRONTIER_BEAST_PATHS,
       CLEARED_SITE_MODEL_PATH,
     ]);
-    expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, BEASTS_MODEL_PATH]).size).toBe(3);
+    expect(new Set([VILLAGE_MODEL_PATH, CAMP_MODEL_PATH]).size).toBe(2);
     expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][StructureType.Village]).toBe(VILLAGE_MODEL_PATH);
     expect(buildingModelPaths(blitz)[BUILDINGS_GROUPS.VILLAGE][StructureType.Camp]).toBe(CAMP_MODEL_PATH);
   });

@@ -12,7 +12,7 @@ import {
 import { Color } from "three";
 import { HyperstructureTypesNames } from "../types";
 import { HYPERSTRUCTURE_MODEL_PATH } from "../structures/hyperstructure-design";
-import { FALLEN_REALM_MODEL_PATHS, FRONTIER_BEAST_PATHS } from "../structures/frontier-beast";
+import { FALLEN_REALM_MODEL_PATHS, FRONTIER_BEAST_PATHS, FRONTIER_BEASTS } from "../structures/frontier-beast";
 
 export const HEX_SIZE = 1;
 
@@ -51,7 +51,6 @@ const RIFT_MODEL_PATH = "/models/reward-tiles/rift.glb";
 export const VILLAGE_MODEL_PATH = "/models/outposts/village.glb";
 export const CLEARED_SITE_MODEL_PATH = "/models/outposts/cleared-standard.glb";
 export const CAMP_MODEL_PATH = "/models/outposts/camp.glb";
-export const BEASTS_MODEL_PATH = "/models/outposts/beasts.glb";
 export const REALM_MODEL_PATHS = {
   [RealmLevelNames.Settlement]: REALM_PATHS[0],
   [RealmLevelNames.City]: REALM_PATHS[1],
@@ -64,10 +63,7 @@ export function isRealmModelPath(path: string): boolean {
 }
 
 export function isSettlementModelPath(path: string): boolean {
-  return (
-    [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, BEASTS_MODEL_PATH, CLEARED_SITE_MODEL_PATH].includes(path) ||
-    isRealmModelPath(path)
-  );
+  return [VILLAGE_MODEL_PATH, CAMP_MODEL_PATH, CLEARED_SITE_MODEL_PATH].includes(path) || isRealmModelPath(path);
 }
 
 export const SHARED_BUILDING_MODEL_PATHS = buildUniqueAssetPaths([
@@ -184,7 +180,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
-    [StructureType.Beasts]: [BEASTS_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
+    [StructureType.Beasts]: [FRONTIER_BEASTS.minotaur.path, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
   };
 }
 

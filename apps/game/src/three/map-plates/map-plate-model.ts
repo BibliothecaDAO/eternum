@@ -144,9 +144,9 @@ export const buildStructurePlate = (
       ? "flag"
       : structure.frontierBeast
         ? beastMeaning(structure.frontierBeast.beast)
-      : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
-        ? mineMeaning(structure.mineKind)
-        : structureMeaning(structure.structureType),
+        : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
+          ? mineMeaning(structure.mineKind)
+          : structureMeaning(structure.structureType),
     guards: structure.clearedSite ? null : guards,
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({

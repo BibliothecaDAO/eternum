@@ -4,7 +4,7 @@ outpost_blender=${OUTPOST_BLENDER:-blender}
 outpost_output=${1:?Provide an external build directory}
 shift
 outpost_assets=("$@")
-if [ ${#outpost_assets[@]} -eq 0 ]; then outpost_assets=(camp village beasts shrine well ruin); fi
+if [ ${#outpost_assets[@]} -eq 0 ]; then outpost_assets=(camp village shrine well ruin); fi
 for asset in "${outpost_assets[@]}"; do
   case "$asset" in
     camp|village|beasts|shrine|well|ruin) ;;

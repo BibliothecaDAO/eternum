@@ -1,7 +1,10 @@
 import { Box3, Color, Matrix4, PerspectiveCamera, Raycaster, Scene, Vector2, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
-import { CAMP_MODEL_PATH, BEASTS_MODEL_PATH } from "../../constants/scene-constants";
+import { StructureType } from "@bibliothecadao/types";
+import InstancedModel from "../../managers/instanced-model";
+import { FRONTIER_BEASTS, frontierBeast } from "../../structures/frontier-beast";
+import { CAMP_MODEL_PATH } from "../../constants/scene-constants";
 import { configureRendererColorOutput } from "../../renderer-color-output";
 import { resetGameEnd } from "../../effects/endgame/state";
 import {
@@ -36,7 +39,7 @@ export async function mountClearedSiteStudy(
   controls.enableDamping = true;
   controls.minDistance = 5;
   controls.maxDistance = 35;
-  const models: SettlementModel[] = [];
+  const models: InstancedModel[] = [];
   const targets: Array<{ bounds: Box3; cleared: boolean }> = [];
   let frame = 0;
   let last = performance.now();
@@ -87,18 +90,24 @@ export async function mountClearedSiteStudy(
     resize();
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
-    const paths = [settings.kind === "camp" ? CAMP_MODEL_PATH : BEASTS_MODEL_PATH, CLEARED_SITE_MODEL_PATH];
+    const beast = frontierBeast(0, StructureType.Beasts, "lowly");
+    const paths = [
+      settings.kind === "camp" ? CAMP_MODEL_PATH : FRONTIER_BEASTS[beast.beast].path,
+      CLEARED_SITE_MODEL_PATH,
+    ];
     for (const [slot, path] of paths.entries()) {
       const gltf = await gltfLoader.loadAsync(path);
-      const model = new SettlementModel(gltf, 1);
+      const isBeast = slot === 0 && settings.kind === "beasts";
+      const model = isBeast ? new InstancedModel(gltf, 1, false, beast.name) : new SettlementModel(gltf, 1);
       models.push(model);
-      await model.prepare();
+      if (model instanceof SettlementModel) await model.prepare();
       signal.throwIfAborted();
       const x = (slot === 0 ? -1 : 1) * Math.sqrt(3);
       const placement = new Matrix4().makeTranslation(x, environment.terrain.sampleSurface(x, 0).height, 0);
+      if (isBeast) placement.scale(new Vector3().setScalar(beast.scale));
       model.setMatrixAt(0, placement);
       model.setCount(1);
-      model.setRelationshipAt(0, slot === 0 ? "enemy" : "owned");
+      if (model instanceof SettlementModel) model.setRelationshipAt(0, slot === 0 ? "enemy" : "owned");
       // The instanced renderer leaves picking to its scene; review uses each delivered model's bounds.
       targets.push({ bounds: new Box3().setFromObject(gltf.scene).applyMatrix4(placement), cleared: slot === 1 });
       scene.add(model.group);

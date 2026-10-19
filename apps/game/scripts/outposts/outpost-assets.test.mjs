@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { expect, it } from "vitest";
 
-it.each(["camp", "village", "beasts", "shrine", "well", "ruin"])(
+it.each(["camp", "village", "shrine", "well", "ruin"])(
   "delivers %s inside the landmark budget with instancing and ownership metadata intact",
   (asset) => {
     const path = fileURLToPath(new URL(`../../public/models/outposts/${asset}.glb`, import.meta.url));
