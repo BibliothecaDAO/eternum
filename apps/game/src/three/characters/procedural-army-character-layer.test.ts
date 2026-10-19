@@ -178,6 +178,30 @@ describe("the Knight's close-up switch", () => {
   });
 });
 
+describe("the Knights' creation budget", () => {
+  it("is spent only on actors made, so armies whose skin failed never hold back a Knight behind them", async () => {
+    const proof = recoveryFixture();
+    runtime.areAssetsReady.mockImplementation((config: ProceduralUnitConfig) => config.kind === "knight");
+    runtime.prepareAssets.mockRejectedValue(new Error("archer skin unavailable"));
+    const archers = [1, 2, 3, 4].map((entityId) => ({
+      ...proof.mid,
+      entityId,
+      category: TroopType.Crossbowman,
+      position: new Vector3(entityId * 3, 0, 0),
+    }));
+    try {
+      proof.layer.sync([...archers, proof.mid], 0);
+      await vi.waitFor(() => expect(runtime.prepareAssets).toHaveBeenCalled());
+      await flushLoads();
+      proof.layer.sync([...archers, proof.mid], 0);
+      expect(proof.layer.hasActor(42)).toBe(true);
+      expect(archers.some(({ entityId }) => proof.layer.hasActor(entityId))).toBe(false);
+    } finally {
+      proof.layer.dispose();
+    }
+  });
+});
+
 describe("visible asset request recovery", () => {
   it("retries a rejected skin on leave/return, not on frames, motion, colour or another unit sharing the need", async () => {
     const proof = recoveryFixture();

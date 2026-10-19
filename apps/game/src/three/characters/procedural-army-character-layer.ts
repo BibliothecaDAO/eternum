@@ -481,11 +481,11 @@ export class ProceduralArmyCharacterLayer {
         this.disposeActorRecord(record);
         this.actors.delete(presentation.entityId);
       }
-      if (!this.actors.has(presentation.entityId)) {
-        if (remainingCreations === 0) return;
-        remainingCreations -= 1;
-      }
+      const creating = !this.actors.has(presentation.entityId);
+      if (creating && remainingCreations === 0) return;
       this.syncActor(presentation);
+      // Only an actor made spends the budget: one whose skin is still loading, or failed, leaves it to the next.
+      if (creating && this.actors.has(presentation.entityId)) remainingCreations -= 1;
     });
   }
 
