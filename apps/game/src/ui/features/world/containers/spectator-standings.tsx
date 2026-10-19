@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { StructureType, formatExact } from "@bibliothecadao/types";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGame } from "@/hooks/context/game-context";
@@ -11,10 +10,10 @@ import { gameStructuresView } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
-import { advanceStandingsTick, selectSpectatorStandings, type StandingsTick } from "./spectator-standings-model";
+import { selectSpectatorStandings } from "./spectator-standings-model";
 
-/** Rank, player, points and the last tick's change. */
-const STANDINGS_COLS = "2rem 1fr 4rem 3rem";
+/** Rank, player and points. */
+const STANDINGS_COLS = "2rem 1fr 4rem";
 
 /** The standings table without a frame or title, so the desktop panel and the compact sheet host the same rows. */
 export function SpectatorStandingsBody() {
@@ -32,8 +31,6 @@ function StandingsRows() {
       })),
     [standingsByAddress],
   );
-  const tick = useCurrentArmiesTick();
-  const [history, setHistory] = useState<StandingsTick | null>(null);
   const structures = useFactView(gameStructuresView);
   const {
     setup: { store },
@@ -41,11 +38,8 @@ function StandingsRows() {
   const players = usePlayers();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
-  useEffect(() => {
-    setHistory((previous) => advanceStandingsTick(previous, tick, standings));
-  }, [standings, tick]);
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
-  const rows = selectSpectatorStandings(standings, selectedOwner, history);
+  const rows = selectSpectatorStandings(standings, selectedOwner);
 
   return (
     <>
@@ -53,7 +47,6 @@ function StandingsRows() {
         <span>#</span>
         <span>Player</span>
         <span className="text-right">Points</span>
-        <span className="text-right">Δ tick</span>
       </HudTableHead>
       {rows.map((row) => {
         const address = BigInt(row.address);
@@ -77,10 +70,6 @@ function StandingsRows() {
             <span>{row.rank}</span>
             <span className="truncate text-left">{name}</span>
             <span className="text-right tabular-nums">{formatExact(Math.floor(row.totalPoints))}</span>
-            <span className="text-right tabular-nums text-hud-muted">
-              {row.delta > 0 ? "+" : ""}
-              {Math.floor(row.delta)}
-            </span>
           </HudTableRow>
         );
       })}

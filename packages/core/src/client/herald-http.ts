@@ -57,7 +57,10 @@ export const fetchHeraldGameSnapshot = async (
   return fetchHeraldJson(url.toString(), `Herald snapshot for ${shard.url} game ${gameId}`);
 };
 
-export const fetchHeraldGameReviewSnapshot = async (shard: Shard, gameId: number): Promise<HeraldGameSnapshot> => {
+export const fetchHeraldGameReviewSnapshot = async (
+  shard: Pick<Shard, "url">,
+  gameId: number,
+): Promise<HeraldGameSnapshot> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0) {
     throw new Error(`Herald review snapshot requires a positive game id; received ${gameId}`);
   }

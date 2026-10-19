@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Finished games keep their standings",
+    description:
+      "When a game ends while you watch it, Standings, the leaderboard's ranks and your rank in the top bar now show the final result instead of going blank. Standings drops the change-per-tick column.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-19",
     title: "Army plates keep up while marching",
     description:
       "While an army walks to a tile it explored or moved to, its plate shows the stamina it has now. It no longer flashes an older, higher number for a second.",

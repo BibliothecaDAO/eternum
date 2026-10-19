@@ -13,6 +13,7 @@ import type {
   GameSyncTransaction,
 } from "../sync/game-sync-types";
 import { HeraldGameSyncTransport, type HeraldSocket } from "../sync/herald-game-sync-transport";
+import { fetchHeraldGameReviewSnapshot } from "./herald-http";
 import type { GameSyncScheduler } from "../sync/scheduler";
 import type { StoryEventScope } from "../sync/story-event-identity";
 
@@ -129,6 +130,7 @@ export function createHeraldGameSyncSession(
     snapshotModels: input.entityModels,
     store: input.store,
     transport: new HeraldGameSyncTransport({
+      finalState: () => fetchHeraldGameReviewSnapshot({ url: input.baseUrl }, input.gameId),
       modelDefinition: input.modelDefinition,
       onConnection: observer.onConnection,
       gameId: input.gameId,

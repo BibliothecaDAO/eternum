@@ -1,5 +1,5 @@
 import type { GameSyncModelDefinition } from "./model-manifest";
-import { HERALD_GAME_FINALIZED_CLOSE } from "./herald-http-types";
+import { HERALD_GAME_FINALIZED_CLOSE, type HeraldGameSnapshot } from "./herald-http-types";
 import type {
   GameSyncFact,
   GameSyncHead,
@@ -73,6 +73,11 @@ interface Deferred<Value> {
 }
 
 export interface HeraldGameSyncTransportOptions {
+  /**
+   * A finalized game's final state, every row of it (Herald's review snapshot). Read once the stream ends for a game
+   * the session was already showing, so its store ends whole and complete, never stuck mid-snapshot.
+   */
+  finalState?: () => Promise<HeraldGameSnapshot>;
   gameId: number;
   modelDefinition: (name: string) => GameSyncModelDefinition;
   /** Herald greeted the stream (true), or the socket was lost and is being retried (false). */
@@ -297,14 +302,54 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
       event?.code === HERALD_GAME_FINALIZED_CLOSE ? this.endFinalized(socket) : this.reconnectSocket(socket);
   }
 
-  /** Herald will never serve a finalized game again, so the stream ends instead of reconnecting. */
+  /**
+   * Herald will never serve a finalized game again, so the stream ends instead of reconnecting. A session already
+   * showing the game then takes its final state, whole: the stream may have ended mid-snapshot, and a store left
+   * incomplete reads every absent row (a player who never scored) as unknown.
+   */
   private endFinalized(socket: HeraldSocket): void {
     if (this.socket !== socket) return;
+    const clock = this.scopeTimestamp;
+    // Stopping shuts the store's gate; the final state opens it again.
     this.stop();
     const failure = new GameFinalizedError(this.options.url);
     console.warn(`[Herald] ${failure.message}; not reconnecting`);
     if (!this.ready.settled) this.ready.reject(failure);
     else if (!this.firstSnapshotEnded) this.handlers?.onStartFailure(failure);
+    else void this.applyFinalState(clock);
+  }
+
+  /**
+   * The game's final state as one snapshot, then the store's gate opened on it for the selected scope, at the last
+   * chain time the stream reported.
+   */
+  private async applyFinalState(clock: number | undefined): Promise<void> {
+    const handlers = this.handlers;
+    const read = this.options.finalState;
+    if (!handlers || !read) return;
+    let final: HeraldGameSnapshot;
+    try {
+      final = await read();
+    } catch (error) {
+      console.warn(`[Herald] the final state of ${this.options.url} could not be read`, error);
+      return;
+    }
+    handlers.onSnapshotStart();
+    let rowsReceived = 0;
+    final.models.forEach(({ model, rows }, index) => {
+      rowsReceived += rows.length;
+      handlers.onSnapshotModel(
+        model,
+        rows.map((row) => toFact({ ...row, model })),
+        { bytesReceived: 0, model, modelsReceived: index + 1, rowsReceived },
+      );
+    });
+    if ((await handlers.onSnapshotEnd(final.confirmed_block)) !== true) return;
+    const { actor, visit } = selectionOf(this.options.url);
+    this.scopeTimestamp = clock;
+    this.completeActor = actor;
+    this.completeVisit = visit;
+    await this.publishSnapshotState();
   }
 
   private reconnectSocket(socket: HeraldSocket): void {
