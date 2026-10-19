@@ -10,7 +10,7 @@ import { EventsFilterSwitch } from "@/ui/features/event-feed/events-filter-switc
 import { useEventsFilter } from "@/hooks/store/use-events-filter-store";
 import { HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { usePlayerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
+import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
@@ -219,7 +219,7 @@ const nextUpStates = (): { label: string; steps: NextStep[]; refusal?: string }[
 ];
 
 /** The top bar's player chip as a player reads it: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{usePlayerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
 
 /**
  * Dev only: the points-first guidance a newcomer sees, the real components on the deploy fixture in the War room skin,

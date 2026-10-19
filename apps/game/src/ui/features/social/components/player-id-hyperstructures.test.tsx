@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { configManager } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/types";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -152,4 +153,36 @@ it("player details render no retired InfoBubble panel", () => {
   draw();
   expect(host.textContent).toContain("Tower 7");
   expect(host.querySelectorAll(".hud-panel")).toHaveLength(0);
+});
+
+it("counts the structures the player owns, by kind, the most held first, and none of anyone else's", () => {
+  const owned = (entity: number, category: StructureType, mineKind = 0) =>
+    put("Structure", [23, entity], {
+      game_id: 23,
+      entity_id: entity,
+      owner: PLAYER,
+      base: {
+        category,
+        level: 0,
+        created_at: 1n,
+        troop_max_guard_count: 0,
+        troop_max_explorer_count: 0,
+        starting_troops_granted: false,
+      },
+      resources_packed: 0n,
+      metadata: { realm_id: 0, village_realm: 0, mine_kind: mineKind, deepest_depth: 0, has_wonder: false, order: 0 },
+    });
+  draw();
+  expect(host.querySelector('[aria-label="Structures owned"]')).toBeNull();
+  expect(host.textContent).toContain("StructuresNone.");
+  act(() => {
+    owned(31, StructureType.Realm);
+    owned(32, StructureType.Camp);
+    owned(33, StructureType.Realm);
+    owned(34, StructureType.Mine, 1);
+  });
+  const rows = [...host.querySelectorAll('[aria-label="Structures owned"] > div')].map((row) => row.textContent);
+  expect(rows).toEqual(["Realm2", "Camp1", "Essence Rift1"]);
+  // The section's cue is the total; the other player's Hyperstructure 7 is not counted.
+  expect(host.textContent).toContain("Structures4");
 });

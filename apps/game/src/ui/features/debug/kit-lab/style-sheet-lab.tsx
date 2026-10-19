@@ -65,7 +65,7 @@ import { Notice } from "@/ui/design-system/kit/notice";
 import { Switch } from "@/ui/design-system/kit/switch";
 import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { usePlayerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
+import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
 import { FeedRowLine } from "@/ui/features/event-feed/feed-row-line";
 import { HoldingsList, useHoldings } from "@/ui/features/world/hud/holdings";
@@ -788,7 +788,7 @@ const LoadingSection = () => (
 );
 
 /** The game's player chip as it draws today: name, rank, points and the game's goal. */
-const LabPlayerPill = () => <HudPill>{usePlayerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
+const LabPlayerPill = () => <HudPill>{playerReadings("clientlane", { rank: 1, points: 310 })}</HudPill>;
 
 const TopBarSection = () => (
   <Element

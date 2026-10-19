@@ -80,18 +80,18 @@ export const IdentityChip = ({ compact = false }: { compact?: boolean }) => {
   );
 };
 
-/** A player's chip: its hover says how the game is won and scored, and it opens the leaderboard. */
+/** A player's chip: name, rank and points; its hover says how the game is won and scored, and it opens the leaderboard. */
 const PlayerChipTrigger = (props: {
   state: Extract<IdentityChipState, { kind: "player" }>;
   isOpen: boolean;
   compact: boolean;
 }) => {
   const goal = usePointsGoal();
-  const readings = usePlayerReadings(props.state.name, props.state.standing);
+  const readings = playerReadings(props.state.name, props.state.standing);
   return (
     <IdentityChipTrigger
       {...props}
-      label={`${goal.sentence} Open the leaderboard for every score.`}
+      label={goal}
       readings={props.compact ? [<CompactPlayer key="player" state={props.state} />] : readings}
     />
   );
@@ -195,23 +195,20 @@ const stateReadings = (state: Exclude<IdentityChipState, { kind: "player" }>): R
   }
 };
 
-/**
- * The player's name, rank and points, then the game's goal, each a reading of the top line, always on screen: the chip
- * opens the leaderboard, where the scoring is.
- */
-export const usePlayerReadings = (name: string, standing: IdentityStanding | null) => {
-  const goal = usePointsGoal();
+/** The player's name, then their rank and points as one reading of the top line, always on screen; the goal is its hover. */
+export const playerReadings = (name: string, standing: IdentityStanding | null) => {
   return [
     <span key="name" className="flex items-center gap-1.5">
       <SemanticIcon name="guild" alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
       <span className="max-w-36 truncate">{name}</span>
     </span>,
     ...(standing
-      ? [<span key="rank">#{standing.rank}</span>, <span key="points">{formatPoints(standing.points)}</span>]
+      ? [
+          <span key="standing">
+            #{standing.rank} · {formatPoints(standing.points)}
+          </span>,
+        ]
       : []),
-    <span key="goal" className="text-hud-muted">
-      {goal.line}
-    </span>,
   ];
 };
 

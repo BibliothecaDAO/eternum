@@ -137,10 +137,10 @@ export function NewsHeadlineBridge() {
       type: "game-start",
       icon: "game-start",
       title: "The game has begun",
-      description: goal.sentence,
+      description: goal,
       timestamp: Date.now(),
     });
-  }, [startAt, nowSeconds, enqueue, goal.sentence]);
+  }, [startAt, nowSeconds, enqueue, goal]);
 
   useEffect(() => {
     const resolveMilestone = createBuildingMilestones([...setup.store.inGame("Building", getScopedGameId())]);

@@ -3,6 +3,8 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
+import { useFactView } from "@/hooks/use-fact-view";
+import { gameStructuresView } from "@/sync/fact-views";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
@@ -13,10 +15,20 @@ import {
   getIsBlitz,
   LeaderboardManager,
   Position,
+  presentedMineKind,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { PlayerActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress, formatExact, formatPercent, formatRate, formatPoints } from "@bibliothecadao/types";
+import {
+  ContractAddress,
+  formatExact,
+  formatPercent,
+  formatRate,
+  formatPoints,
+  structureName,
+  type StructureType,
+} from "@bibliothecadao/types";
 import { useMemo } from "react";
 
 import { normalizeLeaderboardAddress } from "../player/finalized-blitz-leaderboard";
@@ -24,8 +36,9 @@ import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 /**
- * A player's detail beside the leaderboard: only what earns them points. Their points by activity, and the
- * hyperstructures paying them now, each with its share, its points a second and a way to go to it.
+ * A player's detail beside the leaderboard: what earns them points and what they hold. Their points by activity, the
+ * structures they own by kind, and the hyperstructures paying them now, each with its share, its points a second and a
+ * way to go to it.
  */
 export const PlayerId = ({
   selectedPlayer,
@@ -43,6 +56,8 @@ export const PlayerId = ({
   const breakdown =
     activity?.find((entry) => normalizeLeaderboardAddress(entry.address) === address)?.activityBreakdown ?? null;
   const holdings = useHyperstructuresPaying(selectedPlayer);
+  const owned = ownedStructures(useFactView(gameStructuresView), BigInt(selectedPlayer));
+  const ownedTotal = owned.reduce((total, { count }) => total + count, 0);
 
   return (
     <section aria-label="Player details" className="flex flex-col gap-2 p-2">
@@ -63,6 +78,26 @@ export const PlayerId = ({
 
       <HudPanel kind="section" collapsible={false} title="Points">
         <PointsByActivity breakdown={breakdown} />
+      </HudPanel>
+
+      <HudPanel
+        kind="section"
+        collapsible={false}
+        title="Structures"
+        cue={ownedTotal > 0 ? formatExact(ownedTotal) : undefined}
+      >
+        {owned.length === 0 ? (
+          <p className="text-hud-body text-hud-cue">None.</p>
+        ) : (
+          <dl aria-label="Structures owned" className="flex flex-col gap-1">
+            {owned.map(({ name, count }) => (
+              <div key={name} className="flex items-baseline justify-between gap-2">
+                <dt className="text-hud-body">{name}</dt>
+                <dd className="text-hud-strong">{formatExact(count)}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </HudPanel>
 
       <HudPanel kind="section" collapsible={false} title="Hyperstructures giving points">
@@ -104,6 +139,22 @@ export const PointsByActivity = ({ breakdown }: { breakdown: PlayerActivityBreak
       ))}
     </dl>
   );
+};
+
+/** What a player owns, by kind (a mine by what it yields), the most held first: "Realm 2", "Camp 1". */
+const ownedStructures = (
+  structures: readonly NativeRows["Structure"][],
+  owner: bigint,
+): { name: string; count: number }[] => {
+  const counts = new Map<string, number>();
+  for (const structure of structures) {
+    if (structure.owner !== owner) continue;
+    const name = structureName(structure.base.category as StructureType, presentedMineKind(structure));
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([name, count]) => ({ name, count }))
+    .toSorted((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 };
 
 interface HyperstructurePaying {

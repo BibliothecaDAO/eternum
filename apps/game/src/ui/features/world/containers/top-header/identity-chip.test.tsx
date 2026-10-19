@@ -28,9 +28,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { overrideSpectateIntent, resolveSpectateIntent } from "@/utils/spectator-session";
 import { StructureType } from "@bibliothecadao/types";
 
-import { configManager } from "@bibliothecadao/eternum";
-
-import { IdentityChip, usePlayerReadings } from "./identity-chip";
+import { IdentityChip, playerReadings } from "./identity-chip";
 
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
@@ -81,13 +79,7 @@ it.each([
   { points: 1, reads: "1 point" },
   { points: 0, reads: "0 points" },
 ])("writes a score of $points as '$reads' on the top line", async ({ points, reads }) => {
-  vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
-    exploreTile: 5,
-    claimCampFromBandits: 250,
-    claimHyperstructureFromBandits: 1_000,
-    openRelicCrate: 250,
-  } as ReturnType<typeof configManager.getVictoryPointGrants>);
-  const TopLine = () => <p>{usePlayerReadings("clientlane", { rank: 1, points })}</p>;
+  const TopLine = () => <p>{playerReadings("clientlane", { rank: 1, points })}</p>;
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   document.body.replaceChildren(container);
@@ -96,8 +88,6 @@ it.each([
   unmount = () => act(async () => root.unmount());
   expect([...container.querySelector("p")!.children].map((cell) => cell.textContent)).toEqual([
     "clientlane",
-    "#1",
-    reads,
-    "Most points wins",
+    `#1 · ${reads}`,
   ]);
 });

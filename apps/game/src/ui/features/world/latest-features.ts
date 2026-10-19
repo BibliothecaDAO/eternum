@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Compact name chip; structures in a player's detail",
+    description:
+      "The top bar's chip reads your name and \"#1 · 255 points\"; its hover gives the goal and what scores in one short line. In the leaderboard, a player's detail now counts the structures they own, by kind.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
     title: "Finished games keep their standings",
     description:
       "When a game ends while you watch it, Standings, the leaderboard's ranks and your rank in the top bar now show the final result instead of going blank. Standings drops the change-per-tick column.",
