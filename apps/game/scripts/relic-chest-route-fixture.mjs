@@ -72,7 +72,9 @@ export function stageFrontierChest() {
       throw new Error("Open did not target the fixture chest with its adjacent army");
     sends += 1;
     const current = Math.floor(useChainTimeStore.getState().nowMs / 1000);
-    const amount = dayOf(rules, current)?.index === day.index ? 17 : 0;
+    const reservation = store.require("SiteChest", { game_id: gameId, entity_id: chestId });
+    const amount =
+      BigInt(dayOf(rules, current)?.index ?? -1) === reservation.reservation_day ? Number(reservation.amount) : 0;
     write("TileOccupancy", tileKey, null);
     store.applyEvent({
       model: "StoryEvent",
@@ -99,7 +101,16 @@ export function stageFrontierChest() {
     reset,
     fund,
     missing: () => write("SiteChest", chestKey, null),
-    rollover: () => useChainTimeStore.getState().anchor({ timestamp: day.end * 1000 }),
+    expire: () => {
+      if (day.index === 0) throw new Error("Expired-reservation route proof needs a completed game day");
+      write("SiteChest", chestKey, {
+        game_id: gameId,
+        entity_id: chestId,
+        tier: 0,
+        amount: 17,
+        reservation_day: day.index - 1,
+      });
+    },
     get sends() {
       return sends;
     },

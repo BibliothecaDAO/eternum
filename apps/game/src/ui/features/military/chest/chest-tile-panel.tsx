@@ -15,7 +15,7 @@ export const ChestTilePanel = ({
   headerAction,
 }: {
   rewardChestId?: ID;
-  opening: ChestOpening;
+  opening: ChestOpening | null;
   selectedHex: HexPosition;
   coordsLabel?: string;
   headerAction?: ReactNode;

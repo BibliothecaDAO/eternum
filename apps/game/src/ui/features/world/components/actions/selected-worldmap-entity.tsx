@@ -14,7 +14,7 @@ import { StructureBannerEntityDetail } from "@/ui/features/world/components/enti
 import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { BiomeType, HexPosition, TileOccupier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, ID, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   biomeTypeOf,
   hasTileOccupier,

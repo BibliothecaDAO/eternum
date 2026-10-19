@@ -55,8 +55,10 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
       `(async()=>({url:location.href,text:document.querySelector(${JSON.stringify(panel)})?.textContent ?? '',selection:(await import('/src/hooks/store/use-ui-store.ts')).useUIStore.getState().selectedHex,fixture:window.__frontierChestFixture.summary,renderer:(await import('/src/three/renderer-diagnostics.ts')).snapshotRendererDiagnostics().activeMode}))()`,
     );
   try {
+    await devtools.send("Page.enable");
     await devtools.send("Page.addScriptToEvaluateOnNewDocument", {
       source: `
+      window.__frontierRouteProofCatalogue = ${JSON.stringify(schemaIdentity)};
       const originalFetch=window.fetch;
       window.fetch=async(input,init)=>{
         const requestUrl=new URL(typeof input==='string'?input:input.url,location.href);
@@ -74,6 +76,10 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
     await devtools.send("Page.navigate", { url: `https://127.0.0.1:${port}/` });
     await wait(
       `location.origin===${JSON.stringify(`https://127.0.0.1:${port}`)} && document.readyState === 'complete'`,
+    );
+    check(
+      await read(`window.__frontierRouteProofCatalogue===${JSON.stringify(schemaIdentity)}`),
+      "Fixture preload did not run",
     );
     const game = await read(
       `(async()=>{const directory=await(await fetch('/api/directory')).json();for(const shard of directory.shards ?? []){const game=shard.games?.find(g=>g.mode==='frontier'&&g.status==='Live');if(game)return {chainId:shard.chainId,gameId:game.game_id};}throw Error('No live Frontier route available');})()`,
@@ -132,7 +138,7 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
     const reselected = await snapshot();
     check(reselected.text.includes("17 LORDS paid to the army's realm"), "Receipt lost after occupancy disappeared");
     browser.press("Escape");
-    await read("window.__frontierChestFixture.reset();window.__frontierChestFixture.rollover()");
+    await read("window.__frontierChestFixture.reset();window.__frontierChestFixture.expire()");
     await pause(250);
     if (await read("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Continue')"))
       await click("button", "Continue");
@@ -140,7 +146,7 @@ export async function proveFrontierChestRoute(browser, { port, backend, out }) {
     const expired = await snapshot();
     check(
       expired.text.includes("0 LORDS") && expired.text.includes("Reservation expired"),
-      "Rollover still advertises payment",
+      "Expired reservation still advertises payment",
     );
     await capture("expired");
     await click(`${panel} button`, "Open");
