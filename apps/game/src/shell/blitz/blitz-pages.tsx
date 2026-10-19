@@ -23,7 +23,8 @@ import { type EnvironmentLedger, environmentLedger } from "../value/ledger";
 import { chatMembershipOf, useEntryTerms } from "./entry";
 import { PaidEntry, SignInToJoin } from "./entry-panel";
 import { SeatsChip } from "./seats-chip";
-import { type LobbyStep, lobbyId, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
+import { type LobbyStep, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
+import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { LobbyChatPanel } from "./lobby-chat-panel";
 import { RegisteredCount, RosterGrid, SeatGrid } from "./seat-grid";
 
@@ -55,7 +56,7 @@ export const BlitzLobbyPage = () => {
   const wallet = session ? payoutAddressOf(session.user) : null;
   const action =
     row.kind === "game" ? (
-      <LobbyAction row={row} step={step} />
+      <GameAction game={row.game} step={step} />
     ) : (
       <SlotEntry
         key={row.slot.name}
@@ -145,41 +146,25 @@ const LobbyChips = ({ row, step, now }: { row: BlitzRow; step: LobbyStep; now: n
   );
 };
 
-/** The lobby's one step, or the fact standing where it would; Enter presses it on a desktop. */
-const LobbyAction = ({ row, step }: { row: BlitzRow; step: LobbyStep }) => {
+/**
+ * A launched game's one step, or the fact standing where it would; Enter presses it on a desktop. Where its shard could
+ * not be read, the failure stands in its place, as on Play.
+ */
+const GameAction = ({ game, step }: { game: DirectoryGame; step: LobbyStep }) => {
   const navigate = useNavigate();
-  switch (step.kind) {
-    case "open":
-      return (
-        <AppButton kind="primary" size="lg" icon="plus" step onClick={() => navigate(`/blitz/${lobbyId(row)}`)}>
-          {BLITZ_WORDS.join}
-        </AppButton>
-      );
-    case "preparing":
-      return <AppButton kind="primary" size="lg" busy={BLITZ_WORDS.preparing} />;
-    case "enter":
-      return (
-        row.kind === "game" && (
-          <AppButton kind="primary" size="lg" icon="play" step onClick={() => navigate(entryHref(row.game, "play"))}>
-            {WORDS.enter}
-          </AppButton>
-        )
-      );
-    case "watch":
-      return (
-        row.kind === "game" && (
-          <AppButton
-            kind="secondary"
-            size="lg"
-            icon="watch"
-            step
-            onClick={() => navigate(entryHref(row.game, "spectate"))}
-          >
-            {WORDS.watch}
-          </AppButton>
-        )
-      );
-  }
+  if (game.error) return <ServiceFailure service="directory" error={game.error} />;
+  if (step.kind === "preparing") return <AppButton kind="primary" size="lg" busy={BLITZ_WORDS.preparing} />;
+  if (step.kind === "enter")
+    return (
+      <AppButton kind="primary" size="lg" icon="play" step onClick={() => navigate(entryHref(game, "play"))}>
+        {WORDS.enter}
+      </AppButton>
+    );
+  return (
+    <AppButton kind="secondary" size="lg" icon="watch" step onClick={() => navigate(entryHref(game, "spectate"))}>
+      {WORDS.watch}
+    </AppButton>
+  );
 };
 
 /**
