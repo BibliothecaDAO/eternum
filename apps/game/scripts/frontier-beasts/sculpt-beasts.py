@@ -102,8 +102,6 @@ class Sculpt:
         self.skin_parts, self.details = [], []
         self.reptile = species in ["wyvern", "hydra"]
         self.base = TONES[species]
-        self.materials = {}
-        self.heads = []
 
     def surface(
         self, name, sections, paint="skin", connected=True, sides=24, subdivision=2
@@ -652,7 +650,6 @@ class Sculpt:
             ],
         )
         x, y, z = points[-1]
-        self.heads.append((x, y, z))
         # The crown, jaw hinge and broad nose are shaped in the skull's longitudinal cage.
         self.surface(
             "Angular reptile skull",
@@ -813,7 +810,6 @@ class Sculpt:
             "hoof": (0.035, 0.030, 0.025),
             "stone": (0.28, 0.31, 0.22),
             "membrane": (0.48, 0.24, 0.085),
-            "belly": (0.45, 0.53, 0.51),
         }
         tone = palette[kind]
         layer = obj.data.color_attributes.new(
