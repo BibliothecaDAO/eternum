@@ -66,14 +66,15 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   the map, the `hud-layout` step reads every part the HUD draws and judges it as the lab's layout check does
   (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, every control reachable,
   at most seven parts in each region, and on a desktop the minimap.
-- **As a spectator** (default), from a fresh browser profile (cold cache): realm view, open the map, map idle, the HUD's
-  layout, pan (WASD), zoom out and in, the menu, back to the realm and the map, then a minute of watching.
+- **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
+  there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (a desktop's
+  Season place and its page; a phone's Menu), the realm and back to the map, then a minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
-  browser's own click, and past a new day's summary (Continue): realm view, open the map, select the army with the most
-  stamina, open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter;
-  on a desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map. Orders
-  use the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from
-  the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
+  browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
+  open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
+  desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map. Orders use
+  the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from the
+  map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the sign-in page
   first: it sends a signed-in player on at once, and a signed-out one signs in there as a player does: the email, Send

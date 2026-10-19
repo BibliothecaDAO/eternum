@@ -182,12 +182,13 @@ the foot.
 
 ## Blitz and Eternum in a match (`/g/:chain/:game/map` or `/hex`)
 
-A match opens from the lobby (**Your game**) or from home (**Enter**). Add `?spectate=true` to watch a running game, or
-a finished one as it ended. Both modes show one desktop HUD (`src/ui/features/world/hud/desktop-hud.tsx`): your
-holdings, the selected one's card and the minimap down the left; Next up, the events, the picked tile and chat down the
-right; the orders as round bubbles between them. Below 1024 px wide the panels open from one tab bar (Empire, Map, Log,
-Chat, Details), with the actions in a row above it (a rail on the left in landscape). The build tag sits in the band
-under the columns, at the bottom right.
+A match opens from the lobby (**Your game**) or from home (**Enter**), on the world map in every mode (Frontier too: its
+realm is one press of **Realm** away; a spectator's map opens on the season leader's realm). Add `?spectate=true` to
+watch a running game, or a finished one as it ended. Both modes show one desktop HUD
+(`src/ui/features/world/hud/desktop-hud.tsx`): your holdings, the selected one's card and the minimap down the left;
+Next up, the events, the picked tile and chat down the right; the orders as round bubbles between them. Below 1024 px
+wide the panels open from one tab bar (Empire, Map, Log, Chat, Details), with the actions in a row above it (a rail on
+the left in landscape). The build tag sits in the band under the columns, at the bottom right.
 
 The right column's layout has a command: `pnpm --dir apps/game prove:chat <base-url> <out-dir>` measures the real chat
 window, and on `/lab/kit/chat?state=rail` the real rail (Events with its Log count, the panels lab's real picked army,

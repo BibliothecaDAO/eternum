@@ -69,15 +69,17 @@ const NEIGHBOUR_RING = [
 const FRONTIER = { mode: "frontier", card: { heading: "Frontier", enter: "^(Resume|Play)" } };
 const BLITZ = { mode: "blitz", card: { heading: null, enter: "^Enter$" } };
 
-/** What a spectator does: look at the realm, open the map, move the camera, read the menu, switch scenes, watch. */
+/**
+ * What a spectator does: enter on the map (every Frontier session opens there), move the camera, read the season,
+ * switch scenes, watch.
+ */
 export const SPECTATOR_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
   { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "map-idle", play: keepTheViewBefore, settleMs: 10_000, verify: idledOn(inScene("map")) },
   { name: "pan", play: panTheMap, settleMs: 17_000, verify: panned(inScene("map")) },
   { name: "zoom", play: zoomOutAndIn, settleMs: 1_000, verify: zoomedOutAndIn(inScene("map")) },
-  { name: "menu", play: readTheSeasonInTheMenu, settleMs: 1_000, verify: sheetOpenedAndClosed("Menu") },
+  { name: "season", play: readTheSeason, settleMs: 1_000, verify: seasonReadAndClosed },
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 8_000, verify: inScene("hex") },
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
@@ -107,10 +109,7 @@ const frozenSunStillMapSteps = ({ opening, onMap }) => [
 ];
 
 const FRONTIER_MAP = {
-  opening: [
-    { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-    { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
-  ],
+  opening: [{ name: "enter-on-map", settleMs: 8_000, verify: inScene("map") }],
   onMap: inScene("map"),
 };
 const BLITZ_MAP = {
@@ -123,8 +122,7 @@ const BLITZ_MAP = {
  * while its order is in flight (its next order) in each way that order can leave, and two explores.
  */
 const PLAYER_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
   { name: "hud-layout", play: readTheHudLayout, settleMs: 0, verify: hudLaidOut(inScene("map")) },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 3_000, verify: armySelected },
   { name: "production", play: openAndCloseProduction, settleMs: 1_000, verify: sheetOpenedAndClosed("Production") },
@@ -342,6 +340,30 @@ function recordedStill(onMap) {
   };
 }
 
+/**
+ * The season's board as a player reads it: on a desktop its round place opens it as a page and a second press closes
+ * it; a phone has it in the Menu, closed with Escape.
+ */
+async function readTheSeason(input) {
+  if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
+  const { browser } = input;
+  browser.click("Season");
+  await sleep(2_000);
+  const opened = browser.observe();
+  browser.click("Season");
+  await sleep(1_000);
+  return { desktop: true, opened, closed: browser.observe() };
+}
+
+/** A desktop's Season page drew with its place pressed, then closed; a phone's Menu sheet opened, then closed. */
+function seasonReadAndClosed({ played, ...rest }) {
+  if (!played.desktop) return sheetOpenedAndClosed("Menu")({ played, ...rest });
+  if (!played.opened.page || !played.opened.pressed.includes("Season"))
+    return failed("the Season place opened no page", { played });
+  if (played.closed.page) return failed("the Season page did not close", { played });
+  return completed(played);
+}
+
 async function readTheSeasonInTheMenu({ browser }) {
   browser.click("Menu");
   await sleep(1_500);
@@ -457,8 +479,7 @@ function tileRegion([dx, dy]) {
  * centre once the map opens on it.
  */
 const OWNERSHIP_RING_STEPS = [
-  { name: "realm-idle", settleMs: 8_000, verify: inScene("hex") },
-  { name: "open-map", play: goTo("Map", "map"), settleMs: 6_000, verify: inScene("map") },
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
   { name: "unselected-idle", play: clearTheSelection, settleMs: 10_000, verify: nothingSelected },
   { name: "select-realm", play: tapTheCentre, settleMs: 5_000, verify: ownRealmSelected },
   { name: "selected-idle", settleMs: 10_000, verify: ownRealmSelected },

@@ -34,7 +34,7 @@ describe("a spectator", () => {
 
     useAccountStore.setState({ account: null });
     mount()();
-    expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+    expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOn: "map" });
   });
 
   it("leaves the map nothing to open on when the season has no leader to watch", async () => {
@@ -65,7 +65,7 @@ describe("a spectator", () => {
       enterToSpectate();
       try {
         mount()();
-        expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+        expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOn: "map" });
       } finally {
         overrideSpectateIntent(false);
       }
@@ -93,11 +93,11 @@ describe("a spectator", () => {
     try {
       window.history.replaceState(null, "", "/g/0x4445/1/map?col=-1968759586&row=-2000471286&spectate=true");
       mount()();
-      expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: false });
+      expect(startVisit).toHaveBeenCalledWith({ player: "0xa1", structureId: 7, opensOn: null });
 
       window.history.replaceState(null, "", "/g/0x4445/1/map?spectate=true");
       mount()();
-      expect(startVisit).toHaveBeenLastCalledWith({ player: "0xa1", structureId: 7, opensOnArrival: true });
+      expect(startVisit).toHaveBeenLastCalledWith({ player: "0xa1", structureId: 7, opensOn: "map" });
     } finally {
       window.history.replaceState(null, "", entered);
     }

@@ -128,8 +128,44 @@ describe("holding the sun", () => {
   });
 });
 
+describe("entering Frontier", () => {
+  const verify = verifyOf("enter-on-map");
+
+  it("completes on the world map, and fails a session that opens on the realm", () => {
+    expect(verify({ seen: onTheMap }).status).toBe("completed");
+    const onTheRealm = { ...onTheMap, scene: "hex", rendered: "hex", place: "Realm" };
+    expect(verify({ seen: onTheRealm }).status).toBe("failed");
+  });
+});
+
+describe("reading the season", () => {
+  const verify = verifyOf("season");
+  const page = (open, pressed = open ? ["Season"] : []) => ({ page: open, pressed });
+
+  it("completes on a desktop when the Season place opened its page and a second press closed it", () => {
+    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(false) } }).status).toBe(
+      "completed",
+    );
+  });
+
+  it("fails a desktop whose Season place opened nothing, or whose page stayed open", () => {
+    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(false), closed: page(false) } }).reason).toBe(
+      "the Season place opened no page",
+    );
+    expect(verify({ seen: onTheMap, played: { desktop: true, opened: page(true), closed: page(true) } }).reason).toBe(
+      "the Season page did not close",
+    );
+  });
+
+  it("reads a phone's season from its Menu sheet", () => {
+    const phone = { desktop: false, opened: ["Menu"], read: ["Season"], closed: [] };
+    expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
+    expect(verify({ seen: onTheMap, played: { ...phone, opened: [] } }).status).toBe("failed");
+  });
+});
+
 describe("a scene check", () => {
-  const verify = verifyOf("open-map");
+  const verify = verifyOf("return-to-map");
 
   it("fails a route on the map with Map lit while the realm is still drawn", () => {
     const realmDrawnUnderTheMapRoute = { ...onTheMap, rendered: "hex" };

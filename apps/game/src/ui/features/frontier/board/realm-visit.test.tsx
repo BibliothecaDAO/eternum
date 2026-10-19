@@ -92,7 +92,7 @@ describe("a realm visit", () => {
     renderFoot();
     expect(host.textContent).toBe("");
 
-    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" }));
     expect(visit).toHaveBeenLastCalledWith("0x222");
     const foot = () => host.querySelector('[role="status"]')!;
     expect(foot().getAttribute("aria-label")).toBe("Visit Rival");
@@ -114,21 +114,30 @@ describe("a realm visit", () => {
 
   it("leaves the scene to the route for a spectator's watch: its realm arriving moves nothing", () => {
     renderFoot();
-    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: false }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: null }));
     act(() => store.applyFacts([realmRow(8, "0x222")] as never));
 
     expect(goTo).not.toHaveBeenCalled();
     expect(host.querySelector('[role="status"]')?.getAttribute("aria-label")).toBe("Visit Rival");
   });
 
+  it("opens a spectator's watch on the world map at the watched realm, not on its board", () => {
+    renderFoot(null);
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "map" }));
+    act(() => store.applyFacts([realmRow(8, "0x222")] as never));
+
+    expect(goTo).toHaveBeenCalledOnce();
+    expect(goTo).toHaveBeenLastCalledWith(8, expect.anything(), true, { spectator: true });
+  });
+
   it("opens a realm already watched when the player asks to visit it, each time they ask, and only then", () => {
     renderFoot();
-    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: false }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: null }));
     act(() => store.applyFacts([realmRow(8, "0x222")] as never));
     expect(goTo).not.toHaveBeenCalled();
 
     // The season board's Visit of the realm being watched: the transport has nothing new to stream, the realm opens.
-    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" }));
     expect(goTo).toHaveBeenCalledOnce();
     expect(goTo).toHaveBeenLastCalledWith(8, expect.anything(), false, { spectator: true });
 
@@ -141,13 +150,13 @@ describe("a realm visit", () => {
     expect(goTo).toHaveBeenCalledOnce();
 
     // Back on the map, Visit again: it opens again.
-    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" }));
     expect(goTo).toHaveBeenCalledTimes(2);
   });
 
   it("ends with the account that started it", () => {
     renderFoot();
-    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+    act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" }));
     act(() => useAccountStore.setState({ account: { address: "0x333" } as never }));
     expect(host.textContent).toBe("");
   });
@@ -156,7 +165,7 @@ describe("a realm visit", () => {
 it("returns the viewing selection home when replacing the gameplay account clears a visit", () => {
   renderFoot();
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));
-  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" }));
   useUIStore.setState({ isSpectating: true, structureEntityId: 8 });
   goTo.mockClear();
   act(() => useAccountStore.setState({ account: { address: "0x111" } as never }));
@@ -167,7 +176,7 @@ it("returns the viewing selection home when replacing the gameplay account clear
 it("returns home when the replacement account's realm arrives after the visit clears", () => {
   renderFoot(null);
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));
-  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOnArrival: true }));
+  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "realm" }));
   goTo.mockClear();
   act(() => useAccountStore.setState({ account: { address: "0x111" } as never }));
   expect(goTo).not.toHaveBeenCalled();

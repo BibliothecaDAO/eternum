@@ -45,8 +45,6 @@ export interface GameModeConfig {
      * Construction entry. Frontier builds only from its build sheet on a tapped plot.
      */
     showBuildMenus: boolean;
-    /** Where a player's session opens once through the doorway: the world map, or their realm's board. */
-    entryScene: "map" | "hex";
   };
   resources: {
     getTiers: () => ReturnType<typeof getResourceTiers>;
@@ -136,7 +134,6 @@ const blitzConfig: GameModeConfig = {
     showGuildsTab: false,
     showAutomation: true,
     showBuildMenus: true,
-    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(true),
@@ -176,7 +173,6 @@ const eternumConfig: GameModeConfig = {
     showGuildsTab: true,
     showAutomation: true,
     showBuildMenus: true,
-    entryScene: "map",
   },
   resources: {
     getTiers: () => getResourceTiers(false),
@@ -207,7 +203,6 @@ const frontierConfig: GameModeConfig = {
     showAutomation: false,
     showBuildMenus: false,
     // A Frontier session opens on the realm, where the day's first build and deploy happen.
-    entryScene: "hex",
   },
   resources: {
     getTiers: blitzConfig.resources.getTiers,
