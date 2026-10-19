@@ -1,178 +1,196 @@
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPanel, HudRow, HudWindow } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudButton,
+  HudNotice,
+  HudPanel,
+  HudRow,
+  HudSelect,
+  HudWindow,
+  HudWindowFoot,
+} from "@/ui/design-system/kit/hud-elements";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 /**
- * One realm's build order as the Blitz suggestion rules walk it (packages/core/src/automation/blitz-suggestions.ts,
- * buildBlitzRealmSuggestions): level up, wheat farms to the level's target, then wood, coal and copper (two of each per
- * realm level), then T1 military; a worker hut whenever population comes within 3 of its cap. The fixture realm is a
- * City (level 1): its farms are built and its second wood camp is next.
+ * The owner's pick (19 October): a Build order panel of its own, a dropdown of the player's orders with the owner's
+ * as the default, and for every realm only its next step, once it can be taken; done steps never show. Next up stays
+ * how to play for a newcomer. Everything here is fixture data drawn with the HUD's own elements: the proposal, before
+ * any of it is built.
  */
-type BuildStep = { key: string; icon: IconMeaning; name: string; built: number; target: number };
 
-const REALM = { name: "Egonal", level: "City" };
-const ORDER: BuildStep[] = [
-  { key: "level", icon: "realm-1", name: "Level up to City", built: 1, target: 1 },
-  { key: "wheat", icon: "farm", name: "Wheat farms", built: 4, target: 4 },
-  { key: "wood", icon: "wood", name: "Wood camps", built: 1, target: 2 },
-  { key: "coal", icon: "coal", name: "Coal mines", built: 0, target: 2 },
-  { key: "copper", icon: "copper", name: "Copper mines", built: 0, target: 2 },
-  { key: "military", icon: "barracks", name: "Knight barracks", built: 0, target: 1 },
-];
-const NEXT = ORDER.find((step) => step.built < step.target)!;
-const HUT_RULE = "A worker hut comes first whenever population is 3 from full.";
+/** The default order as a player would write it: "<how many> <building>" a line, under the rank it starts at. */
+const DEFAULT_ORDER = `Settlement:
+2 farm
+City:
+4 farm
+1 wood
+1 coal
+1 copper
+2 wood
+2 coal
+2 copper
+1 military
+Kingdom:
+8 farm
+3 wood
+3 coal
+3 copper
+4 wood
+4 coal
+4 copper
+3 military
+Empire:
+12 farm
+5 wood
+5 coal
+5 copper
+6 wood
+6 coal
+6 copper
+5 military`;
+
+/** A player's own order, pasted in: coal and copper first, then farms. */
+const COAL_RUSH = `Name: Coal rush
+City:
+2 coal
+2 copper
+4 farm
+2 wood
+1 military`;
+
+/** A realm's next step under the chosen order, when it can be taken now. */
+type RealmStep = { realm: string; rank: string; icon: IconMeaning; step: string; verb: string; why: string };
+
+const LEVEL_UP: RealmStep = {
+  realm: "Stolsli",
+  rank: "City",
+  icon: "realm-2",
+  step: "Level up to Kingdom",
+  verb: "Level up",
+  why: "Always first when it can",
+};
+const HUT: RealmStep = {
+  realm: "Grimwatch",
+  rank: "Settlement",
+  icon: "workers-hut",
+  step: "Worker hut",
+  verb: "Build",
+  why: "Population 5 of 6",
+};
+
+const ORDERS = {
+  default: {
+    name: "Default · djizus",
+    steps: [{ ...HUT, realm: "Egonal", rank: "City", icon: "wood", step: "Wood camp", why: "2 of 2" }, LEVEL_UP, HUT],
+  },
+  "coal-rush": {
+    name: "Coal rush · imported",
+    steps: [{ ...HUT, realm: "Egonal", rank: "City", icon: "coal", step: "Coal mine", why: "2 of 2" }, LEVEL_UP, HUT],
+  },
+} satisfies Record<string, { name: string; steps: RealmStep[] }>;
+type OrderKey = keyof typeof ORDERS;
 
 const run = () => undefined;
 
-/** The points coach's step, as Next up shows it today with an army idle. */
-const EXPLORE_STEP: NextStep = {
-  key: "coach:explore",
-  kind: "order",
-  line: "Your army can explore: +5 points a tile.",
-  verb: "Select the army",
-  busy: false,
-  run,
-};
-
-/** Today: the build step is the realm's suggestion, ranked after the coach's, so it waits behind the pager. */
-const TODAY_STEPS: NextStep[] = [
-  EXPLORE_STEP,
+/** Next up, kept for a newcomer: the points coach's step first; the default order's next building is one of its pages. */
+const NEWCOMER_STEPS: NextStep[] = [
   {
-    key: "coach:crate",
+    key: "coach:explore",
     kind: "order",
-    line: "A relic crate lies 2 tiles away: +250 points.",
-    verb: "Show the crate",
+    line: "Your army can explore: +5 points a tile.",
+    verb: "Select the army",
     busy: false,
     run,
   },
   {
-    key: "suggestion:wood",
+    key: "default-order:egonal",
     kind: "order",
-    line: `${REALM.name}: Build more wood camps (1 of 2 built).`,
+    line: "Egonal: build a wood camp (2 of 2), the default order's next step.",
     verb: "Build wood camp",
     busy: false,
     run,
   },
 ];
 
-/** A count only where there are several to build. */
-const builtOf = (step: BuildStep) => (step.target > 1 ? `${step.built} of ${step.target}` : "");
-
-/** A: Next up keeps the points step on top, and the realm's next building is its second, quieter line. */
-const NextUpWithBuild = () => (
-  <HudPanel
-    label="Next up"
-    title="Next up"
-    cue={
-      <HudButton kind="quiet" size="sm">
-        1 of 2 ›
+/** A realm's next step: the realm and its step, its rank and why, and its one verb. */
+const StepRow = ({ step }: { step: RealmStep }) => (
+  <HudRow
+    lead={<Icon name={step.icon} size={28} />}
+    title={`${step.realm} · ${step.step}`}
+    detail={`${step.rank} · ${step.why}`}
+    trail={
+      <HudButton kind="secondary" size="sm">
+        {step.verb}
       </HudButton>
     }
-  >
-    <div className="flex flex-col gap-2">
-      <p className="text-hud-body text-hud-ink">{EXPLORE_STEP.line}</p>
-      <HudButton kind="primary">Select the army</HudButton>
-    </div>
-    <div className="mt-3 flex items-center gap-3 border-t border-hud-divider pt-3">
-      <Icon name={NEXT.icon} size={32} />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-hud-label text-hud-muted">Build · {REALM.name}</span>
-        <span className="text-hud-body text-hud-ink">
-          {NEXT.name} {builtOf(NEXT)}
-        </span>
-      </span>
-      <HudButton kind="secondary" size="sm">
-        Build
-      </HudButton>
-    </div>
-  </HudPanel>
+  />
 );
 
-/** One step of the order: done, next (with its Build), or still to come. */
-const OrderRow = ({ step }: { step: BuildStep }) => {
-  const done = step.built >= step.target;
-  const next = step === NEXT;
+/**
+ * The panel: its order at its head (a dropdown once there is more than one), then one row per realm whose next step
+ * can be taken now; a realm waiting on resources, or done with the order, has no row.
+ */
+const BuildOrderPanel = ({ phase }: { phase: 1 | 2 }) => {
+  const [order, setOrder] = useState<OrderKey>("default");
   return (
-    <HudRow
-      selected={next}
-      lead={<Icon name={done ? "check" : step.icon} size={26} />}
-      title={step.name}
-      detail={<HudMeter share={step.built / step.target} tone={done ? "good" : undefined} label={step.name} />}
-      trail={
-        next ? (
-          <HudButton kind="secondary" size="sm">
-            Build
-          </HudButton>
+    <HudPanel
+      label="Build order"
+      title="Build order"
+      icon="build"
+      cue={
+        phase === 1 ? (
+          <span className="text-hud-label text-hud-muted">{ORDERS.default.name}</span>
         ) : (
-          <span className="text-hud-label text-hud-muted">{builtOf(step)}</span>
+          <HudSelect
+            label="Build order"
+            value={order}
+            onChange={setOrder}
+            options={(Object.keys(ORDERS) as OrderKey[]).map((key) => ({ value: key, label: ORDERS[key].name }))}
+          />
         )
       }
-    />
+      bodyClassName="flex flex-col"
+    >
+      {ORDERS[order].steps.map((step) => (
+        <StepRow key={step.realm} step={step} />
+      ))}
+      {phase === 2 && (
+        <div className="flex pt-2">
+          <HudButton kind="quiet" size="sm" icon="plus">
+            Import an order
+          </HudButton>
+        </div>
+      )}
+    </HudPanel>
   );
 };
 
-/** B: its own panel in the rail, under Next up: the realm's whole order, what is done, the next one with Build. */
-const BuildOrderPanel = () => (
-  <HudPanel
-    label="Build order"
-    title="Build order"
-    icon="build"
-    cue={<span className="text-hud-label text-hud-muted">{`${REALM.name} · ${REALM.level}`}</span>}
-    bodyClassName="flex flex-col"
-  >
-    {ORDER.map((step) => (
-      <OrderRow key={step.key} step={step} />
-    ))}
-    <p className="pt-2 text-hud-label text-hud-muted">{HUT_RULE}</p>
-  </HudPanel>
-);
-
-/** C: the order across the top of the Build window, the next building lit with Build next; the rail is unchanged. */
-const BuildWindowWithOrder = () => (
-  <HudWindow title="Build" icon="build" size="page" onClose={run}>
-    <div className="flex flex-col gap-4">
-      <section aria-label="Build order" className="flex flex-col gap-2">
-        <span className="text-hud-label text-hud-muted">Build order · {REALM.name}</span>
-        <div className="flex flex-wrap items-center gap-2">
-          {ORDER.map((step, index) => (
-            <span key={step.key} className="flex items-center gap-2">
-              {index > 0 && <span className="text-hud-muted">›</span>}
-              <HudChip
-                tone={step.built >= step.target ? "good" : step === NEXT ? "warn" : undefined}
-                icons={[step.built >= step.target ? "check" : step.icon]}
-              >
-                {step.name} {builtOf(step)}
-              </HudChip>
-            </span>
-          ))}
-          <HudButton kind="primary" size="sm">
-            Build next: {NEXT.name.replace(/s$/, "")}
-          </HudButton>
-        </div>
-        <p className="text-hud-label text-hud-muted">{HUT_RULE}</p>
-      </section>
-      <p className="rounded border border-dashed border-hud-divider p-6 text-center text-hud-label text-hud-muted">
-        The building groups, as the Build window draws them today
-      </p>
+/** Phase 2's import: an order pasted as text, read line by line, each refusal naming its line. */
+const ImportWindow = () => (
+  <HudWindow title="Import a build order" icon="build" size="fit" onClose={run}>
+    <HudWindowFoot>
+      <HudButton kind="quiet">Cancel</HudButton>
+      <HudButton kind="primary" disabled>
+        Import
+      </HudButton>
+    </HudWindowFoot>
+    <div className="flex w-80 flex-col gap-3">
+      <pre className="rounded border border-hud-line bg-hud-well p-3 font-mono text-hud-label text-hud-ink">
+        {`Name: Mill first\nCity:\n2 mill\n4 farm`}
+      </pre>
+      <HudNotice
+        tone="bad"
+        line="Line 3: “mill” is not a building of an order"
+        why="Farm, wood, coal, copper, hut or military."
+      />
     </div>
   </HudWindow>
 );
 
-const Option = ({
-  name,
-  line,
-  wide = false,
-  children,
-}: {
-  name: string;
-  line: string;
-  wide?: boolean;
-  children: ReactNode;
-}) => (
-  <section data-sheet-element={name} className={`flex flex-col gap-2 ${wide ? "w-fit" : "w-hud-column"}`}>
+const Shown = ({ name, line, children }: { name: string; line: string; children: ReactNode }) => (
+  <section data-sheet-element={name} className="flex w-hud-column flex-col gap-2">
     <h2 className="text-sm font-semibold text-white">{name}</h2>
     <p className="text-xs text-white/60">{line}</p>
     {children}
@@ -180,39 +198,47 @@ const Option = ({
 );
 
 /**
- * Dev only, for the owner's pick: where a realm's build order lives, at /lab/kit/build-order. Today's Next up beside
- * three options, each drawn with the HUD's own elements on one fixture realm.
+ * Dev only, for the owner: the Build order panel as build-order-2 proposes it, at /lab/kit/build-order. Next up for a
+ * newcomer, phase 1 (the panel on the default order), phase 2 (orders a player imports, and the import), and the
+ * default order as written.
  */
 export const BuildOrderLab = () => {
   useDocumentClass("classic-hud");
   return (
     <div className="flex min-h-screen flex-wrap items-start gap-8 bg-[#0b1418] p-6">
-      <Option
-        name="Today"
-        line="The build step still exists, but it ranks after the points coach's steps: here it is page 3 of 3, behind the pager."
+      <Shown
+        name="Next up, for a newcomer"
+        line="How to play: the points coach first (raise an army, explore, a crate); the default order's next building is among its pages. As today."
       >
-        <NextUpView steps={TODAY_STEPS} />
-      </Option>
-      <Option
-        name="A · In Next up"
-        line="The points step stays on top with the gold verb; the realm's next building is a second, quieter line with its own Build."
+        <NextUpView steps={NEWCOMER_STEPS} />
+      </Shown>
+      <Shown
+        name="Phase 1 · the panel"
+        line="Under Next up in the rail, on the default order, for every realm: only a step it can take now, never one done. Stolsli's level-up and Grimwatch's hut are the two rules that always come first."
       >
-        <NextUpWithBuild />
-      </Option>
-      <Option
-        name="B · Its own panel"
-        line="A Build order panel in the rail under Next up: the whole order for the selected realm, done ones checked, the next one with Build. Folds from its title."
+        <BuildOrderPanel phase={1} />
+      </Shown>
+      <Shown
+        name="Phase 2 · a player's orders"
+        line="The dropdown once a player has imported an order: pick Coal rush and Egonal's step changes. Import an order opens the window beside it."
       >
-        <NextUpView steps={[EXPLORE_STEP]} />
-        <BuildOrderPanel />
-      </Option>
-      <Option
-        name="C · In the Build window"
-        line="The order across the top of Build, the next building lit, with Build next. The rail is unchanged; the order shows when Build is open."
-        wide
+        <BuildOrderPanel phase={2} />
+      </Shown>
+      <Shown
+        name="Phase 2 · importing"
+        line="An order pasted as text. Each line that cannot be read is named, and nothing is kept until every line can."
       >
-        <BuildWindowWithOrder />
-      </Option>
+        <ImportWindow />
+      </Shown>
+      <Shown
+        name="The order, as written"
+        line="The default order (left) in the same text a player writes and shares, and a player's own (right). Two rules need no line: level up when the realm can, and a worker hut when population is 3 from full."
+      >
+        <div className="flex items-start gap-3">
+          <pre className="rounded border border-white/10 p-3 font-mono text-xs text-white/80">{DEFAULT_ORDER}</pre>
+          <pre className="rounded border border-white/10 p-3 font-mono text-xs text-white/80">{COAL_RUSH}</pre>
+        </div>
+      </Shown>
     </div>
   );
 };
