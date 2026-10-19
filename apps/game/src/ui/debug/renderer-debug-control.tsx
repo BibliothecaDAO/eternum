@@ -8,11 +8,10 @@ import { env } from "../../../env";
 
 interface RendererDebugControlProps {
   className?: string;
-  /** Boot and error screens show the fallback reason and adapter; Settings shows only the switch. */
-  diagnostics?: boolean;
 }
 
-const rendererModes: ReadonlyArray<{ label: string; mode: RendererBuildMode }> = [
+/** The two backends a player can ask for; asking reloads the game with the choice in its address. */
+export const RENDERER_MODES: ReadonlyArray<{ label: string; mode: RendererBuildMode }> = [
   { label: "WebGPU", mode: "webgpu-auto" },
   { label: "WebGL2", mode: "webgpu-force-webgl" },
 ];
@@ -23,20 +22,26 @@ const formatActiveMode = (activeMode: ReturnType<typeof snapshotRendererDiagnost
   return "Pending";
 };
 
-export const RendererDebugControl = ({
-  className = "",
-  diagnostics: showDiagnostics = true,
-}: RendererDebugControlProps) => {
+/**
+ * The backend this page load asked for: the renderer's own record once it booted, else the address and the build's
+ * default.
+ */
+export const requestedRendererMode = (): RendererBuildMode =>
+  snapshotRendererDiagnostics().requestedMode ??
+  resolveRendererBuildModeFromSearch({
+    envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+    search: window.location.search,
+  });
+
+/**
+ * The boot and error screens' switch: the backend in use, a reload with either, and why it fell back, on what
+ * adapter.
+ */
+export const RendererDebugControl = ({ className = "" }: RendererDebugControlProps) => {
   // Each host mounts after renderer init or already rerenders while booting, so this snapshot needs no subscription.
   const diagnostics = snapshotRendererDiagnostics();
   const currentHref = window.location.href;
-  const currentUrl = new URL(currentHref);
-  const requestedMode =
-    diagnostics.requestedMode ??
-    resolveRendererBuildModeFromSearch({
-      envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
-      search: currentUrl.search,
-    });
+  const requestedMode = requestedRendererMode();
   const adapter = diagnostics.adapterInfo?.description || diagnostics.adapterInfo?.vendor || null;
 
   return (
@@ -52,7 +57,7 @@ export const RendererDebugControl = ({
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-1" role="group" aria-label="Renderer backend">
-        {rendererModes.map(({ label, mode }) => {
+        {RENDERER_MODES.map(({ label, mode }) => {
           const isRequested = requestedMode === mode;
           return (
             <a
@@ -73,19 +78,17 @@ export const RendererDebugControl = ({
         })}
       </div>
 
-      {showDiagnostics && diagnostics.fallbackReason ? (
+      {diagnostics.fallbackReason ? (
         <div className="mt-1 truncate text-amber-300/80" title={diagnostics.fallbackReason}>
           {diagnostics.fallbackReason}
         </div>
       ) : null}
-      {showDiagnostics && adapter ? (
+      {adapter ? (
         <div className="mt-1 truncate text-kit-muted" title={adapter}>
           {adapter}
         </div>
       ) : null}
-      {showDiagnostics && (
-        <div className="mt-1 text-kit-muted">Reloads with console diagnostics for that page load.</div>
-      )}
+      <div className="mt-1 text-kit-muted">Reloads with console diagnostics for that page load.</div>
     </div>
   );
 };

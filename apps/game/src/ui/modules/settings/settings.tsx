@@ -15,10 +15,10 @@ import {
   type GraphicsPreferences,
 } from "@/three/graphics-preferences";
 import { readRenderMode, RENDER_MODE_OPTIONS, type RenderMode, writeRenderMode } from "@/three/render-profile";
-import { RendererDebugControl } from "@/ui/debug/renderer-debug-control";
+import { buildRendererDebugUrl } from "@/three/renderer-build-mode";
+import { RENDERER_MODES, requestedRendererMode } from "@/ui/debug/renderer-debug-control";
 import {
   HudButton,
-  HudChip,
   HudField,
   HudNotice,
   HudPortrait,
@@ -29,8 +29,6 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
-import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
-import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -40,29 +38,37 @@ import { ContractAddress, formatExact } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { InstallSetting } from "./install-setting";
+import { KeyboardShortcuts, KeyboardShortcutsSetting } from "./keyboard-shortcuts";
 import { NotificationSettings } from "./notification-settings";
 
 export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
-/** Player settings first; installing the app and the renderer choice, rarely touched, come last before the session. */
-export const SettingsPanel = () => (
-  <div className="flex flex-col gap-4 p-1">
-    <ProfileHeader />
-    <AudioSettings />
-    <VideoSettings />
-    <NextUpSettings />
-    <SettingsSection title={PROFILE_WORDS.notifications}>
-      <NotificationSettings />
-    </SettingsSection>
-    <ShortcutsSection />
-    <SettingsSection title="App">
-      <InstallSetting />
-    </SettingsSection>
-    <RendererSettings />
-    <SessionActions />
-  </div>
-);
+/**
+ * Player settings first; installing the app and the keys, rarely touched, come last before the session. The keys are
+ * one row whose Show opens their list in Settings' place, and the renderer is a row of Video & Graphics, so Settings
+ * stays one short page.
+ */
+export const SettingsPanel = () => {
+  const [shortcuts, setShortcuts] = useState(false);
+  if (shortcuts) return <KeyboardShortcuts onBack={() => setShortcuts(false)} />;
+  return (
+    <div className="flex flex-col gap-4 p-1">
+      <ProfileHeader />
+      <AudioSettings />
+      <VideoSettings />
+      <NextUpSettings />
+      <SettingsSection title={PROFILE_WORDS.notifications}>
+        <NotificationSettings />
+      </SettingsSection>
+      <SettingsSection title="App">
+        <InstallSetting />
+        <KeyboardShortcutsSetting onShow={() => setShortcuts(true)} />
+      </SettingsSection>
+      <SessionActions />
+    </div>
+  );
+};
 
 function ProfileHeader() {
   const { session } = useIdentitySession();
@@ -223,12 +229,20 @@ function VideoSettings() {
           onChange={(quality) => changeGraphics({ quality })}
         />
       </HudSetting>
-      <HudSetting name="Renderer" about="The game reloads to apply it">
+      <HudSetting name="Frame rate" about="The game reloads to apply it">
         <HudSelect
-          label="Renderer"
+          label="Frame rate"
           value={renderMode}
           options={RENDER_MODE_OPTIONS.map((option) => ({ value: option.mode, label: option.label }))}
           onChange={changeRenderMode}
+        />
+      </HudSetting>
+      <HudSetting name="Renderer" about="The game reloads to apply it">
+        <HudSelect
+          label="Renderer"
+          value={requestedRendererMode()}
+          options={RENDERER_MODES.map((option) => ({ value: option.mode, label: option.label }))}
+          onChange={(mode) => window.location.assign(buildRendererDebugUrl(window.location.href, mode))}
         />
       </HudSetting>
       <HudSetting name="Shadows" about="The game reloads to apply it">
@@ -266,14 +280,6 @@ function VolumeSlider({ label, value, onChange }: { label: string; value: number
     </HudSetting>
   );
 }
-function RendererSettings() {
-  return (
-    <SettingsSection title="Renderer">
-      <RendererDebugControl diagnostics={false} className="border-0 bg-transparent px-0 py-0 backdrop-blur-none" />
-    </SettingsSection>
-  );
-}
-
 function AudioSettings() {
   const { setCategoryVolume, setMasterVolume, setMuted, audioState } = useAudio();
   return (
@@ -296,48 +302,6 @@ function AudioSettings() {
       <HudSetting name="Mute">
         <HudSwitch on={audioState?.muted ?? false} label="Mute" onChange={setMuted} />
       </HudSetting>
-    </SettingsSection>
-  );
-}
-
-const KEY_NAMES: Record<string, string> = { Escape: "Esc", " ": "Space" };
-const formatShortcutKey = (
-  key: string,
-  modifiers?: { shift?: boolean; ctrl?: boolean; alt?: boolean; meta?: boolean },
-) =>
-  [
-    modifiers?.ctrl && "Ctrl",
-    modifiers?.alt && "Alt",
-    modifiers?.meta && "Meta",
-    modifiers?.shift && "Shift",
-    KEY_NAMES[key] ?? (key.length === 1 ? key.toUpperCase() : key),
-  ]
-    .filter(Boolean)
-    .join("+");
-
-/** Read-only: one line per bound key (both scenes bind the same keys), plus the chat binding. */
-function ShortcutsSection() {
-  const bound = getShortcutManager().getShortcuts();
-  // One row per key; a key bound differently per scene lists each meaning once.
-  const bindings = new Map<string, string[]>();
-  for (const shortcut of [...bound, CHAT_SHORTCUT]) {
-    const key = formatShortcutKey(shortcut.key, "modifiers" in shortcut ? shortcut.modifiers : undefined);
-    const meanings = bindings.get(key) ?? [];
-    if (!meanings.includes(shortcut.description)) meanings.push(shortcut.description);
-    bindings.set(key, meanings);
-  }
-  return (
-    <SettingsSection title="Shortcuts">
-      <dl className="flex flex-col gap-1">
-        {[...bindings].map(([key, meanings]) => (
-          <div key={key} className="flex items-center gap-3">
-            <dt>
-              <HudChip>{key}</HudChip>
-            </dt>
-            <dd className="min-w-0 truncate text-hud-body text-hud-ink">{meanings.join(" · ")}</dd>
-          </div>
-        ))}
-      </dl>
     </SettingsSection>
   );
 }

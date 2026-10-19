@@ -84,6 +84,11 @@ export const SITES_CLEARED = "Sites cleared";
 export const LORDS_EARNED = "LORDS earned";
 export const GUIDE = "Guide";
 export const SETTINGS = "Settings";
+/** Settings' row for the keys, and the list it opens in Settings' place. */
+export const SETTINGS_WORDS = {
+  shortcuts: "Keyboard shortcuts",
+  show: "Show",
+} as const;
 export const EXIT = "Exit";
 export const RESUME = "Resume";
 export const SIGN_IN = "Sign in";

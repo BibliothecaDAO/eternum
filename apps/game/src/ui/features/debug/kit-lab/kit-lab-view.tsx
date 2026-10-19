@@ -41,6 +41,7 @@ import { Link } from "react-router-dom";
 
 import { HudLab } from "./hud-lab";
 import { PanelsLab } from "./panels-lab";
+import { BuildOrderLab } from "./build-order-lab";
 import { GuidanceLab } from "./guidance-lab";
 import { StyleSheetLab } from "./style-sheet-lab";
 import { ChatLab } from "./chat-lab";
@@ -71,6 +72,7 @@ export const KitLabView = () => {
       <Route path="panels" element={<PanelsLab />} />
       <Route path="windows/:surface?" element={<WindowsLab />} />
       <Route path="guidance" element={<GuidanceLab />} />
+      <Route path="build-order" element={<BuildOrderLab />} />
       <Route path="tokens" element={<TokensLab />} />
       <Route path="words" element={<WordsLab />} />
       <Route path="hud/:state" element={<HudLab />} />

@@ -16,6 +16,7 @@ import { HintModal } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal-content";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
+import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { EntityType, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
@@ -135,6 +136,15 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
     ),
   },
   market: { name: "Market", draw: () => <Opened open={() => openWindow("market", <MarketModal />)} /> },
+  // The header's Settings, at the width and in the look of the popover it opens in.
+  settings: {
+    name: "Settings",
+    draw: () => (
+      <div data-lab-settings className="ui ui-popover w-hud-settings rounded-xl p-4">
+        <SettingsPanel />
+      </div>
+    ),
+  },
   "realm-number": {
     name: "Realm number",
     draw: () => <RealmNumberPicker value="1234" onChange={() => undefined} disabled={false} />,

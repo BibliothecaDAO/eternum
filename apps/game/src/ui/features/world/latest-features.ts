@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "A shorter Settings",
+    description:
+      "Settings no longer lists every key: Keyboard shortcuts opens them with Show, and Back returns. Frame rate and the renderer sit together under Video & Graphics.",
+    type: "improvement",
+  },
+  {
+    date: "2026-10-19",
     title: "Relic crates keep their surprise",
     description:
       "Select a relic crate to find its opening action. Its three relics are revealed when you open it, and the opened tile keeps the receipt.",
