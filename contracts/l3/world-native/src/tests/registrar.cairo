@@ -408,6 +408,42 @@ fn a_late_preset_validation_failure_rolls_back_the_record_and_allows_retry() {
 }
 
 #[test]
+fn relic_preset_failure_rolls_back_domain_writes_and_allows_retry() {
+    let d = setup();
+    let mut preset = definition(true);
+    let mut relics = array![];
+    for rule in preset.economy.relics {
+        relics.append(crate::relics::RelicRule { draw_weight: 0, ..*rule });
+    }
+    preset.economy.relics = relics.span();
+    let commitment = crate::presets::commitment(preset);
+    start_cheat_caller_address(d.games, super::authority());
+    let (caller, _) = super::deploy("RollbackFixture", @array![]);
+    assert!(
+        !super::fixtures::IRollbackFixtureDispatcherTrait::attempt_preset(
+            super::fixtures::IRollbackFixtureDispatcher { contract_address: caller }, d.games, 1, preset,
+        ),
+    );
+    assert_eq!(registry(d).preset_commitment(1), 0);
+    let (army_tick, first_relic) = snforge_std::interact_with_state(
+        d.games,
+        || {
+            let record = crate::state::read().presets.entry(commitment);
+            (
+                record.rules.tick_config.armies_tick_in_seconds.read(),
+                record.relic_rules.read(crate::relics::FIRST_RELIC),
+            )
+        },
+    );
+    assert_eq!(army_tick, 0);
+    assert_eq!(
+        first_relic, crate::relics::RelicRule { rate_bps: 0, duration: 0, uses: 0, essence_cost: 0, draw_weight: 0 },
+    );
+    registry(d).register_preset(1, definition(true));
+    assert_eq!(registry(d).create_game(params(true)), 1);
+}
+
+#[test]
 fn settlement_uses_block_time_after_grace_and_allows_retry_after_rejection() {
     let (d, _, _) = super::resource_commands::setup();
     let command = crate::commands::Command::MarkGameSettled;

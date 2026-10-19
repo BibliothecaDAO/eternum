@@ -171,6 +171,18 @@ pub trait IPresetStructures<T> {
 }
 
 #[starknet::interface]
+pub trait IPresetRelics<T> {
+    fn store_relic_preset(
+        ref self: T,
+        commitment: felt252,
+        rules: Span<crate::relics::RelicRule>,
+        chests: Option<crate::relics::ChestRules>,
+        mode_rules: u32,
+        day_unit_seconds: u32,
+    );
+}
+
+#[starknet::interface]
 pub trait IPresetWithdrawals<T> {
     fn store_withdrawal_preset(ref self: T, commitment: felt252, withdrawals: WithdrawalPreset);
 }

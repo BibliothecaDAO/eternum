@@ -120,12 +120,19 @@ fn write_economy(
     preset.trade_rules.write(economy.trade);
     write_banks(preset, economy.banks);
     write_hyperstructures(preset, rules, economy.hyperstructures);
-    write_relics(preset, rules, economy.relics, economy.chests);
+    let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
+    crate::presets::IPresetRelicsDispatcherTrait::store_relic_preset(
+        crate::presets::IPresetRelicsLibraryDispatcher { class_hash: classes.relics },
+        commitment,
+        economy.relics,
+        economy.chests,
+        rules.mode_rules,
+        rules.day_unit_seconds,
+    );
     preset.progression_rules.write(economy.progression);
     preset.discovery_rules.write(economy.discovery);
     preset.artificer_cost.write(economy.research_cost);
     if let Some(withdrawals) = economy.withdrawals {
-        let classes = crate::state::read().releases.read(crate::state::read().current_release.read()).classes;
         crate::presets::IPresetWithdrawalsDispatcherTrait::store_withdrawal_preset(
             crate::presets::IPresetWithdrawalsLibraryDispatcher { class_hash: classes.bridge }, commitment, withdrawals,
         );
@@ -406,16 +413,18 @@ fn write_hyperstructures(
     preset.hyper_shards.write(rules.initialize_shards);
 }
 
-fn write_relics(
-    preset: PresetWrite,
-    game_rules: crate::rules::SliceRules,
+pub fn store_relics(
+    commitment: felt252,
     rules: Span<crate::relics::RelicRule>,
     chests: Option<crate::relics::ChestRules>,
+    mode_rules: u32,
+    day_unit_seconds: u32,
 ) {
+    crate::logic::release::assert_authority();
+    let preset = crate::state::write().presets.entry(commitment);
     if let Some(value) = chests {
         assert!(
-            game_rules.day_unit_seconds != 0 && crate::rules::rule_enabled(game_rules, crate::rules::DEPTH_CONTENTS),
-            "chest tables require depth rules",
+            day_unit_seconds != 0 && mode_rules & crate::rules::DEPTH_CONTENTS != 0, "chest tables require depth rules",
         );
         assert!(value.price_ceiling != 0, "empty chest rules");
         let shares = value.shares;
@@ -428,18 +437,17 @@ fn write_relics(
             "invalid chest shares",
         );
         assert!(rules.is_empty(), "ruin chests replace timed relics");
-        preset.rollover_chest_rules.write(chests);
-        return;
+    } else {
+        assert!(rules.len() == 18, "all eighteen relic rules required");
+        let mut total: u128 = 0;
+        for index in 0..18_u32 {
+            let rule = *rules.at(index);
+            total += rule.draw_weight;
+            preset.relic_rules.write(crate::relics::FIRST_RELIC + index.try_into().unwrap(), rule);
+        }
+        assert!(total != 0, "empty relic discovery pool");
+        assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
     }
-    assert!(rules.len() == 18, "all eighteen relic rules required");
-    let mut total: u128 = 0;
-    for index in 0..18_u32 {
-        let rule = *rules.at(index);
-        total += rule.draw_weight;
-        preset.relic_rules.write(crate::relics::FIRST_RELIC + index.try_into().unwrap(), rule);
-    }
-    assert!(total != 0, "empty relic discovery pool");
-    assert!(*rules.at(6).uses == 1 && *rules.at(7).uses == 2, "invalid reveal radii");
     preset.rollover_chest_rules.write(chests);
 }
 
