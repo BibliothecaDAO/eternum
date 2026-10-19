@@ -331,6 +331,43 @@ describe("HeraldGameSyncTransport", () => {
       expect(gates.at(-1)).toEqual({ gameId: 1, complete: true, actor: null, timestamp: 350 });
     });
 
+    it("never fails a replacement subscription with an earlier start's final-state failure", async () => {
+      let failOld!: (reason: Error) => void;
+      const harness = streamHarness({ finalState: () => new Promise((_resolve, reject) => (failOld = reject)) });
+      const old = harness.transport.subscribe(harness.handlers).then(
+        () => "ready",
+        () => "cancelled",
+      );
+      closeAsFinalized(harness.sockets[0]!);
+      const failures: Error[] = [];
+      const replacement = harness.transport
+        .subscribe({ ...harness.handlers, onStartFailure: (error) => failures.push(error) })
+        .then(
+          () => "ready",
+          () => "rejected",
+        );
+      failOld(new Error("the old read failed"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      harness.sockets[1]!.receive(hello("epoch-b", 0));
+      expect(await replacement).toBe("ready");
+      expect(failures).toEqual([]);
+      // The replaced start is settled too, as cancelled, not left waiting.
+      expect(await old).toBe("cancelled");
+      harness.transport.dispose();
+    });
+
+    it("settles a spectator's start cancelled while its final state is still being read", async () => {
+      const harness = streamHarness({ finalState: () => new Promise<HeraldGameSnapshot>(() => {}) });
+      const outcome = harness.transport.subscribe(harness.handlers).then(
+        () => "ready",
+        () => "cancelled",
+      );
+      closeAsFinalized(harness.sockets[0]!);
+      harness.transport.dispose();
+      expect(await outcome).toBe("cancelled");
+      expect(harness.deliveries).toEqual([]);
+    });
+
     it("still ends a player's start as finalized: a player's finished game leads to its results", async () => {
       const finalState = vi.fn(async () => REVIEW);
       const harness = streamHarness({ finalState, url: "wss://herald.test/games/54?actor=0x123" });

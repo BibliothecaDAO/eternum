@@ -180,6 +180,8 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   private stopped = true;
   /** Herald finalized the game: its archived final state, once applied, is the whole session; no stream follows. */
   private finalized = false;
+  /** A spectator's start waiting on its final state: its subscription's own, settled when that read ends or is cancelled. */
+  private finalStart: Deferred<void> | null = null;
   private forceFreshSnapshot = true;
   private firstSnapshotEnded = false;
   private snapshotStreaming = false;
@@ -286,6 +288,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   }
 
   public async subscribe(handlers: GameSyncSubscriptionHandlers): Promise<GameSyncWriter> {
+    this.cancelFinalStart("replaced");
     this.stop();
     this.resetSession(handlers);
     this.connect();
@@ -304,6 +307,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     this.acceptingSnapshotOverlay = false;
     this.stopped = false;
     this.finalized = false;
+    this.finalStart = null;
   }
 
   private connect(): void {
@@ -340,8 +344,20 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     const failure = new GameFinalizedError(this.options.url);
     console.warn(`[Herald] ${failure.message}; not reconnecting`);
     if (this.firstSnapshotEnded) void this.applyFinalState({ clock });
-    else if (selectionOf(this.options.url).actor === null) void this.applyFinalState({ failure });
-    else this.failStart(failure);
+    else if (selectionOf(this.options.url).actor === null) {
+      this.finalStart = this.ready;
+      void this.applyFinalState({ failure });
+    } else this.failStart(failure);
+  }
+
+  /**
+   * A start still reading its final state is its subscription's own: disposing or replacing that subscription settles
+   * it, though its socket was already stopped for the read.
+   */
+  private cancelFinalStart(how: "disposed" | "replaced"): void {
+    const start = this.finalStart;
+    this.finalStart = null;
+    start?.reject(new Error(`Herald transport was ${how} before its final state was read`));
   }
 
   private failStart(failure: Error): void {
@@ -360,12 +376,18 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
     const handlers = this.handlers;
     const generation = this.actorSnapshotGeneration;
     const current = () => handlers === this.handlers && generation === this.actorSnapshotGeneration;
-    const refuse = () => ("failure" in start ? this.failStart(start.failure) : undefined);
+    // A refusal is the starting subscription's alone: one cancelled or replaced meanwhile is never failed by it.
+    const refuse = () => {
+      if (!("failure" in start) || !current()) return;
+      this.finalStart = null;
+      this.failStart(start.failure);
+    };
     if (!handlers || !this.options.finalState) return refuse();
     let final: HeraldGameSnapshot;
     try {
       final = await this.options.finalState();
     } catch (error) {
+      if (!current()) return;
       console.warn(`[Herald] the final state of ${this.options.url} could not be read`, error);
       return refuse();
     }
@@ -376,6 +398,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
         console.warn(`[Herald] the final state of ${this.options.url} holds no GameRegistry end`);
         return refuse();
       }
+      this.finalStart = null;
       this.ready.resolve();
       handlers.onHead({ block: final.confirmed_block, preconfirmed: false, timestamp: clock });
     }
@@ -627,6 +650,7 @@ export class HeraldGameSyncTransport implements GameSyncTransport {
   /** Stops reconnecting and fails a subscribe or first snapshot still waiting on the socket. */
   public dispose(): void {
     const wasRunning = !this.stopped;
+    this.cancelFinalStart("disposed");
     this.stop();
     if (!wasRunning) return;
     const failure = new Error("Herald transport was disposed before its subscription became active");

@@ -40,14 +40,14 @@ and the bar on a desktop, each place's word whole on a phone), the bar with the 
 at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the lobby's entry with every choice taken
 at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet;
 `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses **See the
-end map** and holds the map to its scene being ready, watched and finished. The pages: Play (`/`) the lead
-widest and each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side;
-Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place
-and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) the latest changes beside
-the Scroll's posts. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture
-realm. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
-outcomes). `/lab/kit/build-order` where a realm's build order could live, today's Next up beside three options for the
-owner's pick. `/lab/kit/windows/settings` the header's Settings at its popover's width;
+end map** and holds the map to its scene being ready, watched and finished. The pages: Play (`/`) the lead widest and
+each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side; Season
+(`/season`) the player's figures over Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**)
+the player's place and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) the
+latest changes beside the Scroll's posts. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
+sees them, on a fixture realm. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route,
+Events rows with outcomes). `/lab/kit/build-order` where a realm's build order could live, today's Next up beside three
+options for the owner's pick. `/lab/kit/windows/settings` the header's Settings at its popover's width;
 `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
 keys with Show and leaves with Back. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body,
 Combat and crate panel as the game draws them, on the deploy fixture's realm; capture them with
