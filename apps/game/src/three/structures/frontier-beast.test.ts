@@ -1,9 +1,10 @@
+import { readFileSync, readdirSync } from "node:fs";
+
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { BEAST_NAMES } from "@/ui/design-system/kit/words";
 import { iconDefinition } from "@/ui/design-system/icon-meaning";
 import { describe, expect, it } from "vitest";
-import { readdirSync } from "node:fs";
 import { basename } from "node:path";
-import { BEAST_NAMES } from "@/ui/design-system/kit/words";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
 import {
@@ -160,5 +161,24 @@ describe("Frontier guard identity", () => {
       readStandingFrontierBeast(without(facts(StructureType.Camp), "ExpeditionSite"), 1, 9, { row: 15 }),
     ).toBeUndefined();
     expect(readStandingFrontierBeast(facts(StructureType.Realm), 1, 9, { row: 15 })).toBeUndefined();
+  });
+});
+
+describe("the feature map's beast guards", () => {
+  const section = readFileSync(new URL("../../../FEATURE-MAP.md", import.meta.url), "utf8")
+    .split("## Frontier beast guards")[1]
+    .split("\n## ")[0]
+    .replace(/\s+/g, " ");
+
+  it("names only the species the game draws, and the roaming Beasts by the species each band draws", () => {
+    const shipped: string[] = Object.keys(FRONTIER_BEASTS).map(
+      (beast) => BEAST_NAMES[beast as keyof typeof FRONTIER_BEASTS],
+    );
+    const named = Object.values(BEAST_NAMES).filter((name) => section.includes(name));
+    expect(named.filter((name) => !shipped.includes(name))).toEqual([]);
+    for (const band of ["lowly", "stronger"] as const) {
+      const { name } = frontierBeast(0, StructureType.Beasts, band);
+      expect(section).toContain(`${name} for the ${band} encounter`);
+    }
   });
 });

@@ -55,14 +55,14 @@ each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry 
 the player's place and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a
 release's patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm
 panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game desktop HUD every mode shares,
-as the game mounts it on the lab's game: `blitz`, `blitz-build-order` (four realms' steps in the rail's Build order
-place, under Next up: a stand-in until the Build order panel lands), `frontier`, `frontier-army` (an army out whose XP
-buys a tier; Upgrade's buy_tier is recorded on the page as `window.__labTierBought`), `blitz-spectator`,
-`blitz-finished`; `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and
-Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, every control
-reachable, at most seven parts a region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next
-up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer, the panel
-as built (phase 1), a player's imported orders and the import as proposed (phase 2), and the default order as written.
+as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab realm, which
+has nothing to build now), `frontier`, `frontier-army` (an army out whose XP buys a tier; Upgrade's buy_tier is recorded
+on the page as `window.__labTierBought`), `blitz-spectator`, `blitz-finished`;
+`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
+1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
+region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
+outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer, the panel as built (phase 1), a
+player's imported orders and the import as proposed (phase 2), and the default order as written.
 `/lab/kit/windows/settings` the header's Settings at its popover's width;
 `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
 keys with Show and leaves with Back. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body,

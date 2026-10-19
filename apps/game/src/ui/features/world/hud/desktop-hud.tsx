@@ -22,15 +22,14 @@ import type { ReactNode } from "react";
  *     up), sized to their rows; the selected holding's card (name, population, tiles, automation, resources, relics);
  *     the minimap pinned to the bottom-left corner, a square that gives way down to its least height when the column
  *     runs short. A spectator sees the standings and the minimap;
- *   - right, the guided rail: Next up, the build order (`buildOrder`, the Build order panel), the events, the picked
- *     tile's details, chat;
+ *   - right, the guided rail: Next up, the Build order panel, the events, the picked tile's details, chat;
  *   - the four orders as round bubbles at the foot, between the columns;
  *   - its keys (`useHudKeys`): B P M T open the workspaces, Space takes Next up's step, I selects the next idle army.
  *     They are never drawn.
  *
  * Nothing shows over the blank overlay.
  */
-export const DesktopHud = ({ buildOrder = <BuildOrderPanel /> }: { buildOrder?: ReactNode }) => {
+export const DesktopHud = () => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const idleArmies = useIdleArmies();
   useHudKeys({ idleArmies });
@@ -38,7 +37,7 @@ export const DesktopHud = ({ buildOrder = <BuildOrderPanel /> }: { buildOrder?: 
   return (
     <>
       <LeftColumn />
-      <GuidedRail buildOrder={buildOrder} />
+      <GuidedRail buildOrder={<BuildOrderPanel />} />
       <OrdersFoot />
     </>
   );
