@@ -1,4 +1,4 @@
-import { GameProvider } from "@/hooks/context/game-context";
+import { GameProvider, useGame } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { campBeside } from "@/ui/features/frontier/sites/site-fixture";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -70,14 +70,48 @@ const ColumnLab = () => {
  * minimap at the bottom left), the order bubbles and the build tag, where they sit at the viewport's size. The right
  * rail reads the live game, so the chat lab draws it instead.
  */
-const HudStage = () => (
-  <div data-lab="hud" className="fixed inset-0">
-    <canvas className="absolute inset-0 h-full w-full bg-[#0b1418]" />
-    <LeftColumn />
-    <HudFoot idleArmies={useIdleArmies()} />
-    <BuildTag />
-  </div>
-);
+const HudStage = () => {
+  const { setup } = useGame();
+  useState(() => installBusyRealm(setup.store));
+  return (
+    <div data-lab="hud" className="fixed inset-0">
+      <canvas className="absolute inset-0 h-full w-full bg-[#0b1418]" />
+      <LeftColumn />
+      <HudFoot idleArmies={useIdleArmies()} />
+      <BuildTag />
+    </div>
+  );
+};
+
+/** The realm a few days in, as the card's widest row reads it: ten of its population used, four plots built. */
+const installBusyRealm = (store: NativeFactStore) =>
+  store.applyFacts([
+    {
+      model: "StructureBuildings",
+      key: "0x9a0",
+      value: {
+        game_id: 1,
+        entity_id: "7",
+        packed_counts_1: "0",
+        packed_counts_2: "0",
+        packed_counts_3: "0",
+        population: { current: 10, max: 6 },
+      },
+    },
+    ...[1, 2, 3, 4].map((offset) => ({
+      model: "Building",
+      key: `0x9b${offset}`,
+      value: {
+        game_id: 1,
+        structure_id: "7",
+        inner_col: BUILDINGS_CENTER[0] + offset,
+        inner_row: BUILDINGS_CENTER[1],
+        category: BuildingType.ResourceWheat,
+        paused: false,
+        labor_paid: "0",
+      },
+    })),
+  ] as never);
 
 const LabHoldings = () => {
   const holdings = useHoldings();

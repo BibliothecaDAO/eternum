@@ -35,6 +35,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-10-19",
+    title: "Automation choice fits its card",
+    description:
+      "The holding card's automation choice (Smart, Custom, Off) is as wide as its word and no longer runs past the card's edge beside population and plots. Every dropdown in the HUD now stays inside its panel.",
+    type: "fix",
+  },
+  {
+    date: "2026-10-19",
     title: "Minimap stays at the bottom left",
     description:
       "The minimap now sits in the bottom-left corner at every screen size instead of following the panels above it. On narrower screens the Idle armies button moves above the order buttons, so neither covers the minimap.",

@@ -53,3 +53,14 @@ test("finds a panel running into the minimap", () => {
   const crowded = hud({ width: 1280, height: 720, minimapTop: 340, minimapBottom: 704, foot: [] });
   assert.deepEqual(hudClearanceProblems(crowded), ["Selected holding overlaps Minimap"]);
 });
+
+test("finds a select reaching past the card that holds it", () => {
+  const card = box("Selected holding", 12, 183, 332, 356);
+  const spilling = {
+    ...hud({ width: 1440, height: 900, minimapTop: 564, minimapBottom: 884, foot: [] }),
+    spills: [{ ...box("Production automation", 186, 236, 362, 272), panel: card }],
+  };
+  assert.deepEqual(hudClearanceProblems(spilling), [
+    "Production automation in Selected holding reaches past it (186–362 in 12–332)",
+  ]);
+});

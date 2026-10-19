@@ -626,7 +626,7 @@ const LabSelect = () => {
 const MenuSection = () => (
   <Element
     name="Select"
-    rule="A choice opened from its trigger: the items, the chosen one checked, a rule between groups. Never the browser's own select, which draws in its own colours. The map has no menu of orders: a right-click acts at once."
+    rule="A choice opened from its trigger: the items, the chosen one checked, a rule between groups. As wide as its choice and never wider than where it sits. Never the browser's own select, which draws in its own colours. The map has no menu of orders: a right-click acts at once."
     sheet={
       <div className="flex flex-wrap items-start gap-6">
         <div className="flex flex-col gap-3">

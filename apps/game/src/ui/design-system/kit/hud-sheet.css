@@ -1216,11 +1216,14 @@ button.ui-relic:focus-visible {
   text-align: right;
 }
 
-/* ── Select and its list: a choice opened from its trigger. ── */
+/* ── Select and its list: a choice opened from its trigger. As wide as its choice, never wider than where it sits: in
+ * a full row it gives up room and its choice ends in an ellipsis. ── */
 .ui-select {
   display: inline-flex;
   height: var(--hud-control);
-  min-width: 10rem;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 1;
   align-items: center;
   justify-content: space-between;
   gap: theme(spacing.2);
@@ -1233,6 +1236,12 @@ button.ui-relic:focus-visible {
   font-size: var(--hud-text-body);
   font-weight: var(--hud-weight-body);
   cursor: pointer;
+}
+.ui-select > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ui-select:is(:hover, [data-state="hover"]) {
   border-color: rgb(var(--hud-accent));
