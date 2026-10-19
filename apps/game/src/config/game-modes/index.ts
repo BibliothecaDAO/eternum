@@ -234,9 +234,6 @@ const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   duel: duelConfig,
 };
 
-/** A mode's config by its id, for surfaces that know the mode (the directory's row) before the game's config syncs. */
-export const gameModeConfigOf = (id: GameModeId): GameModeConfig => GAME_MODE_CONFIGS[id];
-
 export function getGameModeConfig(presetId = configManager.getPresetId()): GameModeConfig {
   return GAME_MODE_CONFIGS[nativeGameModeOf(presetId)];
 }
