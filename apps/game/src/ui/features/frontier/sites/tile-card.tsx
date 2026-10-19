@@ -41,13 +41,7 @@ import {
   useFightRefusal,
 } from "./fight-result";
 import { useSelectedOwnArmy } from "./selected-army";
-import {
-  readArmyCard,
-  readSiteCard,
-  type SiteAttack,
-  type SiteCardPlan,
-  storeAtLimit,
-} from "./site-card-plan";
+import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan, storeAtLimit } from "./site-card-plan";
 import { type SiteChoice, SiteCardView, type SiteVerb } from "./site-card-view";
 
 const SITE_MODELS = [

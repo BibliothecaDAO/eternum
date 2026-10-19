@@ -33,7 +33,7 @@ export const frontierCoachSteps = (
 };
 
 /** How the player gives a map order: a mouse right-clicks a tile, a touch screen holds it. */
-export type Pointer = "mouse" | "touch";
+type Pointer = "mouse" | "touch";
 
 const alerts = (facts: NextUpFacts): FrontierCoachStep[] => [
   ...(facts.lastHour ? [lastHour(facts)] : []),
