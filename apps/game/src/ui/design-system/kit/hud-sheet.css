@@ -1491,6 +1491,13 @@ button.ui-relic:focus-visible {
   font-weight: var(--hud-weight-label);
   cursor: pointer;
 }
+/* The word under a bubble stands on the map: it takes a small ground of the HUD's surface, so it reads over snow and
+   sand as over the dark. */
+.ui-bubble__word {
+  border-radius: var(--hud-radius-round);
+  background: color-mix(in srgb, var(--hud-surface-to) 85%, transparent);
+  padding: 0 theme(spacing[1.5]);
+}
 .ui-bubble__disc {
   position: relative;
   display: grid;

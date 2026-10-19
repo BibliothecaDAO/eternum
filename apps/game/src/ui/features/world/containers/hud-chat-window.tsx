@@ -2,7 +2,8 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
 import { resolveChatSenderName } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { Icon } from "@/ui/design-system/icon";
+import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import {
   RealtimeChatShell,
   type InitializeRealtimeClientParams,
@@ -55,7 +56,8 @@ export function useGameChat(open: boolean) {
   return { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread };
 }
 
-/** The strip at the foot of the right column: last message and unread count. Open, a pane rises above the strip, as
+/** The strip at the foot of the right column: last message and unread count, on the sheet's strip so it reads over any
+ *  ground the map shows under it, and pressable once the player's identity has loaded. Open, a pane rises above it, as
  *  tall as `chat-pane` while there is room; in a column short of room it gives up height with what stands above it,
  *  down to `chat-least` (the rail's stacking rule). `foldToIcon` shrinks the strip to its icon and unread count on a
  *  phone held upright, when something else needs the room. */
@@ -130,18 +132,27 @@ export function HudChatWindow({
         </div>
       )}
       <div className={cn("pointer-events-auto shrink-0", foldToIcon && "portrait:w-auto portrait:self-start")}>
-        <HudButton
-          kind="quiet"
-          icon="chat"
-          aria-label="Chat strip"
+        <HudPill
+          label="Chat strip"
           aria-expanded={open}
-          disabled={status === "loading"}
+          className="max-w-full"
           // A signed-out spectator's strip is their way into the sign-in flow, which brings them back to this game.
-          onClick={() => (initializer ? onOpenChange(!open) : requestSignIn())}
+          onPress={status === "loading" ? undefined : () => (initializer ? onOpenChange(!open) : requestSignIn())}
         >
-          <span className={cn("min-w-0 flex-1 truncate", foldToIcon && "portrait:sr-only")}>{stripText}</span>
-          {initializer && !open && unread > 0 && <HudChip label="Unread chat messages">{unread}</HudChip>}
-        </HudButton>
+          {[
+            <span key="last" className="flex min-w-0 items-center gap-1.5">
+              <Icon name="chat" size={20} />
+              <span className={cn("min-w-0 truncate", foldToIcon && "portrait:sr-only")}>{stripText}</span>
+            </span>,
+            ...(initializer && !open && unread > 0
+              ? [
+                  <HudChip key="unread" label="Unread chat messages">
+                    {unread}
+                  </HudChip>,
+                ]
+              : []),
+          ]}
+        </HudPill>
       </div>
     </div>
   );

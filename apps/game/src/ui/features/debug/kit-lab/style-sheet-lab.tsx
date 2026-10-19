@@ -562,6 +562,23 @@ const BubbleSection = () => (
           label="ready"
           render={() => <HudBubble icon="production" word="Production" count={3} countTone="good" />}
         />
+        <span className="flex items-center gap-3">
+          <span data-lab-chrome className="text-xs text-white/50">
+            over snow:
+          </span>
+          <span data-lab-ground="snow" className="flex items-center gap-3 rounded-lg bg-[#e9eef1] p-3">
+            <HudBubble icon="build" word="Build" />
+            <HudBubble icon="production" word="Production" />
+            <HudPill label="Chat strip" onPress={() => undefined}>
+              {[
+                <span key="last" className="flex items-center gap-1.5">
+                  <Icon name="chat" size={20} />
+                  djizus: ohayo
+                </span>,
+              ]}
+            </HudPill>
+          </span>
+        </span>
       </>
     }
     today={<HudBubble icon="military" word="Military" />}

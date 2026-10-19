@@ -55,7 +55,8 @@ it("keeps chat's message, unread count, open action, input focus and Escape on t
   const strip = host.querySelector<HTMLButtonElement>('button[aria-label="Chat strip"]')!;
   expect(strip.textContent).toContain("Ada: Hello");
   expect(host.querySelector('[aria-label="Unread chat messages 3"]')).not.toBeNull();
-  expect(strip.classList.contains("ui-button")).toBe(true);
+  // On the sheet's strip, the surface that reads over any ground the map shows under it.
+  expect(strip.classList.contains("ui-pill")).toBe(true);
   act(() => strip.click());
   expect(onOpenChange).toHaveBeenLastCalledWith(true);
   draw(true);
@@ -65,7 +66,7 @@ it("keeps chat's message, unread count, open action, input focus and Escape on t
   expect(onOpenChange).toHaveBeenLastCalledWith(false);
 });
 
-it("keeps a signed-out player's sign-in action and disables the strip while identity loads", () => {
+it("keeps a signed-out player's sign-in action, and the strip cannot be pressed while identity loads", () => {
   fixture.status = "signed-out";
   draw(false);
   const strip = host.querySelector<HTMLButtonElement>('button[aria-label="Chat strip"]')!;
@@ -75,5 +76,6 @@ it("keeps a signed-out player's sign-in action and disables the strip while iden
   expect(onOpenChange).not.toHaveBeenCalled();
   fixture.status = "loading";
   draw(false);
-  expect(strip.disabled).toBe(true);
+  expect(host.querySelector('button[aria-label="Chat strip"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Chat strip"]')?.textContent).toContain("Sign in to chat");
 });

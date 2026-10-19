@@ -1609,7 +1609,7 @@ export const HudBubble = ({
         </span>
       )}
     </span>
-    {word}
+    <span className="ui-bubble__word">{word}</span>
   </button>
 );
 
