@@ -47,6 +47,7 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
   const relay = new ValueRelay(
     { storage, blockConcurrencyWhile: async (run: () => Promise<unknown>) => run() } as unknown as DurableObjectState,
     {
+      ENVIRONMENT: "production",
       IDENTITY: {
         l2ChainId: async () => "0x1",
         shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
@@ -69,4 +70,23 @@ it("lets the shard signer grant labor while the ledger signer awaits confirmatio
   release();
   await Promise.all([opening, labor]);
   expect(granted).toBe(true);
+});
+
+it("opens no paid slot on dev while dev shares production's ledger, from the calendar or the admin page", async () => {
+  blocked.run.mockClear();
+  const storage = { setAlarm: async () => {}, get: async () => undefined };
+  const relay = new ValueRelay(
+    { storage, blockConcurrencyWhile: async (run: () => Promise<unknown>) => run() } as unknown as DurableObjectState,
+    {
+      ENVIRONMENT: "staging",
+      IDENTITY: {
+        l2ChainId: async () => "0x1",
+        shards: async () => [{ chainId: "0x1", url: "https://shard.test", status: "active" }],
+      },
+    } as never,
+  );
+  await expect(relay.openSlot({ chainId: "0x1", slotId: 1 }, { start: 1, end: 2 })).rejects.toThrow(
+    "paid_blitz_belongs_to_the_ledger_owner",
+  );
+  expect(blocked.run).not.toHaveBeenCalled();
 });

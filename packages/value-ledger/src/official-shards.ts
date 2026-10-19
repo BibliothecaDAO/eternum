@@ -1,4 +1,5 @@
 import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
+import { isOtherEnvironmentChain, type ShardEnvironment } from "./dev-shard";
 export interface RegisteredShard {
   chainId: string;
   url: string;
@@ -9,7 +10,9 @@ export interface ShardDirectory {
 }
 export const activeShards = async (directory: ShardDirectory) =>
   (await directory.shards()).filter((row) => row.status === "active" || row.status === "draining");
-export const requireActiveChain = async (directory: ShardDirectory, chainId: string) => {
+/** The active row a Worker may act on: listed in its own directory, and never a chain the other environment named. */
+export const requireActiveChain = async (directory: ShardDirectory, chainId: string, environment: ShardEnvironment) => {
+  if (isOtherEnvironmentChain(environment, chainId)) throw new Error("other_environment_shard");
   const row = (await activeShards(directory)).find((row) => BigInt(row.chainId) === BigInt(chainId));
   if (!row) throw new Error("unlisted_or_inactive_shard");
   return row;

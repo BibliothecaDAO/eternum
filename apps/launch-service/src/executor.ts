@@ -12,6 +12,7 @@ import { testBlitzRoster } from "./test-blitz";
 
 interface LaunchTarget {
   directory: ShardDirectory & import("@realms-world/value-ledger").RegistrationIdentity;
+  environment: LaunchEnv["ENVIRONMENT"];
   accountAddress: string;
   privateKey: string;
   /** Joins the seater pool, the accounts Blitz games name to seat them, and returns their addresses in pool order. */
@@ -27,6 +28,7 @@ export const launchTargetOf = (
   seaters: () => Promise<string[]>,
 ): LaunchTarget => ({
   directory: env.IDENTITY,
+  environment: env.ENVIRONMENT,
   accountAddress,
   privateKey: env.LAUNCH_DEPLOYER_PRIVATE_KEY,
   seaters,
@@ -38,7 +40,7 @@ export const readLaunchShard = async (directory: ShardDirectory, chainId: string
   return { shard, world: { world: { address: shard.contracts.games! } } };
 };
 export const shardChainOf = (env: LaunchEnv, requested?: string | null) => async () => {
-  if (requested) return (await requireActiveChain(env.IDENTITY, requested)).chainId;
+  if (requested) return (await requireActiveChain(env.IDENTITY, requested, env.ENVIRONMENT)).chainId;
   const shards = await activeShards(env.IDENTITY);
   if (shards.length !== 1) throw new Error("select_official_shard_chain");
   return shards[0]!.chainId;
@@ -58,7 +60,7 @@ const executeRun = async (
   target: LaunchTarget,
   resolveSlot: SlotResolver,
 ): Promise<LaunchSummary> => {
-  await requireActiveChain(target.directory, run.chainId);
+  await requireActiveChain(target.directory, run.chainId, target.environment);
   const { shard } = await readLaunchShard(target.directory, run.chainId);
   if (BigInt(run.chainId) !== BigInt(shard.chainId)) throw new Error("queued_launch_shard_changed");
   const native = new LaunchShard({

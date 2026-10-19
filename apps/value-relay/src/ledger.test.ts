@@ -103,7 +103,7 @@ it("decodes confirmed payments and pins the event head across pagination", async
       continuation_token: "next",
     })
     .mockResolvedValueOnce({ events: [], continuation_token: undefined });
-  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  const reads = ledgerMonitorReads("https://ledger.test", "0x10", "staging");
   const page = await Effect.runPromise(reads.paidClaims(null));
   expect(page.rows).toEqual([
     {
@@ -120,8 +120,53 @@ it("decodes confirmed payments and pins the event head across pagination", async
   await Effect.runPromise(reads.paidClaims(page.next));
   expect(rpc.events.mock.calls[1]![0]).toMatchObject({ to_block: { block_number: 1000 }, continuation_token: "next" });
 });
+it("keeps only its own environment's rows of the ledger dev and production share, at their page positions", async () => {
+  const chainOf = (name: string) => `0x${Buffer.from(name, "ascii").toString("hex")}`;
+  const dev = chainOf("DEV_18dfa7f2b475f083");
+  const production = chainOf("PRODUCTION_18e0000000000000");
+  const paid = (shard: string, claim: string) => ({
+    from_address: "0x10",
+    transaction_hash: "0xdef",
+    block_number: 100,
+    block_hash: "0xa",
+    ...ledgerEvent("WithdrawalPaid", {
+      shard,
+      claim_id: claim,
+      season_id: 7,
+      wallet: "0x123",
+      amount: { low: 5, high: 0 },
+    }),
+  });
+  const applied = (shard: string, gameId: number) => ({
+    from_address: "0x10",
+    transaction_hash: "0xdef",
+    ...ledgerEvent("ResultsApplied", {
+      key: { shard, game_id: gameId },
+      slot_id: 12,
+      season_id: 1,
+      result_commitment: result.commitment,
+      pool: { low: 0, high: 0 },
+    }),
+  });
+  const pages = { events: [paid(dev, "0xa1"), paid(production, "0xa2"), paid("0x1", "0xa3")] };
+  const results = { events: [applied(production, 7), applied(dev, 8)] };
+  const claims = async (environment: "staging" | "production") => {
+    rpc.events.mockResolvedValueOnce(pages);
+    const page = await Effect.runPromise(
+      ledgerMonitorReads("https://ledger.test", "0x10", environment).paidClaims(null),
+    );
+    return page.rows.map((row) => row.transactionHash);
+  };
+  expect(await claims("staging")).toEqual(["0xa1", "0xa3"]);
+  expect(await claims("production")).toEqual(["0xa2", "0xa3"]);
+  rpc.events.mockResolvedValueOnce(results);
+  const posted = await Effect.runPromise(
+    ledgerMonitorReads("https://ledger.test", "0x10", "production").postedResults(null),
+  );
+  expect(posted.rows.map((row) => [BigInt(row.chainId), row.gameId])).toEqual([[BigInt(production), 7]]);
+});
 it("decodes result commitments and refuses malformed payment events", async () => {
-  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  const reads = ledgerMonitorReads("https://ledger.test", "0x10", "staging");
   expect(rpc.call).not.toHaveBeenCalled();
   rpc.events.mockResolvedValueOnce({
     events: [
@@ -176,7 +221,9 @@ it("reads the funded deposit through the committed ledger ABI at a confirmed hea
     }),
   );
   expect(
-    await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
+    await Effect.runPromise(
+      ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress, "staging").frontierPool("0x1", 7),
+    ),
   ).toBe(String(pool));
   expect(rpc.call).toHaveBeenCalledWith(
     { contractAddress: "0x10", entrypoint: "get_frontier", calldata: ["0x1", "7"] },
@@ -184,7 +231,9 @@ it("reads the funded deposit through the committed ledger ABI at a confirmed hea
   );
   rpc.call.mockRejectedValue(new Error("Ledger: unknown Frontier season"));
   await expect(
-    Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress).frontierPool("0x1", 7)),
+    Effect.runPromise(
+      ledgerMonitorReads(credentials.rpcUrl, credentials.contractAddress, "staging").frontierPool("0x1", 7),
+    ),
   ).rejects.toMatchObject({ operation: "read ledger Frontier pool" });
 });
 
@@ -243,7 +292,7 @@ it("refuses a ledger event page whose head changes while it is read", async () =
 });
 
 it("restarts pagination on a replaced checkpoint and anchors an old cursor by replaying it once", async () => {
-  const reads = ledgerMonitorReads("https://ledger.test", "0x10");
+  const reads = ledgerMonitorReads("https://ledger.test", "0x10", "staging");
   rpc.events.mockResolvedValue({ events: [], continuation_token: "next" });
   const first = await Effect.runPromise(reads.postedResults(null));
   rpc.block.mockImplementation(async (number) => ({

@@ -25,16 +25,25 @@ export const finishChestOnLedger = (signer: Signer, tokenId: string) =>
   relayOperation("finish requested chest", async () => {
     const chest = await readChest(signer, tokenId);
     if (chest.finished) return;
-    const provider = rpcAt(signer.rpcUrl);
-    const account = new Account({ provider, address: signer.accountAddress, signer: signer.privateKey });
-    const transaction = await account.execute({
-      contractAddress: signer.contractAddress,
-      entrypoint: "open_finish",
-      calldata: tokenLimbs(tokenId),
-    });
-    const receipt = await provider.waitForTransaction(transaction.transaction_hash);
-    if (receipt.isReverted()) throw new Error("chest_finish_reverted");
+    try {
+      await submitFinish(signer, tokenId);
+    } catch (error) {
+      // Dev and production share the ledger and each relay finishes every requested chest: the other may finish first.
+      if ((await readChest(signer, tokenId)).finished) return;
+      throw error;
+    }
   });
+const submitFinish = async (signer: Signer, tokenId: string) => {
+  const provider = rpcAt(signer.rpcUrl);
+  const account = new Account({ provider, address: signer.accountAddress, signer: signer.privateKey });
+  const transaction = await account.execute({
+    contractAddress: signer.contractAddress,
+    entrypoint: "open_finish",
+    calldata: tokenLimbs(tokenId),
+  });
+  const receipt = await provider.waitForTransaction(transaction.transaction_hash);
+  if (receipt.isReverted()) throw new Error("chest_finish_reverted");
+};
 const readChest = async (connection: Connection, tokenId: string) => {
   const fields = await rpcAt(connection.rpcUrl).callContract(
     { contractAddress: connection.contractAddress, entrypoint: "get_chest", calldata: tokenLimbs(tokenId) },
