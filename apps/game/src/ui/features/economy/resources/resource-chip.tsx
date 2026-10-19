@@ -253,7 +253,7 @@ export const ResourceChip = ({
             {showTransfer && (
               <HudIconButton
                 icon="swap"
-                label={`Transfer ${resourceName}`}
+                label={`Transfer ${name}`}
                 title="Transfer"
                 kind="quiet"
                 size="sm"
@@ -271,7 +271,7 @@ export const ResourceChip = ({
                 trigger={(toggle) => (
                   <HudIconButton
                     icon="flame"
-                    label={`Burn ${resourceName}`}
+                    label={`Burn ${name}`}
                     title="Burn"
                     kind="quiet"
                     size="sm"
@@ -287,7 +287,7 @@ export const ResourceChip = ({
             {isRelic && balance > 0 && (
               <HudIconButton
                 icon="relics"
-                label={`Activate ${resourceName}`}
+                label={`Activate ${name}`}
                 kind="quiet"
                 size="sm"
                 disabled={disableButtons || relicTimeRemaining > 0}

@@ -1,4 +1,4 @@
-// The lint guards: the rules CI holds the client and its packages to, each closing a class of bug a review found once.
+// The lint guards: the rules CI holds the client and its packages to, each closing a class of bug a review found.
 // The repo's full ESLint config is not run in CI, so a rule that must hold lives here.
 //   node scripts/lint-guards.mjs      fails, naming each hit (CI: pnpm --dir apps/game lint:guards)
 import { ESLint } from "eslint";
@@ -24,6 +24,16 @@ const NO_BITWISE_ID = [
   },
 ];
 
+// A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
+// "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
+const TEXT_VALUES = {
+  "@typescript-eslint/restrict-template-expressions": [
+    "error",
+    { allowAny: true, allowBoolean: true, allowNever: true, allowNullish: true, allowNumber: true },
+  ],
+  "@typescript-eslint/restrict-plus-operands": "error",
+};
+
 const eslint = new ESLint({
   cwd: REPO,
   overrideConfigFile: true,
@@ -33,6 +43,13 @@ const eslint = new ESLint({
       languageOptions: { parser: tseslint.parser },
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
       rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID] },
+    },
+    {
+      files: ["apps/game/src/**/*.{ts,tsx}"],
+      ignores: ["**/*.test.{ts,tsx}"],
+      languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: resolve(REPO, "apps/game") } },
+      plugins: { "@typescript-eslint": tseslint.plugin },
+      rules: TEXT_VALUES,
     },
   ],
 });

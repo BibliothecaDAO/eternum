@@ -175,7 +175,7 @@ export class AudioManager {
 
       return audioBuffer;
     } catch (error) {
-      throw new Error(`Failed to load audio asset ${assetId}: ${error}`);
+      throw new Error(`Failed to load audio asset ${assetId}`, { cause: error });
     }
   }
 
@@ -200,7 +200,7 @@ export class AudioManager {
       this.loadedAudio.set(url, audioBuffer);
       return audioBuffer;
     } catch (error) {
-      throw new Error(`Failed to load audio from ${url}: ${error}`);
+      throw new Error(`Failed to load audio from ${url}`, { cause: error });
     }
   }
 
