@@ -15,7 +15,7 @@ import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
-import { relayOperation } from "./ports";
+import { relayOperation, type MonitorPorts } from "./ports";
 import { runMonitor, resetMonitorRow, type MonitorProgress } from "./monitor";
 
 interface MonitorEnv extends MonitorSettings {
@@ -236,7 +236,8 @@ const legacyFault = async (
   return { row };
 };
 
-const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
+type LedgerPorts = MonitorPorts["ledger"];
+const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): MonitorPorts => {
   const shardPorts = async (chainId: string) => {
     const shard = await readRegisteredShard(env.IDENTITY, chainId);
     const reader = new ShardReader({
@@ -246,6 +247,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
     });
     return { reader, shard };
   };
+  // Resolved per read: a missing ledger fails that read, never the whole tick.
+  const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT));
   return {
     identity: {
       matchesPayDecision: (decision: import("@realms-world/identity").LedgerPayDecision) =>
@@ -284,24 +287,15 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage) => {
         }),
     },
     ledger: {
-      frontierPool: (chainId: string, gameId: number) =>
+      // Each read forwards its whole argument list, so the audit cursor's anchor reaches the ledger unchanged.
+      frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>
-          Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).frontierPool(chainId, gameId),
-          ),
+          Effect.runPromise(ledgerReads().frontierPool(...read)),
         ),
-      paidClaims: (cursor: string | null, fromBlock?: number) =>
-        relayOperation("ledger paid claims unavailable", () =>
-          Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).paidClaims(cursor, fromBlock),
-          ),
-        ),
-      postedResults: (cursor: string | null, fromBlock?: number) =>
-        relayOperation("ledger results unavailable", () =>
-          Effect.runPromise(
-            ledgerMonitorReads(env.L2_RPC_URL, ledgerAddress(env.ENVIRONMENT)).postedResults(cursor, fromBlock),
-          ),
-        ),
+      paidClaims: (...read: Parameters<LedgerPorts["paidClaims"]>) =>
+        relayOperation("ledger paid claims unavailable", () => Effect.runPromise(ledgerReads().paidClaims(...read))),
+      postedResults: (...read: Parameters<LedgerPorts["postedResults"]>) =>
+        relayOperation("ledger results unavailable", () => Effect.runPromise(ledgerReads().postedResults(...read))),
       pause: () =>
         relayOperation("ledger pause unavailable", () =>
           Effect.runPromise(
