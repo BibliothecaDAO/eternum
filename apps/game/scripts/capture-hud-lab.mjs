@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * The HUD sheet migration's before-and-after: every HUD surface the lab draws, shot at 1920×1080 (the desktop HUD's
- * stage also at 1280×720 and 1440×900), one picture per surface and size. Against a running dev build (`pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`):
+ * stage also at 1024×768, 1280×720 and 1440×900), one picture per surface and size. Against a running dev build (`pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`):
  *
  *   pnpm --dir apps/game capture:hud-lab --base-url https://127.0.0.1:<port> --out <dir> [--only <surface>,...]
  *
@@ -18,8 +18,8 @@ import { hudClearanceProblems, READ_HUD_BOXES } from "../../../scripts/hud-sheet
 import { runAgentBrowser } from "./run-renderer-scene-smoke.mjs";
 
 const VIEWPORT = [1920, 1080];
-/** The desktop sizes the HUD's layout is held at: a small laptop, a common laptop, a full HD screen. */
-const DESKTOPS = [[1280, 720], [1440, 900], VIEWPORT];
+/** The desktop sizes the HUD's layout is held at: the narrowest desktop, a small laptop, a laptop, a full HD screen. */
+const DESKTOPS = [[1024, 768], [1280, 720], [1440, 900], VIEWPORT];
 const SETTLE_MS = "1200";
 
 /** Each surface: the lab page that draws it, the mark the page puts on it, and its sizes when not just 1920×1080. */
