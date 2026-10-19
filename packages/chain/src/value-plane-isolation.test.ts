@@ -1,10 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 
-import {
-  environmentL2,
-  ownsValueLedger,
-  valuePlaneAddress,
-} from "./value-plane";
+import { environmentL2, valuePlaneAddress } from "./value-plane";
 
 const books = vi.hoisted(() => ({
   dev: {
@@ -29,13 +25,6 @@ vi.mock("../../../contracts/common/addresses/dev.json", () => ({
 }));
 vi.mock("../../../contracts/common/addresses/mainnet.json", () => ({
   default: books.production,
-}));
-// A deploy table naming two books, as the real-token launch will: neither environment may fall back to the other's.
-vi.mock("../../../deploy/first/environments.json", () => ({
-  default: {
-    dev: { book: "dev.json" },
-    production: { book: "mainnet.json" },
-  },
 }));
 
 const original = structuredClone(books);
@@ -91,9 +80,4 @@ it("refuses a dev book naming a different chain", () => {
   books.dev.l2Chain = "SN_SEPOLIA";
   expect(() => environmentL2("staging")).toThrow("must name SN_MAIN");
   expect(environmentL2("production").chain).toBe("SN_MAIN");
-});
-it("gives each environment its own ledger once the deploy table names two books", () => {
-  expect(ownsValueLedger("staging")).toBe(true);
-  expect(ownsValueLedger("production")).toBe(true);
-  expect(() => ownsValueLedger("dev" as never)).toThrow("ENVIRONMENT");
 });

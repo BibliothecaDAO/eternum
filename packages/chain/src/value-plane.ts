@@ -1,6 +1,5 @@
 import devAddresses from "../../../contracts/common/addresses/dev.json";
-import mainnetAddresses from "../../../contracts/common/addresses/mainnet.json";
-import environments from "../../../deploy/first/environments.json";
+import productionAddresses from "../../../contracts/common/addresses/mainnet.json";
 
 export type ValuePlaneContract =
   | "ledger"
@@ -19,45 +18,13 @@ type AddressBook = Partial<Record<ValuePlaneContract, string>> & {
   l2Chain: string;
 };
 
-const books: Record<string, AddressBook> = {
-  "dev.json": devAddresses,
-  "mainnet.json": mainnetAddresses,
-};
-
-/**
- * The deploy table names each environment's book, so a build reads the contracts its own deploy wrote. Dev and
- * production share mainnet, but never select contracts by network; two environments share contracts only when the
- * table names one book for both.
- */
-const bookOf = (environment: "dev" | "production") => {
-  const path = environments[environment].book;
-  const addresses = books[path];
-  if (!addresses)
-    throw new Error(
-      `deploy/first/environments.json names an unknown book ${path}`,
-    );
-  return { path, addresses };
-};
-
+/** Dev and production share mainnet, but never select contracts by network. */
 const addressBooks: Record<
   ValueEnvironment,
   { path: string; addresses: AddressBook }
 > = {
-  staging: bookOf("dev"),
-  production: bookOf("production"),
-};
-
-/**
- * Whether an environment owns the ledger its book names. While production reads dev's book the two share one ledger,
- * whose pause and Blitz season belong to production: dev pauses nothing and opens no paid Blitz slot, and its free test
- * Blitz games stay. Once production names a book of its own again, dev owns its ledger again.
- */
-export const ownsValueLedger = (environment: ValueEnvironment) => {
-  addressBook(environment);
-  return (
-    environment === "production" ||
-    addressBooks.staging.path !== addressBooks.production.path
-  );
+  staging: { path: "dev.json", addresses: devAddresses },
+  production: { path: "mainnet.json", addresses: productionAddresses },
 };
 
 export class ValuePlaneAddressMissingError extends Error {
