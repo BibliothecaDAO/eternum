@@ -82,7 +82,7 @@ def bake_surface(sculpt, delivery, name):
         bpy.context.scene.render.bake.use_selected_to_active = kind == "NORMAL"
         sculpt.select_set(kind == "NORMAL")
         sculpt.hide_render = kind != "NORMAL"
-        size = 256 if kind == "NORMAL" else 512
+        size = 256 if kind == "NORMAL" else 1024
         image = bpy.data.images.new(
             name + " " + kind, width=size, height=size, alpha=False
         )

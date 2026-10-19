@@ -34,9 +34,16 @@ const MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale })
 const SPECIES_MODELS = Object.fromEntries(
   MODEL_BEASTS.map(({ beast, name, scale }) => [
     `species-${beast}`,
-    [{ label: name, parts: [{ path: FRONTIER_BEASTS[beast].path, scale }] }] satisfies readonly LineupAsset[],
+    [
+      { label: `${name} · current`, parts: [{ path: FRONTIER_BEASTS[beast].path, scale }] },
+      { label: `${name} · creature study`, parts: [{ path: `/models/frontier/creatures/beast-${beast}.glb`, scale }] },
+    ] satisfies readonly LineupAsset[],
   ]),
 );
+const CREATURE_MODELS: readonly LineupAsset[] = MODEL_BEASTS.map(({ beast, name, scale }) => ({
+  label: name,
+  parts: [{ path: `/models/frontier/creatures/beast-${beast}.glb`, scale }],
+}));
 const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
   { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
@@ -59,11 +66,18 @@ const BEAST_MODELS = (["lowly", "stronger"] as const).map((band) => {
   return { label: `${beast.name} · ${band}`, parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }] };
 });
 
+const LINEUPS: Readonly<Record<string, readonly LineupAsset[]>> = {
+  models: MODELS,
+  creatures: CREATURE_MODELS,
+  sites: SITE_MODELS,
+  beasts: BEAST_MODELS,
+  ...SPECIES_MODELS,
+};
+
 export function FrontierBeastLab() {
   const [params, setParams] = useSearchParams();
   const group = params.get("group") ?? "models";
-  const lineup =
-    SPECIES_MODELS[group] ?? (group === "sites" ? SITE_MODELS : group === "beasts" ? BEAST_MODELS : MODELS);
+  const lineup = LINEUPS[group] ?? MODELS;
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
@@ -85,7 +99,7 @@ export function FrontierBeastLab() {
   const [depth, setDepth] = useState(0);
   useEffect(() => {
     if (!group.startsWith("species-")) return;
-    const species = group.slice("species-".length);
+    const species = group.split("-")[1];
     const roaming = species === "minotaur" || species === "cyclops";
     setSite(roaming ? 3 : 2);
     setBand(species === "cyclops" ? "stronger" : "lowly");
@@ -115,7 +129,7 @@ export function FrontierBeastLab() {
         renderer.current = value;
         value.update(latest.current);
         setReady(true);
-        setStatus("Loaded · game renderer, world scale · production beast models");
+        setStatus("Loaded · game renderer, world scale · current models and creature studies");
       })
       .catch((error) => {
         if (!controller.signal.aborted) setStatus(`Error: ${String(error)}`);
@@ -145,9 +159,10 @@ export function FrontierBeastLab() {
           Set{" "}
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
             <option value="models">Five production species</option>
+            <option value="creatures">Five creature studies</option>
             {MODEL_BEASTS.map(({ beast, name }) => (
               <option key={beast} value={`species-${beast}`}>
-                {name}
+                {name} · comparison
               </option>
             ))}
             <option value="sites">Standing sites</option>

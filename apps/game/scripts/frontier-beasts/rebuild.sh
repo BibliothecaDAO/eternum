@@ -7,7 +7,9 @@ if [[ -e "$output" ]]; then echo 'Choose a fresh output directory'; exit 1; fi
 mkdir -p "$output/raw"
 cd "$root"
 names="troll wyvern hydra minotaur cyclops"
-source_directory="refined/"
+variant=${2:-refined}
+case "$variant" in refined|creatures) ;; *) echo 'Choose refined or creatures'; exit 1;; esac
+source_directory="$variant/"
 for name in $names; do
   blender --background --threads 2 --python-exit-code 1 --python apps/game/scripts/frontier-beasts/export-beast.py -- \
     "apps/game/asset-sources/frontier-beasts/$source_directory$name.blend" "$output/raw/$name.glb" > "$output/$name-export.log" 2>&1

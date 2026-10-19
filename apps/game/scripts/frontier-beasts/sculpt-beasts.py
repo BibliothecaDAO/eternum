@@ -825,45 +825,7 @@ class Sculpt:
                 # Warm highlights on front planes; cooler shadows around sockets and joints.
                 light = max(0, min(1, (-v.normal.y + 0.25) / 1.25))
                 color = tuple(c * (0.80 + 0.40 * light) for c in color)
-                if not self.reptile:
-                    eye_mask = gaussian(
-                        x,
-                        z,
-                        0 if self.species == "cyclops" else 0.075,
-                        1.38,
-                        0.075,
-                        0.045,
-                    )
-                    if self.species != "cyclops":
-                        eye_mask += gaussian(x, z, -0.075, 1.38, 0.075, 0.045)
-                    if y < -0.10:
-                        color = tuple(c * (1 - 0.50 * eye_mask) for c in color)
-                    if z < 0.18:
-                        color = tuple(c * 0.65 for c in color)
-                    if self.species == "minotaur" and z < 0.115:
-                        color = (0.022, 0.019, 0.017)
-                    if y < -0.08:
-                        crease = 0
-                        for side in [-1, 1]:
-                            crease += (
-                                gaussian(x, z, side * 0.14, 0.91, 0.13, 0.018) * 0.38
-                            )
-                            crease += (
-                                gaussian(x, z, side * 0.075, 0.79, 0.065, 0.012) * 0.25
-                            )
-                            crease += (
-                                gaussian(x, z, side * 0.07, 0.72, 0.06, 0.012) * 0.2
-                            )
-                        crease += gaussian(x, z, 0, 0.95, 0.012, 0.15) * 0.35
-                        color = tuple(c * (1 - min(0.6, crease)) for c in color)
-                    if self.species == "minotaur" and y < -0.18:
-                        muzzle = gaussian(x, z, 0, 1.29, 0.14, 0.09)
-                        color = tuple(
-                            c * (1 - muzzle) + muzzle * t
-                            for c, t in zip(color, (0.16, 0.105, 0.075))
-                        )
-                        nose = gaussian(x, z, 0, 1.29, 0.08, 0.035)
-                        color = tuple(c * (1 - 0.65 * nose) for c in color)
+                color = self.paint_anatomy(color, v)
             layer.data[v.index].color = (*color, 1)
         mat = bpy.data.materials.new("Paint " + obj.name)
         mat.use_nodes = True
@@ -893,6 +855,43 @@ class Sculpt:
         links.new(bump.outputs["Normal"], shader.inputs["Normal"])
         obj.data.materials.clear()
         obj.data.materials.append(mat)
+
+    def paint_anatomy(self, color, vertex):
+        x, y, z = vertex.co
+        if not self.reptile:
+            eye_mask = gaussian(
+                x,
+                z,
+                0 if self.species == "cyclops" else 0.075,
+                1.38,
+                0.075,
+                0.045,
+            )
+            if self.species != "cyclops":
+                eye_mask += gaussian(x, z, -0.075, 1.38, 0.075, 0.045)
+            if y < -0.10:
+                color = tuple(c * (1 - 0.50 * eye_mask) for c in color)
+            if z < 0.18:
+                color = tuple(c * 0.65 for c in color)
+            if self.species == "minotaur" and z < 0.115:
+                color = (0.022, 0.019, 0.017)
+            if y < -0.08:
+                crease = 0
+                for side in [-1, 1]:
+                    crease += gaussian(x, z, side * 0.14, 0.91, 0.13, 0.018) * 0.38
+                    crease += gaussian(x, z, side * 0.075, 0.79, 0.065, 0.012) * 0.25
+                    crease += gaussian(x, z, side * 0.07, 0.72, 0.06, 0.012) * 0.2
+                crease += gaussian(x, z, 0, 0.95, 0.012, 0.15) * 0.35
+                color = tuple(c * (1 - min(0.6, crease)) for c in color)
+            if self.species == "minotaur" and y < -0.18:
+                muzzle = gaussian(x, z, 0, 1.29, 0.14, 0.09)
+                color = tuple(
+                    c * (1 - muzzle) + muzzle * t
+                    for c, t in zip(color, (0.16, 0.105, 0.075))
+                )
+                nose = gaussian(x, z, 0, 1.29, 0.08, 0.035)
+                color = tuple(c * (1 - 0.65 * nose) for c in color)
+        return color
 
     def finish(self):
         print("Painting anatomical surface", flush=True)
