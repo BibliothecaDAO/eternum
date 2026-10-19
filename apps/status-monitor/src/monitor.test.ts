@@ -6,7 +6,7 @@ import worker, { monitor } from "./worker";
 import { probeServices } from "./probes";
 import { nextMonitorState } from "./state";
 import type { MonitorState } from "./model";
-import { NOTICE_LIFETIME_SECONDS, NO_ALERTS, recordNotices, SUSTAINED_SECONDS } from "./alerts";
+import { DAILY_EMAILS, NOTICE_LIFETIME_SECONDS, NO_ALERTS, recordNotices, SUSTAINED_SECONDS } from "./alerts";
 import { onRequestGet } from "../../status/functions/status.json";
 
 const now = 1791456000;
@@ -480,7 +480,7 @@ it("emails an outage of something players use once it lasts ten minutes, once, a
   ]);
   const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
   try {
-    expect(recordNotices(run.state!.document, NO_ALERTS, undefined)).toEqual({ told: [], outbox: [] });
+    expect(recordNotices(run.state!.document, NO_ALERTS, undefined)).toEqual({ told: [], outbox: [], sent: [] });
   } finally {
     errors.mockRestore();
   }
@@ -519,6 +519,57 @@ it("counts an outage from when it went down, and names it unavailable even if it
     }),
   ]);
   expect(run.state!.document.incidents[0]!.title).toBe("Game launches and seating: unavailable");
+});
+
+it("tells components that go down together in one email, and their recovery in one", () => {
+  const box = (status: "up" | "down") => [
+    probe("launch", "Game launches and seating", status),
+    probe("shard:0xa", "herald.public.test", status),
+  ];
+  let run = observe({ state: null, alerts: NO_ALERTS }, now, MINUTES, box("down"));
+  expect(run.alerts.outbox).toEqual([
+    expect.objectContaining({
+      key: `staging:shard:0xa:${now}+launch:${now}:opened`,
+      subject: "[staging] herald.public.test: unavailable; Game launches and seating: unavailable",
+    }),
+  ]);
+  run = observe(run, now + (MINUTES + 1) * 60, 0, box("up"));
+  expect(run.alerts.outbox.map(({ key }) => key)).toEqual([
+    `staging:shard:0xa:${now}+launch:${now}:opened`,
+    `staging:shard:0xa:${now}+launch:${now}:resolved`,
+  ]);
+});
+
+it("sends at most four emails in any 24 hours however a component flaps, the fourth saying so", () => {
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  try {
+    const accounts = (status: "up" | "down") => [probe("accounts", "Sign in and accounts", status)];
+    let run: { state: MonitorState | null; alerts: typeof NO_ALERTS } = { state: null, alerts: NO_ALERTS };
+    const notices = new Map<string, (typeof run.alerts.outbox)[number]>();
+    const collect = () => run.alerts.outbox.forEach((notice) => notices.set(notice.key, notice));
+    let at = now;
+    // Down for ten minutes, up for one, all day: 120 outages and recoveries.
+    while (at < now + 24 * 3600) {
+      run = observe(run, at, MINUTES, accounts("down"));
+      collect();
+      run = observe(run, at + (MINUTES + 1) * 60, 0, accounts("up"));
+      collect();
+      at += (MINUTES + 2) * 60;
+    }
+    expect(notices.size).toBe(DAILY_EMAILS);
+    const [first, ...rest] = [...notices.values()];
+    expect(first!.text).not.toContain("Alert limit reached");
+    expect(rest.at(-1)!.text).toContain(
+      `Alert limit reached: no more email until ${new Date((first!.recorded_at + 24 * 3600) * 1000).toISOString()}.`,
+    );
+    expect(errors.mock.calls.some(([line]) => String(line).includes(`"status_alert_capped"`))).toBe(true);
+    // Once the first email is a day old, the next outage is told again.
+    run = observe(run, at, MINUTES, accounts("down"));
+    collect();
+    expect(notices.size).toBe(DAILY_EMAILS + 1);
+  } finally {
+    errors.mockRestore();
+  }
 });
 
 /** The monitor's real R2 bucket on Miniflare, whose next writes can be made to fail. */

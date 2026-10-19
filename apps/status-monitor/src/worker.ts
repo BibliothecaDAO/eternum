@@ -60,7 +60,9 @@ const readMonitorState = async (bucket: R2Bucket) => {
       !Array.isArray(previous.targets) ||
       !previous.counters ||
       (previous.alerts !== undefined &&
-        (!Array.isArray(previous.alerts.told) || !Array.isArray(previous.alerts.outbox))))
+        (!Array.isArray(previous.alerts.told) ||
+          !Array.isArray(previous.alerts.outbox) ||
+          (previous.alerts.sent !== undefined && !Array.isArray(previous.alerts.sent)))))
   )
     throw new Error("Invalid monitor state");
   return { object, previous };
