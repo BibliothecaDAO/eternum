@@ -142,7 +142,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <RealmVisitFoot home={realm} />
     </>
   );
-  const dock = dockRealm && <DockFor realm={dockRealm} />;
+  const dock = dockRealm && <DockFor realm={dockRealm} onOpenArmy={openArmy} />;
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} />
@@ -284,13 +284,19 @@ const ArmyAction = ({
 };
 
 /** The dock over the realm's armies today; on a phone a pending order takes the foot in its place. */
-const DockFor = ({ realm }: { realm: NativeRows["Structure"] }) => {
+const DockFor = ({
+  realm,
+  onOpenArmy,
+}: {
+  realm: NativeRows["Structure"];
+  onOpenArmy: (explorerId: number) => void;
+}) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
   const selected = useUIStore((state) => state.entityActions.selectedEntityId !== null);
   const phone = useLayout() === "phone";
   if (phone && order && selected) return null;
-  return <ArmyDock realm={realm} armies={armies} />;
+  return <ArmyDock realm={realm} armies={armies} onOpenArmy={onOpenArmy} />;
 };
 
 const PendingOrder = ({

@@ -23,7 +23,16 @@ import type { DockArmy } from "./dock-armies";
  * Deploy while a slot is open, the header counting the slots that stand, and nothing when there is neither (a realm
  * watched with no army out). A visited realm shows its armies read-only and no Deploy.
  */
-export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; armies: DockArmy[] }) => {
+export const ArmyDock = ({
+  realm,
+  armies,
+  onOpenArmy,
+}: {
+  realm: NativeRows["Structure"];
+  armies: DockArmy[];
+  /** An army's sheet, where its XP buys a tier. */
+  onOpenArmy?: (explorerId: number) => void;
+}) => {
   const ordersAllowed = useUIStore(canIssueOrders);
   const actor = useAccountStore((state) => state.account?.address ?? null);
   // Only the actor's own armies are pan targets: a visited realm's army regions are not streamed.
@@ -38,7 +47,13 @@ export const ArmyDock = ({ realm, armies }: { realm: NativeRows["Structure"]; ar
     return (
       <ArmyList used={armies.length} allowed={armies.length + openCount}>
         {armies.map((army, index) => (
-          <DockArmyRow key={army.explorerId} army={army} pickable={own} guided={own && index === 0} />
+          <DockArmyRow
+            key={army.explorerId}
+            army={army}
+            pickable={own}
+            guided={own && index === 0}
+            onOpenArmy={own ? onOpenArmy : undefined}
+          />
         ))}
         {openCount > 0 && <DeploySlot realm={realm} pulse={armies.length === 0} wide />}
       </ArmyList>
@@ -91,8 +106,20 @@ const DockToken = ({ army, pickable, guided }: { army: DockArmy; pickable: boole
   );
 };
 
-const DockArmyRow = ({ army, pickable, guided }: { army: DockArmy; pickable: boolean; guided: boolean }) => {
+const DockArmyRow = ({
+  army,
+  pickable,
+  guided,
+  onOpenArmy,
+}: {
+  army: DockArmy;
+  pickable: boolean;
+  guided: boolean;
+  onOpenArmy?: (explorerId: number) => void;
+}) => {
   const { selected, stamina, onPick } = useDockArmy(army, pickable);
+  // Upgrade opens the army's sheet, where the tier is chosen and bought.
+  const onUpgrade = onOpenArmy && (() => onOpenArmy(army.explorerId));
   return (
     <ArmyRow
       label={army.label}
@@ -107,6 +134,7 @@ const DockArmyRow = ({ army, pickable, guided }: { army: DockArmy; pickable: boo
       flyTarget={attributeBadgeTarget(army.explorerId)}
       guided={guided}
       onPick={onPick}
+      onUpgrade={onUpgrade}
     />
   );
 };

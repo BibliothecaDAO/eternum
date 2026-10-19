@@ -23,20 +23,30 @@ export const LabGame = ({
   preset,
   spectating = false,
   finished = false,
+  facts,
+  systemCalls,
   children,
 }: {
   preset: number;
   spectating?: boolean;
   finished?: boolean;
+  /** More of the game a view needs (an army out), read from the installed store. */
+  facts?: (store: NativeFactStore) => unknown[];
+  /** The calls a view proves, standing in for the network's (they record what they were sent), on its store. */
+  systemCalls?: (store: NativeFactStore) => Record<string, unknown>;
   children: (store: NativeFactStore) => ReactNode;
 }) => {
-  const [store] = useState(() => installLabGame(preset, finished));
+  const [store] = useState(() => {
+    const installed = installLabGame(preset, finished);
+    if (facts) installed.applyFacts(facts(installed) as never);
+    return installed;
+  });
   useState(() => useUIStore.setState({ showBlankOverlay: false, isSpectating: spectating }));
   useLabPlayer();
   const shardOpen = useLabShard(preset);
   return (
     <GameProvider
-      value={{ store, systemCalls: {} } as unknown as GameClientSetup}
+      value={{ store, systemCalls: systemCalls?.(store) ?? {} } as unknown as GameClientSetup}
       account={{ address: PLAYER } as never}
     >
       {shardOpen && children(store)}

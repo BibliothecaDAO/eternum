@@ -1,7 +1,7 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudMeter, HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, STAMINA, TROOPS, troopCount, XP } from "@/ui/design-system/kit/words";
+import { HudIconButton, HudMeter, HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { ARMIES, STAMINA, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { guideTarget } from "../guide/guide-thread";
@@ -9,8 +9,9 @@ import { xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
- * hover); under them its troops and its stamina as a bar with the exact count; the card fan at its end while a tier is
- * affordable now. The desktop's form of the dock's token; a phone keeps the token. Read-only on a visit.
+ * hover); under them its troops and its stamina as a bar with the exact count; at its end, while its XP buys a tier now,
+ * Upgrade, which opens the army's sheet to choose the attribute and buy it. The desktop's form of the dock's token; a
+ * phone keeps the token. Read-only on a visit, where a tier shows as the card fan alone.
  */
 export const ArmyRow = ({
   label,
@@ -25,6 +26,7 @@ export const ArmyRow = ({
   flyTarget,
   guided = false,
   onPick,
+  onUpgrade,
 }: {
   label: string;
   number: number | undefined;
@@ -41,6 +43,8 @@ export const ArmyRow = ({
   guided?: boolean;
   /** Absent on a visit: the row is shown, never picked. */
   onPick?: () => void;
+  /** The army's sheet, where its XP buys a tier; absent on a visit. */
+  onUpgrade?: () => void;
 }) => (
   <HudRow
     lead={
@@ -77,13 +81,24 @@ export const ArmyRow = ({
         </span>
       </span>
     }
-    // The trail keeps the row a pressed toggle, as the phone's token is (the same reads find a picked army): the card
-    // fan while a tier is affordable now, else nothing.
-    trail={canBuyTier ? <SemanticIcon name="picks" size={20} /> : null}
+    // The trail keeps the row a pressed toggle, as the phone's token is (the same reads find a picked army): Upgrade
+    // while a tier is affordable now (the card fan alone on a visit), else nothing.
+    trail={canBuyTier ? <UpgradeTrail label={label} onUpgrade={onUpgrade} /> : null}
     selected={selected}
     onClick={onPick}
   />
 );
+
+/**
+ * Upgrade, the way to the army's sheet while its XP buys a tier: the card fan as a button, as narrow as the fan was, so
+ * the row's figures keep their room; the fan alone where it cannot be pressed.
+ */
+const UpgradeTrail = ({ label, onUpgrade }: { label: string; onUpgrade?: () => void }) =>
+  onUpgrade ? (
+    <HudIconButton icon="picks" label={`${UPGRADE} ${label}`} data-tip={UPGRADE} size="sm" onClick={onUpgrade} />
+  ) : (
+    <SemanticIcon name="picks" size={20} />
+  );
 
 /**
  * A desktop's armies: the list's panel, its rows and Deploy inside, with how many of the day's slots stand. The rows

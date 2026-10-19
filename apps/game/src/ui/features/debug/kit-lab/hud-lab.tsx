@@ -1467,6 +1467,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             selected={lab.selected === index}
             guided={index === 0}
             onPick={noop}
+            onUpgrade={lab.visiting ? undefined : noop}
           />
         ))}
         {open > 0 && <OpenSlot label="Deploy" pulse={lab.armies.length === 0} guided wide onDeploy={noop} />}
