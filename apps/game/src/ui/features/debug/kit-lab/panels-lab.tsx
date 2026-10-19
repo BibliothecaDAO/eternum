@@ -13,13 +13,12 @@ import { BuildTag } from "@/ui/layouts/build-tag";
 import { RealmCard } from "@/ui/features/world/hud/realm-card";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { BiomeType, BiomeTypeToId, BUILDINGS_CENTER, BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BiomeType, BiomeTypeToId, BUILDINGS_CENTER, BuildingType } from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
-import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
-import { installFixtureGame, PLAYER } from "./fixture-game";
+import { installBuildingRules, installFixtureGame, PLAYER } from "./fixture-game";
 
 /**
  * Dev only: the Blitz and Eternum HUD's panels as a player sees them, the real components on the deploy fixture's
@@ -201,30 +200,14 @@ const BuildingLab = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => 
 const LabBuildingPanel = () => <>{useSelectedTileDetails()}</>;
 
 /**
- * The lab's buildings with what reads them: the preset's building rules, wood's recipe (labor in, wood out), and the
+ * The lab's buildings with what reads them: the game's building rules and wood's recipe (labor in, wood out), the
  * game's commands all on, so a Blitz or Eternum panel's production path is open on the Frontier fixture.
  */
 const installBuildings = (store: NativeFactStore) => {
+  installBuildingRules(store, [BuildingType.ResourceWood]);
   const rules = store.require("SliceRules", { game_id: 1 });
   store.applyFacts([
     { model: "SliceRules", key: "0x100", value: { ...rules, command_mask: String((1n << 64n) - 1n) } },
-    ...preset.buildings.map(({ category, rule }) => ({
-      model: "BuildingRule",
-      key: `0x6${category}`,
-      value: { ...rule, category, game_id: 1 },
-    })),
-    {
-      model: "ProductionRecipe",
-      key: "0x9e",
-      value: {
-        game_id: 1,
-        resource_type: ResourcesIds.Wood,
-        simple_output: "1000000000",
-        complex_output: "1000000000",
-        simple_inputs: [{ resource_type: ResourcesIds.Labor, amount: "1000000000" }],
-        complex_inputs: [],
-      },
-    },
     ...[LAB_BUILDINGS.building, LAB_BUILDINGS.production].map(({ innerCol, innerRow, category }, index) => ({
       model: "Building",
       key: `0x9f${index}`,

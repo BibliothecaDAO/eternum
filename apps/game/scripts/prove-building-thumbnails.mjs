@@ -81,6 +81,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           name === "phone"
             ? `${selector} details button:nth-child(2)`
             : `${selector} button[aria-label="Destroy building"]`;
+        // Destroy acts at once on both cards: Blitz and Eternum ask no confirmation.
         const destroyError = clickAsPlayer(b, destroy);
         const destroyed = b.evaluate(`document.querySelector('${selector}').textContent.includes("1 built")`);
         record.presses.push({

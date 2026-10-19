@@ -5,7 +5,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
+import { type BuildingType, getProducedResource, relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
+
+import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 /** The panels lab's and the style sheet's fixture game: the deploy fixture's realm, its player, and Events rows. */
 
@@ -26,6 +28,35 @@ export const installFixtureGame = (base: () => { store: NativeFactStore } = fron
   useAccountStore.setState({ account: { address: PLAYER } as never });
   useUIStore.setState({ structureEntityId: 7 });
   return store;
+};
+
+/**
+ * What a Build card reads of the game's rules: the preset's building rules, and for each resource the given buildings
+ * make that has no recipe yet, the fixture's recipe of one Labor for one unit, so a card's details have one to write.
+ */
+export const installBuildingRules = (store: NativeFactStore, buildings: readonly BuildingType[]) => {
+  const made = [...new Set(buildings.flatMap((building) => getProducedResource(building) ?? []))].filter(
+    (resource) => !store.get("ProductionRecipe", { game_id: 1, resource_type: resource }),
+  );
+  store.applyFacts([
+    ...preset.buildings.map(({ category, rule }) => ({
+      model: "BuildingRule",
+      key: `0x6${category}`,
+      value: { ...rule, category, game_id: 1 },
+    })),
+    ...made.map((resource) => ({
+      model: "ProductionRecipe",
+      key: `0x7${resource}`,
+      value: {
+        game_id: 1,
+        resource_type: resource,
+        simple_output: "1000000000",
+        complex_output: "1000000000",
+        simple_inputs: [{ resource_type: ResourcesIds.Labor, amount: "1000000000" }],
+        complex_inputs: [],
+      },
+    })),
+  ] as never);
 };
 
 /** A story of the player's, worded by the game's one story formatter as the Log and Events both read it. */
