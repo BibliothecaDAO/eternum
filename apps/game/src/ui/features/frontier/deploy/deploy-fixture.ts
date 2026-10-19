@@ -56,6 +56,7 @@ export const frontierDay = () => {
       spacing: 10,
       mode: "Single",
     }),
+    set("0x9", "UpgradeLimits", { game_id: 1, realm_max: 3, village_max: 3 }),
     set("0x3", "GameRegistry", {
       game_id: 1,
       preset_id: 3,

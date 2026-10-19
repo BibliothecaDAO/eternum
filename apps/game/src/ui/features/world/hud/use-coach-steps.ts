@@ -50,25 +50,28 @@ type ButtonAct = Exclude<CoachAct, { kind: "level-up" }>;
 
 /** The coach's steps for the player now, ranked by what scores, each as Next up's step. */
 export const useCoachSteps = (): NextStep[] => {
+  const holds = useFactView(playerStructuresView).length > 0;
   const armies = useCoachArmies();
   const targets = useCoachTargets();
   const troopsOnHand = useTroopsOnHand();
   const certainLoss = useCertainLoss();
   const act = useCoachAct();
   const steps = useMemo(
-    () => coachSteps({ armies, targets, troopsOnHand, certainLoss, grants: configManager.getVictoryPointGrants() }),
-    [armies, targets, troopsOnHand, certainLoss],
+    () =>
+      coachSteps({ holds, armies, targets, troopsOnHand, certainLoss, grants: configManager.getVictoryPointGrants() }),
+    [holds, armies, targets, troopsOnHand, certainLoss],
   );
   return steps.map((step) => toNextStep(step, act));
 };
 
 /**
  * The player's army that fell in a fight in the last few minutes, as an alert to raise another where troops are on
- * hand, while they have no army in the field; none once one stands again (the loss stays in Events and the Log). It
- * is an alert, so it shows with tips off too.
+ * hand, while they have no army in the field and hold somewhere to raise one; none once one stands again (the loss
+ * stays in Events and the Log). It is an alert, so it shows with tips off too.
  */
 export const useLostArmyAlert = (): NextStep[] => {
   const inTheField = useFactView(selectableArmiesView).length > 0;
+  const holds = useFactView(playerStructuresView).length > 0;
   const viewer = useAccountAddress();
   const address = viewer === null ? null : `0x${viewer.toString(16)}`;
   const { data: battles } = useStoryEvents(20, "BattleEvent", address ?? undefined);
@@ -83,7 +86,7 @@ export const useLostArmyAlert = (): NextStep[] => {
         .find(({ line }) => line !== null),
     [battles, nowMs, address],
   );
-  if (!lost?.line || inTheField) return [];
+  if (!lost?.line || inTheField || !holds) return [];
   const raise = raiseStep({ troopsOnHand, grants: configManager.getVictoryPointGrants() });
   const next = troopsOnHand
     ? `Raise another at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.troops)} troops on hand).`
@@ -163,7 +166,11 @@ const useCoachArmies = (): CoachArmy[] => {
           {
             entityId,
             hex: placed.hexCoords,
-            home: { realmId: homeId, name: home ? mode.structure.getName(home).name : "its realm" },
+            home: {
+              realmId: homeId,
+              name: home ? mode.structure.getName(home).name : "its realm",
+              canLevelUp: home ? home.base.level < configManager.getMaxLevel(home.base.category) : false,
+            },
             canExplore: new ArmyActionManager(setup.store, setup.systemCalls, entityId).canExplore(timestamp),
             selected: selectedId === entityId,
           },
@@ -209,14 +216,14 @@ const useTroopsOnHand = (): TroopsOnHand | null => {
   );
 };
 
-/** The whole troops a holding can raise an army from now, every type and tier together, as Military counts them. */
-const troopsOnHand = (store: NativeFactStore, entityId: number, tick: number): number => {
-  const held = TROOP_RESOURCES.reduce(
-    (sum, troop) => sum + (knownBalance(getBalance(entityId, troop, tick, store).balance) ?? 0),
-    0,
+/**
+ * The most whole troops a holding can raise one army from now, as Military counts them: an army is of one type and
+ * tier, so its largest stack, not every stack together.
+ */
+const troopsOnHand = (store: NativeFactStore, entityId: number, tick: number): number =>
+  Math.floor(
+    Math.max(...TROOP_RESOURCES.map((troop) => knownBalance(getBalance(entityId, troop, tick, store).balance) ?? 0)),
   );
-  return Math.floor(held);
-};
 
 /**
  * Whether an army attacking a target's first guard, as both stand now on the target's tile, is wiped out at any roll:

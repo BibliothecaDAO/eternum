@@ -78,7 +78,7 @@ const twoRealms = ({
   const { store, row } = frontierDay();
   vi.spyOn(configManager, "getMaxArmySize").mockImplementation((level) => (level === 0 ? 1_500 : 15_000));
   store.applyFacts([
-    { model: "UpgradeLimits", key: "0x99", value: { game_id: 1, realm_max: 3, village_max: 0 } },
+    { model: "UpgradeLimits", key: "0x9", value: { game_id: 1, realm_max: 3, village_max: 0 } },
     // A day without expeditions: every army at home counts toward its realm's slots.
     {
       model: "SliceRules",

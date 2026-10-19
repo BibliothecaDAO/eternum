@@ -156,7 +156,7 @@ const LabEvents = ({ store }: { store: NativeFactStore }) => {
 const ARMY: CoachArmy = {
   entityId: 1,
   hex: { col: 10, row: 10 },
-  home: { realmId: 7, name: "Egonal" },
+  home: { realmId: 7, name: "Egonal", canLevelUp: true },
   canExplore: true,
   selected: false,
 };
@@ -172,6 +172,7 @@ const TROOPS = { realmId: 7, realmName: "'oak Leukue", troops: 1_000 };
 /** The coach's steps for a state, as Next up shows them (their buttons do nothing here). */
 const coached = (state: Partial<Parameters<typeof coachSteps>[0]>): NextStep[] =>
   coachSteps({
+    holds: true,
     armies: [],
     targets: [],
     troopsOnHand: TROOPS,

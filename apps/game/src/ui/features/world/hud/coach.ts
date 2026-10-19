@@ -11,8 +11,8 @@ export interface CoachHex {
 export interface CoachArmy {
   entityId: number;
   hex: CoachHex;
-  /** The realm it was raised from, whose level bounds how big an army it can raise. */
-  home: { realmId: number; name: string };
+  /** The realm it was raised from, whose level bounds how big an army it can raise, and whether it can rise further. */
+  home: { realmId: number; name: string; canLevelUp: boolean };
   /** An explore order would go now (the order's own rule: stamina and the home's food). */
   canExplore: boolean;
   /** It is the army selected on the map. */
@@ -35,6 +35,8 @@ export interface TroopsOnHand {
 
 /** What the coach reads: the player's armies and troops, what scores on the map, and the game's rules. */
 interface CoachState {
+  /** The player holds a realm or another structure, where an army can be raised. */
+  holds: boolean;
   armies: readonly CoachArmy[];
   targets: readonly CoachTarget[];
   /** Null when no realm holds a troop. */
@@ -65,13 +67,15 @@ export interface CoachStep {
 
 /**
  * What scores most for the player right now, then what scores next. With no army in the field: raise one where troops
- * are on hand, or build a barracks. Then a crate an army stands beside (+250, opened from here); an army that can
- * explore (+5 a tile: the selected one, else the newest); a crate farther off; The Vanguard's camps and rifts (+250) and Hyperstructures (+1,000, then
- * points every second). A target the nearest army would surely lose to asks for its home realm's level-up first, which
- * raises bigger armies. Once the army a step names is selected, the step says how to take it on the map instead.
+ * are on hand, or build a barracks; nothing for a player who holds nothing to build on. Then a crate an army stands
+ * beside (+250, opened from here); an army that can explore (+5 a tile: the selected one, else the newest); a crate
+ * farther off; The Vanguard's camps and rifts (+250) and Hyperstructures (+1,000, then points every second). A target
+ * the nearest army would surely lose to asks for its home realm's level-up first, which raises bigger armies; one whose
+ * home is at the top level is out of that army's reach. Once the army a step names is selected, the step says how to
+ * take it on the map instead.
  */
 export const coachSteps = (state: CoachState): CoachStep[] => {
-  if (state.armies.length === 0) return [raiseStep(state)];
+  if (state.armies.length === 0) return state.holds ? [raiseStep(state)] : [];
   const besideCrate = nearest("crate", state, (pair) => pair.distance === 1);
   const explorer = armyToExplore(state.armies);
   return [
@@ -151,8 +155,12 @@ const nearest = (
  * selected, the step says how to take it on the map. A camp, rift or Hyperstructure the army would surely lose to asks
  * for its home realm's level-up first.
  */
-const goFor = (kind: CoachTarget["kind"], state: CoachState, admits?: (pair: Pair) => boolean): CoachStep[] => {
-  const pair = nearest(kind, state, admits);
+const goFor = (
+  kind: CoachTarget["kind"],
+  state: CoachState,
+  admits: (pair: Pair) => boolean = () => true,
+): CoachStep[] => {
+  const pair = nearest(kind, state, (candidate) => admits(candidate) && !isOutOfReach(candidate, state));
   if (!pair) return [];
   const { army, target } = pair;
   const key = `coach:${kind}:${target.hex.col}:${target.hex.row}`;
@@ -173,6 +181,10 @@ const goFor = (kind: CoachTarget["kind"], state: CoachState, admits?: (pair: Pai
       : { key, line: words.line, verb: words.verb, act: { kind: "go", armyId: army.entityId, target: target.hex } },
   ];
 };
+
+/** The army would surely lose to the target, and its home is at the top level: no level-up raises a bigger one. */
+const isOutOfReach = ({ army, target }: Pair, state: CoachState): boolean =>
+  !army.home.canLevelUp && target.kind !== "crate" && state.certainLoss(army, target);
 
 /** A target's line, its button's verb, and the line once its army is selected: how to take it on the map. */
 const goWords = (kind: CoachTarget["kind"], name: string, grants: PointsGrants) => {

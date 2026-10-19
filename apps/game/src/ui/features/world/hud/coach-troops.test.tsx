@@ -64,6 +64,12 @@ const twoHoldings = () => {
       key: "0xba",
       value: { game_id: 1, entity_id: 8, resource_type: 26, balance: String(12n * PRECISION) },
     },
+    // Nine Paladins beside Noyk's Knights: an army is of one type and tier, so they do not add to the Knights.
+    {
+      model: "ResourceBalance",
+      key: "0xbc",
+      value: { game_id: 1, entity_id: 8, resource_type: ResourcesIds.Paladin, balance: String(9n * PRECISION) },
+    },
     {
       model: "ResourceProduction",
       key: "0xbb",

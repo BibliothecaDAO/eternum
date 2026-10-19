@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 
 const world = vi.hoisted(() => ({
   armies: [{ entityId: 70 }],
+  holdings: [] as unknown[],
   projection: {
     getArmy: () => ({ hexCoords: { col: 4, row: 5, alt: false } }),
     getChests: () => [],
@@ -14,7 +15,8 @@ const world = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 350, useNowMs: () => 350_000 }));
 vi.mock("@/hooks/use-fact-view", () => ({
-  useFactView: (view: unknown) => (view === selectableArmiesView ? world.armies : []),
+  useFactView: (view: unknown) =>
+    view === selectableArmiesView ? world.armies : view === playerStructuresView ? world.holdings : [],
 }));
 vi.mock("@/hooks/store/use-account-store", () => ({ useAccountAddress: () => 0x111n }));
 // The player's army 69 fell a second ago, as the game's history tells it.
@@ -38,7 +40,7 @@ vi.mock("@bibliothecadao/eternum/game-sync", async (importOriginal) => ({
 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
-import { selectableArmiesView } from "@/sync/fact-views";
+import { playerStructuresView, selectableArmiesView } from "@/sync/fact-views";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { ArmyActionManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -50,7 +52,8 @@ import { useCoachSteps, useLostArmyAlert } from "./use-coach-steps";
  * with no production.
  */
 const realmWithExplorer = (food: { wheat: string; fish: string }) => {
-  const { store } = frontierDay();
+  const { store, row } = frontierDay();
+  world.holdings = [{ entityId: 7, structure: row }];
   const { troops } = explorerFixture.expected.value;
   store.applyFacts([
     {
