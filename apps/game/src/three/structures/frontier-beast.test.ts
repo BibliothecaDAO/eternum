@@ -1,6 +1,9 @@
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconDefinition } from "@/ui/design-system/icon-meaning";
 import { describe, expect, it } from "vitest";
+import { readdirSync } from "node:fs";
+import { basename } from "node:path";
+import { BEAST_NAMES } from "@/ui/design-system/kit/words";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
 import {
@@ -42,6 +45,42 @@ const without = (store: ReturnType<typeof facts>, missing: string) => {
 };
 
 describe("Frontier guard identity", () => {
+  it("ships only the beast names and models reachable from live encounters", () => {
+    const species = [
+      ...new Set(
+        [0, 1, 2, 3].flatMap((depth) => [
+          ...[StructureType.Camp, StructureType.Rift, StructureType.Ruin].map(
+            (category) => frontierBeast(depth, category).beast,
+          ),
+          ...(["lowly", "stronger"] as const).map((band) => frontierBeast(depth, StructureType.Beasts, band).beast),
+        ]),
+      ),
+    ].sort();
+    expect(Object.keys(FRONTIER_BEASTS).sort()).toEqual(species);
+    expect(Object.keys(BEAST_NAMES).sort()).toEqual(species);
+    const deliveries = readdirSync(new URL("../../../public/models/frontier", import.meta.url), {
+      recursive: true,
+      encoding: "utf8",
+    })
+      .filter((file) => file.endsWith(".glb") && basename(file).startsWith("beast-"))
+      .sort();
+    expect(deliveries).toEqual(species.map((beast) => basename(FRONTIER_BEASTS[beast].path)).sort());
+  });
+
+  it("keeps one editable sculpt per shipped beast, without retired study sources", () => {
+    const sources = readdirSync(new URL("../../../asset-sources/frontier-beasts", import.meta.url), {
+      recursive: true,
+      encoding: "utf8",
+    })
+      .filter((file) => file.endsWith(".blend"))
+      .sort();
+    expect(sources).toEqual(
+      Object.keys(FRONTIER_BEASTS)
+        .map((species) => `refined/${species}.blend`)
+        .sort(),
+    );
+  });
+
   it("keeps the shipped Ruin progression and measured scales", () => {
     expect([0, 1, 2, 3].map((depth) => frontierBeast(depth).name)).toEqual(["Troll", "Wyvern", "Hydra", "Hydra"]);
     for (const { beast, scale } of FALLEN_REALM_DEPTHS)

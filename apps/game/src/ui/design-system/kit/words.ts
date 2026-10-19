@@ -24,10 +24,7 @@ export const BEAST_NAMES = {
   troll: "Troll",
   wyvern: "Wyvern",
   hydra: "Hydra",
-  wolf: "Wolf",
-  goblin: "Goblin",
   minotaur: "Minotaur",
-  chimera: "Chimera",
   cyclops: "Cyclops",
 } as const;
 export const BEAST = "Beast";
