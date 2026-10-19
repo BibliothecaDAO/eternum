@@ -65,8 +65,7 @@ const BEAST_MODELS = (["lowly", "stronger"] as const).map((band) => {
 export function FrontierBeastLab() {
   const [params, setParams] = useSearchParams();
   const group = params.get("group") ?? "models";
-  const lineup =
-    REFINEMENTS[group] ?? (group === "sites" ? SITE_MODELS : group === "beasts" ? BEAST_MODELS : MODELS);
+  const lineup = REFINEMENTS[group] ?? (group === "sites" ? SITE_MODELS : group === "beasts" ? BEAST_MODELS : MODELS);
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
