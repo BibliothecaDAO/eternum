@@ -105,6 +105,7 @@
     "deploy:cloudflare": "bun --no-env-file deploy/first/cloudflare.ts",
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
     "teardown": "bun --no-env-file deploy/first/teardown.ts",
+    "shared-ledger": "bun --no-env-file deploy/first/shared-ledger.ts",
     "icons:build": "node scripts/icons/build.mjs",
     "icons:check": "node --test scripts/icons/*.test.mjs && node scripts/icons/build.mjs --check",
     "shell:check": "node --test scripts/shell-tokens/*.test.mjs && node scripts/shell-tokens/check.mjs",

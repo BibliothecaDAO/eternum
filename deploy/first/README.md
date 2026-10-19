@@ -20,11 +20,12 @@ its two nearest valid alternatives without changing it. All four dates and the d
 target with `coldAdmin` additionally asks for the **public** cold-admin and treasury addresses. It never asks for their
 keys. No target uses it while production runs on test tokens.
 
-The first account step prints one deployer address to fund with about **250 STRK**, then stops. Run the same apply
-command after funding it. The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor,
-and deploys them. The owner funds only the deployer. The keys remain separate: the deployer/admin key stays on the owner
-machine; the relay and monitor receive only their own keys. Shard launcher and shard relay keys are separate from these
-mainnet keys and need no STRK.
+The first account step prints one deployer address to fund with about **250 STRK** (**50** when the book already names
+every value contract, as production's does on dev's ledger), then stops. Run the same apply command after funding it.
+The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor, and deploys them. The owner
+funds only the deployer. The keys remain separate: the deployer/admin key stays on the owner machine; the relay and
+monitor receive only their own keys. Shard launcher and shard relay keys are separate from these mainnet keys and need
+no STRK.
 
 The 250 STRK is a reserve, not a quote: the earlier dev deployment measurement was about 84 STRK, with roughly 171 STRK
 of transaction resource bounds; 200 was reserved for deployment and first funding, 30 for the measured relay day, and 1
@@ -177,6 +178,36 @@ Only dev is accepted. The box retires its directory row, stops its Compose proje
 directory, and preserves deployment logs in `/opt/athanor/logs`. It leaves Cloudflare and the mainnet ledger alone.
 Teardown output has its own mode-0600 log there. The next deployment creates a fresh shard with a new chain identity so
 service cursors cannot follow the former chain. A restart reads the existing chain identity from the run directory.
+
+## Production shares dev's ledger
+
+While production runs on test tokens, `environments.json` names dev's `dev.json` as production's book, so both
+environments use one `GameLedger`, one test LORDS and dev's ledger presets (Blitz 1, Frontier 2, entry 100). Each keeps
+its own shard, Herald, Workers, relay account and Frontier pool: the ledger keys pools, slots, results and payouts by
+shard, and each environment's relay, launches and value monitor act on and audit only chains its own deploy named
+(`DEV_…` or `PRODUCTION_…`). The ledger holds one Blitz season at a time, and a pause stops payouts on every shard, so
+production owns both (`ownsValueLedger` in `packages/chain/src/value-plane.ts`):
+
+- dev's setup sets nothing ledger-wide: no role, preset or season;
+- dev runs no paid Blitz: its relay opens no paid slot, whether the calendar or the admin page asks, and its season sets
+  no Blitz calendar phase and waits for no paid slot; free test Blitz games stay. A dev Blitz phase already running is
+  ended once with the operator token (`PUT /api/factory/calendar/blitz`, same start, an end a minute ahead);
+- dev's monitor holds no pause role.
+
+Before production's first setup can accept the ledger, its admin (dev's deployer) tops production's deployer up to its
+50 STRK reserve, grants it the admin role and production's relay the operator role, and takes the pause role from dev's
+monitor. Run it once production's setup has stopped at the funding address; without `--apply` it only reads, and it
+sends only a missing change:
+
+```sh
+pnpm run shared-ledger "$HOME/.realms-dev" "$HOME/.realms-production" --apply
+```
+
+Still never run on dev while the ledger is shared: an edit of the five value addresses in `dev.json`, the loss of
+`~/.realms-dev` (its deployer is the ledger's first admin and its treasury; keep a backup), or a ledger admin call
+outside a reviewed plan (`pause`, `unpause`, `rescue_token`, `upgrade`, `register_preset`, `close_frontier`, role
+changes). `teardown dev` stays safe: it removes dev's shard only. The real-token launch names `mainnet.json` again, with
+its own ledger, and dev owns `dev.json`'s ledger again.
 
 ## Private state and recovery
 

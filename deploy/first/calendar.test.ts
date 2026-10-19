@@ -25,7 +25,12 @@ const input = {
   amount: "1000",
 } as Inputs;
 type Phase = { phase: string; startsAt: string; endsAt: string };
-function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt: input.blitzEnd }]) {
+// Production owns the ledger dev shares, so it runs the Blitz phase these cases exercise.
+function setup(
+  phases: Phase[],
+  windows = [{ startsAt: input.blitzStart, endsAt: input.blitzEnd }],
+  environment: "dev" | "production" = "production",
+) {
   spyOn(Date, "now").mockReturnValue(now);
   const base = mkdtempSync(join(tmpdir(), "calendar-recovery-"));
   temporary.push(base);
@@ -51,8 +56,8 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
     return Response.json({ phases });
   }) as unknown as typeof fetch;
   const context = {
-    target: environments.dev,
-    environment: "dev",
+    target: environments[environment],
+    environment,
     apply: true,
     revision,
     store,
@@ -122,6 +127,14 @@ test("calendar accepts season two from the ledger after the first ended", async 
   );
   await step.apply();
   expect(writes).toHaveLength(2);
+  expect((await step.inspect()).done).toBe(true);
+});
+test("dev on production's ledger sets only its Frontier phase and reads no Blitz season", async () => {
+  // A Blitz season dev's dates do not match would refuse an owner; dev never reads it.
+  const { step, writes } = setup([], [{ startsAt: "2027-02-01T00:00:00Z", endsAt: "2027-04-01T00:00:00Z" }], "dev");
+  expect((await step.inspect()).done).toBe(false);
+  await step.apply();
+  expect(writes.map(({ url }) => url.split("/").at(-1))).toEqual(["frontier"]);
   expect((await step.inspect()).done).toBe(true);
 });
 test("a conflicting future ledger season refuses before any calendar write", async () => {

@@ -516,22 +516,26 @@ test.each(["none", "relay", "monitor"])(
         waitForTransaction: provider.waitForTransaction,
       }) as unknown as Account;
     const output: string[] = [];
-    expect(await prepareAccounts(provider, keys, store, (line) => output.push(line), factory)).toBeUndefined();
+    expect(
+      await prepareAccounts(provider, keys, store, (line) => output.push(line), 250n * WEI, factory),
+    ).toBeUndefined();
     const deployer = accountIdentity(keys.deployer).address;
     expect(output).toHaveLength(1);
     expect(output[0]).toContain(deployer);
     expect(output[0]).not.toContain(accountIdentity(keys.relay).address);
     holdings.set(deployer, 250n * WEI);
     if (lostRole !== "none") {
-      await expect(prepareAccounts(provider, keys, store, () => {}, factory)).rejects.toThrow("reply lost");
+      await expect(prepareAccounts(provider, keys, store, () => {}, 250n * WEI, factory)).rejects.toThrow("reply lost");
       observedBlock = nonce - 1;
       const sent = transfers.length;
-      await expect(prepareAccounts(provider, keys, store, () => {}, factory)).rejects.toThrow("stale nonce");
+      await expect(prepareAccounts(provider, keys, store, () => {}, 250n * WEI, factory)).rejects.toThrow(
+        "stale nonce",
+      );
       expect(transfers).toHaveLength(sent);
       observedBlock = undefined;
     }
-    await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
-    await prepareAccounts(provider, keys, store, (line) => output.push(line), factory);
+    await prepareAccounts(provider, keys, store, (line) => output.push(line), 250n * WEI, factory);
+    await prepareAccounts(provider, keys, store, (line) => output.push(line), 250n * WEI, factory);
     expect(deployed.size).toBe(3);
     expect(transfers).toEqual([accountIdentity(keys.relay).address, accountIdentity(keys.monitor).address]);
     expect(holdings.get(accountIdentity(keys.relay).address)).toBe(30n * WEI);

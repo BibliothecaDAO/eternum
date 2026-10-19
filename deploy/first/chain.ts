@@ -119,6 +119,7 @@ export async function prepareAccounts(
   keys: Keys,
   store: PrivateStore,
   output: (line: string) => void,
+  reserve: bigint,
   createAccount: (address: string, key: string) => Account = (address, signer) =>
     new Account({ provider, address, signer }),
 ) {
@@ -132,9 +133,11 @@ export async function prepareAccounts(
   ) as Record<"deployer" | "relay" | "monitor", Account>;
   if (
     !(await classAt(provider, accounts.deployer.address)) &&
-    (await balance(provider, STRK, accounts.deployer.address)) < 250n * WEI
+    (await balance(provider, STRK, accounts.deployer.address)) < reserve
   ) {
-    output(`Fund this address with about 250 STRK, then run the same command again: ${accounts.deployer.address}`);
+    output(
+      `Fund this address with about ${reserve / WEI} STRK, then run the same command again: ${accounts.deployer.address}`,
+    );
     return undefined;
   }
   for (const role of ["deployer", "relay", "monitor"] as const) {

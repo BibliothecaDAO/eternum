@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { Account, RpcProvider, logger } from "starknet";
 import { PrivateStore } from "./private-store";
-import { environments, root, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
+import { environments, ownsValueLedger, root, ACCOUNT_CLASS, WEI, type Environment, type Inputs } from "./settings";
 import { accountIdentity, classAt, newKey, prepareAccounts, type Keys } from "./chain";
 import {
   artifactsReady,
@@ -24,6 +24,7 @@ import {
   publishAssets,
   setupCalls,
   setupPresenceReader,
+  startingReserve,
   verifyLedgerAccounts,
   type Assets,
 } from "./ledger";
@@ -192,7 +193,7 @@ export function preparationSteps(context: Deployment): Step[] {
     {
       name: "Fund and deploy accounts",
       payer: "deployer",
-      cost: "250 STRK starting reserve includes 30 for relay and 1 for monitor; account fees not measured",
+      cost: `${startingReserve(context.target) / WEI} STRK starting reserve includes 30 for relay and 1 for monitor; account fees not measured`,
       inspect: async () => {
         if (!context.keys || !context.provider) return waiting("Account identities are not available yet");
         const states = await Promise.all(
@@ -208,7 +209,13 @@ export function preparationSteps(context: Deployment): Step[] {
         };
       },
       apply: async () => {
-        await prepareAccounts(context.provider!, context.keys!, context.store, context.output);
+        await prepareAccounts(
+          context.provider!,
+          context.keys!,
+          context.store,
+          context.output,
+          startingReserve(context.target),
+        );
       },
     },
     {
@@ -295,6 +302,9 @@ export function preparationSteps(context: Deployment): Step[] {
       payer: context.target.coldAdmin ? "cold admin" : "deployer",
       cost: "included in the 200 STRK deployment reserve",
       inspect: async () => {
+        // Roles, presets and seasons are ledger-wide: on a ledger another environment owns, only that one sets them.
+        if (!ownsValueLedger(context.target))
+          return { done: true, detail: "production owns the ledger this environment shares; nothing is set up here" };
         if (!context.assets || !context.provider || !context.keys || !context.inputs)
           return waiting("Contracts have not been deployed yet");
         const season = await resolveBlitzSeason(
