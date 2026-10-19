@@ -4,6 +4,7 @@ import { StructureType } from "@bibliothecadao/types";
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import {
   FRONTIER_BEASTS,
+  type BeastBand,
   frontierBeast,
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
@@ -31,10 +32,10 @@ const SITES = [
   { kind: "Camp", category: StructureType.Camp, base: CAMP_MODEL_PATH },
   { kind: "Rift", category: StructureType.Rift, base: "/models/reward-tiles/rift.glb" },
   { kind: "Ruin", category: StructureType.Ruin, base: FALLEN_REALM_RUIN_PATH },
-  { kind: "Stragglers", category: StructureType.Stragglers, base: "" },
+  { kind: "Beasts", category: StructureType.Beasts, base: "" },
 ] as const;
 const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ kind, category, base }) => {
-  const beast = frontierBeast(0, category);
+  const beast = frontierBeast(0, category, category === StructureType.Beasts ? "lowly" : undefined);
   const composition = frontierSiteComposition(category);
   return {
     label: `${kind} · ${beast.name}`,
@@ -44,10 +45,10 @@ const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ kind, category, base })
     ],
   };
 });
-const STRAGGLERS = (["Knight", "Paladin", "Crossbowman"] as const).map((troop) => {
-  const beast = frontierBeast(0, StructureType.Stragglers, troop);
+const BEASTS = (["lowly", "stronger"] as const).map((band) => {
+  const beast = frontierBeast(0, StructureType.Beasts, band);
   return {
-    label: `${beast.name} · Loot T${FRONTIER_BEASTS[beast.beast].lootTier}`,
+    label: `${beast.name} · ${band}`,
     parts: [{ path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale }],
   };
 });
@@ -55,7 +56,7 @@ const STRAGGLERS = (["Knight", "Paladin", "Crossbowman"] as const).map((troop) =
 export function FrontierBeastLab() {
   const [params, setParams] = useSearchParams();
   const group = params.get("group") ?? "models";
-  const lineup = group === "sites" ? SITE_MODELS : group === "stragglers" ? STRAGGLERS : MODELS;
+  const lineup = group === "sites" ? SITE_MODELS : group === "beasts" ? BEASTS : MODELS;
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
@@ -73,8 +74,9 @@ export function FrontierBeastLab() {
   const [ready, setReady] = useState(false);
   const [panel, setPanel] = useState(false);
   const [site, setSite] = useState(2);
-  const [troop, setTroop] = useState<"Knight" | "Paladin" | "Crossbowman">("Knight");
-  const beast = frontierBeast(0, SITES[site].category, troop);
+  const [band, setBand] = useState<BeastBand>("lowly");
+  const beast = frontierBeast(0, SITES[site].category, band);
+  const guard = SITES[site].category === StructureType.Beasts ? (band === "lowly" ? 325 : 500) : 2800;
   const plate: StructurePlate = {
     kind: "structure",
     relation: "neutral",
@@ -83,7 +85,7 @@ export function FrontierBeastLab() {
     place: "Woecrag",
     named: false,
     icon: "ruin",
-    guards: [{ type: troop.toLowerCase() as "knight" | "paladin" | "crossbowman", tier: 1, count: 2800, beast: true }],
+    guards: [{ type: "knight", tier: 1, count: guard, beast: true }],
     arrivals: [],
   };
   useEffect(() => {
@@ -129,7 +131,7 @@ export function FrontierBeastLab() {
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>
             <option value="models">New models beside shipped</option>
             <option value="sites">Standing sites</option>
-            <option value="stragglers">Stragglers</option>
+            <option value="beasts">Beasts</option>
           </select>
         </label>
         <label>
@@ -175,11 +177,12 @@ export function FrontierBeastLab() {
               ))}
             </select>
           </label>
-          <select aria-label="Combat class" value={troop} onChange={(e) => setTroop(e.target.value as typeof troop)}>
-            {["Knight", "Paladin", "Crossbowman"].map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </select>
+          {SITES[site].category === StructureType.Beasts && (
+            <select aria-label="Beast strength" value={band} onChange={(e) => setBand(e.target.value as BeastBand)}>
+              <option value="lowly">Lowly</option>
+              <option value="stronger">Stronger</option>
+            </select>
+          )}
           <button onClick={() => setPanel(true)}>Select site</button>
         </div>
         <div data-before>
@@ -205,10 +208,10 @@ export function FrontierBeastLab() {
       {panel && (
         <SiteCardView
           site={SITES[site].kind}
-          beast={{ name: beast.name, tier: 1, combatClass: troop }}
+          beast={{ name: beast.name, tier: 1, combatClass: "Knight" }}
           army={{ art: "knight-t1", troops: 5000 }}
-          guard={2800}
-          fight={{ outcome: "wins", exchanges: 2, troopsLost: 550, guardLeft: 800 }}
+          guard={guard}
+          fight={{ outcome: "wins", exchanges: 2, troopsLost: 550, guardLeft: 0 }}
           pay={site === 0 ? { icon: "labor", amount: 1400 } : site === 1 ? { icon: "essence", amount: 8400 } : null}
           xp={132}
           verb={null}

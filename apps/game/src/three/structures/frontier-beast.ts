@@ -1,6 +1,6 @@
 import { expeditionDepth, readExpeditionRules } from "@bibliothecadao/eternum";
-import { StructureType, type TroopType } from "@bibliothecadao/types";
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BEAST_NAMES } from "@/ui/design-system/kit/words";
 
 export const FALLEN_REALM_RUIN_PATH = "/models/outposts/ruin.glb";
@@ -25,23 +25,41 @@ export const FALLEN_REALM_DEPTHS: readonly { beast: FrontierSpecies; scale: numb
   { beast: "hydra", scale: 1.45 },
   { beast: "hydra", scale: 1.7 },
 ];
-const STRAGGLER_SPECIES: Record<TroopType, FrontierSpecies> = {
-  Knight: "troll",
-  Paladin: "wolf",
-  Crossbowman: "goblin",
-};
+export type BeastBand = "lowly" | "stronger";
+const ROAMING_BEASTS = { lowly: "wolf", stronger: "goblin" } as const;
+type BeastBounds = Pick<
+  NativeRows["DepthRules"],
+  "beast_weak_lower" | "beast_weak_upper" | "beast_strong_lower" | "beast_strong_upper"
+>;
+
+/** Initial guard strength identifies the encounter even after casualties. */
+export function beastBand(initialCount: bigint, bounds: BeastBounds): BeastBand {
+  const precision = BigInt(RESOURCE_PRECISION);
+  const weakLower = BigInt(bounds.beast_weak_lower) * precision;
+  const weakUpper = BigInt(bounds.beast_weak_upper) * precision;
+  const strongLower = BigInt(bounds.beast_strong_lower) * precision;
+  const strongUpper = BigInt(bounds.beast_strong_upper) * precision;
+  if (weakLower <= 0n || weakUpper < weakLower || strongLower <= weakUpper || strongUpper < strongLower)
+    throw new Error("Beast depth rules require positive, separate strength ranges");
+  if (initialCount >= weakLower && initialCount <= weakUpper) return "lowly";
+  if (initialCount >= strongLower && initialCount <= strongUpper) return "stronger";
+  throw new Error(`Initial beast strength ${initialCount} is outside its depth ranges`);
+}
 
 /** One identity for model, plate and panel. Neither casualties nor reward rank can change it. */
-export function frontierBeast(
-  depth: number,
-  category = StructureType.Ruin,
-  troop: TroopType = "Knight",
-): FrontierBeast {
+export function frontierBeast(depth: number, category = StructureType.Ruin, band?: BeastBand): FrontierBeast {
   const entry = FALLEN_REALM_DEPTHS[depth];
   if (!entry) throw new Error(`No Frontier beast for depth ${depth}`);
-  const beast = category === StructureType.Stragglers ? STRAGGLER_SPECIES[troop] : entry.beast;
-  const scale = category === StructureType.Ruin ? entry.scale : category === StructureType.Stragglers ? 1 : 0.85;
-  return { beast, scale, name: BEAST_NAMES[beast] };
+  if (category === StructureType.Beasts) {
+    if (!band) throw new Error("Beast identity requires its initial strength band");
+    const beast = ROAMING_BEASTS[band];
+    return { beast, scale: 1, name: BEAST_NAMES[beast] };
+  }
+  return {
+    beast: entry.beast,
+    scale: category === StructureType.Ruin ? entry.scale : 0.85,
+    name: BEAST_NAMES[entry.beast],
+  };
 }
 
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
@@ -60,18 +78,20 @@ export function readStandingFrontierBeast(
   const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
   if (!site || site.clear || !structure) return undefined;
   const category = structure.base.category;
-  if (![StructureType.Ruin, StructureType.Camp, StructureType.Rift, StructureType.Stragglers].includes(category))
+  if (![StructureType.Ruin, StructureType.Camp, StructureType.Rift, StructureType.Beasts].includes(category))
     return undefined;
   const rules = readExpeditionRules(store, gameId);
   if (!rules) throw new Error(`Frontier site ${entityId} stands without expedition rules`);
-  const guard = store.get("Guard", { game_id: gameId, structure_id: entityId, slot: 0 });
-  if (category === StructureType.Stragglers && !guard) return undefined;
-  return frontierBeast(expeditionDepth(rules, { y: tile.row }), category, guard?.troops.category);
+  const depth = expeditionDepth(rules, { y: tile.row });
+  if (category !== StructureType.Beasts) return frontierBeast(depth, category);
+  const bounds = store.get("DepthRules", { game_id: gameId, depth });
+  if (!bounds) throw new Error(`Frontier beast ${entityId} stands without depth rules`);
+  return frontierBeast(depth, category, beastBand(site.initial_guard_count, bounds));
 }
 
 /** Landmarks sit behind the beast; a ruin retains its measured courtyard composition. */
 export function frontierSiteComposition(category: StructureType) {
   if (category === StructureType.Ruin) return { baseScale: 1, baseZ: 0, beastZ: 0 };
-  if (category === StructureType.Stragglers) return { baseScale: 0, baseZ: 0, beastZ: 0 };
+  if (category === StructureType.Beasts) return { baseScale: 0, baseZ: 0, beastZ: 0 };
   return { baseScale: 0.5, baseZ: -0.42, beastZ: 0.35 };
 }

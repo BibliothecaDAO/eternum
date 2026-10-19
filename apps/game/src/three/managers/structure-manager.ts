@@ -1284,7 +1284,7 @@ export class StructureManager {
   private getBaseStructureModelIndex(structure: StructureInfo): number {
     if (structure.clearedSite) return this.structureModelPaths[String(structure.structureType)].length - 1;
     if (structure.frontierBeast)
-      return structure.structureType === StructureType.Stragglers
+      return structure.structureType === StructureType.Beasts
         ? frontierBeastModelIndex(structure.frontierBeast.beast)
         : FALLEN_REALM_RUIN_MODEL_INDEX;
     if (structure.structureType === StructureType.Hyperstructure) return 0;

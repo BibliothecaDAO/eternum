@@ -11,8 +11,9 @@ export async function proveBeasts(b, out, records, baseUrl) {
     { name: "chimera-detail", group: "models", focus: "3", models: 6 },
     { name: "cyclops-detail", group: "models", focus: "5", models: 6 },
     { name: "standing-sites", group: "sites", focus: "lineup", models: 7 },
-    { name: "stragglers", group: "stragglers", focus: "lineup", models: 3 },
-    { name: "goblin-panel", group: "stragglers", focus: "2", models: 3, panel: true },
+    { name: "beasts", group: "beasts", focus: "lineup", models: 2 },
+    { name: "wolf-panel", group: "beasts", focus: "0", models: 2, band: "lowly", species: "Wolf", count: "325" },
+    { name: "goblin-panel", group: "beasts", focus: "1", models: 2, band: "stronger", species: "Goblin", count: "500" },
   ]) {
     const record = { name: scenario.name, ready: false, presses: [], checks: [] };
     records.push(record);
@@ -63,20 +64,24 @@ export async function proveBeasts(b, out, records, baseUrl) {
         ok: labels.length === expectedLabels && labels.every((label) => label.width > 0 && label.aboveCanvas),
         actual: labels,
       });
-      if (scenario.panel) {
+      if (scenario.band) {
         await b.run("select", 'select[aria-label="Site"]', "3");
-        await b.run("select", 'select[aria-label="Combat class"]', "Crossbowman");
+        await b.run("select", 'select[aria-label="Beast strength"]', scenario.band);
         await b.run("click", 'button:has-text("Select site")');
         record.presses.push({
-          action: "Select Crossbowman Stragglers",
+          action: `Select ${scenario.band} Beasts`,
           status: (await waitFor(b, 'document.querySelector("[role=dialog]")', 5000)) ? "led" : "failed",
         });
         const panel = await b.evaluate(
           `(() => {const p=document.querySelector('[role=dialog]');return {text:p?.textContent,beast:!!p?.querySelector('[data-icon="beast-t1"]'),oldGuard:!!p?.querySelector('[data-icon="troops"]')};})()`,
         );
         record.checks.push({
-          check: "selected panel names Goblin with the actual T1 beast icon",
-          ok: panel.text?.includes("Goblin") && panel.beast && !panel.oldGuard,
+          check: `selected panel names ${scenario.species} with its strength and the actual T1 beast icon`,
+          ok:
+            panel.text?.includes(scenario.species) &&
+            panel.text?.includes(scenario.count) &&
+            panel.beast &&
+            !panel.oldGuard,
           actual: panel,
         });
       }

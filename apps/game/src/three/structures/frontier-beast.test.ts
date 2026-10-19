@@ -1,29 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { StructureType, type TroopType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import { getStructureModelPaths } from "../constants/scene-constants";
 import {
   FRONTIER_BEASTS,
   FALLEN_REALM_DEPTHS,
+  beastBand,
   frontierBeast,
   frontierBeastModelIndex,
   readStandingFrontierBeast,
 } from "./frontier-beast";
 
-const facts = (category: StructureType, cleared = false, troop: TroopType = "Knight", count = 20n) => {
+const DEPTH_BOUNDS = [
+  { beast_weak_lower: 300, beast_weak_upper: 350, beast_strong_lower: 450, beast_strong_upper: 550 },
+  { beast_weak_lower: 900, beast_weak_upper: 1050, beast_strong_lower: 1350, beast_strong_upper: 1650 },
+  { beast_weak_lower: 2400, beast_weak_upper: 2800, beast_strong_lower: 3600, beast_strong_upper: 4400 },
+  { beast_weak_lower: 6000, beast_weak_upper: 7000, beast_strong_lower: 9000, beast_strong_upper: 11000 },
+];
+const scaled = (count: number) => BigInt(count) * BigInt(RESOURCE_PRECISION);
+const facts = (category: StructureType, depth = 0, initialCount = 325, remaining = 1, cleared = false) => {
   const rows = {
     SliceRules: { day_unit_seconds: 86400 },
     GameRegistry: { start_main_at: 0, seed: 1 },
     SettlementRules: { spacing: 10 },
+    DepthRules: DEPTH_BOUNDS[depth],
     Structure: { game_id: 1, entity_id: 9, base: { category } },
     ExpeditionSite: {
       game_id: 1,
       entity_id: 9,
-      initial_guard_count: 100n,
+      initial_guard_count: scaled(initialCount),
       clear: cleared ? { explorer_id: 1n, home_id: 7n, reward: null } : null,
     },
-    Guard: { troops: { category: troop, tier: "T1", count } },
+    Guard: { troops: { category: "Knight", tier: "T1", count: scaled(remaining) } },
   };
   return { get: (model: keyof typeof rows) => rows[model] } as never;
+};
+const without = (store: ReturnType<typeof facts>, missing: string) => {
+  const original = store as { get: (model: string) => unknown };
+  return { get: (model: string) => (model === missing ? undefined : original.get(model)) } as never;
 };
 
 describe("Frontier guard identity", () => {
@@ -32,34 +45,67 @@ describe("Frontier guard identity", () => {
     for (const { beast, scale } of FALLEN_REALM_DEPTHS)
       expect(scale).toBeLessThanOrEqual(FRONTIER_BEASTS[beast].maxScale);
     expect(() => frontierBeast(4)).toThrow("No Frontier beast");
+    expect(() => frontierBeast(0, StructureType.Beasts)).toThrow("initial strength band");
   });
-  it.each([StructureType.Camp, StructureType.Rift, StructureType.Ruin, StructureType.Stragglers])(
+  it.each([StructureType.Camp, StructureType.Rift, StructureType.Ruin])(
     "uses the same live identity to select model and label for site %s",
     (category) => {
-      const identity = readStandingFrontierBeast(facts(category), 1, 9, { row: 15 })!;
-      expect(identity.name).toBe(category === StructureType.Stragglers ? "Troll" : "Wyvern");
+      const identity = readStandingFrontierBeast(facts(category, 1), 1, 9, { row: 15 })!;
+      expect(identity.name).toBe("Wyvern");
       expect(getStructureModelPaths()[category][frontierBeastModelIndex(identity.beast)]).toBe(
         FRONTIER_BEASTS[identity.beast].path,
       );
-      expect(readStandingFrontierBeast(facts(category, true), 1, 9, { row: 15 })).toBeUndefined();
+      expect(readStandingFrontierBeast(facts(category, 1, 325, 0, true), 1, 9, { row: 15 })).toBeUndefined();
     },
   );
+  it.each(DEPTH_BOUNDS.map((bounds, depth) => ({ depth, bounds })))(
+    "keeps both ranged encounters' identities at depth $depth through casualties",
+    ({ depth, bounds }) => {
+      for (const [low, high, name, species] of [
+        [bounds.beast_weak_lower, bounds.beast_weak_upper, "Wolf", "wolf"],
+        [bounds.beast_strong_lower, bounds.beast_strong_upper, "Goblin", "goblin"],
+      ] as const) {
+        for (const initial of [low, Math.floor((low + high) / 2), high]) {
+          const read = (remaining: number, cleared = false) =>
+            readStandingFrontierBeast(facts(StructureType.Beasts, depth, initial, remaining, cleared), 1, 9, {
+              row: depth * 10 + 5,
+            });
+          const identity = read(initial)!;
+          expect(identity).toEqual({ beast: species, name, scale: 1 });
+          expect(getStructureModelPaths()[StructureType.Beasts][frontierBeastModelIndex(identity.beast)]).toBe(
+            FRONTIER_BEASTS[species].path,
+          );
+          expect(read(1)).toEqual(identity);
+          expect(read(0)).toEqual(identity);
+          expect(read(0, true)).toBeUndefined();
+        }
+      }
+    },
+  );
+  it.each([299, 351, 449, 551])("rejects initial count %s outside both preset bands", (count) => {
+    expect(() => readStandingFrontierBeast(facts(StructureType.Beasts, 0, count), 1, 9, { row: 5 })).toThrow(
+      "outside its depth ranges",
+    );
+  });
   it.each([
-    ["Knight", "troll", 5],
-    ["Paladin", "wolf", 5],
-    ["Crossbowman", "goblin", 4],
-  ] as const)("presents %s Stragglers as %s without changing species after losses", (troop, beast, lootTier) => {
-    const read = (count: bigint) =>
-      readStandingFrontierBeast(facts(StructureType.Stragglers, false, troop, count), 1, 9, { row: 15 });
-    expect(read(100n)?.beast).toBe(beast);
-    expect(read(1n)).toEqual(read(100n));
-    expect(FRONTIER_BEASTS[beast].lootTier).toBe(lootTier);
+    { beast_weak_lower: 0 },
+    { beast_weak_upper: 299 },
+    { beast_strong_lower: 350 },
+    { beast_strong_upper: 449 },
+  ])("rejects invalid preset bands %j", (invalid) => {
+    expect(() => beastBand(scaled(325), { ...DEPTH_BOUNDS[0], ...invalid })).toThrow(
+      "positive, separate strength ranges",
+    );
+  });
+  it("requires the depth preset to resolve a beast", () => {
+    expect(() =>
+      readStandingFrontierBeast(without(facts(StructureType.Beasts), "DepthRules"), 1, 9, { row: 5 }),
+    ).toThrow("without depth rules");
   });
   it("does not turn ordinary neutral holdings into Frontier beasts", () => {
-    const store = facts(StructureType.Camp) as unknown as { get: (model: string) => unknown };
-    const original = store.get;
-    store.get = (model) => (model === "ExpeditionSite" ? undefined : original(model));
-    expect(readStandingFrontierBeast(store as never, 1, 9, { row: 15 })).toBeUndefined();
+    expect(
+      readStandingFrontierBeast(without(facts(StructureType.Camp), "ExpeditionSite"), 1, 9, { row: 15 }),
+    ).toBeUndefined();
     expect(readStandingFrontierBeast(facts(StructureType.Realm), 1, 9, { row: 15 })).toBeUndefined();
   });
 });
