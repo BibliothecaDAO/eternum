@@ -20,7 +20,8 @@ test("realm icon comparisons show renders of the current level models", async ()
   for (const reference of references) {
     assert.equal(reference.model, assets.find((asset) => asset.level === reference.level && !asset.wonder).path);
     for (const kind of ["model", "render"]) {
-      const bytes = await readFile(new URL(`public${reference[kind]}`, game));
+      const directory = kind === "model" ? "public" : "asset-sources";
+      const bytes = await readFile(new URL(`${directory}${reference[kind]}`, game));
       assert.equal(
         createHash("sha256").update(bytes).digest("hex"),
         reference[`${kind}Sha256`],

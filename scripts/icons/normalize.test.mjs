@@ -32,7 +32,9 @@ test("faint pixels cannot make a small subject pass the fill check", async () =>
 });
 
 test("isolated specks in the live stone source cannot shrink its delivered subject", async () => {
-  const source = await readFile(new URL("../../apps/game/public/lab/rss-icons/history/stone.png", import.meta.url));
+  const source = await readFile(
+    new URL("../../apps/game/asset-sources/lab/rss-icons/history/stone.png", import.meta.url),
+  );
   const master = await normalizeMaster(source);
   for (const size of [64, 128, 256]) {
     const { fill } = await assertIconFill(await deliverIcon(master, size, "live stone"));

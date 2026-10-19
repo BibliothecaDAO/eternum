@@ -7,7 +7,7 @@ import { buildResourceHistory } from "./resource-history.mjs";
 const repo = fileURLToPath(new URL("../../", import.meta.url));
 const game = `${repo}/apps/game`;
 const source = `${game}/asset-sources/rss-icons`;
-const output = `${game}/public/lab/rss-icons`;
+const output = `${game}/asset-sources/lab/rss-icons`;
 const read = async (path) => JSON.parse(await readFile(path, "utf8"));
 const study = await read(`${source}/catalog.json`);
 const { icons } = await read(`${game}/asset-sources/facets/catalog.json`);

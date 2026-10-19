@@ -7,7 +7,7 @@ const repo = fileURLToPath(new URL("../../", import.meta.url));
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export async function readHistoricalArtwork(entry, game = `${repo}/apps/game`) {
-  const bytes = await readFile(`${game}/public${entry.url}`);
+  const bytes = await readFile(`${game}/asset-sources${entry.url}`);
   if (hash(bytes) !== entry.sha256) throw new Error(`Historical artwork hash differs: ${entry.url}`);
   return bytes;
 }
@@ -35,7 +35,7 @@ export async function buildResourceHistory() {
   const expected = Object.values(entries)
     .flatMap((entry) => (entry.url ? [entry.url.split("/").pop()] : []))
     .sort();
-  const actual = (await readdir(`${repo}/apps/game/public/lab/rss-icons/history`)).sort();
+  const actual = (await readdir(`${repo}/apps/game/asset-sources/lab/rss-icons/history`)).sort();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error("Missing or unwired historical artwork.");
   console.log(
     `Historical set: ${expected.length} pinned committed images and the SAT glyph, ${meanings.length} resources.`,

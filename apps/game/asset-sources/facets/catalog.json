@@ -69,7 +69,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/1.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/stone.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/stone.png",
         "sha256": "85ba053423b4c21cd4ae9a59c3462857d2fe2581c1beaacb560e38bd05d35d78"
       }
     },
@@ -81,7 +81,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/3.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/wood.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/wood.png",
         "sha256": "bfa65db3ebc1a0e682781daffa03a2914027af7b4b4341f70b1bfcc8ed99a87e"
       }
     },
@@ -123,7 +123,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/5.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/ironwood.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ironwood.png",
         "sha256": "4b7a2e467e764ed292ae3317513d57ae2f0024c6c1662d7e6ee860f95bb7390d"
       }
     },
@@ -388,7 +388,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/2.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/coal.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/coal.png",
         "sha256": "e63f09d99239ed05f07d597cfc711f845b7866564f4d92163f0541cc65866f2e"
       }
     },
@@ -400,7 +400,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/4.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/copper.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/copper.png",
         "sha256": "03fdedec6cadb4c7d93a1332be00e9571e5052991637ad7b721f56647553a00d"
       }
     },
@@ -437,7 +437,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/6.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/obsidian.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/obsidian.png",
         "sha256": "1557b9e3f62813a24271c845daeab9a7f443b37e0bd751a8b02c69c4991c0dfb"
       }
     },
@@ -449,7 +449,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/7.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/gold.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/gold.png",
         "sha256": "e68ead6472307fed4dacfa3f9cdfd3f3521fa734a8de99ea018f55e978f5a7ff"
       }
     },
@@ -461,7 +461,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/8.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/silver.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/silver.png",
         "sha256": "3c9cdd596e22c4faa43af7b59be06a4c420460ed89a6c3a29d3d8994862ff031"
       }
     },
@@ -473,7 +473,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/9.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/mithral.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/mithral.png",
         "sha256": "ac24774bce4ddf19e3d6570be2bf5223ca852ac18b813d5eb2f990b825519f03"
       }
     },
@@ -485,7 +485,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/10.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/alchemical-silver.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/alchemical-silver.png",
         "sha256": "fdda73e3735e42374f34d03b575865efc217deccd2660a80eae510d1c5d6292e"
       }
     },
@@ -497,7 +497,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/11.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/cold-iron.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/cold-iron.png",
         "sha256": "50dec308fd3846b22fb85c65d0395aa0627e752a149fea5ba424fbb84b450efc"
       }
     },
@@ -509,7 +509,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/12.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/deep-crystal.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/deep-crystal.png",
         "sha256": "c13b1492805e75c9f985405a1bf99fb8150a7ff2a953caa7fb0406374aa1e32c"
       }
     },
@@ -521,7 +521,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/13.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/ruby.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ruby.png",
         "sha256": "11fb249d86a21869d7863671ccf3f1d614a8f0d6cf155897c3c4d38ed5a71fcb"
       }
     },
@@ -533,7 +533,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/14.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/diamonds.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/diamonds.png",
         "sha256": "31078efdaa85dd0d12b20c3593bab0a2d8476f7d0f3cc6924aff7ac03cdcd7cd"
       }
     },
@@ -545,7 +545,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/15.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/hartwood.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/hartwood.png",
         "sha256": "5c6c8bb596476767f7daa99713e66eb00ed9b005ec23976af4f1fecc83fb8e42"
       }
     },
@@ -557,7 +557,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/16.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/ignium.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ignium.png",
         "sha256": "4e0cd37e69ec4f57e1d9f597bd2c94ef17391760b0a153947a9355b9bacc0684"
       }
     },
@@ -569,7 +569,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/17.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/twilight-quartz.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/twilight-quartz.png",
         "sha256": "bedcd1de691236a526c498e9613ed14fc99e33c60a425185b57f0b650b5fe009"
       }
     },
@@ -581,7 +581,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/18.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/true-ice.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/true-ice.png",
         "sha256": "864a4306745056621e28ddd6b016e090e942c8abc167157a7bbf6d1d43fc4e4b"
       }
     },
@@ -593,7 +593,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/19.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/adamantine.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/adamantine.png",
         "sha256": "52a2903cdf0eb5da31b805be8de083f45db91eb4b6911c6b1411aa3f331a0550"
       }
     },
@@ -605,7 +605,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/20.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/sapphire.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/sapphire.png",
         "sha256": "a7443ec78d358af153fa609434659ffd171d0f684edaeaeb2b4c93c1a030c5cd"
       }
     },
@@ -617,7 +617,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/21.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/ethereal-silica.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/ethereal-silica.png",
         "sha256": "e46d6a5a1182ad2999713e34e9a823f98f321328e0b820683ce579da4657259c"
       }
     },
@@ -629,7 +629,7 @@
       "source": {
         "revision": "638fd7fb410",
         "path": "apps/game/public/images/resources/22.png",
-        "committedPath": "apps/game/public/lab/rss-icons/history/dragonhide.png",
+        "committedPath": "apps/game/asset-sources/lab/rss-icons/history/dragonhide.png",
         "sha256": "9a8557eff93575b06198ef01d9baab56947743521be8ebe53ea6d9de599dd8c5"
       }
     },

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +11,14 @@ import { normalizeMaster, deliverIcon } from "./normalize.mjs";
 import { readHistoricalArtwork } from "./resource-history.mjs";
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
+test("lab comparisons and historical masters stay outside the deployable public directory", async () => {
+  const game = fileURLToPath(new URL("../../apps/game/", import.meta.url));
+  await assert.rejects(readdir(`${game}/public/lab`), { code: "ENOENT" });
+  const { icons } = JSON.parse(await readFile(`${game}/asset-sources/facets/catalog.json`, "utf8"));
+  for (const icon of icons.filter((icon) => icon.source?.committedPath))
+    assert.ok(icon.source.committedPath.startsWith("apps/game/asset-sources/"), icon.source.committedPath);
+});
+
 test("all 18 production relics use the approved Facets masters through their semantic meanings", async () => {
   const repo = fileURLToPath(new URL("../../", import.meta.url));
   const source = `${repo}/apps/game/asset-sources`;
@@ -28,7 +36,7 @@ test("all 18 production relics use the approved Facets masters through their sem
     assert.equal(hash(master), icon.source.sha256);
     assert.notEqual(hash(master), history.entries[icon.id].sha256);
     for (const size of [64, 128, 256])
-      await assert.rejects(readFile(`${repo}/apps/game/public/lab/rss-icons/relics/${size}/${icon.id}.webp`), {
+      await assert.rejects(readFile(`${repo}/apps/game/asset-sources/lab/rss-icons/relics/${size}/${icon.id}.webp`), {
         code: "ENOENT",
       });
   }
@@ -44,7 +52,7 @@ test("all 22 live production resource masters match the pinned committed archive
   for (const [id, entry] of selected) {
     const icon = icons.find((icon) => icon.id === id);
     assert.equal(icon.source.revision, "638fd7fb410");
-    assert.equal(icon.source.committedPath, `apps/game/public${entry.url}`);
+    assert.equal(icon.source.committedPath, `apps/game/asset-sources${entry.url}`);
     assert.deepEqual(await readFile(`${source}/facets/masters/${id}.png`), await readHistoricalArtwork(entry));
   }
 });
@@ -90,11 +98,11 @@ test("production validation rejects a changed model, master or stale delivery", 
 test("historical source validation rejects changed committed bytes", async () => {
   const root = await mkdtemp(join(tmpdir(), "icon-history-"));
   try {
-    await mkdir(`${root}/public`, { recursive: true });
-    const entry = { url: "/relic.png", sha256: hash(Buffer.from("pinned original")) };
-    await writeFile(`${root}/public/relic.png`, "pinned original");
+    await mkdir(`${root}/asset-sources/lab`, { recursive: true });
+    const entry = { url: "/lab/relic.png", sha256: hash(Buffer.from("pinned original")) };
+    await writeFile(`${root}/asset-sources/lab/relic.png`, "pinned original");
     assert.deepEqual(await readHistoricalArtwork(entry, root), Buffer.from("pinned original"));
-    await writeFile(`${root}/public/relic.png`, "wrong artwork");
+    await writeFile(`${root}/asset-sources/lab/relic.png`, "wrong artwork");
     await assert.rejects(readHistoricalArtwork(entry, root), /Historical artwork hash differs/);
   } finally {
     await rm(root, { recursive: true, force: true });
