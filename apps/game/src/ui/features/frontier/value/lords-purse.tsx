@@ -6,8 +6,8 @@ import type { ReactNode } from "react";
 
 /**
  * Under the phone's strip, at its right end, over the map: the realm's LORDS count (it opens Withdraw where one exists)
- * and, while the player's Realms have labor waiting today, the Realms chip beside it. A desktop reads both in its realm
- * panel.
+ * and, while the player's Realms have labor waiting today, the Realms chip beside it (the phone's Menu always has
+ * Realms). A desktop's realm panel carries both, its Realms chip always.
  */
 export const PurseRow = ({ children }: { children: ReactNode }) => (
   <div className="pointer-events-auto absolute right-2 top-full z-10 flex gap-1.5">{children}</div>
@@ -40,13 +40,17 @@ export const LordsPurse = ({
   </HudPill>
 );
 
-/** The labor the player's Realms have waiting today; it opens Realms. */
+/** The way to Realms, where a Realm is added and its labor claimed, wearing the labor they have waiting today. */
 export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => void }) => (
-  <HudPill label={`${REALMS} +${formatAmount(labor)} ${LABOR}`} onPress={onOpen}>
+  <HudPill label={labor > 0 ? `${REALMS} +${formatAmount(labor)} ${LABOR}` : REALMS} onPress={onOpen}>
     {[
       <span key="labor" className="flex items-center gap-1 tabular-nums">
         <SemanticIcon name="realm" size={24} />
-        <SemanticIcon name="labor" size={22} />+{formatAmount(labor)}
+        {labor > 0 && (
+          <>
+            <SemanticIcon name="labor" size={22} />+{formatAmount(labor)}
+          </>
+        )}
       </span>,
     ]}
   </HudPill>

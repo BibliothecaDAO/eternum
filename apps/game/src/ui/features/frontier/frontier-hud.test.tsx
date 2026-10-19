@@ -5,8 +5,8 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-// Only the network, the identity and the chat pane's own drawing stand in: the HUD, its chat hooks and the chat store
-// are the real ones (as review-unified-hud-3 reproduced the lost connection).
+// The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
+// HUD, its hooks and the stores are the real ones.
 const wire = vi.hoisted(() => ({ made: 0, close: vi.fn() }));
 vi.mock("@bibliothecadao/types", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/types")>()),
@@ -19,7 +19,10 @@ vi.mock("@bibliothecadao/types", async (original) => ({
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
-  useIdentitySession: () => ({ status: "signed-in" }),
+  useIdentitySession: () => ({
+    status: "signed-in",
+    session: { user: { id: "u1", realmsId: "", name: "uxplay", email: "uxplay@example.com", address: "0x7" } },
+  }),
 }));
 vi.mock("@/shell/sign-in/sign-in-route", () => ({ useRequestSignIn: () => vi.fn() }));
 vi.mock("@/ui/features/social", async () => ({
@@ -84,17 +87,40 @@ const chatReading = () => ({
     null,
 });
 
-it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {
-  viewport.set(1440);
-  await act(async () =>
+/** The real Frontier HUD over the lab's game, which shard rules the realm's labor. */
+const renderHud = () =>
+  act(async () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
-          <LabGame preset={5}>{(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}</LabGame>
+          <LabGame preset={5} facts={() => [LABOR_RULES]}>
+            {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+          </LabGame>
         </QueryClientProvider>
       </MemoryRouter>,
     ),
   );
+
+const LABOR_RULES = {
+  model: "LaborRules",
+  key: "0x1ab",
+  value: { game_id: 1, amount: "1000", account_daily_limit: 5 },
+};
+
+it("opens Realms from a desktop realm panel whose Realms have no labor waiting, so a new player can add one", async () => {
+  viewport.set(1440);
+  await renderHud();
+  const realms = [...host.querySelectorAll("button")].find((button) => button.getAttribute("aria-label") === "Realms");
+  expect(realms).toBeDefined();
+  await act(async () => realms!.click());
+  expect(host.querySelector('form[aria-label="Add a Realm"]')).not.toBeNull();
+});
+
+it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {
+  viewport.set(1440);
+  wire.made = 0;
+  wire.close.mockClear();
+  await renderHud();
   await act(async () => useRealtimeChatStore.setState({ unreadWorldTotal: 3 }));
   expect(chatReading()).toEqual({ connected: true, unread: "3" });
 

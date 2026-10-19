@@ -11,7 +11,7 @@ import { LandingDelta, STORE_TONES, STORES, type StoreReading, storeLine } from 
 
 /**
  * Frontier's realm on the desktop HUD's left column, read as Blitz's realm card reads a holding: its name, its rank
- * with the labor its Realms hold today, then a ring per store (Essence, Labor, Wheat, Troops), each filling toward its
+ * with the way to Realms (the labor they hold today on it), then a ring per store (Essence, Labor, Wheat, Troops), each filling toward its
  * limit with the time until full on its rim, and a ring for its LORDS. A tap on a store opens Production, on the LORDS
  * Withdraw; a realm watched or visited shows its stores alone. The day's clock is the top bar's.
  */
@@ -30,7 +30,7 @@ export const RealmPanel = ({
   stores: StoreReading[];
   /** The realm's LORDS; absent for a realm not the player's. */
   lords?: number;
-  /** The labor the player's Realms have waiting today: the Realms chip shows while there is some. */
+  /** The labor the player's Realms have waiting today, which the Realms chip wears. */
   labor?: number;
   onOpenStores?: () => void;
   onWithdraw?: () => void;
@@ -45,7 +45,7 @@ export const RealmPanel = ({
         </>
       )}
       <span className="flex-1" />
-      {labor > 0 && onRealms && <RealmsChip labor={labor} onOpen={onRealms} />}
+      {onRealms && <RealmsChip labor={labor} onOpen={onRealms} />}
     </div>
     <ul aria-label="Stores" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {stores.map((store) => (
