@@ -468,6 +468,22 @@ test("missing secrets use stdin JSON, never argv; a retry preserves existing one
   expect(commands).toHaveLength(1);
 });
 
+test("a changed alert address is re-sent by the next setup, replacing the old one in place", async () => {
+  const { store } = storage();
+  const platform = new Platform(environments.production, input, store, true);
+  platform.secretNames = async () => ["ALERT_EMAIL"];
+  const sent: unknown[] = [];
+  platform.wrangler = async (_worker, _argv, body) => {
+    sent.push(JSON.parse(body!));
+    return "";
+  };
+  const status = workers.find((worker) => worker.id === "status")!;
+  await platform.installSecrets(status, { ALERT_EMAIL: "old@example.test" });
+  await platform.installSecrets(status, { ALERT_EMAIL: "old@example.test" });
+  await platform.installSecrets(status, { ALERT_EMAIL: "new@example.test" });
+  expect(sent).toEqual([{ ALERT_EMAIL: "old@example.test" }, { ALERT_EMAIL: "new@example.test" }]);
+});
+
 test("release artifact list includes Sierra and CASM for each of the four declared classes", () => {
   expect(artifactFiles).toHaveLength(8);
   expect(new Set(artifactFiles.map((file) => file.packageName))).toEqual(new Set(["ledger", "mmr", "collectibles"]));

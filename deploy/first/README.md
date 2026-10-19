@@ -155,10 +155,9 @@ payouts require the owner. The gameplay report never controls shard admission.
 
 ## Alerts
 
-Setup asks for an alert email (`alertEmail` in `inputs.json`; add it there for a private directory set up before
-alerts). `deploy:cloudflare` gives it to the status monitor with the Resend key, and the monitor emails each component
-that stays down or degraded for two minutes, and its recovery. What each alert means and the first commands to run:
-[ON-CALL.md](./ON-CALL.md).
+Production's setup asks for an alert email (`alertEmail` in `inputs.json`) and installs it on the status monitor with
+the Resend key. Dev has none and sends no alert email: its Resend quota is shared with sign-in codes. When an alert is
+sent, what it means and the first commands to run: [ON-CALL.md](./ON-CALL.md).
 
 ## Teardown
 

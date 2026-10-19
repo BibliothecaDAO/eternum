@@ -1,8 +1,8 @@
 # On call
 
 The status monitor (`apps/status-monitor`) probes every public path once a minute and shows every component below on the
-status page. Only an outage players feel, which only the owner can end, is emailed to the address setup recorded
-(`alertEmail` in the private directory's `inputs.json`):
+status page. Only an outage players feel, which only the owner can end, is emailed, on production only, to the address
+production's setup recorded (`alertEmail` in the private directory's `inputs.json`):
 
 - the component is `play`, `accounts`, `launch` or a world (`shard:<chain>`);
 - and it has been down, not merely degraded, for ten minutes without a break.
@@ -101,6 +101,7 @@ A player's report that an action failed: every play the stamping RPC refuses is 
 
 ## Changing the alert address
 
-Edit `alertEmail` in the private directory's `inputs.json`. A new address does not replace an existing Worker secret:
-remove it first with `pnpm --dir apps/status-monitor exec wrangler secret delete ALERT_EMAIL --env staging`, then run
-`pnpm run deploy:cloudflare dev <private directory>`.
+Edit `alertEmail` in production's `inputs.json`, then run
+`pnpm run setup production "$HOME/.realms-production" --apply`. Setup re-sends a Worker secret whose value changed, so
+the status monitor's `ALERT_EMAIL` is replaced in place and alerts never stop. `deploy:cloudflare` installs no secret.
+Dev has no alert address.
