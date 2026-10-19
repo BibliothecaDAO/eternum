@@ -1,8 +1,9 @@
 import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packages/identity/src/address";
 import { RelayFailure } from "./failure";
+import { SHARD_PAGE_BLOCKS } from "./ports";
 import { hash, shortString, type RpcProvider } from "starknet";
 import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
-import { rpcAt } from "../../../packages/value-ledger/src/rpc";
+import { rpcAt, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/rpc";
 
 export interface ShardConnection {
   rpcUrl: string;
@@ -38,6 +39,8 @@ export interface ValueRow {
   transactionHash: string;
 }
 const VALUE_MODELS = ["LordsWithdrawal", "BlitzResult"] as const;
+/** Header batches in flight at once: a Worker holds at most six connections. */
+const HEADER_BATCHES_IN_FLIGHT = 4;
 
 interface EventType {
   type: string;
@@ -62,6 +65,28 @@ export class ShardReader {
     const block = await provider.getBlock(number);
     validateHeader(block, number === "latest" ? undefined : number);
     return block;
+  }
+  /** Every confirmed header from `from` to `to`, read in batches the shard's public RPC accepts. */
+  async headers(from: number, to: number): Promise<Map<number, ShardBlock>> {
+    const batches: number[][] = [];
+    for (let start = from; start <= to; start += SHARD_RPC_MAX_BATCH_CALLS)
+      batches.push(Array.from({ length: Math.min(SHARD_RPC_MAX_BATCH_CALLS, to - start + 1) }, (_, i) => start + i));
+    const headers = new Map<number, ShardBlock>();
+    for (let index = 0; index < batches.length; index += HEADER_BATCHES_IN_FLIGHT)
+      await Promise.all(
+        batches.slice(index, index + HEADER_BATCHES_IN_FLIGHT).map(async (numbers) => {
+          const blocks = await rpcBatch<unknown>(
+            this.connection.rpcUrl,
+            "starknet_getBlockWithTxHashes",
+            numbers.map((number) => ({ block_id: { block_number: number } })),
+          );
+          blocks.forEach((block, i) => {
+            validateHeader(block, numbers[i]);
+            headers.set(numbers[i]!, block);
+          });
+        }),
+      );
+    return headers;
   }
   async page(
     from: number,
@@ -97,17 +122,15 @@ export class ShardReader {
     });
     if (page.events.length > 100 || (page.continuation_token && page.continuation_token === position.token))
       throw new Error("invalid_shard_event_page");
+    if (to - from >= SHARD_PAGE_BLOCKS) throw new Error("shard_block_range_too_large");
     const headers = new Map<number, ShardBlock>([
       [from, first],
+      ...(await this.headers(from + 1, to - 1)),
       [to, block],
     ]);
-    if (to - from >= 100) throw new Error("shard_block_range_too_large");
-    for (let number = from + 1; number <= to; number++) {
-      const header = headers.get(number) ?? (await this.header(number));
-      if (!sameFelt(header.parent_hash, headers.get(number - 1)!.block_hash))
+    for (let number = from + 1; number <= to; number++)
+      if (!sameFelt(headers.get(number)!.parent_hash, headers.get(number - 1)!.block_hash))
         throw new RelayFailure({ operation: `confirmed_block_changed:${number - 1}` });
-      headers.set(number, header);
-    }
     const rows: (ValueRow & { confirmedAt: number })[] = [];
     for (const event of page.events) {
       if (

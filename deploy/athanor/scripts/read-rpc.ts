@@ -6,6 +6,7 @@ import { felt, gameInvoke, MAX_TRANSACTION_BYTES, type PlayIdentity } from "../v
 import { permitsAccountRequest, type ShardIdentity } from "./account-rpc-policy";
 import { accountRequestLimiter, rpcClientAddress } from "./rpc-client-limit";
 import { isDevShardChain } from "../../../packages/value-ledger/src/dev-shard";
+import { SHARD_RPC_MAX_BATCH_CALLS as MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/rpc";
 import { seaterAccountAddresses } from "../../../packages/value-ledger/src/shard-accounts";
 import {
   PLAY_REFUSED_CODE,
@@ -35,7 +36,6 @@ const READ_METHODS = new Set([
   "starknet_getStorageProof",
   "starknet_getCompiledCasm",
 ]);
-const MAX_BATCH_CALLS = 32;
 const PREPARATION_TIMEOUT_MS = 2000;
 const FORWARD_TIMEOUT_MS = 5000;
 type Preparation = { signal: AbortSignal; deadline: number };
@@ -256,7 +256,7 @@ async function handlePublicRequest(
     return refuse(-32700, "Invalid JSON", 400);
   }
   const calls = Array.isArray(payload) ? payload : [payload];
-  if (calls.length > MAX_BATCH_CALLS) return refuse(-32600, "RPC batch exceeds 32 calls");
+  if (calls.length > MAX_BATCH_CALLS) return refuse(-32600, `RPC batch exceeds ${MAX_BATCH_CALLS} calls`);
   if (!calls.length) return refuse(-32601, "RPC method is not public");
   if (calls.some(isWrite) && calls.some((call) => !isWrite(call))) {
     return refuse(-32600, "Mixed read and write batch refused");

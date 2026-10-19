@@ -5,7 +5,7 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ShardReader } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
-import { RelayFailure } from "./ports";
+import { RelayFailure, SHARD_PAGE_BLOCKS } from "./ports";
 import { frontierPayment } from "./adapters";
 
 const rpc = vi.hoisted(() => ({
@@ -18,9 +18,15 @@ const rpc = vi.hoisted(() => ({
   contract: vi.fn(),
   receipt: vi.fn(),
   call: vi.fn(),
+  batch: vi.fn(),
 }));
 vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
+  // A batch of header reads answers each call as the node's single read would.
+  rpcBatch: async (url: string, method: string, calls: { block_id: { block_number: number } }[]) => {
+    rpc.batch(url, method, calls.length);
+    return Promise.all(calls.map(({ block_id }) => rpc.header(block_id.block_number)));
+  },
   rpcAt: () => ({
     getEvents: rpc.events,
     getChainId: rpc.chain,
@@ -331,4 +337,22 @@ it("reads a Blitz result that a release's logic class emits under its own event 
       blockNumber: 10,
     },
   ]);
+});
+
+it("reads a full page's headers in batches the shard RPC accepts, checking each against its parent", async () => {
+  rpc.events.mockResolvedValue({ events: [] });
+  rpc.header.mockImplementation(async (number: number) => ({
+    ...header,
+    block_number: number,
+    block_hash: `0x${(number + 1).toString(16)}`,
+    parent_hash: `0x${number.toString(16)}`,
+  }));
+  const from = 1_000;
+  const page = await Effect.runPromise(fixture().ports.eventsPage(from, from + SHARD_PAGE_BLOCKS - 1, null));
+  expect(page.anchors).toHaveLength(SHARD_PAGE_BLOCKS);
+  // The 498 headers between the page's ends go in batches of at most 32, never one round trip each.
+  const batches = rpc.batch.mock.calls.map(([, method, size]) => [method, size]);
+  expect(batches.every(([method, size]) => method === "starknet_getBlockWithTxHashes" && size <= 32)).toBe(true);
+  expect(batches.reduce((total, [, size]) => total + (size as number), 0)).toBe(SHARD_PAGE_BLOCKS - 2);
+  expect(batches).toHaveLength(Math.ceil((SHARD_PAGE_BLOCKS - 2) / 32));
 });

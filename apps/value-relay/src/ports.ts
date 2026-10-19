@@ -209,3 +209,6 @@ export const relayServiceErrors = [
   "invalid_directory_shard_rpc",
   "invalid_directory_shard_url",
 ];
+
+/** The most blocks one relay page covers; every header in it is checked against its parent. */
+export const SHARD_PAGE_BLOCKS = 500;
