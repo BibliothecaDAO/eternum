@@ -802,9 +802,7 @@ function discoveryName(payload: Record<string, unknown>, store?: NativeFactStore
     (site) => site.col === toNumber(coord.x) && site.row === toNumber(coord.y) && site.alt === coord.alt,
   );
   if (!site) return undefined;
-  const structure = readStructure(site.entity_id, store);
-  if (!structure) return undefined;
   const beast = fightBeast(site.entity_id, store);
-  const kind = siteKindOf(structure.base.category);
+  const kind = siteKindOf(site.category);
   return `${beast?.name ?? ""}${kind === "Beasts" ? "" : ` ${kind}`} found`.trim();
 }

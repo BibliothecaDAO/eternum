@@ -26,6 +26,8 @@ const clear = (store: NativeFactStore, amount: bigint | null, resourceType = 23)
       },
     },
     { model: "TileOccupancy", key: "0x90", value: null },
+    { model: "Structure", key: "0x71", value: null },
+    { model: "Guard", key: "0x73", value: null },
   ]);
 };
 
@@ -86,6 +88,8 @@ describe("the marker and receipt survive occupancy and snapshots", () => {
     clear(store, 10_000_000_000n);
     expect(projection.getStructure(SITE)?.clearedSite).toBe(true);
     expect(store.entityOccupancy(1, SITE)).toBeUndefined();
+    expect(store.get("Structure", { game_id: 1, entity_id: SITE })).toBeUndefined();
+    expect(store.get("Guard", { game_id: 1, structure_id: SITE, slot: 0 })).toBeUndefined();
     store.applyFacts([
       { model: "TileOccupancy", key: "0x75", value: null },
       {
@@ -136,6 +140,9 @@ describe("the marker and receipt survive occupancy and snapshots", () => {
     ]);
     expect(projection.getArmiesAtHex(SITE_TILE)).toEqual([]);
     expect(projection.getStructure(SITE)?.clearedSite).toBe(true);
+    store.applyFacts([{ model: "ExpeditionSite", key: "0x72", value: null }]);
+    expect(projection.getStructure(SITE)).toBeUndefined();
+    expect(readClearedSite(store, 1, SITE_TILE)).toBeNull();
     projection.dispose();
   });
 });

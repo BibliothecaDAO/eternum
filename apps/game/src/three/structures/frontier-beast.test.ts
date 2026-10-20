@@ -33,6 +33,7 @@ const facts = (category: StructureType, depth = 0, initialCount = 325, remaining
     ExpeditionSite: {
       game_id: 1,
       entity_id: 9,
+      category,
       initial_guard_count: scaled(initialCount),
       row: depth * 10 + 5,
       clear: cleared ? { explorer_id: 1n, home_id: 7n, reward: null } : null,

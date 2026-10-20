@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +11,8 @@ import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";
 import { CameraView } from "../scenes/camera-view";
 import { StructureManager } from "./structure-manager";
+import { campBeside, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
+import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 
 const REALM = 7;
 
@@ -126,4 +128,39 @@ describe("a structure's guard stamina on its map plate, as the chain's time runs
     chainAt(1_000);
     expect(said()).toEqual({ current: 150, max: 150 });
   });
+});
+
+it("presents a cleared standard from its receipt after the structure and guard are gone", () => {
+  const { store, site } = campBeside();
+  store.applyFacts([
+    {
+      model: "ExpeditionSite",
+      key: "0x72",
+      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
+    },
+    { model: "Structure", key: "0x71", value: null },
+    { model: "Guard", key: "0x73", value: null },
+  ]);
+  const projection = new WorldSpatialProjection({ store });
+  projection.start();
+  expect(projection.getStructure(SITE)).toMatchObject({
+    clearedSite: true,
+    hexCoords: SITE_TILE,
+    occupierType: TileOccupier.Camp,
+  });
+  const manager = Object.assign(Object.create(StructureManager.prototype), {
+    store,
+    worldSpatialProjection: projection,
+    structureInfoCache: new Map(),
+    unpresentableStructures: new Set(),
+    metrics: { structureInfoCacheHits: 0, structureInfoCacheMisses: 0 },
+    updateTimedLabelTracking: vi.fn(),
+  }) as StructureManager;
+  expect(manager.getStructureMarkerFacts(SITE)).toEqual({
+    isAlly: false,
+    isMine: false,
+    ownerAddress: 0n,
+    structureType: StructureType.Camp,
+  });
+  projection.dispose();
 });

@@ -10,9 +10,9 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { formatCharge, formatExact, resourceName, structureName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { siteClearXp } from "./site-card-plan";
 
-const RECEIPT_MODELS = ["ExpeditionSite", "Structure"] as const;
+const RECEIPT_MODELS = ["ExpeditionSite"] as const;
 
-type ClearedSite = { site: NativeRows["ExpeditionSite"]; structure: NativeRows["Structure"] };
+type ClearedSite = { site: NativeRows["ExpeditionSite"] };
 
 /** The site's receipt lives independently of whoever now occupies its tile. */
 export function readClearedSite(
@@ -23,7 +23,7 @@ export function readClearedSite(
   const site = [...store.inGame("ExpeditionSite", gameId)].find(
     (site) => site.clear !== null && site.col === hex.col && site.row === hex.row && site.alt === hex.alt,
   );
-  return site ? { site, structure: store.require("Structure", site) } : null;
+  return site ? { site } : null;
 }
 
 export function useSelectedClearedSite(): ClearedSite | null {
@@ -44,7 +44,7 @@ export function SiteReceipt({ selected }: { selected: ClearedSite }) {
     <section aria-label="Clear reward" className="flex flex-col gap-2 text-hud-body">
       <div className="flex items-center gap-2">
         <Icon name="flag" size={24} />
-        <strong>Cleared · {structureName(selected.structure.base.category)}</strong>
+        <strong>Cleared · {structureName(selected.site.category)}</strong>
       </div>
       <div className="flex items-center gap-3" data-site-rewards>
         {reward && (

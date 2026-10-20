@@ -55,6 +55,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
     set("0x72", "ExpeditionSite", {
       game_id: 1,
       entity_id: SITE,
+      category: SITE_CATEGORY[kind],
       initial_guard_count: String(1_100n * PRECISION),
       ...SITE_TILE,
       clear: null,

@@ -2054,6 +2054,7 @@ fn assert_capture_at(
     );
     assert_eq!(site_before.initial_guard_count, (Into::<u8, u128>::into(depth) + 3) * RESOURCE_PRECISION);
     assert!(site_before.clear.is_none());
+    assert_eq!(site_before.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!((site_before.col, site_before.row, site_before.alt), (coord.x, coord.y, coord.alt));
     let camp_credit = labor_room.unwrap_or(site_before.initial_guard_count / 2);
     let camp_reward = Some(
@@ -2062,7 +2063,7 @@ fn assert_capture_at(
     let attack = Command::BattleGuard(crate::commands::Battle { attacker_id: explorer_id, defender_id: camp_id });
     let mut payout_events = snforge_std::spy_events();
     assert!(execute_in_game(d, game_id, attack, capture_at));
-    assert_eq!(structures.structure(camp).unwrap().owner, d.actor);
+    assert_site_removed(d, camp);
     assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 95);
     let site_after = snforge_std::interact_with_state(
         d.games, || {
@@ -2077,6 +2078,7 @@ fn assert_capture_at(
         },
     );
     assert!(map.occupancy(crate::geometry::tile_key(game_id, coord)).is_none());
+    assert_eq!(map.tile(crate::geometry::tile_key(game_id, coord)).unwrap(), _tile);
     for resource_type in 1_u8..39 {
         let reward = if resource_type == crate::resources::LABOR {
             camp_credit
@@ -2088,14 +2090,6 @@ fn assert_capture_at(
             *home_before.at((resource_type - 1).into()) + reward,
         );
     }
-    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: camp_id, ..essence }), 0);
-    assert_eq!(resources.resource_balance(ResourceSlot { entity_id: camp_id, resource_type: 23, ..essence }), 0);
-    assert_eq!(
-        resources
-            .resource_production(ResourceSlot { entity_id: camp_id, resource_type: 23, ..essence })
-            .production_rate,
-        0,
-    );
     assert!(!execute_in_game(d, game_id, attack, capture_at));
     assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 95);
     let mut relics = 0_u128;
@@ -2143,6 +2137,7 @@ fn assert_capture_at(
         ),
     );
     assert_eq!(troops.resolved_explorer(army_key).unwrap().troops.stamina.inline().amount, 70);
+    assert_site_removed(d, ResourceKey { game_id, entity_id: mine_id });
     let mut total_relics = 0_u128;
     for id in 39_u8..57 {
         total_relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
@@ -2153,20 +2148,7 @@ fn assert_capture_at(
     for time in array![capture_at + 4, capture_at + 29, capture_at + 89, capture_at + 139] {
         start_cheat_block_timestamp_global(time);
         start_cheat_caller_address(d.games, d.games);
-        // Neither side earns anything after the immediate capture payout.
-        resources
-            .grant_resource(
-                ResourceKey { entity_id: mine_id, ..home },
-                38,
-                0,
-                time,
-                crate::commands::resource_context(
-                    crate::commands::ExecutionContext {
-                        timestamp: time,
-                        ..crate::tests::context(d.games, (ResourceKey { entity_id: mine_id, ..home }).game_id),
-                    },
-                ),
-            );
+        // The home earns nothing further, and the cleared site has no resource owner.
         resources
             .grant_resource(
                 home,
@@ -2181,15 +2163,17 @@ fn assert_capture_at(
             );
         stop_cheat_caller_address(d.games);
         assert_eq!(resources.resource_balance(essence), baseline);
-        assert_eq!(resources.resource_balance(mine), 0);
+        assert!(!resources.has_resource(ResourceKey { game_id, entity_id: mine_id }));
     }
-    assert_eq!(resources.resource_production(mine), Default::default());
     let mut paid = 0;
     for (_, event) in payout_events.get_events().emitted_by(d.games).events.span() {
         if *event.keys.at(0) == selector!("StoryEvent") {
             let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            if let crate::ownership::Story::StructureCapturedStory(_) = story.story {
+                panic!("clear is not a capture");
+            }
             if let crate::ownership::Story::SitePayout(payout) = story.story {
                 paid += 1;
                 assert_eq!(story.owner, Some(d.actor));
@@ -2785,7 +2769,7 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
     assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool - CHEST.amount);
     let tile = crate::geometry::tile_key(game_id, coord);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
-    assert_eq!(structures.structure(site_key).unwrap().owner, d.actor);
+    assert_site_removed(d, site_key);
     assert_eq!(relics.site_chest(site_key), Some(CHEST));
     let receipt = snforge_std::interact_with_state(
         d.games, || crate::logic::expeditions::expedition_site(site_key).unwrap().clear.unwrap(),
@@ -2799,6 +2783,9 @@ fn frontier_ruin_clear_pays_its_stored_chest_into_the_realm_and_leaves_no_chest(
             let mut keys = event.keys.span().slice(1, event.keys.len() - 1);
             let mut data = event.data.span();
             let story: crate::ownership::StoryEvent = starknet::Event::deserialize(ref keys, ref data).unwrap();
+            if let crate::ownership::Story::StructureCapturedStory(_) = story.story {
+                panic!("clear is not a capture");
+            }
             if let crate::ownership::Story::SitePayout(payout) = story.story {
                 payouts += 1;
                 assert_eq!(payout.category, crate::taxonomy::RUIN_CATEGORY);
@@ -2840,7 +2827,7 @@ fn a_beast_clear_keeps_an_xp_only_receipt_and_removes_its_blocker() {
         Some(crate::expeditions::SiteClear { explorer_id: key.explorer_id, home_id: army.owner, reward: None }),
     );
     assert!(crate::progression::clear_xp(site.initial_guard_count) > 0);
-    assert_eq!(structures.structure(site_key).unwrap().owner, d.actor);
+    assert_site_removed(d, site_key);
     assert!(
         snforge_std::interact_with_state(
             d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, coord)),
@@ -3698,4 +3685,16 @@ fn open_frontier_settlement_uses_only_each_players_home_and_entry() {
             }
         },
     );
+}
+
+fn assert_site_removed(d: super::Deployment, key: ResourceKey) {
+    assert!(IStructureOperationsDispatcher { contract_address: d.games }.structure(key).is_none());
+    let guards = IGuardsDispatcher { contract_address: d.games };
+    for slot in 0_u8..4 {
+        assert_eq!(
+            guards.guard(GuardKey { game_id: key.game_id, structure_id: key.entity_id, slot }), Default::default(),
+        );
+    }
+    let resources = IResourceOperationsDispatcher { contract_address: d.games };
+    assert!(!resources.has_resource(key));
 }

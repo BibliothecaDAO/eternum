@@ -60,7 +60,7 @@ pub mod ResourcesLogic {
             let context = crate::commands::execution_context(key.game_id, context);
             let site = crate::logic::expeditions::expedition_site(key).expect('missing expedition site');
             assert!(site.clear.is_none(), "site already cleared");
-            let category = crate::logic::structures::structure(key).expect('missing site').base.category;
+            let category = site.category;
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
                 Some(crate::logic::lords_budget::pay(key, context))
             } else {
@@ -80,6 +80,7 @@ pub mod ResourcesLogic {
             } else {
                 None
             };
+            self.resources.destroy(key);
             crate::logic::expeditions::clear_site(
                 key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
             );

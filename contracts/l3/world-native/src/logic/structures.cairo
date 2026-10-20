@@ -39,7 +39,7 @@ pub mod StructureState {
     use starknet::storage::{
         StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
-    use crate::events::{RowMemberSet, RowSet};
+    use crate::events::{RowDeleted, RowMemberSet, RowSet};
     use crate::resources::ResourceKey;
     use crate::structures::StructureRecord;
 
@@ -47,6 +47,7 @@ pub mod StructureState {
     pub enum Event {
         RowSet: RowSet,
         RowMemberSet: RowMemberSet,
+        RowDeleted: RowDeleted,
     }
 
     pub fn mark_starting_troops(key: ResourceKey) {
@@ -115,6 +116,29 @@ pub mod StructureState {
             .serialize(ref values);
         emit(Event::RowSet(RowSet { version: 1, model: 'Structure', keys: keys.span(), values: values.span() }));
     }
+    pub fn remove(key: ResourceKey) {
+        assert!(crate::logic::structures::exists(key), "missing structure");
+        crate::state::write()
+            .structures
+            .structures
+            .write(
+                (key.game_id, key.entity_id),
+                StructureRecord {
+                    owner: 0.try_into().unwrap(),
+                    base: Default::default(),
+                    resources_packed: 0,
+                    metadata: Default::default(),
+                },
+            );
+        emit(
+            Event::RowDeleted(
+                RowDeleted {
+                    version: 1, model: 'Structure', keys: array![key.game_id.into(), key.entity_id.into()].span(),
+                },
+            ),
+        );
+    }
+
     pub fn transfer_owner(key: ResourceKey, owner: starknet::ContractAddress) {
         let state = crate::state::write();
         assert!(crate::logic::structures::exists(key), "missing structure");

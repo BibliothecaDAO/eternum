@@ -95,6 +95,8 @@ it.each(KINDS)("shares all verdicts and species with the card for %s, even after
             clear: { explorer_id: 201, home_id: 7, reward: null },
           },
         },
+        { model: "Structure", key: "0x71", value: null },
+        { model: "Guard", key: "0x73", value: null },
       ] as never);
     const story = buildStoryEventPresentation(battle(army, guard), store, names);
     expect(VERDICT_WORDS[result.verdict]).toBe(verdict);
@@ -112,6 +114,7 @@ it("uses the same verdict vocabulary for Frontier army fights", () => {
 
 it.each(KINDS)("names %s discovery in Events", (kind) => {
   const store = encounter(kind);
+  store.applyFacts([{ model: "Structure", key: "0x71", value: null }]);
   const presentation = buildStoryEventPresentation(
     {
       storyType: "ExplorationReward",

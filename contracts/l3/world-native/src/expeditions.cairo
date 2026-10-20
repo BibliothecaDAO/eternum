@@ -1,7 +1,7 @@
 use crate::rules::BiomeClimateConfig;
 use crate::troops::Coord;
 
-// A guarded site's kind is its structure category. The camp keeps its shared category (crate::camps).
+// A site retains its category and clear receipt after its structure and guards are removed.
 
 pub fn is_site_category(category: u8) -> bool {
     category == crate::taxonomy::CAMP_CATEGORY
@@ -12,6 +12,7 @@ pub fn is_site_category(category: u8) -> bool {
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct ExpeditionSite {
+    pub category: u8,
     pub initial_guard_count: u128,
     pub alt: bool,
     pub col: u32,

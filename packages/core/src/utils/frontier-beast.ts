@@ -57,10 +57,9 @@ export function readFrontierBeast(
   gameId: number,
   entityId: number,
 ): FrontierBeast | undefined {
-  const structure = store.get("Structure", { game_id: gameId, entity_id: entityId });
   const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
-  if (!site || !structure) return undefined;
-  const category = structure.base.category;
+  if (!site) return undefined;
+  const category = site.category;
   if (![StructureType.Ruin, StructureType.Camp, StructureType.Rift, StructureType.Beasts].includes(category))
     return undefined;
   const rules = readExpeditionRules(store, gameId);

@@ -38,8 +38,10 @@ export function ClearedSiteLab() {
           },
         },
       },
+      { model: "Structure", key: "0x71", value: null },
+      { model: "Guard", key: "0x73", value: null },
     ]);
-    return { site: source.store.require("ExpeditionSite", source.site), structure: source.structure };
+    return { site: source.store.require("ExpeditionSite", source.site) };
   }, [kind, reward?.amount, reward?.resourceType]);
   const name = structureName(fixture.structure.base.category);
 

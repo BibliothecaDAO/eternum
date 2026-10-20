@@ -30,6 +30,7 @@ const site = (store: NativeFactStore, cleared: boolean) =>
       value: {
         game_id: GAME,
         entity_id: 42,
+        category: StructureType.Camp,
         initial_guard_count: String(100n * BigInt(RESOURCE_PRECISION)),
         alt: false,
         col: 1,

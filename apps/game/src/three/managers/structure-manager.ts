@@ -543,6 +543,26 @@ export class StructureManager {
     const renderInfo = getStructureInfoFromTileOccupier(renderable.occupierType);
     if (!renderInfo || renderInfo.reserved) return undefined;
 
+    if (renderable.clearedSite) {
+      return {
+        entityId: renderable.entityId,
+        structureName: structureName(renderInfo.type),
+        hexCoords: {
+          col: renderable.hexCoords.col - FELT_CENTER(),
+          row: renderable.hexCoords.row - FELT_CENTER(),
+        },
+        stage: 0,
+        level: 0,
+        initialized: false,
+        isMine: false,
+        isAlly: false,
+        owner: { address: 0n, ownerName: "", guildName: "" },
+        structureType: renderInfo.type,
+        hasWonder: false,
+        clearedSite: true,
+      };
+    }
+
     const structureComponent = this.store?.get("Structure", {
       game_id: configManager.getActiveGameId(),
       entity_id: renderable.entityId,
@@ -586,12 +606,9 @@ export class StructureManager {
       cosmeticId: cosmetic.skin.cosmeticId,
       cosmeticAssetPaths: cosmetic.skin.assetPaths,
       usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
-      attachments: renderable.clearedSite ? [] : cosmetic.attachments,
-      clearedSite: renderable.clearedSite,
+      attachments: cosmetic.attachments,
       siteKind: this.resolveSiteKind(renderable.entityId, renderInfo.type),
-      guardArmies: renderable.clearedSite
-        ? undefined
-        : guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots()),
+      guardArmies: guardsToTell(this.resolveGuardArmies(guards), configManager.hasGuardSlots()),
       activeProductions: this.resolveActiveProductions(renderable.entityId),
       incomingTroopArrivals: this.incomingTroopArrivalsByStructure.get(renderable.entityId),
       attackedFromDegrees: battleDirections?.attackedFromDegrees,

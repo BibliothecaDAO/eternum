@@ -467,6 +467,30 @@
         ]
       },
       {
+        "name": "RowDeleted",
+        "prefix": [
+          "0x39e1872116c7663c8921f9ee75ba10cccc267663c7087f62af7ae609f2dc747",
+          "0x34ee03e4825cf92d0335b5828e3389af6c145ecff05fce078c3753d871cc7f5"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
         "name": "RowSet",
         "prefix": [
           "0xb320b5e6e914bcfb0f18a720f2bd58d60b8965aebf70a049034844d40ad710",
@@ -4680,6 +4704,12 @@
       ],
       "members": [
         {
+          "name": "category",
+          "type": "core::integer::u8",
+          "id": "0x63617465676f7279",
+          "feltLength": 1
+        },
+        {
           "name": "initial_guard_count",
           "type": "core::integer::u128",
           "id": "0x696e697469616c5f67756172645f636f756e74",
@@ -8790,6 +8820,10 @@
       "type": "struct",
       "name": "world_native::expeditions::ExpeditionSite",
       "members": [
+        {
+          "name": "category",
+          "type": "core::integer::u8"
+        },
         {
           "name": "initial_guard_count",
           "type": "core::integer::u128"
@@ -13061,5 +13095,5 @@
       ]
     }
   },
-  "identity": "066bd26329065436e9b5f7243dab4551e2a922bedb964db2d7e9e4d206a100c3"
+  "identity": "59f5ee157bccf4670a2ae27732e6f5498ea1a06908b0da0e38346d8ce563089e"
 }

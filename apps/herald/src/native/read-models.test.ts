@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildNativeDirectory, buildNativeLeaderboard, directoryFact } from "./read-models";
 import {
   structureValue,
+  explorerValue,
   pointsAward,
   manifest,
   seedDerivedRows,
@@ -213,6 +214,80 @@ describe("native directory and leaderboard", () => {
       mode: "blitz",
       expedition: null,
     });
+  });
+
+  it("keeps the player's directory and the clear receipt when a Frontier site and its guard are removed", () => {
+    const { fold, native, decoder } = world();
+    const site = {
+      category: 9,
+      initial_guard_count: 1_000_000_000_000n,
+      alt: false,
+      col: 1764,
+      row: 50,
+      clear: new CairoOption(CairoOptionVariant.None),
+    };
+    native.applyReceipt(
+      fold,
+      receipt([
+        ...seedDerivedRows(fold, decoder, [gameEvent("1", "0", "0", "101"), rulesEvent("1", "120")]),
+        structure("7", "1", "0x111"),
+        structure("6", "9", "0x0"),
+        rowEvent("ExpeditionSite", ["1", "6"], site),
+        rowEvent("Guard", ["1", "6", "0"], {
+          troops: explorerValue("6", site.initial_guard_count).troops,
+          destroyed_tick: 0,
+        }),
+        rowEvent("TileOccupancy", ["1", "0", "1764", "50"], { entity_id: "6", category: "42", is_structure: true }),
+      ]),
+      11,
+      0,
+    );
+    const input = { chain: "madara", confirmedBlock: 12, timestamp: 30, fold, playerAddress: "0x111" };
+    const before = buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state;
+    const deleted = (model: string, keys: string[]) => ({
+      from_address: manifest.world.address,
+      keys: [
+        ...schema.games.events.find(({ name }) => name === "RowDeleted")!.prefix,
+        "1",
+        schema.models.find(({ name }) => name === model)!.identity,
+      ],
+      data: [String(keys.length), ...keys],
+    });
+    native.applyReceipt(
+      fold,
+      receipt([
+        rowEvent("ExpeditionSite", ["1", "6"], {
+          ...site,
+          clear: new CairoOption(CairoOptionVariant.Some, {
+            explorer_id: 201n,
+            home_id: 7n,
+            reward: new CairoOption(CairoOptionVariant.Some, { resource_type: 38, amount: 3_000_000_000_000n }),
+          }),
+        }),
+        deleted("TileOccupancy", ["1", "0", "1764", "50"]),
+        deleted("Guard", ["1", "6", "0"]),
+        deleted("Structure", ["1", "6"]),
+      ]),
+      12,
+      0,
+    );
+    const after = buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state;
+    expect(after).toEqual(before);
+    expect(after!.structures.map(({ entity_id }) => entity_id)).toEqual([7]);
+    expect(fold.modelRows("Structure").map(({ value }) => value.entity_id)).toEqual(["0x7"]);
+    expect(fold.structurePosition("1", "6")).toBeUndefined();
+    expect(fold.modelRows("Guard")).toEqual([]);
+    const retained = fold.modelRows("ExpeditionSite");
+    expect(retained).toHaveLength(1);
+    expect(retained[0]!.value).toMatchObject({ category: "0x9", col: "0x6e4", row: "0x32" });
+    const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
+    expect(restored.modelRows("ExpeditionSite")).toEqual(retained);
+    expect(buildNativeDirectory({ ...input, fold: restored })).toEqual(buildNativeDirectory(input));
+    native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "101")]), 13, 0);
+    fold.evictFinalizedGames();
+    expect(buildNativeDirectory(input).games.find(({ game_id }) => game_id === 1)!.player_state!.structures).toEqual(
+      after!.structures,
+    );
   });
 
   it("publishes a structure level-up and invalidates the directory fact", () => {

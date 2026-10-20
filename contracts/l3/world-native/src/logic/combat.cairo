@@ -438,14 +438,16 @@ pub fn try_capture(
         || crate::logic::guards::GuardState::next(key, target.base.troop_max_guard_count).is_some() {
         return;
     }
-    crate::logic::guards::GuardState::reset(key);
-    crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
-        crate::guards::IStructureCaptureLibraryDispatcher { class_hash: classes(key.game_id).structures.read() },
-        key,
-        explorer.owner,
-        context.timestamp,
-        crate::commands::action_context(context),
-    );
+    if rules.day_unit_seconds == 0 {
+        crate::logic::guards::GuardState::reset(key);
+        crate::guards::IStructureCaptureDispatcherTrait::capture_structure(
+            crate::guards::IStructureCaptureLibraryDispatcher { class_hash: classes(key.game_id).structures.read() },
+            key,
+            explorer.owner,
+            context.timestamp,
+            crate::commands::action_context(context),
+        );
+    }
     if target.owner == 0.try_into().unwrap() {
         crate::relics::ICaptureRewardsDispatcherTrait::grant_capture_rewards(
             crate::relics::ICaptureRewardsLibraryDispatcher { class_hash: classes(key.game_id).relics.read() },

@@ -224,25 +224,28 @@ const resolveChestRenderable = (tile: Tile | undefined): ChestSpatialRenderable 
   });
 };
 
-/** Realms follow their daily site; cleared sites retain their discovery coordinate without occupying it. */
+/** Cleared markers belong to the retained receipt, independently of structures and tile occupants. */
+const resolveClearedSiteRenderable = (
+  site: NativeRows["ExpeditionSite"] | undefined,
+): StructureSpatialRenderable | undefined => {
+  if (!site?.clear) return undefined;
+  return {
+    kind: "structure",
+    spatialId: `entity:${safeInteger(site.entity_id)}`,
+    entityId: safeInteger(site.entity_id),
+    reserved: false,
+    clearedSite: true,
+    hexCoords: { alt: site.alt, col: site.col, row: site.row },
+    occupierType: TileOccupier[siteKindOf(site.category)],
+  };
+};
+
+/** Realms follow their daily site without occupying it. */
 const resolveUnoccupiedStructureRenderable = (
   store: Pick<NativeFactStore, "get" | "require" | "entityOccupancy">,
   structure: NativeRows["Structure"] | undefined,
 ): StructureSpatialRenderable | undefined => {
   if (!structure) return undefined;
-  const cleared = store.get("ExpeditionSite", structure);
-  if (cleared?.clear) {
-    const kind = siteKindOf(structure.base.category);
-    return {
-      kind: "structure",
-      spatialId: `entity:${safeInteger(structure.entity_id)}`,
-      entityId: safeInteger(structure.entity_id),
-      reserved: false,
-      clearedSite: true,
-      hexCoords: { alt: cleared.alt, col: cleared.col, row: cleared.row },
-      occupierType: TileOccupier[kind],
-    };
-  }
   if (!isExpeditionRealm(store, structure)) return undefined;
   const position = structureMapPosition(store, structure);
   if (!position) return undefined;
@@ -647,6 +650,11 @@ export class WorldSpatialProjection {
       if (retained) nextStructures.set(retained.spatialId, retained);
     }
 
+    for (const [, site] of this.store.entries("ExpeditionSite")) {
+      const marker = projectedRow("cleared site", () => resolveClearedSiteRenderable(site));
+      if (marker) nextStructures.set(marker.spatialId, marker);
+    }
+
     this.chestIndex.replace(nextChests);
     this.structureIndex.replace(nextStructures);
     this.armyIndex.replace(nextArmies);
@@ -700,7 +708,9 @@ export class WorldSpatialProjection {
 
   private applyStructureEntityUpdate(key: NativeKeys["Structure"]): void {
     const structure = this.store.get("Structure", key);
-    const retained = resolveUnoccupiedStructureRenderable(this.store, structure);
+    const retained =
+      resolveClearedSiteRenderable(this.store.get("ExpeditionSite", key)) ??
+      resolveUnoccupiedStructureRenderable(this.store, structure);
     const occupancy = this.store.entityOccupancy(key.game_id, key.entity_id);
     const occupied = occupancy ? resolveStructureRenderable(this.tileAt(occupancy)) : undefined;
     this.structureIndex.update(`entity:${safeInteger(key.entity_id)}`, retained ?? occupied);
