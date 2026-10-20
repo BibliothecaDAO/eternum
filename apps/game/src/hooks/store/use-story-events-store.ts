@@ -242,6 +242,12 @@ export interface StoryRead {
   story?: string;
   owner?: string;
   entityId?: number;
+  /**
+   * The read must hold every story through the block the store's facts were last read at (the connection store's
+   * snapshotBlock). An answer behind that block is read again once a newer snapshot or confirmed head than the one it
+   * was asked under arrives, so recovery belongs to the snapshot applied now, whatever order the two arrive in.
+   */
+  coverSnapshot?: boolean;
 }
 
 /**
@@ -279,11 +285,25 @@ const latestStories = (events: StoryEventData[], limit: number): StoryEventData[
   return [...latest.values()].toSorted(newestOnChainFirst).slice(0, limit);
 };
 
-/** A read's stories, and the block Herald's history held every story through when it answered (null: not known). */
+/** A read's stories, the block Herald's history held every story through when it answered (null: not known), and
+ * the recovery signals that stood when it was asked. */
 interface StoryReadPage {
   stories: StoryEventData[];
   completeThroughBlock: number | null;
+  askedUnder: RecoverySignals;
 }
+
+/** What can let history behind the snapshot catch up: a newer snapshot to cover, or a newer confirmed head Herald
+ * folded into its history. */
+interface RecoverySignals {
+  snapshotBlock: number | null;
+  confirmedHead: number | null;
+}
+
+const currentRecoverySignals = (): RecoverySignals => {
+  const { snapshotBlock, lastConfirmedBlock } = useConnectionStore.getState();
+  return { snapshotBlock, confirmedHead: lastConfirmedBlock };
+};
 
 /** A read's page of Herald's history, as stories. */
 const fetchStoryRead = async (
@@ -291,6 +311,7 @@ const fetchStoryRead = async (
   scope: StoryEventScope,
   { limit, story, owner, entityId }: StoryRead,
 ): Promise<StoryReadPage> => {
+  const askedUnder = currentRecoverySignals();
   const page = await fetchHeraldGameHistory(shard, scope.gameId, {
     limit,
     ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
@@ -301,8 +322,27 @@ const fetchStoryRead = async (
     const story = historyStoryEvent(event, scope);
     return story ? [story] : [];
   });
-  return { stories, completeThroughBlock: page.complete_through_block };
+  return { stories, completeThroughBlock: page.complete_through_block, askedUnder };
 };
+
+/** An answer that holds history through a block before the snapshot applied now: it cannot vouch for those facts. */
+const isBehindSnapshot = (page: StoryReadPage, snapshotBlock: number | null): boolean =>
+  snapshotBlock !== null && page.completeThroughBlock !== null && page.completeThroughBlock < snapshotBlock;
+
+const signalsMovedSince = (page: StoryReadPage, now: RecoverySignals): boolean =>
+  page.askedUnder.snapshotBlock !== now.snapshotBlock || page.askedUnder.confirmedHead !== now.confirmedHead;
+
+/**
+ * A settled answer behind the snapshot is worth reading again only under a signal it was not asked under: the same
+ * history asked again answers the same. A failed read or one whose coverage Herald does not know stays as it is, and
+ * the read stays incomplete.
+ */
+const shouldCatchUp = (query: UseQueryResult<StoryReadPage>, now: RecoverySignals): boolean =>
+  query.data !== undefined &&
+  !query.isFetching &&
+  !query.isError &&
+  isBehindSnapshot(query.data, now.snapshotBlock) &&
+  signalsMovedSince(query.data, now);
 
 /** Each read's query as it stands: React Query keeps the list the same object until one of them changes. */
 const sameResults = (results: UseQueryResult<StoryReadPage>[]) => results;
@@ -352,6 +392,20 @@ export const useStoryReads = (reads: StoryRead[]) => {
     for (const query of queries) if (!query.isError) void query.refetch({ cancelRefetch: false });
   }, [handshake, readsKey]);
 
+  // A handshake that meets an older read in flight shares it, so a covering read's answer can land behind a snapshot
+  // that overtook it; it then catches up once per signal it was not asked under, and never on its own answer.
+  const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
+  const confirmedHead = useConnectionStore((state) => state.lastConfirmedBlock);
+  const catchUp = queries.map(
+    (query, index) => Boolean(reads[index].coverSnapshot) && shouldCatchUp(query, { snapshotBlock, confirmedHead }),
+  );
+  const catchUpKey = queries.map((query, index) => (catchUp[index] ? query.dataUpdatedAt : "-")).join();
+  useEffect(() => {
+    queries.forEach((query, index) => {
+      if (catchUp[index]) void query.refetch({ cancelRefetch: false });
+    });
+  }, [catchUpKey]);
+
   const delivered = useMemo(
     () => reads.map((read) => streamed.filter((event) => matchesRead(event, scopeKey, read))),
     [streamed, scopeKey, readsKey],
@@ -384,11 +438,11 @@ export const useStoryReads = (reads: StoryRead[]) => {
 };
 
 /** One story read: its stories, its query's status, and the block its history was complete through. */
-export const useStoryEvents = (limit: number = 100, story?: string, owner?: string) => {
+export const useStoryEvents = (limit: number = 100, story?: string, owner?: string, coverSnapshot = false) => {
   const {
     data,
     queries: [query],
-  } = useStoryReads([{ limit, story, owner }]);
+  } = useStoryReads([{ limit, story, owner, coverSnapshot }]);
   return { ...query, data, completeThroughBlock: query.data?.completeThroughBlock ?? null };
 };
 

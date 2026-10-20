@@ -47,9 +47,9 @@ const usePlayerCombatHistory = (): CombatHistory | null => {
   const player = useAccountStore((state) => state.account?.address);
   const streamGeneration = useConnectionStore((state) => state.lastGlobalHandshake);
   const snapshotBlock = useConnectionStore((state) => state.snapshotBlock);
-  const battles = useStoryEvents(COMBAT_HISTORY, "BattleEvent", player);
-  const raids = useStoryEvents(COMBAT_HISTORY, "RaidEvent", player);
-  const transfers = useStoryEvents(COMBAT_HISTORY, "TroopsTransferred", player);
+  const battles = useStoryEvents(COMBAT_HISTORY, "BattleEvent", player, true);
+  const raids = useStoryEvents(COMBAT_HISTORY, "RaidEvent", player, true);
+  const transfers = useStoryEvents(COMBAT_HISTORY, "TroopsTransferred", player, true);
   const reads = [battles, raids, transfers];
   const known = Boolean(player) && reads.every((read) => read.isSuccess);
   const complete =

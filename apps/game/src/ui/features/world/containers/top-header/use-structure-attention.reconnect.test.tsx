@@ -187,3 +187,155 @@ it("recovers an attack after a reload once history holds every story through the
 it("stays silent after a reload while history is behind the snapshot's block", async () => {
   expect(await attackedAfterReload(34)).toBe("0");
 });
+
+const mountProbe = async () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  const host = document.createElement("div");
+  root = createRoot(host);
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
+  const show = () =>
+    root!.render(
+      <QueryClientProvider client={client}>
+        <Probe />
+      </QueryClientProvider>,
+    );
+  await act(async () => {
+    show();
+  });
+  return { host, show };
+};
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+/** Lets the reads and their renders settle: up to ten rounds, stopping once `done` holds. */
+const settleUntil = async (done: () => boolean) => {
+  for (let round = 0; round < 10 && !done(); round += 1) await settle();
+};
+
+it("re-reads history a replacement snapshot overtook in flight, and recovers the attack", async () => {
+  resetGameSyncStoryEvents();
+  Object.assign(world, { now: 60, end: 100 });
+  useConnectionStore.getState().recordSnapshotBlock(30);
+  // Every read observed history through 34; their answers are held.
+  const held: Array<() => Promise<void>> = [];
+  const heldRead = (_shard: unknown, _game: number, read: { model?: string }) =>
+    new Promise((resolve) => {
+      held.push(async () => resolve(await historyWithHostileHit(30, 34)(_shard, _game, read)));
+    });
+  history.mockImplementation(heldRead as never);
+  const { host, show } = await mountProbe();
+  expect(held).toHaveLength(3);
+  // History commits through 40, then a replacement snapshot at 35 applies; its handshake meets the reads in flight.
+  history.mockImplementation(historyWithHostileHit(30, 40) as never);
+  const callsBefore = history.mock.calls.length;
+  await act(async () => {
+    useConnectionStore.getState().recordSnapshotBlock(35);
+    useConnectionStore.getState().recordGlobalHandshake();
+    show();
+  });
+  await act(async () => {
+    await Promise.all(held.map((release) => release()));
+  });
+  await settleUntil(() => host.textContent === "1");
+  // The overtaken answers (through 34) are behind the snapshot: each read went back for history through 40.
+  expect(history.mock.calls.length - callsBefore).toBeGreaterThanOrEqual(3);
+  expect(host.textContent).toBe("1");
+});
+
+it("re-reads history behind the snapshot on each confirmed head, and stops once it is covered", async () => {
+  resetGameSyncStoryEvents();
+  Object.assign(world, { now: 60, end: 100 });
+  useConnectionStore.getState().recordSnapshotBlock(35);
+  history.mockImplementation(historyWithHostileHit(30, 34) as never);
+  const { host } = await mountProbe();
+  await settle();
+  expect(host.textContent).toBe("0"); // history is behind the snapshot: no alert from it yet
+  history.mockImplementation(historyWithHostileHit(30, 36) as never);
+  await act(async () => {
+    useConnectionStore.getState().recordConfirmedHead(36);
+  });
+  await settleUntil(() => host.textContent === "1");
+  expect(host.textContent).toBe("1");
+  const covered = history.mock.calls.length;
+  await act(async () => {
+    useConnectionStore.getState().recordConfirmedHead(37);
+  });
+  await settle();
+  expect(history.mock.calls.length).toBe(covered); // covered reads are not read again on a head
+});
+
+it("does not read an unchanged answer behind the snapshot again without a new head or snapshot", async () => {
+  resetGameSyncStoryEvents();
+  Object.assign(world, { now: 60, end: 100 });
+  useConnectionStore.getState().recordSnapshotBlock(35);
+  // History stays through 34; each answer is held until its wave is released.
+  const held: Array<() => Promise<void>> = [];
+  const heldRead = (_shard: unknown, _game: number, read: { model?: string }) =>
+    new Promise((resolve) => {
+      held.push(async () => resolve(await historyWithHostileHit(30, 34)(_shard, _game, read)));
+    });
+  history.mockClear();
+  history.mockImplementation(heldRead as never);
+  const { host, show } = await mountProbe();
+  const counts = [history.mock.calls.length];
+  for (let wave = 0; wave < 3; wave += 1) {
+    // The HUD clock renders while the reads are held: neither a head nor a snapshot.
+    await act(async () => {
+      world.now += 1;
+      show();
+    });
+    await act(async () => {
+      await Promise.all(held.splice(0).map((release) => release()));
+    });
+    await settle();
+    counts.push(history.mock.calls.length);
+  }
+  expect(counts).toEqual([3, 3, 3, 3]);
+  expect(host.textContent).toBe("0");
+});
+
+const stuckAnswers = {
+  "history stuck behind the snapshot": { read: historyWithHostileHit(30, 34), readsPerHead: 3 },
+  "history whose coverage Herald does not know": {
+    read: async () => ({ items: [], complete_through_block: null, limit: 100, offset: 0, total: 0 }),
+    readsPerHead: 0,
+  },
+  "a failed history read": {
+    read: async () => {
+      throw new Error("history unavailable");
+    },
+    readsPerHead: 0,
+  },
+};
+
+it.each(Object.entries(stuckAnswers))(
+  "reads %s at most once per confirmed head, and stays without the alert",
+  async (_answer, { read, readsPerHead }) => {
+    resetGameSyncStoryEvents();
+    Object.assign(world, { now: 60, end: 100 });
+    useConnectionStore.getState().recordSnapshotBlock(35);
+    history.mockClear();
+    history.mockImplementation(read as never);
+    const { host, show } = await mountProbe();
+    await settle();
+    expect(history).toHaveBeenCalledTimes(3);
+    for (const head of [36, 37, 38, 39, 40]) {
+      await act(async () => {
+        useConnectionStore.getState().recordConfirmedHead(head);
+      });
+      await settle();
+    }
+    expect(history).toHaveBeenCalledTimes(3 + 5 * readsPerHead);
+    // With no further head, renders of the clock read nothing.
+    for (let tick = 0; tick < 3; tick += 1) {
+      await act(async () => {
+        world.now += 1;
+        show();
+      });
+      await settle();
+    }
+    expect(history).toHaveBeenCalledTimes(3 + 5 * readsPerHead);
+    expect(host.textContent).toBe("0");
+  },
+);
