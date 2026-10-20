@@ -21,22 +21,34 @@ export interface FrontierCoachStep {
  * now (a guard in reach, the army's next tier, the castle's next level, a research tier); then the day's loop,
  * exploring (and how, once the army is selected), today's camp, and rest once every army is out of stamina. It reads
  * the realm's facts (next-up-facts.ts), so a step holds while its state does and goes once it is done; nothing is
- * "seen". The numbers come from the game's rules, never typed into a line; a line whose number is unknown says it
- * without one.
+ * "seen". A step follows where the player is: in the realm, a realm step says what to do there instead of offering
+ * the way in. The numbers come from the game's rules, never typed into a line; a line whose number is unknown says
+ * it without one.
  */
 export const frontierCoachSteps = (
   facts: NextUpFacts,
-  { pointer, tips }: { pointer: Pointer; tips: boolean },
+  { pointer, where, tips }: { pointer: Pointer; where: Where; tips: boolean },
 ): FrontierCoachStep[] => {
   if (!facts.realm) return [];
+  const at = { pointer, where };
   // With tips off (Settings), Next up holds the alerts alone, as Blitz's does.
-  return tips ? [...alerts(facts), ...dayLoop(facts, pointer)] : alerts(facts);
+  return tips ? [...alerts(facts, at), ...dayLoop(facts, at)] : alerts(facts, at);
 };
 
 /** How the player gives a map order: a mouse right-clicks a tile, a touch screen holds it. */
 type Pointer = "mouse" | "touch";
+/** The view the player is in: their realm's board, or the world map. */
+type Where = "realm" | "map";
+type At = { pointer: Pointer; where: Where };
 
-const alerts = (facts: NextUpFacts): FrontierCoachStep[] => [
+/** A step done in the realm: from the map, its button opens the realm; in the realm, its line says what to do there. */
+const realmStep = (key: string, line: string, there: string, { where }: At): FrontierCoachStep =>
+  where === "realm" ? step(key, there) : step(key, line, "Open the realm", "realm");
+
+/** The word for picking something on screen: a mouse clicks, a touch screen taps. */
+const press = (pointer: Pointer) => (pointer === "touch" ? "tap" : "click");
+
+const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
   ...(facts.lastHour ? [lastHour(facts)] : []),
   ...(facts.storeFull
     ? [
@@ -50,11 +62,11 @@ const alerts = (facts: NextUpFacts): FrontierCoachStep[] => [
     : []),
   ...(facts.populationFull
     ? [
-        step(
+        realmStep(
           "population-full",
           `No population left: every building takes some. A Hut adds ${facts.rules?.hutAdds ?? "more"}.`,
-          "Open the realm",
-          "realm",
+          `No population left: every building takes some. A Hut adds ${facts.rules?.hutAdds ?? "more"}: ${press(at.pointer)} an open plot to build one.`,
+          at,
         ),
       ]
     : []),
@@ -68,11 +80,17 @@ const lastHour = ({ rules }: NextUpFacts): FrontierCoachStep =>
       : "The day ends within the hour, and armies still out end with it.",
   );
 
-const dayLoop = (facts: NextUpFacts, pointer: Pointer): FrontierCoachStep[] => {
+const dayLoop = (facts: NextUpFacts, at: At): FrontierCoachStep[] => {
+  const { pointer } = at;
   const steps: FrontierCoachStep[] = [];
   if (!facts.barracks)
     steps.push(
-      step("barracks", "Build barracks: only barracks train troops for your armies.", "Open the realm", "realm"),
+      realmStep(
+        "barracks",
+        "Build barracks: only barracks train troops for your armies.",
+        `Build barracks: ${press(at.pointer)} an open plot, then Barracks. Only barracks train troops for your armies.`,
+        at,
+      ),
     );
   if (facts.armies === 0 && (facts.troopsAtHome ?? 0) >= 1)
     steps.push(
@@ -85,10 +103,7 @@ const dayLoop = (facts: NextUpFacts, pointer: Pointer): FrontierCoachStep[] => {
     );
   if (facts.guardInReach)
     steps.push(
-      step(
-        "guard",
-        `A guard stands beside your army: ${pointer === "touch" ? "tap" : "click"} it to see the fight before you choose.`,
-      ),
+      step("guard", `A guard stands beside your army: ${press(pointer)} it to see the fight before you choose.`),
     );
   if (facts.armyTierAffordable)
     steps.push(
@@ -101,7 +116,12 @@ const dayLoop = (facts: NextUpFacts, pointer: Pointer): FrontierCoachStep[] => {
     );
   if (facts.castleAffordable)
     steps.push(
-      step("castle", "Enough labor: your castle can grow, with more plots and army slots.", "Open the realm", "realm"),
+      realmStep(
+        "castle",
+        "Enough labor: your castle can grow, with more plots and army slots.",
+        `Enough labor: ${press(at.pointer)} your castle to grow it, with more plots and army slots.`,
+        at,
+      ),
     );
   if (facts.typeTierAffordable)
     steps.push(

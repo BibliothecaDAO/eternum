@@ -1121,7 +1121,7 @@ const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
       storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
       ...lab.nextUp,
     },
-    { pointer: desktop ? "mouse" : "touch", tips: true },
+    { pointer: desktop ? "mouse" : "touch", where: "map", tips: true },
   ).map((step) => ({
     key: step.key,
     kind: "order",

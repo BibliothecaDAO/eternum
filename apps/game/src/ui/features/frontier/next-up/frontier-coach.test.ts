@@ -27,8 +27,12 @@ const MORNING: NextUpFacts = {
   },
 };
 
-const lines = (facts: Partial<NextUpFacts>, pointer: "mouse" | "touch" = "mouse") =>
-  frontierCoachSteps({ ...MORNING, ...facts }, { pointer, tips: true }).map(({ line, verb, act }) => [line, verb, act]);
+const lines = (facts: Partial<NextUpFacts>, pointer: "mouse" | "touch" = "mouse", where: "realm" | "map" = "map") =>
+  frontierCoachSteps({ ...MORNING, ...facts }, { pointer, where, tips: true }).map(({ line, verb, act }) => [
+    line,
+    verb,
+    act,
+  ]);
 
 describe("Frontier's Next up", () => {
   it("starts a realm's first morning with barracks, then the deploy, each with its button", () => {
@@ -36,6 +40,33 @@ describe("Frontier's Next up", () => {
       ["Build barracks: only barracks train troops for your armies.", "Open the realm", "realm"],
       ["Deploy your armies: one strong army, two scouts. They stay out until the day ends.", "Deploy", "deploy"],
     ]);
+  });
+
+  it("says in the realm what to do there, where the map offers the way in, and offers no button that goes nowhere", () => {
+    expect(lines({}, "mouse", "realm")[0]).toEqual([
+      "Build barracks: click an open plot, then Barracks. Only barracks train troops for your armies.",
+      null,
+      null,
+    ]);
+    expect(lines({}, "touch", "realm")[0][0]).toBe(
+      "Build barracks: tap an open plot, then Barracks. Only barracks train troops for your armies.",
+    );
+    expect(lines({ barracks: true, armies: 1, populationFull: true }, "mouse", "realm")[0]).toEqual([
+      "No population left: every building takes some. A Hut adds 6: click an open plot to build one.",
+      null,
+      null,
+    ]);
+    expect(lines({ barracks: true, armies: 1, castleAffordable: true }, "mouse", "realm")[0]).toEqual([
+      "Enough labor: click your castle to grow it, with more plots and army slots.",
+      null,
+      null,
+    ]);
+    // In the realm every remaining button goes somewhere: none of them is the realm itself.
+    const inRealm = frontierCoachSteps(
+      { ...MORNING, populationFull: true, castleAffordable: true },
+      { pointer: "mouse", where: "realm", tips: true },
+    );
+    expect(inRealm.filter((step) => step.act === "realm")).toEqual([]);
   });
 
   it("sends an army exploring, then says how on the map once it is selected, with the rules' numbers", () => {
@@ -60,7 +91,7 @@ describe("Frontier's Next up", () => {
   it("puts the day's alerts first: the last hour, a full store, no population", () => {
     const keys = frontierCoachSteps(
       { ...MORNING, barracks: true, lastHour: true, storeFull: "wheat", populationFull: true },
-      { pointer: "mouse", tips: true },
+      { pointer: "mouse", where: "map", tips: true },
     ).map(({ key }) => key);
     expect(keys).toEqual(["frontier:last-hour", "frontier:store-full", "frontier:population-full", "frontier:deploy"]);
     expect(lines({ barracks: true, lastHour: true })[0][0]).toBe(
@@ -80,7 +111,7 @@ describe("Frontier's Next up", () => {
         castleAffordable: true,
         typeTierAffordable: "Farm",
       },
-      { pointer: "mouse", tips: true },
+      { pointer: "mouse", where: "map", tips: true },
     ).map(({ key }) => key);
     // What can be taken now leads; exploring, the day's loop, follows, then the camp it heads for.
     expect(keys).toEqual([
@@ -102,9 +133,10 @@ describe("Frontier's Next up", () => {
 
   it("holds the alerts alone with tips off", () => {
     const keys = (tips: boolean) =>
-      frontierCoachSteps({ ...MORNING, lastHour: true, storeFull: "wheat" }, { pointer: "mouse", tips }).map(
-        ({ key }) => key,
-      );
+      frontierCoachSteps(
+        { ...MORNING, lastHour: true, storeFull: "wheat" },
+        { pointer: "mouse", where: "map", tips },
+      ).map(({ key }) => key);
     expect(keys(false)).toEqual(["frontier:last-hour", "frontier:store-full"]);
     expect(keys(true)).toEqual(["frontier:last-hour", "frontier:store-full", "frontier:barracks", "frontier:deploy"]);
   });

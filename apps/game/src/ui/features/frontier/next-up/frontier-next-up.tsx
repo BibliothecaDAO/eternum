@@ -1,5 +1,6 @@
 import { useArmyOrder } from "@/ui/features/frontier/hud/army-order";
 import { useLayout } from "@/shell/frame/layout";
+import { useQuery } from "@/hooks/helpers/use-query";
 import { useNavigateToMapView, useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
@@ -36,7 +37,12 @@ export const FrontierNextUp = ({
   const facts = useNextUpFacts(rules, realm);
   const tips = useWorldAppearanceStore((state) => state.nextUpTips);
   const take = useTakeStep(realm, facts, onSurface);
-  const steps = frontierCoachSteps(facts, { pointer: isCoarsePointer() ? "touch" : "mouse", tips });
+  const { isMapView } = useQuery();
+  const steps = frontierCoachSteps(facts, {
+    pointer: isCoarsePointer() ? "touch" : "mouse",
+    where: isMapView ? "map" : "realm",
+    tips,
+  });
   // A phone's pinned order draws its own bar with its verb: that is the action at hand.
   const order = useArmyOrder();
   const layout = useLayout();

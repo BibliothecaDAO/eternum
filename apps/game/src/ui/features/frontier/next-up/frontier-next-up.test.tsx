@@ -13,6 +13,8 @@ const moves = vi.hoisted(() => ({
   /** A move or explore pinned on the map, and the screen it is pinned on. */
   pinned: false,
   layout: "desktop" as "phone" | "desktop",
+  /** The view the player is in: the world map, or their realm. */
+  onMap: true,
 }));
 
 vi.mock("./next-up-facts", () => ({ useNextUpFacts: () => moves.facts }));
@@ -31,6 +33,7 @@ vi.mock("../hud/dock-armies", () => ({
 vi.mock("@/utils/can-issue-orders", () => ({ useActNowRefusal: () => null }));
 vi.mock("@/ui/features/frontier/hud/army-order", () => ({ useArmyOrder: () => (moves.pinned ? {} : null) }));
 vi.mock("@/shell/frame/layout", () => ({ useLayout: () => moves.layout }));
+vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: moves.onMap }) }));
 
 const { FrontierNextUp } = await import("./frontier-next-up");
 
@@ -69,10 +72,14 @@ afterEach(() => {
   host.remove();
 });
 
-const show = (facts: Partial<NextUpFacts>, screen: { pinned?: boolean; layout?: "phone" | "desktop" } = {}) => {
+const show = (
+  facts: Partial<NextUpFacts>,
+  screen: { pinned?: boolean; layout?: "phone" | "desktop"; onMap?: boolean } = {},
+) => {
   moves.facts = { ...MORNING, ...facts };
   moves.pinned = screen.pinned ?? false;
   moves.layout = screen.layout ?? "desktop";
+  moves.onMap = screen.onMap ?? true;
   act(() =>
     root.render(<FrontierNextUp rules={{} as never} realm={{ entity_id: 7 } as never} onSurface={onSurface} />),
   );
@@ -111,6 +118,13 @@ it("opens the realm for barracks, and Research and Production where a step names
   show({ armies: 1, armiesTired: true, storeFull: "wheat" });
   press("Production");
   expect(onSurface).toHaveBeenCalledWith("production");
+});
+
+it("says in the realm how to build the barracks there, with no button back into the realm", () => {
+  show({ barracks: false, armies: 1 }, { onMap: false });
+  const panel = host.querySelector('section[aria-label="Next up"]')!;
+  expect(panel.textContent).toContain("Build barracks: click an open plot, then Barracks.");
+  expect([...panel.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Open the realm");
 });
 
 it("steps its button down to secondary while a phone's pinned order holds the action, and only then", () => {
