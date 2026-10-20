@@ -96,14 +96,15 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: resourceName(Number(payload.value)),
     icon: "prize",
   }),
-  // Who took what from whom; from a player, what went with it; from The Vanguard, the points it paid.
+  // Who took what from whom; from a player, what went with it; from a guard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
     title: withPoints(
       [
         `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
           isViewer(payload.previous_owner, event.viewerAddress)
             ? "you"
-            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
+            : (nameFightParticipant(payload.previous_owner, event.entityId, components, resolvePlayerName) ??
+              "its holder")
         }`,
         toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
       ]
@@ -254,11 +255,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const attacker = payload.attacker as Record<string, unknown>;
     const defender = payload.defender as Record<string, unknown>;
     const frontier = store && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
-    const participant = (side: Record<string, unknown>, id: unknown) =>
-      fightBeast(id, store)?.name ??
-      (frontier && toBigIntSafe(side.player) === 0n ? "Beast guard" : nameOwner(side.player, store, resolvePlayerName));
-    const attackerName = participant(attacker, payload.attacker_id);
-    const defenderName = participant(defender, payload.defender_id);
+    const attackerName = nameFightParticipant(attacker.player, payload.attacker_id, store, resolvePlayerName);
+    const defenderName = nameFightParticipant(defender.player, payload.defender_id, store, resolvePlayerName);
     const outcome = frontier
       ? VERDICT_WORDS[fightVerdict({ army: BigInt(String(attacker.after)), guard: BigInt(String(defender.after)) })]
       : battleOutcome(
@@ -782,6 +780,18 @@ function nameOwner(
 function fightBeast(entityId: unknown, store?: NativeFactStore) {
   const id = toNumber(entityId);
   return store && id !== null ? readFrontierBeast(store, configManager.getActiveGameId(), id) : undefined;
+}
+
+/** Battles and captures name the recorded owner, or the beast guarding an ownerless Frontier site. */
+function nameFightParticipant(
+  owner: unknown,
+  entityId: unknown,
+  store?: NativeFactStore,
+  resolvePlayerName?: PlayerNameResolver,
+): string | undefined {
+  if (toBigIntSafe(owner) === 0n && store && readExpeditionRules(store, configManager.getActiveGameId()))
+    return fightBeast(entityId, store)?.name ?? "Beast guard";
+  return nameOwner(owner, store, resolvePlayerName);
 }
 
 /** The revealed tile's retained site, not an army's later position or a guess from the reward. */

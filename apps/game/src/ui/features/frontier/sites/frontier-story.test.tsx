@@ -149,3 +149,46 @@ it("does not invent a Vanguard opponent when an older encounter is outside the s
     "clientlane vs Beast guard · Guard holds",
   );
 });
+
+function captured(entityId = SITE, previousOwner = "0x0") {
+  return {
+    storyType: "StructureCapturedStory",
+    storyPayload: { previous_owner: previousOwner, new_owner: "0x111", points: 0 },
+    entityId,
+    ownerAddress: "0x111",
+    viewerAddress: "0x111",
+  } as never;
+}
+
+it.each(KINDS)("names the beast in a captured %s after its guard has been cleared", (kind) => {
+  const store = encounter(kind);
+  const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
+  const guard = store.require("Guard", { game_id: 1, structure_id: SITE, slot: 0 });
+  store.applyFacts([
+    { model: "Structure", key: "0x71", value: { ...structure, owner: "0x111" } },
+    {
+      model: "ExpeditionSite",
+      key: "0x72",
+      value: {
+        ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
+        clear: { explorer_id: 201, home_id: 7, reward: null },
+      },
+    },
+    { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: "0" } } },
+  ] as never);
+  expect(buildStoryEventPresentation(captured(), store, names).title).toBe(
+    `clientlane took ${kind} from ${kind === "Beasts" ? "Minotaur" : "Troll"}`,
+  );
+});
+
+it("does not invent a Vanguard holder for a captured site outside the synced scope", () => {
+  expect(buildStoryEventPresentation(captured(999), encounter("Rift"), names).title).toBe(
+    "clientlane took a structure from Beast guard",
+  );
+});
+
+it("names the previous player when a cleared site changes hands again", () => {
+  expect(buildStoryEventPresentation(captured(SITE, "0x222"), encounter("Rift"), names).title).toBe(
+    "clientlane took Rift from rival. Its armies and incoming deliveries went with it",
+  );
+});
