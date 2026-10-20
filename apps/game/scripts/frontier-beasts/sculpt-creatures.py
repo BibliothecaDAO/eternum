@@ -373,11 +373,18 @@ class Creature(Sculpt):
             vertex.co.z = max(0.012, vertex.co.z)
         bpy.context.scene["species"] = self.species
         bpy.context.scene["deliveryScale"] = 0.8
-        bpy.context.scene["concept"] = "apps/game/asset-sources/lab/frontier-beasts/concept.png"
+        concept = DESTINATION / f"{self.species}-concept.png"
+        bpy.context.scene["concept"] = (
+            str(concept.relative_to(SOURCE.parents[3]))
+            if concept.exists()
+            else "apps/game/asset-sources/lab/frontier-beasts/concept.png"
+        )
         bpy.context.scene["sculptTriangles"] = sum(
             len(p.vertices) - 2 for p in obj.data.polygons
         )
-        destination = SOURCE / "refined" if self.species in {"troll", "cyclops"} else DESTINATION
+        destination = (
+            SOURCE / "refined" if self.species in {"troll", "cyclops"} else DESTINATION
+        )
         painting = destination / f"{self.species}-paint.png"
         if painting.exists():
             apply_paint(obj, painting)

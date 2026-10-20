@@ -5,7 +5,21 @@ import { runProof, waitFor } from "../prove-run.mjs";
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
 export async function proveBeasts(b, out, records, baseUrl, only) {
   await b.run("set", "viewport", "1600", "1000");
+  if (!only || only === "weak-concepts") await proveConcepts(b, out, records, baseUrl);
   for (const scenario of [
+    { name: "weak-options-gameplay", group: "weak-options", focus: "lineup", models: 5, species: "minotaur" },
+    ...["ghoul", "kappa", "wraith"].flatMap((name, index) => [
+      { name: `${name}-study`, group: "weak-options", focus: String(index + 1), models: 5, species: "minotaur" },
+      {
+        name: `${name}-rear`,
+        group: "weak-options",
+        focus: String(index + 1),
+        models: 5,
+        species: "minotaur",
+        yaw: "180",
+        lighting: "sunset",
+      },
+    ]),
     ...["wyvern", "hydra"].flatMap((beast) => [
       { name: `${beast}-gameplay`, group: `species-${beast}`, focus: "lineup", models: 2, species: beast },
       { name: `${beast}-sculpt`, group: `species-${beast}`, focus: "1", models: 2, species: beast },
@@ -89,6 +103,19 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         `(() => {const node=document.querySelector('[data-lineup-rendered]');return node?JSON.parse(node.dataset.lineupRendered):null;})()`,
       );
       record.checks.push({ check: "controls reached the rendered model selection", ok: rendered, actual });
+      if (scenario.group === "weak-options") {
+        const expected = [
+          "/models/frontier/beast-minotaur.glb",
+          ...["ghoul", "kappa", "wraith"].map((name) => `/lab/frontier-beasts/beast-${name}.glb`),
+          "/models/frontier/beast-cyclops.glb",
+        ];
+        record.checks.push({
+          check: "the requested monster comparison or detail was drawn",
+          ok: (focus === "lineup" ? expected : [expected[focus]]).every((path) => actual?.drawnAssets?.includes(path)),
+          actual: actual?.drawnAssets,
+        });
+      }
+
       if (scenario.group.startsWith("species-") && focus === "lineup") {
         const expected = [
           `/models/frontier/beast-${scenario.species}.glb`,
@@ -175,6 +202,43 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
   }
   if (records.length === 0) throw new Error("No beast proof scenario matched");
 }
+async function proveConcepts(b, out, records, baseUrl) {
+  const record = { name: "weak-concepts", ready: false, presses: [], checks: [] };
+  records.push(record);
+  try {
+    await b.run(
+      "open",
+      `${baseUrl}/lab/models?family=beasts&group=weak-concepts&rendererMode=webgpu-force-webgl`,
+      "--ignore-https-errors",
+    );
+    record.ready = await waitFor(
+      b,
+      `document.querySelectorAll('.beast-concepts img').length===4 && [...document.querySelectorAll('.beast-concepts img')].every(image=>image.complete && image.naturalWidth>0)`,
+      60000,
+    );
+    const names = await b.evaluate(
+      `Array.from(document.querySelectorAll('.beast-concepts strong')).map(node=>node.textContent)`,
+    );
+    record.checks.push({
+      check: "four distinct monster concepts loaded",
+      ok: record.ready && JSON.stringify(names) === JSON.stringify(["Ghoul", "Kappa", "Wraith", "Golem"]),
+      actual: names,
+    });
+    await b.run("screenshot", join(out, "weak-concepts.png"), "--full");
+    await b.run("click", '.beast-concepts a[href*="focus=1"]');
+    record.presses.push({ action: "View model from first concept", status: "led" });
+    const linked = await waitFor(
+      b,
+      `(() => { const node=document.querySelector('[data-lineup-rendered]'); if(!node)return false;const value=JSON.parse(node.dataset.lineupRendered);return document.querySelector('[data-group="weak-options"]')&&value.focus===1&&value.models===5&&value.drawnAssets.includes('/lab/frontier-beasts/beast-ghoul.glb')&&value.calls>0;})()`,
+      60000,
+    );
+    record.checks.push({ check: "concept link opens the actual model in its comparison", ok: linked });
+    await b.run("screenshot", join(out, "concept-to-model.png"));
+  } finally {
+    await b.run("open", "about:blank");
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = process.argv[2] ?? "https://127.0.0.1:4218";
   await runProof(

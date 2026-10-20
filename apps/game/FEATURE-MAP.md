@@ -651,3 +651,11 @@ checks delivered geometry, materials, footprint and source provenance.
 `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports the saved Blender sources without modifying
 production. `verify:fallen-realm` reads the runtime depth table, checks decoded beast/ruin triangles for zero masonry
 contacts and checks both roaming beasts against the tile footprint.
+
+The weak roaming replacement is an owner choice in the local lab. **Set → Weak monsters · concepts**
+(`/lab/models?family=beasts&group=weak-concepts`) shows Ghoul, Kappa, Wraith and Golem paintings. **View model** opens
+the matching sculpt; **Set → Weak monsters · models** (`/lab/models?family=beasts&group=weak-options`) compares the
+three modeled candidates with the Minotaur placeholder and stronger Cyclops at their runtime scale. Golem remains a
+concept. Production keeps Minotaur until the choice. Sources and paintings stay in the lab archive;
+`rebuild.sh <fresh-absolute-directory> creatures` exports every saved creature study. The beast proof also checks the
+four concept images, their model link, and each new model from front and rear.

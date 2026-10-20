@@ -11,26 +11,30 @@ const deliveries = [
     species,
     directory: "public/models/frontier",
     sourceDirectory: "asset-sources/frontier-beasts/refined",
+    maxScale: FRONTIER_BEASTS[species].maxScale,
   })),
-  ...["wyvern", "hydra"].map((species) => ({
+  ...[
+    { species: "wyvern", maxScale: FRONTIER_BEASTS.wyvern.maxScale },
+    { species: "hydra", maxScale: FRONTIER_BEASTS.hydra.maxScale },
+    ...["ghoul", "kappa", "wraith"].map((species) => ({ species, maxScale: 1 })),
+  ].map(({ species, maxScale }) => ({
     species,
     directory: "asset-sources/lab/frontier-beasts",
     sourceDirectory: "asset-sources/lab/frontier-beasts",
+    maxScale,
   })),
 ];
 
-it("keeps only the two pending studies and their editable sculpts in the lab archive", () => {
+it("keeps every pending delivery with its editable source in the lab archive", () => {
   const files = readdirSync(new URL("../../asset-sources/lab/frontier-beasts/", import.meta.url));
-  expect(files.filter((file) => /\.(glb|blend)$/.test(file)).sort()).toEqual([
-    "beast-hydra.glb",
-    "beast-wyvern.glb",
-    "hydra.blend",
-    "wyvern.blend",
-  ]);
+  const studies = deliveries.filter(({ directory }) => directory.startsWith("asset-sources/lab"));
+  expect(files.filter((file) => /\.(glb|blend)$/.test(file)).sort()).toEqual(
+    studies.flatMap(({ species }) => [`beast-${species}.glb`, `${species}.blend`]).sort(),
+  );
   expect(files.some((file) => file.includes("minotaur"))).toBe(false);
 });
 
-for (const { species, directory, sourceDirectory } of deliveries) {
+for (const { species, directory, sourceDirectory, maxScale } of deliveries) {
   it(`${directory}/${species}: delivered sculpt fits the hex and retains paint, normals and editable provenance`, async () => {
     const path = new URL(`../../${directory}/beast-${species}.glb`, import.meta.url);
     const bytes = readFileSync(path);
@@ -54,7 +58,7 @@ for (const { species, directory, sourceDirectory } of deliveries) {
       maxY = -Infinity;
     for (let i = 0; i < positions.getCount(); i++) {
       const [x, y, z] = positions.getElement(i, []);
-      expect(Math.hypot(x, z) * FRONTIER_BEASTS[species].maxScale).toBeLessThanOrEqual(Math.sqrt(3) / 2 + 0.001);
+      expect(Math.hypot(x, z) * maxScale).toBeLessThanOrEqual(Math.sqrt(3) / 2 + 0.001);
       minY = Math.min(minY, y);
       maxY = Math.max(maxY, y);
       for (let side = 0; side < 6; side++)

@@ -48,15 +48,25 @@ def mesh(name, vertices, faces):
 def section_surface(name, sections, sides=24, subdivision=2):
     """Sweep individually shaped elliptical sections; coordinates carry the pose and anatomy."""
     vertices, faces = [], []
+    previous_across = None
     for i, (center, wide, deep) in enumerate(sections):
         tangent = Vector(sections[min(i + 1, len(sections) - 1)][0]) - Vector(
             sections[max(0, i - 1)][0]
         )
         tangent.normalize()
-        across = tangent.cross(Vector((0, 1, 0)))
+        across = (
+            previous_across - tangent * previous_across.dot(tangent)
+            if previous_across is not None
+            else tangent.cross(Vector((0, 1, 0)))
+        )
         if across.length < 0.1:
-            across = Vector((1, 0, 0))
+            axis = min(
+                (Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1))),
+                key=lambda candidate: abs(candidate.dot(tangent)),
+            )
+            across = axis - tangent * axis.dot(tangent)
         across.normalize()
+        previous_across = across.copy()
         front = tangent.cross(across).normalized()
         for j in range(sides):
             angle = math.tau * j / sides

@@ -31,3 +31,39 @@
 .beast-lab .ui-sheet__backdrop {
   background: transparent;
 }
+
+.beast-concepts {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+.beast-concepts figure {
+  margin: 0;
+  background: #172322;
+}
+.beast-concepts img {
+  width: 100%;
+  height: 32vh;
+  object-fit: contain;
+  display: block;
+}
+.beast-concepts figcaption {
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.beast-concepts figcaption span {
+  flex: 1;
+  color: #c4c9c1;
+}
+@media (max-width: 700px) {
+  .beast-concepts {
+    grid-template-columns: 1fr;
+  }
+}

@@ -17,13 +17,14 @@ def apply_paint(obj, painting):
 
 
 def create_projection_uvs(obj):
+    vertical_scale, vertical_offset = bpy.context.scene.get("paintingVertical", (1, 0))
     for name, center, direction in [("Front paint", 0.25, 1), ("Back paint", 0.75, -1)]:
         layer = obj.data.uv_layers.get(name) or obj.data.uv_layers.new(name=name)
         for loop in obj.data.loops:
             x, _, z = obj.data.vertices[loop.vertex_index].co
             layer.data[loop.index].uv = (
                 center + direction * x / 4,
-                0.5 + (z - 0.9) / 2,
+                (0.5 + (z - 0.9) / 2) * vertical_scale + vertical_offset,
             )
 
 
@@ -57,7 +58,23 @@ def paint_material(material, image):
     links.new(blend.outputs[0], paint.inputs[0])
     for index, texture in enumerate(textures):
         links.new(texture.outputs["Color"], paint.inputs[index + 1])
-    links.new(paint.outputs[0], nodes.get("Principled BSDF").inputs["Base Color"])
+    coverage = add("ShaderNodeSeparateColor", "paint saturation")
+    coverage.mode = "HSV"
+    links.new(paint.outputs[0], coverage.inputs[0])
+    colored = add("ShaderNodeMath", "exclude neutral guide background")
+    colored.operation = "GREATER_THAN"
+    colored.inputs[1].default_value = 0.04
+    links.new(coverage.outputs[1], colored.inputs[0])
+    layered = add("ShaderNodeMixRGB", "paint over anatomical color")
+    original = next(
+        node
+        for node in nodes
+        if node.type == "MIX_RGB" and not node.name.startswith("Projection ")
+    )
+    links.new(colored.outputs[0], layered.inputs[0])
+    links.new(original.outputs[0], layered.inputs[1])
+    links.new(paint.outputs[0], layered.inputs[2])
+    links.new(layered.outputs[0], nodes.get("Principled BSDF").inputs["Base Color"])
 
 
 if __name__ == "__main__":
