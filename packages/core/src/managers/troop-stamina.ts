@@ -97,8 +97,9 @@ export function resolveExplorerTroops(
   if (result.unknown) return undefined;
   if (!result.known) throw new Error("Missing occupied army slot: unused");
   if (result.known.explorer_id !== explorer.explorer_id) throw new Error("Army slot occupant mismatch");
-  const progress = store.require("ArmyProgress", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
-  const rules = store.require("SliceRules", { game_id: explorer.game_id });
+  const progress = store.get("ArmyProgress", { game_id: explorer.game_id, explorer_id: explorer.explorer_id });
+  const rules = store.get("SliceRules", { game_id: explorer.game_id });
+  if (!progress || !rules) return undefined;
   const base = troopStaminaLimits(rules.troop_stamina_config, explorer.troops.category, TroopTier.T1).staminaMax;
   return {
     ...explorer.troops,

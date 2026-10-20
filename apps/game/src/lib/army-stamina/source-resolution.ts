@@ -14,9 +14,9 @@ export const selectFreshestArmyStaminaSource = (input: {
   if (!input.liveTroops) return null;
   return {
     source: "live",
-    amount: input.liveTroops.stamina?.amount ?? 0n,
+    amount: input.liveTroops.stamina.amount,
     settledAt: input.liveTroops.stamina.settled_at,
-    troopCount: Number(input.liveTroops.count ?? 0n),
+    troopCount: Number(input.liveTroops.count),
     troops: input.liveTroops,
   };
 };

@@ -1,101 +1,267 @@
-// @vitest-environment jsdom
-import { EntityType, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
 import { act } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { configManager } from "@bibliothecadao/eternum";
+import { shortString } from "starknet";
+import { configManager, readResourceManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import type { GameClientSetup, NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  EntityType,
+  RelicRecipientType,
+  RelicRecipientTypeParam,
+  ResourcesIds,
+  TileOccupier,
+} from "@bibliothecadao/types";
+import { GameProvider } from "@/hooks/context/game-context";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
+import { SurfaceHost } from "@/ui/design-system/molecules/popover";
+import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
+import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
+import { nativePresetForId, nativePresetIdFor } from "../../../../../../../config/source/native";
+import explorerFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 
-// Army 4294967297 of realm 7 (Egonal), holding Stamina Relic I; its stamina is read as the fixture sets it.
-const army = vi.hoisted(() => ({ stamina: { current: 120, max: 120 } }));
+vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: () => {} }) }));
+
 const ARMY_ID = 4294967297;
+const signer = { address: "0x111" };
+let root: Root;
+let host: HTMLDivElement;
 
-vi.mock("@/hooks/context/game-context", () => ({
-  useGame: () => ({ setup: { store: {}, systemCalls: {} }, account: { account: null } }),
-}));
-vi.mock("@/config/game-modes/use-game-mode-config", () => ({
-  useGameModeConfig: () => ({
-    structure: {
-      getName: () => ({ name: "Egonal" }),
-      getEntityInfo: (id: number) =>
-        id === ARMY_ID ? { name: { name: "Veil Brands" }, explorer: { owner: 7, troops: {} } } : null,
-    },
-  }),
-}));
-vi.mock("@/hooks/use-fact-view", () => ({
-  useFactView: () => [{ entityId: 7, structure: {} }],
-}));
-vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
-vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1_000 }));
-vi.mock("@/lib/army-stamina/source-resolution", () => ({
-  getExplorerStaminaSnapshot: () => army.stamina,
-}));
-vi.mock("@/ui/features/military/components/troop-chip", () => ({ TroopChip: () => null }));
-vi.mock("../hooks/use-relic-activation", () => ({
-  useRelicMetadata: () => ({
-    relicInfo: {
-      type: "Stamina",
-      recipientType: RelicRecipientType.Explorer,
-      effectLine: "Increases stamina regeneration by 50% for 3m",
-    },
-    resourceId: ResourcesIds.StaminaRelic1,
-    essenceCost: 250,
-  }),
-  useRelicEssenceStatus: () => ({ essenceBalance: 850, hasEnoughEssence: true, shortfall: "" }),
-  isRelicCompatible: (info: { recipientType: RelicRecipientType }, recipient: RelicRecipientType) =>
-    info.recipientType === recipient,
-}));
+function game(
+  stamina: NativeRows["ExplorerTroops"]["troops"]["stamina"] = {
+    Inline: { amount: 45n, settled_at: 350, remainder: 0 },
+  },
+) {
+  const { store } = frontierDay();
+  const presetId = nativePresetIdFor("blitz");
+  const preset = nativePresetForId(presetId);
+  const set = (key: string, model: string, value: unknown) => ({ key, model, value });
+  store.applyFacts([
+    set("0x100", "SliceRules", {
+      ...store.require("SliceRules", { game_id: 1 }),
+      day_unit_seconds: 0,
+      troop_stamina_config: {
+        ...store.require("SliceRules", { game_id: 1 }).troop_stamina_config,
+        stamina_knight_max: 120,
+        stamina_initial: 120,
+      },
+    }),
+    set("0x3", "GameRegistry", { ...store.require("GameRegistry", { game_id: 1 }), preset_id: presetId }),
+    set("0xa1", "RelicRules", { game_id: 1, rules: preset.relics }),
+    set("0xa2", "ExplorerTroops", {
+      ...explorerFixture.expected.value,
+      game_id: 1,
+      explorer_id: ARMY_ID,
+      owner: 7,
+      troops: { ...explorerFixture.expected.value.troops, stamina },
+    }),
+    set("0xa3", "EntityName", { game_id: 1, entity_id: ARMY_ID, name: shortString.encodeShortString("Veil Brands") }),
+    set("0xa4", "ResourceWeight", { game_id: 1, entity_id: ARMY_ID, capacity: "100000000000000", weight: "0" }),
+    set("0xa5", "ResourceBalance", {
+      game_id: 1,
+      entity_id: ARMY_ID,
+      resource_type: ResourcesIds.StaminaRelic1,
+      balance: "1000000000",
+    }),
+    set("0xa6", "ResourceBalance", {
+      game_id: 1,
+      entity_id: 7,
+      resource_type: ResourcesIds.Essence,
+      balance: "850000000000",
+    }),
+    set("0xa7", "TileOccupancy", {
+      game_id: 1,
+      entity_id: 7,
+      col: 1,
+      row: 1,
+      alt: false,
+      category: TileOccupier.RealmRegularLevel1,
+      is_structure: true,
+    }),
+    set("0xa8", "TileOccupancy", {
+      game_id: 1,
+      entity_id: ARMY_ID,
+      col: 2,
+      row: 1,
+      alt: false,
+      category: TileOccupier.ExplorerKnightT1,
+      is_structure: false,
+    }),
+  ] as never);
+  configManager.setActiveGame(1, presetId);
+  configManager.setStore(store);
+  const apply_relic = vi.fn().mockResolvedValue(undefined);
+  return { store, setup: { store, systemCalls: { apply_relic } } as unknown as GameClientSetup, apply_relic };
+}
 
-import { RelicActivationSelector } from "./relic-activation-selector";
+const button = (name: string) =>
+  [...document.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.trim() === name)!;
 
-// Stamina Relic I's rule as the Blitz preset sets it: 250 Essence, for 3 minutes.
-beforeEach(() => {
-  vi.spyOn(configManager, "getRelicActivation").mockReturnValue({ essenceCost: 250, durationSeconds: 180 });
-});
-afterEach(() => {
-  vi.restoreAllMocks();
-  document.body.innerHTML = "";
-});
-
-const windowText = () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  act(() =>
+async function openInventory(state: ReturnType<typeof game>) {
+  await act(async () =>
     root.render(
-      <RelicActivationSelector
-        resourceId={ResourcesIds.StaminaRelic1}
-        displayAmount="1"
-        holders={[
-          {
-            entityId: ARMY_ID,
-            amount: 1,
-            recipientType: RelicRecipientType.Explorer,
-            entityType: EntityType.ARMY,
-          },
-        ]}
-        onClose={() => {}}
-      />,
+      <GameProvider value={state.setup} account={signer as never}>
+        <CompactEntityInventory
+          resources={readResourceManager(state.store, ARMY_ID)}
+          recipientType={RelicRecipientType.Explorer}
+          entityId={ARMY_ID}
+          entityType={EntityType.ARMY}
+          allowRelicActivation
+        />
+        <SurfaceHost />
+      </GameProvider>,
     ),
   );
-  const text = host.textContent ?? "";
-  act(() => root.unmount());
-  return text;
-};
+  const relic = document.querySelector<HTMLButtonElement>('button[data-tip^="Activate · Stamina I"]');
+  expect(relic, "the player can click the held relic").not.toBeNull();
+  await act(async () => relic!.click());
+  return button("Activate");
+}
 
-it("names the relic it activates and the army by its realm, never by its id", () => {
-  army.stamina = { current: 45, max: 120 };
-  const text = windowText();
-  expect(text).toContain("Activate Stamina I");
-  expect(text).not.toContain("Select Activation Target");
-  expect(text).toContain("Army of Egonal");
-  expect(text).not.toContain(String(ARMY_ID));
-  expect(text).not.toContain("Stamina is full");
+beforeEach(() => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+  useAccountStore.getState().setGameplayAccount(signer as never, signer.address);
 });
 
-it("warns before a stamina relic is spent on an army whose stamina is already full", () => {
-  army.stamina = { current: 120, max: 120 };
-  const text = windowText();
-  expect(text).toContain("Stamina is full");
-  expect(text).toContain("it helps only if the army spends stamina while it works");
+afterEach(async () => {
+  await act(async () => root.unmount());
+  usePopoverStore.getState().close();
+  useAccountStore.getState().setGameplayAccount(null, null);
+  setBlockTimestampSource(null);
+  host.remove();
+  vi.restoreAllMocks();
+});
+
+it("opens the held relic and activates it with native inline troops, without taking down the game", async () => {
+  const state = game();
+  const confirm = await openInventory(state);
+  expect(document.body.textContent).toContain("Activate Stamina I");
+  expect(document.body.textContent).toContain("Army of Stolsli");
+  expect(document.body.textContent).not.toContain(String(ARMY_ID));
+  expect(document.body.textContent).not.toContain("Stamina is full");
+  await act(async () => confirm.click());
+  expect(state.apply_relic).toHaveBeenCalledTimes(1);
+  expect(state.apply_relic).toHaveBeenCalledWith({
+    signer,
+    entity_id: ARMY_ID,
+    relic_resource_id: ResourcesIds.StaminaRelic1,
+    recipient_type: RelicRecipientTypeParam.Explorer,
+  });
+  expect(document.querySelector('[data-popover-panel="relic-activation"]')).toBeNull();
+});
+
+it("warns before a stamina relic is spent on an army whose stamina is full", async () => {
+  await openInventory(game({ Inline: { amount: 120n, settled_at: 350, remainder: 0 } }));
+  expect(document.body.textContent).toContain("Stamina is full");
+  expect(document.body.textContent).toContain("it helps only if the army spends stamina while it works");
+});
+
+it("keeps missing army facts unavailable, reports them in development, and resumes when they arrive", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const state = game();
+  const confirm = await openInventory(state);
+  await act(async () =>
+    state.store.applyFacts([
+      {
+        model: "SliceRules",
+        key: "0x100",
+        value: { ...state.store.require("SliceRules", { game_id: 1 }), day_unit_seconds: 100 },
+      },
+      {
+        model: "GameRegistry",
+        key: "0x3",
+        value: { ...state.store.require("GameRegistry", { game_id: 1 }), preset_id: 3 },
+      },
+      {
+        model: "ArmySlot",
+        key: "0x9",
+        value: {
+          game_id: 1,
+          structure_id: 7,
+          epoch: "0",
+          slot: 0,
+          explorer_id: ARMY_ID,
+          stamina: { amount: "30", settled_at: "350", remainder: 0 },
+        },
+      },
+      {
+        model: "ExplorerTroops",
+        key: "0xa2",
+        value: {
+          ...state.store.require("ExplorerTroops", { game_id: 1, explorer_id: ARMY_ID }),
+          troops: {
+            ...state.store.require("ExplorerTroops", { game_id: 1, explorer_id: ARMY_ID }).troops,
+            stamina: { Slot: 0 },
+          },
+        },
+      },
+    ] as never),
+  );
+  expect(document.body.textContent).toContain("Army data unavailable. Waiting for synchronization.");
+  expect(confirm.disabled).toBe(true);
+  expect(warn).toHaveBeenCalledWith("Relic activation is waiting for synchronized army facts", { entityId: ARMY_ID });
+  await act(async () => confirm.click());
+  expect(state.apply_relic).not.toHaveBeenCalled();
+  await act(async () =>
+    state.store.applyFacts([
+      {
+        model: "ArmyProgress",
+        key: "0xa9",
+        value: {
+          game_id: 1,
+          explorer_id: ARMY_ID,
+          xp: 0,
+          battle: 1,
+          logistics: 1,
+          scouting: 1,
+          scouting_kinds: 0,
+          homecoming: 1,
+        },
+      },
+    ] as never),
+  );
+  expect(document.body.textContent).not.toContain("Army data unavailable");
+  expect(button("Activate").disabled).toBe(false);
+  expect(document.body.textContent).not.toContain("Stamina is full");
+  await act(async () =>
+    state.store.applyFacts([
+      {
+        model: "ArmySlot",
+        key: "0x9",
+        value: {
+          ...state.store.require("ArmySlot", { game_id: 1, structure_id: 7, epoch: 0n, slot: 0 }),
+          stamina: { amount: "120", settled_at: "350", remainder: 0 },
+        },
+      },
+    ] as never),
+  );
+  expect(document.body.textContent).toContain("Stamina is full");
+  await act(async () => button("Activate").click());
+  expect(state.apply_relic).toHaveBeenCalledTimes(1);
+});
+
+it("keeps the open dialog usable when its army disappears, without activating against an unknown holder", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const state = game();
+  await openInventory(state);
+  await act(async () => state.store.applyFacts([{ model: "ExplorerTroops", key: "0xa2", value: null }]));
+  expect(document.body.textContent).toContain("Army data unavailable. Waiting for synchronization.");
+  expect(button("Activate").disabled).toBe(true);
+  await act(async () => button("Activate").click());
+  expect(state.apply_relic).not.toHaveBeenCalled();
+});
+
+it("activates from inventory while map occupancy facts are absent", async () => {
+  const state = game();
+  state.store.applyFacts([
+    { model: "TileOccupancy", key: "0xa7", value: null },
+    { model: "TileOccupancy", key: "0xa8", value: null },
+  ]);
+  const confirm = await openInventory(state);
+  expect(confirm.disabled).toBe(false);
+  await act(async () => confirm.click());
+  expect(state.apply_relic).toHaveBeenCalledTimes(1);
 });

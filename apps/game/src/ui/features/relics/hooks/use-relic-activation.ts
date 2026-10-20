@@ -33,10 +33,10 @@ export const useRelicMetadata = (relicId: ID) => {
   } as const;
 };
 
-export const useRelicEssenceStatus = (entityOwnerId: ID, essenceCost: number) => {
+export const useRelicEssenceStatus = (entityOwnerId: ID | undefined, essenceCost: number) => {
   const resourceManager = useResourceManager(entityOwnerId);
 
-  const essenceBalance = useMemo(() => knownBalance(resourceManager.balance(ResourcesIds.Essence)), [resourceManager]);
+  const essenceBalance = useMemo(() => knownBalance(resourceManager?.balance(ResourcesIds.Essence)), [resourceManager]);
 
   // A balance this client cannot see never covers the cost.
   const hasEnoughEssence = essenceBalance !== undefined && essenceBalance >= essenceCost;

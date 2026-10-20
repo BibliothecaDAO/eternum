@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
-import { useFactView } from "@/hooks/use-fact-view";
-import { playerStructuresView } from "@/sync/fact-views";
+import { useEffect, useMemo, useState } from "react";
+import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
@@ -22,6 +21,7 @@ import { isRelicCompatible, useRelicEssenceStatus, useRelicMetadata } from "../h
 import { HeldRelic, RelicEssenceRequirement, RelicIncompatibilityNotice } from "./relic-activation-shared";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { configManager, getArmyName } from "@bibliothecadao/eternum";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/lib/army-stamina/source-resolution";
 import { activateRelic, relicHolderLine, STAMINA_FULL } from "@/ui/design-system/kit/words";
@@ -42,7 +42,7 @@ interface RelicActivationSelectorProps {
 }
 
 interface EnrichedHolder extends RelicHolderPreview {
-  entityOwnerId: ID;
+  entityOwnerId: ID | undefined;
   entityName: string;
   parentStructureId: number | null;
   parentStructureName: string | null;
@@ -78,6 +78,11 @@ const RelicActivationHolderCard = ({
   const compatible = isRelicCompatible(relicInfo, holder.recipientType);
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
   const staminaFull = useStaminaFull(isArmyHolder ? holder.troops : null);
+  const armyUnknown = isArmyHolder && holder.troops === null;
+  useEffect(() => {
+    if (import.meta.env.DEV && armyUnknown)
+      console.warn("Relic activation is waiting for synchronized army facts", { entityId: holder.entityId });
+  }, [armyUnknown, holder.entityId]);
 
   return (
     <HudPanel
@@ -109,12 +114,13 @@ const RelicActivationHolderCard = ({
         {compatible && relicInfo?.type === "Stamina" && staminaFull && (
           <HudNotice tone="warn" line={STAMINA_FULL.line} why={STAMINA_FULL.why} />
         )}
+        {armyUnknown && <HudNotice tone="warn" line="Army data unavailable. Waiting for synchronization." />}
         {activationError && <HudNotice tone="bad" line={activationError} />}
         <span className="flex justify-end">
           <HudButton
             kind="secondary"
             busy={isActivating ? "Activating…" : undefined}
-            disabled={!compatible || !hasEnoughEssence}
+            disabled={!compatible || !hasEnoughEssence || armyUnknown}
             onClick={() => onActivate({ holder, hasEnoughEssence, shortfall })}
           >
             Activate
@@ -132,28 +138,6 @@ const useStaminaFull = (troops: Troops | null): boolean => {
   return stamina !== null && stamina.current >= stamina.max;
 };
 
-const toEntityId = (value: unknown, fallback: ID): ID => {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "bigint") {
-    return Number(value);
-  }
-
-  if (typeof value === "string") {
-    try {
-      const parsedBigInt = BigInt(value);
-      return Number(parsedBigInt);
-    } catch {
-      const parsedNumber = Number(value);
-      return Number.isNaN(parsedNumber) ? fallback : parsedNumber;
-    }
-  }
-
-  return fallback;
-};
-
 export const RelicActivationSelector = ({
   resourceId,
   displayAmount: _initialDisplayAmount,
@@ -165,9 +149,14 @@ export const RelicActivationSelector = ({
     account: { account },
   } = useGame();
   const mode = useGameModeConfig();
-  const revision = useNativeRevision(["Structure", "ExplorerTroops", "TileOccupancy"]);
-
-  const playerStructures = useFactView(playerStructuresView);
+  const revision = useNativeRevision([
+    "Structure",
+    "ExplorerTroops",
+    "EntityName",
+    "ArmySlot",
+    "ArmyProgress",
+    "SliceRules",
+  ]);
 
   const [activatingHolderId, setActivatingHolderId] = useState<string | null>(null);
   const [activationError, setActivationError] = useState<{ holderId: string | null; message: string | null }>({
@@ -175,59 +164,26 @@ export const RelicActivationSelector = ({
     message: null,
   });
 
-  const structureNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    playerStructures.forEach((structure) => {
-      const id = safeInteger(structure.entityId);
-      if (Number.isNaN(id)) {
-        return;
-      }
-
-      try {
-        const name = mode.structure.getName(structure.structure).name;
-        map.set(String(id), name);
-      } catch {
-        map.set(String(id), "Structure");
-      }
-    });
-
-    return map;
-  }, [mode, playerStructures]);
-
   const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(resourceId);
 
   const relicDescription = relicInfo?.effectLine;
 
   const enrichedHolders = useMemo<EnrichedHolder[]>(() => {
-    const resolveParentStructureName = (structureId: ID | null): string | null => {
-      if (structureId == null) {
-        return null;
-      }
-
-      const cachedName = structureNameMap.get(String(structureId));
-      if (cachedName) {
-        return cachedName;
-      }
-
-      try {
-        const parentInfo = mode.structure.getEntityInfo(structureId, null, store);
-        return parentInfo?.name?.name ?? null;
-      } catch {
-        return null;
-      }
-    };
-
     return holders.map((holder) => {
-      const entityInfo = mode.structure.getEntityInfo(holder.entityId, null, store);
+      const game_id = configManager.getActiveGameId();
       const isArmy = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
-      const entityName = entityInfo?.name?.name ?? (isArmy ? "Army" : "Structure");
-      const selfId = toEntityId(holder.entityId, holder.entityId);
-      const explorerOwnerRaw = isArmy ? entityInfo?.explorer?.owner : undefined;
-      const entityOwnerId = isArmy ? toEntityId(explorerOwnerRaw, selfId) : selfId;
-      const hasParentStructure = isArmy && entityOwnerId !== selfId;
-      const parentStructureId = hasParentStructure ? entityOwnerId : null;
-      const parentStructureName = hasParentStructure ? resolveParentStructureName(parentStructureId) : null;
-      const troops = isArmy ? ((entityInfo?.explorer?.troops as Troops | undefined) ?? null) : null;
+      const explorer = isArmy ? store.get("ExplorerTroops", { game_id, explorer_id: holder.entityId }) : undefined;
+      const entityOwnerId = isArmy ? (explorer ? safeInteger(explorer.owner) : undefined) : holder.entityId;
+      const structure =
+        entityOwnerId === undefined ? undefined : store.get("Structure", { game_id, entity_id: entityOwnerId });
+      const entityName = isArmy
+        ? getArmyName(holder.entityId, store)
+        : structure
+          ? mode.structure.getName(structure).name
+          : "Structure";
+      const parentStructureId = isArmy ? (entityOwnerId ?? null) : null;
+      const parentStructureName = isArmy && structure ? mode.structure.getName(structure).name : null;
+      const troops = explorer ? (resolveExplorerTroops(store, explorer) ?? null) : null;
 
       return {
         ...holder,
@@ -238,7 +194,7 @@ export const RelicActivationSelector = ({
         troops,
       };
     });
-  }, [store, holders, mode, structureNameMap, revision]);
+  }, [store, holders, mode, revision]);
 
   const visibleHolders = enrichedHolders;
   const visibleDisplayAmount = _initialDisplayAmount;
