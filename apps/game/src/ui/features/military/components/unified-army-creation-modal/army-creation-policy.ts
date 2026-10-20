@@ -1,12 +1,5 @@
 import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
-import {
-  RESOURCE_PRECISION,
-  ResourcesIds,
-  formatWait,
-  formatExact,
-  formatCharge,
-  resourceName,
-} from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, formatWait, formatCharge, resourceName } from "@bibliothecadao/types";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
@@ -77,7 +70,7 @@ export function troopRaiseLine(costs: TroopRaiseCost[] | undefined) {
     .filter(({ amount }) => amount > 0n)
     .map(
       ({ resource, amount }) =>
-        `${formatExact(Math.ceil(Number(amount) / RESOURCE_PRECISION))} ${ResourcesIds[resource].toLowerCase()}`,
+        `${formatCharge(Number(amount) / RESOURCE_PRECISION)} ${ResourcesIds[resource].toLowerCase()}`,
     )
     .join(" · ");
 }

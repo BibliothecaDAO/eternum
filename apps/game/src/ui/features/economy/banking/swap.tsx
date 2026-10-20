@@ -32,6 +32,7 @@ import {
   LORDS,
   resourceName,
   formatPercent,
+  formatFigure,
 } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -252,7 +253,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
       <div className="flex flex-col gap-1">
         <HudRow
           title="Price"
-          trail={`1 ${chosenResourceName} = ${formatCharge(marketManager.getMarketPrice())} ${LORDS}`}
+          trail={`1 ${chosenResourceName} = ${formatFigure(marketManager.getMarketPrice())} ${LORDS}`}
         />
         <HudRow
           title="Slippage"

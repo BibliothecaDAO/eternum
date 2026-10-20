@@ -35,6 +35,7 @@ import {
   formatPercent,
   LORDS,
   resourceName,
+  formatFigure,
 } from "@bibliothecadao/types";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import React, { useCallback, useMemo, useState } from "react";
@@ -220,7 +221,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
         }
         onMouseLeave={() => setTooltip(null)}
       >
-        {formatCharge(marketManager.getMarketPrice())} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
+        {formatFigure(marketManager.getMarketPrice())} <ResourceIcon resource={ResourcesIds.Lords} size="sm" />
       </span>
       <TotalLiquidity totalLords={totalLords} totalResource={totalResource} resourceId={resourceId} />
       <MyLiquidity

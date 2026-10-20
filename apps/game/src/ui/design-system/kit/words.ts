@@ -749,16 +749,14 @@ export const formatArmyFoodRequirement = ({
   missingWheat,
   missingFish,
   wheatLabel,
-  formatAmount,
 }: {
   missingWheat: number;
   missingFish: number;
   wheatLabel: string;
-  formatAmount: (amount: number) => string;
 }): string => {
   const missingParts = [
-    missingWheat > 0 ? `${formatAmount(missingWheat)} ${wheatLabel}` : null,
-    missingFish > 0 ? `${formatAmount(missingFish)} fish` : null,
+    missingWheat > 0 ? `${formatCharge(missingWheat)} ${wheatLabel}` : null,
+    missingFish > 0 ? `${formatCharge(missingFish)} fish` : null,
   ].filter(Boolean);
 
   if (missingParts.length === 0) return "";
@@ -864,18 +862,16 @@ export const formatTravelBlockedSummary = ({
   missingWheat,
   missingFish,
   wheatLabel,
-  formatAmount,
 }: {
   staminaBlocked: boolean;
   minTravelStamina: number;
   missingWheat: number;
   missingFish: number;
   wheatLabel: string;
-  formatAmount: (amount: number) => string;
 }): string | null => {
   const requirements = [
-    staminaBlocked ? `${minTravelStamina}+ stamina` : null,
-    formatArmyFoodRequirement({ missingWheat, missingFish, wheatLabel, formatAmount }) || null,
+    staminaBlocked ? `${formatCharge(minTravelStamina)}+ stamina` : null,
+    formatArmyFoodRequirement({ missingWheat, missingFish, wheatLabel }) || null,
   ].filter(Boolean);
 
   if (requirements.length === 0) return null;
@@ -883,22 +879,24 @@ export const formatTravelBlockedSummary = ({
   return `Cannot travel — needs ${requirements.join(" and ")}`;
 };
 
-/** The visible reason food keeps an army still: what one step costs it and what its realm holds. */
-export const formatFoodBlock = (
-  block: {
-    action: "travel" | "explore";
-    perStep: ArmyFoodRequirement;
-    food: ArmyFoodBalance;
-  },
-  formatAmount: (amount: number) => string,
-): string => {
-  const part = (amount: number, label: string) => (amount > 0 ? `${formatAmount(amount)} ${label}` : null);
-  const cost = [part(block.perStep.wheatPayAmount, "wheat"), part(block.perStep.fishPayAmount, "fish")]
+/** The visible reason food keeps an army still: what one step costs it (a charge) and what its realm holds. */
+export const formatFoodBlock = (block: {
+  action: "travel" | "explore";
+  perStep: ArmyFoodRequirement;
+  food: ArmyFoodBalance;
+}): string => {
+  const part = (amount: number, label: string, write: (amount: number) => string) =>
+    amount > 0 ? `${write(amount)} ${label}` : null;
+  const cost = [
+    part(block.perStep.wheatPayAmount, "wheat", formatCharge),
+    part(block.perStep.fishPayAmount, "fish", formatCharge),
+  ]
     .filter(Boolean)
     .join(" and ");
   const held = [
-    part(Math.max(0, block.food.wheat), "wheat") ?? (block.perStep.wheatPayAmount > 0 ? "no wheat" : null),
-    block.perStep.fishPayAmount > 0 ? (part(Math.max(0, block.food.fish), "fish") ?? "no fish") : null,
+    part(Math.max(0, block.food.wheat), "wheat", formatAmount) ??
+      (block.perStep.wheatPayAmount > 0 ? "no wheat" : null),
+    block.perStep.fishPayAmount > 0 ? (part(Math.max(0, block.food.fish), "fish", formatAmount) ?? "no fish") : null,
   ]
     .filter(Boolean)
     .join(" and ");

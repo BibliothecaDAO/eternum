@@ -1,4 +1,4 @@
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
@@ -146,7 +146,7 @@ const Foot = ({ foot }: { foot: BuildTile["foot"] }) => {
     <span className="flex items-center gap-1">
       <SemanticIcon name="labor" size={14} />
       <span className={cn("tabular-nums", foot.short ? "text-hud-bad" : "text-hud-ink")}>
-        {formatExact(foot.labor)}
+        {formatCharge(foot.labor)}
       </span>
       {foot.raised && (
         <span role="img" aria-label={PRICE_UP} data-tip={foot.raised} className="leading-none text-hud-warn">

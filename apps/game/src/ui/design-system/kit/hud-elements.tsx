@@ -1,5 +1,5 @@
 import {
-  formatCharge,
+  formatTypedNumber,
   formatExact,
   formatPercent,
   formatShortDuration,
@@ -195,14 +195,14 @@ const AmountInput = ({
       <input
         aria-label={label}
         inputMode={decimals ? "decimal" : "numeric"}
-        value={draft ?? formatCharge(value)}
+        value={draft ?? formatTypedNumber(value)}
         disabled={disabled}
         autoFocus={autoFocus}
         onChange={(event) => {
           const text = event.target.value;
           const amount = decimals ? parseDecimalAmount(text, min, max) : parseWholeAmount(text, min, max);
           if (amount === null) setDraft("");
-          else setDraft(decimals ? (typedNumberText(text) ?? formatCharge(amount)) : null);
+          else setDraft(decimals ? (typedNumberText(text) ?? formatTypedNumber(amount)) : null);
           if (amount !== null) onChange(amount);
         }}
         onBlur={() => setDraft(null)}
@@ -482,7 +482,7 @@ export const HudTransfer = ({
 );
 
 /**
- * What a verb costs, exactly as charged, as one compact line: under the order on the map's order line and the app's
+ * What a verb costs, rounded as every charge reads (formatCharge), as one compact line: under the order on the map's order line and the app's
  * tooltip, and beside a button, which carries its verb only (`costLine` writes it from the verb's prices). Nothing when
  * it costs nothing.
  */

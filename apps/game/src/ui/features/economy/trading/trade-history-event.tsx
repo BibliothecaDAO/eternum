@@ -7,9 +7,9 @@ import {
   Resource,
   ResourcesIds,
   formatAmount,
-  formatCharge,
   formatMoment,
   formatAgo,
+  formatFigure,
 } from "@bibliothecadao/types";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 
@@ -74,7 +74,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
         {formatAmount(divideByPrecision(resourceTaken.amount, false))}
       </span>
       <span className="flex items-center justify-end gap-1 text-hud-strong tabular-nums">
-        {formatCharge(price)}
+        {formatFigure(price)}
         <ResourceIcon resource={Number(tradedResourceId)} size="xs" withTooltip={false} />
       </span>
     </HudTableRow>

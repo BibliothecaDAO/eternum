@@ -1,4 +1,4 @@
-import { formatCharge, readTypedNumber, typedNumberText } from "@bibliothecadao/types";
+import { formatTypedNumber, readTypedNumber, typedNumberText } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useUISound } from "@/audio";
@@ -33,10 +33,10 @@ export const NumberInput = ({
   disabled = false,
 }: NumberInputProps) => {
   const playClick = useUISound("ui.click");
-  const [displayValue, setDisplayValue] = useState(formatCharge(value));
+  const [displayValue, setDisplayValue] = useState(formatTypedNumber(value));
 
   useEffect(() => {
-    setDisplayValue(formatCharge(value));
+    setDisplayValue(formatTypedNumber(value));
   }, [value]);
 
   return (
@@ -75,20 +75,20 @@ export const NumberInput = ({
           }
           const typed = typedNumberText(inputValue, { whole: !allowDecimals });
           if (typed === undefined) {
-            setDisplayValue(formatCharge(min));
+            setDisplayValue(formatTypedNumber(min));
             onChange(min);
           } else if (allowDecimals) {
             setDisplayValue(typed);
             onChange(Math.min(readTypedNumber(typed) ?? min, max));
           } else {
             const whole = Math.min(Math.max(readTypedNumber(typed, { whole: true }) ?? min, min), max);
-            setDisplayValue(formatCharge(whole));
+            setDisplayValue(formatTypedNumber(whole));
             onChange(whole);
           }
         }}
         onBlur={() => {
           if (displayValue === "") {
-            setDisplayValue(formatCharge(Math.max(value, min)));
+            setDisplayValue(formatTypedNumber(Math.max(value, min)));
           }
           onBlurProp?.();
         }}

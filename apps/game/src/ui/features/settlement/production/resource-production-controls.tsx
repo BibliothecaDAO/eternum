@@ -16,6 +16,7 @@ import {
   formatExact,
   resourceName,
   formatPercent,
+  formatCharge,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { LaborResourcesPanel } from "./labor-resources-panel";
@@ -284,10 +285,7 @@ export const ResourceProductionControls = ({
           {currentInputs === undefined
             ? "—"
             : currentInputs
-                .map(
-                  (input) =>
-                    `${formatExact(Math.ceil(input.amount * productionAmount))} ${resourceName(input.resource)}`,
-                )
+                .map((input) => `${formatCharge(input.amount * productionAmount)} ${resourceName(input.resource)}`)
                 .join(" · ")}
         </p>
         {(error || isDisabled || refusal) && (

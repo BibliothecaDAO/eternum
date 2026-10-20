@@ -1,4 +1,4 @@
-import { formatCharge } from "@bibliothecadao/types";
+import { formatFigure } from "@bibliothecadao/types";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -81,5 +81,5 @@ export const ATTRIBUTE_LOOK: Record<Attribute, { atTier: (tier: number) => numbe
 /** What going from one tier of an attribute to another gives, "+20%" or "+1.5". */
 export const attributeGain = (attribute: Attribute, from: number, to: number): string => {
   const { atTier, unit } = ATTRIBUTE_LOOK[attribute];
-  return `+${formatCharge(atTier(to) - atTier(from))}${unit}`;
+  return `+${formatFigure(atTier(to) - atTier(from))}${unit}`;
 };

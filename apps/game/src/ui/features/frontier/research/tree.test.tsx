@@ -250,7 +250,7 @@ describe("the castle's tree", () => {
         />,
       ),
     );
-    expect(host.querySelector(".ui-cost")?.textContent).toBe("400,000 Essence");
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("400K Essence");
     expect(buttons().find((button) => button.textContent === "Research")!.disabled).toBe(true);
     expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs Ethereal I");
   });

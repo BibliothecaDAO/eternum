@@ -7,8 +7,9 @@ import { formatCount } from "./count";
 import { POINT, POINTS } from "./nouns";
 
 const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
-// Nine places: the resource precision every balance and charge settles to.
-const charge = new Intl.NumberFormat("en-US", { maximumFractionDigits: 9 });
+// Nine places: the resource precision every balance and charge settles to, which a typed amount keeps.
+const typed = new Intl.NumberFormat("en-US", { maximumFractionDigits: 9 });
+const twoFigures = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
 /**
@@ -29,11 +30,21 @@ export const formatExact = (value: number | bigint | undefined): string =>
   value === undefined ? "—" : exact.format(value);
 
 /**
- * A charge: a price, a cost, an order's amount and total, a swap's debit and credit, a fee. Written as the chain takes
- * it, exact at any size and to the resource's last unit ("0.25 LORDS", "12,400 wheat"), so a real charge never reads
- * as nothing or as a rounded figure.
+ * A charge: a cost, a price, an order's amount and total, a swap's debit and credit, a fee, and a reward shown beside
+ * them. Rounded, as a player reads it (owner, 10-20: "dont show exact charges"): whole from one ("28 wheat" for 28.15),
+ * compact past ten thousand as an amount held reads ("12.4K"), so a cost and a balance read alike; under one, two
+ * figures ("0.25 LORDS", "0.6 wheat"), so a real charge never reads as nothing. The chain still takes the exact charge.
  */
-export const formatCharge = (value: number | undefined): string => (value === undefined ? "—" : charge.format(value));
+export const formatCharge = (value: number | undefined): string => {
+  if (value === undefined) return "—";
+  return value !== 0 && Math.abs(value) < 1 ? twoFigures.format(value) : formatAmount(value);
+};
+
+/**
+ * The number an amount field shows: what the player typed or set, exact to the resource's last unit ("1,234.5"), never
+ * rounded, as the transaction will carry it.
+ */
+export const formatTypedNumber = (value: number): string => typed.format(value);
 
 const TYPED_WHOLE = /[+-]?[0-9,]+/;
 const TYPED_DECIMAL = /[+-]?(?:[0-9,]+(?:[.][0-9]*)?|[.][0-9]+)/;

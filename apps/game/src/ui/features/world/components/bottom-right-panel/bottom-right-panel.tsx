@@ -2,7 +2,7 @@ import { knownBalance } from "@/ui/utils/utils";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { getMinePresentation, resourceName, structureName, formatAmount } from "@bibliothecadao/types";
+import { getMinePresentation, resourceName, structureName, formatAmount, formatCharge } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -531,7 +531,8 @@ const LocalTilePanel = () => {
                       <span key={`build-cost-${entry.resource}-${index}`} title={name}>
                         <HudChip tone={hasEnough ? undefined : "bad"}>
                           <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
-                          {formatAmount(balance === undefined ? undefined : Math.floor(balance))} / {entry.amount}
+                          {formatAmount(balance === undefined ? undefined : Math.floor(balance))} /{" "}
+                          {formatCharge(entry.amount)}
                         </HudChip>
                       </span>
                     );

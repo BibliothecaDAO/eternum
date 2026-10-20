@@ -29,6 +29,8 @@ const CATEGORIES = {
   "number.percent": "a percent written by hand (`${n}%`, {n}%)",
   "number.grouping": "thousands grouped by hand (a regex over digit triples)",
   "number.points": "points written by the compact amount rule (formatAmount(points)): points are exact",
+  "number.charge":
+    "a cost, price or fee written by formatAmount or formatExact: every charge reads rounded, by formatCharge",
   "number.plural":
     'a noun\'s number picked by hand (n === 1 ? "army" : "armies"), or a count before a fixed plural (`${max} slots`, `${count} ${WORDS.players}`): formatCount picks it',
   "words.doubled": "a writer's own noun or unit written again after it ({formatPoints(n)} points)",
@@ -185,6 +187,23 @@ const compactPoints = (node) => {
   }
   return false;
 };
+
+// A charge reads one way wherever it is shown (formatCharge, rounded); through the amount or count writers the same
+// cost would read "1,250" in one place and "1.3K" or "1,250.4" in another. A unit price is a figure (formatFigure).
+const CHARGE_NAME = /cost|price|charge|fee(?![a-z])/i;
+/** The name a written value goes by: `price`, `option.populationCost`, through a conversion (`lordsOf(cost)`). */
+const valueName = (node) => {
+  if (ts.isIdentifier(node)) return node.text;
+  if (ts.isPropertyAccessExpression(node)) return node.name.text;
+  if (ts.isParenthesizedExpression(node)) return valueName(node.expression);
+  if (ts.isCallExpression(node) && node.arguments.length === 1) return valueName(node.arguments[0]);
+  return "";
+};
+const chargeByOtherWriter = (node) =>
+  ts.isCallExpression(node) &&
+  /^(formatAmount|formatExact)$/.test(calleeName(node)) &&
+  node.arguments[0] !== undefined &&
+  CHARGE_NAME.test(valueName(node.arguments[0]));
 
 // What each writer already writes after its figure. Written again after the call, it reads twice: "35 points points".
 // A "%" or a rate's unit after any figure is number.percent or number.rate already.
@@ -469,6 +488,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (work) hit(work, node);
     if (readsBackWritten(node)) hit("number.parse", node);
     if (compactPoints(node)) hit("number.points", node);
+    if (chargeByOtherWriter(node)) hit("number.charge", node);
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
     if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))

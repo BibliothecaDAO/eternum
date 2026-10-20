@@ -1,5 +1,5 @@
 import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "@/ui/design-system/kit/words";
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -183,7 +183,7 @@ const EntryPanel = ({
         </AppChip>
         <AppFigure
           icon="lords"
-          value={formatExact(lordsOf(cost.cash))}
+          value={formatCharge(lordsOf(cost.cash))}
           label={ENTRY_WORDS.total}
           tone={state === "short" ? "bad" : "gold"}
         />
@@ -192,7 +192,7 @@ const EntryPanel = ({
       {sign ||
         (state === "short" ? (
           <AppButton kind="primary" size="lg" disabled>
-            {ENTRY_WORDS.needMore(formatExact(lordsShortOf(cost.cash - terms.lords)))}
+            {ENTRY_WORDS.needMore(formatCharge(lordsShortOf(cost.cash - terms.lords)))}
           </AppButton>
         ) : (
           <AppButton kind="primary" size="lg" icon="play" step onClick={() => setSigning(true)}>
@@ -245,7 +245,7 @@ const SplitBar = ({ shares }: { shares: ReturnType<typeof entryShares> }) => {
     <p className="flex flex-wrap items-center gap-2" aria-label={ENTRY_WORDS.whereItGoes}>
       {parts.map((part) => (
         <AppChip key={part.key} icon={part.icon} tone={part.tone}>
-          {formatExact(lordsOf(part.amount))}
+          {formatCharge(lordsOf(part.amount))}
         </AppChip>
       ))}
     </p>
@@ -438,7 +438,7 @@ const Receipt = ({
 /** An amount of LORDS, with its icon. */
 const Lords = ({ amount }: { amount: bigint }) => (
   <AppChip icon="lords" tone="gold">
-    {formatExact(lordsOf(amount))}
+    {formatCharge(lordsOf(amount))}
   </AppChip>
 );
 

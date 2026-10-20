@@ -19,7 +19,7 @@ import {
   resourceName,
   rankName,
   formatCharge,
-  ResourcesIds,
+  formatAmount,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
 
@@ -111,7 +111,7 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
                 <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
                 <span className="flex-1 text-hud-body text-hud-ink">{resourceName(req.resource)}</span>
                 <span className={clsx("text-hud-strong ", isMet ? "text-hud-ink" : "text-hud-bad")}>
-                  {req.current === undefined ? "—" : formatExact(Math.floor(req.current))} / {formatCharge(req.amount)}
+                  {req.current === undefined ? "—" : formatAmount(Math.floor(req.current))} / {formatCharge(req.amount)}
                 </span>
               </div>
               {req.incoming && (

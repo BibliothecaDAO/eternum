@@ -18,9 +18,9 @@ import {
   MarketInterface,
   ResourcesIds,
   formatAmount,
-  formatCharge,
   LORDS,
   resourceName,
+  formatFigure,
 } from "@bibliothecadao/types";
 
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -173,10 +173,10 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
           <span className="flex flex-wrap gap-x-2 text-hud-label text-hud-muted">
             <span title="Balance">{formatAmount(knownAmount(balance))} owned</span>
             <span className="text-hud-good" title="Best ask">
-              Buy {formatPrice(bestPrices.lowestAsk.get(desk.selectedResource))}
+              Buy {formatFigure(bestPrices.lowestAsk.get(desk.selectedResource))}
             </span>
             <span className="text-hud-bad" title="Best bid">
-              Sell {formatPrice(bestPrices.highestBid.get(desk.selectedResource))}
+              Sell {formatFigure(bestPrices.highestBid.get(desk.selectedResource))}
             </span>
           </span>
         </span>
@@ -187,8 +187,6 @@ const SelectedResourceHeader = ({ desk, onChange }: { desk: MarketDesk; onChange
     </div>
   );
 };
-
-const formatPrice = (price: number | undefined) => (price === undefined ? "—" : formatCharge(price));
 
 const useStructureResourceBalance = (structureEntityId: ID, resourceId: number) => {
   const { currentDefaultTick } = getBlockTimestamp();

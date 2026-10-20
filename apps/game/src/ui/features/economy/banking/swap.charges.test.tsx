@@ -71,11 +71,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("a swap's debit and credit, in its confirmation", () => {
+describe("a swap's debit and credit, in its confirmation, rounded as every charge reads", () => {
   it.each([
     { wheat: 100, lords: 0.25, debit: "-0.25", credit: "+100" },
-    { wheat: 2.5, lords: 1.25, debit: "-1.25", credit: "+2.5" },
-    { wheat: 50_000, lords: 12_400, debit: "-12,400", credit: "+50,000" },
+    { wheat: 2.5, lords: 1.25, debit: "-1", credit: "+3" },
+    { wheat: 50_000, lords: 12_400, debit: "-12.4K", credit: "+50K" },
   ])("buying $wheat Wheat for $lords LORDS reads $debit → $credit", ({ wheat, lords, debit, credit }) => {
     vi.spyOn(configManager, "getAdminBankOwnerFee").mockReturnValue(0);
     vi.spyOn(configManager, "getAdminBankLpFee").mockReturnValue(0);
@@ -102,6 +102,6 @@ describe("a swap's debit and credit, in its confirmation", () => {
     act(() => swap!.click());
 
     const confirmation = host.querySelector("[data-confirm]")?.textContent ?? "";
-    expect(confirmation.match(/-[\d,.]+→\+[\d,.]+/)?.[0]).toBe(`${debit}→${credit}`);
+    expect(confirmation.match(/-[\d,.]+K?→\+[\d,.]+K?/)?.[0]).toBe(`${debit}→${credit}`);
   });
 });

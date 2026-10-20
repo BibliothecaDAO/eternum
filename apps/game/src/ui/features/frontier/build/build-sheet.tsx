@@ -49,9 +49,9 @@ import {
   type HexPosition,
   ResourcesIds,
   formatAmount,
-  formatExact,
   formatCharge,
   formatRate,
+  formatFigure,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -313,7 +313,7 @@ const buildingLine = (option: BuildOption): string => {
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, TIER_WORDS[option.tier - 1])
         : `+${formatAmount(effect.amount)} ${POPULATION}`;
-  const takes = option.populationCost > 0 ? `, ${takesPopulation(formatAmount(option.populationCost))}` : "";
+  const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
   return `${buildingName(option.category)}: ${does}${takes}`;
 };
 
@@ -324,9 +324,9 @@ const buildingLine = (option: BuildOption): string => {
 const riseLine = (option: BuildOption, price: number): string | undefined =>
   option.rise.times > 1
     ? priceRaised(
-        formatExact(price / option.rise.times),
+        formatCharge(price / option.rise.times),
         LABOR,
-        formatCharge(option.rise.times),
+        formatFigure(option.rise.times),
         formatAmount(option.rise.standing),
       )
     : undefined;
@@ -343,7 +343,7 @@ const buildGains = (option: BuildOption): BuildGain[] => {
       : effect.kind === "trains"
         ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
         : { icon: "person", value: `+${formatAmount(effect.amount)}`, label: "houses" };
-  return [gain, { icon: "person", value: formatAmount(option.populationCost), label: "population" }];
+  return [gain, { icon: "person", value: formatCharge(option.populationCost), label: "population" }];
 };
 
 /** A realm's plot, as the actions in flight name it. */

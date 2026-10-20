@@ -1,4 +1,4 @@
-import { formatAmount } from "@bibliothecadao/types";
+import { formatAmount, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -16,7 +16,7 @@ export type XpGoal = { price: number; tier: number };
  * army spends; there is no level, so with every attribute at legendary it says the balance alone.
  */
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal ? xpToward(formatAmount(xp), formatAmount(goal.price), TIER_WORDS[goal.tier - 1]) : `${XP} ${formatAmount(xp)}`;
+  goal ? xpToward(formatAmount(xp), formatCharge(goal.price), TIER_WORDS[goal.tier - 1]) : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,

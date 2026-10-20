@@ -64,6 +64,10 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "const row = <Row detail={`${rows.length} buildings`} />;", // 44
     // 45: the Play card as it shipped in 26932d66b75 (play-item.tsx), which read "1 Players" (qa-app-2 P3-12)
     "const chip = <Chip>{`${formatAmount(game.player_count)} ${PLAY_WORDS.players}`}</Chip>;",
+    // 46-48: costs as they shipped in 549586f46ea (army-sheet, build-sheet, army-token), each by its own writer
+    "const tier = <p>{formatExact(price)} {XP}</p>;",
+    "const takes = takesPopulation(formatAmount(option.populationCost));",
+    "const fee = `${formatExact(lpFee)} LORDS`;",
   ].join("\n");
   assert.deepEqual(scan(source), [
     "1 formatter",
@@ -112,6 +116,9 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "43 number.percent",
     "44 number.plural",
     "45 number.plural",
+    "46 number.charge",
+    "47 number.charge",
+    "48 number.charge",
   ]);
 });
 
@@ -158,6 +165,11 @@ test("leaves code alone: arithmetic, coordinates, logs, CSS, keys and components
     "export function GoldRow({ n }) { return <span>{n}</span>; }",
     "if (troop === 'Knight') {}",
     "const top = <p>#{rank} · {formatPoints(points)}</p>;",
+    "const cost = <p>{formatCharge(option.populationCost)}</p>;",
+    "const each = <p>at {formatFigure(offer.price)} LORDS each</p>;",
+    "const fed = <p>{formatAmount(feedCount)}</p>;",
+    "const after = <p>{formatExact(held - price)}</p>;",
+    "const held = <p>{formatExact(Math.floor(cost.held))}</p>;",
     "const left = `${formatDuration(s)} left`;",
     "const more = <p>{formatWait(s)} more</p>;",
     'const held = `${formatCount(n, "relic")} held`;',

@@ -1,4 +1,4 @@
-import { formatAmount } from "@bibliothecadao/types";
+import { formatAmount, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -125,9 +125,9 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
           <span className="flex items-center gap-1 text-hud-label tabular-nums">
             {row.choice && <SemanticIcon name="final-seal" size={16} />}
             <SemanticIcon name="essence" size={14} />
-            {formatAmount(row.next.essence)}
+            {formatCharge(row.next.essence)}
             <SemanticIcon name="labor" size={14} />
-            {formatAmount(row.next.labor)}
+            {formatCharge(row.next.labor)}
           </span>
         ) : (
           <SemanticIcon name="check" size={18} />
@@ -155,7 +155,7 @@ const Node = ({ node, onOpen }: { node: CastleNode; onOpen: () => void }) => (
         ) : (
           <span className="flex items-center gap-0.5 tabular-nums">
             <SemanticIcon name="essence" size={12} />
-            {formatAmount(node.essence)}
+            {formatCharge(node.essence)}
           </span>
         )
       }

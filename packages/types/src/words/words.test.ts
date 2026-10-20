@@ -12,6 +12,7 @@ import {
   formatPercent,
   formatPoints,
   formatRate,
+  formatTypedNumber,
   readTypedNumber,
   typedNumberText,
 } from "./amount";
@@ -217,13 +218,34 @@ describe("amounts", () => {
     expect(typedNumberText("abc")).toBeUndefined();
   });
 
-  it("writes a charge as the chain takes it: never rounded, never compacted, never nothing", () => {
-    expect(formatCharge(0.25)).toBe("0.25");
-    expect(formatCharge(2.5)).toBe("2.5");
-    expect(formatCharge(12_400)).toBe("12,400");
-    expect(formatCharge(1_234_567.125)).toBe("1,234,567.125");
-    expect(formatCharge(0.000000001)).toBe("0.000000001");
+  it("writes a charge rounded: whole from one, compact past ten thousand, two figures under one, never nothing", () => {
+    expect([28.15, 12.5, 2.5, 2.4, 1_250.6, 12_400, 1_234_567.125].map(formatCharge)).toEqual([
+      "28",
+      "13",
+      "3",
+      "2",
+      "1,251",
+      "12.4K",
+      "1.2M",
+    ]);
+    expect([0.25, 0.6, 0.0125, 0.000000001, -0.25, 0].map(formatCharge)).toEqual([
+      "0.25",
+      "0.6",
+      "0.013",
+      "0.000000001",
+      "-0.25",
+      "0",
+    ]);
     expect(formatCharge(undefined)).toBe("—");
+  });
+
+  it("writes an amount field's number exactly, as typed", () => {
+    expect([1_234.5, 0.25, 12_400, 0.000000001].map(formatTypedNumber)).toEqual([
+      "1,234.5",
+      "0.25",
+      "12,400",
+      "0.000000001",
+    ]);
   });
 });
 

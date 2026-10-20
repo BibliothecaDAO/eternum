@@ -115,7 +115,7 @@ describe("ReasonPlate", () => {
         />,
       ),
     );
-    expect(plate).toBe("Needs 15,000 labor, have 9,640 · in 10h 44mMap");
+    expect(plate).toBe("Needs 15K labor, have 9,640 · in 10h 44mMap");
   });
 
   it("counts what is free, or a store's own limit, in the same line", () => {
@@ -123,10 +123,10 @@ describe("ReasonPlate", () => {
       "Needs 3 population, 2 free",
     );
     expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
-      "Needs 24,000 labor, the store holds 18,000",
+      "Needs 24K labor, the store holds 18K",
     );
     expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
-      "Needs 48,000 Essence, have —",
+      "Needs 48K Essence, have —",
     );
   });
 

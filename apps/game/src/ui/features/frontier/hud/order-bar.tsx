@@ -1,4 +1,4 @@
-import { formatAmount, formatCharge, formatExact, formatDuration } from "@bibliothecadao/types";
+import { formatAmount, formatCharge, formatDuration } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -139,7 +139,7 @@ const CostChip = ({
         icons={[icon]}
         label={label}
         tone="bad"
-      >{`${formatExact(cost.held === undefined ? undefined : Math.floor(cost.held))} / ${formatCharge(cost.cost)}`}</HudChip>
+      >{`${formatAmount(cost.held === undefined ? undefined : Math.floor(cost.held))} / ${formatCharge(cost.cost)}`}</HudChip>
       {cost.wait !== undefined && (
         <HudChip icons={["hourglass"]} label={LEFT}>
           {formatDuration(cost.wait)}

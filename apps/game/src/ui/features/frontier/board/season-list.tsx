@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, LORDS } from "@bibliothecadao/types";
+import { formatAmount, formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -140,7 +140,7 @@ const PoolLine = ({ pool }: { pool: SeasonPoolFigures | null }) =>
     <dl className="flex shrink-0 flex-wrap gap-x-5 gap-y-1.5 whitespace-nowrap px-1 py-1.5 text-hud-body">
       <PoolFigure word={SEASON_POOL} value={formatExact(pool.lords)} />
       {pool.today !== undefined && <PoolFigure word={TODAY} value={`+${formatExact(pool.today)}`} />}
-      {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatExact(pool.price)} />}
+      {pool.price !== undefined && <PoolFigure word={PER_SHARE} value={formatCharge(pool.price)} />}
       {pool.ceiling !== undefined && <PoolFigure word={SHARE_CEILING} value={formatExact(pool.ceiling)} />}
     </dl>
   );

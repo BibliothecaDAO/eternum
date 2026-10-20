@@ -128,7 +128,7 @@ it.each(KINDS)("names %s discovery in Events", (kind) => {
     } as never,
     store,
   );
-  expect(presentation.title).toBe(`${kind === "Beasts" ? "Cyclops" : `${SPECIES[kind]} ${kind}`} found: +12.5 Essence`);
+  expect(presentation.title).toBe(`${kind === "Beasts" ? "Cyclops" : `${SPECIES[kind]} ${kind}`} found: +13 Essence`);
 });
 
 it("does not print a Frontier realm's off-map founding coordinates", () => {

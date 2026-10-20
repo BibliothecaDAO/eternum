@@ -1,4 +1,4 @@
-import { formatCharge, formatExact, formatWait } from "@bibliothecadao/types";
+import { formatCharge, formatWait } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED } from "@/ui/design-system/kit/words";
 import {
@@ -61,7 +61,7 @@ const orderOf = ({ path, exploreStamina, food }: TileOrder): OrderTip | null => 
   if (actionType === ActionType.Chest) return { line, cost: null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
   const pieces = [
-    ...(stamina > 0 ? [`${formatExact(stamina)} ${STAMINA}`] : []),
+    ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
     ...(food.wheat > 0 ? [`${formatCharge(food.wheat)} wheat`] : []),
     ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),
   ];
@@ -74,7 +74,7 @@ const orderOf = ({ path, exploreStamina, food }: TileOrder): OrderTip | null => 
  */
 const refusalLine = ({ refusal, staminaWait, explored }: TileOrder): string | null => {
   if (refusal?.reason === "stamina") {
-    const need = `Needs ${formatExact(refusal.need)} ${STAMINA}`;
+    const need = `Needs ${formatCharge(refusal.need)} ${STAMINA}`;
     return staminaWait === undefined ? need : `${need}, ${readyIn(staminaWait)}`;
   }
   if (refusal) return REFUSALS[refusal.reason];

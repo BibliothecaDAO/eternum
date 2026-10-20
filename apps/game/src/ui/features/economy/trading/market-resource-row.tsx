@@ -3,7 +3,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ID, ResourcesIds, formatAmount, formatCharge, resourceName } from "@bibliothecadao/types";
+import { ID, ResourcesIds, formatAmount, resourceName, formatFigure } from "@bibliothecadao/types";
 import { memo, useMemo } from "react";
 import { MARKET_RESOURCE_COLS } from "./market-resource-sidebar";
 
@@ -22,7 +22,7 @@ interface MarketResourceRowProps {
 /** A price in its side's tone (buying green, selling red), muted while no one offers it. */
 const Price = ({ price, tone }: { price: number; tone?: "text-hud-good" | "text-hud-bad" }) => (
   <span className={`text-right tabular-nums ${price > 0 ? (tone ?? "") : "text-hud-muted"}`}>
-    {formatCharge(price)}
+    {formatFigure(price)}
   </span>
 );
 

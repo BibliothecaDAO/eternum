@@ -36,9 +36,10 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
   });
 
-  it("puts what the order costs on one compact line under it, exactly as the chain charges it", () => {
+  it("puts what the order costs on one compact line under it, rounded as every charge reads", () => {
     const explore = [step(ActionType.Move), step(ActionType.Explore)];
     expect(cost(explore, { food: { wheat: 100, fish: 0 } })).toBe("21 stamina · 100 wheat");
+    expect(cost(explore, { food: { wheat: 28.15, fish: 0 } })).toBe("21 stamina · 28 wheat");
     expect(cost(explore, { food: { wheat: 0.05, fish: 0 } })).toBe("21 stamina · 0.05 wheat");
     expect(cost(explore, { food: { wheat: 30, fish: 30 } })).toBe("21 stamina · 30 wheat · 30 fish");
     expect(cost([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("2 stamina");

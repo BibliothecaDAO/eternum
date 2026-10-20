@@ -1,4 +1,4 @@
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
@@ -176,7 +176,7 @@ const AttributeRow = ({
           <SemanticIcon name="check" size={22} />
         ) : (
           <HudChip tone={affordable ? "good" : "bad"}>
-            {formatExact(price)} {XP}
+            {formatCharge(price)} {XP}
           </HudChip>
         )}
       </>

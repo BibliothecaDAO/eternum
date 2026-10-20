@@ -35,7 +35,14 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import { BuildingType, RESOURCE_PRECISION, ResourcesIds, formatAmount, formatRate } from "@bibliothecadao/types";
+import {
+  BuildingType,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  formatAmount,
+  formatRate,
+  formatCharge,
+} from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 
 import { KindChoice } from "../army/army-sheet";
@@ -298,7 +305,7 @@ const standingFigures = (
   };
   const takes = store.require("BuildingRule", { game_id: realm.game_id, category: view.category }).population_cost;
   const population: Figure[] =
-    takes > 0 ? [{ icons: ["person"], label: BUILDING_FIGURES.eachTakes, value: formatAmount(takes) }] : [];
+    takes > 0 ? [{ icons: ["person"], label: BUILDING_FIGURES.eachTakes, value: formatCharge(takes) }] : [];
   if (effect.kind === "trains")
     return [
       {

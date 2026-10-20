@@ -70,10 +70,10 @@ afterEach(() => {
 describe("a new order's charge, on the form and its confirmation", () => {
   // The form starts at 100 Wheat: the price each sets what the order costs.
   it.each([
-    { each: 0.0025, cost: "0.25" },
-    { each: 0.0125, cost: "1.25" },
-    { each: 124, cost: "12,400" },
-  ])("buying 100 Wheat at $each LORDS each costs exactly $cost LORDS", ({ each, cost }) => {
+    { each: 0.0025, shownEach: "0.0025", cost: "0.25" },
+    { each: 0.0125, shownEach: "0.013", cost: "1" },
+    { each: 124, shownEach: "124", cost: "12.4K" },
+  ])("buying 100 Wheat at $each LORDS each costs $cost LORDS, rounded", ({ each, shownEach, cost }) => {
     const host = render(
       <OrderCreation entityId={1} resourceId={ResourcesIds.Wheat} isBuy layout="compact" suggestedPrice={each} />,
     );
@@ -82,7 +82,7 @@ describe("a new order's charge, on the form and its confirmation", () => {
     press(host, "Buy 100 Wheat");
 
     expect(host.querySelector("[data-confirm]")?.textContent).toContain(
-      `100 Wheat for ${cost} LORDS, at ${each.toString()} LORDS each.`,
+      `100 Wheat for ${cost} LORDS, at ${shownEach} LORDS each.`,
     );
   });
 });
@@ -107,10 +107,10 @@ describe("filling an offer: what it takes, on the book and in the confirmation",
 
   it.each([
     { wheat: 100, lords: 0.25, shown: ["100", "0.25"] },
-    { wheat: 3, lords: 1.25, shown: ["3", "1.25"] },
-    { wheat: 50_000, lords: 12_400, shown: ["50,000", "12,400"] },
+    { wheat: 3, lords: 1.25, shown: ["3", "1"] },
+    { wheat: 50_000, lords: 12_400, shown: ["50K", "12.4K"] },
   ])(
-    "selling into a bid for $wheat Wheat takes $lords LORDS, never rounded or compacted",
+    "selling into a bid for $wheat Wheat takes $lords LORDS, rounded as every charge reads",
     ({ wheat, lords, shown }) => {
       const host = render(
         <OrderRow

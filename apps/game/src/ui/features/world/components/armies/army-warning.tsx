@@ -3,7 +3,6 @@ import {
   getArmyFoodRequirementLabel,
   getArmyReadinessTitle,
 } from "@/ui/design-system/kit/words";
-import { formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import type { ReactNode } from "react";
@@ -87,7 +86,6 @@ const getMissingFoodText = (foodWarning: { missingWheat: number; missingFish: nu
     missingWheat: foodWarning.missingWheat,
     missingFish: foodWarning.missingFish,
     wheatLabel: foodRequirementLabel,
-    formatAmount: (amount) => formatCharge(Number(amount)),
   });
 
 const formatRequirementTitle = ({

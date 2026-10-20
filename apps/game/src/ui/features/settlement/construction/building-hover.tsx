@@ -3,7 +3,15 @@ import { type ResourceRequirement } from "@/ui/design-system/molecules/requireme
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { adjustWonderLordsCost } from "@/ui/utils/utils";
 import { configManager } from "@bibliothecadao/eternum";
-import { type BuildingType, formatExact, formatFigure, resourceName, ResourcesIds } from "@bibliothecadao/types";
+import {
+  type BuildingType,
+  formatExact,
+  formatFigure,
+  resourceName,
+  ResourcesIds,
+  formatCharge,
+  formatAmount,
+} from "@bibliothecadao/types";
 import clsx from "clsx";
 
 /**
@@ -65,7 +73,7 @@ const BuildCost = ({ requirements }: { requirements: ResourceRequirement[] | und
           <ResourceIcon resource={resource} size="xs" withTooltip={false} />
           <span className="flex-1">{resourceName(resource)}</span>
           <span className="text-right tabular-nums">
-            {current === undefined ? "—" : formatExact(Math.floor(current))} / {formatExact(amount)}
+            {current === undefined ? "—" : formatAmount(Math.floor(current))} / {formatCharge(amount)}
           </span>
         </li>
       ))}

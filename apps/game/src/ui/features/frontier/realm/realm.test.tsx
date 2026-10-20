@@ -62,7 +62,7 @@ describe("the build sheet", () => {
     // The head holds what is free of the realm's population, and says so in words on its tooltip.
     const population = host.querySelector('[aria-label="population 2 / 6"]')!;
     expect(population.getAttribute("data-tip")).toBe("population 2 free of 6");
-    expect(tile("Workshop").textContent).toBe("Workshop10,000");
+    expect(tile("Workshop").textContent).toBe("Workshop10K");
     // A locked building shows its lock and gate on its foot, no labor price.
     expect(tile("War hall").textContent).not.toMatch(/\d/);
     expect(tile("Scouts' lodge").querySelector('[aria-label="Rare"]')).not.toBeNull();
@@ -100,7 +100,7 @@ describe("the build sheet", () => {
         />,
       ),
     );
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 15,000 labor, have 9,640 · in 10h 44m");
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 15K labor, have 9,640 · in 10h 44m");
     expect(buttons().some((button) => button.textContent?.startsWith("Build"))).toBe(false);
     act(() =>
       buttons()
@@ -169,7 +169,7 @@ describe("the castle", () => {
     expect(sheet.textContent).toContain("City");
     expect(sheet.textContent).toContain("Kingdom");
     expect(sheet.querySelector('[aria-label="plots 36"]')).not.toBeNull();
-    expect(host.querySelector(".ui-cost")?.textContent).toBe("15,000 labor");
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("15K labor");
     act(() =>
       buttons()
         .find((button) => button.textContent === "Upgrade")!

@@ -12,7 +12,14 @@ import {
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import { ResourcesIds, type ID, type Resource, formatClockTime, formatExact } from "@bibliothecadao/types";
+import {
+  ResourcesIds,
+  type ID,
+  type Resource,
+  formatClockTime,
+  formatExact,
+  formatCharge,
+} from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 /**
@@ -75,7 +82,7 @@ export const TravelInfo = ({
         <dd className="text-hud-strong">{`${resourceWeightKg} kg`}</dd>
         <dt className="text-right text-hud-label text-hud-muted">Donkeys Burnt for Transfer</dt>
         <dd className={canCarry ? "text-hud-strong text-hud-good" : "text-hud-strong text-hud-bad"}>
-          {formatExact(neededDonkeys)} 🔥🫏 [{donkeyBalance === undefined ? "—" : formatExact(donkeyBalance)}]
+          {formatCharge(neededDonkeys)} 🔥🫏 [{donkeyBalance === undefined ? "—" : formatExact(donkeyBalance)}]
         </dd>
       </dl>
       <ResourceWeight />

@@ -41,6 +41,7 @@ import {
   formatMoment,
   LORDS,
   resourceName,
+  formatFigure,
 } from "@bibliothecadao/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -237,7 +238,7 @@ export const OrderBookSide = ({
       icon={resourceMeaning(resourceId)}
       title={
         <span>
-          {isBuy ? "Sell to" : "Buy from"} <span className={sideTone(!isBuy)}>{formatCharge(bestPrice)}</span> {LORDS}
+          {isBuy ? "Sell to" : "Buy from"} <span className={sideTone(!isBuy)}>{formatFigure(bestPrice)}</span> {LORDS}
           each
         </span>
       }
@@ -430,7 +431,7 @@ export const OrderRow = memo(
     return (
       <HudTableRow
         cols={ORDER_COLS}
-        label={`${actionLabel} ${getsDisplay} at ${formatCharge(offer.perLords)} ${LORDS} each`}
+        label={`${actionLabel} ${getsDisplay} at ${formatFigure(offer.perLords)} ${LORDS} each`}
         title={`Expires ${formatMoment(offer.expiresAt)}`}
         selected={isSelf}
       >
@@ -438,7 +439,7 @@ export const OrderRow = memo(
           <ResourceIcon withTooltip={false} size="xs" resource={getDisplayResource} />
           {getsDisplay}
         </span>
-        <span className="text-center tabular-nums">{formatCharge(offer.perLords)}</span>
+        <span className="text-center tabular-nums">{formatFigure(offer.perLords)}</span>
         <span className={`flex items-center justify-center gap-1 tabular-nums ${sideTone(isBuy)}`}>
           <ResourceIcon withTooltip={false} size="xs" resource={ResourcesIds.Lords} />
           {formatCharge(knownAmount(getTotalLords))}
@@ -563,7 +564,7 @@ const TakeOfferForm = memo(
               title="Donkeys Required"
               trail={
                 <span className={`tabular-nums ${sideTone(!shortOfDonkeys)}`}>
-                  {formatExact(donkeysNeeded)} [{formatAmount(donkeyBalance)}]
+                  {formatCharge(donkeysNeeded)} [{formatAmount(donkeyBalance)}]
                 </span>
               }
             />
@@ -769,7 +770,7 @@ export const OrderCreation = memo(
           onBack={() => setShowConfirmation(false)}
         >
           <span>
-            {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}, at {formatCharge(Number(bid))} {LORDS}{" "}
+            {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}, at {formatFigure(Number(bid))} {LORDS}{" "}
             each.
           </span>
         </HudConfirm>
@@ -820,7 +821,7 @@ export const OrderCreation = memo(
         <span title="Donkeys needed / available">
           <HudChip tone={enoughDonkeys ? undefined : "bad"}>
             <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
-            {formatExact(donkeysNeeded)} / {formatAmount(knownAmount(donkeyBalance))}
+            {formatCharge(donkeysNeeded)} / {formatAmount(knownAmount(donkeyBalance))}
           </HudChip>
         </span>
         <span title="Weight">
