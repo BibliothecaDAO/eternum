@@ -171,14 +171,12 @@ export const SignInFrame = ({
   );
 
 const PhoneHero = () => (
-  <section className="relative isolate -mx-4 flex h-[38dvh] items-start overflow-hidden px-4 pt-3">
-    <img
-      {...paintingSources(PAINTING)}
-      sizes="100vw"
-      alt=""
-      className="absolute inset-0 -z-10 size-full object-cover"
-    />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-app-ground via-transparent to-transparent" />
+  <section className="relative isolate flex h-[38dvh] items-start pt-3">
+    {/* The painting runs to the screen's edges; the lore line keeps to the column. */}
+    <div aria-hidden className="absolute inset-y-0 -inset-x-gutter -z-10 overflow-hidden">
+      <img {...paintingSources(PAINTING)} sizes="100vw" alt="" className="size-full object-cover" />
+      <span className="absolute inset-0 bg-gradient-to-b from-app-ground via-transparent to-transparent" />
+    </div>
     <p className="text-app-heading text-app-ink">{LORE_LINE}</p>
   </section>
 );
