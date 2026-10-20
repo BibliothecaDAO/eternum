@@ -47,7 +47,7 @@ afterEach(async () => {
   host.remove();
 });
 
-/** A surface offering the step, as the Build order panel and Next up each do: its verb, busy while the step sends. */
+/** A surface offering the step, as the Build order panel and Attention's suggestions each do: its verb, busy while the step sends. */
 const Surface = ({ name }: { name: string }) => {
   const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
   return (
@@ -66,7 +66,7 @@ it("sends a step once while it is in flight, whichever surface presses it, and s
     root.render(
       <>
         <Surface name="Build order" />
-        <Surface name="Next up" />
+        <Surface name="Attention" />
       </>,
     ),
   );
@@ -75,12 +75,12 @@ it("sends a step once while it is in flight, whichever surface presses it, and s
   const busy = () => [...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-busy"));
 
   await press("Build order");
-  await press("Next up");
+  await press("Attention");
   expect(send.build).toHaveBeenCalledTimes(1);
   expect(busy()).toEqual(["true", "true"]);
 
   await act(async () => send.land());
   expect(busy()).toEqual(["false", "false"]);
-  await press("Next up");
+  await press("Attention");
   expect(send.build).toHaveBeenCalledTimes(2);
 });

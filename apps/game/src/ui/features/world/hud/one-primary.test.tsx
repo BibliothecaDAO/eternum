@@ -43,8 +43,7 @@ vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({
 vi.mock("@/ui/modules/entity-details/hooks/use-structure-upgrade", () => ({
   useStructureUpgrade: () => ({ isOwner: true, currentLevel: 0 }),
 }));
-// Resources arrived at the selected realm, and another realm, North, can take its step: Next up's queue holds the
-// selected realm's Provision, then the arrival, then North's step.
+// Another realm, North, can take its build-order step: the Build order panel's, never Next up's.
 vi.mock("@/ui/features/world/containers/left-facets/use-empire-suggestions", () => ({
   useEmpireSuggestions: () => [{ id: "s2", realmId: 2, realmName: "North" }],
 }));
@@ -98,18 +97,16 @@ describe("one filled gold action at a time", () => {
     const advance = () =>
       act(() => [...nextUp().querySelectorAll("button")].find((b) => b.textContent?.includes("›"))!.click());
     const shown: string[] = [];
-    for (let step = 0; step < 3; step += 1) {
+    for (let step = 0; step < 2; step += 1) {
       expect(filledGold()).toHaveLength(1);
       expect(nextUp().contains(host.querySelector('.ui-button[data-kind="primary"]'))).toBe(true);
       shown.push(nextUp().querySelector("p")!.textContent!);
       advance();
     }
-    // Alerts lead, then the tips: the selected realm's step, then another realm's.
-    expect(shown).toEqual([
-      "Resources arrived at Realm.",
-      "Realm is ready to be provisioned.",
-      "North is ready to be provisioned.",
-    ]);
+    // Alerts lead, then the tips: the selected realm's step. North's build-order step stays in the Build order panel.
+    expect(shown).toEqual(["Resources arrived at Realm.", "Realm is ready to be provisioned."]);
+    expect(nextUp().textContent).toContain("of 2 ›");
+    expect(nextUp().textContent).not.toContain("North");
   });
 
   it("fills the Castle's Provision and Attention where no Next up is shown, as on the phone", () => {

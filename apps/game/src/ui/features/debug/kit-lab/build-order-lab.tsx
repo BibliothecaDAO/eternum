@@ -75,14 +75,6 @@ const NEWCOMER_STEPS: NextStep[] = [
     busy: false,
     run,
   },
-  {
-    key: "default-order:egonal",
-    kind: "order",
-    line: "Egonal: build a wood camp (2 of 2), the default order's next step.",
-    verb: "Build wood camp",
-    busy: false,
-    run,
-  },
 ];
 
 /** A realm's next step: the realm and its step, its rank and why, and its one verb. */
@@ -206,7 +198,7 @@ export const BuildOrderLab = () => {
     <div className="flex min-h-screen flex-wrap items-start gap-8 bg-[#0b1418] p-6">
       <Shown
         name="Next up, for a newcomer"
-        line="How to play: the points coach first (raise an army, explore, a crate); the default order's next building is among its pages. As today."
+        line="How to play: the points coach (raise an army, explore, a crate). The build order's steps are the panel's alone (owner, 10-20: remove build steps in Next up)."
       >
         <NextUpView steps={NEWCOMER_STEPS} />
       </Shown>

@@ -5,13 +5,7 @@ import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
-import { useEmpireSuggestions } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
-import {
-  isOrderSuggestion,
-  useSuggestionActions,
-} from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { Position, structureMapPosition } from "@bibliothecadao/eternum";
@@ -38,9 +32,9 @@ const usePublishShown = (step: NextStep | undefined) => {
  * The one thing to do now: the step that scores most for the player's state, with the others a tap away. First the
  * alerts: structures under attack or with arrivals, and an army just lost. Then, as tips, the coach's steps ranked by
  * what scores (raise an army where troops are on hand, open a crate beside an army, explore, go for a crate, a camp or
- * rift, a Hyperstructure, or level up first where the army would surely lose), then the selected realm's level-up and
- * the suggested moves. Tips off (Settings) leaves the alerts alone. Its button is the screen's one primary action;
- * before play opens it waits, saying when play starts.
+ * rift, a Hyperstructure, or level up first where the army would surely lose), then the selected realm's level-up. The
+ * build order's steps are the Build order panel's alone. Tips off (Settings) leaves the alerts alone. Its button is the
+ * screen's one primary action; before play opens it waits, saying when play starts.
  */
 export const NextUp = () => <NextUpView steps={useNextSteps()} refusal={useActNowRefusal()} />;
 
@@ -177,7 +171,6 @@ function useNextSteps(): NextStep[] {
   const attention = useAttentionSteps();
   const lostArmy = useLostArmyAlert();
   const coach = useCoachSteps();
-  const suggestions = useSuggestionSteps(structureEntityId);
   const tips = useWorldAppearanceStore((state) => state.nextUpTips);
   const structures = useFactView(playerStructuresView);
   const mode = useGameModeConfig();
@@ -199,7 +192,7 @@ function useNextSteps(): NextStep[] {
   // A lost army's alert already says where to raise the next one.
   const route = lostArmy.length > 0 ? coach.filter(({ key }) => !RAISE_KEYS.has(key)) : coach;
   // With tips off (Settings), Next up holds the alerts alone, and shows nothing without one.
-  return tips ? [...alerts, ...route, ...levelUpStep, ...suggestions] : alerts;
+  return tips ? [...alerts, ...route, ...levelUpStep] : alerts;
 }
 
 /** The coach's steps for an empty field: raising an army, or the barracks it needs first. */
@@ -235,40 +228,5 @@ function useAttentionSteps(): NextStep[] {
       busy: false,
       run: () => show(structure),
     };
-  });
-}
-
-/**
- * The suggested moves. A realm's level-up is that realm's own step, read and sent by its hook; the selected realm's
- * leads the list on its own, so it is not repeated here.
- */
-function useSuggestionSteps(selectedId: number): NextStep[] {
-  const suggestions = useEmpireSuggestions();
-  const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
-  // Each suggestion's own flow words its failure.
-  const run = (suggestion: Parameters<typeof handleSuggestionClick>[0]) =>
-    void handleSuggestionClick(suggestion).catch(() => undefined);
-  return suggestions.flatMap((suggestion): NextStep[] => {
-    if (isOrderSuggestion(suggestion)) {
-      return [
-        {
-          key: `suggestion:${suggestion.id}`,
-          kind: "order",
-          line: `${suggestion.realmName}: ${suggestion.reason ?? suggestion.label}`,
-          verb: suggestion.label,
-          busy: pendingSuggestionIds.includes(suggestion.id),
-          run: () => run(suggestion),
-        },
-      ];
-    }
-    if (suggestion.realmId === selectedId) return [];
-    return [
-      {
-        key: `level-up:${suggestion.realmId}`,
-        kind: "level-up",
-        realmId: suggestion.realmId,
-        name: suggestion.realmName,
-      },
-    ];
   });
 }

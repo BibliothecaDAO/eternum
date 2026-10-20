@@ -19,8 +19,8 @@ export const isOrderSuggestion = (suggestion: EmpireSuggestion): suggestion is O
   suggestion.action !== "upgrade";
 
 /**
- * The steps being sent, one set for the game: Next up, the Build order panel and the suggestions panel offer the same
- * step, and it sends once, whichever of them presses it, until its send ends.
+ * The steps being sent, one set for the game: the Build order panel and the suggestions panel offer the same step, and
+ * it sends once, whichever of them presses it, until its send ends.
  */
 const usePendingSuggestions = create<{ ids: readonly string[] }>(() => ({ ids: [] }));
 
