@@ -6,7 +6,7 @@
   font-family: var(--hud-font);
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
 }
 /* Every control of the sheet takes the pointer wherever it stands. The HUD's bands and columns let the pointer through
@@ -39,7 +39,7 @@ button[class^="ui"] {
   padding: theme(spacing.2) theme(spacing.3);
   color: var(--hud-muted);
   font-size: var(--hud-text-title);
-  line-height: var(--hud-line-title);
+  line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
 }
 /* The panel's name: its chevron (when it folds), its icon and its title, one line. */
@@ -82,7 +82,7 @@ button.ui-panel__name {
   margin-left: auto;
   color: var(--hud-cue);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 /* The body's padding is a default the caller's layout may change (bodyClassName's p-0, pt-0): it carries no weight
@@ -115,7 +115,7 @@ button.ui-panel__name {
   padding: 0 theme(spacing.3);
   font-family: inherit;
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
   white-space: nowrap;
   cursor: pointer;
@@ -128,7 +128,7 @@ button.ui-panel__name {
   height: calc(var(--hud-control) - 8px);
   padding: 0 theme(spacing.2);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 .ui-button[data-kind="primary"] {
@@ -222,7 +222,7 @@ button.ui-panel__name {
   color: rgb(var(--hud-ink));
   font-family: inherit;
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
   outline: none;
@@ -258,7 +258,7 @@ button.ui-panel__name {
 .ui-tip__line {
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
 }
 /* What a verb costs, exactly as charged, one compact line: under its order in a tip, centred under its button, at the
@@ -266,7 +266,7 @@ button.ui-panel__name {
 .ui-cost {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -275,14 +275,14 @@ button.ui-panel__name {
 .ui-tip__why {
   color: var(--hud-warn);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 /* How to do it: the gesture, as a cue. */
 .ui-tip__how {
   color: var(--hud-cue);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 
@@ -305,7 +305,7 @@ button.ui-panel__name {
   color: var(--hud-cue);
   font-family: inherit;
   font-size: var(--hud-text-title);
-  line-height: var(--hud-line-title);
+  line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
   cursor: pointer;
   transition:
@@ -316,7 +316,7 @@ button.ui-panel__name {
   height: calc(var(--hud-control) - 8px);
   padding: 0 theme(spacing.2);
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
 }
 /* A phone's sheet is narrower than a full-size strip: each tab at the body's size, closer together. The phone layout's
  * width, not a container's: a strip that sizes to its tabs (the top bar's) cannot also be sized by them. */
@@ -324,7 +324,7 @@ button.ui-panel__name {
   .ui-tab {
     padding: 0 theme(spacing.2);
     font-size: var(--hud-text-body);
-    line-height: var(--hud-line-body);
+    line-height: var(--hud-leading-body);
   }
 }
 .ui-tab:is(:hover, [data-state="hover"]) {
@@ -351,7 +351,7 @@ button.ui-panel__name {
   padding: 1px theme(spacing[1.5]);
   color: rgb(var(--hud-accent));
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
   /* A chip is one tag: it never breaks over two lines, and gives way to the words beside it instead. */
@@ -395,7 +395,7 @@ button.ui-panel__name {
   justify-content: center;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
 }
@@ -459,7 +459,7 @@ button.ui-panel__name {
   padding: 0 theme(spacing.2);
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   white-space: nowrap;
 }
@@ -567,7 +567,7 @@ button.ui-ring:focus-visible .ui-ring__face {
   padding: 0 3px;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-badge);
-  line-height: var(--hud-line-badge);
+  line-height: var(--hud-leading-badge);
   font-weight: var(--hud-weight-badge);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -623,13 +623,13 @@ button.ui-row {
 .ui-row__title {
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
 }
 .ui-row__detail {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 /* A row with its own controls: the button that chooses it takes the room, the controls keep theirs. */
@@ -665,7 +665,7 @@ span.ui-row__choose {
   margin-left: auto;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
 }
@@ -699,7 +699,7 @@ span.ui-row__choose {
   color: rgb(var(--hud-ink));
   font-family: inherit;
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
   text-align: inherit;
   cursor: pointer;
@@ -737,7 +737,7 @@ span.ui-row__choose {
   border-bottom: 1px solid var(--hud-divider);
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 
@@ -748,13 +748,13 @@ span.ui-row__choose {
   gap: theme(spacing.2);
   padding: theme(spacing.1) 0;
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-body);
 }
 .ui-event__time {
   flex: none;
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   color: var(--hud-cue);
   font-variant-numeric: tabular-nums;
@@ -885,7 +885,7 @@ span.ui-row__choose {
   padding: theme(spacing.2) theme(spacing.2) theme(spacing.2) theme(spacing.4);
   color: rgb(var(--hud-accent));
   font-size: var(--hud-text-display);
-  line-height: var(--hud-line-display);
+  line-height: var(--hud-leading-display);
   font-weight: var(--hud-weight-display);
 }
 .ui-window__bar > :last-child {
@@ -1041,7 +1041,7 @@ button.ui-relic:focus-visible {
   overflow: hidden;
   color: var(--relic);
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1050,7 +1050,7 @@ button.ui-relic:focus-visible {
   flex: none;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
 }
@@ -1077,7 +1077,7 @@ button.ui-relic:focus-visible {
   min-width: 0;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 .ui-actions > :last-child:not(.ui-actions__note) {
@@ -1131,7 +1131,7 @@ button.ui-relic:focus-visible {
 .ui-deploy__name {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 /* A number set in steps: the field between a step down and a step up. */
@@ -1151,7 +1151,7 @@ button.ui-relic:focus-visible {
 .ui-amount__of {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   font-variant-numeric: tabular-nums;
 }
@@ -1234,7 +1234,7 @@ button.ui-relic:focus-visible {
 .ui-transfer__held {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 .ui-transfer__steps {
@@ -1383,7 +1383,7 @@ button.ui-relic:focus-visible {
   white-space: nowrap;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 .ui-menu__label {
@@ -1487,7 +1487,7 @@ button.ui-relic:focus-visible {
 .ui-confirm__question {
   color: rgb(var(--hud-accent));
   font-size: var(--hud-text-title);
-  line-height: var(--hud-line-title);
+  line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
 }
 .ui-confirm[data-tone="bad"] {
@@ -1525,7 +1525,7 @@ button.ui-relic:focus-visible {
 .ui-notice__why {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 
@@ -1540,7 +1540,7 @@ button.ui-relic:focus-visible {
   color: var(--hud-muted);
   font-family: inherit;
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
   cursor: pointer;
 }
@@ -1781,7 +1781,7 @@ button.ui-pill:focus-visible {
 .ui-portrait__initial {
   color: var(--hud-muted);
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
 }
 
@@ -1855,7 +1855,7 @@ button.ui-card__choose:disabled {
   overflow: hidden;
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-title);
-  line-height: var(--hud-line-title);
+  line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1865,7 +1865,7 @@ button.ui-card__choose:disabled {
   flex-direction: column;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 /* A small card, three to a sheet's row (a Frontier building): its painting above its name, its words centred under it. */
@@ -1887,7 +1887,7 @@ button.ui-card__choose:disabled {
 .ui-card[data-size="sm"] .ui-card__title {
   max-width: 100%;
   font-size: var(--hud-text-strong);
-  line-height: var(--hud-line-strong);
+  line-height: var(--hud-leading-strong);
   font-weight: var(--hud-weight-strong);
 }
 .ui-card[data-size="sm"] .ui-card__detail {
@@ -1898,7 +1898,7 @@ button.ui-card__choose:disabled {
 .ui-card__refusal {
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 .ui-card__actions {
@@ -1929,7 +1929,7 @@ button.ui-card__choose:disabled {
 .ui-float {
   color: rgb(var(--hud-gold));
   font-size: var(--hud-text-body);
-  line-height: var(--hud-line-body);
+  line-height: var(--hud-leading-body);
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.9);
@@ -1984,13 +1984,13 @@ button.ui-card__choose:disabled {
 .ui-banner__eyebrow {
   color: var(--banner-tone);
   font-size: var(--hud-text-label);
-  line-height: var(--hud-line-label);
+  line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
 .ui-banner__title {
   color: rgb(var(--hud-ink));
   font-size: var(--hud-text-title);
-  line-height: var(--hud-line-title);
+  line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
 }
 .ui-banner__line {

@@ -598,18 +598,30 @@ export const HUD_LAYERS = {
   tip: "250",
 } as const;
 
-/** The HUD sheet's CSS variables: `--hud-<name>`, and each type role as `--hud-text-<role>`, `--hud-line-<role>`, `--hud-weight-<role>`. */
-export const hudVariables = (): Record<string, string> => ({
-  ...Object.fromEntries(Object.entries(HUD_SHEET).map(([name, value]) => [`--hud-${name}`, value])),
-  ...Object.fromEntries(
-    Object.entries(HUD_TYPE).flatMap(([role, { size, line, weight }]) => [
+/**
+ * The HUD sheet's CSS variables: `--hud-<name>`, and each type role as `--hud-text-<role>`, `--hud-leading-<role>`,
+ * `--hud-weight-<role>`. A role's leading is never `--hud-line-*`: that is an edge's colour (line, line-strong).
+ */
+export const hudVariables = (): Record<string, string> =>
+  variablesOf([
+    ...Object.entries(HUD_SHEET).map(([name, value]): [string, string] => [`--hud-${name}`, value]),
+    ...Object.entries(HUD_TYPE).flatMap(([role, { size, line, weight }]): [string, string][] => [
       [`--hud-text-${role}`, size],
-      [`--hud-line-${role}`, line],
+      [`--hud-leading-${role}`, line],
       [`--hud-weight-${role}`, weight],
     ]),
-  ),
-  "--hud-font": CLASSIC_HUD_FONTS.ui,
-});
+    ["--hud-font", CLASSIC_HUD_FONTS.ui],
+  ]);
+
+/** CSS variables from their names and values, each name written once: two meanings never share a variable. */
+const variablesOf = (entries: [string, string][]): Record<string, string> => {
+  const variables: Record<string, string> = {};
+  for (const [name, value] of entries) {
+    if (name in variables) throw new Error(`The CSS variable ${name} is written twice`);
+    variables[name] = value;
+  }
+  return variables;
+};
 
 /** Each mode's variables, and the derived values again, so a mode root (and the lab's editor on it) restyles them. */
 export const hudModeVariables = (mode: HudMode): Record<string, string> => ({
@@ -746,21 +758,21 @@ export const APP_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
 
 /**
  * The app sheet's CSS variables, under `data-surface="shell"`: `--app-<name>`, each type role as `--app-text-<role>`,
- * `--app-line-<role>`, `--app-weight-<role>`, `--app-face-<role>`; and the age a game shows, Blitz's by default.
+ * `--app-leading-<role>`, `--app-weight-<role>`, `--app-face-<role>`; and the age a game shows, Blitz's by default. A
+ * role's leading is never `--app-line-*`: that is an edge's colour (line, line-strong).
  */
-export const appVariables = (): Record<string, string> => ({
-  ...Object.fromEntries(Object.entries(APP_SHEET).map(([name, value]) => [`--app-${name}`, value])),
-  ...Object.fromEntries(Object.entries(APP_DERIVED).map(([name, value]) => [`--app-${name}`, value])),
-  ...Object.fromEntries(
-    Object.entries(APP_TYPE).flatMap(([role, { size, line, weight, face }]) => [
+export const appVariables = (): Record<string, string> =>
+  variablesOf([
+    ...Object.entries(APP_SHEET).map(([name, value]): [string, string] => [`--app-${name}`, value]),
+    ...Object.entries(APP_DERIVED).map(([name, value]): [string, string] => [`--app-${name}`, value]),
+    ...Object.entries(APP_TYPE).flatMap(([role, { size, line, weight, face }]): [string, string][] => [
       [`--app-text-${role}`, size],
-      [`--app-line-${role}`, line],
+      [`--app-leading-${role}`, line],
       [`--app-weight-${role}`, weight],
       [`--app-face-${role}`, FONTS[face]],
     ]),
-  ),
-  ...appAgeVariables("blitz"),
-});
+    ...Object.entries(appAgeVariables("blitz")),
+  ]);
 
 /** A game's age, wherever the app shows one (`data-age` on its card or page): the HUD's own age colours, one source. */
 export const appAgeVariables = (age: HudMode): Record<string, string> => ({

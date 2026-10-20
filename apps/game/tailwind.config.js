@@ -64,7 +64,7 @@ export default {
             `hud-${role}`,
             [
               `var(--hud-text-${role})`,
-              { lineHeight: `var(--hud-line-${role})`, fontWeight: `var(--hud-weight-${role})` },
+              { lineHeight: `var(--hud-leading-${role})`, fontWeight: `var(--hud-weight-${role})` },
             ],
           ]),
         ),
@@ -445,7 +445,7 @@ export default {
             {
               fontFamily: `var(--app-face-${role})`,
               fontSize: `var(--app-text-${role})`,
-              lineHeight: `var(--app-line-${role})`,
+              lineHeight: `var(--app-leading-${role})`,
               fontWeight: `var(--app-weight-${role})`,
             },
           ]),

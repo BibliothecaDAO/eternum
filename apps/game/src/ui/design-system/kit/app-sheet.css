@@ -16,7 +16,7 @@
   padding: 0 theme(spacing.5);
   font-family: var(--app-face-strong);
   font-size: var(--app-text-strong);
-  line-height: var(--app-line-strong);
+  line-height: var(--app-leading-strong);
   font-weight: var(--app-weight-strong);
   white-space: nowrap;
   transition:
@@ -85,7 +85,7 @@
 .app-field__line {
   font-family: var(--app-face-label);
   font-size: var(--app-text-label);
-  line-height: var(--app-line-label);
+  line-height: var(--app-leading-label);
   font-weight: var(--app-weight-label);
   color: var(--app-muted);
 }
@@ -334,7 +334,7 @@
 .app-panel__head h2 {
   font-family: var(--app-face-heading);
   font-size: var(--app-text-heading);
-  line-height: var(--app-line-heading);
+  line-height: var(--app-leading-heading);
   font-weight: var(--app-weight-heading);
 }
 /* A head about one game or mode: its painting behind the name, faded into the panel. */
@@ -419,7 +419,7 @@
 .app-age-column__name {
   font-family: var(--app-face-title);
   font-size: var(--app-text-title);
-  line-height: var(--app-line-title);
+  line-height: var(--app-leading-title);
   color: var(--app-ink);
 }
 
@@ -478,13 +478,13 @@
 .app-game-card__title {
   font-family: var(--app-face-title);
   font-size: var(--app-text-title);
-  line-height: var(--app-line-title);
+  line-height: var(--app-leading-title);
   color: var(--app-ink);
   text-shadow: 0 2px 0 rgb(0 0 0 / 0.6);
 }
 .app-game-card[data-size="lead"] .app-game-card__title {
   font-size: var(--app-text-display);
-  line-height: var(--app-line-display);
+  line-height: var(--app-leading-display);
 }
 .app-game-card__facts {
   display: flex;
@@ -550,13 +550,13 @@
   white-space: nowrap;
   font-family: var(--app-face-body);
   font-size: var(--app-text-body);
-  line-height: var(--app-line-body);
+  line-height: var(--app-leading-body);
   font-weight: var(--app-weight-strong);
 }
 .app-row__detail {
   font-family: var(--app-face-label);
   font-size: var(--app-text-label);
-  line-height: var(--app-line-label);
+  line-height: var(--app-leading-label);
   font-weight: var(--app-weight-label);
   color: var(--app-muted);
 }
@@ -648,7 +648,7 @@
   gap: theme(spacing.2);
   font-family: var(--app-face-figure);
   font-size: var(--app-text-figure);
-  line-height: var(--app-line-figure);
+  line-height: var(--app-leading-figure);
   font-weight: var(--app-weight-figure);
   font-variant-numeric: tabular-nums;
   color: var(--app-ink);
@@ -851,7 +851,7 @@
 .app-page-head h1 {
   font-family: var(--app-face-title);
   font-size: var(--app-text-title);
-  line-height: var(--app-line-title);
+  line-height: var(--app-leading-title);
   color: var(--app-ink);
 }
 .app-page-head__back {
@@ -922,7 +922,7 @@
 .app-dialog h2 {
   font-family: var(--app-face-title);
   font-size: var(--app-text-title);
-  line-height: var(--app-line-title);
+  line-height: var(--app-leading-title);
 }
 .app-dialog__body {
   font-family: var(--app-face-body);
