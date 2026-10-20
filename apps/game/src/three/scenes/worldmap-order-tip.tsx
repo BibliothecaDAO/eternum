@@ -28,8 +28,13 @@ export class PointerOrderTip {
     private readonly gone: () => void,
   ) {}
 
-  /** The pointer came to a tile, or left the map (null). */
+  /**
+   * The pointer came to a tile, or left the map (null). The tile a click took is said again only once the pointer has
+   * left it: the scene points at the same tile again while the pointer rests there (its hover colours change as the
+   * click's preview opens), and the line would sit over that preview.
+   */
   point(hex: HexPosition | null): void {
+    if (this.taken && hex !== null && this.hex !== null && hex.col === this.hex.col && hex.row === this.hex.row) return;
     this.hex = hex;
     this.taken = false;
     this.say();

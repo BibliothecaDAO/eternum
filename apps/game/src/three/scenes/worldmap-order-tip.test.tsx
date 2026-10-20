@@ -95,7 +95,7 @@ describe("the line under a still pointer", () => {
     expect({ x: after!.x - before!.x, y: after!.y - before!.y }).toEqual({ x: 200, y: 100 });
   });
 
-  it("stays away once a click takes the tile, until the pointer comes to a tile again", () => {
+  it("stays away once a click takes the tile, while the pointer rests on it, until the pointer leaves it", () => {
     tile.path = move(2);
     pointer.point({ col: 1, row: 0 });
     pointer.take();
@@ -105,6 +105,11 @@ describe("the line under a still pointer", () => {
     pointer.refresh();
     expect(shownLine()).toBeNull();
 
+    // The click's preview opening recolours the hover, and the scene points at the same tile again.
+    pointer.point({ col: 1, row: 0 });
+    expect(shownLine()).toBeNull();
+
+    pointer.point({ col: 2, row: 0 });
     pointer.point({ col: 1, row: 0 });
     expect(shownLine()).toBe("Open crate");
   });
