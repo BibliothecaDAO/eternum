@@ -125,7 +125,9 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
   expect(mode.structure.getName(structure).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(words.kindLine.match(/Troll/g)).toHaveLength(1);
   expect(events[0].title).toBe(`${siteDisplayName(SITE)} cleared`);
-  expect(events[1].title).toContain("Troll found");
+  // A discovery names the site as its clear does; what guards it is the kind beside it.
+  expect(events[1].title).toContain(`${siteDisplayName(SITE)} found`);
+  expect(events[1].description).toMatch(/^Troll · /);
 });
 
 it("retains site proper names and Camp for Blitz kind lines and lists", () => {
