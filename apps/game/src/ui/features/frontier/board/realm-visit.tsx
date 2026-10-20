@@ -22,18 +22,17 @@ export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure
 };
 
 /**
- * While visiting another realm, the foot that names it, with Leave. A visit that opens on arrival (see RealmVisit) opens
- * the realm where it says (its board, or the world map on it) once its rows arrive with the visit's scope, as a realm
- * the player does not own, so every order stays off. Leaving returns to the player's own realm. Stays mounted between
- * visits, so the way home runs after one ends.
+ * A visit's way in and out, held once above the HUD's layouts (FrontierHud), so a desktop<->phone change, which remounts
+ * the foot, replays nothing. A visit that opens on arrival (see RealmVisit) opens the realm where it says (its board, or
+ * the world map on it) once its rows arrive with the visit's scope, as a realm the player does not own, so every order
+ * stays off; it opens once per visit asked for. A spectator's visit that ends returns to the player's own realm.
  */
-export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null }) => {
+export const useRealmVisitNavigation = (home: NativeRows["Structure"] | null) => {
   const { setup } = useGame();
   const visit = useRealmVisit();
   const previousVisit = useRef(visit);
   const openedVisit = useRef<RealmVisit | null>(null);
   const visited = useVisitedRealm(visit);
-  const name = usePlayerDisplayName(visit?.player) ?? "—";
   const goToStructure = useGoToStructure(setup);
   /** A realm's board, or the world map on it. */
   const openRealm = (realm: NativeRows["Structure"], spectator: boolean, on: "realm" | "map" = "realm") => {
@@ -65,7 +64,13 @@ export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null 
       openRealm(home, false);
     }
   }, [visit, home]);
+};
 
+/** While visiting another realm, the foot that names it, with Leave (home: the player's realm, to return to). */
+export const RealmVisitFoot = ({ home }: { home: NativeRows["Structure"] | null }) => {
+  const visit = useRealmVisit();
+  const visited = useVisitedRealm(visit);
+  const name = usePlayerDisplayName(visit?.player) ?? "—";
   if (!visit) return null;
 
   return (
