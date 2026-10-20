@@ -1,3 +1,4 @@
+import { staminaOf } from "@/utils/config";
 import { BiomeCombat } from "@/components/BiomeCombat";
 
 # Stamina & Biome Effects
@@ -16,23 +17,23 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 
 **Eternum Stamina System:**
 
-- **Day Length**: 60 minutes (10 minutes per phase)
-- **Stamina Regeneration per Phase**: 2 stamina
-- **Total Stamina Regeneration per Day**: 12 stamina
+- **Day Length**: {staminaOf("eternum").dayMinutes} minutes ({staminaOf("eternum").phaseMinutes} minute per phase)
+- **Stamina Regeneration per Phase**: {staminaOf("eternum").perPhase} stamina
+- **Total Stamina Regeneration per Day**: {staminaOf("eternum").perDay} stamina
 
 ## Combat Stamina Mechanics
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **5
-stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend
+**{staminaOf("eternum").attack} stamina**. If the attacker does not have the full stamina cost, the attack command is
 rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **4 stamina**
-(2 × stamina regen per phase). If the defender's current stamina is below this required threshold, they receive a **30%
-damage penalty** during that combat round.
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends
+**{staminaOf("eternum").defense} stamina**. If the defender's current stamina is below this required threshold, they
+receive a **30% damage penalty** during that combat round.
 
 ## Biomes (Combat Effects)
 

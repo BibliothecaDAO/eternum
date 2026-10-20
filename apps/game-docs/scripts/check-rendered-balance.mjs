@@ -72,8 +72,102 @@ export const relicRuns = (relics, rules, firstRelicId) => [
   },
 ];
 
-/** The relic table and the Blitz preset's relic rules, read from their TypeScript sources through Vite. */
-const loadRelicSources = async () => {
+/** Thousands with commas, as the pages write them. */
+const n = (value) => value.toLocaleString("en-US");
+const pct = (bps) => `${n(bps / 100)}%`;
+const DEPTH_NAMES = ["Surface", "Ethereal I", "Ethereal II", "Ethereal III"];
+const TIERS = ["common", "uncommon", "rare", "epic", "legendary"];
+const POINTS_PRECISION = 1_000_000;
+
+/** Stamina as each mode's prose states it: a phase is one armies tick, and a day six of them. */
+const staminaPhrases = (mode, config) => {
+  const stamina = config.troop.stamina;
+  return [
+    {
+      page: `${mode}/military/stamina-and-biomes`,
+      phrases: [
+        `Stamina Regeneration per Phase: ${stamina.staminaGainPerTick} stamina`,
+        `Total Stamina Regeneration per Day: ${stamina.staminaGainPerTick * 6} stamina`,
+        `the attacker must spend ${stamina.staminaAttackReq} stamina`,
+        `The defender simultaneously spends ${stamina.staminaDefenseReq} stamina`,
+      ],
+    },
+    {
+      page: `${mode}/worldmap-movement/movement`,
+      phrases: [
+        `+${stamina.staminaGainPerTick} stamina per Phase`,
+        `Exploring an unknown hex always costs ${stamina.staminaExploreStaminaCost} stamina`,
+      ],
+    },
+    { page: `${mode}/key-concepts`, phrases: [`regenerating at +${stamina.staminaGainPerTick} per Phase`] },
+  ];
+};
+
+/**
+ * Frontier's numbers, from its generated config (stamina, tick, start, castle) and its native preset (days' depths,
+ * guards, chests), as its four rules pages state them.
+ */
+const frontierPhrases = (config, preset) => {
+  const stamina = config.troop.stamina;
+  const tick = config.tick.armiesTickIntervalInSeconds;
+  const start = (id) => n(config.startingResources.find((r) => r.resource === id).amount);
+  const limit = config.troop.limit;
+  const armies = [limit.settlementArmies, limit.cityArmies, limit.kingdomArmies, limit.empireArmies];
+  const caps = [
+    limit.settlementDeploymentCap,
+    limit.cityDeploymentCap,
+    limit.kingdomDeploymentCap,
+    limit.empireDeploymentCap,
+  ];
+  const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
+  return [
+    {
+      page: "frontier/introduction",
+      phrases: [
+        `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
+        `Revealing a tile costs ${stamina.staminaExploreStaminaCost}, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
+      ],
+    },
+    {
+      page: "frontier/expedition",
+      phrases: preset.depths.flatMap((depth, index) => [
+        `${DEPTH_NAMES[index]} ${range(depth.siteGuardLower, depth.siteGuardUpper)} ${range(depth.ruinGuardLower, depth.ruinGuardUpper)} ${range(depth.beastWeakLower, depth.beastWeakUpper)} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
+        `${DEPTH_NAMES[index]} ${depth.revealPercent}%`,
+      ]),
+    },
+    {
+      page: "frontier/chests",
+      phrases: [
+        ...preset.depths.map(
+          (depth, index) => `${DEPTH_NAMES[index]} ${TIERS.map((tier) => pct(depth.chest[tier])).join(" ")}`,
+        ),
+        `Shares ${TIERS.map((tier) => n(preset.chests.shares[tier])).join(" ")}`,
+        `never exceeds ${n(preset.chests.priceCeiling)} LORDS`,
+      ],
+    },
+    {
+      page: "frontier/realm",
+      phrases: [
+        `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
+        ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
+      ],
+    },
+  ];
+};
+
+/** The phrases every rules page that states a stamina, guard, chest or points number must show. */
+export const expectedPhrases = (blitz, eternum, frontier, frontierPreset) => [
+  ...staminaPhrases("blitz", blitz),
+  ...staminaPhrases("eternum", eternum),
+  {
+    page: "blitz/worldmap-movement/worldmap",
+    phrases: [`${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} victory points`],
+  },
+  ...frontierPhrases(frontier, frontierPreset),
+];
+
+/** The relic table, the Blitz preset's relic rules and Frontier's native preset, read from their TypeScript sources through Vite. */
+const loadBalanceSources = async () => {
   const { createServer } = await import("vite");
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
   try {
@@ -81,7 +175,8 @@ const loadRelicSources = async () => {
       join(here, "../../../packages/types/src/constants/index.ts"),
     );
     const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
-    return { relics: RELICS, rules: blitzPreset.relics, firstRelicId: ResourcesIds.StaminaRelic1 };
+    const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
+    return { relics: RELICS, rules: blitzPreset.relics, firstRelicId: ResourcesIds.StaminaRelic1, frontierPreset };
   } finally {
     await server.close();
   }
@@ -106,6 +201,20 @@ export const visibleText = (html) =>
 const containsRun = (text, run) =>
   text.some((_, start) => run.every((expected, offset) => text[start + offset] === expected));
 
+/** A built page's visible text as one line: nodes joined by a space, whitespace collapsed, none before punctuation. */
+export const pageLine = (html) =>
+  visibleText(html)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .replace(/ ([:,.;)%])/g, "$1");
+
+/** The phrases a built site does not show, each with its page. */
+export const missingPhrases = (dist, pages) =>
+  pages.flatMap(({ page, phrases }) => {
+    const line = pageLine(readFileSync(join(dist, page, "index.html"), "utf8"));
+    return phrases.filter((phrase) => !line.includes(phrase)).map((phrase) => ({ page, run: [phrase] }));
+  });
+
 /** The runs a built site does not show, each with its page. */
 export const missingRuns = (dist, pages) =>
   pages.flatMap(({ page, runs }) => {
@@ -115,11 +224,17 @@ export const missingRuns = (dist, pages) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const { relics, rules, firstRelicId } = await loadRelicSources();
-  const missing = missingRuns(dist, [
-    ...expectedRuns(configOf("blitz"), configOf("eternum")),
-    ...relicRuns(relics, rules, firstRelicId),
-  ]);
+  const { relics, rules, firstRelicId, frontierPreset } = await loadBalanceSources();
+  const missing = [
+    ...missingRuns(dist, [
+      ...expectedRuns(configOf("blitz"), configOf("eternum")),
+      ...relicRuns(relics, rules, firstRelicId),
+    ]),
+    ...missingPhrases(
+      dist,
+      expectedPhrases(configOf("blitz"), configOf("eternum"), configOf("frontier"), frontierPreset),
+    ),
+  ];
   for (const { page, run } of missing) console.error(`${page}: expected "${run.join(" | ")}"`);
   if (missing.length) process.exit(1);
   console.log("Rendered balance matches each mode's config.");

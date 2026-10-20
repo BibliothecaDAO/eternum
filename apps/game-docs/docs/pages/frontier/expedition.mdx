@@ -1,51 +1,70 @@
 ---
 title: The Expedition
-description: Today's map, the sites on it, the spire, and the rollover
+description: Today's map, what a reveal finds, the sites and their guards, the depths, and the day's end
 ---
+
+import { FRONTIER } from "@/utils/frontier";
 
 # The Expedition
 
 ## Today's map
 
-Every expedition starts on fresh fog. Your armies start the day on your home ring, the seven tiles at the heart of your
-own region, and they can move only inside that region. The ring counts as explored from the first second, so crossing it
-costs travel stamina and finds nothing. Nobody arrives too late and no map is farmed dry.
+Every day starts on fresh fog. Your realm is raised in its own stretch of the new map, and its six neighbouring tiles
+start the day explored. Walking over known ground costs {FRONTIER.stamina.step} stamina a step and finds nothing.
 
-## What a tile can hold
+## What a reveal pays
 
-| Tile        | Where       | Chance    | What it gives                                                                  |
-| ----------- | ----------- | --------- | ------------------------------------------------------------------------------ |
-| Supplies    | Every layer | New tiles | 50–300 Essence, 60–450 labor or 30–250 troops, sent straight home.             |
-| Rift        | Surface     | 4%        | Guarded. Captured, it produces Essence into the realm until the day ends.      |
-| Camp        | Every layer | About 6%  | A guarded outpost. Clearing it pays its chest and nothing else.                |
-| Trove       | Ethereal    | 4%        | Rifts give way to troves below: heavily guarded, producing more, with a chest. |
-| Loose chest | Every layer | About 1%  | A lucky find on an empty tile, on top of the chests you fight for.             |
+Every tile an army reveals sends Essence or labor home to the realm, as likely as each other: a share of the army's
+troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.reveal} XP.
 
-Supplies come with every tile an army reveals, including the ones where a camp or rift appears, and deeper ground
-multiplies them. Walking over known ground pays nothing. Everything found goes home the moment it is picked up, and an
-army never carries anything worth losing.
+| Ground                    | Reveal pays, of the army's troops  | Entering costs                            |
+| ------------------------- | ---------------------------------- | ----------------------------------------- |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].revealPercent} | —                                         |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].revealPercent} | {FRONTIER.depths[1].entryStamina} stamina |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].revealPercent} | {FRONTIER.depths[2].entryStamina} stamina |
+| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].revealPercent} | {FRONTIER.depths[3].entryStamina} stamina |
 
-## Merging armies
+## What a reveal can find
 
-An army can grow in the field only by absorbing another of your armies from the same realm. They must stand side by side
-and have the same troop type and tier. The merged army keeps the lower of the two staminas, so a merge never refills a
-tired army, and it can hold no more troops than your castle allows per army.
+| Find   | Chance                                      | What it is                                                                                             |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                           |
+| Camp   | {FRONTIER.discovery.camp}                   | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                           |
+| Rift   | {FRONTIER.discovery.rift}                   | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                  |
+| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm. |
+| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: grants an army {FRONTIER.xp.shrine} XP, then is gone.                                 |
+| Well   | {FRONTIER.discovery.well}                   | Once researched: gives an army {FRONTIER.stamina.well} stamina, then is gone.                          |
+| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the season's pool can fund it ([Chests](/frontier/chests)).                 |
 
-## Fighting a camp
+After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal always finds something. Scouting
+makes the kinds you pick for it more likely.
 
-A camp shows its exact guard before you attack. Guards run from 1,000 to 1,599 on the surface, 3,000 to 4,999 at
-Ethereal I, 8,000 to 11,999 at Ethereal II and 20,000 to 29,999 at Ethereal III, so what counts as a safe fight moves as
-the realm grows. Winning opens the site's chest where the army stands. No fight refunds stamina, won or lost.
+## Guards
+
+Every guard is shown before you attack. Guards grow with depth, so what counts as a safe fight moves as your realm
+grows.
+
+| Ground                    | Camps and rifts                | Ruins                          | Minotaur (beasts)              | Cyclops (beasts)                 |
+| ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].siteGuard} | {FRONTIER.depths[0].ruinGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].siteGuard} | {FRONTIER.depths[1].ruinGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].siteGuard} | {FRONTIER.depths[2].ruinGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} |
+| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].siteGuard} | {FRONTIER.depths[3].ruinGuard} | {FRONTIER.depths[3].beastWeak} | {FRONTIER.depths[3].beastStrong} |
+
+A band of beasts is a Minotaur's or a stronger Cyclops's, as likely as each other. Camps, rifts and ruins show their
+depth's beast: a Troll on the surface, then a Wyvern, then a Hydra. A clear gives the army XP by the guard's starting
+strength, beasts included.
+
+A site pays once. A cleared site leaves a standard that shows what the clear paid, and armies can walk onto it.
 
 ## The spire and its depths
 
-Today's spire stands on one tile of your home ring and moves one step around the ring each day. Once your realm is
-attuned, bring an army onto or beside the spire, tap it, and pick a depth you have unlocked. Entering costs 30 stamina
-for Ethereal I, 40 for II and 50 for III, and the trip is one way for the day. Supplies below are four times the surface
-at Ethereal I and double again each step down, with guards to match.
+Research opens the Ethereal depths, one at a time ([Your Realm](/frontier/realm)). An army enters one from your realm's
+spire, paying the entry stamina above; the trip is one way for the day.
 
-## The rollover
+## The day's end
 
-At 00:00 UTC the expedition ends. The map and its fog, every camp, rift and trove, and every army you sent out are gone.
-Your realm is raised on the next map with its castle, barracks, plots, spire, uncommitted garrison and stored wheat,
-labor and Essence. The game tells you when the new expedition has begun and takes you to your realm.
+When the day ends, the map and its fog, every site and every army you sent out are gone. An army with Homecoming first
+sends a share of its survivors home: {FRONTIER.homecoming[0]} at uncommon, {FRONTIER.homecoming[1]} at rare,
+{FRONTIER.homecoming[2]} at epic and {FRONTIER.homecoming[3]} at legendary. Your realm is raised on the next map with
+its buildings, research, troops and stores, and the game takes you to it.

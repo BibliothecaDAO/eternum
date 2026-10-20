@@ -1,5 +1,6 @@
 import { HyperstructureRings } from "@/components/blitz-components/HyperstructureRings";
 import { importantNote } from "@/components/styles";
+import { victoryPointsOf } from "@/utils/config";
 
 # The World Map
 
@@ -49,7 +50,8 @@ An unknown force occasionally reveals treasures from the past in random location
 hexes, there is a chance that a Relic Crate will be revealed on a different nearby tile, visible to all players. These
 crates can contain powerful boosts that can accelerate the production of your Realms, improve the stamina regeneration
 of your armies, or even give them combat damage boosts to give you an edge over your foes. The first army to reach and
-activate the crate will receive **three** Relics directly into their inventory and **1,000 victory points** for their
-Lord, so be sure to secure them before your enemies do!
+open the crate receives its pack of **three** Relics (War, Explore, Produce or Fortress, revealed only as it opens)
+directly into its inventory and **{victoryPointsOf("blitz", "pointsForRelicDiscovery")} victory points** for its Lord,
+so be sure to secure them before your enemies do!
 
 <img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />

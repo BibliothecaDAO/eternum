@@ -1,34 +1,43 @@
 ---
 title: Chests
-description: What a chest holds and how good it is
+description: What a Frontier chest pays, and how its LORDS reach you
 ---
+
+import { FRONTIER } from "@/utils/frontier";
 
 # Chests
 
-A chest opens the moment you earn it, where the army stands. There is nothing to carry home and nothing anyone can take.
+Every Frontier chest pays LORDS, from the season's pool, into your realm. There are two: the chest a ruin guards, and
+the rare chest a reveal turns up.
 
-## Two rolls
+## A ruin's chest
 
-**What it is.** The same everywhere: 90% of chests hold a relic, 9% a cosmetic and 1% a token claim, with at most one
-token claim a day; past that, the roll gives a relic. Deeper is better, not different.
+Clearing a ruin pays its chest. Its tier is rolled when the ruin is found, by the ground it stands on:
 
-**How good it is.** Set by the ground you were standing on.
+| Ground                    | Common                        | Uncommon                      | Rare                          | Epic                          | Legendary                     |
+| ------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].chest[0]} | {FRONTIER.depths[0].chest[1]} | {FRONTIER.depths[0].chest[2]} | {FRONTIER.depths[0].chest[3]} | {FRONTIER.depths[0].chest[4]} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].chest[0]} | {FRONTIER.depths[1].chest[1]} | {FRONTIER.depths[1].chest[2]} | {FRONTIER.depths[1].chest[3]} | {FRONTIER.depths[1].chest[4]} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].chest[0]} | {FRONTIER.depths[2].chest[1]} | {FRONTIER.depths[2].chest[2]} | {FRONTIER.depths[2].chest[3]} | {FRONTIER.depths[2].chest[4]} |
+| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].chest[0]} | {FRONTIER.depths[3].chest[1]} | {FRONTIER.depths[3].chest[2]} | {FRONTIER.depths[3].chest[3]} | {FRONTIER.depths[3].chest[4]} |
 
-| Ground       | Common | Uncommon | Rare | Epic |
-| ------------ | ------ | -------- | ---- | ---- |
-| Surface      | 78%    | 18%      | 3.5% | 0.5% |
-| Ethereal I   | 60%    | 30%      | 8%   | 2%   |
-| Ethereal II  | 42%    | 38%      | 15%  | 5%   |
-| Ethereal III | 25%    | 43%      | 23%  | 9%   |
+A chest is worth its tier's shares at the day's price:
 
-Relic chests keep a pity count per depth: the 400th relic chest on the surface without an epic is epic, and the 100th,
-40th and 20th at Ethereal I, II and III.
+| Tier   | Common                      | Uncommon                    | Rare                        | Epic                        | Legendary                   |
+| ------ | --------------------------- | --------------------------- | --------------------------- | --------------------------- | --------------------------- |
+| Shares | {FRONTIER.chests.shares[0]} | {FRONTIER.chests.shares[1]} | {FRONTIER.chests.shares[2]} | {FRONTIER.chests.shares[3]} | {FRONTIER.chests.shares[4]} |
 
-## What each kind does
+The price of a share is set each day from the season's pool, and never exceeds{" "} {FRONTIER.chests.priceCeiling}
+LORDS. The Season page shows the pool, today's price and its ceiling. A chest's LORDS are set aside from the pool as the
+ruin is found, so a ruin found today pays at today's price.
 
-- **Relics** boost stamina, damage, damage reduction or exploration rewards. A common or uncommon relic is level I, a
-  rare or epic one level II. It stays on the army that found it, costs nothing to activate, and ends with the army.
-- **Cosmetics** are recorded on your account.
-- **Token claims** are recorded on your account for payout later; the payout itself is not part of this season.
+## A chest in the wild
 
-No chest is ever a blank. Every one gives a relic, a cosmetic or a token claim.
+Each newly revealed surface tile has a 1 in {FRONTIER.discovery.exploreChestOneIn} chance of a chest, found only while
+the season's pool can fund it. It is worth one common share at today's price, set aside as it is found. Open it with one
+of your armies beside it before the day ends; its LORDS go to that army's realm.
+
+## Your LORDS
+
+Your realm's LORDS pay for Refill, and you can withdraw them to your payout wallet until the season's claim window
+closes, {FRONTIER.claimWindow.graceHours} hour short of {FRONTIER.claimWindow.days} days after the season ends.

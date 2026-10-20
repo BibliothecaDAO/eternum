@@ -1,58 +1,72 @@
 ---
 title: Frontier
-description: A treasure hunt in daily expeditions
+description: A treasure hunt on a new map every day
 ---
+
+import { FRONTIER } from "@/utils/frontier";
 
 # Realms: Frontier
 
 Explore the unknown. Find the gold. Nobody can take your realm.
 
-Frontier is a treasure hunt in daily expeditions. You send armies out of your realm into the fog, fight what guards the
-land, and bring home Essence and chests. It is free to play, you fight the wilds and never other players, and the map is
-new every expedition while your realm keeps what it earned.
+Frontier is a treasure hunt on a new map every day. You send armies out of your realm into the fog, fight what guards
+the land, and bring home Essence, labor and LORDS. It is free to play: your realm is founded as you first enter, you
+fight the wilds and never other players, and the map is new every day while your realm keeps what it earned.
 
-## One expedition, one day
+## One day, one map
 
-An expedition runs for one day, from 00:00 UTC to the next. You commit troops in the morning and they do not come back:
-a committed army is spent whether it dies or not. What comes back is Essence, and Essence is what makes your realm
-stronger for tomorrow.
+A day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. The lengths are drawn for the whole
+season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.day.bagHours} hours a bag; no bag opens
+with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how long
+tomorrow lasts.
 
-1. **Muster.** Troops leave the garrison as armies of 150 stamina on your home ring, paying wheat on every step. A new
-   realm fields three armies at once; its castle raises that to four, five and six.
+1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army, at
+   {FRONTIER.stamina.start} stamina. A new realm fields {FRONTIER.realm.armies[0]} armies at once; its castle raises
+   that to {FRONTIER.realm.armies[3]}.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
-3. **Clear.** Camps, rifts and troves are guarded. A site shows its exact guard before you attack, an attack costs 50
-   stamina, and winning refunds none of it.
-4. **Bring it home.** Everything found goes straight to the realm. Chests open the moment you earn them.
+3. **Clear.** Camps, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you attack,
+   and an attack needs {FRONTIER.stamina.attack} stamina.
+4. **Bring it home.** Everything found goes straight to the realm. An army never carries anything worth losing.
 
-At the end of the day the map and every army on it are gone. Your realm is raised again on the next map with everything
-you built.
+When the day ends, the map and every army on it are gone. Your realm is raised again on the next map with everything it
+holds.
 
 ## What carries over
 
-| Gone at the end of every expedition | Rebuilt with your realm, every time | Kept on your account    |
-| ----------------------------------- | ----------------------------------- | ----------------------- |
-| The map and its fog                 | Castle, barracks, plots, the spire  | Chests and token claims |
-| Camps, rifts and troves             | The garrison you did not commit     | Cosmetics               |
-| Every army you sent out             | Stored wheat, labor and Essence     | Your record             |
+| Gone when the day ends           | Kept by your realm                   |
+| -------------------------------- | ------------------------------------ |
+| The map and its fog              | Its buildings, castle and research   |
+| Every camp, rift, ruin and beast | Its troops, wheat, labor and Essence |
+| Every army you sent out          | Its LORDS                            |
+
+An army with Homecoming sends some of its survivors home as the day ends ([The Expedition](/frontier/expedition)).
 
 ## Stamina sets the pace
 
-An army holds 150 stamina and recovers 30 an hour, so a full bar takes five hours. Revealing a tile costs 30, moving
-over known ground 10, and an attack 50. The army panel shows how long until an army is rested.
+An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every{" "}
+{FRONTIER.stamina.tickMinutes} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a tile
+costs {FRONTIER.stamina.reveal}, a step over known ground {FRONTIER.stamina.step}, and an attack needs{" "}
+{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
+big army needs farms behind it.
+
+Refill tops an army's stamina up at once for {FRONTIER.stamina.refillLords} LORDS a missing point, paid from your
+realm's LORDS. A well gives {FRONTIER.stamina.well} stamina, buying an attribute tier gives{" "}
+{FRONTIER.stamina.tierBought}, and Logistics raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
 
 ## Fights roll dice
 
-Each side of a fight rolls a d20 and hits 1% to 20% harder, so the attack preview shows a range from your worst roll to
+Each side of a fight rolls a d20 and hits up to 20% harder, so the attack preview shows a range from your worst roll to
 your best. The ground does not matter: no biome helps or hurts either side.
 
 ## Your realm is never attacked
 
 No player can raid, besiege or take it, and no player can fight your armies. The realm has no guard slots because it
-needs none. Armies cannot be sent home, stationed or topped up from the garrison: deployed is deployed. Two of your
-armies standing side by side can merge, and an army you disband loses its troops.
+needs none. Two of your armies standing side by side can merge, keeping the lower of their two staminas, and an army you
+disband loses its troops; Frontier asks first.
 
-## Nothing is handed out
+## What you are given
 
-No daily gift, no consolation chest. What you bring home is what you cleared and what you were lucky enough to walk
-into. Frontier has no trade, market, bridge, guilds, faith, hyperstructures or automation.
+Each Realm in your payout wallet gives your Frontier realm {FRONTIER.labor.perRealm} labor once a day: add it by its
+number, then Claim all. Everything else is what you cleared and what you were lucky enough to walk into. Frontier has no
+trade, market, bridge, guilds, faith, hyperstructures or automation.
