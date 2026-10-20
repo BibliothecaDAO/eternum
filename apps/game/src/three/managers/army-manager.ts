@@ -136,7 +136,6 @@ export interface ArmyMovementPlan {
   sourceNormalized: { x: number; y: number };
   targetNormalized: { x: number; y: number };
   targetHexCoords: Position;
-  path: Position[];
   worldPath: Vector3[];
   armyCategory: TroopType;
   armyTier: TroopTier;
@@ -191,7 +190,6 @@ export class ArmyManager {
   private renderQueueActive = false;
   private pendingRenderChunkKey: string | null = null;
   private pendingRenderOptions: ManagerChunkUpdateOptions | null = null;
-  private armyPaths: Map<ID, Position[]> = new Map();
   private currentCameraView: CameraView;
   private contentLadder: WorldmapContentLadder;
   private hexagonScene?: HexagonScene;
@@ -1228,7 +1226,6 @@ export class ArmyManager {
     return resolveArmyPresentationPosition({
       entityId: army.entityId,
       hexCoords: army.hexCoords,
-      path: this.armyPaths.get(army.entityId),
       isMoving: this.armyModel.isEntityMoving(numericId),
       movingPosition: this.armyModel.getEntityWorldPosition(numericId),
       getArmyWorldPosition: (entityId, hexCoords) => this.getArmyWorldPosition(entityId, hexCoords),
@@ -1254,7 +1251,6 @@ export class ArmyManager {
       entityId,
     );
 
-    this.armyPaths.delete(entityId);
     this.removeArmyCompactLabel(entityId);
 
     const numericId = this.toNumericId(entityId);
@@ -1870,7 +1866,6 @@ export class ArmyManager {
       sourceNormalized,
       targetNormalized,
       targetHexCoords: hexCoords,
-      path,
       worldPath,
       armyCategory: armyData.category,
       armyTier: armyData.tier,
@@ -1882,7 +1877,7 @@ export class ArmyManager {
    * authoritative for presentation; this method owns only the visual tween.
    */
   private async applyMovementPlan(plan: ArmyMovementPlan): Promise<boolean> {
-    const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
+    const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, worldPath } = plan;
 
     const armyData = this.armyPresentations.get(entityId);
     if (!armyData) return false;
@@ -1902,7 +1897,6 @@ export class ArmyManager {
     // The army-model is the single source of truth for render slots.
     const matrixIndex = this.armyModel.getEntitySlot(numericEntityId);
     if (matrixIndex === undefined) {
-      this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
       this.cleanupMovementSourceBucket(entityId);
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
@@ -1910,8 +1904,6 @@ export class ArmyManager {
       this.runMovementCompleteListeners(numericEntityId);
       return false;
     }
-
-    this.armyPaths.set(entityId, path);
 
     // A walk still playing is replaced, never completed: the army walks on from where its model is, and its movement
     // completes once, when it stops.
@@ -1923,7 +1915,6 @@ export class ArmyManager {
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       if (!this.armyPresentations.has(entityId)) return;
-      this.armyPaths.delete(entityId);
       this.cleanupMovementSourceBucket(entityId);
       this.pathRenderer.removePath(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
@@ -1964,7 +1955,6 @@ export class ArmyManager {
 
     // console.debug(`[ArmyManager] removeArmy invoked for entity ${entityId}`);
 
-    this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
 
     // Remove path visualization
@@ -3118,7 +3108,6 @@ ${
       this.debugStatsIntervalId = undefined;
     }
 
-    this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
     this.preCommitArmyQueue.clear();
     this.movementStartListeners.clear();

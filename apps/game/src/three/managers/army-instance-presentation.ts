@@ -5,21 +5,16 @@ import { findCosmeticById, resolveArmyCosmetic } from "../cosmetics";
 import type { ArmyData } from "../types";
 import type { ModelType } from "../types/army";
 
+/** Where an army is drawn: where its walk has it while it walks, else on the tile it stands on. */
 export function resolveArmyPresentationPosition(input: {
   entityId: ArmyData["entityId"];
   hexCoords: Position;
-  path?: Position[];
   isMoving: boolean;
   movingPosition?: Vector3 | null;
   getArmyWorldPosition: (entityId: ArmyData["entityId"], hexCoords: Position) => Vector3;
 }): Vector3 {
-  const sourceHex = input.path && input.path.length > 0 ? input.path[0] : input.hexCoords;
-
-  if (input.isMoving) {
-    return input.movingPosition?.clone() ?? input.getArmyWorldPosition(input.entityId, sourceHex);
-  }
-
-  return input.getArmyWorldPosition(input.entityId, sourceHex);
+  if (input.isMoving && input.movingPosition) return input.movingPosition.clone();
+  return input.getArmyWorldPosition(input.entityId, input.hexCoords);
 }
 
 export function resolveArmyCosmeticPresentation(input: {

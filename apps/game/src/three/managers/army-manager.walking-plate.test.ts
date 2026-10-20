@@ -30,7 +30,6 @@ const managerWithVisibleArmy = (stamina: number) => {
     armyPresentations: new Map([[ARMY, armyRecord(stamina)]]),
     visibleArmyOrder: [ARMY],
     visibleArmyIndices: new Map([[ARMY, 0]]),
-    armyPaths: new Map(),
     movingArmySourceBuckets: new Map(),
     movementStartListeners: new Map(),
     activeArmyAttachmentEntities: new Set(),
