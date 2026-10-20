@@ -127,6 +127,7 @@ export async function proveEffectCost(b, out, records, baseUrl, effect) {
       "--exact",
     );
     const complete = await waitFor(b, 'document.querySelector("[data-effect-measurement]")', 90000);
+    record.presses.push({ action: `Measure ${effect} cost`, status: complete ? "led" : "failed" });
     if (!complete) throw new Error("Effect measurement did not complete");
     const result = await b.evaluate("JSON.parse(document.querySelector('[data-effect-measurement]').textContent)");
     record.loadAfter = loadavg();
@@ -150,38 +151,8 @@ export async function proveEffectCost(b, out, records, baseUrl, effect) {
       error: result.error,
     });
     if (result.runs?.length === 6) {
-      const summarize = (enabled) => {
-        const runs = result.runs.filter((run) => run.enabled === enabled);
-        const frames = runs.flatMap((run) => run.frames).sort((a, b) => a - b);
-        const percentile = (values, fraction) => values[Math.ceil(values.length * fraction) - 1];
-        return {
-          runs: runs.length,
-          samples: frames.length,
-          median: percentile(frames, 0.5),
-          p95: percentile(frames, 0.95),
-          min: frames[0],
-          max: frames.at(-1),
-          runMedians: runs.map((run) =>
-            percentile(
-              [...run.frames].sort((a, b) => a - b),
-              0.5,
-            ),
-          ),
-          calls: runs.map((run) => run.calls),
-          triangles: runs.map((run) => run.triangles),
-        };
-      };
-      const off = summarize(false),
-        on = summarize(true);
-      const summary = {
-        effect,
-        off,
-        on,
-        medianDelta: on.median - off.median,
-        p95Delta: on.p95 - off.p95,
-        maxLoad: Math.max(...loadSamples.map(([load]) => load)),
-        gpu: result.runs[0].gpu,
-      };
+      const summary = summarizeEffectRuns(effect, result.runs, loadSamples);
+      const { off, on } = summary;
       writeFileSync(join(out, `${effect}-summary.json`), JSON.stringify(summary, null, 2));
       if (idle)
         record.checks.push({
@@ -209,4 +180,40 @@ async function readDrawn(b, focus, yaw) {
   );
   if (!ready) throw new Error(`Site renderer did not draw focus ${focus}, yaw ${yaw}`);
   return b.evaluate("JSON.parse(document.querySelector('[data-lineup-rendered]').dataset.lineupRendered)");
+}
+
+/** Retain each condition's spread and each run's median; pool only matching on/off samples. */
+function summarizeEffectRuns(effect, runs, loadSamples) {
+  const off = summarizeFrames(runs.filter((run) => !run.enabled));
+  const on = summarizeFrames(runs.filter((run) => run.enabled));
+  return {
+    effect,
+    off,
+    on,
+    medianDelta: on.median - off.median,
+    p95Delta: on.p95 - off.p95,
+    maxLoad: Math.max(...loadSamples.map(([load]) => load)),
+    gpu: runs[0].gpu,
+  };
+}
+
+function summarizeFrames(runs) {
+  const frames = runs.flatMap((run) => run.frames).sort((a, b) => a - b);
+  const percentile = (values, fraction) => values[Math.ceil(values.length * fraction) - 1];
+  return {
+    runs: runs.length,
+    samples: frames.length,
+    median: percentile(frames, 0.5),
+    p95: percentile(frames, 0.95),
+    min: frames[0],
+    max: frames.at(-1),
+    runMedians: runs.map((run) =>
+      percentile(
+        [...run.frames].sort((a, b) => a - b),
+        0.5,
+      ),
+    ),
+    calls: runs.map((run) => run.calls),
+    triangles: runs.map((run) => run.triangles),
+  };
 }
