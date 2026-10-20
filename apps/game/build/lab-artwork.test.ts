@@ -9,7 +9,7 @@ import { labArtwork } from "./lab-artwork";
 async function fixture(enabled: boolean) {
   const root = await mkdtemp(join(tmpdir(), "lab-artwork-"));
   const original = await readFile(new URL("../asset-sources/lab/rss-icons/history/stone.png", import.meta.url));
-  const model = await readFile(new URL("../asset-sources/lab/frontier-beasts/beast-wyvern.glb", import.meta.url));
+  const model = await readFile(new URL("../public/models/frontier/beast-wyvern.glb", import.meta.url));
   await mkdir(join(root, "asset-sources/lab/rss-icons/history"), { recursive: true });
   await mkdir(join(root, "asset-sources/lab/frontier-beasts"), { recursive: true });
   await mkdir(join(root, "public"));

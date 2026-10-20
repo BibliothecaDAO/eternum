@@ -4,7 +4,7 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { StructureType, formatExact, fightVerdict, VERDICT_WORDS } from "@bibliothecadao/types";
 
 import { battleRecordOf } from "../sites/fight-record";
-import { TARGET_MARKS } from "../sites/site-marks";
+import { TARGET_MARKS, attackTargetName } from "../sites/site-marks";
 
 /**
  * The day log's line for one of the player's attacks on a site, from its battle story: the site, how the attack ended
@@ -34,7 +34,7 @@ const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
   const kind = structure && StructureType[structure.base.category];
   if (!kind || !(kind in TARGET_MARKS)) return null;
-  const word = TARGET_MARKS[kind as keyof typeof TARGET_MARKS].word;
   const beast = readFrontierBeast(store, configManager.getActiveGameId(), Number(entityId));
-  return beast ? (kind === "Beasts" ? beast.name : `${beast.name} ${word}`) : word;
+  const word = attackTargetName(kind as keyof typeof TARGET_MARKS, beast ?? undefined);
+  return beast && (kind === "Rift" || kind === "Ruin") ? `${beast.name} ${word}` : word;
 };

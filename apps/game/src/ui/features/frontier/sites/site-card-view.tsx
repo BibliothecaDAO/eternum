@@ -37,7 +37,7 @@ import type { ReactNode } from "react";
 import { useEnterConfirms } from "../hud/enter-confirms";
 import type { Cost } from "../hud/army-order";
 import type { SiteFight } from "./site-card-plan";
-import { type AttackTargetKind, TARGET_MARKS } from "./site-marks";
+import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
 /** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
  * Attack held back, by the stamina the army lacks or by a site too far for one order. One line under it says why. */
@@ -107,8 +107,8 @@ export const SiteCardView = ({
   onRealm?: () => void;
   onClose: () => void;
 }) => {
-  const { word: kind, icon } = TARGET_MARKS[site];
-  const word = site === "Beasts" ? (beast?.name ?? kind) : kind;
+  const { icon } = TARGET_MARKS[site];
+  const word = attackTargetName(site, beast);
   const lost = fight && fight.outcome === "loses";
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined && choices.length > 0;

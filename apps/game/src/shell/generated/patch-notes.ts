@@ -267,7 +267,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "camp",
           "title": "Beasts",
-          "line": "Beasts roam the land in two strengths, as likely as each other: a Minotaur, 300 to 350 troops on the surface, or a stronger Cyclops, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. A camp, a rift or a ruin shows its depth's beast: a Troll on the surface, then a Wyvern, then a Hydra."
+          "line": "Beasts roam the land in two strengths, as likely as each other: a Cyclops, 300 to 350 troops on the surface, or a stronger Wraith, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. Camps show a Troll at every depth, without a camp landmark. A Dark fey hovers above each rift. Ruins are guarded by an Ammit on the surface, a Basilisk in Ethereal I, a Wyvern in Ethereal II and a Hydra in Ethereal III, with low drifting mist across their floors."
         },
         {
           "kind": "new",

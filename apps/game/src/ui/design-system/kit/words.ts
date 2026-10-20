@@ -22,7 +22,6 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
-
 export { BEAST_NAMES } from "@bibliothecadao/types";
 export const BEAST = "Beast";
 

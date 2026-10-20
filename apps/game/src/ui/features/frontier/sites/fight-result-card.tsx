@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import type { TroopsChange } from "./fight-record";
 import type { FightResult } from "./fight-result";
 import { SiteMark } from "./site-card-view";
-import { TARGET_MARKS } from "./site-marks";
+import { TARGET_MARKS, attackTargetName } from "./site-marks";
 
 import { VERDICT_WORDS, type FightVerdict } from "@bibliothecadao/types";
 
@@ -27,8 +27,8 @@ const VERDICT_TONES: Record<FightVerdict, string> = {
  * it away.
  */
 export const FightResultCard = ({ result, onClose }: { result: FightResult; onClose: () => void }) => {
-  const { word: kind, icon } = TARGET_MARKS[result.site];
-  const word = result.site === "Beasts" ? (result.guardIdentity?.name ?? kind) : kind;
+  const { icon } = TARGET_MARKS[result.site];
+  const word = attackTargetName(result.site, result.guardIdentity);
   const verdict = VERDICT_WORDS[result.verdict];
   return (
     <button

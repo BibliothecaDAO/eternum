@@ -12,7 +12,7 @@ import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { closeFightResult, useFightResult } from "./sites/fight-result";
 import { FightResultCard } from "./sites/fight-result-card";
 import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
-import { TARGET_MARKS } from "./sites/site-marks";
+import { attackTargetName } from "./sites/site-marks";
 import { TileCard, useSelectedTarget } from "./sites/tile-card";
 import { SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
 import { TypeUpgrade } from "./research/type-upgrade";
@@ -61,7 +61,7 @@ export const FrontierSelectionSheet = ({
   };
   if (fight)
     return (
-      <HudSheet label={TARGET_MARKS[fight.site].word} onClose={closeFight}>
+      <HudSheet label={attackTargetName(fight.site, fight.guardIdentity)} onClose={closeFight}>
         <FightResultCard result={fight} onClose={closeFight} />
       </HudSheet>
     );

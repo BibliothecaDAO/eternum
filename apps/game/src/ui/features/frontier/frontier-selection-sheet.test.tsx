@@ -381,13 +381,18 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
   }
 });
 
-it("closes the target's card with its fight result on Escape, not back to the card from before the fight", () => {
+it.each([
+  ["Camp", "Troll", "beast-troll"],
+  ["Beasts", "Wraith", "beast-wraith"],
+  ["Rift", "Rift", "beast-dark-fey"],
+] as const)("titles the %s result sheet and closes it on Escape", (site, name, art) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside();
   tiles.current = [];
   useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
   fightEnded({
-    site: "Rift",
+    site,
+    guardIdentity: { name, art },
     verdict: "guard-holds",
     armyArt: "knight-t1",
     army: { before: 1_000, after: 694 },
@@ -403,7 +408,7 @@ it("closes the target's card with its fight result on Escape, not back to the ca
       </GameProvider>,
     ),
   );
-  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Rift");
+  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(name);
 
   act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
 
