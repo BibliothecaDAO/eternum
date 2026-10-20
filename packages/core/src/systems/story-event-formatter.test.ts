@@ -251,7 +251,7 @@ it("renders the site's recorded kind and payout without a current structure", ()
       reward: { resource_type: 23, amount: "500000000000" },
     }),
   );
-  expect(result.title).toBe("Camp cleared");
+  expect(result.title).toBe("Troll cleared");
   expect(result.description).toContain("500");
   expect(
     buildStoryEventPresentation(

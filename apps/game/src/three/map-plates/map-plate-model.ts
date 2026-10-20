@@ -2,7 +2,7 @@ import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { displayPlayerName } from "@bibliothecadao/eternum";
-import { StructureType, structureName, formatExact } from "@bibliothecadao/types";
+import { StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
 
@@ -138,10 +138,12 @@ export const buildStructurePlate = (
     owner: ownerOf(structure.owner),
     beast: structure.frontierBeast?.name,
     name: structure.clearedSite
-      ? `${structureName(structure.structureType)} · Cleared`
+      ? `${frontierSiteName(structure.structureType)} · Cleared`
       : named
         ? structure.structureName.trim()
-        : structureName(structure.structureType, structure.mineKind ?? undefined),
+        : structure.frontierBeast
+          ? frontierSiteName(structure.structureType)
+          : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
     // A site's name as its holder and every list read it (siteDisplayName, through the manager): the plate never makes one.
     place: named ? undefined : structure.structureName.trim() || undefined,

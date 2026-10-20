@@ -1,7 +1,7 @@
 import { type ID, type MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
-import { getIsBlitz } from "../../utils/utils";
+import { getGameMode } from "../../utils/utils";
 import { computeTrades } from "../../utils/trades";
 import type { PlayerNameResolver } from "../../utils/entities";
 
@@ -23,7 +23,7 @@ export const readOpenTrades = (
     store.inGame("TradeOrder", configManager.getActiveGameId()),
     currentBlockTimestamp,
     store,
-    getIsBlitz(),
+    getGameMode(),
     playerName,
   );
 

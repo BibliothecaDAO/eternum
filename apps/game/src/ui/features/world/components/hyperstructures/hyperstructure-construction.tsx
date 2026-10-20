@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   configManager,
   getHyperstructureTotalContributableAmounts,
-  getIsBlitz,
+  getGameMode,
   getStructureName,
   ResourceManager,
 } from "@bibliothecadao/eternum";
@@ -178,7 +178,7 @@ export const HyperstructureConstruction = ({ entityId }: { entityId: number }) =
                   ...(source ? [] : [{ value: "", label: "Select an owned structure", disabled: true }]),
                   ...sources.map((row) => ({
                     value: row.entity_id.toString(),
-                    label: getStructureName(row, getIsBlitz()).name,
+                    label: getStructureName(row, getGameMode()).name,
                   })),
                 ]}
                 onChange={(id) => {

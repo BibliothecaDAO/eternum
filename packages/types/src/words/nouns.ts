@@ -53,11 +53,22 @@ export const resourceName = (id: ResourcesIds | number | undefined): string => {
   return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
 };
 
-/** A structure by its kind, a mine by what it yields: "Camp", "Rift", "Hyperstructure". */
-export const structureName = (type: StructureType, mineKind?: number): string =>
-  type === StructureType.Mine && mineKind !== undefined
-    ? getMinePresentation(mineKind).name
-    : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+export type StructureNamingMode = "frontier" | "blitz" | "eternum" | "duel";
+
+/** A structure in its game: Frontier replaces the camp category with a Troll; other modes keep their own names. */
+export const structureName = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string =>
+  mode === "frontier" && type === StructureType.Camp
+    ? BEAST_NAMES.troll
+    : type === StructureType.Mine && mineKind !== undefined
+      ? getMinePresentation(mineKind).name
+      : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+
+/** The same category names for list headings and discovery choices. */
+export const structurePlural = (type: StructureType, mineKind?: number, mode?: StructureNamingMode): string => {
+  if (type === StructureType.Beasts) return structureName(type, mineKind, mode);
+  if (type === StructureType.BitcoinMine) return "Bitcoin mines";
+  return `${structureName(type, mineKind, mode)}s`;
+};
 
 /** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
 const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
@@ -104,6 +115,12 @@ export const BEAST_NAMES = {
   basilisk: "Basilisk",
   "dark-fey": "Dark fey",
 } as const;
+/** Frontier creatures are the encounter itself; a rift or ruin retains its landmark name. */
+export const frontierSiteName = (type: StructureType, beast?: { name: string }): string =>
+  (type === StructureType.Camp || type === StructureType.Beasts) && beast
+    ? beast.name
+    : structureName(type, undefined, "frontier");
+
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";
 export const GUARD_HOLDS = "Guard holds";

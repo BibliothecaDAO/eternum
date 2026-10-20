@@ -1,4 +1,6 @@
 import {
+  frontierSiteName,
+  StructureType,
   fightVerdict,
   VERDICT_WORDS,
   buildingName,
@@ -22,10 +24,10 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
-import { siteKindOf, readExpeditionRules } from "../utils/expeditions";
+import { readExpeditionRules } from "../utils/expeditions";
 import { readFrontierBeast } from "../utils/frontier-beast";
 import { Position } from "./position";
-import { getIsBlitz } from "../utils/utils";
+import { getGameMode } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
 import { feltEquals } from "../client/herald-http";
@@ -197,7 +199,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   SitePayout: (_event, payload, components) => {
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
-    const label = siteKindOf(category);
+    const label = frontierSiteName(category);
     const reward =
       payload.reward === null
         ? label === "Ruin"
@@ -479,7 +481,7 @@ function describeStructureName(structureId: unknown, components?: NativeFactStor
 }
 
 function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
-  return getStructureName(structure, getIsBlitz()).name;
+  return getStructureName(structure, getGameMode()).name;
 }
 
 /**
@@ -829,6 +831,10 @@ function discoveryName(payload: Record<string, unknown>, store?: NativeFactStore
   );
   if (!site) return undefined;
   const beast = fightBeast(site.entity_id, store);
-  const kind = siteKindOf(site.category);
-  return `${beast?.name ?? ""}${kind === "Beasts" ? "" : ` ${kind}`} found`.trim();
+  const label = frontierSiteName(site.category, beast);
+  const named =
+    beast && (site.category === StructureType.Rift || site.category === StructureType.Ruin)
+      ? `${beast.name} ${label}`
+      : label;
+  return `${named} found`;
 }

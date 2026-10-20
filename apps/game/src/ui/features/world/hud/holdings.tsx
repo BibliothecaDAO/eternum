@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
@@ -26,6 +27,7 @@ const hasLevels = (structure: StructureWithMetadata) => structure.realmLevelLabe
  * classic list does.
  */
 export const useHoldings = () => {
+  const mode = useGameModeConfig();
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const selectedId = useUIStore((state) => state.structureEntityId);
@@ -43,7 +45,7 @@ export const useHoldings = () => {
     nameUpdateVersion: nameVersion,
   });
 
-  const kinds = useMemo(() => kindsHeld(structures), [structures]);
+  const kinds = useMemo(() => kindsHeld(structures, mode.id), [structures, mode.id]);
 
   const filter = shownKind(savedFilter, kinds);
   const searchable = needsSearch(kinds, filter, structures.length);

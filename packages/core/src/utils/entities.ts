@@ -9,6 +9,7 @@ import {
   NEUTRAL_OWNER_NAME,
   StructureType,
   siteName,
+  type StructureNamingMode,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -25,7 +26,7 @@ export const getEntityInfo = (
   entityId: ID,
   playerAccount: ContractAddress | null,
   store: NativeFactStore,
-  isBlitz: boolean,
+  mode: StructureNamingMode,
 ) => {
   const game_id = configManager.getActiveGameId();
 
@@ -41,7 +42,7 @@ export const getEntityInfo = (
     };
   } else {
     if (structure) {
-      name = getStructureName(structure, isBlitz);
+      name = getStructureName(structure, mode);
     }
   }
 
@@ -104,7 +105,7 @@ export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalS
  * A structure's name, and the name it had before its holder renamed it (originalName, which the rename control shows).
  * A site is named by siteDisplayName, the rule every reader of a site shares.
  */
-export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
+export const getStructureName = (structure: NativeRows["Structure"], mode: StructureNamingMode) => {
   const entityId = safeInteger(structure.entity_id);
   if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
     return { name: siteDisplayName(entityId), originalName: siteName(entityId) };
@@ -119,11 +120,11 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
  * generated name (armyName, "Iron Wardens") and a site's (siteName, "Gloomsgrasp"), never its entity id, which is a
  * storage key, not a name. Undefined when the store holds neither (an army already gone): the caller words that.
  */
-export const getEntityName = (entityId: ID, store: NativeFactStore, isBlitz: boolean): string | undefined => {
+export const getEntityName = (entityId: ID, store: NativeFactStore, mode: StructureNamingMode): string | undefined => {
   const game_id = configManager.getActiveGameId();
   if (store.get("ExplorerTroops", { game_id, explorer_id: entityId })) return getArmyName(entityId, store);
   const structure = store.get("Structure", { game_id, entity_id: entityId });
-  return structure ? getStructureName(structure, isBlitz).name : undefined;
+  return structure ? getStructureName(structure, mode).name : undefined;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {

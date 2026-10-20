@@ -165,6 +165,15 @@ export async function proveBeasts(b, out, records, baseUrl, only, rendererMode =
           actual: panel,
         });
       }
+      const publicWords = await b.evaluate(`(() => {
+        const main = document.querySelector('[data-beasts-ready]');
+        return [main?.textContent, ...Array.from(main?.querySelectorAll('[aria-label],[title],[alt]') ?? []).flatMap(node => [node.getAttribute('aria-label'), node.getAttribute('title'), node.getAttribute('alt')])].filter(Boolean).join(' ');
+      })()`);
+      record.checks.push({
+        check: "Frontier public names never expose the camp category",
+        ok: !/\bcamps?\b/i.test(publicWords),
+        actual: publicWords,
+      });
       const icons = await b.evaluate(
         `Array.from(document.querySelectorAll('.beast-icon-studies img')).map(img=>({width:img.getBoundingClientRect().width,loaded:img.complete&&img.naturalWidth>0,meaning:img.dataset.icon}))`,
       );

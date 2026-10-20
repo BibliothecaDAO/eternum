@@ -43,8 +43,9 @@ Models are static, authored Z-up facing -Y and delivered Y-up facing +Z with bak
 ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textures. Terrain belongs to the scene.
 
 `packages/core/src/utils/frontier-beast.ts` owns encounter identity and scale. Cyclops is lowly, Wraith stronger; Troll
-guards every camp, Dark fey every rift. Ruins use Ammit / Basilisk / Wyvern / Hydra from surface through III. No combat
-tier or count rule is derived from this art. The client beast catalog owns delivery paths and site offsets.
+replaces the camp category on the client at every depth; Dark fey hovers above every rift. Ruins use Ammit / Basilisk /
+Wyvern / Hydra from surface through III. No combat tier or count rule is derived from this art. The client beast catalog
+owns delivery paths and site offsets.
 
 All eight use the selected sculpts. Wraith, Ammit and Basilisk have the latest paint/sculpt polish; Wyvern and Hydra are
 the approved polished versions. Minotaur and the unselected Ghoul/Kappa/Golem outputs are retired. Selected concept

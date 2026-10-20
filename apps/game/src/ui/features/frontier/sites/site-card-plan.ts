@@ -24,7 +24,7 @@ import {
   type TroopType,
 } from "@bibliothecadao/types";
 
-import type { AttackTargetKind } from "./site-marks";
+import { attackTargetName, type AttackTargetKind } from "./site-marks";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
 
@@ -87,7 +87,7 @@ export const readSiteCard = (
       : siteReward(kind, site);
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
-    name: beast?.name ?? kind,
+    name: beast?.name ?? attackTargetName(kind),
     beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,

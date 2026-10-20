@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
 import type { LeftListFilter } from "@/hooks/store/use-ui-store";
@@ -43,7 +44,8 @@ export const HoldingPicker = ({
   const firstChosen = holdings.find((holding) => Number(holding.entityId) === chosen[0]);
   const [asked, setAsked] = useState<LeftListFilter>(firstChosen?.category ?? "all");
   const [query, setQuery] = useState("");
-  const kinds = kindsHeld(holdings);
+  const mode = useGameModeConfig();
+  const kinds = kindsHeld(holdings, mode.id);
   const kind = shownKind(asked, kinds);
   const searchable = needsSearch(kinds, kind, holdings.length);
   const rows = listHoldings(holdings, kind, searchable ? query : "");

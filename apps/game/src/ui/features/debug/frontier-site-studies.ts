@@ -7,7 +7,7 @@ import {
   frontierBeast,
   frontierSiteComposition,
 } from "@/three/structures/frontier-beast";
-import { BEAST_NAMES, CAMP, RIFT, RUIN } from "@/ui/design-system/kit/words";
+import { BEAST_NAMES, RIFT, RUIN } from "@/ui/design-system/kit/words";
 
 const site = (
   id: string,
@@ -39,7 +39,7 @@ const site = (
 export const SITE_STUDIES = [
   site("cyclops", "Lowly roaming", StructureType.Beasts, 0, "lowly"),
   site("wraith", "Stronger roaming", StructureType.Beasts, 0, "stronger"),
-  site("troll", `${CAMP} · all depths`, StructureType.Camp, 3),
+  site("troll", `All depths`, StructureType.Camp, 3),
   site("dark-fey", `${RIFT} · all depths`, StructureType.Rift, 3),
   ...FALLEN_REALM_DEPTHS.map(({ beast }, depth) =>
     site(beast, `${RUIN} ${["Surface", "I", "II", "III"][depth]}`, StructureType.Ruin, depth),

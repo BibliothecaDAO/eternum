@@ -2,7 +2,7 @@ import { SiteReceipt } from "../frontier/sites/site-receipt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { siteReward } from "@bibliothecadao/eternum";
-import { formatAmount, resourceName, structureName, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { formatAmount, resourceName, frontierSiteName, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { mountClearedSiteStudy, type ClearedSiteStudy } from "@/three/debug/model-lab/cleared-site-renderer";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
@@ -43,7 +43,7 @@ export function ClearedSiteLab() {
     ]);
     return { site: source.store.require("ExpeditionSite", source.site) };
   }, [kind, reward?.amount, reward?.resourceType]);
-  const name = structureName(fixture.structure.base.category);
+  const name = frontierSiteName(fixture.structure.base.category);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -82,8 +82,8 @@ export function ClearedSiteLab() {
         <label>
           Site{" "}
           <select aria-label="Site" value={kind} onChange={(event) => change("site", event.target.value)}>
-            <option value="camp">{structureName(StructureType.Camp)}</option>
-            <option value="beasts">{structureName(StructureType.Beasts)}</option>
+            <option value="camp">{frontierSiteName(StructureType.Camp)}</option>
+            <option value="beasts">{frontierSiteName(StructureType.Beasts)}</option>
           </select>
         </label>
         <label>

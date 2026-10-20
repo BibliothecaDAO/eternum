@@ -12,7 +12,7 @@ import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profil
 import {
   configManager,
   getEntityName,
-  getIsBlitz,
+  getGameMode,
   LeaderboardManager,
   Position,
   presentedMineKind,
@@ -149,7 +149,7 @@ const ownedStructures = (
   const counts = new Map<string, number>();
   for (const structure of structures) {
     if (structure.owner !== owner) continue;
-    const name = structureName(structure.base.category as StructureType, presentedMineKind(structure));
+    const name = structureName(structure.base.category as StructureType, presentedMineKind(structure), getGameMode());
     counts.set(name, (counts.get(name) ?? 0) + 1);
   }
   return [...counts]
@@ -214,7 +214,7 @@ const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying
         const at = structure ? structureMapPosition(store, structure) : null;
         return {
           id: share.hyperstructureId,
-          name: getEntityName(share.hyperstructureId, store, getIsBlitz()) ?? "Hyperstructure",
+          name: getEntityName(share.hyperstructureId, store, getGameMode()) ?? "Hyperstructure",
           share: share.shareholderPercentage,
           perSecond: share.pointsPerSecond,
           position: at ? Position.fromContract({ x: at.x, y: at.y }) : null,

@@ -29,7 +29,7 @@ import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY
 import {
   configManager,
   getBuildingCount,
-  getIsBlitz,
+  getGameMode,
   getStructureName,
   ResourceArrivalManager,
 } from "@bibliothecadao/eternum";
@@ -212,7 +212,7 @@ const AutoProvisionRealms = () => {
           return [
             {
               entityId: safeInteger(structure.entityId),
-              name: getStructureName(structure.structure, getIsBlitz()).name,
+              name: getStructureName(structure.structure, getGameMode()).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
             },
           ];

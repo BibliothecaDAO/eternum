@@ -28,7 +28,7 @@ const MARKS: Record<AttributeKey, IconMeaning> = {
   scouting: "order-detection",
   homecoming: "order-enlightenment",
 };
-const KIND_ICONS: Record<ScoutKind, IconMeaning> = { camp: "camp", rift: "rift", beasts: "troops" };
+const KIND_ICONS: Record<ScoutKind, IconMeaning> = { camp: "beast-troll", rift: "rift", beasts: "beast-cyclops" };
 const KINDS: ScoutKind[] = ["camp", "rift", "beasts"];
 
 /** One attribute of the army: its tier, and for Scouting the kind each tier above common went to. */

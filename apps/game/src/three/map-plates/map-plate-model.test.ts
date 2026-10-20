@@ -131,7 +131,7 @@ it("marks a cleared site with a flag, never calls it undefended, and keeps the n
     buildStructurePlate(
       structure({ structureName: siteName(29), structureType: StructureType.Camp, clearedSite: true, guardArmies: [] }),
     ),
-  ).toMatchObject({ icon: "flag", name: "Camp · Cleared", guards: null, place: siteName(29) });
+  ).toMatchObject({ icon: "flag", name: "Troll · Cleared", guards: null, place: siteName(29) });
 });
 
 it("names a Frontier guard by its beast while retaining its combat stack and site lore", () => {

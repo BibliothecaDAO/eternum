@@ -7,6 +7,7 @@ import {
   StructureType,
   getResourceTiers,
   structureName,
+  structurePlural,
 } from "@bibliothecadao/types";
 import { BUILDINGS_GROUPS, buildingModelPaths, getStructureModelPaths } from "@/three/constants/scene-constants";
 
@@ -94,12 +95,12 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
   return { ...paths, [BUILDINGS_GROUPS.BUILDINGS]: buildings };
 }
 
-const buildStructureHelpers = (isBlitz: boolean) => ({
+const buildStructureHelpers = (mode: GameModeId) => ({
   // A mode names the active game's structures, from the active game's facts.
-  getName: (structure: StructureNameInput) => getStructureName(structure, isBlitz),
-  getTypeName: structureName,
+  getName: (structure: StructureNameInput) => getStructureName(structure, mode),
+  getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind, mode),
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
-    getEntityInfo(entityId, playerAccount, store, isBlitz),
+    getEntityInfo(entityId, playerAccount, store, mode),
 });
 
 const buildBuildingRule = (extraExclusions: Set<string>) => (key: string) => {
@@ -141,7 +142,7 @@ const blitzConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(BLITZ_BUILDING_EXCLUSIONS),
   },
-  structure: buildStructureHelpers(true),
+  structure: buildStructureHelpers("blitz"),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(true),
@@ -180,7 +181,7 @@ const eternumConfig: GameModeConfig = {
   rules: {
     isBuildingTypeAllowed: buildBuildingRule(new Set()),
   },
-  structure: buildStructureHelpers(false),
+  structure: buildStructureHelpers("eternum"),
   assets: {
     structureModelPaths: getStructureModelPaths(),
     buildingModelPaths: resolveBuildingModelPaths(false),
@@ -191,8 +192,11 @@ const frontierConfig: GameModeConfig = {
   ...blitzConfig,
   id: "frontier",
   displayName: "Frontier",
+  structure: buildStructureHelpers("frontier"),
   labels: {
     ...blitzConfig.labels,
+    village: structureName(StructureType.Camp, undefined, "frontier"),
+    villages: structurePlural(StructureType.Camp, undefined, "frontier"),
     timelineSubject: "Season",
     shareEventLabel: "Realms Frontier",
     endgameCardTitle: "Realms Frontier",

@@ -15,7 +15,7 @@ import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import {
   configManager,
   getEntityName,
-  getIsBlitz,
+  getGameMode,
   getTroopResourceId,
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
@@ -120,7 +120,7 @@ const twoRealms = ({
     1_400n * P,
     350,
   );
-  return { store, advice, other: getEntityName(8, store, getIsBlitz()), home: getEntityName(7, store, getIsBlitz()) };
+  return { store, advice, other: getEntityName(8, store, getGameMode()), home: getEntityName(7, store, getGameMode()) };
 };
 
 /** The Military window on the second realm: whether it can raise a field army, and the most troops one can take. */

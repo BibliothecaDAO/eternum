@@ -52,7 +52,7 @@ describe("the day log's line for a story", () => {
 
   it("keeps the title of any story it has no line of its own for", () => {
     const { store } = campBeside();
-    expect(dayLogLine(story("SitePayout", {}, "Camp cleared"), store)).toBe("Camp cleared");
+    expect(dayLogLine(story("SitePayout", {}, "Troll cleared"), store)).toBe("Troll cleared");
     expect(dayLogLine(story("BuildingPaymentStory", { category: 250, cost: [] }, "Building Constructed"), store)).toBe(
       "Building Constructed",
     );

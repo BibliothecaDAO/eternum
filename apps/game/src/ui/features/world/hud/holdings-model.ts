@@ -3,7 +3,7 @@ import { mineMeaning, realmMeaning, structureMeaning } from "@/ui/design-system/
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import { StructureType, structureName } from "@bibliothecadao/types";
+import { StructureType, structurePlural, type StructureNamingMode } from "@bibliothecadao/types";
 
 /**
  * The one grammar every list of the player's holdings reads by: the HUD's holdings panel, the transfer window's Send
@@ -16,19 +16,19 @@ type ListedHolding = Pick<
 >;
 
 /** Every kind a player can hold, in the order the tabs show them. */
-const KINDS: Array<{ kind: StructureType; plural: string }> = [
-  { kind: StructureType.Realm, plural: "Realms" },
-  { kind: StructureType.Village, plural: "Villages" },
-  { kind: StructureType.Camp, plural: "Camps" },
-  { kind: StructureType.Mine, plural: "Mines" },
-  { kind: StructureType.Rift, plural: "Rifts" },
-  { kind: StructureType.BitcoinMine, plural: "Bitcoin mines" },
-  { kind: StructureType.Hyperstructure, plural: "Hyperstructures" },
-  { kind: StructureType.Bank, plural: "Banks" },
-  { kind: StructureType.Ruin, plural: "Ruins" },
-  { kind: StructureType.Beasts, plural: "Beasts" },
+const KINDS = [
+  StructureType.Realm,
+  StructureType.Village,
+  StructureType.Camp,
+  StructureType.Mine,
+  StructureType.Rift,
+  StructureType.BitcoinMine,
+  StructureType.Hyperstructure,
+  StructureType.Bank,
+  StructureType.Ruin,
+  StructureType.Beasts,
 ];
-const KIND_RANK = new Map(KINDS.map(({ kind }, index) => [kind, index]));
+const KIND_RANK = new Map(KINDS.map((kind, index) => [kind, index]));
 
 /** A search box earns its place once the kind shown no longer fits on one screen. */
 const SEARCH_FROM = 12;
@@ -42,7 +42,10 @@ const mineKindOf = (holding: Pick<ListedHolding, "category" | "structure">): num
  * kind they present, so a player holding rifts sees "Rifts", as everywhere else; only both kinds at once
  * share the word "Mines".
  */
-export const kindsHeld = (holdings: ReadonlyArray<Pick<ListedHolding, "category" | "structure">>) => {
+export const kindsHeld = (
+  holdings: ReadonlyArray<Pick<ListedHolding, "category" | "structure">>,
+  mode?: StructureNamingMode,
+) => {
   const counts = new Map<StructureType, number>();
   const mineKinds = new Set<number>();
   for (const holding of holdings) {
@@ -52,12 +55,17 @@ export const kindsHeld = (holdings: ReadonlyArray<Pick<ListedHolding, "category"
     if (mineKind !== undefined) mineKinds.add(mineKind);
   }
   const [onlyMineKind] = mineKinds.size === 1 ? mineKinds : [];
-  return KINDS.filter(({ kind }) => counts.has(kind)).map(({ kind, plural }) => {
+  return KINDS.filter((kind) => counts.has(kind)).map((kind) => {
     const presentsOneMineKind = kind === StructureType.Mine && onlyMineKind !== undefined;
     return {
       kind,
-      plural: presentsOneMineKind ? `${structureName(StructureType.Mine, onlyMineKind)}s` : plural,
-      icon: presentsOneMineKind ? mineMeaning(onlyMineKind) : structureMeaning(kind),
+      plural: structurePlural(kind, presentsOneMineKind ? onlyMineKind : undefined, mode),
+      icon:
+        mode === "frontier" && kind === StructureType.Camp
+          ? ("beast-troll" as const)
+          : presentsOneMineKind
+            ? mineMeaning(onlyMineKind)
+            : structureMeaning(kind),
       count: counts.get(kind)!,
     };
   });

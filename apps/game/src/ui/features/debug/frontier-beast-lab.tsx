@@ -1,7 +1,7 @@
 import { siteDisplayName, type BeastBand } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { StructureType } from "@bibliothecadao/types";
+import { StructureType, frontierSiteName } from "@bibliothecadao/types";
 import { mountStaticLineup, type LineupAsset, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import {
   FRONTIER_BEASTS,
@@ -33,11 +33,11 @@ const SITES = [
   { kind: "Ruin", category: StructureType.Ruin, base: FALLEN_REALM_RUIN_PATH },
   { kind: "Beasts", category: StructureType.Beasts, base: "" },
 ] as const;
-const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ kind, category, base }) => {
+const SITE_MODELS: readonly LineupAsset[] = SITES.map(({ category, base }) => {
   const beast = frontierBeast(0, category, "lowly");
   const composition = frontierSiteComposition(category);
   return {
-    label: `${kind} · ${beast.name}`,
+    label: frontierSiteName(category, beast),
     parts: [
       ...(composition.baseScale ? [{ path: base, scale: composition.baseScale, z: composition.baseZ }] : []),
       { path: FRONTIER_BEASTS[beast.beast].path, scale: beast.scale, z: composition.beastZ, y: composition.beastY },
@@ -185,8 +185,8 @@ export function FrontierBeastLab() {
               Site{" "}
               <select aria-label="Site" value={site} onChange={(e) => setSite(Number(e.target.value))}>
                 {SITES.map((entry, i) => (
-                  <option key={entry.kind} value={i}>
-                    {entry.kind}
+                  <option key={frontierSiteName(entry.category)} value={i}>
+                    {frontierSiteName(entry.category)}
                   </option>
                 ))}
               </select>

@@ -20,13 +20,13 @@ clock until **Advance to day rollover**; **Reset chest** restores the funded tim
 
 Frontier fight cards and Events share **Victory**, **Army lost** and **Guard holds**, with the encounter's beast
 species. A roaming beast's card is titled by its species; the fight result retains that species' portrait after the
-guard clears. Events names camps, rifts and beasts found on the revealed tile. A Frontier founding line names the
+guard clears. Events names Trolls, rifts and roaming beasts found on the revealed tile. A Frontier founding line names the
 settler without the realm's off-map settlement coordinate.
 
 ## Cleared-site standard
 
-Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped camp
-or beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
+Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared sites**. **Site** compares the shipped Troll
+or roaming beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
 Click a model or its selection button to open the reward panel; Close site dismisses it. The selected standard uses the
 production receipt component over native clear-result facts, with the Structure and guard removed. In the game a clear
 leaves the biome and a walkable tile; the standard and its reward receipt survive an army walking across it and a

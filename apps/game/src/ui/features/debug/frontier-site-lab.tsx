@@ -236,7 +236,7 @@ export function FrontierSiteLab() {
         </aside>
       </div>
       <footer>
-        Two roaming beasts. {BEAST_NAMES.troll} alone at camps. {BEAST_NAMES["dark-fey"]} above rifts. Four ruin
+        Two roaming beasts. {BEAST_NAMES.troll} at every depth. {BEAST_NAMES["dark-fey"]} above rifts. Four ruin
         guardians in the original masonry, with ground mist.
       </footer>
     </main>

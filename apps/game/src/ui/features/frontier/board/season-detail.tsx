@@ -1,8 +1,7 @@
-import { formatAmount, LORDS } from "@bibliothecadao/types";
+import { formatAmount, LORDS, frontierSiteName, StructureType } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { OrderMark } from "./realm-marks";
 import {
-  CAMP,
   CHESTS,
   CLEARED,
   ESSENCE,
@@ -62,7 +61,7 @@ export const SeasonDetailSheet = ({
         <span aria-hidden className="text-hud-body text-hud-muted">
           =
         </span>
-        <HudChip icons={["camp"]} label={CAMP}>
+        <HudChip icons={["beast-troll"]} label={frontierSiteName(StructureType.Camp)}>
           {formatAmount(detail.sites.camps)}
         </HudChip>
         <HudChip icons={["rift"]} label={RIFT}>

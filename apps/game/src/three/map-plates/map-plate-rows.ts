@@ -62,8 +62,9 @@ const siteRows = (plate: StructurePlate): PlateRow[] => {
   // Three rows at most: what it holds, and troops on their way to one of the player's own sites, follow its guard.
   const holds = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
+  const kind = plate.name === plate.beast ? undefined : plate.name;
   const rows: PlateRow[] = [
-    [{ kind: "owner", text: plate.beast ? [plate.place, plate.name].filter(Boolean).join(" ") : plate.owner }],
+    [{ kind: "owner", text: plate.beast ? [plate.place, kind].filter(Boolean).join(" ") : plate.owner }],
     !plate.beast && plate.place ? [name, { kind: "word", text: plate.name }] : [name],
     [...(plate.guards ? guard(plate.guards) : []), ...holds, ...arriving],
   ];

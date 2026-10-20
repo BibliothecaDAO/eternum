@@ -1,6 +1,7 @@
 import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { configManager } from "..";
+import { nativeGameModeOf } from "./native-preset-mode";
 
 export { getEntityIdFromKeys };
 
@@ -94,5 +95,7 @@ export function divideWithPrecision(
   // convert to decimal
   return Number(Number(a).toFixed(round));
 }
+
+export const getGameMode = () => nativeGameModeOf(configManager.getPresetId());
 
 export const getIsBlitz = () => [2, 4].includes(configManager.getPresetId());

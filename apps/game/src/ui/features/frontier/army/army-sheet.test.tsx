@@ -99,8 +99,8 @@ describe("the army", () => {
   it("chooses Scouting's kind with each kind's find rate before and after", () => {
     const onKind = vi.fn();
     render("scouting", {}, vi.fn(), onKind);
-    const camps = kind("Find camps");
-    expect(camps.textContent).toBe("Find camps4% → 4.4%");
+    const camps = kind("Find Trolls");
+    expect(camps.textContent).toBe("Find Trolls4% → 4.4%");
     expect(kind("Find rifts").getAttribute("aria-selected")).toBe("true");
     act(() => camps.click());
     expect(onKind).toHaveBeenCalledWith("camp");

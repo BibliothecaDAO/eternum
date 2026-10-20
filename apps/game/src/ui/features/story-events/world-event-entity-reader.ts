@@ -1,5 +1,5 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { configManager, getExplorerOwner, getIsBlitz, getStructureName } from "@bibliothecadao/eternum";
+import { configManager, getExplorerOwner, getGameMode, getStructureName } from "@bibliothecadao/eternum";
 import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import type { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { ContractAddress, type ID, StructureType } from "@bibliothecadao/types";
@@ -56,7 +56,7 @@ export const createWorldEventEntityReader = (
       coordY: spatial.hexCoords.row,
       ownerAddress,
       ownerName: getPlayerName(ownerAddress),
-      structureName: getStructureName(structure, getIsBlitz()).name,
+      structureName: getStructureName(structure, getGameMode()).name,
       structureType: structure.base.category as StructureType,
     };
   };

@@ -1,3 +1,4 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useUIStore, type LeftListFilter } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -19,12 +20,13 @@ type HeldKind = ReturnType<typeof kindsHeld>[number];
  *                   (e.g. Build is Realm + Village only)
  */
 export const useStructureCategoryFilter = (structures: StructureWithMetadata[], universe?: StructureType[]) => {
+  const mode = useGameModeConfig();
   const leftListFilter = useUIStore((state) => state.leftListFilter);
   const setLeftListFilter = useUIStore((state) => state.setLeftListFilter);
 
   const availableCategories = useMemo(
-    () => kindsHeld(structures).filter(({ kind }) => !universe || universe.includes(kind)),
-    [structures, universe],
+    () => kindsHeld(structures, mode.id).filter(({ kind }) => !universe || universe.includes(kind)),
+    [structures, universe, mode.id],
   );
 
   // Fall back to the first owned category when the saved filter has nothing

@@ -7,7 +7,7 @@ import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { XP } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatExact, resourceName, structureName, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { formatCharge, formatExact, resourceName, frontierSiteName, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { siteClearXp } from "./site-card-plan";
 
 const RECEIPT_MODELS = ["ExpeditionSite"] as const;
@@ -44,7 +44,7 @@ export function SiteReceipt({ selected }: { selected: ClearedSite }) {
     <section aria-label="Clear reward" className="flex flex-col gap-2 text-hud-body">
       <div className="flex items-center gap-2">
         <Icon name="flag" size={24} />
-        <strong>Cleared · {structureName(selected.site.category)}</strong>
+        <strong>Cleared · {frontierSiteName(selected.site.category)}</strong>
       </div>
       <div className="flex items-center gap-3" data-site-rewards>
         {reward && (

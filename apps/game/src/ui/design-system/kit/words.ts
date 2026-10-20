@@ -16,6 +16,8 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
+  structurePlural,
+  StructureType,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
@@ -186,10 +188,13 @@ export const xpToward = (held: string, price: string, tier: string) =>
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
 /** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */
-export const FIND_KINDS = ["Find camps", "Find rifts", "Find beasts"] as const;
+export const FIND_KINDS = [
+  `Find ${structurePlural(StructureType.Camp, undefined, "frontier")}`,
+  "Find rifts",
+  "Find beasts",
+] as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
-export const CAMP = "Camp";
 export const RIFT = "Rift";
 export const RUIN = "Ruin";
 /** A map plate's words: a thing with no guard, the troops on their way to one. */

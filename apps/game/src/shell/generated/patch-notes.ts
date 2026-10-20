@@ -55,7 +55,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "map-realm",
           "title": "Map tokens",
-          "line": "Every army, realm, camp and rift wears a token in its side's colour: its troops' count and tier (a beast guard shows its beast instead), an army's stamina bar, and a dashed ring when nothing guards a structure that can be attacked. Hover or select it and its plate opens in its place: an army's player, home and exact stamina, a realm's guards in the order an attacker meets them, a camp's or rift's own name and what it holds."
+          "line": "Every army, realm and site wears a token in its side's colour: its troops' count and tier (a beast guard shows its beast instead), an army's stamina bar, and a dashed ring when nothing guards a structure that can be attacked. Hover or select it and its plate opens in its place: an army's player, home and exact stamina, a realm's guards in the order an attacker meets them, a site's own name and what it holds."
         },
         {
           "kind": "new",
@@ -259,15 +259,15 @@ export const patchNotes = [
         },
         {
           "kind": "new",
-          "icon": "camp",
+          "icon": "beast-troll",
           "title": "Sites to clear",
-          "line": "Camps, rifts, ruins and beasts hold the land's riches, and each shows its guard and its payout before you attack: a camp pays labor, a rift Essence, a ruin its chest. A site pays once: a cleared one leaves a standard that shows what the clear paid, and armies can walk onto it."
+          "line": "Trolls, rifts, ruins and roaming beasts hold the land's riches, and each shows its guard and its payout before you attack: a Troll pays labor, a rift Essence, a ruin its chest. A site pays once: a cleared one leaves a standard that shows what the clear paid, and armies can walk onto it."
         },
         {
           "kind": "new",
-          "icon": "camp",
+          "icon": "beast-troll",
           "title": "Beasts",
-          "line": "Beasts roam the land in two strengths, as likely as each other: a Cyclops, 300 to 350 troops on the surface, or a stronger Wraith, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. Camps show a Troll at every depth, without a camp landmark. A Dark fey hovers above each rift. Ruins are guarded by an Ammit on the surface, a Basilisk in Ethereal I, a Wyvern in Ethereal II and a Hydra in Ethereal III, with low drifting mist across their floors."
+          "line": "Beasts roam the land in two strengths, as likely as each other: a Cyclops, 300 to 350 troops on the surface, or a stronger Wraith, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. Trolls stand at every depth. A Dark fey hovers above each rift. Ruins are guarded by an Ammit on the surface, a Basilisk in Ethereal I, a Wyvern in Ethereal II and a Hydra in Ethereal III, with low drifting mist across their floors."
         },
         {
           "kind": "new",
@@ -297,7 +297,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "star",
           "title": "Armies learn",
-          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, each Scouting tier adds 10%, 20%, 30%, then 40% to the camps, rifts or beasts you pick for it, so all four on one kind find twice as many. On a desktop, Upgrade on an army's row opens its tiers once its XP buys one."
+          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, each Scouting tier adds 10%, 20%, 30%, then 40% to the Trolls, rifts or beasts you pick for it, so all four on one kind find twice as many. On a desktop, Upgrade on an army's row opens its tiers once its XP buys one."
         },
         {
           "kind": "new",

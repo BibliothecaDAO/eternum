@@ -42,7 +42,7 @@ import {
   divideByPrecision,
   getBlockTimestamp,
   getGuardsByStructure,
-  getIsBlitz,
+  getGameMode,
   getStructureInfoFromTileOccupier,
   getStructureName,
   TROOP_TIERS,
@@ -585,7 +585,7 @@ export class StructureManager {
       entityId: renderable.entityId,
       structureName:
         structureComponent && this.store
-          ? getStructureName(structureComponent, getIsBlitz()).name
+          ? getStructureName(structureComponent, getGameMode()).name
           : renderInfo.type === StructureType.Realm || renderInfo.type === StructureType.Hyperstructure
             ? structureName(renderInfo.type)
             : siteDisplayName(renderable.entityId),

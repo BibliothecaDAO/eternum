@@ -6,7 +6,7 @@ import { isAddressEqualToAccount } from "@/three/utils";
 import { LeftView } from "@/types";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { configManager, getIsBlitz, getStructureName, Position } from "@bibliothecadao/eternum";
+import { configManager, getGameMode, getStructureName, Position } from "@bibliothecadao/eternum";
 import { BuildingType, HexEntityInfo, HexPosition, ResourcesIds } from "@bibliothecadao/types";
 import { SceneName } from "../../types/common";
 import { navigateToStructure } from "../../utils/navigation";
@@ -23,7 +23,7 @@ interface OpenStructureContextMenuParams {
 
 const resolveStructureTitle = (structure: HexEntityInfo, store: Store) => {
   const structureRow = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.id });
-  return structureRow ? getStructureName(structureRow, getIsBlitz()).name : "Structure";
+  return structureRow ? getStructureName(structureRow, getGameMode()).name : "Structure";
 };
 
 export const openStructureContextMenu = ({ event, structure, hexCoords, store }: OpenStructureContextMenuParams) => {

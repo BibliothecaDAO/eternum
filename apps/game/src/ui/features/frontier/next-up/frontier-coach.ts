@@ -1,3 +1,4 @@
+import { frontierSiteName, StructureType } from "@bibliothecadao/types";
 import type { NextUpFacts } from "./next-up-facts";
 
 /**
@@ -116,8 +117,8 @@ const dayLoop = (facts: NextUpFacts, pointer: Pointer): FrontierCoachStep[] => {
     steps.push(
       step(
         "camp",
-        "A camp in today's region: count their troops, then yours. Clearing it teaches your army.",
-        "Show the camp",
+        `A ${frontierSiteName(StructureType.Camp)} in today's region: compare its strength with your army. Defeating it teaches your army.`,
+        `Show the ${frontierSiteName(StructureType.Camp)}`,
         "camp",
       ),
     );
