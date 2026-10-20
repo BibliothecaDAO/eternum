@@ -25,7 +25,7 @@ import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
  * a standing building its type's Upgrade sheet, a standing site or another player's army the tile card, a Shrine or
  * Well its card, a spire or reward chest its own. Cleared sites and opened chests keep their receipts on the tile.
  * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
- * shows open no card. The player's own attack result stands in the card's place until it is closed.
+ * shows open no card. The player's own attack result stands in the card's place until it is closed, with the card.
  */
 export const FrontierSelectionSheet = ({
   rules,
@@ -55,10 +55,15 @@ export const FrontierSelectionSheet = ({
     closeSelectedTile();
     setSelectedBuildingHex(null);
   };
+  // The result stands in the target's card: closing it (its close, Escape) closes the card, not back to before the fight.
+  const closeFight = () => {
+    closeFightResult();
+    close();
+  };
   if (fight)
     return (
-      <HudSheet label={TARGET_MARKS[fight.site].word} onClose={closeFightResult}>
-        <FightResultCard result={fight} onClose={closeFightResult} />
+      <HudSheet label={TARGET_MARKS[fight.site].word} onClose={closeFight}>
+        <FightResultCard result={fight} onClose={closeFight} />
       </HudSheet>
     );
   if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />;

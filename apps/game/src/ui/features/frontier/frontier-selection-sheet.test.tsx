@@ -25,6 +25,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { expeditionSpireTile, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
+import { fightEnded } from "./sites/fight-result";
 
 /** Rules for the sheets that never read them here. */
 const RULES = { dayUnitSeconds: 100, spacing: 10, startMainAt: 100, seed: 1n };
@@ -238,4 +239,40 @@ it("selects a Frontier chest, follows missing metadata and expiry, opens through
     useUIStore.getState().setMapLayer(false);
     useAccountStore.setState({ account: null });
   }
+});
+
+it("closes the target's card with its fight result on Escape, not back to the card from before the fight", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store } = campBeside();
+  tiles.current = [];
+  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
+  fightEnded({
+    site: "Rift",
+    verdict: "guard-holds",
+    armyArt: "knight-t1",
+    army: { before: 1_000, after: 694 },
+    guard: { before: 1_000, after: 572 },
+    gained: null,
+  });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+        <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+      </GameProvider>,
+    ),
+  );
+  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Rift");
+
+  act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+
+  expect(host.querySelector("[data-kit-sheet]")).toBeNull();
+  expect(useUIStore.getState().mapSelection).toEqual({
+    kind: "army",
+    entityId: 201,
+    tile: null,
+  });
+  act(() => root.unmount());
+  useUIStore.getState().selectOnMap(null);
 });
