@@ -31,7 +31,6 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
 import { plotKey, sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
   buildableRadius,
   configManager,
