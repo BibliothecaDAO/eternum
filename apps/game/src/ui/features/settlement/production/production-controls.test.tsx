@@ -74,7 +74,7 @@ const egonal = ({ copper, labor = 0, troopBonus = 0 }: { copper: number; labor?:
 
 const realm = { entityId: 7, category: StructureType.Realm } as RealmInfo;
 
-const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false } = {}) => {
+const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false, compact = false } = {}) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const store = egonal(holdings);
   const isCommandEnabled = configManager.isCommandEnabled.bind(configManager);
@@ -96,7 +96,7 @@ const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false } 
   act(() =>
     root.render(
       <GameProvider value={setup} account={{ address: "0x111" } as never}>
-        <ProductionControls selectedResource={ResourcesIds.Crossbowman} realm={realm} />
+        <ProductionControls selectedResource={ResourcesIds.Crossbowman} realm={realm} compact={compact} />
       </GameProvider>,
     ),
   );
@@ -223,6 +223,53 @@ it("runs the labor recipe on its own inputs and output, with the troop bonus on 
       expect.objectContaining({ produced_resource_types: [ResourcesIds.Crossbowman], production_cycles: [3] }),
     );
     expect(view.burnResources).not.toHaveBeenCalled();
+  } finally {
+    view.unmount();
+  }
+});
+
+it("refuses Max when the holdings cover no whole cycle, and sends nothing", async () => {
+  const view = mount({ copper: 0.7 });
+  try {
+    await view.press(view.button("Max"));
+    expect(view.host.textContent).toContain("0 Crossbowman T1");
+    expect(view.start().textContent).toBe("Not enough resources");
+    expect(view.start().disabled).toBe(true);
+    await view.press(view.start());
+    expect(view.burnResources).not.toHaveBeenCalled();
+    expect(view.burnLabor).not.toHaveBeenCalled();
+  } finally {
+    view.unmount();
+  }
+});
+
+it("refuses labor's Max under one cycle the same way", async () => {
+  const view = mount({ copper: 20, labor: 20 }, { laborEnabled: true });
+  try {
+    const laborTab = [...view.host.querySelectorAll('[role="tab"]')].find(
+      (tab) => tab.textContent === "Labor Production",
+    );
+    await view.press(laborTab!);
+    await view.press(view.button("Max"));
+    expect(view.start().textContent).toBe("Not enough resources");
+    expect(view.start().disabled).toBe(true);
+    await view.press(view.start());
+    expect(view.burnResources).not.toHaveBeenCalled();
+    expect(view.burnLabor).not.toHaveBeenCalled();
+  } finally {
+    view.unmount();
+  }
+});
+
+it("refuses an amount of nothing in the compact form, saying why", async () => {
+  const view = mount({ copper: 20 }, { compact: true });
+  try {
+    view.type("Amount of Crossbowman T1", "0");
+    expect(view.host.textContent).toContain("Enter an amount to make");
+    expect(view.start().disabled).toBe(true);
+    await view.press(view.start());
+    expect(view.burnResources).not.toHaveBeenCalled();
+    expect(view.burnLabor).not.toHaveBeenCalled();
   } finally {
     view.unmount();
   }

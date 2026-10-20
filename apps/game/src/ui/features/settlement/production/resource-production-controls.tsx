@@ -261,7 +261,10 @@ const recipeOf = (resource: number, simple: boolean, bonusPercent: number): Prod
     : undefined;
 };
 
-/** Why the run cannot start, or null when it can: no recipe, nothing sized, or an input short of the run's burn. */
+/**
+ * Why the run cannot start, or null when it can: no recipe, no whole cycle (the chain refuses zero cycles, whatever
+ * sized the run), or an input short of the run's burn.
+ */
 const runVerdict = (
   recipe: ProductionRecipe | undefined,
   run: ProductionRun | undefined,
@@ -269,10 +272,16 @@ const runVerdict = (
   balances: Record<number, bigint>,
 ): string | null => {
   if (!recipe || !run) return "This recipe is unknown here";
-  if (run.cycles === 0n && sizing.by === "input")
-    return `Spend at least ${formatCharge(fromUnits(oneCycleOf(recipe, sizing.resource)))} ${resourceName(sizing.resource)}`;
-  if (run.cycles === 0n && sizing.by === "output") return "Enter an amount to make";
+  if (run.cycles === 0n) return noCycleReason(recipe, sizing);
   return coversRun(run, balances) ? null : "Not enough resources";
+};
+
+/** Why a sizing came to no whole cycle: a budget under one cycle's burn, nothing asked for, or holdings under it. */
+const noCycleReason = (recipe: ProductionRecipe, sizing: RunSizing): string => {
+  if (sizing.by === "input")
+    return `Spend at least ${formatCharge(fromUnits(oneCycleOf(recipe, sizing.resource)))} ${resourceName(sizing.resource)}`;
+  if (sizing.by === "output") return "Enter an amount to make";
+  return "Not enough resources";
 };
 
 /** The rows a run's panel shows: each input held against its burn, and the budget typed into the one that sizes it. */
