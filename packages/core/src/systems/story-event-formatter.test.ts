@@ -114,12 +114,18 @@ describe("owner naming", () => {
   });
 });
 
-it("names a LORDS withdrawal by its whole amount", () => {
-  expect(buildStoryEventPresentation(story("LordsWithdrawn", { account: "0x1", amount: 200 }))).toMatchObject({
+it("names a LORDS withdrawal by its whole amount, and another player's by the player", () => {
+  const djizus = (address: string) => (BigInt(address) === 0x123n ? "djizus" : null);
+  const withdrawn = (view: Event) => buildStoryEventPresentation(view, undefined, djizus);
+  expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 200 }))).toMatchObject({
     title: "LORDS withdrawn",
     description: "200 LORDS to L2",
   });
-  expect(buildStoryEventPresentation(story("LordsWithdrawn", { account: "0x1", amount: 12_000 }))).toMatchObject({
+  expect(withdrawn(story("LordsWithdrawn", { account: "0x123", amount: 50 }))).toMatchObject({
+    title: "djizus withdrew LORDS",
+    description: "50 LORDS to L2",
+  });
+  expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 12_000 }))).toMatchObject({
     description: "12K LORDS to L2",
   });
 });
@@ -448,6 +454,35 @@ describe("every story the chain can tell", () => {
     (storyType, payload) => {
       const { description } = buildStoryEventPresentation(story(storyType, payload, 7));
       expect(description ?? "").not.toMatch(/(^|· )[A-Z][a-z]+( [a-z]+)*: /);
+    },
+  );
+
+  /**
+   * The stories no Frontier command tells (its preset's command mask: no trade, bank, faith, relic crafting, raid,
+   * transfer or relic chest; a Frontier chest is a reward chest), and the game's own: these may leave their player out.
+   */
+  const NOT_FRONTIER = new Set([
+    "FaithPointsClaimedStory",
+    "ResourceTransferStory",
+    "TradeCreated",
+    "TradeAccepted",
+    "TradeCancelled",
+    "BankSwap",
+    "BankLiquidity",
+    "RelicChestOpened",
+    "FaithPledged",
+    "FaithRemoved",
+    "BlitzFinalized",
+    "RelicCrafted",
+    "RaidEvent",
+  ]);
+
+  it.each(Object.entries(SAMPLES).filter(([storyType]) => !NOT_FRONTIER.has(storyType)))(
+    "names another player in %s, a line about ground this client never synced",
+    (storyType, payload) => {
+      const djizus = (address: string) => (BigInt(address) === 0x123n ? "djizus" : null);
+      const { title, description } = buildStoryEventPresentation(story(storyType, payload, 7), undefined, djizus);
+      expect(`${title} · ${description ?? ""}`).toContain("djizus");
     },
   );
 

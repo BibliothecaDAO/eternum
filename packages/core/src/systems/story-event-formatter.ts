@@ -244,10 +244,17 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "scroll",
     };
   },
-  LordsWithdrawn: (_event, payload) => {
+  LordsWithdrawn: (event, payload, components, resolvePlayerName) => {
     const amount = toNumber(payload.amount);
     if (amount === null) throw new Error("Incomplete LORDS withdrawal story");
-    return { title: "LORDS withdrawn", description: `${formatCharge(amount)} LORDS to L2`, icon: "prize" };
+    // Another player's withdrawal names them: the story's owner is the withdrawing account.
+    return {
+      title: isViewer(event.ownerAddress, event.viewerAddress ?? null)
+        ? "LORDS withdrawn"
+        : `${playerOf(event, components, resolvePlayerName)} withdrew LORDS`,
+      description: `${formatCharge(amount)} LORDS to L2`,
+      icon: "prize",
+    };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord =
