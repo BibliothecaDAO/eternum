@@ -34,7 +34,9 @@ type Story = typeof clear | ReturnType<typeof battle>;
 const present = (story: Story, store: ReturnType<typeof campBeside>["store"]) =>
   buildStoryEventPresentation(
     {
+      // The player's own stories, as the story store hands them over: owner and viewer alike.
       ownerAddress: "0x123",
+      viewerAddress: "0x123",
       ownerName: null,
       entityId: 7,
       txHash: "0x1",

@@ -427,3 +427,61 @@ it("asks a failed history read again once on each handshake, never on a remount 
     expect(history).toHaveBeenCalledTimes(asked);
   }
 });
+
+it("reads the world's stories again each time a reader opens, so another player's new chest reaches the Log", async () => {
+  const chestOpened = (block: number, owner: string) => ({
+    model: "StoryEvent",
+    game_id: "1",
+    block_number: block,
+    transaction_hash: `0xc${block}`,
+    transaction_index: 0,
+    event_index: 0,
+    value: {
+      game_id: "0x1",
+      owner,
+      entity_id: "0x9",
+      timestamp: `0x${(100 + block).toString(16)}`,
+      story: { RewardChestOpened: { explorer_id: "0x7", structure_id: "0x9", coord: {}, amount: "0x32" } },
+    },
+  });
+  const answer = (items: ReturnType<typeof chestOpened>[], through: number) => ({
+    items,
+    complete_through_block: through,
+    limit: 350,
+    offset: 0,
+    total: items.length,
+  });
+  history.mockResolvedValue(answer([chestOpened(10, "0xd1")], 10));
+  const client = new QueryClient();
+  // The Log's World history: every player's stories, which a Frontier client's stream never carries.
+  const World = () => (
+    <ol>
+      {useStoryEvents(350).data.map((event) => (
+        <li key={event.id}>{event.owner}</li>
+      ))}
+    </ol>
+  );
+  const open = async () => {
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={client}>
+          <World />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+    const owners = [...log.querySelectorAll("li")].map((row) => row.textContent);
+    await act(async () => logRoot.unmount());
+    return owners;
+  };
+
+  expect(await open()).toEqual(["0xd1"]);
+  // Another player opens a chest after the Log closed; nothing streams it to this client.
+  history.mockResolvedValue(answer([chestOpened(12, "0xd2"), chestOpened(10, "0xd1")], 12));
+  const asked = history.mock.calls.length;
+
+  expect(await open()).toEqual(["0xd2", "0xd1"]);
+  expect(history).toHaveBeenCalledTimes(asked + 1);
+});

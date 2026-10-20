@@ -114,12 +114,18 @@ describe("owner naming", () => {
   });
 });
 
-it("names a LORDS withdrawal by its whole amount", () => {
-  expect(buildStoryEventPresentation(story("LordsWithdrawn", { account: "0x1", amount: 200 }))).toMatchObject({
+it("names a LORDS withdrawal by its whole amount, and another player's by the player", () => {
+  const djizus = (address: string) => (BigInt(address) === 0x123n ? "djizus" : null);
+  const withdrawn = (view: Event) => buildStoryEventPresentation(view, undefined, djizus);
+  expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 200 }))).toMatchObject({
     title: "LORDS withdrawn",
     description: "200 LORDS to L2",
   });
-  expect(buildStoryEventPresentation(story("LordsWithdrawn", { account: "0x1", amount: 12_000 }))).toMatchObject({
+  expect(withdrawn(story("LordsWithdrawn", { account: "0x123", amount: 50 }))).toMatchObject({
+    title: "djizus withdrew LORDS",
+    description: "50 LORDS to L2",
+  });
+  expect(withdrawn(own("LordsWithdrawn", { account: "0x123", amount: 12_000 }))).toMatchObject({
     description: "12K LORDS to L2",
   });
 });
@@ -241,12 +247,18 @@ it.each([
 it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   expect(
     buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Logistics", tier: 3, price: 200 })),
-  ).toMatchObject({ title: "Logistics rare", description: "Army · 200 XP" });
+  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · 200 XP" });
+});
+
+/** A story the viewer's own account told. */
+const own = (storyType: string, payload: Record<string, unknown>): Event => ({
+  ...story(storyType, payload),
+  viewerAddress: "0x123",
 });
 
 it("names a cleared site by its map name, with its recorded kind and payout, without a current structure", () => {
   const result = buildStoryEventPresentation(
-    story("SitePayout", {
+    own("SitePayout", {
       structure_id: 3,
       explorer_id: 7,
       site_id: 9,
@@ -255,10 +267,10 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
     }),
   );
   expect(result.title).toBe(`${siteName(9)} cleared`);
-  expect(result.description).toMatch(/^Troll · Army · .*500/);
+  expect(result.description).toMatch(/^Troll · Lord 0123's army · .*500/);
   expect(
     buildStoryEventPresentation(
-      story("SitePayout", {
+      own("SitePayout", {
         structure_id: 3,
         explorer_id: 7,
         site_id: 9,
@@ -266,7 +278,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Army · XP only" });
+  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Lord 0123's army · XP only" });
   // The name its holder gave it, as the rename control writes it.
   const named = vi
     .spyOn(localStorage, "getItem")
@@ -274,7 +286,7 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
   try {
     expect(
       buildStoryEventPresentation(
-        story("SitePayout", {
+        own("SitePayout", {
           structure_id: 3,
           explorer_id: 7,
           site_id: 9,
@@ -286,6 +298,29 @@ it("names a cleared site by its map name, with its recorded kind and payout, wit
   } finally {
     named.mockRestore();
   }
+});
+
+it("names another player's clear by the player, and a ruin's clear as the chest it earns", () => {
+  const cleared = (category: number, view: (type: string, payload: Record<string, unknown>) => Event) =>
+    buildStoryEventPresentation(
+      view("SitePayout", {
+        structure_id: 3,
+        explorer_id: 7,
+        site_id: 9,
+        category,
+        reward: { resource_type: 39, amount: "120000000000" },
+      }),
+    ).title;
+  expect(cleared(StructureType.Camp, story)).toBe(`Lord 0123 cleared ${siteName(9)}`);
+  expect(cleared(StructureType.Ruin, story)).toBe(`Lord 0123 cleared ${siteName(9)}: chest earned`);
+  expect(cleared(StructureType.Ruin, own)).toBe(`${siteName(9)} cleared: chest earned`);
+});
+
+it("names another player's opened chest by the player, the LORDS it paid or its expiry", () => {
+  const opened = (amount: string) =>
+    buildStoryEventPresentation(story("RewardChestOpened", { explorer_id: 7, structure_id: 3, coord: {}, amount }));
+  expect(opened("50")).toMatchObject({ title: "Lord 0123 opened a chest: 50 LORDS", description: "Lord 0123's army" });
+  expect(opened("0").title).toBe("Lord 0123's chest expired: no LORDS paid");
 });
 
 describe("every story the chain can tell", () => {
@@ -422,12 +457,42 @@ describe("every story the chain can tell", () => {
     },
   );
 
+  /**
+   * The stories no Frontier command tells (its preset's command mask: no trade, bank, faith, relic crafting, raid,
+   * transfer or relic chest; a Frontier chest is a reward chest), and the game's own: these may leave their player out.
+   */
+  const NOT_FRONTIER = new Set([
+    "FaithPointsClaimedStory",
+    "ResourceTransferStory",
+    "TradeCreated",
+    "TradeAccepted",
+    "TradeCancelled",
+    "BankSwap",
+    "BankLiquidity",
+    "RelicChestOpened",
+    "FaithPledged",
+    "FaithRemoved",
+    "BlitzFinalized",
+    "RelicCrafted",
+    "RaidEvent",
+  ]);
+
+  it.each(Object.entries(SAMPLES).filter(([storyType]) => !NOT_FRONTIER.has(storyType)))(
+    "names another player in %s, a line about ground this client never synced",
+    (storyType, payload) => {
+      const djizus = (address: string) => (BigInt(address) === 0x123n ? "djizus" : null);
+      const { title, description } = buildStoryEventPresentation(story(storyType, payload, 7), undefined, djizus);
+      expect(`${title} · ${description ?? ""}`).toContain("djizus");
+    },
+  );
+
   it("reads a building's placement from the change the story carries, never as an update", () => {
     const placed = (change: string) =>
       buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37, change }, 7)).title;
-    expect(placed("Created")).toMatch(/ built at /);
-    expect(placed("Destroyed")).toMatch(/ demolished at /);
-    expect(placed("Paused")).toMatch(/ paused at /);
+    // The realm is not in this store: its player tells it.
+    expect(placed("Created")).toMatch(/^Lord 0123 built an? .+$/);
+    expect(placed("Destroyed")).toMatch(/^Lord 0123's .+ demolished$/);
+    expect(placed("Paused")).toMatch(/^Lord 0123's .+ paused$/);
     expect(() => buildStoryEventPresentation(story("BuildingPlacementStory", { coord, category: 37 }, 7))).toThrow(
       "Incomplete building placement story",
     );
@@ -590,9 +655,9 @@ it("counts one troop as one", () => {
   const moved = (amount: string) =>
     buildStoryEventPresentation(
       story("TroopsTransferred", { source: { Explorer: 7 }, target: { Explorer: 8 }, amount }),
-    ).description;
-  expect(moved("1000000000")).toBe("1 troop");
-  expect(moved("2000000000")).toBe("2 troops");
+    ).title;
+  expect(moved("1000000000")).toBe("Lord 0123 moved 1 troop between armies");
+  expect(moved("2000000000")).toBe("Lord 0123 moved 2 troops between armies");
 });
 
 describe("a story's subject", () => {
@@ -614,6 +679,39 @@ describe("a story's subject", () => {
     expect(
       title("GuardAddStory", { structure_id: 5, slot: 1, category: "Knight", tier: "T1", amount: "0x77359400" }),
     ).toBe(`${name}'s Castle Wall reinforced`);
+  });
+
+  it("is told by its player when this client never synced the realm or the army, as another player's are", () => {
+    const resolve = (address: string) => (BigInt(address) === 0x123n ? "djizus" : null);
+    const title = (storyType: string, payload: Record<string, unknown>) =>
+      buildStoryEventPresentation(story(storyType, payload, 5), undefined, resolve).title;
+    const troops = { category: "Knight", tier: "T1", amount: "149000000000" };
+    expect(title("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...troops })).toBe("djizus raised an army");
+    expect(
+      title("TroopsTransferred", { source: { Explorer: 7 }, target: { Explorer: 8 }, amount: "149000000000" }),
+    ).toBe("djizus moved 149 troops between armies");
+    expect(
+      title("TroopsTransferred", {
+        source: { Explorer: 7 },
+        target: { Guard: { structure_id: 5, slot: 1 } },
+        amount: "21000000000",
+      }),
+    ).toBe("djizus moved 21 troops from an army to the Castle Wall");
+    expect(title("BuildingPaymentStory", { coord: { x: 1, y: 1 }, category: 37, cost: [] })).toMatch(
+      /^djizus built an? \S/,
+    );
+    expect(title("GuardAddStory", { structure_id: 5, slot: 1, ...troops })).toBe("djizus reinforced the Castle Wall");
+    expect(title("ExplorerAddStory", { explorer_id: 7, ...troops })).toBe("djizus reinforced an army");
+    expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
+    expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
+    expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
+    expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus founded a realm");
+    expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe("Resources arrived at djizus's realm");
+    for (const line of [
+      title("ProductionStory", { received_resource_type: 35, received_amount: "1", cost: [] }),
+      title("ExplorerCreateStory", { structure_id: 5, explorer_id: 7, ...troops }),
+    ])
+      expect(line).not.toMatch(/a structure|^Army /);
   });
 
   it("tells a building's placement and its payment, one action, by the same title", () => {

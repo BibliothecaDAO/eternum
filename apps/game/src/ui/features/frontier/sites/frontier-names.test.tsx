@@ -76,6 +76,8 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
       {
         storyType: "SitePayout",
         storyPayload: { site_id: SITE, category: StructureType.Camp, explorer_id: 201, reward: null },
+        ownerAddress: "0x111",
+        viewerAddress: "0x111",
       } as never,
       store,
     ),
