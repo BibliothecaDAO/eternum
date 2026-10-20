@@ -3,12 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { CONTROL_CONFIG } from "../constants/rendering";
+import { HEX_SIZE } from "../constants/scene-constants";
 import type { SceneManager } from "../scene-manager";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
   resolveWorldmapCameraPitchRadians,
 } from "../scenes/worldmap-camera-view-profile";
-import { zoomTowardCursor } from "../scenes/worldmap-zoom/worldmap-zoom-anchor";
+import { groundUnderCursor, zoomTowardCursor } from "../scenes/worldmap-zoom/worldmap-zoom-anchor";
 import { WorldmapZoomCoordinator } from "../scenes/worldmap-zoom/worldmap-zoom-coordinator";
 import { SceneName } from "../types";
 
@@ -280,35 +281,6 @@ describe("InputManager lifecycle", () => {
 
     expect(callback).not.toHaveBeenCalled();
     expect(fixture.raycaster.setFromCamera).not.toHaveBeenCalled();
-  });
-
-  it("suppresses click callback after drag threshold is exceeded", () => {
-    const callback = vi.fn();
-    const fixture = createSubject();
-
-    fixture.manager.setSurface(fixture.surface);
-    fixture.manager.activate();
-    fixture.manager.addListener("click", callback);
-
-    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 40, clientY: 40 }));
-    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 40, clientY: 40 }));
-
-    expect(callback).not.toHaveBeenCalled();
-  });
-
-  it("still clicks when the pointer only trembles while pressed", () => {
-    const callback = vi.fn();
-    const fixture = createSubject();
-    fixture.manager.setSurface(fixture.surface);
-    fixture.manager.activate();
-    fixture.manager.addListener("click", callback);
-
-    fixture.surface.dispatchEvent(new MouseEvent("mousedown", { clientX: 10, clientY: 10 }));
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 12, clientY: 11 }));
-    fixture.surface.dispatchEvent(new MouseEvent("click", { clientX: 12, clientY: 11 }));
-
-    expect(callback).toHaveBeenCalledTimes(1);
   });
 
   it("is idempotent and skips duplicate destroy cleanup", () => {
@@ -593,10 +565,15 @@ function createWorldMap() {
     zoom.applyIntent({ type: "snap_to_distance", distance: 10 });
   };
 
+  /** The ground under a screen point, where the camera stands now. */
+  const groundAt = (x: number, y: number) =>
+    groundUnderCursor(camera, controls.target, new THREE.Vector2((x / 1440) * 2 - 1, -(y / 900) * 2 + 1))!;
+
   return {
     camera,
     clicked,
     frames,
+    groundAt,
     press,
     moveTo,
     release,
@@ -646,6 +623,33 @@ describe("InputManager on the world map's damped, easing camera", () => {
     expect(map.clicked).toHaveBeenCalledTimes(1);
     map.destroy();
   });
+
+  it.each([4, 6, 8])(
+    "selects the tile a press went down on in one click, though the hand travels %i px, and holds the map still",
+    (travel) => {
+      const map = createWorldMap();
+      const pressedGround = map.groundAt(900, 500);
+      const before = map.camera.position.clone();
+
+      // A player's press: the button goes down, the hand drifts over two frames, the button comes up.
+      map.press(900, 500);
+      map.frames(2);
+      map.moveTo(900 + travel / 2, 500);
+      map.frames(2);
+      map.moveTo(900 + travel, 500);
+      map.frames(2);
+      map.release(900 + travel, 500);
+      map.frames(30);
+
+      expect(map.clicked).toHaveBeenCalledTimes(1);
+      expect(map.camera.position.distanceTo(before)).toBe(0);
+      // The click picks the ground the press went down on: the tile the player pressed.
+      const [, raycaster] = map.clicked.mock.calls[0] as [MouseEvent, THREE.Raycaster];
+      const picked = raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3())!;
+      expect(picked.distanceTo(pressedGround)).toBeLessThan(HEX_SIZE / 2);
+      map.destroy();
+    },
+  );
 
   it("takes a six-pixel drag that pans the map for a pan, not a click", () => {
     const map = createWorldMap();
