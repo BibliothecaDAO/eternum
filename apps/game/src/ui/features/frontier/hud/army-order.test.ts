@@ -35,21 +35,21 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
 
 import { isCovered, useOrderAt } from "./army-order";
 
-const orderWith = (wheat: number) => {
+const useOrderWith = (wheat: number) => {
   realm.wheat = wheat;
   return useOrderAt({ col: 1, row: 2 })!.wheat;
 };
 
 describe("an order's wheat, held exactly against its charge", () => {
   it.each([28.15, 28.2, 28.99])("covers a 28.15 charge with %s held, and waits for nothing", (held) => {
-    const wheat = orderWith(held);
+    const wheat = useOrderWith(held);
     expect(wheat.held).toBeCloseTo(held, 9);
     expect(isCovered(wheat)).toBe(true);
     expect(wheat.wait).toBeUndefined();
   });
 
   it("refuses it with 28.1 held, and waits the farms' 3 seconds for the 0.05 missing", () => {
-    const wheat = orderWith(28.1);
+    const wheat = useOrderWith(28.1);
     expect(isCovered(wheat)).toBe(false);
     expect(wheat.wait).toBeCloseTo(3, 6);
   });

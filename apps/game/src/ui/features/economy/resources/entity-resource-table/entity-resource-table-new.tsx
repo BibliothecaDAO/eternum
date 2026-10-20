@@ -238,12 +238,6 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const tiers = useMemo(() => Object.entries(mode.resources.getTiers()), [mode.resources]);
 
-  if (structureColumns.length === 0) {
-    return <p className="p-3 text-hud-muted">Own a structure to begin tracking your resources.</p>;
-  }
-
-  const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
-
   const handleToggleTierVisibility = useCallback((tierKey: string) => {
     setCollapsedTiers((prev) => {
       const next = { ...prev, [tierKey]: !prev[tierKey] };
@@ -291,6 +285,13 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
     },
     [closeSurface, openSurface],
   );
+
+  // Every hook stands above this: a player whose last holding goes (or whose first arrives) keeps the same hooks.
+  if (structureColumns.length === 0) {
+    return <p className="p-3 text-hud-muted">Own a structure to begin tracking your resources.</p>;
+  }
+
+  const highlightedStructure = structureColumns.find((structure) => structure.isSelected)?.label;
 
   const handleDragStart = (structureId: number, resourceId: ResourcesIds, amount: number) => {
     setDragState({

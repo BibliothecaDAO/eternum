@@ -44,6 +44,7 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
     setup: { store },
   } = useGame();
 
+  const taker = usePlayerDisplayName(trade.event.takerAddress);
   const resourceTaken = trade.event.resourceTaken;
   const resourceGiven = trade.event.resourceGiven;
   if (!resourceTaken || !resourceGiven) {
@@ -53,7 +54,6 @@ export const TradeHistoryEvent = ({ trade }: { trade: TradeEvent }) => {
   const price = getLordsPricePerResource(resourceGiven, resourceTaken);
   const tradedResourceId =
     resourceTaken.resourceId === ResourcesIds.Lords ? resourceGiven.resourceId : resourceTaken.resourceId;
-  const taker = usePlayerDisplayName(trade.event.takerAddress);
   const fullDateTime = formatMoment(trade.event.eventTime.getTime() / 1000);
 
   return (
