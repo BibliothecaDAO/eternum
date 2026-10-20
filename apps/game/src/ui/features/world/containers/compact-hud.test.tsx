@@ -5,7 +5,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 // A player in a game whose play is open, on a phone held upright, with no tile chosen. What the panels hold is not this
 // test's business, only the tab bar and the Details tab's empty state.
-vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
+const viewer = vi.hoisted(() => ({ ordersAllowed: true }));
+vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => viewer.ordersAllowed }));
 vi.mock("@/ui/features/world/components/bottom-right-panel", () => ({
   MinimapPanel: () => null,
   useSelectedTileDetails: () => null,
@@ -37,6 +38,7 @@ beforeEach(() => {
   root = createRoot(host);
   // The game has loaded: the blank overlay that covers the boot is gone.
   useUIStore.setState({ showBlankOverlay: false });
+  viewer.ordersAllowed = true;
   act(() => root.render(<CompactHud lane="portrait" />));
 });
 
@@ -68,4 +70,13 @@ it("names each tab in words under its painting, and paints Chat as chat, not as 
   expect(tabs.map((button) => button.textContent)).toEqual(["Empire", "Map", "Log", "Chat", "Details"]);
   expect(tab("Chat").querySelector("img")?.dataset.icon).toBe("chat");
   expect(host.querySelector('[data-icon="discord"]')).toBeNull();
+});
+
+it("names a spectator's Standings sheet once, in its head", () => {
+  viewer.ordersAllowed = false;
+  act(() => useUIStore.setState({}));
+  act(() => tab("Standings").click());
+  const sheet = host.querySelector('section[aria-label="HUD sheet"]')!;
+  expect(sheet.textContent?.match(/Standings/g)).toEqual(["Standings"]);
+  expect(sheet.querySelector('section[aria-label="Standings"]')).not.toBeNull();
 });

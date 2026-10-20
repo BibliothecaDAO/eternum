@@ -293,7 +293,8 @@ const SheetContent = ({
     return ordersAllowed ? (
       <EmpireColumn />
     ) : (
-      <HudPanel kind="section" title="Standings" collapsible={false}>
+      // The sheet's head names it; the panel under it is its frame and table alone.
+      <HudPanel kind="section" label="Standings" collapsible={false}>
         <SpectatorStandingsBody />
       </HudPanel>
     );
