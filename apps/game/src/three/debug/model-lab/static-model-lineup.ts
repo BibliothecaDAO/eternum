@@ -12,6 +12,7 @@ import { readModelLabSettings } from "./model-lab-settings";
 
 export interface LineupAsset {
   label: string;
+  position?: { x: number; z: number };
   parts: readonly { path: string; scale?: number; z?: number }[];
 }
 export interface LineupSettings {
@@ -103,8 +104,9 @@ export async function mountStaticLineup(
       model.setMatrixAt(0, matrix);
     });
     const x = next.focus === "lineup" ? 0 : positions[next.focus].x;
+    const z = next.focus === "lineup" ? 0 : positions[next.focus].z;
     const height = next.focus === "lineup" ? 0.8 : heights[next.focus];
-    controls.target.set(x, environment.terrain.sampleSurface(x, 0).height + height / 2, 0);
+    controls.target.set(x, environment.terrain.sampleSurface(x, z).height + height / 2, z);
     const pitch = LOCAL_CAMERA_ZOOM.pitchRadians;
     camera.position
       .copy(controls.target)
@@ -119,8 +121,8 @@ export async function mountStaticLineup(
     await environment.update(readModelLabSettings(new URLSearchParams("family=knight&biome=grassland")));
     signal.throwIfAborted();
     for (const [slot, asset] of lineup.entries()) {
-      const x = (slot - (lineup.length - 1) / 2) * Math.sqrt(3) * 1.5;
-      positions.push(new Vector3(x, environment.terrain.sampleSurface(x, 0).height, 0));
+      const { x, z } = asset.position ?? { x: (slot - (lineup.length - 1) / 2) * Math.sqrt(3) * 1.5, z: 0 };
+      positions.push(new Vector3(x, environment.terrain.sampleSurface(x, z).height, z));
       heights.push(0);
       for (const part of asset.parts) {
         const gltf = await gltfLoader.loadAsync(part.path);

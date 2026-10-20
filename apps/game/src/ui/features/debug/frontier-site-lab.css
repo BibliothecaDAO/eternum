@@ -1,0 +1,49 @@
+.frontier-site-lab-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+.frontier-site-lab aside {
+  overflow: auto;
+  min-height: 0;
+  padding: 12px;
+  border-left: 1px solid #394942;
+}
+.frontier-site-lab aside > label {
+  display: grid;
+  gap: 8px;
+}
+.frontier-site-lab aside p {
+  font-size: 13px;
+  color: #b7c9c0;
+  margin: 12px 0;
+}
+.frontier-site-lab figure {
+  margin: 0 0 16px;
+}
+.frontier-site-lab figure img {
+  display: block;
+  width: 100%;
+}
+.frontier-site-lab figcaption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+  font-size: 13px;
+}
+.frontier-site-lab button {
+  background: #365b4a;
+  border: 1px solid #749681;
+  color: #fff;
+  padding: 5px 8px;
+}
+.frontier-site-lab figcaption span {
+  color: #b7c9c0;
+}
+@media (max-width: 850px) {
+  .frontier-site-lab-body {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+}

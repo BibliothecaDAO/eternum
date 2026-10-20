@@ -286,6 +286,18 @@ class Sculpt:
             reduce = obj.modifiers.new("Sculpt density", "DECIMATE")
             reduce.ratio = 140000 / count
             bpy.ops.object.modifier_apply(modifier=reduce.name)
+        topology = bmesh.new()
+        topology.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(topology, verts=list(topology.verts), dist=0.0001)
+        bmesh.ops.dissolve_degenerate(topology, edges=list(topology.edges), dist=0.0001)
+        bmesh.ops.delete(
+            topology,
+            geom=[v for v in topology.verts if not v.link_faces],
+            context="VERTS",
+        )
+        topology.to_mesh(obj.data)
+        topology.free()
+        obj.data.validate()
         self.body = obj
         for face in obj.data.polygons:
             face.use_smooth = True

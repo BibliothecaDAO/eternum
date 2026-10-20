@@ -195,6 +195,7 @@ export function FrontierBeastLab() {
       <header>
         <Link to="/lab/models">Models</Link>
         <h1>Frontier beasts</h1>
+        <Link to="?family=beasts&group=site-map">Site choices</Link>
         <label>
           Set{" "}
           <select aria-label="Set" value={group} onChange={(e) => change("group", e.target.value)}>

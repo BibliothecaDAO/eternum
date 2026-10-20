@@ -360,6 +360,23 @@ class Creature(Sculpt):
             vertex.co += normal * grain
         self.body.data.update()
 
+    def require_connected_skin(self):
+        neighbors = [set() for _ in self.body.data.vertices]
+        for edge in self.body.data.edges:
+            a, b = edge.vertices
+            neighbors[a].add(b)
+            neighbors[b].add(a)
+        reached, pending = {0}, [0]
+        while pending:
+            for vertex in neighbors[pending.pop()]:
+                if vertex not in reached:
+                    reached.add(vertex)
+                    pending.append(vertex)
+        if len(reached) != len(neighbors):
+            raise ValueError(
+                "Join every finger and limb into the body before surface details"
+            )
+
     def paint_anatomy(self, color, vertex):
         return color
 

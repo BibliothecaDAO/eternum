@@ -1,10 +1,12 @@
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runProof, waitFor } from "../prove-run.mjs";
+import { proveSiteStudies } from "./prove-site-studies.mjs";
 
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
 export async function proveBeasts(b, out, records, baseUrl, only) {
   await b.run("set", "viewport", "1600", "1000");
+  if (!only || only === "site-map") await proveSiteStudies(b, out, records, baseUrl);
   if (!only || only === "weak-concepts") await proveConcepts(b, out, records, baseUrl);
   for (const scenario of [
     { name: "weak-options-gameplay", group: "weak-options", focus: "lineup", models: 5, species: "minotaur" },

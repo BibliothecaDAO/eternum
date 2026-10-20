@@ -659,3 +659,11 @@ three modeled candidates with the Minotaur placeholder and stronger Cyclops at t
 concept. Production keeps Minotaur until the choice. Sources and paintings stay in the lab archive;
 `rebuild.sh <fresh-absolute-directory> creatures` exports every saved creature study. The beast proof also checks the
 four concept images, their model link, and each new model from front and rear.
+
+The proposed encounter map is together at `/lab/models?family=beasts&group=site-map` (**Site choices** from the beast
+archive). **Concepts** switches between three weak monsters, three surface guardians and the dark fey; **Show on tile**
+focuses a modeled choice in its context. **View → Whole map** restores all eleven tiles; **Turn** and **Light** inspect
+them. The proposed camp is just Troll, the rift keeps its landmark with the hovering dark fey, and the two modeled
+surface guardians keep the shipped ruin. The deeper Wyvern/Hydra compositions use their production paths and scales. Ent
+remains concept-only. This route is a study, not the production encounter resolver. `prove:beasts` checks the concept
+controls and every context from two angles; `verify:assets` includes the new guardians' masonry-clearance tests.

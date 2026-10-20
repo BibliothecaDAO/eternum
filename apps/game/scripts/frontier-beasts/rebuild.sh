@@ -11,7 +11,7 @@ variant=${2:-refined}
 case "$variant" in refined|creatures) ;; *) echo 'Choose refined or creatures'; exit 1;; esac
 source_directory="apps/game/asset-sources/frontier-beasts/refined"
 if [[ "$variant" = creatures ]]; then
-  names="wyvern hydra ghoul kappa wraith"
+  names="wyvern hydra ghoul kappa wraith basilisk ammit dark-fey"
   source_directory="apps/game/asset-sources/lab/frontier-beasts"
 fi
 for name in $names; do

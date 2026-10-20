@@ -17,6 +17,8 @@ const deliveries = [
     { species: "wyvern", maxScale: FRONTIER_BEASTS.wyvern.maxScale },
     { species: "hydra", maxScale: FRONTIER_BEASTS.hydra.maxScale },
     ...["ghoul", "kappa", "wraith"].map((species) => ({ species, maxScale: 1 })),
+    ...["basilisk", "ammit"].map((species) => ({ species, maxScale: 1.2 })),
+    { species: "dark-fey", maxScale: 0.75 },
   ].map(({ species, maxScale }) => ({
     species,
     directory: "asset-sources/lab/frontier-beasts",
@@ -67,7 +69,10 @@ for (const { species, directory, sourceDirectory, maxScale } of deliveries) {
         );
     }
     expect(minY).toBeGreaterThanOrEqual(-0.001);
-    expect(minY).toBeLessThan(0.03);
+    if (species === "dark-fey") {
+      expect(minY).toBeGreaterThan(0.2);
+      expect(minY).toBeLessThan(0.4);
+    } else expect(minY).toBeLessThan(0.03);
     expect(maxY).toBeGreaterThan(0.7);
     for (const texture of root.listTextures()) expect(texture.getMimeType()).toBe("image/ktx2");
     const source = readFileSync(new URL(`../../${sourceDirectory}/${species}.blend`, import.meta.url));
