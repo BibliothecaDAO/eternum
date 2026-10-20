@@ -5,7 +5,7 @@ import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
-import { ContractAddress, ID, RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
+import { ContractAddress, formatCharge, ID, RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { AnimatePresence, motion } from "framer-motion";
@@ -33,7 +33,7 @@ const getFormattedRaidTweet = ({
   // Format the resources text
   const resourcesText = stolenResources
     .map((resource) => {
-      return `${resource.amount} ${resourceName(resource.resourceId)}`;
+      return `${formatCharge(resource.amount)} ${resourceName(resource.resourceId)}`;
     })
     .join(", ");
 
@@ -412,7 +412,7 @@ export const RaidResult = ({
                       <ResourceIcon resource={resource.resourceId} size={"lg"} className="mr-2" />
                       Resource: {resourceName(resource.resourceId)}
                     </span>
-                    <span className="text-hud-good">{resource.amount}</span>
+                    <span className="text-hud-good">{formatCharge(resource.amount)}</span>
                   </div>
                 ))}
               </div>

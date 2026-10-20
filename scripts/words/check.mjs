@@ -31,6 +31,8 @@ const CATEGORIES = {
   "number.points": "points written by the compact amount rule (formatAmount(points)): points are exact",
   "number.charge":
     "a cost, price or fee written by formatAmount or formatExact: every charge reads rounded, by formatCharge",
+  "number.bare":
+    "an amount written into text as it is (`${resource.amount} wheat`): raw, ungrouped and unrounded; a writer writes it (formatCharge)",
   "number.pair":
     "a cost held against what is held, written as two figures (`${formatAmount(held)} / ${formatCharge(cost)}`): formatHeldAgainst writes the pair, so a shortfall never reads as met",
   "number.plural":
@@ -206,6 +208,32 @@ const chargeByOtherWriter = (node) =>
   /^(formatAmount|formatExact)$/.test(calleeName(node)) &&
   node.arguments[0] !== undefined &&
   CHARGE_NAME.test(valueName(node.arguments[0]));
+
+// An amount a player reads always goes through a writer: put in text as it is, 28.15 wheat reads "28.15", 0.1 reads
+// "0.1" and 12000 LORDS reads "12000". A value named for words already written (amountText, costLabel) is text, and so
+// is a words table's entry (PROFILE_WORDS.removeCost). In JSX a bare name is often a node built for its slot ({price});
+// a field read off a record ({resource.amount}) is the figure itself.
+const BARE_AMOUNT_NAME =
+  /^(?:amount|cost|price|fee|paid|reward|gain|yield)s?$|(?:Amount|Cost|Price|Fee|Paid|Reward|Gain|Yield)s?$/;
+const isWordsTableEntry = (node) =>
+  ts.isPropertyAccessExpression(node) &&
+  ts.isIdentifier(node.expression) &&
+  /^[A-Z][A-Z0-9_]+$/.test(node.expression.text);
+const bareAmount = (node) =>
+  (ts.isIdentifier(node) || ts.isPropertyAccessExpression(node)) &&
+  !isWordsTableEntry(node) &&
+  BARE_AMOUNT_NAME.test(valueName(node));
+const bareAmountText = (node) => {
+  if (ts.isTemplateExpression(node))
+    return !inDiagnostic(node) && readsAsText(node) && node.templateSpans.some((span) => bareAmount(span.expression));
+  return (
+    ts.isJsxExpression(node) &&
+    node.expression !== undefined &&
+    (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent)) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    bareAmount(node.expression)
+  );
+};
 
 // A cost beside what is held, each side rounded alone, can read as met while short ("28 / 28" for 28.10 of 28.15); the
 // pair is one writer's (formatHeldAgainst). Read here: two writer calls joined by a slash, one of them a charge.
@@ -530,6 +558,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (compactPoints(node)) hit("number.points", node);
     if (chargeByOtherWriter(node)) hit("number.charge", node);
     if (handPair(node)) hit("number.pair", node);
+    if (bareAmountText(node)) hit("number.bare", node);
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
     if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))

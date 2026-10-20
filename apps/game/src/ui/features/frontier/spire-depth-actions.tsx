@@ -18,7 +18,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import type { ID } from "@bibliothecadao/types";
+import { formatCharge, type ID } from "@bibliothecadao/types";
 import { useState } from "react";
 import type { Account } from "starknet";
 
@@ -80,10 +80,16 @@ export const SpireDepthActions = ({ armyEntityId }: { armyEntityId: ID }) => {
             size="sm"
             busy={pending === depth ? "Entering…" : undefined}
             disabled={!besideSpire || stamina === undefined || stamina < cost || pending !== null}
-            title={stamina === undefined ? "Stamina —" : stamina < cost ? `Needs ${cost} stamina` : `${cost} stamina`}
+            title={
+              stamina === undefined
+                ? "Stamina —"
+                : stamina < cost
+                  ? `Needs ${formatCharge(cost)} stamina`
+                  : `${formatCharge(cost)} stamina`
+            }
             onClick={() => enter(depth)}
           >
-            {`${DEPTH_NAMES[depth]} · ${cost} stamina`}
+            {`${DEPTH_NAMES[depth]} · ${formatCharge(cost)} stamina`}
           </HudButton>
         ))}
       </div>

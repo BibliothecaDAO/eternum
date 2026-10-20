@@ -3,7 +3,14 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { getMinePresentation, resourceName, structureName } from "@bibliothecadao/types";
+import {
+  formatCharge,
+  formatExact,
+  formatFigure,
+  getMinePresentation,
+  resourceName,
+  structureName,
+} from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -324,8 +331,9 @@ const LocalTilePanel = () => {
   }
 
   const populationChips: Array<{ key: string; label: string }> = [];
-  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${populationCost}` });
-  if (populationCapacity !== 0) populationChips.push({ key: "cap", label: `Capacity +${populationCapacity}` });
+  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${formatCharge(populationCost)}` });
+  if (populationCapacity !== 0)
+    populationChips.push({ key: "cap", label: `Capacity +${formatExact(populationCapacity)}` });
 
   // Compact row helper used inside the consolidated building bubble.
   const SectionRow = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -499,7 +507,7 @@ const LocalTilePanel = () => {
                 return (
                   <span key={`${entry.resource}-${index}`} title={name}>
                     <HudChip tone="bad">
-                      -{entry.amount}
+                      -{formatFigure(entry.amount)}
                       <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
                     </HudChip>
                   </span>

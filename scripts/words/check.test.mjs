@@ -194,3 +194,19 @@ test("leaves code alone: arithmetic, coordinates, logs, CSS, keys and components
   ].join("\n");
   assert.deepEqual(scan(source), []);
 });
+
+test("finds an amount put into text as it is, and passes text, nodes and words tables named for one", () => {
+  const source = [
+    // 1-2: the raid result and the LORDS withdrawal story as they shipped in 5bdc22683e6
+    '<span className="text-hud-good">{resource.amount}</span>;',
+    "const story = { description: `${amount} LORDS to L2` };",
+    "const tip = <b title={`Needs ${cost} stamina`} />;", // 3
+    "const story = { description: `${formatCharge(amount)} LORDS to L2` };",
+    "const price = <span>{price}</span>;",
+    "const title = <p>{PROFILE_WORDS.removeCost}</p>;",
+    "const story = { description: `Paid ${spent}` };",
+    "const tip = <b title={`${amountText} wheat`} />;",
+    "const key = `${resource.amount}-${index}`;",
+  ].join("\n");
+  assert.deepEqual(scan(source), ["1 number.bare", "2 number.bare", "3 number.bare"]);
+});

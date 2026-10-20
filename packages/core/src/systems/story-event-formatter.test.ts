@@ -119,6 +119,9 @@ it("names a LORDS withdrawal by its whole amount", () => {
     title: "LORDS withdrawn",
     description: "200 LORDS to L2",
   });
+  expect(buildStoryEventPresentation(story("LordsWithdrawn", { account: "0x1", amount: 12_000 }))).toMatchObject({
+    description: "12K LORDS to L2",
+  });
 });
 
 it("formats native battle sides and positive Ethereal rolls without a legacy row projection", () => {
@@ -702,6 +705,13 @@ it("says what an explore found, not where nor the points every tile scores", () 
     }),
   ).title;
   expect(title).toBe("Explored: +200 Essence");
+});
+
+it("writes a small army's find rounded, as every charge and reward reads", () => {
+  const title = buildStoryEventPresentation(
+    story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "1200000000" }),
+  ).title;
+  expect(title).toBe("Explored: +1 Labor");
 });
 
 it("adds the points an opened crate scored", () => {

@@ -6,7 +6,7 @@ import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { getTileAt, configManager, entityMapPosition } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import type { ID } from "@bibliothecadao/types";
+import { formatCharge, type ID } from "@bibliothecadao/types";
 import { resolveSpireCrossing } from "./spire-crossing";
 
 export const SpireTravelModal = ({
@@ -57,7 +57,7 @@ export const SpireTravelModal = ({
               <p className="text-sm font-semibold text-cyan-100">Your hex on {sideName} is clear</p>
               <p className="text-xs text-gold/70">
                 The army crosses to the same hex on {sideName}. It keeps its position and its stamina. The crossing
-                costs {essenceCost} Essence from its home structure, on the way back too.
+                costs {formatCharge(essenceCost)} Essence from its home structure, on the way back too.
               </p>
             </div>
           </div>

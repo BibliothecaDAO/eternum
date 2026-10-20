@@ -223,7 +223,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   LordsWithdrawn: (_event, payload) => {
     const amount = toNumber(payload.amount);
     if (amount === null) throw new Error("Incomplete LORDS withdrawal story");
-    return { title: "LORDS withdrawn", description: `${amount} LORDS to L2`, icon: "prize" };
+    return { title: "LORDS withdrawn", description: `${formatCharge(amount)} LORDS to L2`, icon: "prize" };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
     const coord =
@@ -243,10 +243,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   // Paid in the same transaction as the building it pays for: the same action, told by the same title.
   BuildingPaymentStory: (event, payload, components) => {
-    const cost = formatResourceList(payload.cost);
+    const spent = formatResourceList(payload.cost);
     return {
       title: `${formatBuildingCategory(payload.category, components) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
-      description: cost ? `Paid ${cost}` : undefined,
+      description: spent ? `Paid ${spent}` : undefined,
       icon: "building",
     };
   },
