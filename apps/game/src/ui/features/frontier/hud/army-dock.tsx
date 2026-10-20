@@ -69,7 +69,7 @@ export const ArmyDock = ({
 
 /**
  * Picking an army on the dock or the list, and what it shows: selected, and its stamina as a refill sweeps it. A pick
- * selects the army on the map and opens its panel (its figures, its XP and its level-ups), even when it was selected.
+ * opens the army's panel where the HUD gives the way (useArmyPanelOpens), else selects the army on the map.
  */
 const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId: number) => void) | undefined) => {
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorerId);
@@ -77,12 +77,7 @@ const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId
   return {
     selected,
     stamina: useWellRefillShown(army),
-    onPick: pickable
-      ? () => {
-          selectArmy(army.explorerId);
-          onOpenArmy?.(army.explorerId);
-        }
-      : undefined,
+    onPick: pickable ? () => (onOpenArmy ?? selectArmy)(army.explorerId) : undefined,
   };
 };
 

@@ -58,6 +58,7 @@ const MORNING: NextUpFacts = {
 let host: HTMLDivElement;
 let root: Root;
 const onSurface = vi.fn();
+const onOpenArmy = vi.fn();
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -81,7 +82,14 @@ const show = (
   moves.layout = screen.layout ?? "desktop";
   moves.onMap = screen.onMap ?? true;
   act(() =>
-    root.render(<FrontierNextUp rules={{} as never} realm={{ entity_id: 7 } as never} onSurface={onSurface} />),
+    root.render(
+      <FrontierNextUp
+        rules={{} as never}
+        realm={{ entity_id: 7 } as never}
+        onSurface={onSurface}
+        onOpenArmy={onOpenArmy}
+      />,
+    ),
   );
 };
 
@@ -95,15 +103,17 @@ it("shows the day's step in the Next up panel, and its button opens the realm's 
   expect(moves.deploy).toHaveBeenCalledWith({ structureId: 7, isExplorer: true });
 });
 
-it("selects the army with the most stamina to explore, and opens the sheet of the one whose XP buys a tier", () => {
+it("selects the army with the most stamina to explore, and opens the panel of the one whose XP buys a tier", () => {
   show({ armies: 2 });
   press("Select the army");
   expect(moves.selectArmy).toHaveBeenCalledWith(12);
 
+  // One way to the panel: the HUD's pick of the army, never a second open of the surface beside it.
   show({ armies: 2, armyTierAffordable: true });
   press("Open the army");
-  expect(moves.selectArmy).toHaveBeenLastCalledWith(12);
-  expect(onSurface).toHaveBeenCalledWith("army");
+  expect(onOpenArmy).toHaveBeenCalledOnce();
+  expect(onOpenArmy).toHaveBeenCalledWith(12);
+  expect(onSurface).not.toHaveBeenCalled();
 });
 
 it("opens the realm for barracks, and Research and Production where a step names them", () => {

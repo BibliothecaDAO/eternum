@@ -18,6 +18,7 @@ import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board"
 import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
+import { useArmyPanelOpens } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
@@ -97,19 +98,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
-  // Selecting one of the realm's armies, on the map or from its row, opens its panel, as Blitz opens a selection's detail.
-  const selectedArmy = useSelectedOwnArmy(visit ? null : realm);
-  useEffect(() => {
-    if (selectedArmy !== null) setSurface("army");
-  }, [selectedArmy]);
+  // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
+  const openArmy = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"));
   const seasonRank = useSeasonRank();
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
-  const openArmy = (explorerId: number) => {
-    // The army opens on its HUD surface, not on a tile card.
-    useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: null });
-    setSurface("army");
-  };
 
   const strip = (
     <FrontierStrip
@@ -186,7 +179,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   );
 
   // Next up speaks to a player in their own realm: a visit or a spectator has none.
-  const nextUp = realm && !visit && <FrontierNextUp rules={rules} realm={realm} onSurface={setSurface} />;
+  const nextUp = realm && !visit && (
+    <FrontierNextUp rules={rules} realm={realm} onSurface={setSurface} onOpenArmy={openArmy} />
+  );
 
   return desktop ? (
     <FrontierDesktop
@@ -350,13 +345,6 @@ const ArmyAction = ({ rules, realm }: { rules: ExpeditionRules; realm: NativeRow
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   return <RealmBuildingsRow realm={realm} />;
-};
-
-/** The realm's army the map has selected, by its id; null while none of the realm's armies is. */
-const useSelectedOwnArmy = (realm: NativeRows["Structure"] | null): number | null => {
-  const armies = useDockArmies(realm);
-  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
-  return armies.some(({ explorerId }) => explorerId === selectedId) ? selectedId : null;
 };
 
 /** The dock over the realm's armies today; on a phone a pending order takes the foot in its place. */

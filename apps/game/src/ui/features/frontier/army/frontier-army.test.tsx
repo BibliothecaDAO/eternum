@@ -83,8 +83,10 @@ it("opens the army's panel from its row on a desktop, whatever its XP buys", () 
   const realm = { owner: "0x111", base: { troop_max_explorer_count: 3 } };
   act(() => root.render(<ArmyDock realm={realm as never} armies={[army as never]} onOpenArmy={onOpenArmy} />));
   act(() => button(/Army 1/)!.click());
-  expect(game.select).toHaveBeenCalledWith(12);
+  // The HUD's pick selects and opens it (useArmyPanelOpens): the row takes that one way, no selection of its own.
+  expect(onOpenArmy).toHaveBeenCalledOnce();
   expect(onOpenArmy).toHaveBeenCalledWith(12);
+  expect(game.select).not.toHaveBeenCalled();
 });
 
 it("shows the army's figures, then its level-ups one step on, and buys the chosen level with buy_tier", async () => {

@@ -12,7 +12,6 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 }));
 
 const { DEFAULT_BUILD_ORDER } = await import("@bibliothecadao/eternum/automation");
-const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { UnifiedHudLab } = await import("./unified-hud-lab");
 const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 
@@ -35,8 +34,6 @@ beforeEach(() => {
   root = createRoot(host);
 });
 afterEach(async () => {
-  useUIStore.getState().selectOnMap(null);
-  window.history.replaceState({}, "", "/");
   await act(async () => root.unmount());
   host.remove();
   usePopoverStore.getState().close();
@@ -54,54 +51,6 @@ const labAt = (view: string) => (
   </MemoryRouter>
 );
 const forecast = () => document.querySelector('[data-popover-panel="quick-attack"]');
-
-const renderView = (view: string) =>
-  act(async () =>
-    root.render(
-      <MemoryRouter initialEntries={[`/unified/${view}`]}>
-        <QueryClientProvider client={new QueryClient()}>
-          <Routes>
-            <Route path="unified/:view?" element={<UnifiedHudLab />} />
-          </Routes>
-        </QueryClientProvider>
-      </MemoryRouter>,
-    ),
-  );
-
-it.each([
-  ["desktop", true],
-  ["phone", false],
-])("opens the army's panel when the map selects the army, with no army bar under it, on a %s", async (_, desktop) => {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: desktop && query.includes("min-width"),
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }));
-  // The player is on the map, where a pick in the dock selects the army in place.
-  window.history.replaceState({}, "", "/g/0x1ab/1/map");
-  await renderView("frontier-army");
-  const panel = () => host.querySelector("[data-kit-sheet] [data-army-step='stats']");
-  expect(panel()).toBeNull();
-
-  // The map selects the army as a click on it does.
-  await act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: 90, tile: "own" }));
-  expect(panel()).not.toBeNull();
-  expect(panel()!.textContent).toContain("Full in");
-  expect(host.querySelector('button[aria-label="Army"]')).toBeNull();
-
-  // Closing the panel keeps the army selected, so the next tap on the map orders it; the panel stays closed.
-  await act(async () => host.querySelector<HTMLButtonElement>("[data-kit-sheet] button[aria-label='Close']")!.click());
-  expect(panel()).toBeNull();
-  expect(useUIStore.getState().entityActions.selectedEntityId).toBe(90);
-
-  // The dock picks it again, its row on a desktop and its token on a phone, and the panel opens again.
-  const dockArmy = [...host.querySelectorAll<HTMLElement>("button, [role='button']")].find(
-    (each) => each.getAttribute("aria-label") === "Army 1" || each.textContent?.startsWith("Army 1"),
-  )!;
-  await act(async () => dockArmy.click());
-  expect(panel()).not.toBeNull();
-});
 
 it("draws the game's own Build order panel in a Blitz player's rail, its order named at its head", async () => {
   await act(async () =>

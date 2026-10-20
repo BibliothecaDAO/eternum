@@ -29,14 +29,17 @@ export const FrontierNextUp = ({
   rules,
   realm,
   onSurface,
+  onOpenArmy,
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
   onSurface: (surface: HudSurface) => void;
+  /** Picks an army and opens its panel. */
+  onOpenArmy: (explorerId: number) => void;
 }) => {
   const facts = useNextUpFacts(rules, realm);
   const tips = useWorldAppearanceStore((state) => state.nextUpTips);
-  const take = useTakeStep(realm, facts, onSurface);
+  const take = useTakeStep(realm, facts, onSurface, onOpenArmy);
   const { isMapView } = useQuery();
   const steps = frontierCoachSteps(facts, {
     pointer: isCoarsePointer() ? "touch" : "mouse",
@@ -66,7 +69,12 @@ const toNextStep = (step: FrontierCoachStep, take: (act: FrontierCoachAct) => vo
  * the one whose XP buys a tier, with its sheet open), centre the map on today's camp with its tile picked, or open
  * Research or Production.
  */
-const useTakeStep = (realm: NativeRows["Structure"], facts: NextUpFacts, onSurface: (surface: HudSurface) => void) => {
+const useTakeStep = (
+  realm: NativeRows["Structure"],
+  facts: NextUpFacts,
+  onSurface: (surface: HudSurface) => void,
+  onOpenArmy: (explorerId: number) => void,
+) => {
   const goToPlace = useGoToFrontierPlace(realm);
   const armies = useDockArmies(realm);
   const selectArmy = useSelectArmyOnMap();
@@ -84,8 +92,7 @@ const useTakeStep = (realm: NativeRows["Structure"], facts: NextUpFacts, onSurfa
       }
       case "army": {
         const tiered = armies.find((army) => army.canBuyTier);
-        if (tiered) selectArmy(tiered.explorerId);
-        return onSurface("army");
+        return tiered && onOpenArmy(tiered.explorerId);
       }
       case "camp":
         if (!facts.camp) return;
