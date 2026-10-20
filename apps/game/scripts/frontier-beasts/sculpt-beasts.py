@@ -1,4 +1,4 @@
-"""Author the five lab sculpts from anatomical section cages, then paint the unified surfaces."""
+"""Author the production sculpts from anatomical section cages, then paint the unified surfaces."""
 
 import math
 import runpy
@@ -15,7 +15,6 @@ from beast_paint import apply_paint
 
 SOURCE = Path(__file__).resolve().parents[2] / "asset-sources/frontier-beasts"
 TONES = {
-    "minotaur": (0.125, 0.17, 0.22),
     "cyclops": (0.38, 0.38, 0.23),
     "troll": (0.27, 0.32, 0.22),
     "wyvern": (0.42, 0.105, 0.045),
@@ -127,146 +126,6 @@ class Sculpt:
             name, [(p, w, w * 0.8) for p, w in zip(points, widths)], paint, False, 12, 2
         )
 
-    def biped(self):
-        troll = self.species == "troll"
-        bull = self.species == "minotaur"
-        # Broad chest narrows through the ribs, then opens into the pelvis.
-        self.surface(
-            "Torso cage",
-            [
-                ((0, 0.045, 0.47), 0.10, 0.09),
-                ((0, 0.035, 0.55), 0.19, 0.13),
-                ((0, 0.025, 0.68), 0.16 if bull else 0.21, 0.13 if bull else 0.17),
-                ((0, 0.02, 0.80), 0.20, 0.15),
-                ((0, 0.035, 0.96), 0.30, 0.19),
-                ((0, 0.055, 1.07), 0.26, 0.17),
-                ((0, 0.035, 1.13), 0.15, 0.13),
-            ],
-        )
-        self.surface(
-            "Neck and skull cage",
-            [
-                ((0, 0.015, 1.02), 0.14, 0.12),
-                ((0, -0.025, 1.15), 0.125, 0.13),
-                ((0, -0.07, 1.21), 0.12, 0.115),
-                ((0, -0.075, 1.28), 0.155, 0.14),
-                ((0, -0.065, 1.39), 0.15, 0.125),
-                ((0, -0.035, 1.48), 0.115, 0.10),
-                ((0, -0.025, 1.51), 0.05, 0.055),
-            ],
-        )
-        for s in [-1, 1]:
-            # Elbows, wrists and knuckles have their own narrow sections, not inflated tubes.
-            self.surface(
-                "Shoulder to hand cage",
-                [
-                    ((s * 0.21, 0.035, 1.04), 0.145, 0.15),
-                    ((s * 0.32, 0.005, 1.02), 0.155, 0.14),
-                    ((s * 0.39, -0.015, 0.92), 0.12, 0.115),
-                    ((s * 0.43, -0.025, 0.81), 0.09, 0.08),
-                    ((s * 0.43, -0.045, 0.75), 0.075, 0.075),
-                    ((s * 0.46, -0.065, 0.67), 0.105, 0.09),
-                    ((s * 0.47, -0.11, 0.56), 0.072, 0.065),
-                    ((s * 0.46, -0.14, 0.49), 0.052, 0.05),
-                    ((s * 0.465, -0.165, 0.43), 0.075, 0.055),
-                    ((s * 0.47, -0.17, 0.38), 0.065, 0.04),
-                ],
-            )
-            for finger in range(4):
-                x = s * (0.415 + finger * 0.035)
-                z = 0.385 - abs(finger - 1.5) * 0.006
-                self.surface(
-                    "Articulated finger",
-                    [
-                        ((x, -0.17, z + 0.04), 0.020, 0.023),
-                        ((x, -0.19, z - 0.015), 0.019, 0.022),
-                        ((x, -0.21, z - 0.055), 0.017, 0.019),
-                        ((x, -0.24, z - 0.065), 0.012, 0.013),
-                    ],
-                    sides=12,
-                    subdivision=1,
-                )
-            self.surface(
-                "Opposed thumb",
-                [
-                    ((s * 0.41, -0.16, 0.45), 0.031, 0.035),
-                    ((s * 0.375, -0.205, 0.42), 0.025, 0.025),
-                    ((s * 0.37, -0.24, 0.38), 0.018, 0.021),
-                ],
-                sides=12,
-            )
-            self.surface(
-                "Leg anatomy cage",
-                [
-                    ((s * 0.11, 0.035, 0.57), 0.13, 0.13),
-                    ((s * 0.155, 0.025, 0.47), 0.13, 0.12),
-                    ((s * 0.19, -0.045, 0.36), 0.105, 0.09),
-                    ((s * 0.20, -0.075, 0.30), 0.075, 0.075),
-                    ((s * 0.195, -0.015, 0.23), 0.083, 0.075),
-                    ((s * 0.185, 0.04, 0.14), 0.053, 0.053),
-                    ((s * 0.185, 0.02, 0.07), 0.057, 0.055),
-                ],
-            )
-            self.surface(
-                "Foot cage",
-                [
-                    ((s * 0.185, 0.06, 0.065), 0.055, 0.05),
-                    ((s * 0.185, -0.015, 0.06), 0.075, 0.055),
-                    ((s * 0.185, -0.095, 0.05), 0.09, 0.047),
-                    ((s * 0.185, -0.19, 0.043), 0.085, 0.038),
-                ],
-                sides=20,
-            )
-            if not bull:
-                for toe in range(4):
-                    x = s * (0.12 + toe * 0.042)
-                    self.surface(
-                        "Toe",
-                        [
-                            ((x, -0.13, 0.045), 0.025, 0.027),
-                            ((x, -0.205, 0.035), 0.022, 0.025),
-                            ((x, -0.23, 0.035), 0.014, 0.020),
-                        ],
-                        sides=12,
-                        subdivision=1,
-                    )
-            self.surface(
-                "Pointed ear",
-                [
-                    ((s * 0.12, -0.02, 1.37), 0.055, 0.035),
-                    ((s * 0.21, 0.0, 1.40), 0.045, 0.025),
-                    ((s * 0.265, 0.025, 1.43), 0.005, 0.008),
-                ],
-                sides=12,
-            )
-        print("Unifying anatomy", flush=True)
-        self.unify_skin()
-        print("Sculpting planes and face", flush=True)
-        self.sculpt_biped_face()
-        print("Carving facial and material details", flush=True)
-        self.biped_details()
-        if bull:
-            for obj in [self.body, *self.details]:
-                for v in obj.data.vertices:
-                    x, y, z = v.co
-                    if z > 1.10:
-                        v.co.z -= 0.085 * min(1, (z - 1.10) / 0.10)
-                    if 0.80 < z < 1.12:
-                        v.co.x *= 1 + 0.10 * math.sin(math.pi * (z - 0.80) / 0.32)
-                    if abs(x) > 0.23 and 0.85 < z < 1.1:
-                        v.co.z += 0.035 * math.sin(math.pi * (z - 0.85) / 0.25)
-        if troll:
-            for obj in [self.body, *self.details]:
-                for v in obj.data.vertices:
-                    # The troll carries its skull forward and its weight on longer arms.
-                    z = v.co.z
-                    if z > 1.0:
-                        t = min(1, (z - 1.0) / 0.35)
-                        v.co.y -= 0.14 * t
-                        v.co.z -= 0.12 * t
-                    if abs(v.co.x) > 0.33 and 0.28 < z < 0.85:
-                        v.co.z -= 0.09 * math.sin(math.pi * (z - 0.28) / 0.57)
-
     def unify_skin(self):
         obj = join(self.skin_parts, "Unified anatomical sculpt")
         self.skin_parts = [obj]
@@ -301,48 +160,6 @@ class Sculpt:
         self.body = obj
         for face in obj.data.polygons:
             face.use_smooth = True
-
-    def sculpt_biped_face(self):
-        bull = self.species == "minotaur"
-        cyclops = self.species == "cyclops"
-        normals = [v.normal.copy() for v in self.body.data.vertices]
-        for v, normal in zip(self.body.data.vertices, normals):
-            x, y, z = v.co
-            if y < -0.045:
-                front = min(1, max(0, (-y - 0.045) / 0.055))
-                push = 0
-                for s in [-1, 1]:
-                    push += 0.064 * gaussian(x, z, s * 0.14, 0.98, 0.15, 0.105)
-                    push += 0.035 * gaussian(x, z, s * 0.075, 0.83, 0.07, 0.045)
-                    push += 0.025 * gaussian(x, z, s * 0.065, 0.76, 0.06, 0.045)
-                    push += 0.023 * gaussian(x, z, s * 0.062, 0.69, 0.06, 0.045)
-                    push += 0.03 * gaussian(x, z, s * 0.34, 0.94, 0.08, 0.13)
-                    push += 0.03 * gaussian(x, z, s * 0.47, 0.66, 0.065, 0.105)
-                    push += 0.025 * gaussian(x, z, s * 0.165, 0.43, 0.08, 0.11)
-                    push += 0.02 * gaussian(x, z, s * 0.2, 0.30, 0.065, 0.05)
-                    push += 0.032 * gaussian(x, z, s * 0.10, 1.30, 0.065, 0.07)
-                    push -= 0.025 * gaussian(x, z, s * 0.14, 1.25, 0.045, 0.075)
-                push -= 0.014 * gaussian(x, z, 0, 0.98, 0.021, 0.13)
-                if cyclops:
-                    push -= 0.050 * gaussian(x, z, 0, 1.385, 0.09, 0.055)
-                    push += 0.055 * gaussian(x, z, 0, 1.44, 0.11, 0.035)
-                else:
-                    for s in [-1, 1]:
-                        push -= 0.035 * gaussian(x, z, s * 0.075, 1.38, 0.045, 0.035)
-                        push += 0.046 * gaussian(x, z, s * 0.075, 1.42, 0.065, 0.025)
-                push += (0.135 if bull else 0.085) * gaussian(
-                    x, z, 0, 1.29, 0.105 if bull else 0.045, 0.070
-                )
-                push += (0.075 if bull else 0.06) * gaussian(
-                    x, z, 0, 1.23, 0.105, 0.035
-                )
-                push -= 0.020 * gaussian(x, z, 0, 1.25, 0.09, 0.008)
-                v.co.y -= push * front
-            # Deliberate skin folds and fine pores sit below the anatomical planes.
-            n = noise_vector(v.co * 53)
-            v.co += normal * (n.x * 0.0012)
-            v.co.z = max(0.012, v.co.z)
-        self.body.data.update()
 
     def face_y(self, x, z):
         hit, point, _, _ = self.body.ray_cast(Vector((x, -2, z)), Vector((0, 1, 0)))
@@ -382,157 +199,6 @@ class Sculpt:
                 ],
                 [0.009, 0.014, 0.009],
                 "skin",
-            )
-
-    def biped_details(self):
-        bull = self.species == "minotaur"
-        if self.species == "cyclops":
-            self.eye(0, 1.385, 0.053)
-        else:
-            for s in [-1, 1]:
-                self.eye(s * 0.075, 1.38, 0.025)
-        for s in [-1, 1]:
-            x = s * (0.052 if bull else 0.022)
-            y = self.face_y(x, 1.29)
-            self.ridge(
-                "Nostril",
-                [(x, y - 0.004, 1.297), (x + s * 0.009, y - 0.006, 1.285)],
-                [0.012, 0.015],
-                "dark",
-            )
-            if bull:
-                self.ridge(
-                    "Swept ivory horn",
-                    [
-                        (s * 0.115, -0.015, 1.46),
-                        (s * 0.23, 0.005, 1.49),
-                        (s * 0.34, 0.035, 1.55),
-                        (s * 0.38, 0.025, 1.66),
-                        (s * 0.34, -0.01, 1.75),
-                    ],
-                    [0.06, 0.054, 0.038, 0.018, 0.001],
-                )
-            else:
-                y = self.face_y(s * 0.07, 1.24)
-                self.ridge(
-                    "Lower tusk",
-                    [
-                        (s * 0.07, y, 1.23),
-                        (s * 0.09, y - 0.035, 1.27),
-                        (s * 0.085, y - 0.025, 1.34),
-                    ],
-                    [0.022, 0.018, 0.001],
-                )
-        mouth = []
-        for x in [-0.09, -0.045, 0, 0.045, 0.09]:
-            z = 1.247 + 0.018 * (abs(x) / 0.09) ** 2
-            mouth.append((x, self.face_y(x, z) - 0.004, z))
-        self.ridge("Mouth cleft", mouth, [0.005, 0.008, 0.008, 0.008, 0.005], "dark")
-        self.cloth()
-        if bull:
-            for s in [-1, 1]:
-                for i in range(9):
-                    x = s * (0.07 + 0.024 * i)
-                    self.ridge(
-                        "Carved mane lock",
-                        [
-                            (x, 0.03, 1.49 - i * 0.029),
-                            (x + s * 0.045, 0.06, 1.40 - i * 0.036),
-                            (x + s * 0.025, 0.04, 1.24 - i * 0.034),
-                        ],
-                        [0.045, 0.05, 0.001],
-                        "mane",
-                    )
-                for i in range(5):
-                    x = s * (0.09 + i * 0.014)
-                    self.ridge(
-                        "Cheek mane",
-                        [
-                            (x, -0.06, 1.36 - i * 0.023),
-                            (x + s * 0.05, -0.08, 1.30 - i * 0.026),
-                            (x + s * 0.04, -0.09, 1.21 - i * 0.026),
-                        ],
-                        [0.025, 0.035, 0.001],
-                        "mane",
-                    )
-            for s in [-1, 1]:
-                for split in [-1, 1]:
-                    x = s * 0.185 + split * 0.039
-                    self.surface(
-                        "Split hoof",
-                        [
-                            ((x, 0.015, 0.09), 0.041, 0.075),
-                            ((x, -0.055, 0.055), 0.044, 0.05),
-                            ((x, -0.18, 0.035), 0.04, 0.033),
-                        ],
-                        "hoof",
-                        False,
-                        16,
-                        1,
-                    )
-        if self.species == "troll":
-            for s in [-1, 1]:
-                for i in range(5):
-                    x = s * (0.075 + i * 0.055)
-                    self.ridge(
-                        "Shoulder stone crest",
-                        [
-                            (x, 0.12, 1.04),
-                            (x, 0.14, 1.16 + 0.03 * math.sin(i)),
-                            (x + s * 0.035, 0.15, 1.10),
-                        ],
-                        [0.045, 0.035, 0.001],
-                        "stone",
-                    )
-
-    def cloth(self):
-        vertices = []
-        for level in range(5):
-            for i in range(48):
-                a = math.tau * i / 48
-                fold = 0.009 * math.cos(a * 12)
-                z = 0.61 - level * 0.045
-                if level == 4:
-                    z -= 0.04 * (0.5 + 0.5 * math.sin(a * 7))
-                vertices.append(
-                    (
-                        (0.195 + fold) * math.cos(a),
-                        0.025 + (0.155 + fold) * math.sin(a),
-                        z,
-                    )
-                )
-        faces = []
-        for level in range(4):
-            for i in range(48):
-                a = level * 48 + i
-                b = level * 48 + (i + 1) % 48
-                faces.append((a, b, b + 48, a + 48))
-        obj = mesh("Folding hide apron", vertices, faces)
-        obj["paint"] = "leather"
-        self.details.append(obj)
-        activate(obj)
-        solid = obj.modifiers.new("Hide thickness", "SOLIDIFY")
-        solid.thickness = 0.006
-        bpy.ops.object.modifier_apply(modifier=solid.name)
-        for i in range(12):
-            a = math.tau * i / 12
-            self.ridge(
-                "Bound hide belt",
-                [
-                    (0.20 * math.cos(a), 0.025 + 0.16 * math.sin(a), 0.605),
-                    (
-                        0.20 * math.cos(a + 0.26),
-                        0.025 + 0.16 * math.sin(a + 0.26),
-                        0.62,
-                    ),
-                    (
-                        0.20 * math.cos(a + 0.52),
-                        0.025 + 0.16 * math.sin(a + 0.52),
-                        0.605,
-                    ),
-                ],
-                [0.009, 0.009, 0.009],
-                "horn",
             )
 
     def reptile_body(self):
@@ -880,40 +546,6 @@ class Sculpt:
         obj.data.materials.append(mat)
 
     def paint_anatomy(self, color, vertex):
-        x, y, z = vertex.co
-        if not self.reptile:
-            eye_mask = gaussian(
-                x,
-                z,
-                0 if self.species == "cyclops" else 0.075,
-                1.38,
-                0.075,
-                0.045,
-            )
-            if self.species != "cyclops":
-                eye_mask += gaussian(x, z, -0.075, 1.38, 0.075, 0.045)
-            if y < -0.10:
-                color = tuple(c * (1 - 0.50 * eye_mask) for c in color)
-            if z < 0.18:
-                color = tuple(c * 0.65 for c in color)
-            if self.species == "minotaur" and z < 0.115:
-                color = (0.022, 0.019, 0.017)
-            if y < -0.08:
-                crease = 0
-                for side in [-1, 1]:
-                    crease += gaussian(x, z, side * 0.14, 0.91, 0.13, 0.018) * 0.38
-                    crease += gaussian(x, z, side * 0.075, 0.79, 0.065, 0.012) * 0.25
-                    crease += gaussian(x, z, side * 0.07, 0.72, 0.06, 0.012) * 0.2
-                crease += gaussian(x, z, 0, 0.95, 0.012, 0.15) * 0.35
-                color = tuple(c * (1 - min(0.6, crease)) for c in color)
-            if self.species == "minotaur" and y < -0.18:
-                muzzle = gaussian(x, z, 0, 1.29, 0.14, 0.09)
-                color = tuple(
-                    c * (1 - muzzle) + muzzle * t
-                    for c, t in zip(color, (0.16, 0.105, 0.075))
-                )
-                nose = gaussian(x, z, 0, 1.29, 0.08, 0.035)
-                color = tuple(c * (1 - 0.65 * nose) for c in color)
         return color
 
     def finish(self):
@@ -953,10 +585,15 @@ if __name__ == "__main__":
         )["Creature"]
         sculpt = creature_type(species)
         getattr(sculpt, species)()
-    else:
+    elif species == "wraith":
+        creature_type = runpy.run_path(
+            str(Path(__file__).with_name("sculpt-weak-beasts.py"))
+        )["WeakBeast"]
+        sculpt = creature_type(species)
+        sculpt.wraith()
+    elif species in {"wyvern", "hydra"}:
         sculpt = Sculpt(species)
-        if sculpt.reptile:
-            sculpt.reptile_body()
-        else:
-            sculpt.biped()
+        sculpt.reptile_body()
+    else:
+        raise ValueError("Choose troll, wyvern, hydra, wraith or cyclops")
     sculpt.finish()

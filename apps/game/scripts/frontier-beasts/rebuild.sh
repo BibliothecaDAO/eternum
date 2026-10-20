@@ -6,12 +6,12 @@ case "$output" in /*) ;; *) echo 'Use an absolute output directory'; exit 1;; es
 if [[ -e "$output" ]]; then echo 'Choose a fresh output directory'; exit 1; fi
 mkdir -p "$output/raw"
 cd "$root"
-names="troll wyvern hydra minotaur cyclops"
+names="troll wyvern hydra wraith cyclops"
 variant=${2:-refined}
 case "$variant" in refined|creatures) ;; *) echo 'Choose refined or creatures'; exit 1;; esac
 source_directory="apps/game/asset-sources/frontier-beasts/refined"
 if [[ "$variant" = creatures ]]; then
-  names="wyvern hydra ghoul kappa wraith basilisk ammit dark-fey"
+  names="wyvern hydra ghoul kappa basilisk ammit dark-fey"
   source_directory="apps/game/asset-sources/lab/frontier-beasts"
 fi
 for name in $names; do

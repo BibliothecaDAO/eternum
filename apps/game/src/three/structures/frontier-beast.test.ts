@@ -106,14 +106,14 @@ describe("Frontier guard identity", () => {
     "keeps both ranged encounters' identities at depth $depth through casualties",
     ({ depth, bounds }) => {
       for (const [low, high, name, species] of [
-        [bounds.beast_weak_lower, bounds.beast_weak_upper, "Minotaur", "minotaur"],
-        [bounds.beast_strong_lower, bounds.beast_strong_upper, "Cyclops", "cyclops"],
+        [bounds.beast_weak_lower, bounds.beast_weak_upper, "Cyclops", "cyclops"],
+        [bounds.beast_strong_lower, bounds.beast_strong_upper, "Wraith", "wraith"],
       ] as const) {
         for (const initial of [low, Math.floor((low + high) / 2), high]) {
           const read = (remaining: number, cleared = false) =>
             readStandingFrontierBeast(facts(StructureType.Beasts, depth, initial, remaining, cleared), 1, 9);
           const identity = read(initial)!;
-          expect(identity).toEqual({ beast: species, name, scale: species === "minotaur" ? 0.8 : 1 });
+          expect(identity).toEqual({ beast: species, name, scale: 1 });
           expect(getStructureModelPaths()[StructureType.Beasts][frontierBeastModelIndex(identity.beast)]).toBe(
             FRONTIER_BEASTS[species].path,
           );
@@ -146,7 +146,7 @@ describe("Frontier guard identity", () => {
     );
   });
   it("has exactly five active species with distinct model and portrait deliveries", () => {
-    expect(Object.keys(FRONTIER_BEASTS)).toEqual(["troll", "wyvern", "hydra", "minotaur", "cyclops"]);
+    expect(Object.keys(FRONTIER_BEASTS)).toEqual(["troll", "wyvern", "hydra", "wraith", "cyclops"]);
     expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(5);
     expect(
       new Set(

@@ -3189,13 +3189,13 @@
       }
     },
     {
-      "id": "beast-minotaur",
-      "label": "Minotaur",
+      "id": "beast-wraith",
+      "label": "Wraith",
       "family": "Beasts",
-      "prompt": "prompts/beast-minotaur.txt",
+      "prompt": "prompts/beast-wraith.txt",
       "source": {
         "kind": "painted",
-        "sha256": "3cd93674afae4ada72b81fe00835e0f3e193302eb40c21a798738ee9fc4168c6"
+        "sha256": "2a6a3a0cf4cfd1f345e3e29e56ab0544e2193d26181c34947f342b2fd6278d95"
       }
     },
     {

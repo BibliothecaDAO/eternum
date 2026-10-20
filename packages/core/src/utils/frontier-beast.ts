@@ -16,7 +16,7 @@ export const FALLEN_REALM_DEPTHS: readonly { beast: FrontierSpecies; scale: numb
   { beast: "hydra", scale: 1.7 },
 ];
 export type BeastBand = "lowly" | "stronger";
-const ROAMING_BEASTS = { lowly: { beast: "minotaur", scale: 0.8 }, stronger: { beast: "cyclops", scale: 1 } } as const;
+const ROAMING_BEASTS = { lowly: { beast: "cyclops", scale: 1 }, stronger: { beast: "wraith", scale: 1 } } as const;
 type BeastBounds = Pick<
   NativeRows["DepthRules"],
   "beast_weak_lower" | "beast_weak_upper" | "beast_strong_lower" | "beast_strong_upper"

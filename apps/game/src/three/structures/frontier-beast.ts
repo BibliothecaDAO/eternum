@@ -17,7 +17,7 @@ export const FRONTIER_BEASTS = {
   troll: { path: "/models/frontier/beast-troll.glb", lootSurvivorId: 71, lootTier: 5, maxScale: 1.46 },
   wyvern: { path: "/models/frontier/beast-wyvern.glb", lootSurvivorId: 37, lootTier: 3, maxScale: 1.38 },
   hydra: { path: "/models/frontier/beast-hydra.glb", lootSurvivorId: 59, lootTier: 2, maxScale: 1.7 },
-  minotaur: { path: "/models/frontier/beast-minotaur.glb", maxScale: 1 },
+  wraith: { path: "/models/frontier/beast-wraith.glb", lootSurvivorId: 18, lootTier: 4, maxScale: 1 },
   cyclops: { path: "/models/frontier/beast-cyclops.glb", maxScale: 1 },
 } as const;
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];

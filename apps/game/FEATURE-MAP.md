@@ -636,9 +636,9 @@ receipt over native fixture facts.
 ## Frontier beast guards
 
 Standing Frontier sites share their beast identity between the map model, hover plate and selected-site card. Ruins keep
-their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Beasts show Minotaur for the
-lowly encounter and Cyclops for the stronger encounter. Both draw a Knight T1 count from their depth's preset ranges.
-The initial count preserves their identity after losses. Cleared sites do not show beasts.
+their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Beasts show Cyclops for the
+lowly encounter and Wraith for the stronger encounter. Both draw a Knight T1 count from their depth's preset ranges. The
+initial count preserves their identity after losses. Cleared sites do not show beasts.
 
 `/lab/models?family=beasts` shows the five production beasts, including the approved Troll and Cyclops. Wyvern and Hydra
 creature studies have separate comparisons in the local lab, served from `asset-sources/lab/frontier-beasts/`. **Set →
@@ -652,11 +652,12 @@ checks delivered geometry, materials, footprint and source provenance.
 production. `verify:fallen-realm` reads the runtime depth table, checks decoded beast/ruin triangles for zero masonry
 contacts and checks both roaming beasts against the tile footprint.
 
-The weak roaming replacement is an owner choice in the local lab. **Set → Weak monsters · concepts**
+Wraith is the owner-selected stronger roaming beast; Cyclops is the lowly encounter. Its model, portrait, plate, panel
+and history use the shared species identity. **Set → Weak monsters · concepts**
 (`/lab/models?family=beasts&group=weak-concepts`) shows Ghoul, Kappa, Wraith and Golem paintings. **View model** opens
 the matching sculpt; **Set → Weak monsters · models** (`/lab/models?family=beasts&group=weak-options`) compares the
-three modeled candidates with the Minotaur placeholder and stronger Cyclops at their runtime scale. Golem remains a
-concept. Production keeps Minotaur until the choice. Sources and paintings stay in the lab archive;
+Ghoul and Kappa studies with the shipped Wraith and lowly Cyclops at their runtime scale. Golem remains a concept.
+Wraith's source and painting live with the production beasts; the other studies stay in the lab archive;
 `rebuild.sh <fresh-absolute-directory> creatures` exports every saved creature study. The beast proof also checks the
 four concept images, their model link, and each new model from front and rear.
 

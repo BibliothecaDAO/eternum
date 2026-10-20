@@ -100,7 +100,7 @@ it.each(KINDS)("shares all verdicts and species with the card for %s, even after
       ] as never);
     const story = buildStoryEventPresentation(battle(army, guard), store, names);
     expect(VERDICT_WORDS[result.verdict]).toBe(verdict);
-    expect(story.title).toBe(`clientlane vs ${site === "Beasts" ? "Minotaur" : "Troll"} · ${verdict}`);
+    expect(story.title).toBe(`clientlane vs ${site === "Beasts" ? "Cyclops" : "Troll"} · ${verdict}`);
     expect(story.description).toContain(`Outcome: ${verdict}`);
   }
 });
@@ -127,7 +127,7 @@ it.each(KINDS)("names %s discovery in Events", (kind) => {
     } as never,
     store,
   );
-  expect(presentation.title).toBe(`${kind === "Beasts" ? "Minotaur" : `Troll ${kind}`} found: +12.5 Essence`);
+  expect(presentation.title).toBe(`${kind === "Beasts" ? "Cyclops" : `Troll ${kind}`} found: +12.5 Essence`);
 });
 
 it("does not print a Frontier realm's off-map founding coordinates", () => {
@@ -182,7 +182,7 @@ it.each(KINDS)(
       { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: "0" } } },
     ] as never);
     expect(buildStoryEventPresentation(captured(), store, names).title).toBe(
-      `clientlane took ${siteName(SITE)} from ${kind === "Beasts" ? "Minotaur" : "Troll"}`,
+      `clientlane took ${siteName(SITE)} from ${kind === "Beasts" ? "Cyclops" : "Troll"}`,
     );
   },
 );

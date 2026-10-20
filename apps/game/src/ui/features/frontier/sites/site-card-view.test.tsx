@@ -281,12 +281,12 @@ describe("a cleared ruin's chest", () => {
   });
 });
 
-it("titles a single roaming Minotaur by its species", () => {
+it("titles a single roaming Wraith by its species", () => {
   act(() =>
     root.render(
       <SiteCardView
         site="Beasts"
-        beast={{ name: "Minotaur", beast: "minotaur", combatClass: "Knight" }}
+        beast={{ name: "Wraith", beast: "wraith", combatClass: "Knight" }}
         army={null}
         guard={314}
         fight={undefined}
@@ -297,5 +297,5 @@ it("titles a single roaming Minotaur by its species", () => {
       />,
     ),
   );
-  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Minotaur");
+  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
 });

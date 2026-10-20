@@ -1431,9 +1431,9 @@
       "label": "Hydra",
       "family": "Beasts"
     },
-    "beast-minotaur": {
-      "art": "beast-minotaur",
-      "label": "Minotaur",
+    "beast-wraith": {
+      "art": "beast-wraith",
+      "label": "Wraith",
       "family": "Beasts"
     },
     "beast-cyclops": {

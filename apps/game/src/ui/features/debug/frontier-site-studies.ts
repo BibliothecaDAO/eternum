@@ -9,17 +9,18 @@ export const SITE_CONCEPTS = {
 } as const;
 export const SURFACE_STUDY_SCALE = 1.2;
 const FEY_STUDY_SCALE = 0.75;
-const studyPath = (species: keyof typeof BEAST_STUDY_NAMES) => `/lab/frontier-beasts/beast-${species}.glb`;
+export const beastChoicePath = (species: keyof typeof BEAST_STUDY_NAMES) =>
+  species === "wraith" ? FRONTIER_BEASTS.wraith.path : `/lab/frontier-beasts/beast-${species}.glb`;
 const ruin = { path: FALLEN_REALM_RUIN_PATH, scale: 1 };
 const sites: readonly (LineupAsset & { id: string })[] = [
   ...SITE_CONCEPTS.weak.map((species) => ({
     id: species,
-    label: `Weak roaming · ${BEAST_STUDY_NAMES[species]}`,
-    parts: [{ path: studyPath(species), scale: 0.8 }],
+    label: `${species === "wraith" ? "Stronger roaming" : "Unselected study"} · ${BEAST_STUDY_NAMES[species]}`,
+    parts: [{ path: beastChoicePath(species), scale: species === "wraith" ? 1 : 0.8 }],
   })),
   {
     id: "cyclops",
-    label: `Stronger roaming · ${BEAST_NAMES.cyclops}`,
+    label: `Lowly roaming · ${BEAST_NAMES.cyclops}`,
     parts: [{ path: FRONTIER_BEASTS.cyclops.path, scale: 1 }],
   },
   {
@@ -32,13 +33,13 @@ const sites: readonly (LineupAsset & { id: string })[] = [
     label: `${RIFT} · ${BEAST_STUDY_NAMES["dark-fey"]} · all depths`,
     parts: [
       { path: "/models/reward-tiles/rift.glb", scale: 0.5, z: -0.42 },
-      { path: studyPath("dark-fey"), scale: FEY_STUDY_SCALE, z: 0.35 },
+      { path: beastChoicePath("dark-fey"), scale: FEY_STUDY_SCALE, z: 0.35 },
     ],
   },
   ...(["basilisk", "ammit"] as const).map((species) => ({
     id: species,
     label: `${RUIN} Surface · ${BEAST_STUDY_NAMES[species]}`,
-    parts: [ruin, { path: studyPath(species), scale: SURFACE_STUDY_SCALE }],
+    parts: [ruin, { path: beastChoicePath(species), scale: SURFACE_STUDY_SCALE }],
   })),
   ...FALLEN_REALM_DEPTHS.slice(1).map(({ beast, scale }, i) => ({
     id: `ruin-${i + 1}`,

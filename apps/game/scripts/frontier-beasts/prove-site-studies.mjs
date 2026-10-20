@@ -9,7 +9,7 @@ const concepts = {
 const contexts = [
   ["ghoul", 0, ["/lab/frontier-beasts/beast-ghoul.glb"]],
   ["kappa", 1, ["/lab/frontier-beasts/beast-kappa.glb"]],
-  ["wraith", 2, ["/lab/frontier-beasts/beast-wraith.glb"]],
+  ["wraith", 2, ["/models/frontier/beast-wraith.glb"]],
   ["cyclops", 3, ["/models/frontier/beast-cyclops.glb"]],
   ["troll", 4, ["/models/frontier/beast-troll.glb"]],
   ["dark-fey", 5, ["/models/reward-tiles/rift.glb", "/lab/frontier-beasts/beast-dark-fey.glb"]],

@@ -98,7 +98,7 @@ export const BEAST_NAMES = {
   troll: "Troll",
   wyvern: "Wyvern",
   hydra: "Hydra",
-  minotaur: "Minotaur",
+  wraith: "Wraith",
   cyclops: "Cyclops",
 } as const;
 export const VICTORY = "Victory";

@@ -7,6 +7,7 @@ import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   BuildingType,
   buildingName,
+  BEAST_NAMES,
   formatAmount,
   formatCount,
   formatDuration,
@@ -25,7 +26,7 @@ export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as
 export const BEAST_STUDY_NAMES = {
   ghoul: "Ghoul",
   kappa: "Kappa",
-  wraith: "Wraith",
+  wraith: BEAST_NAMES.wraith,
   golem: "Golem",
   basilisk: "Basilisk",
   ammit: "Ammit",

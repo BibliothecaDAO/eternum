@@ -71,7 +71,7 @@ describe("gameplay villages", () => {
       CLEARED_SITE_MODEL_PATH,
     ]);
     expect(getStructureModelPaths()[StructureType.Beasts]).toEqual([
-      FRONTIER_BEASTS.minotaur.path,
+      FRONTIER_BEASTS.cyclops.path,
       ...FRONTIER_BEAST_PATHS,
       CLEARED_SITE_MODEL_PATH,
     ]);

@@ -3,15 +3,16 @@
 The five production beasts come from the packed Blender sources in `apps/game/asset-sources/frontier-beasts/refined/`.
 Each source retains its sculpt and painted textures. The matching `*-paint.png` files and prompts live beside the
 sources. `apps/game/scripts/frontier-beasts/sculpt-beasts.py` authors these production sculpts, dispatching the approved
-Troll and Cyclops to `sculpt-creatures.py`; the packed `.blend` files are the inputs to delivery rebuilds.
+Troll and Cyclops to `sculpt-creatures.py` and Wraith to `sculpt-weak-beasts.py`; the packed `.blend` files are the
+inputs to delivery rebuilds.
 
-| Species  | Editable source under `refined/` | Production delivery under `public/models/frontier/` |
-| -------- | -------------------------------- | --------------------------------------------------- |
-| Troll    | `troll.blend`                    | `beast-troll.glb`                                   |
-| Wyvern   | `wyvern.blend`                   | `beast-wyvern.glb`                                  |
-| Hydra    | `hydra.blend`                    | `beast-hydra.glb`                                   |
-| Minotaur | `minotaur.blend`                 | `beast-minotaur.glb`                                |
-| Cyclops  | `cyclops.blend`                  | `beast-cyclops.glb`                                 |
+| Species | Editable source under `refined/` | Production delivery under `public/models/frontier/` |
+| ------- | -------------------------------- | --------------------------------------------------- |
+| Troll   | `troll.blend`                    | `beast-troll.glb`                                   |
+| Wyvern  | `wyvern.blend`                   | `beast-wyvern.glb`                                  |
+| Hydra   | `hydra.blend`                    | `beast-hydra.glb`                                   |
+| Wraith  | `wraith.blend`                   | `beast-wraith.glb`                                  |
+| Cyclops | `cyclops.blend`                  | `beast-cyclops.glb`                                 |
 
 ## Rebuild and validate
 
@@ -24,7 +25,7 @@ pnpm --dir apps/game verify:beasts
 
 The output directory must be absolute and must not already exist. The rebuild exports all five packed sources through
 `export-beast.py`, then compresses the fresh exports through `scripts/outposts/optimize-outpost.mjs`. It writes
-`beast-{troll,wyvern,hydra,minotaur,cyclops}.glb` and per-model logs into that external directory. It does not overwrite
+`beast-{troll,wyvern,hydra,wraith,cyclops}.glb` and per-model logs into that external directory. It does not overwrite
 production deliveries. Review the rebuilt files in the game's lab before copying an approved set to the production
 paths, then run `verify:beasts` again against those delivered bytes. Never recompress an already compressed delivery.
 
@@ -37,13 +38,16 @@ triangle and byte budgets, one primitive, unit transforms, UVs, color and normal
 Models are static, authored Z-up facing -Y and delivered Y-up facing +Z with baked transforms. Each origin is the tile's
 ground center. Deliveries use Draco geometry, ETC1S color and UASTC normal textures. Terrain belongs to the scene.
 
-`src/three/structures/frontier-beast.ts` owns species paths, depth/band selection, scales and site composition. The
-standing depth beasts are Troll, Wyvern and the three-headed Hydra; the two roaming encounters use Minotaur and Cyclops.
-Species art does not define combat tiers. Both the model and player-facing identity use that shared resolver.
+`packages/core/src/utils/frontier-beast.ts` owns depth/band identity and scales; the client's
+`src/three/structures/frontier-beast.ts` owns model paths and site composition. The standing depth beasts are Troll,
+Wyvern and the three-headed Hydra; the lowly roaming encounter uses Cyclops and the stronger uses Wraith. Species art
+does not define combat tiers. Both the model and player-facing identity use that shared resolver.
 
-Troll and Cyclops use the owner-approved creature sculpts. Wyvern and Hydra studies and their editable sources live in
+Troll, Cyclops and Wraith use the owner-selected creature sculpts. Pending studies and their editable sources live in
 `asset-sources/lab/frontier-beasts/`, outside deployment. The local lab serves their GLBs at `/lab/frontier-beasts/`;
-`rebuild.sh <fresh-absolute-directory> creatures` rebuilds those two separately. The rejected Minotaur study is removed.
+`rebuild.sh <fresh-absolute-directory> creatures` rebuilds those separately. Wraith has one production delivery and
+source; the lab uses that same delivery. Its concept painting remains in the lab choice page. The rejected Minotaur
+delivery, source, portrait and obsolete biped writer are removed.
 
 The ruin, shrines and wells belong to the [outpost family](../outposts/SOURCE.md). The ruin delivery is
 `/models/outposts/ruin.glb`; the beast is a separate model. `pnpm --dir apps/game verify:fallen-realm` is a read-only

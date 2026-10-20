@@ -10,6 +10,7 @@ import {
   FALLEN_REALM_RUIN_PATH,
   FALLEN_REALM_DEPTHS,
 } from "@/three/structures/frontier-beast";
+import { beastChoicePath } from "./frontier-site-studies";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
@@ -55,17 +56,13 @@ const WEAK_OPTIONS = [
   { species: "golem", model: false, detail: "Crumbling construct · concept only" },
 ] as const;
 const WEAK_MODELS: readonly LineupAsset[] = [
-  {
-    label: `${WEAK_BEAST.name} · placeholder`,
-    parts: [{ path: FRONTIER_BEASTS[WEAK_BEAST.beast].path, scale: WEAK_BEAST.scale }],
-  },
   ...WEAK_OPTIONS.filter(({ model }) => model).map(({ species }) => ({
-    label: `${BEAST_STUDY_NAMES[species]} · study`,
-    parts: [{ path: `/lab/frontier-beasts/beast-${species}.glb`, scale: WEAK_BEAST.scale }],
+    label: `${BEAST_STUDY_NAMES[species]} · ${species === "wraith" ? "shipped" : "study"}`,
+    parts: [{ path: beastChoicePath(species), scale: WEAK_BEAST.scale }],
   })),
   {
-    label: `${BEAST_NAMES.cyclops} · stronger`,
-    parts: [{ path: FRONTIER_BEASTS.cyclops.path, scale: frontierBeast(0, StructureType.Beasts, "stronger").scale }],
+    label: `${BEAST_NAMES.cyclops} · lowly`,
+    parts: [{ path: FRONTIER_BEASTS.cyclops.path, scale: frontierBeast(0, StructureType.Beasts, "lowly").scale }],
   },
 ];
 const SITES = [
@@ -155,7 +152,7 @@ export function FrontierBeastLab() {
   useEffect(() => {
     if (concepts) {
       setReady(true);
-      setStatus("Four concepts · three model studies · production keeps the placeholder");
+      setStatus("Four concepts · two unselected studies · Wraith and Cyclops shipped");
       return;
     }
     const controller = new AbortController();
@@ -261,7 +258,7 @@ export function FrontierBeastLab() {
                 <strong>{BEAST_STUDY_NAMES[species]}</strong>
                 <span>{detail}</span>
                 {model && (
-                  <Link to={`?family=beasts&group=weak-options&focus=${index + 1}&rendererMode=webgpu-force-webgl`}>
+                  <Link to={`?family=beasts&group=weak-options&focus=${index}&rendererMode=webgpu-force-webgl`}>
                     View model
                   </Link>
                 )}
@@ -288,8 +285,8 @@ export function FrontierBeastLab() {
               </label>
               {site === 3 ? (
                 <select aria-label="Beast strength" value={band} onChange={(e) => setBand(e.target.value as BeastBand)}>
-                  <option value="lowly">Lowly · {BEAST_NAMES.minotaur}</option>
-                  <option value="stronger">Stronger · {BEAST_NAMES.cyclops}</option>
+                  <option value="lowly">Lowly · {BEAST_NAMES.cyclops}</option>
+                  <option value="stronger">Stronger · {BEAST_NAMES.wraith}</option>
                 </select>
               ) : (
                 <select aria-label="Depth" value={depth} onChange={(e) => setDepth(Number(e.target.value))}>

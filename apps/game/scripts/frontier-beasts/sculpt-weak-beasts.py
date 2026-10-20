@@ -419,8 +419,9 @@ class WeakBeast(Creature):
             t = ring / (rings - 1)
             for i in range(segments):
                 a = math.tau * i / segments
-                width = 0.21 * (1 - 0.76 * t)
-                height = 0.30 * (1 - 0.76 * t)
+                pleat = 1 + 0.035 * math.sin(a * 6 + t * 2)
+                width = 0.21 * (1 - 0.76 * t) * pleat
+                height = 0.30 * (1 - 0.76 * t) * pleat
                 points.append(
                     (
                         -0.05 + width * math.cos(a),
@@ -475,6 +476,27 @@ class WeakBeast(Creature):
                 "dark",
                 False,
                 16,
+            )
+        for side in [-1, 1]:
+            self.ridge(
+                "Carved mask brow",
+                [
+                    (-0.05 + side * 0.015, -0.245, 1.285),
+                    (-0.05 + side * 0.052, -0.258, 1.30),
+                    (-0.05 + side * 0.080, -0.226, 1.275),
+                ],
+                [0.008, 0.014, 0.004],
+                "horn",
+            )
+            self.ridge(
+                "Raised mask cheek edge",
+                [
+                    (-0.05 + side * 0.070, -0.228, 1.225),
+                    (-0.05 + side * 0.044, -0.244, 1.155),
+                    (-0.05 + side * 0.018, -0.230, 1.055),
+                ],
+                [0.008, 0.011, 0.002],
+                "horn",
             )
         self.ridge(
             "Long screaming mouth slit",
@@ -534,6 +556,14 @@ class WeakBeast(Creature):
         bpy.ops.object.modifier_apply(modifier=solid.name)
         self.details.append(obj)
 
+    def finish(self):
+        bpy.context.scene["paintingVertical"] = {
+            "ghoul": (1.00944, 0.000322),
+            "kappa": (0.985848, 0.036607),
+            "wraith": (1.006562, 0.002013),
+        }[self.species]
+        super().finish()
+
     def fingers(self, side, x, y, z, paint, length, count=3):
         for i in range(count):
             finger_x = side * (x + (i - (count - 1) / 2) * 0.045)
@@ -586,9 +616,4 @@ if __name__ == "__main__":
         raise ValueError("Choose ghoul, kappa or wraith")
     creature = WeakBeast(species)
     getattr(creature, species)()
-    bpy.context.scene["paintingVertical"] = {
-        "ghoul": (1.00944, 0.000322),
-        "kappa": (0.985848, 0.036607),
-        "wraith": (1.006562, 0.002013),
-    }[species]
     creature.finish()

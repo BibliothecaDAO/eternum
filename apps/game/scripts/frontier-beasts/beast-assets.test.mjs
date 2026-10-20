@@ -16,7 +16,7 @@ const deliveries = [
   ...[
     { species: "wyvern", maxScale: FRONTIER_BEASTS.wyvern.maxScale },
     { species: "hydra", maxScale: FRONTIER_BEASTS.hydra.maxScale },
-    ...["ghoul", "kappa", "wraith"].map((species) => ({ species, maxScale: 1 })),
+    ...["ghoul", "kappa"].map((species) => ({ species, maxScale: 1 })),
     ...["basilisk", "ammit"].map((species) => ({ species, maxScale: 1.2 })),
     { species: "dark-fey", maxScale: 0.75 },
   ].map(({ species, maxScale }) => ({
@@ -34,6 +34,18 @@ it("keeps every pending delivery with its editable source in the lab archive", (
     studies.flatMap(({ species }) => [`beast-${species}.glb`, `${species}.blend`]).sort(),
   );
   expect(files.some((file) => file.includes("minotaur"))).toBe(false);
+});
+
+it("keeps only catalogued production beast deliveries and their editable sources", () => {
+  const species = Object.keys(FRONTIER_BEASTS);
+  const models = readdirSync(new URL("../../public/models/frontier/", import.meta.url));
+  const sources = readdirSync(new URL("../../asset-sources/frontier-beasts/refined/", import.meta.url));
+  expect(models.filter((name) => /^beast-.*\.glb$/.test(name)).sort()).toEqual(
+    species.map((name) => `beast-${name}.glb`).sort(),
+  );
+  expect(sources.filter((name) => name.endsWith(".blend")).sort()).toEqual(
+    species.map((name) => `${name}.blend`).sort(),
+  );
 });
 
 for (const { species, directory, sourceDirectory, maxScale } of deliveries) {

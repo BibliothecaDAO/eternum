@@ -180,7 +180,7 @@ export function getStructureModelPaths(): Record<StructureType, string[]> {
     [StructureType.BitcoinMine]: [BITCOIN_MINE_MODEL_PATH],
     [StructureType.Rift]: [RIFT_MODEL_PATH, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
     [StructureType.Ruin]: [...FALLEN_REALM_MODEL_PATHS, CLEARED_SITE_MODEL_PATH],
-    [StructureType.Beasts]: [FRONTIER_BEASTS.minotaur.path, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
+    [StructureType.Beasts]: [FRONTIER_BEASTS.cyclops.path, ...FRONTIER_BEAST_PATHS, CLEARED_SITE_MODEL_PATH],
   };
 }
 
