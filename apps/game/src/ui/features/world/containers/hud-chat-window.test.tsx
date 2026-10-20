@@ -3,11 +3,14 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+const HELLO = { sender: { playerId: "1", displayName: "Ada" }, content: "Hello" };
 const fixture = vi.hoisted(() => ({
   status: "signed-in",
   signIn: vi.fn(),
   setOpen: vi.fn(),
   loadHistory: vi.fn(),
+  connection: "connected",
+  zone: {} as Record<string, unknown>,
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: fixture.status }) }));
 vi.mock("@/shell/sign-in/sign-in-route", () => ({ useRequestSignIn: () => fixture.signIn }));
@@ -24,9 +27,9 @@ vi.mock("@/ui/features/social", () => ({
   useRealtimeChatSelector: (select: (state: unknown) => unknown) =>
     select({
       activeZoneId: "global",
-      connectionStatus: "connected",
+      connectionStatus: fixture.connection,
       joinedZoneIds: ["global"],
-      worldZones: { global: { messages: [{ sender: { playerId: "1", displayName: "Ada" }, content: "Hello" }] } },
+      worldZones: { global: fixture.zone },
       unreadWorldTotal: 2,
       unreadDirectTotal: 1,
       actions: { loadWorldHistory: fixture.loadHistory, setShellOpen: fixture.setOpen },
@@ -44,6 +47,8 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.clearAllMocks();
   fixture.status = "signed-in";
+  fixture.connection = "connected";
+  fixture.zone = { messages: [HELLO] };
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -81,4 +86,38 @@ it("keeps a signed-out player's sign-in action, and the strip cannot be pressed 
   draw(false);
   expect(host.querySelector('button[aria-label="Chat strip"]')).toBeNull();
   expect(host.querySelector('[aria-label="Chat strip"]')?.textContent).toContain("Sign in to chat");
+});
+
+const stripLine = () => host.querySelector('[aria-label="Chat strip"] .truncate')?.textContent;
+
+it("says chat is loading until the room's history answers, never an empty room it has not read", () => {
+  fixture.zone = { messages: [], isFetchingHistory: true };
+  draw(false);
+  expect(stripLine()).toBe("Loading chat…");
+  fixture.connection = "connecting";
+  fixture.zone = { messages: [] };
+  draw(false);
+  expect(stripLine()).toBe("Loading chat…");
+});
+
+it("says the room is empty only once its history answered with no message", () => {
+  fixture.zone = { messages: [], lastFetchedCursor: null, isFetchingHistory: false };
+  draw(false);
+  expect(stripLine()).toBe("No messages yet");
+});
+
+it("says chat is unavailable when the history read or the connection failed, never that the room is empty", () => {
+  fixture.zone = { messages: [], isFetchingHistory: false, historyError: "Chat history is unavailable. Try again." };
+  draw(false);
+  expect(stripLine()).toBe("Chat unavailable");
+  fixture.connection = "error";
+  fixture.zone = { messages: [] };
+  draw(false);
+  expect(stripLine()).toBe("Chat unavailable");
+});
+
+it("shows a message that arrived live even while the history read is still out", () => {
+  fixture.zone = { messages: [HELLO], isFetchingHistory: true };
+  draw(false);
+  expect(stripLine()).toBe("Ada: Hello");
 });
