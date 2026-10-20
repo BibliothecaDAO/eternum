@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const card = vi.hoisted(() => ({
   balances: [] as Array<{ resourceId: number; amount: number }>,
   category: 1 as number,
+  relicEffects: [] as Array<{ id: number; endAt: number }>,
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 0 }));
@@ -28,7 +29,7 @@ vi.mock("@/ui/features/world/components/entities/hooks/use-structure-entity-deta
     structure: { base: { category: card.category } },
     structureName: "Egonal",
     resources: { balances: () => card.balances },
-    relicEffects: [],
+    relicEffects: card.relicEffects,
   }),
 }));
 vi.mock("@/ui/features/world/components/entities/structure-production-summary", () => ({
@@ -40,8 +41,13 @@ vi.mock("@/ui/features/world/components/entities/compact-entity-inventory", () =
 vi.mock("@/ui/design-system/icon", () => ({ Icon: () => null }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
 vi.mock("@/ui/shared", () => ({ ProductionStatusBadge: () => null }));
-vi.mock("@bibliothecadao/eternum", () => ({ divideByPrecision: (amount: number) => amount / 1e9 }));
+vi.mock("@bibliothecadao/eternum", () => ({
+  divideByPrecision: (amount: number) => amount / 1e9,
+  bonusActive: (endAt: number, timestamp: number) => timestamp < endAt,
+}));
 
+import { formatWait } from "@bibliothecadao/types";
+import { relicShortName } from "@/ui/design-system/kit/words";
 import { GAME_TASKS } from "../../../../../scripts/game-tasks.mjs";
 import { RealmCard } from "./realm-card";
 
@@ -53,6 +59,7 @@ let root: Root;
 
 beforeEach(() => {
   card.category = StructureType.Realm;
+  card.relicEffects = [];
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   host = document.createElement("div");
   document.body.append(host);
@@ -134,5 +141,18 @@ describe("the line under the card's header", () => {
     act(() => root.render(<RealmCard holding={holding(StructureType.Mine)} />));
 
     expect(firstUnderHeader()?.getAttribute("aria-label")).toBe("Resources");
+  });
+});
+
+describe("a relic at work on the holding", () => {
+  it("shows the activated relic with its time left once its held chip has gone", () => {
+    // Troop Production I activated: none held any more, three minutes of its 15% to run.
+    card.balances = [{ resourceId: ResourcesIds.Wheat, amount: 500 * 1e9 }];
+    card.relicEffects = [{ id: ResourcesIds.ProductionRelic1, endAt: 180 }];
+    act(() => root.render(<RealmCard holding={null} />));
+
+    expect(host.textContent).toContain("Active relic effects");
+    expect(host.textContent).toContain(relicShortName(ResourcesIds.ProductionRelic1));
+    expect(host.textContent).toContain(`${formatWait(180)} left`);
   });
 });

@@ -4,6 +4,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import {
@@ -39,7 +40,8 @@ import { resourcesInTierOrder } from "@/ui/shared/resource-tier-order";
 
 /**
  * The selected holding of the player's, in a HUD panel named for it with rename beside the name: its population,
- * building tiles and automation, then a medallion per resource it makes or holds (five to a row), then its relics.
+ * building tiles and automation, then a medallion per resource it makes or holds (five to a row), then its relics: those
+ * it holds, then those working on it with their time left (an activated relic leaves the held row for that one).
  * Nothing for a holding not theirs.
  */
 export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }) => {
@@ -64,6 +66,7 @@ export const RealmCard = ({ holding }: { holding: StructureWithMetadata | null }
         />
         <ResourceRings resources={detail.resources} summary={summary} />
         <HeldRelics entityId={entityId} resources={detail.resources} activeRelicIds={detail.relicEffects} />
+        <ActiveRelicEffects entityId={entityId} relicEffects={detail.relicEffects} />
       </div>
     </HudPanel>
   );
