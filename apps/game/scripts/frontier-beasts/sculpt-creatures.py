@@ -400,7 +400,7 @@ class Creature(Sculpt):
             len(p.vertices) - 2 for p in obj.data.polygons
         )
         destination = (
-            SOURCE / "refined" if self.species in {"troll", "cyclops", "wraith"} else DESTINATION
+            SOURCE / "refined" if self.species in {"troll", "cyclops", "wraith", "wyvern", "hydra", "ammit", "basilisk", "dark-fey"} else DESTINATION
         )
         painting = destination / f"{self.species}-paint.png"
         if painting.exists():

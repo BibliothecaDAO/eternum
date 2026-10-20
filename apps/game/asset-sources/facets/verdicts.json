@@ -1003,5 +1003,17 @@
   "faceted/beast-cyclops": {
     "reason": "One central amber eye and olive hide match the approved Cyclops.",
     "verdict": "beats shipped"
+  },
+  "faceted/beast-ammit": {
+    "verdict": "beats shipped",
+    "reason": "Distinct painted portrait matches the selected creature silhouette and fills its HUD frame."
+  },
+  "faceted/beast-basilisk": {
+    "verdict": "beats shipped",
+    "reason": "Distinct painted portrait matches the selected creature silhouette and fills its HUD frame."
+  },
+  "faceted/beast-dark-fey": {
+    "verdict": "beats shipped",
+    "reason": "Distinct painted portrait matches the selected creature silhouette and fills its HUD frame."
   }
 }

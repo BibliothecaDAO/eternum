@@ -7,6 +7,7 @@ import { fightResultOf } from "./fight-result";
 vi.stubGlobal("localStorage", { getItem: () => null });
 afterEach(() => vi.restoreAllMocks());
 const KINDS = ["Camp", "Rift", "Ruin", "Beasts"] as const;
+const SPECIES = { Camp: "Troll", Rift: "Dark fey", Ruin: "Ammit", Beasts: "Cyclops" };
 
 function encounter(kind: SiteKind) {
   const { store } = campBeside(kind);
@@ -100,7 +101,7 @@ it.each(KINDS)("shares all verdicts and species with the card for %s, even after
       ] as never);
     const story = buildStoryEventPresentation(battle(army, guard), store, names);
     expect(VERDICT_WORDS[result.verdict]).toBe(verdict);
-    expect(story.title).toBe(`clientlane vs ${site === "Beasts" ? "Cyclops" : "Troll"} · ${verdict}`);
+    expect(story.title).toBe(`clientlane vs ${SPECIES[site]} · ${verdict}`);
     expect(story.description).toContain(`Outcome: ${verdict}`);
   }
 });
@@ -127,7 +128,7 @@ it.each(KINDS)("names %s discovery in Events", (kind) => {
     } as never,
     store,
   );
-  expect(presentation.title).toBe(`${kind === "Beasts" ? "Cyclops" : `Troll ${kind}`} found: +12.5 Essence`);
+  expect(presentation.title).toBe(`${kind === "Beasts" ? "Cyclops" : `${SPECIES[kind]} ${kind}`} found: +12.5 Essence`);
 });
 
 it("does not print a Frontier realm's off-map founding coordinates", () => {
@@ -182,7 +183,7 @@ it.each(KINDS)(
       { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: "0" } } },
     ] as never);
     expect(buildStoryEventPresentation(captured(), store, names).title).toBe(
-      `clientlane took ${siteName(SITE)} from ${kind === "Beasts" ? "Cyclops" : "Troll"}`,
+      `clientlane took ${siteName(SITE)} from ${SPECIES[kind]}`,
     );
   },
 );

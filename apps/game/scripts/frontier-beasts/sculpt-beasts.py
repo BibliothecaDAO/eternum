@@ -592,8 +592,13 @@ if __name__ == "__main__":
         sculpt = creature_type(species)
         sculpt.wraith()
     elif species in {"wyvern", "hydra"}:
-        sculpt = Sculpt(species)
-        sculpt.reptile_body()
+        creature_type = runpy.run_path(str(Path(__file__).with_name("sculpt-creatures.py")))["Creature"]
+        sculpt = creature_type(species)
+        getattr(sculpt, species)()
+    elif species in {"ammit", "basilisk", "dark-fey"}:
+        creature_type = runpy.run_path(str(Path(__file__).with_name("sculpt-site-beasts.py")))["SiteBeast"]
+        sculpt = creature_type(species)
+        getattr(sculpt, species.replace("-", "_"))()
     else:
-        raise ValueError("Choose troll, wyvern, hydra, wraith or cyclops")
+        raise ValueError("Choose an active beast species")
     sculpt.finish()

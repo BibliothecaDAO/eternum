@@ -1464,5 +1464,20 @@
     "token": "brand-coingecko",
     "label": "CoinGecko",
     "family": "Brands"
+  },
+  "beast-ammit": {
+    "art": "beast-ammit",
+    "label": "Ammit",
+    "family": "Beasts"
+  },
+  "beast-basilisk": {
+    "art": "beast-basilisk",
+    "label": "Basilisk",
+    "family": "Beasts"
+  },
+  "beast-dark-fey": {
+    "art": "beast-dark-fey",
+    "label": "Dark fey",
+    "family": "Beasts"
   }
 }

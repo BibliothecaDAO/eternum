@@ -10,9 +10,9 @@ export interface FrontierBeast {
   scale: number;
 }
 export const FALLEN_REALM_DEPTHS: readonly { beast: FrontierSpecies; scale: number }[] = [
-  { beast: "troll", scale: 1.2 },
+  { beast: "ammit", scale: 1.2 },
+  { beast: "basilisk", scale: 1.2 },
   { beast: "wyvern", scale: 1.35 },
-  { beast: "hydra", scale: 1.45 },
   { beast: "hydra", scale: 1.7 },
 ];
 export type BeastBand = "lowly" | "stronger";
@@ -45,11 +45,9 @@ export function frontierBeast(depth: number, category = StructureType.Ruin, band
     const roaming = ROAMING_BEASTS[band];
     return { ...roaming, name: BEAST_NAMES[roaming.beast] };
   }
-  return {
-    beast: entry.beast,
-    scale: category === StructureType.Ruin ? entry.scale : 0.85,
-    name: BEAST_NAMES[entry.beast],
-  };
+  if (category === StructureType.Camp) return { beast: "troll", scale: 0.85, name: BEAST_NAMES.troll };
+  if (category === StructureType.Rift) return { beast: "dark-fey", scale: 0.75, name: BEAST_NAMES["dark-fey"] };
+  return { ...entry, name: BEAST_NAMES[entry.beast] };
 }
 
 export function readFrontierBeast(

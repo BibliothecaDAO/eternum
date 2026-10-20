@@ -7,7 +7,6 @@ import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
   BuildingType,
   buildingName,
-  BEAST_NAMES,
   formatAmount,
   formatCount,
   formatDuration,
@@ -23,16 +22,6 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
-export const BEAST_STUDY_NAMES = {
-  ghoul: "Ghoul",
-  kappa: "Kappa",
-  wraith: BEAST_NAMES.wraith,
-  golem: "Golem",
-  basilisk: "Basilisk",
-  ammit: "Ammit",
-  ent: "Ent",
-  "dark-fey": "Dark fey",
-} as const;
 
 export { BEAST_NAMES } from "@bibliothecadao/types";
 export const BEAST = "Beast";

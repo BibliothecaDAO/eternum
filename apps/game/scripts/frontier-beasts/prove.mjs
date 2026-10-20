@@ -1,62 +1,68 @@
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runProof, waitFor } from "../prove-run.mjs";
-import { proveSiteStudies } from "./prove-site-studies.mjs";
+import { proveSiteStudies, proveMistCost } from "./prove-site-studies.mjs";
 
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
 export async function proveBeasts(b, out, records, baseUrl, only) {
+  await b.run(
+    "open",
+    "about:blank",
+    "--args",
+    "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
+  );
   await b.run("set", "viewport", "1600", "1000");
+  if (only === "mist") return proveMistCost(b, out, records, baseUrl);
   if (!only || only === "site-map") await proveSiteStudies(b, out, records, baseUrl);
-  if (!only || only === "weak-concepts") await proveConcepts(b, out, records, baseUrl);
   for (const scenario of [
-    { name: "weak-options-gameplay", group: "weak-options", focus: "lineup", models: 4, species: "cyclops" },
-    ...["ghoul", "kappa", "wraith"].flatMap((name, index) => [
-      { name: `${name}-study`, group: "weak-options", focus: String(index), models: 4, species: "cyclops" },
-      {
-        name: `${name}-rear`,
-        group: "weak-options",
-        focus: String(index),
-        models: 4,
-        species: "cyclops",
-        yaw: "180",
-        lighting: "sunset",
-      },
-    ]),
-    ...["wyvern", "hydra"].flatMap((beast) => [
-      { name: `${beast}-gameplay`, group: `species-${beast}`, focus: "lineup", models: 2, species: beast },
-      { name: `${beast}-sculpt`, group: `species-${beast}`, focus: "1", models: 2, species: beast },
+    { name: "models-gameplay", group: "models", focus: "lineup", models: 8, species: "ammit" },
+    { name: "ruins-gameplay", group: "ruins", focus: "lineup", models: 8, species: "ammit" },
+    { name: "standing-sites", group: "sites", focus: "lineup", models: 6, species: "ammit" },
+    ...["troll", "wyvern", "hydra", "wraith", "cyclops", "ammit", "basilisk", "dark-fey"].flatMap((beast, index) => [
+      { name: `${beast}-detail`, group: "models", focus: String(index), models: 8, species: "ammit" },
       {
         name: `${beast}-rear`,
-        group: `species-${beast}`,
-        focus: "1",
-        models: 2,
-        species: beast,
+        group: "models",
+        focus: String(index),
+        models: 8,
+        species: "ammit",
         yaw: "180",
         lighting: "sunset",
       },
     ]),
-    { name: "creatures-gameplay", group: "creatures", focus: "lineup", models: 2, species: "troll" },
-    { name: "models-gameplay", group: "models", focus: "lineup", models: 5, species: "troll" },
-    { name: "ruins-gameplay", group: "ruins", focus: "lineup", models: 8, species: "troll" },
-    ...[0, 1, 2, 3].map((depth) => ({
-      name: `ruin-depth-${depth}`,
-      group: "ruins",
-      focus: String(depth),
-      models: 8,
-      species: ["troll", "wyvern", "hydra", "hydra"][depth],
-      depth: String(depth),
-    })),
-    { name: "approved-troll", group: "models", focus: "0", models: 5, species: "troll" },
-    { name: "standing-sites", group: "sites", focus: "lineup", models: 7, species: "troll" },
-    {
-      name: "lowly-beast",
-      group: "beasts",
-      focus: "0",
-      models: 2,
-      species: "cyclops",
-      band: "lowly",
-      panel: true,
-    },
+    ...[0, 1, 2, 3].flatMap((depth) => [
+      {
+        name: `ruin-depth-${depth}`,
+        group: "ruins",
+        focus: String(depth),
+        models: 8,
+        species: ["ammit", "basilisk", "wyvern", "hydra"][depth],
+        site: "2",
+        depth: String(depth),
+        panel: true,
+      },
+      {
+        name: `camp-depth-${depth}`,
+        group: "sites",
+        focus: "0",
+        models: 6,
+        species: "troll",
+        site: "0",
+        depth: String(depth),
+        panel: true,
+      },
+      {
+        name: `rift-depth-${depth}`,
+        group: "sites",
+        focus: "1",
+        models: 6,
+        species: "dark-fey",
+        site: "1",
+        depth: String(depth),
+        panel: true,
+      },
+    ]),
+    { name: "lowly-beast", group: "beasts", focus: "0", models: 2, species: "cyclops", band: "lowly", panel: true },
     {
       name: "stronger-beast",
       group: "beasts",
@@ -66,8 +72,6 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
       band: "stronger",
       panel: true,
     },
-    { name: "wyvern-panel", group: "models", focus: "1", models: 5, species: "wyvern", depth: "1", panel: true },
-    { name: "hydra-panel", group: "models", focus: "2", models: 5, species: "hydra", depth: "2", panel: true },
   ].filter((scenario) => !only || scenario.name === only)) {
     const record = { name: scenario.name, ready: false, presses: [], checks: [] };
     records.push(record);
@@ -105,30 +109,6 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         `(() => {const node=document.querySelector('[data-lineup-rendered]');return node?JSON.parse(node.dataset.lineupRendered):null;})()`,
       );
       record.checks.push({ check: "controls reached the rendered model selection", ok: rendered, actual });
-      if (scenario.group === "weak-options") {
-        const expected = [
-          ...["ghoul", "kappa"].map((name) => `/lab/frontier-beasts/beast-${name}.glb`),
-          "/models/frontier/beast-wraith.glb",
-          "/models/frontier/beast-cyclops.glb",
-        ];
-        record.checks.push({
-          check: "the requested monster comparison or detail was drawn",
-          ok: (focus === "lineup" ? expected : [expected[focus]]).every((path) => actual?.drawnAssets?.includes(path)),
-          actual: actual?.drawnAssets,
-        });
-      }
-
-      if (scenario.group.startsWith("species-") && focus === "lineup") {
-        const expected = [
-          `/models/frontier/beast-${scenario.species}.glb`,
-          `/lab/frontier-beasts/beast-${scenario.species}.glb`,
-        ];
-        record.checks.push({
-          check: "current and creature study drawn together",
-          ok: expected.every((path) => actual?.drawnAssets.includes(path)),
-          actual: actual?.drawnAssets,
-        });
-      }
       if (focus === "lineup")
         record.checks.push({ check: "every model part was drawn", ok: actual?.drawnParts.length === scenario.models });
       const labels = await b.evaluate(`(() => {
@@ -145,6 +125,7 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         ok: labels.length === expectedLabels && labels.every((label) => label.width > 0 && label.aboveCanvas),
         actual: labels,
       });
+      if (scenario.site) await b.run("select", 'select[aria-label="Site"]', scenario.site);
       if (scenario.band) {
         await b.run("select", 'select[aria-label="Site"]', "3");
         await b.run("select", 'select[aria-label="Beast strength"]', scenario.band);
@@ -158,7 +139,8 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         const p=document.querySelector('[data-after] .mp-plate');
         return { rows: Array.from(p.querySelectorAll('.mp-plate__row')).map(row=>row.textContent), icon:p.querySelector('img')?.dataset.icon, tier:!!p.querySelector('.ui-tier') || /T[123]/.test(p.textContent) };
       })()`);
-      const speciesName = scenario.species[0].toUpperCase() + scenario.species.slice(1);
+      const speciesName =
+        scenario.species === "dark-fey" ? "Dark fey" : scenario.species[0].toUpperCase() + scenario.species.slice(1);
       record.checks.push({
         check: "species title follows site name, with its own icon and no tier badge",
         ok:
@@ -190,10 +172,10 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
         `Array.from(document.querySelectorAll('.beast-icon-studies img')).map(img=>({width:img.getBoundingClientRect().width,loaded:img.complete&&img.naturalWidth>0,meaning:img.dataset.icon}))`,
       );
       record.checks.push({
-        check: "five distinct species paintings decoded at real 20px HUD size",
+        check: "eight distinct species paintings decoded at real 20px HUD size",
         ok:
-          icons.length === 5 &&
-          new Set(icons.map((icon) => icon.meaning)).size === 5 &&
+          icons.length === 8 &&
+          new Set(icons.map((icon) => icon.meaning)).size === 8 &&
           icons.every((icon) => icon.width === 20 && icon.loaded),
         actual: icons,
       });
@@ -203,42 +185,6 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
     }
   }
   if (records.length === 0) throw new Error("No beast proof scenario matched");
-}
-async function proveConcepts(b, out, records, baseUrl) {
-  const record = { name: "weak-concepts", ready: false, presses: [], checks: [] };
-  records.push(record);
-  try {
-    await b.run(
-      "open",
-      `${baseUrl}/lab/models?family=beasts&group=weak-concepts&rendererMode=webgpu-force-webgl`,
-      "--ignore-https-errors",
-    );
-    record.ready = await waitFor(
-      b,
-      `document.querySelectorAll('.beast-concepts img').length===4 && [...document.querySelectorAll('.beast-concepts img')].every(image=>image.complete && image.naturalWidth>0)`,
-      60000,
-    );
-    const names = await b.evaluate(
-      `Array.from(document.querySelectorAll('.beast-concepts strong')).map(node=>node.textContent)`,
-    );
-    record.checks.push({
-      check: "four distinct monster concepts loaded",
-      ok: record.ready && JSON.stringify(names) === JSON.stringify(["Ghoul", "Kappa", "Wraith", "Golem"]),
-      actual: names,
-    });
-    await b.run("screenshot", join(out, "weak-concepts.png"), "--full");
-    await b.run("click", '.beast-concepts a[href*="focus=0"]');
-    record.presses.push({ action: "View model from first concept", status: "led" });
-    const linked = await waitFor(
-      b,
-      `(() => { const node=document.querySelector('[data-lineup-rendered]'); if(!node)return false;const value=JSON.parse(node.dataset.lineupRendered);return document.querySelector('[data-group="weak-options"]')&&value.focus===0&&value.models===4&&value.drawnAssets.includes('/lab/frontier-beasts/beast-ghoul.glb')&&value.calls>0;})()`,
-      60000,
-    );
-    record.checks.push({ check: "concept link opens the actual model in its comparison", ok: linked });
-    await b.run("screenshot", join(out, "concept-to-model.png"));
-  } finally {
-    await b.run("open", "about:blank");
-  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

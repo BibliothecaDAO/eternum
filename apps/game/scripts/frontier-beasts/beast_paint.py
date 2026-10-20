@@ -18,12 +18,13 @@ def apply_paint(obj, painting):
 
 def create_projection_uvs(obj):
     vertical_scale, vertical_offset = bpy.context.scene.get("paintingVertical", (1, 0))
+    horizontal_scale = bpy.context.scene.get("paintingHorizontal", 1)
     for name, center, direction in [("Front paint", 0.25, 1), ("Back paint", 0.75, -1)]:
         layer = obj.data.uv_layers.get(name) or obj.data.uv_layers.new(name=name)
         for loop in obj.data.loops:
             x, _, z = obj.data.vertices[loop.vertex_index].co
             layer.data[loop.index].uv = (
-                center + direction * x / 4,
+                center + direction * x / 4 * horizontal_scale,
                 (0.5 + (z - 0.9) / 2) * vertical_scale + vertical_offset,
             )
 

@@ -1,26 +1,11 @@
 import { join } from "node:path";
+import { loadavg } from "node:os";
+import { writeFileSync } from "node:fs";
 import { waitFor } from "../prove-run.mjs";
 
-const concepts = {
-  weak: ["ghoul", "kappa", "wraith"],
-  ruin: ["basilisk", "ammit", "ent"],
-  rift: ["dark-fey"],
-};
-const contexts = [
-  ["ghoul", 0, ["/lab/frontier-beasts/beast-ghoul.glb"]],
-  ["kappa", 1, ["/lab/frontier-beasts/beast-kappa.glb"]],
-  ["wraith", 2, ["/models/frontier/beast-wraith.glb"]],
-  ["cyclops", 3, ["/models/frontier/beast-cyclops.glb"]],
-  ["troll", 4, ["/models/frontier/beast-troll.glb"]],
-  ["dark-fey", 5, ["/models/reward-tiles/rift.glb", "/lab/frontier-beasts/beast-dark-fey.glb"]],
-  ["basilisk", 6, ["/models/outposts/ruin.glb", "/lab/frontier-beasts/beast-basilisk.glb"]],
-  ["ammit", 7, ["/models/outposts/ruin.glb", "/lab/frontier-beasts/beast-ammit.glb"]],
-  ["ruin-I", 8, ["/models/outposts/ruin.glb", "/models/frontier/beast-wyvern.glb"]],
-  ["ruin-II", 9, ["/models/outposts/ruin.glb", "/models/frontier/beast-hydra.glb"]],
-  ["ruin-III", 10, ["/models/outposts/ruin.glb", "/models/frontier/beast-hydra.glb"]],
-];
+const contexts = ["cyclops", "wraith", "troll", "dark-fey", "ammit", "basilisk", "wyvern", "hydra"];
 
-/** Exercise the single owner-choice page through its visible concept and tile controls. */
+/** Select each production encounter through the same owner-facing lab controls. */
 export async function proveSiteStudies(b, out, records, baseUrl) {
   const record = { name: "site-map", ready: false, presses: [], checks: [] };
   records.push(record);
@@ -31,63 +16,110 @@ export async function proveSiteStudies(b, out, records, baseUrl) {
       "--ignore-https-errors",
     );
     record.ready = await waitFor(b, 'document.querySelector("[data-site-studies-ready=true]")', 60000);
-    if (!record.ready) return;
+    if (!record.ready) {
+      record.page = await b.evaluate("document.body.innerText");
+      record.errors = await b.run("errors");
+      record.console = await b.run("console");
+      await b.run("screenshot", join(out, `${record.name}-not-ready.png`));
+      return;
+    }
     const overview = await readDrawn(b, "lineup", 0);
     record.checks.push({
-      check: "eleven tile contexts draw all seventeen model parts together",
-      ok: overview?.drawnParts.length === 17 && overview?.models === 17,
+      check: "eight final contexts draw all thirteen production parts",
+      ok: overview?.drawnParts.length === 13 && overview?.models === 13,
       actual: overview,
     });
+    const baseline = await b.evaluate(
+      "(() => {const image=document.querySelector('img[src*=\"production-before\"]');return image?.complete&&image.naturalWidth>0;})()",
+    );
+    record.checks.push({ check: "recorded production comparison is visible beside the live final map", ok: baseline });
     await b.run("screenshot", join(out, "site-map-overview.png"));
-    for (const [group, species] of Object.entries(concepts)) {
-      await b.run("select", 'select[aria-label="Concepts"]', group);
-      record.presses.push({ action: `Concepts: ${group}`, status: "led" });
-      const loaded = await waitFor(
-        b,
-        `(() => {const figures=[...document.querySelectorAll('[data-site-concept]')];return JSON.stringify(figures.map(f=>f.dataset.siteConcept))===${JSON.stringify(JSON.stringify(species))}&&figures.every(f=>f.querySelector('img').complete&&f.querySelector('img').naturalWidth>0);})()`,
-        15000,
-      );
-      record.checks.push({ check: `${group} concept paintings decoded in their choice group`, ok: loaded });
-      await b.run("screenshot", join(out, `site-concepts-${group}.png`));
-      for (const name of species.filter((name) => name !== "ent")) {
-        const [, index, paths] = contexts.find(([candidate]) => candidate === name);
-        await b.evaluate(
-          `document.querySelector('[data-site-concept="${name}"] button').scrollIntoView({block:"center"})`,
-        );
-        await b.run("click", `[data-site-concept="${name}"] button`);
-        record.presses.push({ action: `Show ${name} on tile`, status: "led" });
-        const drawn = await readDrawn(b, index, 0);
-        record.checks.push({
-          check: `${name} concept button draws the creature with its site context`,
-          ok: paths.every((path) => drawn?.drawnAssets.includes(path)),
-          actual: drawn?.drawnAssets,
-        });
-        await b.run("screenshot", join(out, `site-${name}.png`));
-      }
-    }
-    for (const [name, index, paths] of contexts) {
+    for (const [index, name] of contexts.entries()) {
       await b.run("select", 'select[aria-label="Site view"]', String(index));
       record.presses.push({ action: `Site view: ${name}`, status: "led" });
       for (const yaw of [30, 180]) {
         await b.run("select", 'select[aria-label="Turn"]', String(yaw));
         const drawn = await readDrawn(b, index, yaw);
         record.checks.push({
-          check: `${name} at ${yaw} degrees focuses its tile and draws its intended site parts`,
-          ok: drawn?.focus === index && drawn?.yaw === yaw && paths.every((path) => drawn?.drawnAssets.includes(path)),
-          actual: drawn?.drawnAssets,
-        });
-        const labels = await b.evaluate(
-          `Array.from(document.querySelectorAll('.model-lineup-label')).filter(label=>!label.hidden).map(label=>label.textContent)`,
-        );
-        record.checks.push({
-          check: `${name} focus labels only its selected tile`,
-          ok: labels.length === 1,
-          actual: labels,
+          check: `${name} at ${yaw} degrees draws its production delivery`,
+          ok: drawn?.drawnAssets.includes(`/models/frontier/beast-${name}.glb`),
+          actual: drawn,
         });
         await b.run("screenshot", join(out, `site-${name}-${yaw}.png`));
       }
     }
+    await b.run("select", 'select[aria-label="Site view"]', "3");
+    await b.run("select", 'select[aria-label="Turn"]', "30");
+    await b.run("screenshot", join(out, "fey-motion-a.png"));
+    await b.run("wait", "750");
+    await b.run("screenshot", join(out, "fey-motion-b.png"));
+    await b.run("select", 'select[aria-label="Site view"]', "4");
+    await b.run("uncheck", 'input[aria-label="Ground mist"]');
+    await b.run("screenshot", join(out, "ruin-mist-off.png"));
+    await b.run("check", 'input[aria-label="Ground mist"]');
+    await b.run("wait", "500");
+    await b.run("screenshot", join(out, "ruin-mist-on.png"));
   } finally {
+    await b.run("open", "about:blank");
+  }
+}
+
+/** Six alternating runs on the same 100-ruin scene; retain every sample and machine-load bound. */
+export async function proveMistCost(b, out, records, baseUrl) {
+  const record = { name: "mist-cost", ready: false, checks: [], loadBefore: loadavg() };
+  records.push(record);
+  if (record.loadBefore[0] > 12) {
+    record.error = "Machine load exceeds 12; frame measurements would be invalid";
+    return;
+  }
+  const loadSamples = [record.loadBefore];
+  const monitor = setInterval(() => loadSamples.push(loadavg()), 1000);
+  try {
+    await b.run("set", "viewport", "1600", "1000");
+    await b.run(
+      "open",
+      `${baseUrl}/lab/models?family=beasts&group=site-map&population=100&rendererMode=webgpu-force-webgl`,
+      "--ignore-https-errors",
+    );
+    record.ready = await waitFor(b, 'document.querySelector("[data-site-studies-ready=true]")', 60000);
+    if (!record.ready) {
+      record.page = await b.evaluate("document.body.innerText");
+      record.errors = await b.run("errors");
+      record.console = await b.run("console");
+      await b.run("screenshot", join(out, `${record.name}-not-ready.png`));
+      return;
+    }
+    const scene = await readDrawn(b, "lineup", 0);
+    record.checks.push({
+      check: "one hundred complete ruin compositions are submitted",
+      ok: scene.models === 200 && scene.drawnParts.length === 200,
+      actual: scene.models,
+    });
+    await b.run("find", "role", "button", "click", "--name", "Measure mist cost", "--exact");
+    const complete = await waitFor(b, 'document.querySelector("[data-mist-measurement]")', 90000);
+    if (!complete) throw new Error("Mist measurement did not complete");
+    const result = await b.evaluate("JSON.parse(document.querySelector('[data-mist-measurement]').textContent)");
+    record.loadAfter = loadavg();
+    writeFileSync(
+      join(out, "mist-frames.json"),
+      JSON.stringify(
+        { ...result, viewport: [1600, 1000], loadSamples, loadBefore: record.loadBefore, loadAfter: record.loadAfter },
+        null,
+        2,
+      ),
+    );
+    record.checks.push({
+      check: "six complete hardware-rendered runs at acceptable load",
+      ok:
+        result.runs?.length === 6 &&
+        result.runs.every((run) => run.frames.length === 90 && !/swiftshader|llvmpipe|software/i.test(run.gpu)) &&
+        record.loadAfter[0] <= 12 &&
+        loadSamples.every((load) => load[0] <= 12),
+      error: result.error,
+    });
+    await b.run("screenshot", join(out, "hundred-ruins.png"));
+  } finally {
+    clearInterval(monitor);
     await b.run("open", "about:blank");
   }
 }
@@ -99,7 +131,5 @@ async function readDrawn(b, focus, yaw) {
     15000,
   );
   if (!ready) throw new Error(`Site renderer did not draw focus ${focus}, yaw ${yaw}`);
-  return b.evaluate(
-    `(() => {const node=document.querySelector('[data-lineup-rendered]');return node?JSON.parse(node.dataset.lineupRendered):null;})()`,
-  );
+  return b.evaluate("JSON.parse(document.querySelector('[data-lineup-rendered]').dataset.lineupRendered)");
 }

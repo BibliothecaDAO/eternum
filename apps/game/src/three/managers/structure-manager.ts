@@ -1,3 +1,4 @@
+import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName } from "@bibliothecadao/types";
 import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
@@ -974,6 +975,8 @@ export class StructureManager {
   }
 
   private createStructureModel(gltf: GLTF, structureType: StructureType, modelPath: string): StructureModel {
+    const frontierKind = frontierModelKind(modelPath);
+    if (frontierKind) return new FrontierModel(gltf, STRUCTURE_INSTANCE_CAPACITY, frontierKind);
     if (modelPath === RiftModelPath) return new RewardTileModel(gltf, STRUCTURE_INSTANCE_CAPACITY);
     if (isSettlementModelPath(modelPath))
       return new SettlementModel(
@@ -1278,7 +1281,7 @@ export class StructureManager {
     const guard =
       (models?.get(frontierBeastModelIndex(structure.frontierBeast.beast))?.height ?? 0) *
       structure.frontierBeast.scale;
-    return Math.max(landmark, guard);
+    return Math.max(landmark, guard + composition.beastY + (structure.frontierBeast.beast === "dark-fey" ? 0.04 : 0));
   }
 
   private getModelForStructure(structure: StructureInfo): StructureModel | undefined {
@@ -1292,7 +1295,7 @@ export class StructureManager {
   private getBaseStructureModelIndex(structure: StructureInfo): number {
     if (structure.clearedSite) return this.structureModelPaths[String(structure.structureType)].length - 1;
     if (structure.frontierBeast)
-      return structure.structureType === StructureType.Beasts
+      return frontierSiteComposition(structure.structureType).baseScale === 0
         ? frontierBeastModelIndex(structure.frontierBeast.beast)
         : FALLEN_REALM_RUIN_MODEL_INDEX;
     if (structure.structureType === StructureType.Hyperstructure) return 0;
@@ -1618,6 +1621,7 @@ export class StructureManager {
           dirtyModels,
           structure.frontierBeast.scale,
           composition.beastZ,
+          composition.beastY,
         ),
       );
     return bindings.filter(isBoundStructureInstance);
@@ -1630,10 +1634,12 @@ export class StructureManager {
     dirtyModels: Set<StructureModel>,
     scale: number,
     z: number,
+    y = 0,
   ): StructureInstanceBinding | undefined {
     const originalScale = this.dummy.scale.clone();
     const originalPosition = this.dummy.position.clone();
     this.dummy.translateZ(z);
+    this.dummy.translateY(y);
     this.dummy.scale.multiplyScalar(scale);
     this.dummy.updateMatrix();
     try {

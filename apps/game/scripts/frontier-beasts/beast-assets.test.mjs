@@ -13,18 +13,6 @@ const deliveries = [
     sourceDirectory: "asset-sources/frontier-beasts/refined",
     maxScale: FRONTIER_BEASTS[species].maxScale,
   })),
-  ...[
-    { species: "wyvern", maxScale: FRONTIER_BEASTS.wyvern.maxScale },
-    { species: "hydra", maxScale: FRONTIER_BEASTS.hydra.maxScale },
-    ...["ghoul", "kappa"].map((species) => ({ species, maxScale: 1 })),
-    ...["basilisk", "ammit"].map((species) => ({ species, maxScale: 1.2 })),
-    { species: "dark-fey", maxScale: 0.75 },
-  ].map(({ species, maxScale }) => ({
-    species,
-    directory: "asset-sources/lab/frontier-beasts",
-    sourceDirectory: "asset-sources/lab/frontier-beasts",
-    maxScale,
-  })),
 ];
 
 it("keeps every pending delivery with its editable source in the lab archive", () => {

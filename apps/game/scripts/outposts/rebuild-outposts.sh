@@ -7,8 +7,8 @@ outpost_assets=("$@")
 if [ ${#outpost_assets[@]} -eq 0 ]; then outpost_assets=(camp village shrine well ruin); fi
 for asset in "${outpost_assets[@]}"; do
   case "$asset" in
-    camp|village|beasts|shrine|well|ruin) ;;
-    *) echo "Unknown outpost: $asset. Choose camp, village, beasts, shrine, well or ruin." >&2; exit 1 ;;
+    camp|village|shrine|well|ruin) ;;
+    *) echo "Unknown outpost: $asset. Choose camp, village, shrine, well or ruin." >&2; exit 1 ;;
   esac
 done
 mkdir -p "$outpost_output/models"

@@ -100,6 +100,9 @@ export const BEAST_NAMES = {
   hydra: "Hydra",
   wraith: "Wraith",
   cyclops: "Cyclops",
+  ammit: "Ammit",
+  basilisk: "Basilisk",
+  "dark-fey": "Dark fey",
 } as const;
 export const VICTORY = "Victory";
 export const ARMY_LOST = "Army lost";

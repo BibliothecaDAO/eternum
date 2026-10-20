@@ -189,7 +189,7 @@ describe("the tile card", () => {
     });
     expect(button("Move")?.disabled).toBe(false);
     expect(button("Attack")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Camp");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
     unmount();
   });
 
@@ -198,7 +198,7 @@ describe("the tile card", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
-    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Camp");
+    expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
     unmount();
   });
 
@@ -334,7 +334,7 @@ describe("the result of the player's attack", () => {
     await act(async () => card.button("Attack")!.click());
     act(() => lands(card.store));
     await act(async () => apply(APPLIED));
-    const result = () => card.host.querySelector<HTMLButtonElement>("button[aria-label^='Camp:']");
+    const result = () => card.host.querySelector<HTMLButtonElement>("button[aria-label^='Troll:']");
     return { ...card, result };
   };
 
@@ -343,9 +343,9 @@ describe("the result of the player's attack", () => {
       battleArrives([1_498, 0], [1_100, 1_028]);
       store.applyFacts(ARMY_GONE as never);
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label="Wyvern 1,100 → 1,028"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     unmount();
   });
 
@@ -354,8 +354,8 @@ describe("the result of the player's attack", () => {
       battleArrives([1_498, 0], [1_100, 1_028]);
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never);
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
-    expect(result()!.querySelector('[aria-label="Wyvern 1,100 → 1,028"]')).not.toBeNull();
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
+    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
     expect(result()!.textContent).not.toContain("+550");
     expect(result()!.querySelector('[aria-label^="XP"]')).toBeNull();
     unmount();
@@ -365,7 +365,7 @@ describe("the result of the player's attack", () => {
     const { result, unmount } = await attackThatLands((store) =>
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never),
     );
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(result()!.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(result()!.textContent).not.toContain("+");
@@ -384,7 +384,7 @@ describe("the result of the player's attack", () => {
       // The card's preview said 550 labor; the record of what the contract paid says 700, and the card says that.
       payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(700) });
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(result()!.textContent).toContain("+700");
     expect(result()!.textContent).not.toContain("550");
@@ -408,7 +408,7 @@ describe("the result of the player's attack", () => {
 
   it("shows a victory's XP alone when no payout record of the clear arrived", async () => {
     const { result, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
-    expect(result()?.getAttribute("aria-label")).toBe("Camp: Victory");
+    expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
     expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
     expect(result()!.textContent).not.toContain("550");
     unmount();
@@ -422,7 +422,7 @@ describe("the result of the player's attack", () => {
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Army is resting");
     // The army ends its day, and the site's guard changes: neither is this attack's doing.
     act(() => store.applyFacts([...ARMY_GONE, gone("Guard", "0x73")] as never));
-    expect(host.querySelector("button[aria-label^='Camp:']")).toBeNull();
+    expect(host.querySelector("button[aria-label^='Troll:']")).toBeNull();
     unmount();
   });
 });

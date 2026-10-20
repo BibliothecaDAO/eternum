@@ -1,5 +1,5 @@
 import "./static-model-lineup.css";
-import { Box3, Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
+import { Color, Matrix4, PerspectiveCamera, Scene, Vector3 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { initializeProceduralCharacterRendererRuntime } from "../../characters/procedural-character-renderer-runtime";
 import { CAMERA_CONFIG, LOCAL_CAMERA_ZOOM } from "../../constants/rendering";
@@ -9,11 +9,13 @@ import { configureRendererColorOutput } from "../../renderer-color-output";
 import { gltfLoader } from "../../utils/utils";
 import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
+import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
+import { RewardTileModel } from "../../rewards/reward-tile-model";
 
 export interface LineupAsset {
   label: string;
   position?: { x: number; z: number };
-  parts: readonly { path: string; scale?: number; z?: number }[];
+  parts: readonly { path: string; scale?: number; z?: number; y?: number }[];
 }
 export interface LineupSettings {
   distance: number;
@@ -43,10 +45,18 @@ export async function mountStaticLineup(
   controls.enableDamping = true;
   controls.minDistance = 3;
   controls.maxDistance = 35;
-  const models: InstancedModel[] = [];
+  const models: Array<InstancedModel | RewardTileModel> = [];
+  const batches = new Map<string, { model: InstancedModel | RewardTileModel; count: number; parts: number[] }>();
   const positions: Vector3[] = [];
   const heights: number[] = [];
-  const parts: { scale: number; z: number; slot: number }[] = [];
+  const parts: {
+    scale: number;
+    z: number;
+    y: number;
+    slot: number;
+    model: InstancedModel | RewardTileModel;
+    index: number;
+  }[] = [];
   container.classList.add("model-lineup");
   const labels = lineup.map((asset) => {
     const label = document.createElement("div");
@@ -71,6 +81,15 @@ export async function mountStaticLineup(
   let last = performance.now();
   let disposed = false;
   let capturePending = true;
+  let sampling:
+    | {
+        remaining: number;
+        gl: WebGL2RenderingContext;
+        frames: number[];
+        resolve: (value: { frames: number[]; calls: number; triangles: number; gpu: string }) => void;
+        reject: (reason: Error) => void;
+      }
+    | undefined;
   const resize = () => {
     const { width, height } = container.getBoundingClientRect();
     if (!width || !height) return;
@@ -82,6 +101,8 @@ export async function mountStaticLineup(
   const dispose = () => {
     if (disposed) return;
     disposed = true;
+    sampling?.reject(new Error("Lab closed during frame measurement"));
+    sampling = undefined;
     cancelAnimationFrame(frame);
     observer.disconnect();
     labels.forEach((label) => label.remove());
@@ -95,13 +116,12 @@ export async function mountStaticLineup(
   const update = (next: LineupSettings) => {
     current = next;
     capturePending = true;
-    models.forEach((model, index) => {
-      const part = parts[index];
+    parts.forEach((part) => {
       const matrix = new Matrix4().makeRotationY((next.yaw * Math.PI) / 180);
       matrix.setPosition(positions[part.slot]);
-      matrix.multiply(new Matrix4().makeTranslation(0, 0, part.z));
+      matrix.multiply(new Matrix4().makeTranslation(0, part.y, part.z));
       matrix.scale(new Vector3(part.scale, part.scale, part.scale));
-      model.setMatrixAt(0, matrix);
+      part.model.setMatrixAt(part.index, matrix);
     });
     const x = next.focus === "lineup" ? 0 : positions[next.focus].x;
     const z = next.focus === "lineup" ? 0 : positions[next.focus].z;
@@ -125,23 +145,42 @@ export async function mountStaticLineup(
       positions.push(new Vector3(x, environment.terrain.sampleSurface(x, z).height, z));
       heights.push(0);
       for (const part of asset.parts) {
-        const gltf = await gltfLoader.loadAsync(part.path);
-        signal.throwIfAborted();
-        heights[slot] = Math.max(heights[slot], new Box3().setFromObject(gltf.scene).max.y * (part.scale ?? 1));
-        const model = new InstancedModel(gltf, 1, false, asset.label);
-        models.push(model);
-        parts.push({ scale: part.scale ?? 1, z: part.z ?? 0, slot });
-        const instance = models.length - 1;
-        model.instancedMeshes.forEach((mesh) => {
-          const afterRender = mesh.onAfterRender;
-          mesh.onAfterRender = (...args) => {
-            afterRender.apply(mesh, args);
-            drawnAssets.add(part.path);
-            drawnParts.add(instance);
-          };
+        let batch = batches.get(part.path);
+        if (!batch) {
+          const gltf = await gltfLoader.loadAsync(part.path);
+          signal.throwIfAborted();
+          const capacity = lineup.flatMap((entry) => entry.parts).filter((entry) => entry.path === part.path).length;
+          const kind = frontierModelKind(part.path);
+          const model = kind
+            ? new FrontierModel(gltf, capacity, kind)
+            : part.path === "/models/reward-tiles/rift.glb"
+              ? new RewardTileModel(gltf, capacity)
+              : new InstancedModel(gltf, capacity, false, asset.label);
+          batch = { model, count: 0, parts: [] };
+          batches.set(part.path, batch);
+          models.push(model);
+          scene.add(model.group);
+          const active = batch;
+          model.instancedMeshes.forEach((mesh) => {
+            const afterRender = mesh.onAfterRender;
+            mesh.onAfterRender = (...args) => {
+              afterRender.apply(mesh, args);
+              drawnAssets.add(part.path);
+              active.parts.forEach((index) => drawnParts.add(index));
+            };
+          });
+        }
+        heights[slot] = Math.max(heights[slot], batch.model.height * (part.scale ?? 1) + (part.y ?? 0));
+        batch.parts.push(parts.length);
+        parts.push({
+          scale: part.scale ?? 1,
+          z: part.z ?? 0,
+          y: part.y ?? 0,
+          slot,
+          model: batch.model,
+          index: batch.count++,
         });
-        model.setCount(1);
-        scene.add(model.group);
+        batch.model.setCount(batch.count);
       }
     }
     update(settings);
@@ -156,15 +195,29 @@ export async function mountStaticLineup(
       drawnAssets.clear();
       drawnParts.clear();
       renderer.render(scene, camera);
+      if (sampling) {
+        sampling.gl.finish();
+        sampling.frames.push(performance.now() - now);
+        if (--sampling.remaining === 0) {
+          const extension = sampling.gl.getExtension("WEBGL_debug_renderer_info");
+          sampling.resolve({
+            frames: sampling.frames,
+            calls: renderer.info.render.calls,
+            triangles: renderer.info.render.triangles,
+            gpu: String(sampling.gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL ?? sampling.gl.RENDERER)),
+          });
+          sampling = undefined;
+        }
+      }
       placeLabels();
       const selectionDrawn =
         current.focus === "lineup"
-          ? drawnParts.size === models.length
+          ? drawnParts.size === parts.length
           : lineup[current.focus].parts.every((part) => drawnAssets.has(part.path));
       if (capturePending && selectionDrawn) {
         container.dataset.lineupRendered = JSON.stringify({
           ...current,
-          models: models.length,
+          models: parts.length,
           drawnAssets: [...drawnAssets],
           drawnParts: [...drawnParts],
           cameraDistance: camera.position.distanceTo(controls.target),
@@ -175,7 +228,25 @@ export async function mountStaticLineup(
       frame = requestAnimationFrame(render);
     };
     render();
-    return { dispose, update, assets: lineup.flatMap((asset) => asset.parts.map((part) => part.path)) };
+    return {
+      dispose,
+      update,
+      setMistVisible(visible: boolean) {
+        models.forEach((model) => {
+          if (model instanceof FrontierModel) model.setMistVisible(visible);
+        });
+      },
+      measureFrames(count: number) {
+        const backend = (renderer as unknown as { backend: { getContext?: () => WebGL2RenderingContext } }).backend;
+        const gl = backend.getContext?.();
+        if (!gl?.finish) return Promise.reject(new Error("Synchronized frame measurement requires the WebGL renderer"));
+        if (sampling) return Promise.reject(new Error("A frame measurement is already running"));
+        return new Promise<{ frames: number[]; calls: number; triangles: number; gpu: string }>((resolve, reject) => {
+          sampling = { remaining: count, gl, frames: [], resolve, reject };
+        });
+      },
+      assets: lineup.flatMap((asset) => asset.parts.map((part) => part.path)),
+    };
   } catch (error) {
     dispose();
     throw error;

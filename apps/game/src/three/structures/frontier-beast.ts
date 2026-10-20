@@ -19,6 +19,9 @@ export const FRONTIER_BEASTS = {
   hydra: { path: "/models/frontier/beast-hydra.glb", lootSurvivorId: 59, lootTier: 2, maxScale: 1.7 },
   wraith: { path: "/models/frontier/beast-wraith.glb", lootSurvivorId: 18, lootTier: 4, maxScale: 1 },
   cyclops: { path: "/models/frontier/beast-cyclops.glb", maxScale: 1 },
+  ammit: { path: "/models/frontier/beast-ammit.glb", lootSurvivorId: 32, lootTier: 2, maxScale: 1.2 },
+  basilisk: { path: "/models/frontier/beast-basilisk.glb", lootSurvivorId: 5, lootTier: 1, maxScale: 1.2 },
+  "dark-fey": { path: "/models/frontier/beast-dark-fey.glb", maxScale: 0.75 },
 } as const;
 const BEAST_ORDER = Object.keys(FRONTIER_BEASTS) as FrontierSpecies[];
 export const FRONTIER_BEAST_PATHS = BEAST_ORDER.map((beast) => FRONTIER_BEASTS[beast].path);
@@ -36,9 +39,9 @@ export function readStandingFrontierBeast(
   return readFrontierBeast(store, gameId, entityId);
 }
 
-/** Landmarks sit behind the beast; a ruin retains its measured courtyard composition. */
+/** Every landmark and guard shares its tile center. The fey clears the rift crown. */
 export function frontierSiteComposition(category: StructureType) {
-  if (category === StructureType.Ruin) return { baseScale: 1, baseZ: 0, beastZ: 0 };
-  if (category === StructureType.Beasts) return { baseScale: 0, baseZ: 0, beastZ: 0 };
-  return { baseScale: 0.5, baseZ: -0.42, beastZ: 0.35 };
+  if (category === StructureType.Ruin) return { baseScale: 1, baseZ: 0, beastZ: 0, beastY: 0 };
+  if (category === StructureType.Rift) return { baseScale: 0.5, baseZ: 0, beastZ: 0, beastY: 0.2 };
+  return { baseScale: 0, baseZ: 0, beastZ: 0, beastY: 0 };
 }

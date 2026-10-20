@@ -154,3 +154,8 @@
  
  					const { geometry, material } = object;
  
+--- a/src/nodes/accessors/Morph.js
++++ b/src/nodes/accessors/Morph.js
+@@ -286 +286 @@
+-		if ( influences ) {
++		if ( influences && influences.value !== null ) {

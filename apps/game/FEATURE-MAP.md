@@ -635,36 +635,31 @@ receipt over native fixture facts.
 
 ## Frontier beast guards
 
-Standing Frontier sites share their beast identity between the map model, hover plate and selected-site card. Ruins keep
-their depth roster; camps and rifts show the same depth beast beside a smaller landmark. Beasts show Cyclops for the
-lowly encounter and Wraith for the stronger encounter. Both draw a Knight T1 count from their depth's preset ranges. The
-initial count preserves their identity after losses. Cleared sites do not show beasts.
+Standing sites share one species identity between model, plate, selected card and history. Roaming Beasts show Cyclops
+for the lowly encounter and Wraith for the stronger encounter. Their inclusive count bands, Knight T1 combat and
+immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show Dark fey
+hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through depth
+III. Cleared sites remove their guard and standing effects.
 
-`/lab/models?family=beasts` shows the five production beasts, including the approved Troll and Cyclops. Wyvern and Hydra
-creature studies have separate comparisons in the local lab, served from `asset-sources/lab/frontier-beasts/`. **Set →
-Ruin depths** (`group=ruins`) shows all four production ruin compositions at their exact runtime scales; **Set** also
-switches to standing-site compositions or roaming beasts; **View**, **Turn** and **Light** inspect them. The footer
-compares the old and new plates at HUD size. Pick a **Site** and, for Beasts, **Beast strength**, then **Select site**
-to inspect its production card. `pnpm --dir apps/game prove:beasts https://127.0.0.1:4218 <evidence-parent>` drives
-these controls, records the rendered parts and icon sizes, captures each result and releases the page. `verify:beasts`
-checks delivered geometry, materials, footprint and source provenance.
-`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports the saved Blender sources without modifying
-production. `verify:fallen-realm` reads the runtime depth table, checks decoded beast/ruin triangles for zero masonry
-contacts and checks both roaming beasts against the tile footprint.
+`/lab/models?family=beasts&group=site-map` opens the final eight encounter contexts on their tiles. View focuses a tile;
+Turn and Light inspect it. The sidebar shows the selected concepts and a recorded screenshot of the previous production
+lineup, so retired deliveries need not remain in the app. Ground mist toggles the production effect for comparison. The
+original ruin masonry remains; low animated mist replaces the removed violet residue surfaces.
 
-Wraith is the owner-selected stronger roaming beast; Cyclops is the lowly encounter. Its model, portrait, plate, panel
-and history use the shared species identity. **Set → Weak monsters · concepts**
-(`/lab/models?family=beasts&group=weak-concepts`) shows Ghoul, Kappa, Wraith and Golem paintings. **View model** opens
-the matching sculpt; **Set → Weak monsters · models** (`/lab/models?family=beasts&group=weak-options`) compares the
-Ghoul and Kappa studies with the shipped Wraith and lowly Cyclops at their runtime scale. Golem remains a concept.
-Wraith's source and painting live with the production beasts; the other studies stay in the lab archive;
-`rebuild.sh <fresh-absolute-directory> creatures` exports every saved creature study. The beast proof also checks the
-four concept images, their model link, and each new model from front and rear.
+`/lab/models?family=beasts` shows all eight production species, all four ruin depths, standing site compositions and
+both roaming beasts. Site, Depth and Beast strength control the real plate and selected card. Select site opens that
+card; species portraits are shown at their actual 20px HUD size. The plate has a species title and strength, with no
+combat-tier badge. The retired Minotaur, Ghoul, Kappa and Golem deliveries and their old choice routes are removed.
 
-The proposed encounter map is together at `/lab/models?family=beasts&group=site-map` (**Site choices** from the beast
-archive). **Concepts** switches between three weak monsters, three surface guardians and the dark fey; **Show on tile**
-focuses a modeled choice in its context. **View → Whole map** restores all eleven tiles; **Turn** and **Light** inspect
-them. The proposed camp is just Troll, the rift keeps its landmark with the hovering dark fey, and the two modeled
-surface guardians keep the shipped ruin. The deeper Wyvern/Hydra compositions use their production paths and scales. Ent
-remains concept-only. This route is a study, not the production encounter resolver. `prove:beasts` checks the concept
-controls and every context from two angles; `verify:assets` includes the new guardians' masonry-clearance tests.
+Scene → 100 ruins (`/lab/models?family=beasts&group=site-map&population=100&rendererMode=webgpu-force-webgl`) batches
+one hundred complete ruin/guardian compositions through the production models. Measure mist cost takes six alternating
+on/off runs, 30 warm-up and 90 sampled frames each, synchronizing WebGL completion. Its result is synchronized frame
+cost, not an FPS claim. The proof refuses timing on machine load above 12 or a software renderer.
+
+`pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the visible lab controls and records
+models, contexts, motion captures, eight HUD portraits, plates and panels. Append `mist` to run the hundred-ruin timing
+comparison separately. `verify:beasts` checks all eight deliveries, budgets and editable-source hashes;
+`verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production scale. All authoring sources
+and paint live in `asset-sources/frontier-beasts/refined/`;
+`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those exact eight packed sources. There is one
+production path per species and no separate study GLB.

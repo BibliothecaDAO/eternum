@@ -86,7 +86,7 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), paid)} onClose={onClose} />,
       ),
     );
-    const card = host.querySelector<HTMLButtonElement>('button[aria-label="Camp: Victory"]')!;
+    const card = host.querySelector<HTMLButtonElement>('button[aria-label="Troll: Victory"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="troops 1,100 → 0"]')).not.toBeNull();
     expect(card.textContent).toContain("+550");
@@ -102,7 +102,7 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 1_318], [1_100, 0]), full)} onClose={() => {}} />,
       ),
     );
-    const card = host.querySelector('button[aria-label="Camp: Victory"]')!;
+    const card = host.querySelector('button[aria-label="Troll: Victory"]')!;
     // The figure is still the reward the record names; the mark says the store could not take all of it.
     expect(card.textContent).toContain("+550");
     const mark = card.querySelector('[aria-label="Store Full"]')!;
@@ -125,7 +125,7 @@ describe("the result card", () => {
         <FightResultCard result={fightResultOf(SENT, record([1_498, 0], [1_100, 1_028]), paid)} onClose={() => {}} />,
       ),
     );
-    const card = host.querySelector('button[aria-label="Camp: Army lost"]')!;
+    const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="XP"]')).toBeNull();
@@ -133,7 +133,7 @@ describe("the result card", () => {
 
   it("shows the lost army alone when nothing is known of the other side", () => {
     act(() => root.render(<FightResultCard result={lostArmyResult(SENT)} onClose={() => {}} />));
-    const card = host.querySelector('button[aria-label="Camp: Army lost"]')!;
+    const card = host.querySelector('button[aria-label="Troll: Army lost"]')!;
     expect(card.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
     expect(card.querySelector('[aria-label^="troops"]')).toBeNull();
     expect(card.textContent).not.toContain("+");

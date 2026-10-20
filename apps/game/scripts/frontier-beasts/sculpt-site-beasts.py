@@ -132,6 +132,10 @@ class SiteBeast(Creature):
                     [0.016, 0.011, 0.001],
                     "horn",
                 )
+        # Broad facial scale ridges survive the map camera and bake into the crown.
+        for i in range(4):
+            z = 1.10 + i * 0.026
+            self.ridge("Central crown shield", [(-0.045, -0.36 + i * 0.025, z), (0.01, -0.39 + i * 0.025, z + 0.02), (0.065, -0.36 + i * 0.025, z)], [0.009, 0.017, 0.009], "skin")
         for i in range(9):
             z = 0.40 + i * 0.073
             y = self.face_y(0, z) - 0.009
@@ -278,6 +282,10 @@ class SiteBeast(Creature):
                     [0.011, 0.001],
                     "horn",
                 )
+        for side in [-1, 1]:
+            for i in range(5):
+                y = -0.35 - i * 0.043
+                self.ridge("Crocodile muzzle plate", [(side * 0.025, y, 0.956 - i * 0.01), (side * 0.072, y - 0.01, 0.95 - i * 0.01), (side * 0.12, y, 0.91 - i * 0.008)], [0.010, 0.015, 0.005], "skin")
         for ring in range(5):
             z = 0.48 + ring * 0.064
             radius = 0.20 - ring * 0.014
@@ -503,6 +511,12 @@ class SiteBeast(Creature):
             False,
             12,
         )
+
+    def finish(self):
+        if self.species == "ammit":
+            bpy.context.scene["paintingVertical"] = (1.31368, 0.0268)
+            bpy.context.scene["paintingHorizontal"] = 1.348
+        super().finish()
 
     def paint_anatomy(self, color, vertex):
         x, y, z = vertex.co

@@ -47,3 +47,18 @@
     grid-template-columns: minmax(0, 1fr) 220px;
   }
 }
+
+.frontier-site-baseline {
+  display: block;
+  position: relative;
+  height: 100px;
+  overflow: hidden;
+}
+.frontier-site-lab .frontier-site-baseline img {
+  position: absolute;
+  width: 320%;
+  max-width: none;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}

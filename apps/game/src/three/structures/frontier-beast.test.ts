@@ -14,6 +14,7 @@ import {
   frontierBeast,
   frontierBeastModelIndex,
   readStandingFrontierBeast,
+  frontierSiteComposition,
 } from "./frontier-beast";
 
 const DEPTH_BOUNDS = [
@@ -85,7 +86,7 @@ describe("Frontier guard identity", () => {
   });
 
   it("keeps the shipped Ruin progression and measured scales", () => {
-    expect([0, 1, 2, 3].map((depth) => frontierBeast(depth).name)).toEqual(["Troll", "Wyvern", "Hydra", "Hydra"]);
+    expect([0, 1, 2, 3].map((depth) => frontierBeast(depth).name)).toEqual(["Ammit", "Basilisk", "Wyvern", "Hydra"]);
     for (const { beast, scale } of FALLEN_REALM_DEPTHS)
       expect(scale).toBeLessThanOrEqual(FRONTIER_BEASTS[beast].maxScale);
     expect(() => frontierBeast(4)).toThrow("No Frontier beast");
@@ -95,13 +96,29 @@ describe("Frontier guard identity", () => {
     "uses the same live identity to select model and label for site %s",
     (category) => {
       const identity = readStandingFrontierBeast(facts(category, 1), 1, 9)!;
-      expect(identity.name).toBe("Wyvern");
+      expect(identity.name).toBe(
+        category === StructureType.Camp ? "Troll" : category === StructureType.Rift ? "Dark fey" : "Basilisk",
+      );
       expect(getStructureModelPaths()[category][frontierBeastModelIndex(identity.beast)]).toBe(
         FRONTIER_BEASTS[identity.beast].path,
       );
       expect(readStandingFrontierBeast(facts(category, 1, 325, 0, true), 1, 9)).toBeUndefined();
     },
   );
+  it.each([0, 1, 2, 3])("keeps camps beast-only and rifts fey-guarded at depth %s", (depth) => {
+    expect(readStandingFrontierBeast(facts(StructureType.Camp, depth), 1, 9)).toEqual({
+      beast: "troll",
+      name: "Troll",
+      scale: 0.85,
+    });
+    expect(frontierSiteComposition(StructureType.Camp).baseScale).toBe(0);
+    expect(readStandingFrontierBeast(facts(StructureType.Rift, depth), 1, 9)).toEqual({
+      beast: "dark-fey",
+      name: "Dark fey",
+      scale: 0.75,
+    });
+    expect(frontierSiteComposition(StructureType.Rift)).toEqual({ baseScale: 0.5, baseZ: 0, beastZ: 0, beastY: 0.2 });
+  });
   it.each(DEPTH_BOUNDS.map((bounds, depth) => ({ depth, bounds })))(
     "keeps both ranged encounters' identities at depth $depth through casualties",
     ({ depth, bounds }) => {
@@ -145,16 +162,25 @@ describe("Frontier guard identity", () => {
       "without depth rules",
     );
   });
-  it("has exactly five active species with distinct model and portrait deliveries", () => {
-    expect(Object.keys(FRONTIER_BEASTS)).toEqual(["troll", "wyvern", "hydra", "wraith", "cyclops"]);
-    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(5);
+  it("has exactly eight active species with distinct model and portrait deliveries", () => {
+    expect(Object.keys(FRONTIER_BEASTS)).toEqual([
+      "troll",
+      "wyvern",
+      "hydra",
+      "wraith",
+      "cyclops",
+      "ammit",
+      "basilisk",
+      "dark-fey",
+    ]);
+    expect(new Set(Object.values(FRONTIER_BEASTS).map((beast) => beast.path)).size).toBe(8);
     expect(
       new Set(
         (Object.keys(FRONTIER_BEASTS) as (keyof typeof FRONTIER_BEASTS)[]).map(
           (beast) => iconDefinition(beastMeaning(beast)).art,
         ),
       ).size,
-    ).toBe(5);
+    ).toBe(8);
   });
   it("does not turn ordinary neutral holdings into Frontier beasts", () => {
     expect(readStandingFrontierBeast(without(facts(StructureType.Camp), "ExpeditionSite"), 1, 9)).toBeUndefined();

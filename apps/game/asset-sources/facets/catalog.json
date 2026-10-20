@@ -3207,6 +3207,36 @@
         "kind": "painted",
         "sha256": "f5b1cc00c9a6c055b8a47bac1a2e28da61f18533cc9352005feb84dd140562de"
       }
+    },
+    {
+      "id": "beast-ammit",
+      "label": "Ammit",
+      "family": "Beasts",
+      "prompt": "prompts/beast-ammit.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "2253b85d67ee33bceb93e52723b962848eed387b177113980a661b6eededd304"
+      }
+    },
+    {
+      "id": "beast-basilisk",
+      "label": "Basilisk",
+      "family": "Beasts",
+      "prompt": "prompts/beast-basilisk.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "6f96faad2b3a0c494f2eb7e2454674f37c3021ef4925c8b20cc21941a5104538"
+      }
+    },
+    {
+      "id": "beast-dark-fey",
+      "label": "Dark fey",
+      "family": "Beasts",
+      "prompt": "prompts/beast-dark-fey.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "fb42992e25b5433cef42aa42b63724029db28d34473e55a6b3938556f77e66c5"
+      }
     }
   ]
 }
