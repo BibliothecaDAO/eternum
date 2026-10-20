@@ -79,7 +79,7 @@ const PlateAt = ({
 }) => (
   <div className="mp !static !overflow-visible">
     <div className="mp-at !static" data-relation={plate.relation} data-selected={selected}>
-      {open || selected ? <Plate plate={plate} view={selected ? "selected" : "open"} /> : <Token plate={plate} />}
+      {open ? <Plate plate={plate} /> : <Token plate={plate} />}
     </div>
   </div>
 );

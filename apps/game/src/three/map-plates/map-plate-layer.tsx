@@ -7,7 +7,6 @@ import "./map-plates.css";
 import { hudColumnRects } from "../utils/labels/hud-clearance";
 import { placePlates, plateSize, type OrderLineAsk, type PlateThing } from "./map-plate-layout";
 import type { MapPlate } from "./map-plate-model";
-import type { PlateView } from "./map-plate-rows";
 import { Token, tokenSize } from "./map-plate-token";
 import { Plate } from "./map-plates";
 
@@ -50,14 +49,16 @@ interface PlateEntry {
    * never reopened at the smaller estimate it outgrew. A content change makes a new entry; a web font loading
    * estimates them afresh.
    */
-  sizes: Record<PlateView | "token", { width: number; height: number }>;
+  sizes: Record<LabelView, { width: number; height: number }>;
 }
+
+/** How a thing is drawn: its token at rest, or its plate opened in the token's place. */
+type LabelView = "token" | "open";
 
 /** A plate's sizes before any is drawn, from its words' measure. */
 const estimates = (plate: MapPlate): PlateEntry["sizes"] => ({
   token: tokenSize(plate),
-  open: plateSize(plate, "open"),
-  selected: plateSize(plate, "selected"),
+  open: plateSize(plate),
 });
 
 /** How much a thing's place is worth: yours, then what threatens you. */
@@ -72,8 +73,7 @@ const SCREEN_TOP = 56;
 /**
  * The map's labels over the world renderer (map labels, the owner's plan D of 2026-10-19: "icons everywhere, full plate
  * on hover"): one DOM layer under the HUD, one React root for their content, and per frame only their screen positions,
- * written straight to each element. Every thing is its token (map-plate-token.tsx), right above it; hovered or selected,
- * its full plate (map-plates.tsx) replaces the token in place, and the order line stands beside its tile (`placePlates`).
+ * written straight to each element. Every thing is its token (map-plate-token.tsx), right above it; hovered, its full plate (map-plates.tsx) replaces the token in place, and the order line stands beside its tile (`placePlates`).
  * The managers decide which things carry a label (the zoom band's gate); the layer decides only where each stands.
  */
 export class MapPlateLayer {
@@ -83,7 +83,9 @@ export class MapPlateLayer {
   private readonly elements = new Map<string, HTMLDivElement>();
   private hovered: string | null = null;
   private selected: ID | null = null;
-  /** Things hovered or selected whose plate the layout could not open clear of the others: they stay their token. */
+  /** The hovered thing as it was selected: it rests until the pointer leaves it, and opens on the next hover. */
+  private restingHover: string | null = null;
+  /** A thing hovered whose plate the layout could not open clear of the others: it stays its token. */
   private closed = new Set<string>();
   private orderLineAsk: OrderLineAsk | null = null;
   private orderLineAt: { x: number; y: number } | null = null;
@@ -148,10 +150,16 @@ export class MapPlateLayer {
     return ask && this.orderLineAt;
   }
 
-  /** The selected thing's plate stays open, ringed in gold. */
+  /**
+   * The selected thing's token is ringed in gold, and goes back to rest: its detail is the HUD's panel, so its plate
+   * opens only while it is hovered, as any thing's (owner, 20 October 2026: "on select it goes back to the rest state
+   * and we just open up a detail panel"). Selected under the pointer, it rests too, until the pointer leaves it.
+   */
   public setSelected(entityId: ID | null): void {
     if (this.selected === entityId) return;
     this.selected = entityId;
+    const hovered = this.hovered === null ? undefined : this.entries.get(this.hovered);
+    if (entityId !== null && hovered?.entityId === entityId) this.restingHover = this.hovered;
     this.invalidate();
   }
 
@@ -246,17 +254,18 @@ export class MapPlateLayer {
   private setHovered(key: string | null): void {
     if (this.hovered === key) return;
     this.hovered = key;
+    // The pointer left the thing it selected: its next hover opens it.
+    if (key !== this.restingHover) this.restingHover = null;
     this.invalidate();
   }
 
-  /** How a thing asks to be drawn: its plate selected (which hovering elsewhere never closes) or hovered; else its token. */
-  private askedViewOf(entry: PlateEntry): PlateView | "token" {
-    if (entry.entityId === this.selected) return "selected";
-    return entry.key === this.hovered ? "open" : "token";
+  /** How a thing asks to be drawn: its plate while it is hovered (not as it was selected), else its token. */
+  private askedViewOf(entry: PlateEntry): LabelView {
+    return entry.key === this.hovered && entry.key !== this.restingHover ? "open" : "token";
   }
 
   /** How a thing is drawn: as it asks, but its token where the layout could not open its plate clear of the others. */
-  private viewOf(entry: PlateEntry): PlateView | "token" {
+  private viewOf(entry: PlateEntry): LabelView {
     return this.closed.has(entry.key) ? "token" : this.askedViewOf(entry);
   }
 
@@ -309,7 +318,7 @@ export class MapPlateLayer {
    * A thing's size in a view, as the layout weighs it: as drawn when its element shows that view now (the layout keeps
    * what is drawn apart, not an estimate of it), else as it was last drawn, else its estimate (`PlateEntry.sizes`).
    */
-  private sizeOf(entry: PlateEntry, view: PlateView | "token"): { width: number; height: number } {
+  private sizeOf(entry: PlateEntry, view: LabelView): { width: number; height: number } {
     const element = this.elements.get(entry.key);
     const drawn = element?.dataset.view === view ? element.firstElementChild : null;
     if (drawn instanceof HTMLElement && drawn.offsetWidth > 0)
@@ -331,7 +340,7 @@ export class MapPlateLayer {
         token: this.sizeOf(entry, "token"),
         opened: asked === "token" ? undefined : this.sizeOf(entry, asked),
         priority: RELATION_PRIORITY[entry.plate.relation] + KIND_PRIORITY[entry.plate.kind],
-        openRank: asked === "selected" ? 2 : asked === "open" ? 1 : 0,
+        openRank: asked === "open" ? 1 : 0,
       };
     });
     const { spots, orderLine, closed } = placePlates(
@@ -367,7 +376,7 @@ const LabelSlot = memo(function LabelSlot({
   register,
 }: {
   entry: PlateEntry;
-  view: PlateView | "token";
+  view: LabelView;
   selected: boolean;
   register: (key: string, element: HTMLDivElement | null) => void;
 }) {
@@ -381,7 +390,7 @@ const LabelSlot = memo(function LabelSlot({
       data-selected={selected}
       style={{ display: "none", zIndex: view === "token" ? 1 : 5 }}
     >
-      {view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} view={view} />}
+      {view === "token" ? <Token plate={entry.plate} /> : <Plate plate={entry.plate} />}
     </div>
   );
 });

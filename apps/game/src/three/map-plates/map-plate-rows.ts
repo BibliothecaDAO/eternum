@@ -24,30 +24,23 @@ export type PlateSegment =
 type PlateRow = readonly PlateSegment[];
 
 /**
- * How a plate is drawn, opened in its token's place: its tile hovered, or it selected. A selected army of the player's
- * own leaves out "player | home": the player knows it is theirs (owner, map labels 2026-10-19).
- */
-export type PlateView = "open" | "selected";
-
-/**
  * What a plate says opened, row by row (the owner's rounds 5 and 6 of the map labels, the sheet's round 3), at most
  * three, from the most important fact down. No id anywhere. At rest a thing is its token (map-plate-token.tsx).
  *
  * - An army: "player | home realm" as on that realm's plate ("clientlane | Stolsli"), then its troops, then its stamina
- *   on its own row, the bar with its exact "84/150" (owner, map labels 2026-10-18). The player's own army, selected, is
- *   its troops and stamina alone.
+ *   on its own row, the bar with its exact "84/150" (owner, map labels 2026-10-18).
  * - A realm or a hyperstructure: "player | name", its guard slots in attack order, each with its stamina under it, and
  *   a row of troops on their way, each time before its troops. In a game with no guard slots (Frontier) a realm has no
  *   guard to tell, so no guard row: nobody can attack it (owner, map labels 2026-10-19).
  * - A camp or a rift: its owner, its lore name and kind, and its guard with what it holds beside it.
  */
-export const plateRows = (plate: MapPlate, view: PlateView): PlateRow[] => {
-  if (plate.kind === "army") return armyRows(plate, view === "selected" && plate.relation === "own");
+export const plateRows = (plate: MapPlate): PlateRow[] => {
+  if (plate.kind === "army") return armyRows(plate);
   return plate.named ? placeRows(plate) : siteRows(plate);
 };
 
-const armyRows = (plate: ArmyPlate, mine: boolean): PlateRow[] => [
-  ...(mine ? [] : [whose(plate.owner, plate.homeName)]),
+const armyRows = (plate: ArmyPlate): PlateRow[] => [
+  whose(plate.owner, plate.homeName),
   [{ kind: "troops", troops: plate.troops }],
   ...(plate.stamina ? [[{ kind: "stamina", ...plate.stamina } as const]] : []),
 ];

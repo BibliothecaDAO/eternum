@@ -4,16 +4,16 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 
 import { type MapPlate, type PlateTroops } from "./map-plate-model";
-import { plateRows, type PlateSegment, type PlateView } from "./map-plate-rows";
+import { plateRows, type PlateSegment } from "./map-plate-rows";
 
 /**
  * A map plate (the owner's pick, map-labels rounds 2 to 5), opened in its token's place: the rows `plateRows` says, on
  * the HUD panel's surface. A painting only for a troop stack, where it reads faster than a word; everything else said
  * in words.
  */
-export const Plate = ({ plate, view }: { plate: MapPlate; view: PlateView }) => (
+export const Plate = ({ plate }: { plate: MapPlate }) => (
   <div className="mp-plate" data-open="true">
-    {plateRows(plate, view).map((row, index) => (
+    {plateRows(plate).map((row, index) => (
       <div key={index} className="mp-plate__row">
         {row.map((segment, at) => (
           <Segment key={at} segment={segment} />

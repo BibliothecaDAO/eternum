@@ -140,7 +140,7 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(plateOf("1,321")!.style.display).toBe("");
   });
 
-  it("opens the hovered thing's plate in its token's place, and keeps the selected one open, ringed", async () => {
+  it("opens the hovered thing's plate in its token's place; a selected one rests as its token, ringed", async () => {
     const structures = layer.createScope("structure");
     structures.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate: realm });
     await frame();
@@ -155,7 +155,7 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(isOpen("Niziz")).toBe(true);
     expect(plateOf("Niziz")!.querySelector(".mp-token")).toBeNull();
     expect(plateOf("Niziz")!.textContent).toContain("›");
-    const size = plateSize(realm, "open");
+    const size = plateSize(realm);
     const plate = placeOf(plateOf("Niziz")!);
     // On the token's foot, its middle over the token's (to the pixel each was rounded to).
     expect(Math.abs(plate.x + size.width / 2 - (drawnToken.x + drawnToken.width / 2))).toBeLessThanOrEqual(1);
@@ -166,13 +166,55 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     expect(container.querySelector(".mp-token")).not.toBeNull();
     expect(container.querySelector('[data-open="true"]')).toBeNull();
 
+    // Selected, it goes back to rest: its token, ringed; its detail is the HUD's panel.
     layer.setSelected(1);
+    await frame();
+    expect(container.querySelector('[data-open="true"]')).toBeNull();
+    expect(container.querySelector<HTMLElement>(".mp-at")!.dataset).toMatchObject({ view: "token", selected: "true" });
+    // Hovered again, it opens, still ringed.
+    structures.setHover(1);
     await frame();
     expect(isOpen("Niziz")).toBe(true);
     expect(plateOf("Niziz")!.dataset.selected).toBe("true");
   });
 
-  it("keeps the selected army's plate open, with its home, while another tile is hovered", async () => {
+  // The owner's gesture, in both modes' one layer: point at a thing (its plate opens), click it with the pointer still
+  // on it (it goes back to rest), then leave it and come back (it opens again).
+  for (const [namespace, plate] of [
+    ["structure", realm],
+    ["army", army],
+  ] as const) {
+    it(`rests a hovered ${namespace} once selected while the pointer stays on it, and opens it again on the next hover`, async () => {
+      const scope = layer.createScope(namespace);
+      scope.setLabel({ entityId: 1, position: new Vector3(0, 0, 0), plate });
+      // The thing's one label, and whether its plate is open.
+      const label = () => container.querySelector<HTMLElement>(".mp-at")!;
+      const opened = () => label().querySelector('[data-open="true"]') !== null;
+      scope.setHover(1);
+      await frame();
+      expect(opened()).toBe(true);
+
+      layer.setSelected(1);
+      await frame();
+      expect(opened()).toBe(false);
+      expect(label().dataset).toMatchObject({ view: "token", selected: "true" });
+      // The pointer moves on the same thing: it stays at rest.
+      scope.setHover(1);
+      await frame();
+      expect(opened()).toBe(false);
+
+      // It leaves, and comes back: the plate opens, still ringed.
+      scope.clearHover();
+      await frame();
+      expect(opened()).toBe(false);
+      scope.setHover(1);
+      await frame();
+      expect(opened()).toBe(true);
+      expect(label().dataset.selected).toBe("true");
+    });
+  }
+
+  it("leaves a selected army at rest while another tile is hovered, and opens its plate, home and stamina, on hover", async () => {
     const armies = layer.createScope("army");
     const structures = layer.createScope("structure");
     armies.setLabel({
@@ -182,45 +224,20 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     });
     structures.setLabel({ entityId: 1, position: new Vector3(3, 0, 0), plate: realm });
     layer.setSelected(2);
-    await frame();
-    expect(isOpen("clientlane")).toBe(true);
-    expect(plateOf("clientlane")!.textContent).toContain("Stolsli");
-
     structures.setHover(1);
     await frame();
     expect(isOpen("Niziz")).toBe(true);
-    expect(isOpen("clientlane")).toBe(true);
+    expect(container.querySelectorAll('[data-open="true"]')).toHaveLength(1);
+
+    structures.clearHover();
+    armies.setHover(2);
+    await frame();
+    expect(plateOf("clientlane")!.textContent).toContain("Stolsli");
     // Its stamina on its own row under its troops: three rows, the last its exact reading.
     const rows = [...plateOf("clientlane")!.querySelectorAll(".mp-plate__row")];
     expect(rows).toHaveLength(3);
     expect(rows[2].textContent).toBe("60/120");
     expect(rows[2].querySelector(".mp-plate__meter")).not.toBeNull();
-
-    structures.clearHover();
-    await frame();
-    expect(container.querySelectorAll('[data-open="true"]')).toHaveLength(1);
-    expect(isOpen("clientlane")).toBe(true);
-  });
-
-  it("leaves out 'player | home' on the player's own army while selected, not while its tile is hovered", async () => {
-    const armies = layer.createScope("army");
-    armies.setLabel({
-      entityId: 2,
-      position: new Vector3(0, 0, 0),
-      plate: { ...army, relation: "own", owner: "djizus" },
-    });
-    armies.setHover(2);
-    await frame();
-    expect(plateOf("1,321")!.textContent).toContain("djizus");
-
-    armies.clearHover();
-    layer.setSelected(2);
-    await frame();
-    // Its troops, then its stamina: two rows.
-    const rows = [...plateOf("1,321")!.querySelectorAll(".mp-plate__row")].map((row) => row.textContent);
-    expect(rows).toHaveLength(2);
-    expect(rows[1]).toBe("60/120");
-    expect(plateOf("1,321")!.textContent).not.toContain("djizus");
   });
 
   it("drops the labels of things no longer placed, and only its own scope's", async () => {
@@ -411,8 +428,8 @@ describe("a plate's drawn size, as the layer weighs it frame after frame (review
    * wider than the plate's estimate (room for it and its 6px gaps, with 1px over), the plate drawn `extra` px wider than
    * that estimate and its token 74×50. Each frame passes RELAYOUT_MS, so every frame lays out again.
    */
-  const stage = (view: "selected" | "open", extra: number) => {
-    const estimate = plateSize(ownArmy, view);
+  const stage = (extra: number) => {
+    const estimate = plateSize(ownArmy);
     const drawn = { width: estimate.width + extra, height: estimate.height };
     for (const [property, value] of [
       ["offsetWidth", (element: HTMLElement) => (element.classList.contains("mp-token") ? 74 : drawn.width)],
@@ -460,7 +477,7 @@ describe("a plate's drawn size, as the layer weighs it frame after frame (review
       for (let index = 0; index < count; index += 1) views.push(await frame());
       return views;
     };
-    const ask = () => (view === "selected" ? layer.setSelected(1) : scope.setHover(1));
+    const ask = () => scope.setHover(1);
     return { frames, ask, columns };
   };
 
@@ -468,32 +485,30 @@ describe("a plate's drawn size, as the layer weighs it frame after frame (review
     for (const undo of restore.splice(0).reverse()) await undo();
   });
 
-  for (const view of ["selected", "open"] as const) {
-    it(`keeps a ${view} plate that is drawn too wide for its place closed, frame after frame, on a still map`, async () => {
-      const { frames, ask } = stage(view, 2);
-      await frames(2);
-      ask();
-      // It opens once at its estimate, is drawn 2px wider, and stays its token from then on: no flicker, no redraws.
-      const views = await frames(10);
-      expect(views.slice(2)).toEqual(Array(8).fill("token"));
-      expect(views.filter((shown, index) => index > 0 && shown !== views[index - 1]).length).toBeLessThanOrEqual(1);
-    });
+  it("keeps a hovered plate that is drawn too wide for its place closed, frame after frame, on a still map", async () => {
+    const { frames, ask } = stage(2);
+    await frames(2);
+    ask();
+    // It opens once at its estimate, is drawn 2px wider, and stays its token from then on: no flicker, no redraws.
+    const views = await frames(10);
+    expect(views.slice(2)).toEqual(Array(8).fill("token"));
+    expect(views.filter((shown, index) => index > 0 && shown !== views[index - 1]).length).toBeLessThanOrEqual(1);
+  });
 
-    it(`keeps a ${view} plate that fits open, frame after frame`, async () => {
-      const { frames, ask } = stage(view, 0);
-      await frames(2);
-      ask();
-      expect(await frames(10)).toEqual(Array(10).fill(view));
-    });
-  }
+  it("keeps a hovered plate that fits open, frame after frame", async () => {
+    const { frames, ask } = stage(0);
+    await frames(2);
+    ask();
+    expect(await frames(10)).toEqual(Array(10).fill("open"));
+  });
 
   it("opens a plate it closed once the room it needs is there", async () => {
-    const { frames, ask, columns } = stage("selected", 2);
+    const { frames, ask, columns } = stage(2);
     await frames(2);
     ask();
     expect((await frames(6)).at(-1)).toBe("token");
     // The HUD's columns go: the plate is weighed at its drawn size, which now fits.
     columns.forEach((column) => column.remove());
-    expect(await frames(4)).toEqual(Array(4).fill("selected"));
+    expect(await frames(4)).toEqual(Array(4).fill("open"));
   });
 });

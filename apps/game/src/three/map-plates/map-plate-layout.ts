@@ -2,7 +2,7 @@ import { formatExact } from "@bibliothecadao/types";
 import { CLASSIC_HUD_FONTS, HUD_TYPE } from "@/tokens";
 
 import { type MapPlate } from "./map-plate-model";
-import { plateRows, type PlateSegment, type PlateView } from "./map-plate-rows";
+import { plateRows, type PlateSegment } from "./map-plate-rows";
 
 /** A rectangle on screen, in CSS pixels from the map's top left. */
 export interface Rect {
@@ -379,9 +379,9 @@ const segmentWidth = (segment: PlateSegment): number => {
   }
 };
 
-/** A plate's size opened (hovered, or selected), from the rows it draws. */
-export const plateSize = (plate: MapPlate, view: PlateView): Size => {
-  const rows = plateRows(plate, view);
+/** A plate's size opened (its thing hovered), from the rows it draws. */
+export const plateSize = (plate: MapPlate): Size => {
+  const rows = plateRows(plate);
   const width = Math.max(
     ...rows.map((row) => row.reduce((sum, segment) => sum + segmentWidth(segment), 0) + READING_GAP * (row.length - 1)),
   );

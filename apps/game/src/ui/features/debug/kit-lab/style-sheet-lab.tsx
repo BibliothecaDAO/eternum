@@ -1558,7 +1558,7 @@ const PlateAt = ({
 }) => (
   <div className="mp !static !overflow-visible">
     <div className="mp-at !static" data-relation={plate.relation} data-selected={selected}>
-      {open || selected ? <Plate plate={plate} view={selected ? "selected" : "open"} /> : <Token plate={plate} />}
+      {open ? <Plate plate={plate} /> : <Token plate={plate} />}
     </div>
   </div>
 );
@@ -1566,12 +1566,12 @@ const PlateAt = ({
 const PlatesSection = () => (
   <Element
     name="Map plate"
-    rule="At rest every thing is its token: a disk in its side's colour, then its tier and count, a site's holding, an army's stamina bar; undefended, a dashed ring. Hovered or selected, its plate opens in the token's place, at most three rows, never an id. An army: player | home, then troops, then its stamina bar and exact x/y. A realm: player | name, its guard slots with each one's stamina, its arrivals (time first). A Frontier realm: player | name alone, since nobody can attack it. A camp or rift: its owner, its lore name and kind, its guard and what it holds."
+    rule="At rest every thing is its token: a disk in its side's colour, then its tier and count, a site's holding, an army's stamina bar; undefended, a dashed ring. Selected, its token is ringed in gold and stays at rest: its detail is the HUD's panel. Hovered, its plate opens in the token's place, at most three rows, never an id. An army: player | home, then troops, then its stamina bar and exact x/y. A realm: player | name, its guard slots with each one's stamina, its arrivals (time first). A Frontier realm: player | name alone, since nobody can attack it. A camp or rift: its owner, its lore name and kind, its guard and what it holds."
     sheet={
       <div className="flex flex-wrap items-end gap-4">
         <PlateAt plate={ARMY} />
         <PlateAt plate={ARMY} open />
-        <PlateAt plate={REALM} />
+        <PlateAt plate={REALM} selected />
         <PlateAt plate={REALM} open selected />
         <PlateAt plate={RIFT} />
         <PlateAt plate={RIFT} open />

@@ -148,7 +148,7 @@ it("names a Frontier guard by its beast while retaining its combat stack and sit
   expect(plate.icon).toBe("beast-wyvern");
   expect(plate.place).toBe(siteName(29));
   // Opened: its place and kind above, the species as its title (at rest it is its token, the species' portrait).
-  expect(plateRows(plate, "open").slice(0, 2)).toEqual([
+  expect(plateRows(plate).slice(0, 2)).toEqual([
     [{ kind: "owner", text: `${siteName(29)} Ruin` }],
     [{ kind: "title", text: "Wyvern" }],
   ]);

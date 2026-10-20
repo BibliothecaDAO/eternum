@@ -209,7 +209,7 @@ export function FrontierBeastLab() {
           </div>
           <div data-after>
             <small>Selected plate, and its token at rest</small>
-            <Plate plate={plate} view="open" />
+            <Plate plate={plate} />
             <Token plate={plate} />
           </div>
           <div className="beast-icon-studies">
