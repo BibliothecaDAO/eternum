@@ -4,6 +4,40 @@ import { closingFrontierDays, replayWithFrontierDays } from "./frontier-day-rank
 import type { FoldRow, RpcBlockWithReceipts } from "../types";
 import { receipt, rowEvent, rulesEvent, seedDerivedRows, setup, structureValue } from "./fixtures";
 import { WorldFold } from "../world-fold";
+import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
+import { encodeMembers } from "./serde";
+import { manifest, schema } from "./fixtures";
+
+function openedChest(owner: number, amount: number) {
+  const layout = schema.games.events.find((event) => event.name === "StoryEvent")!;
+  const values = {
+    version: 2,
+    game_id: 1,
+    owner: new CairoOption(CairoOptionVariant.Some, owner),
+    entity_id: new CairoOption(CairoOptionVariant.Some, 7),
+    tx_hash: 85,
+    timestamp: start,
+    story: new CairoCustomEnum({
+      RewardChestOpened: { explorer_id: 7, structure_id: 1, coord: { alt: false, x: 40, y: 12 }, amount },
+    }),
+  };
+  return {
+    from_address: manifest.world.address,
+    keys: [
+      ...layout.prefix,
+      ...encodeMembers(
+        schema,
+        layout.members.filter((member) => member.kind === "key"),
+        values,
+      ),
+    ],
+    data: encodeMembers(
+      schema,
+      layout.members.filter((member) => member.kind === "data"),
+      values,
+    ),
+  };
+}
 
 const start = 1800000000;
 const calendar = { seed: 42n, startMainAt: start, dayUnitSeconds: 3600 };
@@ -94,11 +128,19 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
   );
   const end = dayOf(calendar, start)!.end;
   const blocks = new Map<number, RpcBlockWithReceipts>([
-    [10, { block_number: 10, timestamp: end - 1, transactions: [] }],
+    [10, { block_number: 10, timestamp: end - 2, transactions: [] }],
     [
       11,
       {
         block_number: 11,
+        timestamp: end - 1,
+        transactions: [{ transaction: { type: "INVOKE" }, receipt: receipt([openedChest(1, 50), openedChest(1, 0)]) }],
+      },
+    ],
+    [
+      12,
+      {
+        block_number: 12,
         timestamp: end,
         transactions: [
           {
@@ -133,12 +175,19 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
       },
     },
     fromBlock: 11,
-    toBlock: 11,
+    toBlock: 12,
   };
   const replay = await replayWithFrontierDays(native, history, input);
   expect(replay.frontierDays[0]!.entries).toEqual([{ address: "0x1", structure_id: "1", rank: 1 }]);
   expect(history.frontierHistory).toHaveBeenCalledWith("1", 10);
-  expect(history.appendEvents).toHaveBeenCalledWith([], 11, replay.frontierDays);
+  expect(history.appendEvents).toHaveBeenCalledWith(
+    [
+      expect.objectContaining({ model: expect.objectContaining({ name: "StoryEvent" }) }),
+      expect.objectContaining({ model: expect.objectContaining({ name: "StoryEvent" }) }),
+    ],
+    12,
+    replay.frontierDays,
+  );
   const uncommitted = WorldFold.restore(decoder.registry, fold.checkpoint());
   const beforeHistoryFailure = uncommitted.checkpoint();
   history.appendEvents.mockRejectedValueOnce(new Error("history unavailable"));
@@ -147,9 +196,12 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
   );
   expect(uncommitted.checkpoint()).toEqual(beforeHistoryFailure);
   const before = fold.checkpoint();
-  await expect(replayWithFrontierDays(native, history, { ...input, fold, toBlock: 12 })).rejects.toThrow(
+  await expect(replayWithFrontierDays(native, history, { ...input, fold, toBlock: 13 })).rejects.toThrow(
     "disconnected",
   );
+  expect(fold.checkpoint()).toEqual(before);
+  blocks.get(11)!.transactions[0]!.receipt = receipt([openedChest(999, 50)]);
+  await expect(replayWithFrontierDays(native, history, { ...input, fold })).rejects.toThrow("settled realm");
   expect(fold.checkpoint()).toEqual(before);
 });
 

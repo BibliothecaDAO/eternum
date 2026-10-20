@@ -36,7 +36,7 @@ export const ownStoriesOfDay = <Story extends OwnStory>(
 };
 
 /**
- * What the player's day added up to: reveals and what they paid, sites cleared, the ruin's chest and the LORDS it paid,
+ * What the player's day added up to: reveals, site clears and opened chests, with what they paid,
  * folded from the player's own stories within the day.
  */
 export const totalToday = (stories: readonly OwnStory[], player: string, day: DayBounds): StoryTotals => {
@@ -51,6 +51,9 @@ export const totalToday = (stories: readonly OwnStory[], player: string, day: Da
       if (Number(storyPayload.category) === StructureType.Ruin) totals.chests += 1;
       const reward = someReward(storyPayload.reward);
       if (reward) addReward(totals, reward.resource_type, reward.amount);
+    } else if (story === "RewardChestOpened") {
+      totals.chests += 1;
+      totals.lords += Number(BigInt(String(storyPayload.amount)));
     }
   }
   return totals;
