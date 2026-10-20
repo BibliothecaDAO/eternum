@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { resolveStructureRotationY } from "./structure-orientation";
 import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS } from "./frontier-beast";
 import {
+  BUILDINGS_GROUPS,
+  buildingModelPaths,
   CAMP_MODEL_PATH,
   CLEARED_SITE_MODEL_PATH,
   getStructureModelPaths,
@@ -11,7 +13,15 @@ import {
   VILLAGE_MODEL_PATH,
 } from "../constants/scene-constants";
 
+import { formatStructureCosmeticTarget, getCosmeticRegistry } from "../cosmetics/registry";
+
 const catalog = getStructureModelPaths();
+const realmTarget = formatStructureCosmeticTarget(StructureType.Realm);
+const realmSkins = getCosmeticRegistry().filter(
+  (entry) =>
+    entry.category === "structure-skin" &&
+    entry.appliesTo.some((target) => target === realmTarget || target.startsWith(`${realmTarget}:`)),
+);
 
 describe("orientation follows the models drawn", () => {
   it.each([...Object.values(REALM_MODEL_PATHS), VILLAGE_MODEL_PATH, CAMP_MODEL_PATH])(
@@ -55,5 +65,38 @@ describe("orientation follows the models drawn", () => {
     RiftModelPath,
   ])("preserves the existing rotation for %s without a facing model", (path) => {
     expect(resolveStructureRotationY([path], 1.25)).toBe(1.25);
+  });
+});
+
+describe("cosmetic skins inherit the facing of their model family", () => {
+  it("covers both collection realm skins through the registry", () => {
+    expect(realmSkins.flatMap((skin) => skin.ownershipKeys ?? [])).toEqual(
+      expect.arrayContaining(["0x3040101", "0x3030501"]),
+    );
+  });
+
+  it.each(realmSkins)("faces registered realm skin $id at every tile heading", (skin) => {
+    for (let direction = 0; direction < 6; direction++) {
+      expect(resolveStructureRotationY(skin.assetPaths, (direction * Math.PI) / 3)).toBe(0);
+    }
+  });
+
+  it.each([true, false])("faces every local settlement model in mode blitz=%s", (blitz) => {
+    const paths = buildingModelPaths(blitz);
+    for (const group of [BUILDINGS_GROUPS.REALMS, BUILDINGS_GROUPS.VILLAGE]) {
+      for (const path of Object.values(paths[group])) {
+        expect(resolveStructureRotationY([path], 1.25)).toBe(0);
+      }
+    }
+  });
+
+  it("does not give standalone attachments the facing of the realm they attach to", () => {
+    const attachments = getCosmeticRegistry().filter(
+      (entry) => entry.category === "attachment" && entry.appliesTo.includes(realmTarget),
+    );
+    expect(attachments.length).toBeGreaterThan(0);
+    for (const attachment of attachments) {
+      expect(resolveStructureRotationY(attachment.assetPaths, 1.25)).toBe(1.25);
+    }
   });
 });
