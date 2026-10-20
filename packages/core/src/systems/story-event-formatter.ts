@@ -27,7 +27,6 @@ import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameRe
 import { readExpeditionRules } from "../utils/expeditions";
 import { readFrontierBeast } from "../utils/frontier-beast";
 import { Position } from "./position";
-import { getGameMode } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
 import { feltEquals } from "../client/herald-http";
@@ -479,7 +478,7 @@ function describeStructureName(structureId: unknown, components?: NativeFactStor
 }
 
 function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
-  return getStructureName(structure, getGameMode()).name;
+  return getStructureName(structure).name;
 }
 
 /**

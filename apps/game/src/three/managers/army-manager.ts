@@ -59,7 +59,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { displayPlayerName, getEntityName, getGameMode } from "@bibliothecadao/eternum";
+import { displayPlayerName, getEntityName } from "@bibliothecadao/eternum";
 import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -1307,7 +1307,7 @@ export class ArmyManager {
   /** The realm an army comes from: the structure that raised it, by the one name the map and event text use. */
   private resolveHomeRealmName(army: ArmyData): string {
     if (!this.store || army.owningStructureId === null || army.owningStructureId === undefined) return "";
-    return getEntityName(army.owningStructureId, this.store, getGameMode()) ?? "";
+    return getEntityName(army.owningStructureId, this.store) ?? "";
   }
 
   /**

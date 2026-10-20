@@ -1,7 +1,6 @@
 import { type ID, type MarketInterface, ResourcesIds } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../native-fact-store";
 import { configManager } from "../../managers/config-manager";
-import { getGameMode } from "../../utils/utils";
 import { computeTrades } from "../../utils/trades";
 import type { PlayerNameResolver } from "../../utils/entities";
 
@@ -19,13 +18,7 @@ export const readOpenTrades = (
   currentBlockTimestamp: number,
   playerName: PlayerNameResolver,
 ): MarketInterface[] =>
-  computeTrades(
-    store.inGame("TradeOrder", configManager.getActiveGameId()),
-    currentBlockTimestamp,
-    store,
-    getGameMode(),
-    playerName,
-  );
+  computeTrades(store.inGame("TradeOrder", configManager.getActiveGameId()), currentBlockTimestamp, store, playerName);
 
 export const readMarket = (trades: MarketInterface[], playerStructureIds: ID[]): MarketView => ({
   userTrades: trades.filter((trade) => playerStructureIds.includes(trade.makerId)),

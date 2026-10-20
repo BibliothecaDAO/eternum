@@ -30,16 +30,15 @@ describe("the one name a player reads for an army or a structure", () => {
       Structure: { "12884901891": camp },
       ExplorerTroops: { "128490": { explorer_id: 128490 } },
     });
-    expect(getEntityName(12884901891, store, "blitz")).toBe(siteName(12884901891));
-    expect(getEntityName(128490, store, "blitz")).toBe(armyName(128490));
-    expect(getEntityName(128490, store, "blitz")).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
+    expect(getEntityName(12884901891, store)).toBe(siteName(12884901891));
+    expect(getEntityName(128490, store)).toBe(armyName(128490));
+    expect(getEntityName(128490, store)).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
   });
 
-  it("keeps a site's proper name in Frontier and Blitz", () => {
+  it("keeps a site's proper name, never its category", () => {
     const store = storeOf({ Structure: { "12884901891": camp } });
-    expect(getEntityName(12884901891, store, "frontier")).toBe(siteName(12884901891));
-    expect(getEntityName(12884901891, store, "frontier")).not.toMatch(/\bcamps?\b/i);
-    expect(getEntityName(12884901891, store, "blitz")).toBe(siteName(12884901891));
+    expect(getEntityName(12884901891, store)).toBe(siteName(12884901891));
+    expect(getEntityName(12884901891, store)).not.toMatch(/\bcamps?\b/i);
   });
 
   it("reads an army's given name", () => {
@@ -47,10 +46,10 @@ describe("the one name a player reads for an army or a structure", () => {
       ExplorerTroops: { "5": { explorer_id: 5 } },
       EntityName: { "5": { name: 0x52617665726fn } },
     });
-    expect(getEntityName(5, store, "blitz")).toBe("Ravero");
+    expect(getEntityName(5, store)).toBe("Ravero");
   });
 
   it("names nothing the store does not hold", () => {
-    expect(getEntityName(9, storeOf({}), "blitz")).toBeUndefined();
+    expect(getEntityName(9, storeOf({}))).toBeUndefined();
   });
 });

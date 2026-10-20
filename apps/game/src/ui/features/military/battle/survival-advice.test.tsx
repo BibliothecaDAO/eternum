@@ -12,13 +12,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 
 import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import {
-  configManager,
-  getEntityName,
-  getGameMode,
-  getTroopResourceId,
-  setBlockTimestampSource,
-} from "@bibliothecadao/eternum";
+import { configManager, getEntityName, getTroopResourceId, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, TroopTier, TroopType } from "@bibliothecadao/types";
 
@@ -120,7 +114,7 @@ const twoRealms = ({
     1_400n * P,
     350,
   );
-  return { store, advice, other: getEntityName(8, store, getGameMode()), home: getEntityName(7, store, getGameMode()) };
+  return { store, advice, other: getEntityName(8, store), home: getEntityName(7, store) };
 };
 
 /** The Military window on the second realm: whether it can raise a field army, and the most troops one can take. */

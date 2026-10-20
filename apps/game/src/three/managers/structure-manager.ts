@@ -42,7 +42,6 @@ import {
   divideByPrecision,
   getBlockTimestamp,
   getGuardsByStructure,
-  getGameMode,
   getStructureInfoFromTileOccupier,
   getStructureName,
   TROOP_TIERS,
@@ -585,7 +584,7 @@ export class StructureManager {
       entityId: renderable.entityId,
       structureName:
         structureComponent && this.store
-          ? getStructureName(structureComponent, getGameMode()).name
+          ? getStructureName(structureComponent).name
           : renderInfo.type === StructureType.Realm || renderInfo.type === StructureType.Hyperstructure
             ? structureName(renderInfo.type)
             : siteDisplayName(renderable.entityId),

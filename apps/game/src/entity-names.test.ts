@@ -132,14 +132,14 @@ describe("one name for each thing, read by every list, picker, event and panel",
     if (given) setEntityNameLocalStorage(SITE, given);
     try {
       const name = given ?? siteName(SITE);
-      expect(getStructureName(site, "frontier").name).toBe(name);
-      expect(getEntityName(SITE, store, "frontier")).toBe(name);
+      expect(getStructureName(site).name).toBe(name);
+      expect(getEntityName(SITE, store)).toBe(name);
       // A cleared site's receipt keeps only the site's id: the same rule names it.
       expect(siteDisplayName(SITE)).toBe(name);
       const plate = buildStructurePlate({
         entityId: SITE,
         structureType: StructureType.Camp,
-        structureName: getStructureName(site, "frontier").name,
+        structureName: getStructureName(site).name,
         owner: { address: 0x111n, ownerName: "", guildName: "" },
         isMine: true,
         guardArmies: [],

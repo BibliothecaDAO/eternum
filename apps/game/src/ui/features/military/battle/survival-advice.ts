@@ -1,4 +1,4 @@
-import { configManager, getEntityName, getGameMode } from "@bibliothecadao/eternum";
+import { configManager, getEntityName } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType, type ID, type Troops, rankName } from "@bibliothecadao/types";
 
@@ -30,8 +30,7 @@ export const readSurvivalAdvice = (
   const home = explorer ? store.get("Structure", { game_id: game, entity_id: Number(explorer.owner) }) : undefined;
   if (!home) return describeSurvivalAdvice({ extra, current, troop, home: null, nextLevel: null, source: null });
 
-  const nameOf = (row: NativeRows["Structure"]) =>
-    getEntityName(Number(row.entity_id), store, getGameMode()) ?? "Your realm";
+  const nameOf = (row: NativeRows["Structure"]) => getEntityName(Number(row.entity_id), store) ?? "Your realm";
   const level = Number(home.base.level);
   const nextLevel =
     level < configManager.getMaxLevel(StructureType.Realm)
