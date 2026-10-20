@@ -13,7 +13,7 @@ let cache: ReturnType<typeof testRatingReader>;
 const updated = (players: string[]) => ({ events: players.map((player) => ({ keys: [MMR_UPDATED, player] })) });
 const MMR_UPDATED = hash.getSelectorFromName("MMRUpdated");
 const env = {
-  ENVIRONMENT: "production",
+  ENVIRONMENT: "staging",
   L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
   PUBLIC_RATE_LIMIT: { limit: vi.fn(async () => ({ success: true })) },
   DB: { batch: profileBatch, prepare: () => ({ bind: () => ({ all: async () => ({ results: identityRows }) }) }) },
