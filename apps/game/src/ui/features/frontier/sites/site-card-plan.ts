@@ -62,13 +62,20 @@ export interface SiteCardPlan {
 }
 
 /**
- * The fight ahead, in two scales that never mix. The outcome and its count of attacks speak of the whole fight, attack
- * after attack. The troops lost and the guard left speak of the one attack the Attack button sends now, so they are
- * the figures its result will show.
+ * The fight ahead, in two scales that never mix. The outcome, its count of attacks and `whole` speak of the whole
+ * fight, attack after attack. The troops lost and the guard left speak of the one attack the Attack button sends now,
+ * so they are the figures its result will show.
  */
 export type SiteFight =
   | { outcome: "refused" }
-  | { outcome: "wins" | "loses" | "stalls"; exchanges: number; troopsLost: number; guardLeft: number };
+  | {
+      outcome: "wins" | "loses" | "stalls";
+      exchanges: number;
+      troopsLost: number;
+      guardLeft: number;
+      /** Over every attack the fight takes: the troops the army loses, the guard it kills, the stamina it spends. */
+      whole: { troopsLost: number; guardKilled: number; stamina: number };
+    };
 
 export const readSiteCard = (
   store: NativeFactStore,
@@ -208,6 +215,11 @@ const forecastFightAt = (
     exchanges: forecast.exchanges,
     troopsLost: Number(forecast.firstExchange.attackerLoss / PRECISION),
     guardLeft: Number((guard.count - forecast.firstExchange.defenderLoss) / PRECISION),
+    whole: {
+      troopsLost: Number(forecast.attackerLoss / PRECISION),
+      guardKilled: Number(forecast.defenderLoss / PRECISION),
+      stamina: Number(forecast.staminaSpent),
+    },
   };
 };
 

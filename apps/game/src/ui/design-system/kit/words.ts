@@ -213,6 +213,26 @@ export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
 /** The skull beside an army on a site's card, on its tooltip. */
 export const WOULD_BE_LOST = "Would be lost";
+/**
+ * A site's fight card, read as its result will read (the owner's pick, 20 October 2026: "A for the fight"): what this
+ * attack does to each side, what it comes to, and under Details the whole fight's figures.
+ */
+export const FIGHT_WORDS = {
+  youLose: (troops: string) => `you lose ${troops}`,
+  youKill: (troops: string) => `you kill ${troops}`,
+  armyLost: "Your army is lost",
+  clears: "This attack clears it",
+  holds: "The guard holds",
+  clearedIn: (attacks: number) =>
+    attacks === 1 ? "Cleared in this attack" : `Cleared in ${formatCount(attacks, "attack")}`,
+  details: "Details",
+  wholeFight: "The whole fight",
+  attacks: "Attacks",
+  lose: "You lose",
+  kill: "You kill",
+  stamina: "Stamina",
+  ends: { wins: "The guard falls", loses: "The army falls", stalls: "Neither side falls" },
+} as const;
 export const USE = "Use";
 export const USING = "Using…";
 

@@ -19,7 +19,6 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
-import { FIGHT_CASES, type FightCase, type FightOption, FightOptionSheet } from "./fight-options";
 import { LabGame } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
@@ -166,19 +165,31 @@ type LabChest = Parameters<typeof RuinChestMoment>[0];
 
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
-/** A fight the army wins in so many attacks; the losses and the guard left are this attack's, as its result shows. */
-const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
+/**
+ * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows, and
+ * the whole fight's (each attack costing as this one, the guard's every troop killed, 30 stamina an attack).
+ */
+const WIN = (exchanges: number, troopsLost: number, guard: number, guardLeft = 0) => ({
   outcome: "wins" as const,
   exchanges,
   troopsLost,
   guardLeft,
+  whole: { troopsLost: troopsLost * exchanges, guardKilled: guard, stamina: 30 * exchanges },
+});
+/** A fight that ends with the army gone: every troop lost over the whole fight, and what it killed by then. */
+const LOSE = (exchanges: number, troopsLost: number, guardLeft: number, army: number, guardKilled: number) => ({
+  outcome: "loses" as const,
+  exchanges,
+  troopsLost,
+  guardLeft,
+  whole: { troopsLost: army, guardKilled, stamina: 30 * exchanges },
 });
 const CAMP_CARD: LabSite = {
   site: "Camp",
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
-  fight: WIN(1, 180),
+  fight: WIN(1, 180, 1_100),
   pay: { icon: "labor", amount: 550 },
   xp: 82,
   verb: ATTACK_30,
@@ -188,7 +199,7 @@ const RUIN_CARD: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: ARMY_CHIP,
   guard: 3_400,
-  fight: WIN(2, 1_250, 1_520),
+  fight: WIN(2, 1_250, 3_400, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
   xp: 145,
@@ -369,35 +380,43 @@ const LAB_NEXT_UP_FACTS: NextUpFacts = {
   rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
 
-/** Today's camp card for a fight the options read (fight-options.tsx). */
-const todaysCard = (fight: FightCase): LabSite => ({
+/**
+ * The fight card (the owner's pick, option A) on the owner's camp and two more: fight-short, a Troll camp it wins in
+ * three attacks, 31 minutes from the stamina; fight-ready, one attack clears it now; fight-loses, the army is lost in
+ * this attack.
+ */
+const OWNERS_CAMP: LabSite = {
   site: "Camp",
-  beast:
-    fight.guard.art === "beast-troll" ? { name: fight.guard.name, beast: "troll", combatClass: "Knight" } : undefined,
-  army: fight.army,
-  guard: fight.guard.troops,
-  fight: {
-    outcome: fight.attacksToClear === 0 ? "loses" : "wins",
-    exchanges: fight.attacksToClear,
-    troopsLost: fight.attack.lost,
-    guardLeft: Math.max(0, fight.guard.troops - fight.attack.killed),
-  },
-  pay: { icon: fight.pay.icon, amount: fight.pay.amount },
-  xp: fight.xp,
-  verb:
-    fight.stamina.wait === 0
-      ? ATTACK_30
-      : { kind: "short", stamina: { cost: fight.stamina.cost, held: fight.stamina.held, wait: fight.stamina.wait } },
-});
-
-/** The fight card's options, each case beside today's card: fight-<today|a|b|c>-<short|ready|loses>. */
+  beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
+  army: { art: "knight-t1", troops: 1_500 },
+  guard: 1_300,
+  fight: WIN(3, 180, 1_300, 740),
+  pay: { icon: "wood", amount: 650 },
+  xp: 90,
+  verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
+};
 const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
-  Object.entries(FIGHT_CASES).flatMap(([name, fight]) => [
-    [`fight-today-${name}`, { clock: CLOCK, stores: STORES, armies: ARMIES, site: todaysCard(fight) }],
-    ...(["a", "b", "c"] as const).map((option) => [
-      `fight-${option}-${name}`,
-      { clock: CLOCK, stores: STORES, armies: ARMIES, forecast: { option, fight } },
-    ]),
+  Object.entries({
+    short: OWNERS_CAMP,
+    ready: {
+      ...OWNERS_CAMP,
+      beast: undefined,
+      army: { art: "knight-t1", troops: 5_000 },
+      guard: 1_100,
+      fight: WIN(1, 180, 1_100),
+      pay: { icon: "labor", amount: 550 },
+      xp: 82,
+      verb: ATTACK_30,
+    },
+    loses: {
+      ...OWNERS_CAMP,
+      army: { art: "knight-t1", troops: 400 },
+      fight: LOSE(1, 400, 1_150, 400, 150),
+      verb: ATTACK_30,
+    },
+  } satisfies Record<string, LabSite>).map(([name, site]) => [
+    `fight-${name}`,
+    { clock: CLOCK, stores: STORES, armies: ARMIES, site },
   ]),
 );
 
@@ -470,7 +489,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15, 400), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   "site-ruin-lose": {
@@ -480,7 +499,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
+      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
     },
   },
   "site-far": {
@@ -508,12 +527,12 @@ const STATES = {
       army: null,
       verb: null,
       choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 1_100, 492), onPick: () => undefined },
         {
           label: "Army 2",
           art: ARMY_CHIP.art,
           troops: 100,
-          fight: { outcome: "loses", exchanges: 1, troopsLost: 100, guardLeft: 1_034 },
+          fight: LOSE(1, 100, 1_034, 100, 66),
           onPick: () => undefined,
         },
         { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
@@ -677,7 +696,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
+      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
     },
   },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
@@ -813,8 +832,6 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  /** One of the fight card's options for the owner to pick (fight-options.tsx). */
-  forecast?: { option: FightOption; fight: FightCase };
   fight?: FightResult;
   chest?: LabChest;
   deploy?: LabDeploy;
@@ -1016,7 +1033,6 @@ export const HudLab = () => {
           />
         )}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
-        {lab.forecast && <FightOptionSheet {...lab.forecast} />}
         {lab.fight && (
           <Sheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
             <FightResultCard result={lab.fight} onClose={noop} />
