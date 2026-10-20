@@ -258,13 +258,27 @@ test("finds an amount put into text as it is, and passes text, nodes and words t
   ]);
 });
 
-test("finds a least amount to type written as a charge, and passes it written as typed", () => {
+test("finds a least amount to type written as a charge, in text a player reads, and passes it written as typed", () => {
   const source = [
     // 1: the production minimum as it shipped in 16e0f6e6a76 and 8ca6d70a7e7, which read "Spend at least <1 Copper"
     "const story = { reason: `Spend at least ${formatCharge(fromUnits(least))} ${resourceName(resource)}` };",
     "const story = { reason: `Needs at least ${formatAmount(least)} wheat` };", // 2
+    // 3-5: the same minimum through a wrapper that passes the figure on, and in ordinary JSX
+    "const story = { reason: `Spend at least ${(formatCharge(fromUnits(least)))} Copper` };",
+    "const line = <p>Spend at least {formatCharge(fromUnits(least))} {resourceName(resource)}</p>;",
+    'const line = <p>{"Spend at least "}{formatAmount(least)} Copper</p>;',
+    // Written as typed, an ordinary charge, a log and an attribute no player reads: passes.
     "const story = { reason: `Spend at least ${formatTypedNumber(fromUnits(least))} ${resourceName(resource)}` };",
+    "const line = <p>Spend at least {formatTypedNumber(fromUnits(least))} Copper</p>;",
     "const story = { reason: `Needs ${formatCharge(cost)} wheat` };",
+    "console.info(`probe: at least ${formatCharge(least)}`);",
+    "const probe = <p data-testid={`at least ${formatCharge(least)}`} />;",
   ].join("\n");
-  assert.deepEqual(scan(source), ["1 number.threshold", "2 number.threshold"]);
+  assert.deepEqual(scan(source), [
+    "1 number.threshold",
+    "2 number.threshold",
+    "3 number.threshold",
+    "4 number.threshold",
+    "5 number.threshold",
+  ]);
 });

@@ -379,18 +379,46 @@ const bareAmountText = (node, file) => {
 };
 
 // A least amount the player is told to type ("Spend at least 0.8 Copper") is an amount to type, not a charge: through
-// formatCharge or formatAmount it reads "<1" under one unit and says nothing. Read here: "at least" before a writer.
+// formatCharge or formatAmount it reads "<1" under one unit and says nothing. Read here, in text a player reads (as the
+// other text checks bound it): "at least" right before a figure those writers write, through any wrapper that passes it
+// on, in a template or in JSX.
 const AT_LEAST = /\bat least\s*$/i;
-const thresholdByChargeWriter = (node) =>
-  ts.isTemplateExpression(node) &&
-  node.templateSpans.some((span, index) => {
-    const before = index === 0 ? node.head.text : node.templateSpans[index - 1].literal.text;
+const writesChargeOrAmount = (expression) =>
+  expression !== undefined &&
+  writtenAlternatives(expression).some(
+    (each) => ts.isCallExpression(each) && /^(formatCharge|formatAmount)$/.test(calleeName(each)),
+  );
+/** The words a JSX child spells: its text, or a string written as an expression ({"at least "}). */
+const jsxChildText = (child) =>
+  ts.isJsxText(child)
+    ? child.text
+    : ts.isJsxExpression(child) && child.expression && ts.isStringLiteralLike(child.expression)
+      ? child.expression.text
+      : null;
+const thresholdByChargeWriter = (node) => {
+  if (ts.isTemplateExpression(node))
     return (
-      AT_LEAST.test(before) &&
-      ts.isCallExpression(span.expression) &&
-      /^(formatCharge|formatAmount)$/.test(calleeName(span.expression))
+      !inDiagnostic(node) &&
+      readsAsText(node) &&
+      node.templateSpans.some((span, index) => {
+        const before = index === 0 ? node.head.text : node.templateSpans[index - 1].literal.text;
+        return AT_LEAST.test(before) && writesChargeOrAmount(span.expression);
+      })
+    );
+  if (!ts.isJsxElement(node) && !ts.isJsxFragment(node)) return false;
+  const children = node.children.filter((child) => !isBlank(child));
+  return children.some((child, index) => {
+    const next = children[index + 1];
+    const words = jsxChildText(child);
+    return (
+      words !== null &&
+      AT_LEAST.test(words) &&
+      next !== undefined &&
+      ts.isJsxExpression(next) &&
+      writesChargeOrAmount(next.expression)
     );
   });
+};
 
 // A cost beside what is held, each side rounded alone, can read as met while short ("28 / 28" for 28.10 of 28.15); the
 // pair is one writer's (formatHeldAgainst). Read here: two writer calls joined by a slash, one of them a charge.
