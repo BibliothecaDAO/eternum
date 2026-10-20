@@ -83,6 +83,12 @@ const select = (entityId: number | null) =>
   );
 const closePanel = () =>
   act(async () => host.querySelector<HTMLButtonElement>("[data-kit-sheet] button[aria-label='Close']")!.click());
+/** The signed-in owner entered this game to spectate it (`?spectate=true`), as spectator-session latches it. */
+const spectate = async () => {
+  window.history.replaceState({}, "", "/g/0x1ab/1/map?spectate=true");
+  overrideSpectateIntent(true);
+  await act(async () => useUIStore.setState({ isSpectating: true }));
+};
 /** The army's row on a desktop, its token on a phone. */
 const pickInDock = () =>
   act(async () =>
@@ -172,10 +178,17 @@ describe.each([
 
   it("never opens for a signed-in owner who entered the game to spectate it", async () => {
     await renderHud();
-    window.history.replaceState({}, "", "/g/0x1ab/1/map?spectate=true");
-    overrideSpectateIntent(true);
-    await act(async () => useUIStore.setState({ isSpectating: true }));
+    await spectate();
     await select(ARMY);
+    expect(panel()).toBeNull();
+  });
+
+  it("never reopens from the dock (its row, its token) for that spectating owner", async () => {
+    await renderHud();
+    await spectate();
+    await select(ARMY);
+    // The army is selected: for a player the dock's pick would reopen its panel.
+    await pickInDock();
     expect(panel()).toBeNull();
   });
 });
