@@ -17,10 +17,7 @@ import type { DockArmy } from "./hud/dock-armies";
  * An army's per-reveal payout at a depth, scaled, from the game's own depth rules: undefined where the depth has none,
  * null in a game whose reveals pay the drawn exploration reward instead.
  */
-export const useRevealYield = (
-  troops: { tier: TroopTier; count: bigint },
-  depth: number,
-): bigint | undefined | null => {
+const useRevealYield = (troops: { tier: TroopTier; count: bigint }, depth: number): bigint | undefined | null => {
   const { setup } = useGame();
   if (!configManager.paysRevealSupplies()) return null;
   const percent = readRevealPercent(setup.store, configManager.getActiveGameId(), depth);
