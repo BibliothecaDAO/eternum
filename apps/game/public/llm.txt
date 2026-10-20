@@ -1509,7 +1509,7 @@ troops, larger the deeper it is. Each reveal also gives the army 2 XP.
 | Find   | Chance      | What it is                                                                                                                                                                                               |
 | ------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Beasts | 6%          | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                             |
-| Camp   | 4%          | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                                                                                                                             |
+| Troll  | 4%          | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                                                                                                                             |
 | Rift   | 4%          | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                                                                                                                    |
 | Ruin   | 1%          | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, and only while the season's pool can fund its chest: a ruin it cannot fund leaves the tile empty. |
 | Shrine | 3%          | Once researched: grants an army 200 XP, then is gone.                                                                                                                                                    |
@@ -1525,14 +1525,14 @@ more likely.
 Every guard is shown before you attack. Guards grow with depth, so what counts as a safe fight moves as your realm
 grows.
 
-| Ground       | Camps and rifts | Ruins         | Minotaur (beasts) | Cyclops (beasts) |
-| ------------ | --------------- | ------------- | ----------------- | ---------------- |
-| Surface      | 1,000–1,600     | 2,000–4,000   | 300–350           | 450–550          |
-| Ethereal I   | 3,000–5,000     | 6,000–10,500  | 900–1,050         | 1,350–1,650      |
-| Ethereal II  | 8,000–12,000    | 18,000–22,500 | 2,400–2,800       | 3,600–4,400      |
-| Ethereal III | 20,000–30,000   | 52,500–76,000 | 6,000–7,000       | 9,000–11,000     |
+| Ground       | Trolls and rifts | Ruins         | Minotaur (beasts) | Cyclops (beasts) |
+| ------------ | ---------------- | ------------- | ----------------- | ---------------- |
+| Surface      | 1,000–1,600      | 2,000–4,000   | 300–350           | 450–550          |
+| Ethereal I   | 3,000–5,000      | 6,000–10,500  | 900–1,050         | 1,350–1,650      |
+| Ethereal II  | 8,000–12,000     | 18,000–22,500 | 2,400–2,800       | 3,600–4,400      |
+| Ethereal III | 20,000–30,000    | 52,500–76,000 | 6,000–7,000       | 9,000–11,000     |
 
-A band of beasts is a Minotaur's or a stronger Cyclops's, as likely as each other. Camps, rifts and ruins show their
+A band of beasts is a Minotaur's or a stronger Cyclops's, as likely as each other. Trolls, rifts and ruins show their
 depth's beast: a Troll on the surface, then a Wyvern, then a Hydra. A clear gives the army XP by the guard's starting
 strength, beasts included.
 
@@ -1582,7 +1582,7 @@ tomorrow lasts.
    that to 6.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
-3. **Clear.** Camps, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you attack,
+3. **Clear.** Trolls, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you attack,
    and an attack needs 30 stamina.
 4. **Bring it home.** Everything found goes straight to the realm. An army never carries anything worth losing.
 
@@ -1591,11 +1591,11 @@ holds.
 
 ## What carries over
 
-| Gone when the day ends           | Kept by your realm                   |
-| -------------------------------- | ------------------------------------ |
-| The map and its fog              | Its buildings, castle and research   |
-| Every camp, rift, ruin and beast | Its troops, wheat, labor and Essence |
-| Every army you sent out          | Its LORDS                            |
+| Gone when the day ends            | Kept by your realm                   |
+| --------------------------------- | ------------------------------------ |
+| The map and its fog               | Its buildings, castle and research   |
+| Every Troll, rift, ruin and beast | Its troops, wheat, labor and Essence |
+| Every army you sent out           | Its LORDS                            |
 
 An army with Homecoming sends some of its survivors home as the day ends ([The Expedition](/frontier/expedition)).
 
