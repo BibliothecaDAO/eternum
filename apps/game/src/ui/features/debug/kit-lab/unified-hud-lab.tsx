@@ -156,7 +156,10 @@ const enemyArmyBeside = (store: NativeFactStore): unknown[] => {
 };
 const ENEMY = "0xe1";
 
-/** The lab army's attack on the enemy army, opened as the map opens it: the forecast surface over the HUD. */
+/**
+ * The lab army's attack on the enemy army, opened as the map opens it: the forecast surface over the HUD. Leaving the
+ * view takes that surface away, and only that one: a surface opened after it stays.
+ */
 const AttackForecast = ({ store }: { store: NativeFactStore }) => {
   useEffect(() => {
     const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: 7 }))!;
@@ -170,6 +173,8 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
         />
       ),
     });
+    const opened = usePopoverStore.getState().surface;
+    return () => usePopoverStore.setState((now) => (now.surface === opened ? { openId: null, surface: null } : now));
   }, [store]);
   return <SurfaceHost />;
 };
