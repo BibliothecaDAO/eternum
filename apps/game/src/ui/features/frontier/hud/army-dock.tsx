@@ -53,7 +53,7 @@ export const ArmyDock = ({
   return (
     <nav aria-label="Armies" className="pointer-events-auto flex gap-1.5">
       {armies.map((army) => (
-        <DockToken key={army.explorerId} army={army} pickable={own} />
+        <DockToken key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
       ))}
       {Array.from({ length: openCount }, (_, index) => (
         <DeploySlot
@@ -67,19 +67,35 @@ export const ArmyDock = ({
   );
 };
 
-/** Picking an army on the dock or the list, and what it shows: selected, and its stamina as a refill sweeps it. */
-const useDockArmy = (army: DockArmy, pickable: boolean) => {
+/**
+ * Picking an army on the dock or the list, and what it shows: selected, and its stamina as a refill sweeps it. A pick
+ * selects the army on the map and opens its panel (its figures, its XP and its level-ups), even when it was selected.
+ */
+const useDockArmy = (army: DockArmy, pickable: boolean, onOpenArmy: ((explorerId: number) => void) | undefined) => {
   const selected = useUIStore((state) => state.entityActions.selectedEntityId === army.explorerId);
   const selectArmy = useSelectArmyOnMap();
   return {
     selected,
     stamina: useWellRefillShown(army),
-    onPick: pickable ? () => selectArmy(army.explorerId) : undefined,
+    onPick: pickable
+      ? () => {
+          selectArmy(army.explorerId);
+          onOpenArmy?.(army.explorerId);
+        }
+      : undefined,
   };
 };
 
-const DockToken = ({ army, pickable }: { army: DockArmy; pickable: boolean }) => {
-  const { selected, stamina, onPick } = useDockArmy(army, pickable);
+const DockToken = ({
+  army,
+  pickable,
+  onOpenArmy,
+}: {
+  army: DockArmy;
+  pickable: boolean;
+  onOpenArmy?: (explorerId: number) => void;
+}) => {
+  const { selected, stamina, onPick } = useDockArmy(army, pickable, onOpenArmy);
   return (
     <ArmyToken
       label={army.label}
@@ -106,14 +122,7 @@ const DockArmyRow = ({
   pickable: boolean;
   onOpenArmy?: (explorerId: number) => void;
 }) => {
-  const { selected, stamina, onPick } = useDockArmy(army, pickable);
-  // The row picks the army on the map and opens its panel: its figures, its XP and its level-ups.
-  const open =
-    onPick &&
-    (() => {
-      onPick();
-      onOpenArmy?.(army.explorerId);
-    });
+  const { selected, stamina, onPick } = useDockArmy(army, pickable, onOpenArmy);
   return (
     <ArmyRow
       label={army.label}
@@ -126,7 +135,7 @@ const DockArmyRow = ({
       canBuyTier={army.canBuyTier}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
-      onPick={open}
+      onPick={onPick}
     />
   );
 };

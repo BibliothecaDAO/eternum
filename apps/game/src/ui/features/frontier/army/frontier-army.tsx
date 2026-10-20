@@ -26,7 +26,7 @@ const KIND_OF: Record<ScoutKind, ScoutingKind> = { camp: "Camp", rift: "Rift", b
 
 /**
  * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
- * from its row in the Armies panel. None while no army of the realm is selected.
+ * from the dock (its row on a desktop, its token on a phone). None while no army of the realm is selected.
  */
 export const FrontierArmy = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);

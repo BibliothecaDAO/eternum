@@ -36,6 +36,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   useUIStore.getState().selectOnMap(null);
+  window.history.replaceState({}, "", "/");
   await act(async () => root.unmount());
   host.remove();
   usePopoverStore.getState().close();
@@ -77,6 +78,8 @@ it.each([
     addEventListener: () => {},
     removeEventListener: () => {},
   }));
+  // The player is on the map, where a pick in the dock selects the army in place.
+  window.history.replaceState({}, "", "/g/0x1ab/1/map");
   await renderView("frontier-army");
   const panel = () => host.querySelector("[data-kit-sheet] [data-army-step='stats']");
   expect(panel()).toBeNull();
@@ -91,6 +94,13 @@ it.each([
   await act(async () => host.querySelector<HTMLButtonElement>("[data-kit-sheet] button[aria-label='Close']")!.click());
   expect(panel()).toBeNull();
   expect(useUIStore.getState().entityActions.selectedEntityId).toBe(90);
+
+  // The dock picks it again, its row on a desktop and its token on a phone, and the panel opens again.
+  const dockArmy = [...host.querySelectorAll<HTMLElement>("button, [role='button']")].find(
+    (each) => each.getAttribute("aria-label") === "Army 1" || each.textContent?.startsWith("Army 1"),
+  )!;
+  await act(async () => dockArmy.click());
+  expect(panel()).not.toBeNull();
 });
 
 it("draws the game's own Build order panel in a Blitz player's rail, its order named at its head", async () => {
