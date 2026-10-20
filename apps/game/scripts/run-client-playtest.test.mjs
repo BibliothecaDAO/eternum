@@ -50,8 +50,20 @@ describe("readPlaytestOptions", () => {
       "--cpu-throttle must be an integer of at least 1",
     );
     expect(() => readPlaytestOptions(["--viewport", "1440"])).toThrow(/--viewport takes <width>x<height>/);
-    expect(() => readPlaytestOptions(["--steps", "burst"])).toThrow(
-      '--steps takes spectator, unit-assets-spectator, knight-spectator, knight-blitz-spectator, player, ownership-rings, blitz-orders, blitz-spectator, blitz-burst, still-map, still-map-frozen-sun, blitz-still-map, blitz-still-map-frozen-sun, not "burst"',
+    // The refusal names every step list the runner can play, as STEP_SETS lists them: a list added there is named here.
+    const refusal = (() => {
+      try {
+        readPlaytestOptions(["--steps", "burst"]);
+      } catch (error) {
+        return error.message;
+      }
+      return null;
+    })();
+    expect(refusal).toMatch(/^--steps takes .*, not "burst"$/);
+    const named = refusal.slice("--steps takes ".length, refusal.lastIndexOf(", not ")).split(", ");
+    expect(named).toEqual(Object.keys(STEP_SETS));
+    expect(named).toEqual(
+      expect.arrayContaining(["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"]),
     );
     expect(() => readPlaytestOptions(["--player", ".context/playtest-profiles/clientlane"])).toThrow(
       '--player takes an email, not ".context/playtest-profiles/clientlane"',
