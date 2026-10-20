@@ -22,6 +22,13 @@ describe("Frontier's tile card", () => {
     expect(plan.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
   });
 
+  it("counts the fight for an army short of the attack's stamina, as its Attack will send it once it can", () => {
+    const { store, site, structure, attack } = campBeside("Camp", true, 0n);
+    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    // The one attack its stamina will then pay for. The guard has rested by then, so it costs more than now (320 above).
+    expect(plan.fight).toEqual({ outcome: "stalls", exchanges: 1, troopsLost: 457, guardLeft: 492 });
+  });
+
   it("has no fight for an army out of reach or none selected", () => {
     const { store, site, structure, attack } = campBeside();
     expect(

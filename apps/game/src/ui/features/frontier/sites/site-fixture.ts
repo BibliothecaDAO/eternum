@@ -27,7 +27,7 @@ const SITE_CATEGORY: Record<SiteKind, StructureType> = {
   Beasts: StructureType.Beasts,
 };
 
-export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
+export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStamina = 100n) => {
   const { store } = frontierDay();
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
@@ -73,7 +73,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true) => {
           }),
         ]
       : []),
-    set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, 100n) }),
+    set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, armyStamina) }),
     set("0x75", "TileOccupancy", {
       game_id: 1,
       alt: false,

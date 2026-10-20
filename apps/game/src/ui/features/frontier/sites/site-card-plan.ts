@@ -8,6 +8,7 @@ import {
   getGuardsByStructure,
   siteKindOf,
   siteReward,
+  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -170,8 +171,8 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
 });
 
 /**
- * The fight as the contract resolves it, attack after attack now, with no dice: Frontier's combat is exact. An army out
- * of its troops' reach has no fight to forecast.
+ * The fight as the contract resolves it, attack after attack from the moment the army can attack, with no dice:
+ * Frontier's combat is exact. An army out of its troops' reach has no fight to forecast.
  */
 const forecastFightAt = (
   store: NativeFactStore,
@@ -190,7 +191,7 @@ const forecastFightAt = (
     troops,
     guard,
     {
-      timestamp: attack.timestamp,
+      timestamp: whenItCanAttack(troops, attack.timestamp),
       attackDistance: distance,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
@@ -209,3 +210,11 @@ const forecastFightAt = (
     guardLeft: Number((guard.count - forecast.firstExchange.defenderLoss) / PRECISION),
   };
 };
+
+/**
+ * The moment the army holds the attack's stamina: now, or later for an army short of it, so the card counts the fight
+ * its Attack will send rather than none. Damage does not depend on the attacker's stamina; the guard's own stamina at
+ * that moment does, and is read then.
+ */
+const whenItCanAttack = (troops: Troops, now: number): number =>
+  StaminaManager.getAffordableAt(troops, activeCombatRules().stamina.stamina_attack_req, now) ?? now;
