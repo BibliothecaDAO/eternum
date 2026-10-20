@@ -1,5 +1,8 @@
 import { Account, RpcError, RpcProvider, hash, num, type ProviderInterface } from "starknet";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { realmsAccountAddress } from "@realms-world/identity/account";
+
+import { executeGameplayAccountTransaction } from "../client/submit";
 import {
   deviceKeyOf,
   DeviceLimitError,
@@ -35,6 +38,14 @@ const provider = (deployed: boolean) =>
     waitForTransaction: vi.fn(async () => ({})),
   }) as unknown as ProviderInterface;
 
+// The account's own reads go to its own channel, not to these fake providers: its device changes are numbered by the
+// gameplay queue, which reads the nonce and polls inclusion through the account.
+beforeEach(() => {
+  vi.spyOn(Account.prototype, "getNonce").mockResolvedValue("0x7");
+  vi.spyOn(Account.prototype, "getTransactionStatus").mockResolvedValue({
+    finality_status: "PRE_CONFIRMED",
+  } as never);
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe("joining a shard", () => {
@@ -98,7 +109,7 @@ describe("joining a shard", () => {
     const execute = vi.spyOn(Account.prototype, "execute").mockResolvedValue({ transaction_hash: "0x8" });
     await joinRealmsAccount({ provider: provider(true), shard, realmsId: "0x9", device, approve });
     expect(execute).toHaveBeenCalledOnce();
-    expect(execute.mock.calls[0][1]).toEqual(FEE_FREE);
+    expect(execute.mock.calls[0][1]).toMatchObject(FEE_FREE);
     expect(approve).toHaveBeenCalledWith(expect.objectContaining({ action: "ADD", counter: 2 }));
   });
 
@@ -233,7 +244,7 @@ describe("device-limit join refusals", () => {
     vi.spyOn(Account.prototype, "execute").mockRejectedValue(cause);
     await expect(joinRealmsAccount({ provider: rpc, shard, realmsId: "0x99", device, approve })).rejects.toMatchObject({
       message: "account_join_device_add_failed",
-      cause,
+      cause: { name: "TransactionNotSentError", cause },
     });
   });
 
@@ -247,5 +258,137 @@ describe("device-limit join refusals", () => {
       message: "account_join_events_failed",
       cause: new Error("offline"),
     });
+  });
+});
+
+/**
+ * One account on a node that holds one transaction per nonce and executes from the account's nonce upwards, a block
+ * every 250 ms after `heldBlocks` empty ones. A spent nonce is refused before forwarding; a second transaction at an
+ * occupied nonce is forwarded and rejected by the node, so the sender learns nothing (an unknown outcome).
+ */
+function heldNode(address: string, heldBlocks: number) {
+  let nonce = 7n;
+  let blocks = 0;
+  const held = new Map<bigint, string>();
+  const landed: [bigint, string][] = [];
+  const sent: [bigint, string][] = [];
+  setInterval(() => {
+    if ((blocks += 1) <= heldBlocks) return;
+    for (let what = held.get(nonce); what; what = held.get(nonce)) {
+      landed.push([nonce, what]);
+      held.delete(nonce);
+      nonce += 1n;
+    }
+  }, 250);
+  const hashOf = (at: bigint, what: string) => `0x${Buffer.from(`${what}@${at}`).toString("hex")}`;
+  const receive = async (what: string, at: bigint) => {
+    sent.push([at, what]);
+    if (at < nonce)
+      throw Object.assign(new Error("Transaction refused"), { baseError: { code: -32010, data: { reason: "nonce" } } });
+    if (held.has(at))
+      throw Object.assign(new Error("Transaction outcome unknown"), {
+        baseError: { code: -32011, data: { transaction_hash: hashOf(at, what) } },
+      });
+    held.set(at, what);
+    return { transaction_hash: hashOf(at, what) };
+  };
+  const status = async (transactionHash: string) => {
+    if (landed.some(([at, what]) => hashOf(at, what) === transactionHash)) return { finality_status: "PRE_CONFIRMED" };
+    throw Object.assign(new Error("Transaction hash not found"), { baseError: { code: 29 } });
+  };
+  const included = async (transactionHash: string) => {
+    while (!landed.some(([at, what]) => hashOf(at, what) === transactionHash))
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    return {};
+  };
+  // The account's own sends, reads and receipt waits: a device change is sent by a starknet.js Account. One sent with
+  // no nonce takes the node's current one, as starknet.js reads it.
+  vi.spyOn(Account.prototype, "execute").mockImplementation(async (calls, details) => {
+    const call = (Array.isArray(calls) ? calls[0] : calls) as { entrypoint: string };
+    return receive(call.entrypoint, details?.nonce === undefined ? nonce : BigInt(details.nonce));
+  });
+  vi.spyOn(Account.prototype, "getNonce").mockImplementation(async () => `0x${nonce.toString(16)}`);
+  vi.spyOn(Account.prototype, "getTransactionStatus").mockImplementation(status as never);
+  vi.spyOn(Account.prototype, "waitForTransaction").mockImplementation(included as never);
+  return {
+    sent: () => sent,
+    landed: () => landed,
+    /** The browser's play, through the gameplay queue as the game client sends it. */
+    play: (stopped?: AbortSignal) =>
+      executeGameplayAccountTransaction({
+        account: {
+          address,
+          execute: async (_calls: unknown, details?: { nonce?: unknown }) =>
+            receive("play", BigInt(details!.nonce as string)),
+          getNonce: async () => `0x${nonce.toString(16)}`,
+          getTransactionStatus: status,
+        } as never,
+        calls: { contractAddress: "0x1", entrypoint: "play", calldata: [] },
+        shard: { chainId: shard.chainId, l2GasBound: BigInt(shard.l2GasBound) },
+        stopped,
+      }),
+    /** The shard's reads of the account, for the device operations. */
+    provider: (signs: boolean) =>
+      ({
+        getClassHashAt: vi.fn(async () => shard.accountClassHash),
+        callContract: vi.fn(async ({ entrypoint }: { entrypoint: string }) =>
+          entrypoint === "is_device" ? [signs ? "0x1" : "0x0"] : ["0x1"],
+        ),
+        getEvents: vi.fn(async () => ({ events: [] })),
+        waitForTransaction: vi.fn(included),
+      }) as unknown as ProviderInterface,
+  };
+}
+
+// A play of this browser is still held when the account changes its devices: the device change must take the nonce
+// after the play's, never the held one, and both must land.
+describe("a device change while a play of this browser is held", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("joining as a device takes the nonce after the held play, and both land", async () => {
+    vi.useFakeTimers();
+    const realmsId = "0x77";
+    const node = heldNode(realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey), 4);
+    const play = node.play();
+    await vi.advanceTimersByTimeAsync(10);
+    const join = joinRealmsAccount({ provider: node.provider(false), shard, realmsId, device, approve });
+    void join.catch(() => {});
+    await vi.advanceTimersByTimeAsync(5_000);
+    await expect(join).resolves.toBeInstanceOf(Account);
+    await expect((await play).inBlock).resolves.toBeUndefined();
+    expect(node.sent()).toEqual([
+      [7n, "play"],
+      [8n, "is_device"],
+    ]);
+    expect(node.landed()).toEqual([
+      [7n, "play"],
+      [8n, "is_device"],
+    ]);
+  });
+
+  it("revoking a device takes the nonce after the held play, and both land", async () => {
+    vi.useFakeTimers();
+    const realmsId = "0x78";
+    const node = heldNode(realmsAccountAddress(realmsId, shard.accountClassHash, shard.guardianPublicKey), 4);
+    const play = node.play();
+    await vi.advanceTimersByTimeAsync(10);
+    const revoked = revokeDeviceEverywhere({
+      shards: [{ ...shard, url: "https://dev.test", provider: node.provider(true) }],
+      realmsId,
+      device,
+      deviceKey: "0xa1",
+      approve,
+    });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await expect(revoked).resolves.toEqual([]);
+    await expect((await play).inBlock).resolves.toBeUndefined();
+    expect(node.sent()).toEqual([
+      [7n, "play"],
+      [8n, "revoke_device"],
+    ]);
+    expect(node.landed()).toEqual([
+      [7n, "play"],
+      [8n, "revoke_device"],
+    ]);
   });
 });

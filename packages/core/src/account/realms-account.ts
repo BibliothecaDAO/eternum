@@ -2,7 +2,8 @@ import { DeviceSigner } from "./device-signer";
 export { DeviceSigner } from "./device-signer";
 import { utils as starknetKeyUtils } from "@scure/starknet";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
-import { Account, BlockTag, ec, hash, num, type ProviderInterface } from "starknet";
+import { Account, BlockTag, ec, hash, num, type Call, type ProviderInterface } from "starknet";
+import { executeGameplayAccountTransaction } from "../client/submit";
 import { operatorRequest } from "./operator-request";
 import { resolveGameTransactionResourceBounds } from "./transaction-resource-bounds";
 export { operatorRequest } from "./operator-request";
@@ -188,7 +189,7 @@ async function joinOnce(
     const counter = (await joinStep("account_join_counter_failed", () => deviceChangeCounter(provider, address))) + 1;
     const joining = realmsAccount(provider, address, device, await approval(counter));
     const joined = await joinStep("account_join_device_add_failed", () =>
-      joining.execute(isDeviceCall(address, device.publicKey), accountTransactionDetails(shard)),
+      sendNumbered(joining, isDeviceCall(address, device.publicKey), shard),
     ).catch(async (error: unknown) => {
       if (rpcErrorCode(error) === -32010) {
         const devices = await joinStep("account_join_events_failed", () => listDevices(provider, address));
@@ -295,13 +296,10 @@ async function revokeDevice({
     deviceKey,
     counter,
   });
-  const result = await account.execute(
-    {
-      contractAddress: account.address,
-      entrypoint: "revoke_device",
-      calldata: [deviceKey, r, s],
-    },
-    accountTransactionDetails(shard),
+  const result = await sendNumbered(
+    account,
+    { contractAddress: account.address, entrypoint: "revoke_device", calldata: [deviceKey, r, s] },
+    shard,
   );
   await account.waitForTransaction(result.transaction_hash, { retryInterval: RECEIPT_POLL_MS });
   return result.transaction_hash;
@@ -380,6 +378,18 @@ async function forEachShard(
 
 const realmsAccount = (provider: ProviderInterface, address: string, device: DeviceKey, approval?: string[]) =>
   new Account({ provider, address, signer: new DeviceSigner(device, approval), cairoVersion: "1" });
+
+/**
+ * A device change the account sends itself, numbered by the account's one nonce owner (the gameplay queue in
+ * client/submit), so it takes the nonce after this browser's plays and never one of theirs. Its signer, and with it the
+ * guardian's approval, is the account's own; the queue only numbers and sends it.
+ */
+const sendNumbered = (account: Account, call: Call, shard: RealmsAccountShard) =>
+  executeGameplayAccountTransaction({
+    account,
+    calls: call,
+    shard: { chainId: shard.chainId, l2GasBound: BigInt(shard.l2GasBound) },
+  });
 
 const isDeviceCall = (address: string, deviceKey: string) => ({
   contractAddress: address,
