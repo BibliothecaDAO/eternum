@@ -1,4 +1,6 @@
 import { logicalStoryIdentity, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
+import type { NotificationCopy } from "./story-copy";
+import { storyNotificationRule } from "./story-policy";
 
 /** Shared display content and logical identity for live-page and server delivery. */
 export function buildStoryNotification(input: {
@@ -34,141 +36,18 @@ export function buildStoryNotification(input: {
   );
 }
 
-interface NotificationCopy {
-  title: string;
-  body: string;
-}
-
-/** One voice for live-page and background game alerts. Unknown variants remain loud in development. */
+/** One voice for live-page and background game alerts: the copy each delivered story's rule names. */
 export function storyNotificationCopy(
   story: string,
   payload: Record<string, unknown>,
   value: Record<string, unknown>,
   recipient?: string,
 ): NotificationCopy {
-  switch (story) {
-    case "BattleEvent":
-      return nativeBattleCopy(payload, recipient);
-    case "RaidEvent":
-      return raidCopy(payload, recipient);
-    case "StructureCapturedStory":
-      return captureCopy(payload, recipient);
-    case "RealmCreatedStory":
-      return { title: "A new realm rises", body: "Your banner now flies over fresh lands." };
-    case "BuildingPlacementStory":
-      return buildingCopy(payload);
-    case "StructureLevelUpStory":
-      return structureLevelCopy(payload);
-    case "ResourceReceiveArrivalStory":
-      return { title: "The caravan has arrived", body: "Fresh supplies have reached their destination." };
-    case "ProductionStory":
-      return { title: "The workshops are humming", body: "A new batch of resources is ready." };
-    case "BuildingPaymentStory":
-      return { title: "Construction is underway", body: "The builders have their materials and their orders." };
-    case "ResourceTransferStory":
-      return transferCopy(payload, value);
-    case "ResourceBurnStory":
-      return { title: "Resources committed", body: "The realm has paid its due." };
-    case "ExplorerCreateStory":
-      return { title: "An army answers the call", body: "New troops stand ready beyond the walls." };
-    case "ExplorerAddStory":
-      return { title: "Reinforcements have arrived", body: "Fresh troops have joined your army." };
-    case "ExplorerDeleteStory":
-      return { title: "The banners return home", body: "An army has stood down." };
-    case "GuardAddStory":
-      return { title: "The walls are reinforced", body: "Fresh defenders have taken their posts." };
-    case "GuardDeleteStory":
-      return { title: "A guard post is clear", body: "Those troops are ready for new orders." };
-    case "RelicChestOpened":
-      return { title: "A crate is open", body: "Your army has pulled relics from the fog." };
-    case "RelicActivated":
-      return { title: "Relic activated", body: "Your relic's effect was applied." };
-    default:
-      if (process.env.NODE_ENV !== "production") throw new Error(`Unknown notification copy: ${story}`);
-      return { title: "The realm is stirring", body: "New confirmed activity awaits your attention." };
-  }
+  const rule = storyNotificationRule(story);
+  if ("excluded" in rule) throw new Error(`Not a notified story: ${story}`);
+  return rule.copy({ payload, value, recipient });
 }
 
-/** A native battle names each side's player; the recipient's side tells victory from defeat. */
-function nativeBattleCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
-  const attacker = compareInteger(record(payload.attacker).player, recipient) === true;
-  const side = attacker ? payload.attacker_id : payload.defender_id;
-  if (compareInteger(payload.winner_id, 0) !== false)
-    return { title: "Battle lines have shifted", body: "The clash is over. Survey the field." };
-  return compareInteger(payload.winner_id, side) === true
-    ? { title: "Victory on the field", body: "Your forces carried the day." }
-    : { title: "Your forces were defeated", body: "The battle is over. Your next move awaits." };
-}
-
-/** A capture tells both sides what changed hands: a player's structure takes its armies and incoming deliveries along. */
-function captureCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
-  if (compareInteger(payload.new_owner, recipient) !== true)
-    return { title: "A stronghold has fallen", body: "The enemy took it, with its armies and incoming deliveries." };
-  return compareInteger(payload.previous_owner, 0) === false
-    ? { title: "The stronghold is yours", body: "Its armies and incoming deliveries are yours too." }
-    : { title: "The stronghold is yours", body: "Your banner now flies over the captured site." };
-}
-
-function raidCopy(payload: Record<string, unknown>, recipient: string | undefined): NotificationCopy {
-  const target = compareInteger(payload.target_owner, recipient) === true;
-  if (target)
-    return payload.success === true
-      ? { title: "Your realm was raided", body: "Raiders made off with supplies." }
-      : { title: "A raid was repelled", body: "Your defenders held the walls." };
-  return payload.success === true
-    ? { title: "The raid succeeded", body: "Your army returns with its spoils." }
-    : { title: "The raid failed", body: "The defenders held. Your army falls back." };
-}
-
-function buildingCopy(payload: Record<string, unknown>): NotificationCopy {
-  switch (payload.change) {
-    case "Created":
-      return { title: "A new building takes shape", body: "Another piece of your realm is rising." };
-    case "Destroyed":
-      return { title: "A building has fallen", body: "The site is clear for what comes next." };
-    case "Paused":
-      return { title: "Construction paused", body: "The builders are awaiting fresh orders." };
-    case "Resumed":
-      return { title: "The hammers ring again", body: "Construction has resumed." };
-    default:
-      throw new Error("Incomplete building placement story");
-  }
-}
-
-function transferCopy(payload: Record<string, unknown>, value: Record<string, unknown>): NotificationCopy {
-  const received = compareInteger(payload.to_entity_id, value.entity_id);
-  if (received === true) return { title: "Supplies received", body: "A shipment has reached your stores." };
-  if (received === false) return { title: "Supplies dispatched", body: "Your shipment is on its way." };
-  return { title: "Supplies are moving", body: "A shipment has completed its journey." };
-}
-
-function structureLevelCopy(payload: Record<string, unknown>): NotificationCopy {
-  const level = displayInteger(payload.new_level);
-  return {
-    title: "Your realm grows stronger",
-    body: level ? `The keep has reached level ${level}.` : "The keep has reached a new height.",
-  };
-}
-
-function displayInteger(value: unknown): string | null {
-  try {
-    return BigInt(value as string | number | bigint).toString();
-  } catch {
-    return null;
-  }
-}
-
-function compareInteger(left: unknown, right: unknown): boolean | null {
-  try {
-    return BigInt(left as string | number | bigint) === BigInt(right as string | number | bigint);
-  } catch {
-    return null;
-  }
-}
-
-function record(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
 /**
  * A story from the history cursor: a StoryEvent names its variant inside the value, while a native battle or raid is
  * its own event whose value is the payload. The cursor also carries events that are not stories (recorded executions,

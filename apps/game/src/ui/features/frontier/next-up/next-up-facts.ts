@@ -31,6 +31,7 @@ import {
 import { knownAmount } from "@/ui/utils/utils";
 import { useMemo } from "react";
 import { affordableUpgrades } from "../attributes/attributes";
+import { nextHutGrant } from "../build/build-options";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import { dayClock } from "../hud/day-clock";
 import { readRealmStore } from "../realm-stores";
@@ -185,13 +186,13 @@ const readNextUpRules = (
   const hut = store.require("BuildingRule", { game_id: realm.game_id, category: BuildingType.WorkersHut });
   const board = store.get("BoardRules", { game_id: realm.game_id });
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
-  const hutTier = learned === undefined ? 0 : researchTier(learned, research.ROW_HUT);
   const stamina = configManager.getTroopStaminaRules();
   const xp = store.get("ArmyProgressionRules", { game_id: realm.game_id });
   // With no army out, the share a new army starts with: common.
   const homecoming = progress.length > 0 ? Math.min(...progress.map((army) => army.homecoming)) : 1;
   return {
-    hutAdds: hut.capacity_grant + (hut.capacity_grant * hutTier * (board?.population_step_bps ?? 0)) / 10_000,
+    // Before the board's rules arrive the Hut row has no step: one more Hut adds its grant alone.
+    hutAdds: board ? nextHutGrant(store, realm, learned ?? 0n) : hut.capacity_grant,
     stamina: {
       explore: stamina.stamina_explore_stamina_cost,
       anHour: Math.round((stamina.stamina_gain_per_tick * 3_600) / configManager.getTick(TickIds.Armies)),

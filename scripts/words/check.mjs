@@ -52,6 +52,8 @@ const CATEGORIES = {
   retired: "a retired words file back, or an import of one: its words live in the words module now",
   "number.parse":
     'a written figure read back as a number (Number(formatAmount(x)), parseFloat(text.replace(/,/g, "")))',
+  "number.population":
+    'a population written by hand ("1 / 6", "2 free of 6"): formatPopulation writes it one way, used of all it can hold',
 };
 
 // The client's words files this module replaced. None may come back, and nothing may import one: a merge that restores
@@ -641,6 +643,27 @@ const enclosingFunctionName = (node) => {
 /** A template's text as a player reads it, each substitution standing in as a number. */
 const templateText = (node) => node.head.text + node.templateSpans.map((span) => `7${span.literal.text}`).join("");
 
+// A realm's population reads one way, Blitz's and Frontier's alike: what its buildings take of all it can hold, "5/6",
+// written by the words module's formatPopulation (formatPopulationInWords in a line). A count of it set against another by hand ("1 / 6", "2 free of 6",
+// "Population 5 of 6") is a second way, whichever side it counts.
+const POPULATION_NAME = /population|people/i;
+const COUNTED_AGAINST = /7\s*(?:\/|of\b|free\b)/;
+const JSX_AGAINST = /^\s*(?:\/|of\b|free\b)/;
+const handPopulation = (node) => {
+  if (ts.isTemplateExpression(node))
+    return (
+      !inDiagnostic(node) &&
+      !isCodeString(node) &&
+      (POPULATION_NAME.test(templateText(node)) ||
+        node.templateSpans.some((span) => POPULATION_NAME.test(span.expression.getText()))) &&
+      COUNTED_AGAINST.test(templateText(node))
+    );
+  if (!ts.isJsxText(node) || !JSX_AGAINST.test(node.text)) return false;
+  const siblings = node.parent.children;
+  const before = siblings[siblings.indexOf(node) - 1];
+  return before !== undefined && ts.isJsxExpression(before) && POPULATION_NAME.test(before.getText());
+};
+
 /** Every hit in one file's source: { category, line, text }. */
 export function scanSource(source, fileName, { nouns, voiceRules }) {
   const file = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, fileName.endsWith("x") ? 4 : 3);
@@ -700,6 +723,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (bareAmountText(node, file)) hit("number.bare", node);
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
+    if (handPopulation(node)) hit("number.population", node);
     if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))
       node.templateSpans.forEach((span, index) => {
         if (fixedPlural(span, node.templateSpans[index + 1])) hit("number.plural", span);

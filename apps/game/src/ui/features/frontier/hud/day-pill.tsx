@@ -1,9 +1,8 @@
-import { formatClockTime, formatDuration } from "@bibliothecadao/types";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
-import { DAY, DAY_ENDS, LEFT, TOMORROW_LASTS } from "@/ui/design-system/kit/words";
+import { DAY, dayEnds, dayLeft, phraseText, tomorrowLasts } from "@/ui/design-system/kit/words";
 import { ClockSpent, useGameFinished } from "@/ui/features/world/containers/top-header/game-clock";
 import { GameFinishedPill } from "@/ui/features/world/containers/top-header/game-finished-pill";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
@@ -25,7 +24,7 @@ export const DayPill = ({ clock }: { clock: DayClock }) => (
   <HudPill
     label="Day clock"
     role="timer"
-    data-tip={`${DAY_ENDS} ${formatClockTime(clock.endsAt)} · ${TOMORROW_LASTS} ${formatDuration(clock.tomorrowSeconds)}`}
+    data-tip={`${phraseText(dayEnds(clock.endsAt))} · ${phraseText(tomorrowLasts(clock.tomorrowSeconds))}`}
     className={cn("pointer-events-auto relative overflow-hidden tabular-nums", STORE_TONES[clock.tone].text)}
   >
     {[
@@ -34,7 +33,7 @@ export const DayPill = ({ clock }: { clock: DayClock }) => (
         {DAY} {clock.day ?? "—"}
       </span>,
       <span key="left" className="whitespace-nowrap">
-        {formatDuration(clock.secondsLeft)} {LEFT}
+        {phraseText(dayLeft(clock.secondsLeft))}
         {clock.shareLeft !== undefined && <ClockSpent label="Day spent" share={1 - clock.shareLeft} />}
       </span>,
     ]}

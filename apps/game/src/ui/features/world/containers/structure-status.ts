@@ -6,9 +6,6 @@ const normalizeNonNegativeInteger = (value: number) => {
   return Math.max(0, Math.trunc(value));
 };
 
-export const formatPopulationStatusLabel = (population: number, populationCapacity: number) =>
-  `${normalizeNonNegativeInteger(population)}/${normalizeNonNegativeInteger(populationCapacity)}`;
-
 export const formatUsedBuildingTilesLabel = (used: number, total: number) =>
   `${normalizeNonNegativeInteger(used)}/${normalizeNonNegativeInteger(total)}`;
 

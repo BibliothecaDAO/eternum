@@ -9,7 +9,9 @@ import {
   buildingName,
   formatAmount,
   formatCount,
+  formatClockTime,
   formatDuration,
+  formatExact,
   getRelicInfo,
   relicEffect,
   type ResourcesIds,
@@ -28,11 +30,32 @@ export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as
 export { BEAST_NAMES } from "@bibliothecadao/types";
 export const BEAST = "Beast";
 
-/** The clock line: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h". */
-export const DAY_ENDS = "Day ends";
 export const LEFT = "left";
-export const TOMORROW_LASTS = "Tomorrow lasts";
 export const DAY = "Day";
+
+/**
+ * The day's clock, written here once (live-qa-night-1 P3-8: the HUD said "Tomorrow lasts 1d" where Play said "24h"):
+ * when today ends in local clock time, the time left, and how long tomorrow lasts. A day runs 8 to 24 hours, so its
+ * lengths read in hours, never days. Each phrase is its words and its reading, for a surface that sets the reading
+ * apart; `phraseText` writes it whole: "Day ends 21:40", "7h 14m left", "Tomorrow lasts 24h".
+ */
+export type ClockPhrase = { words: string; reading: string; readingFirst?: boolean };
+const dayLength = (seconds: number | undefined) => formatDuration(seconds, { days: false });
+export const dayEnds = (endsAt: number | undefined): ClockPhrase => ({
+  words: "Day ends",
+  reading: formatClockTime(endsAt),
+});
+export const dayLeft = (secondsLeft: number | undefined): ClockPhrase => ({
+  words: LEFT,
+  reading: dayLength(secondsLeft),
+  readingFirst: true,
+});
+export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
+  words: "Tomorrow lasts",
+  reading: dayLength(seconds),
+});
+export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): string =>
+  readingFirst ? `${reading} ${words}` : `${words} ${reading}`;
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {
@@ -172,8 +195,6 @@ export const priceRaised = (base: string, noun: string, times: string, standing:
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
 export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
-/** A store on its tooltip: what is free of it, "Population 2 free of 6". */
-export const freeOf = (noun: string, free: string, total: string) => `${noun} ${free} free of ${total}`;
 /** The fix for a short store that the map can fill: "Explore for labor". */
 export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
@@ -215,6 +236,26 @@ export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
 /** The skull beside an army on a site's card, on its tooltip. */
 export const WOULD_BE_LOST = "Would be lost";
+/**
+ * A site's fight card, read as its result will read (the owner's pick, 20 October 2026: "A for the fight"): what this
+ * attack does to each side, what it comes to, and under Details the whole fight's figures.
+ */
+export const FIGHT_WORDS = {
+  youLose: (troops: string) => `you lose ${troops}`,
+  youKill: (troops: string) => `you kill ${troops}`,
+  armyLost: "Your army is lost",
+  clears: "This attack clears it",
+  holds: "The guard holds",
+  clearedIn: (attacks: number) =>
+    attacks === 1 ? "Cleared in this attack" : `Cleared in ${formatCount(attacks, "attack")}`,
+  details: "Details",
+  wholeFight: "The whole fight",
+  attacks: "Attacks",
+  lose: "You lose",
+  kill: "You kill",
+  stamina: "Stamina",
+  ends: { wins: "The guard falls", loses: "The army falls", stalls: "Neither side falls" },
+} as const;
 export const USE = "Use";
 export const USING = "Using…";
 
@@ -249,7 +290,6 @@ export const BUILDING_FIGURES = {
   held: (noun: string) => `${noun} held of its store's limit`,
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
-  free: `${POPULATION} free of all`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
 } as const;
 
@@ -265,6 +305,14 @@ export const marchLine = (tiles: number) =>
   tiles === 0
     ? `Leaves no ${WHEAT} to march`
     : `Leaves wheat to march ${tiles === 1 ? "1 tile" : `${formatAmount(tiles)} tiles`}`;
+
+/**
+ * The stamina a new army starts on, which its army slot holds (the owner, 20 October 2026: "stamina is slot tied"):
+ * full when the slot is fresh today, else the bar the slot's last army left. `bar` is "7/150".
+ */
+export const startsOn = (army: string, bar: string, fresh: boolean) =>
+  fresh ? `${army} starts full: ${bar} ${STAMINA}` : `${army} starts on ${bar} ${STAMINA}`;
+export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today" : "The bar its slot's last army left");
 
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
@@ -330,6 +378,12 @@ export const LEAVE = "Leave";
 
 /** Filling an army's stamina for LORDS, a full refill only. */
 export const REFILL = "Refill";
+/**
+ * A refill the realm cannot pay yet, as its chip's name says it: what the LORDS held count against, and why that is the
+ * price ("Refill to full: 20 LORDS, one a missing stamina point. The realm holds 0.").
+ */
+export const refillShort = (held: string, price: string) =>
+  `Refill to full: ${price} LORDS, one a missing stamina point. The realm holds ${held}.`;
 export const REFILLING = "Refilling…";
 
 /** LORDS leaving the game for the wallet linked to the account. */
@@ -345,9 +399,18 @@ export const WITHDRAWALS_CLOSED = "Withdrawals have closed for this season.";
 /** After the season, on its last card: the moment its withdrawals close. */
 export const withdrawUntil = (moment: string) => `Withdraw until ${moment}`;
 export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now. Your LORDS stay here.";
+/** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
+export const withdrawalUnknown = (amount: string) =>
+  `No answer yet for these ${amount}: the withdrawal may still apply. Your LORDS show it once it does.`;
 
 /** The labor a player's Realms give once a game day. */
 export const REALMS = "Realms";
+/**
+ * What the Realms sheet is for, at its head whatever it holds (live-qa-night-1 P3-3: with no wallet linked it said only
+ * "No wallet linked"): each Realm the linked wallet holds gives labor once a game day, up to the day's cap (0: none).
+ */
+export const realmsGiveLabor = (perRealm: number, cap: number) =>
+  `Each Realm in your Starknet wallet gives ${formatExact(perRealm)} ${LABOR} a day${cap > 0 ? `, up to ${formatCount(cap, "Realm")}` : ""}.`;
 export const CLAIM = "Claim";
 export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
@@ -442,6 +505,11 @@ export const SIGN_IN_WORDS = {
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
+  /**
+   * Blitz's column with no Blitz at all (live-qa-night-1 P3-12: it vanished once an ended one's results were seen). An
+   * operator opens each slot; none is set ahead, so the next one shows here when it opens.
+   */
+  noneScheduled: "No Blitz scheduled. The next one shows here when it opens.",
   preparing: "Preparing…",
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",

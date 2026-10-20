@@ -214,7 +214,7 @@ const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying
         const at = structure ? structureMapPosition(store, structure) : null;
         return {
           id: share.hyperstructureId,
-          name: getEntityName(share.hyperstructureId, store, getGameMode()) ?? "Hyperstructure",
+          name: getEntityName(share.hyperstructureId, store) ?? "Hyperstructure",
           share: share.shareholderPercentage,
           perSecond: share.pointsPerSecond,
           position: at ? Position.fromContract({ x: at.x, y: at.y }) : null,

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Vector3 } from "three";
 
-import { createMapLabelFixture, type MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
+import { createMapLabelFixture, PLATE_CLEARANCE, type MapLabelEntity } from "@/three/debug/map-label-lab-fixture";
+import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import {
   mountProceduralTerrainBenchmarkRenderer,
   type TerrainBenchmarkStage,
@@ -16,24 +17,25 @@ import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import { buildArmyPlate, buildStructurePlate, guardsToTell, type MapPlate } from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 
-type MapZoom = "play" | "close";
+type MapZoom = "play" | "close" | "far";
 type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
 
 /**
  * The map label lab (`/lab/map-labels`): the map's labels (three/map-plates, the production layer the world map draws)
  * on the real map renderer, over a fixture world: 48 real realms in a dense block and real camp, rift, hyperstructure
  * and knight models between them. Every thing is its token; its plate opens in the token's place on hover or selection
- * (the owner's plan D). The address holds the view, so a capture is reproducible: `zoom` (play or close), `hover` or
- * `select` an entity by its id, `focus` one to centre the camera on it (a hovered one is centred too), `busy=1` for an
- * army beside every realm (a full Blitz in one view), `game=frontier` for a Frontier world (no guard slots: a realm
- * holds no guard and nothing marches home to it), `panel=0` to hide the lab's panel (for a phone), and
+ * (the owner's plan D). The address holds the view, so a capture is reproducible: `zoom` (play, close or far), `hover` or
+ * `select` an entity by its id, `battle` one to put it in battle, `focus` one to centre the camera on it (a hovered one is
+ * centred too), `busy=1` for an army beside every realm (a full Blitz in one view), `game=frontier` for a Frontier world
+ * (no guard slots: a realm holds no guard and nothing marches home to it), `panel=0` to hide the lab's panel (for a
+ * phone), and
  * `rendererMode=webgpu-force-webgl` for WebGL. Pointer hover on a tile and click work too; Escape clears the selection.
  * With a thing selected, the hovered tile shows the map's order line ("Attack", or "Transfer troops" on the player's
  * own), said and placed as the world map says and places it.
  */
 export const MapLabelLabView = () => {
   const [params, setParams] = useSearchParams();
-  const zoom: MapZoom = params.get("zoom") === "close" ? "close" : "play";
+  const zoom: MapZoom = params.get("zoom") === "close" ? "close" : params.get("zoom") === "far" ? "far" : "play";
   const selected = params.get("select");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +50,7 @@ export const MapLabelLabView = () => {
   const panel = params.get("panel") !== "0";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
-  const layer = usePlates(world, frontier, overlayRef, canvasRef, hovered, selected, setCounts);
+  const layer = usePlates(world, frontier, params.get("battle"), overlayRef, canvasRef, hovered, selected, setCounts);
   useOrderLine(world, layer, overlayRef, hovered, selected);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -70,7 +72,9 @@ export const MapLabelLabView = () => {
           setPointerHover(tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
         }
         onPointerLeave={() => setPointerHover(null)}
-        onClick={() => set("select", pointerHover)}
+        // A click on a resting token selects its thing, as the world map resolves it (`MapPlateLayer.tokenAt`); anywhere
+        // else (an open plate included), the tile under the pointer.
+        onClick={(event) => set("select", layer?.tokenAt(event.clientX, event.clientY)?.split(":")[1] ?? pointerHover)}
       />
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
       <Tooltip />
@@ -80,7 +84,7 @@ export const MapLabelLabView = () => {
       >
         <div className="mb-1.5 flex items-center gap-1.5">
           <span className="w-16 opacity-80">Zoom</span>
-          {(["play", "close"] as const).map((key) => (
+          {(["play", "close", "far"] as const).map((key) => (
             <button
               key={key}
               type="button"
@@ -88,7 +92,7 @@ export const MapLabelLabView = () => {
               onClick={() => set("zoom", key)}
               className="rounded border border-white/25 px-2 py-0.5 aria-pressed:border-amber-300 aria-pressed:bg-amber-300/15"
             >
-              {key === "play" ? "Play" : "Close"}
+              {key === "play" ? "Play" : key === "close" ? "Close" : "Far"}
             </button>
           ))}
         </div>
@@ -171,6 +175,7 @@ const useMapWorld = (
 const usePlates = (
   world: World | null,
   frontier: boolean,
+  battle: string | null,
   overlayRef: React.RefObject<HTMLDivElement | null>,
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
   hovered: string | null,
@@ -206,9 +211,30 @@ const usePlates = (
       layer.scopes[entity.kind === "army" ? "army" : "structure"].setLabel({
         entityId: entity.entityId,
         position: entity.anchor,
-        plate: plateOf(entity, frontier),
+        // `battle` puts one thing in battle, as a battle cooldown does in the game: the map keeps it in view.
+        plate: { ...plateOf(entity, frontier), ...(String(entity.entityId) === battle ? { inBattle: true } : {}) },
       });
-  }, [layer, world, frontier]);
+  }, [layer, world, frontier, battle]);
+  // The world the plate probe measures each label against (scripts/client-playtest/plates.mjs), as the game reports its
+  // own through window.__gameRenderer: the camera, the canvas, each thing's tile, its model's top and its label point.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!world || !canvas) return;
+    const page = window as { __mapLabelLab?: unknown };
+    page.__mapLabelLab = {
+      camera: world.stage.camera,
+      canvas,
+      things: world.entities.map((entity) => ({
+        key: `${entity.kind === "army" ? "army" : "structure"}:${entity.entityId}`,
+        tile: entity.ground,
+        top: entity.anchor.clone().setY(entity.anchor.y - PLATE_CLEARANCE),
+        point: entity.anchor,
+      })),
+    };
+    return () => {
+      delete page.__mapLabelLab;
+    };
+  }, [world, canvasRef]);
   useEffect(() => {
     if (!layer || !world) return;
     const entity = world.entities.find((candidate) => String(candidate.entityId) === hovered);
@@ -335,7 +361,8 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean): MapPlate => {
 };
 
 /** The game's camera over the block: its 45° field and 60° pitch, at a play distance or close. */
-const ZOOM_DISTANCE: Record<MapZoom, number> = { play: 22, close: 12 };
+/** `far` is the world map's farthest camera distance (WORLDMAP_CAMERA_ZOOM.maxDistance), where labels still show. */
+const ZOOM_DISTANCE: Record<MapZoom, number> = { play: 22, close: 12, far: WORLDMAP_CAMERA_ZOOM.maxDistance };
 const PITCH = Math.PI / 3;
 
 const useZoom = (world: World | null, zoom: MapZoom, focus: string | null) => {

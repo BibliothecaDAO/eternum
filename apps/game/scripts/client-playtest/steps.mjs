@@ -46,6 +46,8 @@ const ZOOM_IN_NOTCHES = 15;
 // a test. A distance within the tolerance has arrived there.
 export const CLOSEST_CAMERA_DISTANCE = 10;
 const CLOSEST_DISTANCE_TOLERANCE = 0.05;
+// The map's farthest camera distance with labels drawn: WORLDMAP_CAMERA_ZOOM.maxDistance, held equal by a test.
+export const FARTHEST_CAMERA_DISTANCE = 45;
 // A still map's frames: long enough to span several of the sun's shadow steps, few enough to keep as evidence.
 const BURST_ARMIES_MAX = 6;
 const BURST_SELECT_WAIT_MS = 5_000;
@@ -289,18 +291,33 @@ async function zoomAllTheWayIn({ browser }) {
   return { distance: browser.observe().worldmapDistance };
 }
 
+async function zoomAllTheWayOut({ browser }) {
+  browser.run(["eval", `void window.__playtest.wheel(100, ${ZOOM_IN_NOTCHES})`]);
+  await sleep(ZOOM_SETTLE_MS);
+  return { distance: browser.observe().worldmapDistance };
+}
+
 /** On the map at the closest camera distance, read after the wheel: a missing or other distance is not the closest view. */
 function zoomedAllTheWayIn(onMap) {
+  return zoomedTo(onMap, CLOSEST_CAMERA_DISTANCE, "closest");
+}
+
+/** On the map at the farthest camera distance the wheel reaches, where labels are still drawn. */
+function zoomedAllTheWayOut(onMap) {
+  return zoomedTo(onMap, FARTHEST_CAMERA_DISTANCE, "farthest");
+}
+
+function zoomedTo(onMap, target, name) {
   return ({ seen, played }) => {
     const scene = onMap({ seen });
     if (scene.status !== "completed") return scene;
     const distance = played?.distance;
     if (typeof distance !== "number" || !Number.isFinite(distance)) {
-      return failed(`no camera distance was read after zooming in (${distance})`, played);
+      return failed(`no camera distance was read after zooming (${distance})`, played);
     }
-    return Math.abs(distance - CLOSEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE
+    return Math.abs(distance - target) <= CLOSEST_DISTANCE_TOLERANCE
       ? completed(played)
-      : failed(`the camera stopped at distance ${distance}, not the closest (${CLOSEST_CAMERA_DISTANCE})`, played);
+      : failed(`the camera stopped at distance ${distance}, not the ${name} (${target})`, played);
   };
 }
 
@@ -530,23 +547,38 @@ const BLITZ_SPECTATOR_STEPS = [
 ];
 
 /**
- * The map's labels in a live Blitz or Frontier game (map labels, owner 2026-10-19: "the label placement on the map need
+ * The map's labels in a live Blitz or Frontier game, opened with the dev overlays (the page then reports its world, so
+ * each label is measured against its thing as the renderer places it) (map labels, owner 2026-10-19: "the label placement on the map need
  * work"): read at the map's own zoom, then with each tile round the centre hovered (its plate opens in its token's
- * place), then the same at the closest zoom. No reading may hold a token, plate or order line over or crowding another,
- * or an opened plate away from its token. A seated player's list first takes the readiest army with Tab, so each hovered
+ * place), then the same at the farthest zoom and at the closest. No reading may hold a label on its thing or away from
+ * it (owner, 2026-10-20), a token, plate or order line over or crowding another, or an opened plate away from its token. A seated player's list first takes the readiest army with Tab, so each hovered
  * tile also shows the army's order line beside it.
  */
-const plateSteps = ({ opening, onMap }, { selectArmy }) => [
-  ...opening,
-  ...(selectArmy
+const plateSteps = ({ opening, onMap }, { selectArmy }) => {
+  const selectTheArmy = selectArmy
     ? [{ name: "select-army", play: selectTheArmyByTab, settleMs: 2_000, verify: armyOfferedOrders }]
-    : []),
-  { name: "plates", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
-  { name: "plates-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
-  { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 1_000, verify: zoomedAllTheWayIn(onMap) },
-  { name: "plates-close", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
-  { name: "plates-close-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
-];
+    : [];
+  // A click at each label, then the readiest army taken again for a seated player's next hovers.
+  const clickThrough = (name) => [
+    { name, play: clickThroughTheLabels, settleMs: 0, verify: clicksLandedBeneath },
+    ...selectTheArmy.map((step) => ({ ...step, name: `${name}-select-army` })),
+  ];
+  return [
+    ...opening,
+    ...selectTheArmy,
+    { name: "plates", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+    { name: "plates-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+    ...clickThrough("labels-click-through"),
+    { name: "zoom-out", play: zoomAllTheWayOut, settleMs: 1_000, verify: zoomedAllTheWayOut(onMap) },
+    { name: "plates-far", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+    { name: "plates-far-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+    ...clickThrough("labels-click-through-far"),
+    { name: "zoom-in", play: zoomAllTheWayIn, settleMs: 1_000, verify: zoomedAllTheWayIn(onMap) },
+    { name: "plates-close", play: readThePlates({ hover: false }), settleMs: 0, verify: platesClear },
+    { name: "plates-close-hovered", play: readThePlates({ hover: true }), settleMs: 0, verify: platesClear },
+    ...clickThrough("labels-click-through-close"),
+  ];
+};
 
 /** Long enough for a frame to place the plates after the view or the hovered tile changed. */
 const PLATES_SETTLE_MS = 1_500;
@@ -568,6 +600,70 @@ const readThePlates =
     }
     return { before, readings };
   };
+
+/** How many labels in view a click-through step clicks at, and how long a click's selection takes to land. */
+const LABEL_CLICKS = 6;
+const CLICK_SETTLE_MS = 1_200;
+
+/**
+ * A real click at the middle of each label in view (owner, 2026-10-20: "a click on a token selects its thing"; an open
+ * plate stays click-through), then the click it must equal, with the label layer hidden: for a resting token, a click
+ * on its thing's own tile, as the renderer places it; for an open plate, the same point. Each pair must select the same
+ * tile.
+ */
+async function clickThroughTheLabels({ browser, extraScreenshot }) {
+  const seen = browser.read(PLATES_EXPRESSION);
+  const page = browser.read("JSON.stringify({ width: innerWidth, height: innerHeight })");
+  const layer = (visibility) =>
+    browser.run(["eval", `void document.querySelector(".mp")?.style.setProperty("visibility", "${visibility}")`]);
+  const offsetOf = ({ x, y }) => [Math.round(x - page.width / 2), Math.round(y - page.height / 2)];
+  const clicks = [];
+  for (const [index, label] of (seen?.things ?? [])
+    .filter((thing) => thing.kind !== "order line")
+    .slice(0, LABEL_CLICKS)
+    .entries()) {
+    const middle = offsetOf({ x: label.x + label.w / 2, y: label.y + label.h / 2 });
+    const token = label.kind === "token";
+    if (token && !label.over) continue;
+    // From no selection: with one standing, a hovered tile shows the order line, and a token under it steps aside.
+    for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+    browser.tap(middle);
+    await sleep(CLICK_SETTLE_MS);
+    const shown = browser.observe().selection?.hex ?? null;
+    extraScreenshot(`click-${index}`);
+    const expected = token ? offsetOf(label.over.tile) : middle;
+    layer("hidden");
+    try {
+      browser.tap(expected);
+      await sleep(CLICK_SETTLE_MS);
+    } finally {
+      layer("");
+    }
+    clicks.push({
+      label: label.text || label.kind,
+      kind: label.kind,
+      at: middle,
+      expectedAt: expected,
+      shown,
+      expected: browser.observe().selection?.hex ?? null,
+    });
+  }
+  browser.press("Escape");
+  return { clicks };
+}
+
+/** A click on a token selected its thing's tile, and a click on an open plate the tile beneath, as checked. */
+function clicksLandedBeneath({ played }) {
+  if (played.clicks.length === 0) return blocked("no map label is drawn in view to click at");
+  const same = (a, b) => a !== null && b !== null && a.col === b.col && a.row === b.row;
+  const off = played.clicks.filter((click) => !same(click.shown, click.expected));
+  return off.length === 0
+    ? completed({ clicks: played.clicks })
+    : failed(`${off.length} clicks at a label did not select its thing's tile, or the tile beneath a plate`, {
+        clicks: played.clicks,
+        off,
+      });
+}
 
 /** Every reading of the step clear: the first that is not names the step's failure, with what it saw. */
 function platesClear({ played }) {
@@ -952,10 +1048,14 @@ export const STEP_SETS = {
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
   "blitz-burst": { game: BLITZ, steps: BLITZ_BURST_STEPS },
-  "blitz-plates": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: false }) },
-  "blitz-plates-player": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: true }) },
-  "frontier-plates": { game: FRONTIER, steps: plateSteps(FRONTIER_MAP, { selectArmy: false }) },
-  "frontier-plates-player": { game: FRONTIER, steps: plateSteps(FRONTIER_MAP, { selectArmy: true }) },
+  "blitz-plates": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: false }), devOverlays: true },
+  "blitz-plates-player": { game: BLITZ, steps: plateSteps(BLITZ_MAP, { selectArmy: true }), devOverlays: true },
+  "frontier-plates": { game: FRONTIER, steps: plateSteps(FRONTIER_MAP, { selectArmy: false }), devOverlays: true },
+  "frontier-plates-player": {
+    game: FRONTIER,
+    steps: plateSteps(FRONTIER_MAP, { selectArmy: true }),
+    devOverlays: true,
+  },
   "still-map": { game: FRONTIER, steps: stillMapSteps(FRONTIER_MAP) },
   "still-map-frozen-sun": { game: FRONTIER, steps: frozenSunStillMapSteps(FRONTIER_MAP), devOverlays: true },
   "blitz-still-map": { game: BLITZ, steps: stillMapSteps(BLITZ_MAP) },

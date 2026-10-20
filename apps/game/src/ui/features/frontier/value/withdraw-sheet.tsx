@@ -10,19 +10,22 @@ import {
   TRANSACTION,
   WITHDRAW,
   paidWhenResumed,
+  withdrawalUnknown,
 } from "@/ui/design-system/kit/words";
 
 import { AmountRange } from "../amount-range";
 
 /**
- * Where a withdrawal stands: choosing the amount, sent (the LORDS have left the game's count), paid on Starknet with its
- * transaction, or recorded while payouts were paused and paid when they resume.
+ * Where a withdrawal stands: choosing the amount (again, with the reason the last one was not applied), sending until
+ * the game applies it and the ledger pays it, paid on Starknet with its transaction, recorded while payouts were paused
+ * and paid when they resume, or unknown: no answer, so it may still apply.
  */
 export type WithdrawStep =
-  | { kind: "pick" }
+  | { kind: "pick"; notApplied?: string }
   | { kind: "sending"; amount: number }
   | { kind: "paid"; amount: number; transactionUrl: string }
-  | { kind: "waiting"; amount: number };
+  | { kind: "waiting"; amount: number }
+  | { kind: "unknown"; amount: number };
 
 /**
  * Withdraw (value screens, a): the realm's LORDS leave the game for the wallet linked to the account, shown and never
@@ -81,22 +84,37 @@ const WithdrawBody = ({
   if (step.kind === "sending") return <Sending amount={step.amount} held={held} wallet={wallet} />;
   if (step.kind === "paid") return <Paid step={step} wallet={wallet} onClose={onClose} />;
   if (step.kind === "waiting") return <Waiting amount={step.amount} held={held} wallet={wallet} />;
+  if (step.kind === "unknown") return <Unknown amount={step.amount} held={held} wallet={wallet} onClose={onClose} />;
   if (wallet === null) return <NoWallet held={held} onLinkWallet={onLinkWallet} />;
   if (refusal) return <Refused held={held} address={wallet} line={refusal} />;
-  return <Pick held={held} address={wallet} amount={amount} onAmount={onAmount} onWithdraw={onWithdraw} />;
+  return (
+    <Pick
+      held={held}
+      address={wallet}
+      amount={amount}
+      notApplied={step.notApplied}
+      onAmount={onAmount}
+      onWithdraw={onWithdraw}
+    />
+  );
 };
 
-/** Choose the amount (or all of it), see the count after and where the LORDS go, then Withdraw carrying the amount. */
+/**
+ * Choose the amount (or all of it), see the count after and where the LORDS go, then Withdraw carrying the amount. After
+ * a withdrawal the game did not apply, its reason stands over the choice.
+ */
 const Pick = ({
   held,
   address,
   amount,
+  notApplied,
   onAmount,
   onWithdraw,
 }: {
   held: number | undefined;
   address: string;
   amount: number;
+  notApplied: string | undefined;
   onAmount: (amount: number) => void;
   onWithdraw: () => void;
 }) => (
@@ -104,6 +122,7 @@ const Pick = ({
     <Hero icon="lords" value={formatExact(amount)} />
     <AmountRange label={LORDS} icon="lords" value={amount} max={held ?? 0} disabled={!held} onChange={onAmount} />
     <Flow before={held} after={held === undefined ? undefined : held - amount} address={address} />
+    {notApplied && <HudNotice tone="warn" line={notApplied} />}
     <HudButton kind="primary" disabled={!held || amount < 1 || amount > held} onClick={onWithdraw}>
       {WITHDRAW}
     </HudButton>
@@ -148,6 +167,28 @@ const Waiting = ({ amount, held, wallet }: { amount: number; held: number | unde
     <Hero icon="hourglass" value={formatExact(amount)} />
     <Leaving held={held} wallet={wallet} />
     <HudNotice tone="warn" line={paidWhenResumed(formatExact(amount))} />
+  </>
+);
+
+/** No answer from the game: the withdrawal may still apply, so the sheet says so and offers no second send. */
+const Unknown = ({
+  amount,
+  held,
+  wallet,
+  onClose,
+}: {
+  amount: number;
+  held: number | undefined;
+  wallet: string | null;
+  onClose: () => void;
+}) => (
+  <>
+    <Hero icon="hourglass" value={formatExact(amount)} />
+    <Leaving held={held} wallet={wallet} />
+    <HudNotice tone="warn" line={withdrawalUnknown(formatExact(amount))} />
+    <HudButton kind="primary" onClick={onClose}>
+      {CONTINUE}
+    </HudButton>
   </>
 );
 

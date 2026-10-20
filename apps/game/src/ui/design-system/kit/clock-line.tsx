@@ -1,8 +1,7 @@
-import { formatClockTime, formatDuration } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { TONE_TEXT, type Tone } from "./tone";
-import { DAY_ENDS, LEFT, TOMORROW_LASTS } from "./words";
+import { type ClockPhrase, dayEnds, dayLeft, tomorrowLasts } from "./words";
 
 /**
  * The clock line, ruled to stay in words: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h". Days run 8 to 24 hours,
@@ -25,17 +24,29 @@ export const ClockLine = ({
     role="timer"
     className={cn("flex flex-wrap items-baseline justify-center gap-x-1 text-sm font-semibold", TONE_TEXT[tone])}
   >
-    <span>{DAY_ENDS}</span>
-    <Numeral>{formatClockTime(endsAt)}</Numeral>
+    <Phrase phrase={dayEnds(endsAt)} />
     <span aria-hidden>·</span>
-    <Numeral>{formatDuration(secondsLeft, { days: false })}</Numeral>
-    <span>{LEFT}</span>
+    <Phrase phrase={dayLeft(secondsLeft)} />
     <span aria-hidden className="px-1">
       ·
     </span>
-    <span>{TOMORROW_LASTS}</span>
-    <Numeral>{formatDuration(tomorrowSeconds, { days: false })}</Numeral>
+    <Phrase phrase={tomorrowLasts(tomorrowSeconds)} />
   </p>
 );
 
-const Numeral = ({ children }: { children: string }) => <b className="text-sm tabular-nums">{children}</b>;
+/** A clock phrase with its reading set apart in bold numerals. */
+const Phrase = ({ phrase }: { phrase: ClockPhrase }) => {
+  const reading = <b className="tabular-nums">{phrase.reading}</b>;
+  const words = <span>{phrase.words}</span>;
+  return phrase.readingFirst ? (
+    <>
+      {reading}
+      {words}
+    </>
+  ) : (
+    <>
+      {words}
+      {reading}
+    </>
+  );
+};

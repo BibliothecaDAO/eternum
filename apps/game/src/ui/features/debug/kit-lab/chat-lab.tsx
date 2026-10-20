@@ -58,7 +58,7 @@ const RailLab = ({ chatOpen }: { chatOpen: boolean }) => (
 const RailStage = ({ chatOpen }: { chatOpen: boolean }) => (
   <div className="fixed inset-0">
     <canvas data-lab="map" className="absolute inset-0 z-0 h-full w-full bg-[#0b1418]" />
-    <RailFrame>
+    <RailFrame chat={<HudChatWindow open={chatOpen} onOpenChange={noop} />} chatOpen={chatOpen}>
       <HudPanel label="Next up" title="Next up" cue="1 of 5">
         <p className="text-hud-body text-hud-ink">Your army can explore: +5 points a tile.</p>
         <HudButton kind="primary" className="mt-2 w-full">
@@ -75,7 +75,6 @@ const RailStage = ({ chatOpen }: { chatOpen: boolean }) => (
       <TileDetails>
         <SelectedWorldmapEntity />
       </TileDetails>
-      <HudChatWindow open={chatOpen} onOpenChange={noop} />
     </RailFrame>
     <BuildTag />
   </div>

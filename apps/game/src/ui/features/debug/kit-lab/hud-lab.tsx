@@ -19,7 +19,6 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
-import { FIGHT_CASES, type FightCase, type FightOption, FightOptionSheet } from "./fight-options";
 import { LabGame } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
@@ -166,19 +165,31 @@ type LabChest = Parameters<typeof RuinChestMoment>[0];
 
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
-/** A fight the army wins in so many attacks; the losses and the guard left are this attack's, as its result shows. */
-const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
+/**
+ * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows, and
+ * the whole fight's (each attack costing as this one, the guard's every troop killed, 30 stamina an attack).
+ */
+const WIN = (exchanges: number, troopsLost: number, guard: number, guardLeft = 0) => ({
   outcome: "wins" as const,
   exchanges,
   troopsLost,
   guardLeft,
+  whole: { troopsLost: troopsLost * exchanges, guardKilled: guard, stamina: 30 * exchanges },
+});
+/** A fight that ends with the army gone: every troop lost over the whole fight, and what it killed by then. */
+const LOSE = (exchanges: number, troopsLost: number, guardLeft: number, army: number, guardKilled: number) => ({
+  outcome: "loses" as const,
+  exchanges,
+  troopsLost,
+  guardLeft,
+  whole: { troopsLost: army, guardKilled, stamina: 30 * exchanges },
 });
 const CAMP_CARD: LabSite = {
   site: "Camp",
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
-  fight: WIN(1, 180),
+  fight: WIN(1, 180, 1_100),
   pay: { icon: "labor", amount: 550 },
   xp: 82,
   verb: ATTACK_30,
@@ -188,7 +199,7 @@ const RUIN_CARD: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: ARMY_CHIP,
   guard: 3_400,
-  fight: WIN(2, 1_250, 1_520),
+  fight: WIN(2, 1_250, 3_400, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
   xp: 145,
@@ -238,38 +249,60 @@ const DAY_DONE = {
   onContinue: () => undefined,
 };
 
-/** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
-const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "workshop", icon: "workshop", name: "Workshop", tip: "", foot: { kind: "price", labor: 10_000, short: true } },
-  { key: "barracks", icon: "barracks", name: "Barracks", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "hut", icon: "workers-hut", name: "Hut", tip: "", foot: { kind: "price", labor: 5_100, short: false } },
-  { key: "war", icon: "war-hall", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "built" } },
-  {
-    key: "supply",
-    icon: "supply-yard",
-    name: TRAINING_BUILDINGS[1],
-    tip: "",
-    foot: { kind: "price", labor: 3_000, short: false },
-  },
-  {
-    key: "lodge",
-    icon: "scout-lodge",
-    name: TRAINING_BUILDINGS[2],
-    tip: "",
-    foot: { kind: "price", labor: 3_000, short: false },
-  },
-  { key: "hearth", icon: "hearth", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "built" } },
+type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
+/** A building card for the lab: its painting and name, what it gives and takes, and where it stands. */
+const tile = (
+  key: string,
+  icon: LabTile["icon"],
+  name: string,
+  gives: LabTile["gives"],
+  takes: number,
+  standing: LabTile["standing"],
+): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
+const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
+  ({ kind: "price", labor, short }) as const;
+const TRAINS = { icon: "order-rage", value: "Common" } as const;
+
+/**
+ * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
+ * Workshop 3h 10m from its 10,000.
+ */
+const BUILD_TILES: LabTile[] = [
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, 1, price(6_800)),
+  tile(
+    "workshop",
+    "workshop",
+    "Workshop",
+    { icon: "labor", value: "+0.83/min" },
+    1,
+    price(10_000, { of: "labor", wait: 3 * HOUR + 10 * 60 }),
+  ),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(6_800)),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(5_100)),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "built" }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, price(3_000)),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, price(3_000)),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, { kind: "built" }),
 ];
-const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 800, short: false } },
-  { key: "workshop", icon: "workshop", name: "Workshop", tip: "", foot: { kind: "price", labor: 2_000, short: false } },
-  { key: "barracks", icon: "barracks", name: "Barracks", tip: "", foot: { kind: "price", labor: 800, short: false } },
-  { key: "hut", icon: "workers-hut", name: "Hut", tip: "", foot: { kind: "price", labor: 300, short: false } },
-  { key: "war", icon: "war-hall", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "supply", icon: "supply-yard", name: TRAINING_BUILDINGS[1], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "lodge", icon: "scout-lodge", name: TRAINING_BUILDINGS[2], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "hearth", icon: "hearth", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "locked", gate: 3 } },
+/** A fresh realm: the training buildings locked behind the Barracks at Rare. */
+const EARLY_TILES: LabTile[] = [
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, 1, price(800)),
+  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", gate: 3 }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
+    kind: "locked",
+    gate: 3,
+  }),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
+    kind: "locked",
+    gate: 3,
+  }),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
+    kind: "locked",
+    gate: 3,
+  }),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -369,35 +402,43 @@ const LAB_NEXT_UP_FACTS: NextUpFacts = {
   rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
 
-/** Today's camp card for a fight the options read (fight-options.tsx). */
-const todaysCard = (fight: FightCase): LabSite => ({
+/**
+ * The fight card (the owner's pick, option A) on the owner's camp and two more: fight-short, a Troll camp it wins in
+ * three attacks, 31 minutes from the stamina; fight-ready, one attack clears it now; fight-loses, the army is lost in
+ * this attack.
+ */
+const OWNERS_CAMP: LabSite = {
   site: "Camp",
-  beast:
-    fight.guard.art === "beast-troll" ? { name: fight.guard.name, beast: "troll", combatClass: "Knight" } : undefined,
-  army: fight.army,
-  guard: fight.guard.troops,
-  fight: {
-    outcome: fight.attacksToClear === 0 ? "loses" : "wins",
-    exchanges: fight.attacksToClear,
-    troopsLost: fight.attack.lost,
-    guardLeft: Math.max(0, fight.guard.troops - fight.attack.killed),
-  },
-  pay: { icon: fight.pay.icon, amount: fight.pay.amount },
-  xp: fight.xp,
-  verb:
-    fight.stamina.wait === 0
-      ? ATTACK_30
-      : { kind: "short", stamina: { cost: fight.stamina.cost, held: fight.stamina.held, wait: fight.stamina.wait } },
-});
-
-/** The fight card's options, each case beside today's card: fight-<today|a|b|c>-<short|ready|loses>. */
+  beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
+  army: { art: "knight-t1", troops: 1_500 },
+  guard: 1_300,
+  fight: WIN(3, 180, 1_300, 740),
+  pay: { icon: "wood", amount: 650 },
+  xp: 90,
+  verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
+};
 const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
-  Object.entries(FIGHT_CASES).flatMap(([name, fight]) => [
-    [`fight-today-${name}`, { clock: CLOCK, stores: STORES, armies: ARMIES, site: todaysCard(fight) }],
-    ...(["a", "b", "c"] as const).map((option) => [
-      `fight-${option}-${name}`,
-      { clock: CLOCK, stores: STORES, armies: ARMIES, forecast: { option, fight } },
-    ]),
+  Object.entries({
+    short: OWNERS_CAMP,
+    ready: {
+      ...OWNERS_CAMP,
+      beast: undefined,
+      army: { art: "knight-t1", troops: 5_000 },
+      guard: 1_100,
+      fight: WIN(1, 180, 1_100),
+      pay: { icon: "labor", amount: 550 },
+      xp: 82,
+      verb: ATTACK_30,
+    },
+    loses: {
+      ...OWNERS_CAMP,
+      army: { art: "knight-t1", troops: 400 },
+      fight: LOSE(1, 400, 1_150, 400, 150),
+      verb: ATTACK_30,
+    },
+  } satisfies Record<string, LabSite>).map(([name, site]) => [
+    `fight-${name}`,
+    { clock: CLOCK, stores: STORES, armies: ARMIES, site },
   ]),
 );
 
@@ -470,7 +511,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15, 400), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   "site-ruin-lose": {
@@ -480,7 +521,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
+      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
     },
   },
   "site-far": {
@@ -508,12 +549,12 @@ const STATES = {
       army: null,
       verb: null,
       choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
+        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 1_100, 492), onPick: () => undefined },
         {
           label: "Army 2",
           art: ARMY_CHIP.art,
           troops: 100,
-          fight: { outcome: "loses", exchanges: 1, troopsLost: 100, guardLeft: 1_034 },
+          fight: LOSE(1, 100, 1_034, 100, 66),
           onPick: () => undefined,
         },
         { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
@@ -677,7 +718,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: { outcome: "loses", exchanges: 3, troopsLost: 1_200, guardLeft: 2_300 },
+      fight: LOSE(3, 1_200, 2_300, 1_200, 1_100),
     },
   },
   "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
@@ -792,6 +833,14 @@ const STATES = {
     purse: { lords: 1_240 },
     realms: { wallet: WALLET_ADDRESS, realms: [], labor: 9_640, limit: 18_000 },
   },
+  /** No wallet linked: the sheet says what Realms are for, then asks for the wallet (live-qa-night-1 P3-3). */
+  "realms-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    realms: { wallet: null, realms: [], labor: 9_640, limit: 18_000 },
+  },
 } as const;
 
 type LabState = {
@@ -813,8 +862,6 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  /** One of the fight card's options for the owner to pick (fight-options.tsx). */
-  forecast?: { option: FightOption; fight: FightCase };
   fight?: FightResult;
   chest?: LabChest;
   deploy?: LabDeploy;
@@ -971,21 +1018,10 @@ export const HudLab = () => {
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
-            population={lab.realmView === "build" ? { free: 3, total: 12 } : { free: 6, total: 6 }}
+            population={lab.realmView === "build" ? LAB_POPULATION : { used: 0, total: 6 }}
             tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
             chosen={lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
-            gains={
-              lab.realmView === "build"
-                ? [
-                    { icon: "wheat", value: "+375/h", label: "produces" },
-                    { icon: "person", value: "1", label: "population" },
-                  ]
-                : [
-                    { icon: "troops", value: "+100/h", label: "produces" },
-                    { icon: "person", value: "3", label: "population" },
-                  ]
-            }
             prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
             refusal={undefined}
             sending={false}
@@ -1016,7 +1052,6 @@ export const HudLab = () => {
           />
         )}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
-        {lab.forecast && <FightOptionSheet {...lab.forecast} />}
         {lab.fight && (
           <Sheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
             <FightResultCard result={lab.fight} onClose={noop} />
@@ -1055,6 +1090,8 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
+      // The next army fills a slot whose army was released today with 40 stamina left.
+      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150 } }}
       wheatCost={count * 2}
       march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}

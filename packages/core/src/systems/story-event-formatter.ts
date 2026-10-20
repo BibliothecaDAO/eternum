@@ -6,6 +6,7 @@ import {
   VERDICT_WORDS,
   buildingName,
   formatCharge,
+  scaledToUnits,
   formatClockTime,
   formatDuration,
   formatExact,
@@ -13,7 +14,6 @@ import {
   GuardSlot,
   guardSlotName,
   LORDS,
-  RESOURCE_PRECISION,
   RealmLevels,
   rankName,
   relicChestDelivery,
@@ -28,7 +28,6 @@ import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameRe
 import { readExpeditionRules } from "../utils/expeditions";
 import { readFrontierBeast } from "../utils/frontier-beast";
 import { Position } from "./position";
-import { getGameMode } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
 import { configManager } from "../managers/config-manager";
 import { feltEquals } from "../client/herald-http";
@@ -174,7 +173,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
     title: "Hyperstructure points",
-    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatNumber(payload.points) ?? "—"}`,
+    // Story points are at the contract's precision (a millionth of a point); a player reads whole points.
+    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatPoints(Math.floor(wholePoints(BigInt(String(payload.points)))))}`,
     icon: "prize",
   }),
   BitcoinAwardStory: (_event, payload, components, resolvePlayerName) => ({
@@ -595,7 +595,7 @@ function describeStructureName(structureId: unknown, components?: NativeFactStor
 }
 
 function structureDisplayName(components: NativeFactStore, structure: StructureRow): string {
-  return getStructureName(structure, getGameMode()).name;
+  return getStructureName(structure).name;
 }
 
 /**
@@ -810,14 +810,6 @@ function amountToBigInt(value: unknown): bigint | null {
   return null;
 }
 
-/** An amount at contract precision as the chain moved it, to its last unit: a charge ("1,000", "0.001"). */
-function formatAmountWithPrecision(amount: unknown, precision: number): string {
-  const bigIntAmount = amountToBigInt(amount);
-  if (bigIntAmount === null) return "0";
-  const divisor = BigInt(precision);
-  return formatCharge(Number(bigIntAmount / divisor) + Number(bigIntAmount % divisor) / precision);
-}
-
 function joinPieces(parts: Array<string | undefined>): string | undefined {
   const filtered = parts.filter((part): part is string => Boolean(part));
   return filtered.length ? filtered.join(" · ") : undefined;
@@ -858,7 +850,7 @@ function troopCount(amount: unknown): string {
 function formatResourceAmount(amount: unknown): string | undefined {
   const bigIntAmount = amountToBigInt(amount);
   if (bigIntAmount === null) return undefined;
-  return formatAmountWithPrecision(bigIntAmount, RESOURCE_PRECISION);
+  return formatCharge(scaledToUnits(bigIntAmount));
 }
 
 function formatSlotLabel(value: unknown): string | undefined {

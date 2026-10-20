@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 describe("the build sheet", () => {
-  it("stands the chosen building on the plot as a ghost, shows its gains, builds it there and takes the ghost away", async () => {
+  it("stands the chosen building on the plot as a ghost, builds it there and takes the ghost away", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, realm } = realmBoard();
     const plot = { col: 11, row: 10 };
@@ -54,8 +54,6 @@ describe("the build sheet", () => {
       )!;
     expect(card("Farm").getAttribute("aria-pressed")).toBe("true");
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceWheat, plot });
-    // The chosen farm makes wheat at its rate and takes its population.
-    expect(host.querySelector('[aria-label^="produces +"]')).not.toBeNull();
 
     act(() => card("Barracks").click());
     expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });
@@ -150,6 +148,95 @@ describe("the build sheet", () => {
     refused.mockRestore();
   });
 
+  /**
+   * whole-review-2-ui P2-2: an answer to one plot's Build closes only the card that sent it. The real sheet, its send
+   * held at the network; the HUD's own close (frontier-selection-sheet) clears whatever plot is selected.
+   */
+  describe("an answer to a Build that arrives late", () => {
+    const heldSend = () => {
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      const { store, realm } = realmBoard();
+      let answer: (sent: { transaction_hash: string }) => void = () => {};
+      const placeBuilding = vi.fn(() => new Promise((resolve) => (answer = resolve)));
+      installActiveGameClient({
+        connect() {},
+        disconnect() {},
+        dispose() {},
+        actions: { placeBuilding },
+        waitForAction: () => Promise.resolve({ hash: "0x1", block: 1, status: "SUCCEEDED" }),
+      } as unknown as GameClient);
+      const host = document.createElement("div");
+      document.body.append(host);
+      const root = createRoot(host);
+      const select = (col: number | null) =>
+        useUIStore
+          .getState()
+          .setSelectedBuildingHex(col === null ? null : { structureId: 7, innerCol: col, innerRow: 10 });
+      const close = () => {
+        useUIStore.getState().closeSelectedTile();
+        useUIStore.getState().setSelectedBuildingHex(null);
+      };
+      const Hud = () => {
+        const at = useUIStore((state) => state.selectedBuildingHex);
+        return (
+          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+            {at && <BuildSheet realm={realm} plot={{ col: at.innerCol, row: at.innerRow }} onClose={close} />}
+          </GameProvider>
+        );
+      };
+      act(() => root.render(<Hud />));
+      const build = () =>
+        act(async () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!.click());
+      const selected = () => useUIStore.getState().selectedBuildingHex?.innerCol ?? null;
+      const end = () => {
+        act(() => root.unmount());
+        host.remove();
+        select(null);
+      };
+      return {
+        placeBuilding,
+        select: (col: number | null) => act(() => select(col)),
+        build,
+        selected,
+        end,
+        answer: () => act(async () => answer({ transaction_hash: "0x1" })),
+      };
+    };
+
+    it("leaves plot B's card open when plot A's answer arrives after B was chosen", async () => {
+      const life = heldSend();
+      life.select(11);
+      await life.build();
+      expect(life.placeBuilding).toHaveBeenCalledWith(expect.objectContaining({ hex: { col: 11, row: 10 } }));
+      life.select(12);
+      await life.answer();
+      expect(life.selected()).toBe(12);
+      life.end();
+    });
+
+    it("leaves a card opened anew open when the card that sent was closed before the answer", async () => {
+      const life = heldSend();
+      life.select(11);
+      await life.build();
+      // A's card closes (the sheet unmounts), then plot B opens its own card.
+      life.select(null);
+      life.select(12);
+      await life.answer();
+      expect(life.selected()).toBe(12);
+      life.end();
+    });
+
+    it("closes the card that sent once the answer arrives while it still shows that plot", async () => {
+      const life = heldSend();
+      life.select(11);
+      await life.build();
+      expect(life.selected()).toBe(11);
+      await life.answer();
+      expect(life.selected()).toBeNull();
+      life.end();
+    });
+  });
+
   const fact = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
   const labor = (store: ReturnType<typeof realmBoard>["store"], amount: bigint) =>
     store.applyFacts([
@@ -204,12 +291,12 @@ describe("the build sheet", () => {
     return { host, card, button, close };
   };
 
-  it("keeps the realm's free population in its head", () => {
+  it("keeps the realm's population in its head, used of all it can hold", () => {
     const { store, realm } = realmBoard();
     const total = 6 + configManager.getBasePopulationCapacity();
     population(store, 4);
     const sheet = open(store, realm);
-    expect(sheet.host.querySelector(`[aria-label="population ${total - 4} / ${total}"]`)).not.toBeNull();
+    expect(sheet.host.querySelector(`[aria-label="population 4/${total}"]`)).not.toBeNull();
     sheet.close();
   });
 
@@ -263,7 +350,7 @@ describe("the build sheet", () => {
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
-    const base = sheet.card("Farm").textContent!.replace("Farm", "");
+    const base = sheet.card("Farm").querySelector(".ui-chip")!.textContent;
     sheet.close();
 
     store.applyFacts([
@@ -279,6 +366,89 @@ describe("the build sheet", () => {
     const rise = 1 + 4 * (configManager.getBuildingBaseCostPercentIncrease() / 10_000);
     expect(arrow.getAttribute("data-tip")).toBe(`Base ${base} labor, ×${rise} with 2 standing`);
     risen.close();
+  });
+
+  it("says on each card what one more gives, the population it takes, and its price with the wait or the lack", () => {
+    const { store, realm } = realmBoard();
+    // No labor yet, growing 100 an hour.
+    labor(store, 0n);
+    store.applyFacts([
+      fact("0x78", "ResourceProduction", {
+        game_id: 1,
+        entity_id: 7,
+        resource_type: ResourcesIds.Labor,
+        building_count: 1,
+        production_rate: String((100n * BigInt(RESOURCE_PRECISION)) / 3_600n),
+        output_amount_left: "0",
+        last_settled_at: 350,
+      }),
+    ] as never);
+    const band = (sheet: ReturnType<typeof open>, name: string) => sheet.card(name).querySelector(".ui-chip")!;
+    const sheet = open(store, realm);
+    const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
+    // What one more Farm makes, the population it takes, then its price in red with the wait at a glance ("7m").
+    expect(sheet.card("Farm").textContent).toMatch(/\+[\d,.]+\/(?:s|min)/);
+    expect(sheet.card("Farm").querySelector(`[aria-label="population ${farm}"]`)).not.toBeNull();
+    expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
+    expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
+    // A training building waits behind the Barracks' tier: a lock and its pips, no price.
+    expect(band(sheet, "War hall").querySelector('[aria-label="Rare"]')).not.toBeNull();
+    expect(band(sheet, "War hall").textContent).not.toMatch(/\d/);
+    sheet.close();
+
+    // Labor for all; the population full: a building that takes some says so in amber, the Hut stands ready.
+    labor(store, 1_000_000n);
+    population(store, 6 + configManager.getBasePopulationCapacity());
+    const full = open(store, realm);
+    expect(band(full, "Farm").getAttribute("data-tone")).toBe("warn");
+    expect(band(full, "Hut").getAttribute("data-tone")).toBeNull();
+    full.close();
+
+    // A training building standing: a tick on a green band.
+    store.applyFacts([
+      fact("0x72", "StructureBuildings", {
+        game_id: 1,
+        entity_id: 7,
+        ...countsWith(BuildingType.WarHall, 1),
+        population: { current: 2, max: 6 },
+      }),
+    ] as never);
+    const built = open(store, realm);
+    expect(band(built, "War hall").getAttribute("data-tone")).toBe("good");
+    expect(band(built, "War hall").querySelector('[data-icon="check"]')).not.toBeNull();
+    built.close();
+  });
+
+  it("says on the Hut's card what the chain grants for one more: its grant and the change in the rounded bonus", () => {
+    const { store, realm } = realmBoard();
+    const grant = configManager.getBuildingCategoryConfig(BuildingType.WorkersHut).capacity_grant;
+    // The Hut row at its first tier (research.cairo: bit 21), on the fixture board's 2,500 bps step.
+    store.applyFacts([
+      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 21n) }),
+    ] as never);
+    const hutGives = (standing: number) => {
+      store.applyFacts([
+        fact("0x72", "StructureBuildings", {
+          game_id: 1,
+          entity_id: 7,
+          ...countsWith(BuildingType.WorkersHut, standing),
+          population: { current: 0, max: 6 },
+        }),
+      ] as never);
+      const sheet = open(store, realm);
+      // What one more gives stands beside its painting (a Hut takes no population, so the only person mark).
+      const gives = sheet
+        .card("Hut")
+        .querySelector('[data-icon="person"]')!
+        .parentElement!.textContent!.replace("+", "");
+      sheet.close();
+      return Number(gives);
+    };
+    // buildings.cairo's hut_bonus over all standing Huts, the difference granted: floor(2 × 6 × 0.25) − floor(6 × 0.25)
+    // = 3 − 1 with one standing, floor(3 × 6 × 0.25) − floor(2 × 6 × 0.25) = 4 − 3 with two.
+    expect(grant).toBe(6);
+    expect(hutGives(1)).toBe(6 + 2);
+    expect(hutGives(2)).toBe(6 + 1);
   });
 
   it("says what opens a locked training building, with the way there on the gold button", () => {

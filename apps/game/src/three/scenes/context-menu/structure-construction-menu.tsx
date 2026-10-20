@@ -7,7 +7,7 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import type { GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
-import { getRealmInfo, configManager, getEntityName, getGameMode, resolveUseSimpleCost } from "@bibliothecadao/eternum";
+import { getRealmInfo, configManager, getEntityName, resolveUseSimpleCost } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   HexEntityInfo,
@@ -122,8 +122,7 @@ export const createConstructionMenu = ({
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
   const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
-  const structureName =
-    getEntityName(structureEntityId, store, getGameMode()) ?? structureKindName(StructureType.Realm);
+  const structureName = getEntityName(structureEntityId, store) ?? structureKindName(StructureType.Realm);
 
   const makeBuildingAction = ({
     suffix,

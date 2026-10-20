@@ -12,10 +12,7 @@ import {
 } from "@/ui/features/world/components/entities/structure-production-summary";
 import { Icon } from "@/ui/design-system/icon";
 import { HudIconButton, HudPanel, HudSelect } from "@/ui/design-system/kit/hud-elements";
-import {
-  formatPopulationStatusLabel,
-  formatUsedBuildingTilesLabel,
-} from "@/ui/features/world/containers/structure-status";
+import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/structure-status";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { canIssueOrders } from "@/utils/can-issue-orders";
@@ -31,6 +28,8 @@ import {
   StructureType,
   formatCount,
   formatExact,
+  formatPopulation,
+  formatPopulationInWords,
   formatAmount,
   resourceName,
 } from "@bibliothecadao/types";
@@ -112,10 +111,10 @@ const HoldingStats = ({ holding }: { holding: StructureWithMetadata }) => {
     <>
       <span
         className="flex items-center gap-1.5"
-        data-tip={`Population ${formatExact(holding.population)} of ${formatExact(holding.populationCapacity)}`}
+        data-tip={formatPopulationInWords(holding.population, holding.populationCapacity)}
       >
         <Icon name="people" size={16} />
-        {formatPopulationStatusLabel(holding.population, holding.populationCapacity)}
+        {formatPopulation(holding.population, holding.populationCapacity)}
       </span>
       {tiles && (
         <span

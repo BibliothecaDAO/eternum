@@ -856,3 +856,9 @@ it("tells the recorded whole LORDS payment and names its home even after the ope
       .title,
   ).toBe("Chest expired: no LORDS paid");
 });
+
+it("writes a hyperstructure share's points whole, from the contract's millionths", () => {
+  expect(
+    buildStoryEventPresentation(story("HyperstructurePoints", { player: "0x0", points: "5000000000" })).description,
+  ).toMatch(/ \+5,000 points$/);
+});

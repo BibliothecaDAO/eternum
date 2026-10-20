@@ -35,7 +35,7 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/te
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
-import { isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
+import { ARMY_PLATE_HEIGHT, isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
 import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -59,7 +59,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { displayPlayerName, getEntityName, getGameMode } from "@bibliothecadao/eternum";
+import { displayPlayerName, getEntityName } from "@bibliothecadao/eternum";
 import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -122,8 +122,6 @@ import type { PipelineCompiler } from "../pipeline-compiler";
 import { armyHomeStructureId } from "@/utils/native-id";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-// How far above its tile an army's plate sits: just over the unit's head, so the plate reads as this unit's.
-const ARMY_PLATE_HEIGHT = 1.45;
 
 interface MovingArmySourceState {
   col: number;
@@ -1307,7 +1305,7 @@ export class ArmyManager {
   /** The realm an army comes from: the structure that raised it, by the one name the map and event text use. */
   private resolveHomeRealmName(army: ArmyData): string {
     if (!this.store || army.owningStructureId === null || army.owningStructureId === undefined) return "";
-    return getEntityName(army.owningStructureId, this.store, getGameMode()) ?? "";
+    return getEntityName(army.owningStructureId, this.store) ?? "";
   }
 
   /**
@@ -2972,7 +2970,10 @@ ${
 
         // Only update if timer has changed or expired
         if (army.battleTimerLeft !== newBattleTimerLeft) {
+          const ended = army.battleTimerLeft !== undefined && newBattleTimerLeft === undefined;
           army.battleTimerLeft = newBattleTimerLeft;
+          // Out of battle: its label says so, and the map no longer keeps it in view for that.
+          if (ended) this.refreshArmyCompactLabel(army);
         }
       }
     });

@@ -1,4 +1,4 @@
-import { formatClockTime, formatCount, formatDuration } from "@bibliothecadao/types";
+import { formatCount } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
 import { AppButton, AppChip, AppGameCard, AppRow } from "@/ui/design-system/kit/app-elements";
@@ -6,13 +6,14 @@ import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
 import {
   BLITZ_WORDS,
   DAY,
-  DAY_ENDS,
   ENTRY_WORDS,
-  LEFT,
   PITCH,
   PLAY_WORDS,
-  TOMORROW_LASTS,
   WORDS,
+  dayEnds,
+  dayLeft,
+  phraseText,
+  tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 
 import { lobbyId, lobbyTitle } from "../blitz/lobby";
@@ -121,9 +122,9 @@ const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: numbe
   return (
     <>
       <AppChip icon="hourglass" tone={tone}>
-        <span role="timer">{`${DAY_ENDS} ${formatClockTime(day.endsAt)} · ${formatDuration(day.secondsLeft, { days: false })} ${LEFT}`}</span>
+        <span role="timer">{`${phraseText(dayEnds(day.endsAt))} · ${phraseText(dayLeft(day.secondsLeft))}`}</span>
       </AppChip>
-      <AppChip icon="sun">{`${TOMORROW_LASTS} ${formatDuration(day.tomorrowSeconds, { days: false })}`}</AppChip>
+      <AppChip icon="sun">{phraseText(tomorrowLasts(day.tomorrowSeconds))}</AppChip>
       {withPlayers && <AppChip icon="people">{formatCount(game.player_count, PLAY_WORDS.player)}</AppChip>}
     </>
   );

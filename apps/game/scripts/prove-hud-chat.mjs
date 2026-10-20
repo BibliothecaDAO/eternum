@@ -9,10 +9,12 @@
  * - in the rail (`?state=rail`, the real rail frame, Events panel, the panels lab's real picked-army tile, chat and build
  *   tag over a stand-in map canvas), chat open at 1920×1080, 1440×900, 1440×768 and 1280×720: the details and the open
  *   chat share the column without covering each other, each keeping its least height (the details a header and a body,
- *   the chat 300 px); on a screen too short for both, the column scrolls as a whole, the composer in view and every part
- *   reachable at one end or the other; the Events name reads whole beside its Log count; and nothing in the column
+ *   the chat 300 px); on a screen too short for both, the panels scroll in their own box above the chat, the strip and
+ *   the composer always in the column and every part reachable; the Events name reads whole beside its Log count; and nothing in the column
  *   covers the build tag in the band under it. Closed, at 1920×1080 and 1280×720, the same for the strip and the
- *   details. A wheel turned over each panel never reaches the
+ *   details. Then, on one page with chat open from 1440×900, the window is made shorter, height by height down to the
+ *   shortest desktop (800, 768, 744, 720): the open chat's foot stays in the column at each, never only where the
+ *   page opened. A wheel turned over each panel never reaches the
  *   canvas under them, and turned over the bare map it does. The wheel goes where the browser sends one: to the element
  *   under the point, bubbling from there. agent-browser's own `mouse wheel` always fires at the viewport's corner
  *   (0, 0), whatever the mouse is over, so on the game's page it lands on the map.
@@ -35,6 +37,8 @@ const RAIL_OPEN_SIZES = [
   ["1440", "768"],
   ["1280", "720"],
 ];
+/** One open page made shorter, step by step, from 1440×900: the rail holds at each height it passes through. */
+const RAIL_RESIZE_HEIGHTS = ["800", "768", "744", "720"];
 const RAIL_CLOSED_SIZES = [
   ["1920", "1080"],
   ["1280", "720"],
@@ -85,9 +89,21 @@ const RAIL = `(() => {
   const events = rail?.querySelector('section[aria-label="Events"]');
   const title = events?.querySelector(".ui-panel__title");
   const details = rail?.querySelector('[aria-label="Tile details"]');
+  const column = rail?.firstElementChild;
+  // What shows of the details: their box, cut by the panels' scroll box they may run past.
+  const shown = (() => {
+    const box = rect(details);
+    const clip = rect(column);
+    if (!box || !clip) return null;
+    const top = Math.max(box.top, clip.top);
+    const bottom = Math.min(box.bottom, clip.bottom);
+    return bottom > top ? { ...box, top, bottom, y: top, height: bottom - top } : null;
+  })();
   return {
     viewport: { width: innerWidth, height: innerHeight },
     rail: rect(rail),
+    column: rect(column),
+    detailsShown: shown,
     events: rect(events),
     eventsTitleCut: title ? title.scrollWidth > title.clientWidth : null,
     unread: rect(events?.querySelector('[aria-label="Unread events"]')),
@@ -111,11 +127,14 @@ const RAIL = `(() => {
 
 /** Each place the wheel turns over, as the middle of what shows of it: the map's own, then each panel's. */
 const WHEEL_TARGETS = `(() => {
+  // What shows of an element: its box, cut by the viewport and by the rail's panel scroll box when it is inside it.
   const middle = (element) => {
     if (!element) return null;
     const box = element.getBoundingClientRect();
+    const scroll = document.querySelector('aside[aria-label="Guided rail"]')?.firstElementChild;
+    const clip = scroll && scroll.contains(element) ? scroll.getBoundingClientRect() : { top: 0, bottom: innerHeight };
     const [left, right] = [Math.max(box.left, 0), Math.min(box.right, innerWidth)];
-    const [top, bottom] = [Math.max(box.top, 0), Math.min(box.bottom, innerHeight)];
+    const [top, bottom] = [Math.max(box.top, clip.top, 0), Math.min(box.bottom, clip.bottom, innerHeight)];
     return right > left && bottom > top ? [Math.round((left + right) / 2), Math.round((top + bottom) / 2)] : null;
   };
   const pane = document.querySelector('section[aria-label="Chat"]');
@@ -186,7 +205,7 @@ const above = (upper, lower, slack = 1) => upper !== null && lower !== null && u
 /** The rail with chat open: the details and chat share the column, the Events name whole, the tag under the column. */
 const railOpenChecks = (rail) => [
   { check: "the rail is drawn with the details and the open chat", ok: rail.details !== null && rail.pane !== null },
-  { check: "the details end above the chat", ok: above(rail.details, rail.chat) },
+  { check: "what shows of the details ends above the chat", ok: above(rail.detailsShown, rail.chat) },
   ...detailsChecks(rail),
   {
     check: "the chat keeps its least height (300 px, strip included)",
@@ -258,7 +277,8 @@ const wheelChecks = (wheel) =>
  */
 const turnWheelOver = (b) => {
   b.evaluate(
-    `(() => { window.__mapWheels = 0; document.querySelector('canvas[data-lab="map"]').addEventListener("wheel", () => { window.__mapWheels += 1; }); return true; })()`,
+    // One listener a page, however many times a page is measured (a resized page is measured at each height).
+    `(() => { window.__mapWheels = 0; if (!window.__mapWheelsCounted) { window.__mapWheelsCounted = true; document.querySelector('canvas[data-lab="map"]').addEventListener("wheel", () => { window.__mapWheels += 1; }); } return true; })()`,
   );
   const reached = {};
   for (const [place, point] of Object.entries(b.evaluate(WHEEL_TARGETS))) {
@@ -334,6 +354,30 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           rail.measures.wheel = turnWheelOver(b);
           rail.checks.push(...wheelChecks(rail.measures.wheel));
         }
+      }
+
+      // One page, chat open, made shorter: the rail's structure, not where the page opened, keeps the chat's foot in.
+      const resized = { state: "rail, chat open, 1440×900", ready: false, presses: [], checks: [] };
+      resized.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail`, ["1440", "900"]);
+      for (const height of RAIL_RESIZE_HEIGHTS) {
+        const size = `1440×${height}`;
+        const step = {
+          state: `rail, chat open, resized from 1440×900 to ${size}`,
+          ready: false,
+          presses: [],
+          checks: [],
+        };
+        records.push(step);
+        if (!resized.ready) continue;
+        b.run("set", "viewport", "1440", height);
+        await sleep(SETTLE_MS);
+        step.ready = true;
+        step.measures = b.evaluate(RAIL);
+        step.measures.reach = b.evaluate(REACH);
+        step.checks.push(...railOpenChecks(step.measures), ...reachChecks(step.measures.reach));
+        b.run("screenshot", join(out, `rail-resized-${size}.png`));
+        step.measures.wheel = turnWheelOver(b);
+        step.checks.push(...wheelChecks(step.measures.wheel));
       }
 
       for (const viewport of RAIL_CLOSED_SIZES) {

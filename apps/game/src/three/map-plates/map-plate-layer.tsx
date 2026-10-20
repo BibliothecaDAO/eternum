@@ -97,6 +97,8 @@ export class MapPlateLayer {
   private lastViewport = "";
   private lastLayoutAt = -Infinity;
   private readonly point = new Vector3();
+  /** The resting tokens drawn at the last layout, opaque (not stepped aside), where they stand in the layer. */
+  private tokens: { key: string; x: number; y: number; width: number; height: number }[] = [];
 
   /** `container` is where the layer draws: resolved again each frame until it exists (the world UI mounts late). */
   constructor(private readonly container: () => HTMLElement | null) {
@@ -148,6 +150,23 @@ export class MapPlateLayer {
     this.layoutDirty = true;
     if (this.lastFrame) this.layout(this.lastFrame.camera, this.lastFrame.width, this.lastFrame.height);
     return ask && this.orderLineAt;
+  }
+
+  /**
+   * The thing whose resting token is drawn at this point of the page (`namespace:entityId`), or null: a click there
+   * selects that thing, as a click on its tile does (owner, 2026-10-20: a click on a token selects its thing). An opened
+   * plate is not a token: a click on it lands on what is beneath. No element of the layer takes the pointer; the scene
+   * that resolves clicks asks here.
+   */
+  public tokenAt(clientX: number, clientY: number): string | null {
+    if (this.element.style.display === "none" || !this.element.isConnected) return null;
+    const origin = this.element.getBoundingClientRect();
+    const [x, y] = [clientX - origin.left, clientY - origin.top];
+    return (
+      this.tokens.find(
+        (token) => x >= token.x && x <= token.x + token.width && y >= token.y && y <= token.y + token.height,
+      )?.key ?? null
+    );
   }
 
   /**
@@ -340,6 +359,11 @@ export class MapPlateLayer {
         token: this.sizeOf(entry, "token"),
         opened: asked === "token" ? undefined : this.sizeOf(entry, asked),
         priority: RELATION_PRIORITY[entry.plate.relation] + KIND_PRIORITY[entry.plate.kind],
+        // In view however crowded (the owner, 2026-10-20): the selected thing, the player's own armies, what is in battle.
+        keep:
+          entry.entityId === this.selected ||
+          (entry.plate.kind === "army" && entry.plate.relation === "own") ||
+          entry.plate.inBattle === true,
         openRank: asked === "open" ? 1 : 0,
       };
     });
@@ -349,6 +373,10 @@ export class MapPlateLayer {
       this.orderLineAsk,
     );
     this.orderLineAt = orderLine;
+    const sizes = new Map(things.map((thing) => [thing.id, thing.token]));
+    this.tokens = [...spots].flatMap(([key, spot]) =>
+      spot.shape === "token" && !spot.yields ? [{ key, x: spot.x, y: spot.y, ...sizes.get(key)! }] : [],
+    );
     for (const key of offScreen) {
       const element = this.elements.get(key);
       if (element && element.style.display !== "none") element.style.display = "none";

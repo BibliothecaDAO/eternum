@@ -1,20 +1,21 @@
-import { formatAmount, formatExact, formatDuration, formatRate, formatClockTime } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import {
   DAY,
-  DAY_ENDS,
   ESSENCE,
   FULL,
   FULL_IN,
   LABOR,
-  LEFT,
   OF,
-  TOMORROW_LASTS,
   TROOPS,
   WHEAT,
+  dayEnds,
+  dayLeft,
+  phraseText,
+  tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
@@ -92,17 +93,11 @@ const DayClockLine = ({ clock }: { clock: DayClock }) => (
       STORE_TONES[clock.tone].text,
     )}
   >
-    <span>
-      {DAY_ENDS} {formatClockTime(clock.endsAt)}
-    </span>
+    <span>{phraseText(dayEnds(clock.endsAt))}</span>
     <span aria-hidden>·</span>
-    <span>
-      {formatDuration(clock.secondsLeft)} {LEFT}
-    </span>
+    <span>{phraseText(dayLeft(clock.secondsLeft))}</span>
     <span aria-hidden>·</span>
-    <span>
-      {TOMORROW_LASTS} {formatDuration(clock.tomorrowSeconds)}
-    </span>
+    <span>{phraseText(tomorrowLasts(clock.tomorrowSeconds))}</span>
   </p>
 );
 

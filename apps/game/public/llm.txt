@@ -1577,9 +1577,8 @@ season in bags of 5 days, one of each length, 80 hours a bag; no bag opens
 with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how long
 tomorrow lasts.
 
-1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army, at
-   120 stamina. A new realm fields 3 armies at once; its castle raises
-   that to 6.
+1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army in one of the
+   realm's army slots: 3 for a new realm, up to 6 as its castle rises.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
 3. **Clear.** Trolls, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you
@@ -1610,6 +1609,20 @@ big army needs farms behind it.
 Refill tops an army's stamina up at once for 1 LORDS a missing point, paid from your
 realm's LORDS. A well gives 60 stamina, buying an attribute tier gives
 30, and Logistics raises an army's maximum by up to 150.
+
+### Stamina stays with the slot
+
+Stamina belongs to the army slot, not to the army in it. A new army takes your realm's lowest free slot.
+
+* A slot's first army of the day starts with a full bar: 120 stamina, plus what your Supply yard's
+  Logistics adds.
+* When an army dies, is disbanded or merges into another, its slot keeps the stamina it had left, and that stamina keeps
+  recovering.
+* The next army deployed into that slot starts with that stamina, not a full bar. Replacing a tired army never brings a
+  fresh one.
+* The new army's own maximum still caps it. Its XP and tiers start again from your realm's training; only the stamina
+  carries over.
+* When the day ends, every slot is cleared, so each slot's first army tomorrow starts full again.
 
 ## Fights roll dice
 
@@ -1713,7 +1726,8 @@ carries up to  150 more stamina, and each Scouting tier adds
 10%,  20%, 30%, then
 40% to the find rate of the camps, rifts or beasts you pick for it, so all four on one
 kind add  100%. Homecoming sends survivors home when the day ends
-([The Expedition](/frontier/expedition)).
+([The Expedition](/frontier/expedition)). An army's XP and tiers end with it; its stamina stays with its army slot for
+the next army ([Stamina stays with the slot](/frontier/introduction#stamina-stays-with-the-slot)).
 
 
 

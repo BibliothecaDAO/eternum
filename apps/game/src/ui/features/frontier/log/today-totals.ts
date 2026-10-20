@@ -1,5 +1,5 @@
 import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
-import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, scaledToUnits, StructureType } from "@bibliothecadao/types";
 
 /** A story as the day's totals read it: whose it is and when. */
 interface OwnStory {
@@ -35,35 +35,46 @@ export const ownStoriesOfDay = <Story extends OwnStory>(
   );
 };
 
+/** What the day paid, summed at contract precision so no fraction is lost before the total is written. */
+type Paid = { essence: bigint; labor: bigint; lords: bigint };
+
 /**
- * What the player's day added up to: reveals, site clears and opened chests, with what they paid,
- * folded from the player's own stories within the day.
+ * What the player's day added up to: reveals, site clears and opened chests, with what they paid, folded from the
+ * player's own stories within the day. The payments are added as the chain moved them and turned into a player's
+ * units once (scaledToUnits): five reveals of 57.6 make 288, as their lines read 58 each.
  */
 export const totalToday = (stories: readonly OwnStory[], player: string, day: DayBounds): StoryTotals => {
-  const totals: StoryTotals = { reveals: 0, cleared: 0, chests: 0, essence: 0, labor: 0, lords: 0 };
+  const counts = { reveals: 0, cleared: 0, chests: 0 };
+  const paid: Paid = { essence: 0n, labor: 0n, lords: 0n };
   for (const { story, storyPayload } of ownStoriesOfDay(stories, player, day)) {
     if (story === "ExplorationReward") {
-      totals.reveals += 1;
-      addReward(totals, storyPayload.resource_type, storyPayload.amount);
+      counts.reveals += 1;
+      addReward(paid, storyPayload.resource_type, storyPayload.amount);
     } else if (story === "SitePayout") {
-      totals.cleared += 1;
+      counts.cleared += 1;
       // A ruin's clear is the day's chest.
-      if (Number(storyPayload.category) === StructureType.Ruin) totals.chests += 1;
+      if (Number(storyPayload.category) === StructureType.Ruin) counts.chests += 1;
       const reward = someReward(storyPayload.reward);
-      if (reward) addReward(totals, reward.resource_type, reward.amount);
+      if (reward) addReward(paid, reward.resource_type, reward.amount);
     } else if (story === "RewardChestOpened") {
-      totals.chests += 1;
-      totals.lords += Number(BigInt(String(storyPayload.amount)));
+      counts.chests += 1;
+      // A ruin chest's LORDS are whole.
+      paid.lords += BigInt(String(storyPayload.amount)) * PRECISION;
     }
   }
-  return totals;
+  return {
+    ...counts,
+    essence: scaledToUnits(paid.essence),
+    labor: scaledToUnits(paid.labor),
+    lords: scaledToUnits(paid.lords),
+  };
 };
 
-const addReward = (totals: StoryTotals, resourceType: unknown, amount: unknown): void => {
-  const whole = Number(BigInt(String(amount)) / PRECISION);
-  if (Number(resourceType) === ResourcesIds.Essence) totals.essence += whole;
-  else if (Number(resourceType) === ResourcesIds.Labor) totals.labor += whole;
-  else if (Number(resourceType) === ResourcesIds.Lords) totals.lords += whole;
+const addReward = (paid: Paid, resourceType: unknown, amount: unknown): void => {
+  const scaled = BigInt(String(amount));
+  if (Number(resourceType) === ResourcesIds.Essence) paid.essence += scaled;
+  else if (Number(resourceType) === ResourcesIds.Labor) paid.labor += scaled;
+  else if (Number(resourceType) === ResourcesIds.Lords) paid.lords += scaled;
 };
 
 /** A payout's reward in either option form Herald writes: the value itself, {"Some": value}, or none. */

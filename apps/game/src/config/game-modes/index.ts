@@ -97,10 +97,10 @@ function resolveBuildingModelPaths(isBlitz: boolean) {
 
 const buildStructureHelpers = (mode: GameModeId) => ({
   // A mode names the active game's structures, from the active game's facts.
-  getName: (structure: StructureNameInput) => getStructureName(structure, mode),
+  getName: (structure: StructureNameInput) => getStructureName(structure),
   getTypeName: (type: StructureType, mineKind?: number) => structureName(type, mineKind, mode),
   getEntityInfo: (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) =>
-    getEntityInfo(entityId, playerAccount, store, mode),
+    getEntityInfo(entityId, playerAccount, store),
 });
 
 const buildBuildingRule = (extraExclusions: Set<string>) => (key: string) => {

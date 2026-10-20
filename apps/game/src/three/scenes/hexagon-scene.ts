@@ -437,11 +437,15 @@ export abstract class HexagonScene {
     }
   }
 
-  private handleClick(_event: MouseEvent, raycaster: Raycaster): void {
+  private handleClick(event: MouseEvent, raycaster: Raycaster): void {
     useUIStore.getState().closeContextMenu();
-    const clickedHex = this.resolveClickedHex(raycaster);
-    this.onHexagonClick(clickedHex?.hexCoords ?? null);
+    // A click on a map label's resting token is a click on its thing's tile; anywhere else, the tile under the pointer.
+    const labelled = this.resolveLabelClick?.(event);
+    this.onHexagonClick(labelled ?? this.resolveClickedHex(raycaster)?.hexCoords ?? null);
   }
+
+  /** The tile of the thing whose map label is drawn under the click, if a scene draws labels that take one. */
+  protected resolveLabelClick?(event: MouseEvent): HexPosition | null;
 
   private resolveClickedHex(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
     const clickedHex = this.interactiveHexManager.onClick(raycaster);

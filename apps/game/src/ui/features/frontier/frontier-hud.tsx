@@ -13,7 +13,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
+import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
@@ -79,6 +79,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const visit = useRealmVisit();
   const visited = useVisitedRealm(visit);
   const dockRealm = visit ? visited : realm;
+  // The visit's way in and out lives here, above the two layouts, so switching layout replays no visit.
+  useRealmVisitNavigation(realm);
   // A spectator watches their own realm when they have one this season, else the leader; the strip reads it.
   useSpectatorWatch();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.

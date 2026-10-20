@@ -26,13 +26,7 @@ import { sendAutomaticProvision } from "@/ui/modules/entity-details/realm-castle
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 
-import {
-  configManager,
-  getBuildingCount,
-  getGameMode,
-  getStructureName,
-  ResourceArrivalManager,
-} from "@bibliothecadao/eternum";
+import { configManager, getBuildingCount, getStructureName, ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { BuildingType, StructureType, formatCount, type ResourceArrivalInfo } from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -212,7 +206,7 @@ const AutoProvisionRealms = () => {
           return [
             {
               entityId: safeInteger(structure.entityId),
-              name: getStructureName(structure.structure, getGameMode()).name,
+              name: getStructureName(structure.structure).name,
               provisioned: getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0,
             },
           ];

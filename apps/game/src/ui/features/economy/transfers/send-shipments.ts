@@ -1,6 +1,5 @@
 import { sendOnce } from "@/hooks/store/use-actions-in-flight";
-import { ActionNotAppliedError, type SentCommand } from "@/sync/action-outcome";
-import { TransactionNotSentError } from "@bibliothecadao/provider";
+import { isDefinitelyNotApplied, type SentCommand } from "@/sync/action-outcome";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 /** One destination's goods, in whole units. */
@@ -52,9 +51,6 @@ const sendShipment = async (
     return { shipment, status: isDefinitelyNotApplied(error) ? "refused" : "unknown", error };
   }
 };
-
-const isDefinitelyNotApplied = (error: unknown) =>
-  error instanceof ActionNotAppliedError || error instanceof TransactionNotSentError;
 
 const shipmentCall = (sourceId: number, shipment: Shipment): ShipmentCall => ({
   sender_entity_id: BigInt(sourceId),

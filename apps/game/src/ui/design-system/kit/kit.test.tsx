@@ -5,7 +5,6 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ClockLine } from "./clock-line";
-import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
 import { ListRow } from "./list-row";
 import { Pill } from "./pill";
@@ -16,6 +15,7 @@ import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
+import { dayEnds, dayLeft, phraseText, tomorrowLasts } from "./words";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -276,14 +276,18 @@ describe("a Sheet closed in the tick it opened", () => {
   });
 });
 
-describe("the clock line as text", () => {
-  it("writes the Day-end reminder's line from its instants with the clock line's words", () => {
+describe("the day's clock, written once (live-qa-night-1 P3-8)", () => {
+  it("writes when today ends, the time left and how long tomorrow lasts, a day's lengths in hours, never days", () => {
     const endsAt = new Date(2026, 9, 7, 21, 40).getTime() / 1000;
-    expect(clockLineText({ endsAt, secondsLeft: 3_600, tomorrowSeconds: 12 * 3_600 })).toBe(
-      "Day ends 21:40 · 1h left · Tomorrow lasts 12h",
-    );
-    expect(clockLineText({ endsAt: undefined, secondsLeft: undefined, tomorrowSeconds: undefined })).toBe(
-      "Day ends — · — left · Tomorrow lasts —",
-    );
+    expect(phraseText(dayEnds(endsAt))).toBe("Day ends 21:40");
+    expect(phraseText(dayLeft(3_600))).toBe("1h left");
+    expect(phraseText(dayLeft(24 * 3_600))).toBe("24h left");
+    expect(phraseText(tomorrowLasts(12 * 3_600))).toBe("Tomorrow lasts 12h");
+    expect(phraseText(tomorrowLasts(24 * 3_600))).toBe("Tomorrow lasts 24h");
+    expect([dayEnds(undefined), dayLeft(undefined), tomorrowLasts(undefined)].map(phraseText)).toEqual([
+      "Day ends —",
+      "— left",
+      "Tomorrow lasts —",
+    ]);
   });
 });

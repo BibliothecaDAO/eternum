@@ -14,7 +14,7 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { configManager, getEntityName, getGameMode } from "@bibliothecadao/eternum";
+import { configManager, getEntityName } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -213,7 +213,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   );
 
   const structureCategory = structureInfo.structureCategory;
-  const structureName = getEntityName(structureId, store, getGameMode()) ?? "Structure";
+  const structureName = getEntityName(structureId, store) ?? "Structure";
 
   const configuredResearchCost = configManager.getArtificerConfig().research_cost_for_relic;
 

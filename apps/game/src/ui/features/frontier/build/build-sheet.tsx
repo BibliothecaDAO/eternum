@@ -29,7 +29,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownAmount } from "@/ui/utils/utils";
-import { plotKey, sendBuilding } from "@/ui/features/settlement/construction/send-building";
+import { plotKey, sendBuilding, useStillShowing } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import {
   buildableRadius,
@@ -55,11 +55,11 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
-import { type RealmPopulation, readRealmPopulation } from "../realm/realm-population";
+import { readRealmPopulation } from "../realm/realm-population";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
-import { type BuildGain, type BuildTile, BuildView } from "./build-view";
+import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
@@ -134,22 +134,24 @@ export const BuildSheet = ({
     [realm.entity_id, revision, setup.store],
   );
   useBuildingGhost(option?.category, plot);
+  const stillShowing = useStillShowing(plot);
 
   // Until the realm's research is known, no building's tier or price is.
   if (!options || !option) return null;
 
-  /** The sheet closes as the building leaves; its ghost stays on the plot until the build's own outcome. */
+  /**
+   * The sheet closes as the building leaves, if it still shows this plot; its ghost stays on the plot until the
+   * build's own outcome.
+   */
   const build = async () => {
+    AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
         realmId,
         type: option.category,
         plot,
         useSimpleCost,
-        onSent: () => {
-          AudioManager.getInstance().play("ui.build_place");
-          onClose();
-        },
+        from: { isOpen: stillShowing, close: onClose },
       });
     } catch (error) {
       toast.failed(error, "The building could not be placed.");
@@ -158,7 +160,7 @@ export const BuildSheet = ({
 
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-  const population = freePopulation(readRealmPopulation(setup.store, realmId));
+  const population = readRealmPopulation(setup.store, realmId);
   const choose = (category: BuildingType) =>
     setChosen(options.findIndex((candidate) => candidate.category === category));
   const priceOf = (category: BuildingType) =>
@@ -203,7 +205,7 @@ export const BuildSheet = ({
         kind: "short",
         of: "population",
         counted: "free",
-        held: population.free,
+        held: population && population.total - population.used,
         need: option.populationCost,
       },
       fix: {
@@ -233,10 +235,15 @@ export const BuildSheet = ({
   return (
     <BuildView
       population={population}
-      tiles={options.map((candidate) => buildTile(candidate, held(ResourcesIds.Labor)))}
+      tiles={options.map((candidate) =>
+        buildTile(candidate, {
+          labor: held(ResourcesIds.Labor),
+          laborPerHour: realmPerHour(setup.store, realmId, ResourcesIds.Labor, tick),
+          free: population && population.total - population.used,
+        }),
+      )}
       chosen={chosen}
       onChoose={setChosen}
-      gains={buildGains(option)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
       refusal={refusal()}
       sending={sending}
@@ -245,14 +252,6 @@ export const BuildSheet = ({
     />
   );
 };
-
-/** What is free of the realm's population, and all it can hold. */
-const freePopulation = (
-  population: RealmPopulation | undefined,
-): { free: number | undefined; total: number | undefined } =>
-  population
-    ? { free: population.total - population.used, total: population.total }
-    : { free: undefined, total: undefined };
 
 /** Each attribute's mark, as a training building's gain shows it. */
 const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconMeaning> = {
@@ -275,27 +274,35 @@ const priceKind = (resource: number): PriceKind => {
   return kind;
 };
 
-const buildTile = (option: BuildOption, labor: number | undefined): BuildTile => {
-  const icon = buildingIcon(option.category);
+/** What the realm holds that a card weighs its building against: labor and how fast it comes, and free population. */
+type Holdings = { labor: number | undefined; laborPerHour: number | undefined; free: number | undefined };
+
+const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
+  key: String(option.category),
+  icon: buildingIcon(option.category),
+  name: buildingName(option.category),
+  tip: buildingLine(option),
+  gives: givesOf(option),
+  takes: option.populationCost,
+  standing: standingOf(option, holdings),
+});
+
+/**
+ * Where a building stands for the realm, the first that holds: built (a realm holds one), locked behind the Barracks'
+ * tier, or its price, with the labor the realm lacks and the wait until it holds it, or else the population it lacks.
+ */
+const standingOf = (option: BuildOption, { labor, laborPerHour, free }: Holdings): BuildTile["standing"] => {
+  if (option.standing === "built") return { kind: "built" };
+  // The gate is a research tier above common; the kit counts tiers from common.
+  if (option.standing !== "open") return { kind: "locked", gate: (option.standing.gate + 1) as Tier };
   const price = option.cost.find(({ resource }) => resource === ResourcesIds.Labor)?.amount ?? 0;
-  return {
-    key: String(option.category),
-    icon,
-    name: buildingName(option.category),
-    tip: buildingLine(option),
-    foot:
-      option.standing === "built"
-        ? { kind: "built" }
-        : option.standing === "open"
-          ? {
-              kind: "price",
-              labor: price,
-              short: labor === undefined || labor < price,
-              raised: riseLine(option, price),
-            }
-          : // The gate is a research tier above common; the kit counts tiers from common.
-            { kind: "locked", gate: (option.standing.gate + 1) as Tier },
-  };
+  const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] =
+    labor === undefined || labor < price
+      ? { of: "labor", wait: secondsUntilHeld(labor, price, laborPerHour) }
+      : free !== undefined && free < option.populationCost
+        ? { of: "population" }
+        : undefined;
+  return { kind: "price", labor: price, raised: riseLine(option, price), short };
 };
 
 /**
@@ -328,20 +335,13 @@ const riseLine = (option: BuildOption, price: number): string | undefined =>
       )
     : undefined;
 
-/**
- * The chosen building's gains: what it makes an hour, the population room it adds or the tier a training building
- * starts each new army at, and its population.
- */
-const buildGains = (option: BuildOption): BuildGain[] => {
-  const { effect } = option;
-  const gain: BuildGain =
-    effect.kind === "produces"
-      ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.perHour / 3600), label: "produces" }
-      : effect.kind === "trains"
-        ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[option.tier - 1], label: "trains" }
-        : { icon: "person", value: `+${formatAmount(effect.amount)}`, label: "houses" };
-  return [gain, { icon: "person", value: formatCharge(option.populationCost), label: "population" }];
-};
+/** What one more gives: what it makes a minute, the population room it adds, or the tier new armies start at. */
+const givesOf = ({ effect, tier }: BuildOption): BuildTile["gives"] =>
+  effect.kind === "produces"
+    ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.perHour / 3600) }
+    : effect.kind === "trains"
+      ? { icon: ATTRIBUTE_MARKS[effect.attribute], value: TIER_WORDS[tier - 1] }
+      : { icon: "person", value: `+${formatAmount(effect.amount)}` };
 
 /** A realm's plot, as the actions in flight name it. */
 

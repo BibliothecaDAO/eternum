@@ -42,7 +42,7 @@ describe("Frontier's build options", () => {
     expect(barracks.wheat.after).toBeCloseTo(300, 3);
   });
 
-  it("gives each Fields pick a quarter more output and each hut tier a quarter more room, at no extra price", () => {
+  it("gives each Fields pick a quarter more output, and the next Hut its grant and the bonus its tiers add, at no extra price", () => {
     const { store, realm } = realmBoard();
     const option = (category: BuildingType) =>
       readBuildOptions(store, realm, true, 350)!.find((candidate) => candidate.category === category)!;
@@ -64,8 +64,11 @@ describe("Frontier's build options", () => {
       6,
     );
     expect(farmAfter.cost).toEqual(farm.cost);
+    // No Hut stands: the first adds its grant and its share of the epic tier's bonus, rounded down as the contract
+    // rounds it (6 + floor(6 × 3 × 2,500 / 10,000) = 6 + 4), never a fraction.
+    const grant = (hut.effect as { amount: number }).amount;
     expect((option(BuildingType.WorkersHut).effect as { amount: number }).amount).toBe(
-      (hut.effect as { amount: number }).amount * 1.75,
+      grant + Math.floor((grant * 3 * 2_500) / 10_000),
     );
   });
 

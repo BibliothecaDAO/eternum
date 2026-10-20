@@ -1,11 +1,11 @@
-import { formatExact, LORDS } from "@bibliothecadao/types";
+import { formatCharge, formatExact, LORDS } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
-import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed } from "@/ui/design-system/kit/words";
+import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
 
 /**
  * Refill's control (wireframes 05, 08): the missing points as a LORDS price, one LORDS a point; when the realm holds
- * fewer LORDS, what it holds against the price takes the button's place.
+ * fewer LORDS, what it holds against the price takes the button's place, named Refill, its hover saying what it counts.
  */
 export const RefillButton = ({
   price,
@@ -20,10 +20,11 @@ export const RefillButton = ({
   onRefill: () => void;
 }) =>
   held !== undefined && held < price ? (
-    <span role="img" aria-label={`${LORDS} ${heldAgainstNeed(held, price)}`} className="flex shrink-0">
+    <span role="img" aria-label={refillShort(formatExact(held), formatCharge(price))} className="flex shrink-0">
       <HudPanel collapsible={false} bodyClassName="flex items-center gap-1.5">
         <SemanticIcon name="lords" size={18} />
         <span className="flex min-w-14 flex-col gap-1">
+          <span className="text-hud-label text-hud-muted">{REFILL}</span>
           <span className="whitespace-nowrap text-hud-body tabular-nums text-hud-ink">
             {heldAgainstNeed(held, price)}
           </span>

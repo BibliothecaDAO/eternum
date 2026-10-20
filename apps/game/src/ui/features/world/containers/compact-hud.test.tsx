@@ -8,7 +8,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const viewer = vi.hoisted(() => ({ ordersAllowed: true }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => viewer.ordersAllowed }));
 vi.mock("@/ui/features/world/components/bottom-right-panel", () => ({
-  MinimapPanel: () => null,
+  MinimapPanel: () => <svg data-minimap />,
   useSelectedTileDetails: () => null,
 }));
 vi.mock("@/ui/features/event-feed/quick-feed", () => ({
@@ -39,6 +39,7 @@ beforeEach(() => {
   // The game has loaded: the blank overlay that covers the boot is gone.
   useUIStore.setState({ showBlankOverlay: false });
   viewer.ordersAllowed = true;
+  view("map");
   act(() => root.render(<CompactHud lane="portrait" />));
 });
 
@@ -46,6 +47,13 @@ afterEach(() => {
   act(() => root.unmount());
   host.remove();
 });
+
+/** The game's view as the address names it: the world map, or the realm's own tiles. */
+const view = (scene: "map" | "hex") =>
+  act(() => {
+    window.history.pushState({}, "", `/g/0xa/3/${scene}`);
+    window.dispatchEvent(new Event("urlChanged"));
+  });
 
 const tab = (name: string) =>
   host.querySelector<HTMLButtonElement>(`nav[aria-label="HUD tabs"] [aria-label="${name}"]`)!;
@@ -79,4 +87,13 @@ it("names a spectator's Standings sheet once, in its head", () => {
   const sheet = host.querySelector('section[aria-label="HUD sheet"]')!;
   expect(sheet.textContent?.match(/Standings/g)).toEqual(["Standings"]);
   expect(sheet.querySelector('section[aria-label="Standings"]')).not.toBeNull();
+});
+
+it("offers the minimap on the world map only: the realm view has no Map tab, and an open Map sheet closes there", () => {
+  act(() => tab("Map").click());
+  expect(host.querySelector('section[aria-label="HUD sheet"] [data-minimap]')).not.toBeNull();
+  view("hex");
+  const tabs = [...host.querySelectorAll('nav[aria-label="HUD tabs"] button')].map((button) => button.textContent);
+  expect(tabs).toEqual(["Empire", "Log", "Chat", "Details"]);
+  expect(host.querySelector('section[aria-label="HUD sheet"]')).toBeNull();
 });

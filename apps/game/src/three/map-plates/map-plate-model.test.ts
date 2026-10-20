@@ -119,6 +119,23 @@ describe("a map plate's facts", () => {
     });
   });
 
+  it("says when an army or a structure is in battle (on its battle cooldown), so the map keeps it in view", () => {
+    const army = {
+      entityId: 7,
+      isMine: false,
+      owner: { address: 2n, ownerName: "Tamsin", guildName: "" },
+      category: "Knight",
+      tier: "T1",
+      troopCount: 500,
+      currentStamina: 60,
+      maxStamina: 120,
+    } as const;
+    expect(buildArmyPlate({ ...army, battleTimerLeft: 42 }, "Niziz").inBattle).toBe(true);
+    expect(buildArmyPlate({ ...army, battleTimerLeft: undefined }, "Niziz").inBattle).toBeUndefined();
+    expect(buildStructurePlate(structure({ battleTimerLeft: 42 })).inBattle).toBe(true);
+    expect(buildStructurePlate(structure({ battleTimerLeft: 0 })).inBattle).toBeUndefined();
+  });
+
   it("lists guard slots as an attacker meets them, highest slot first", () => {
     const slot0 = { type: "crossbowman", tier: 1, count: 516 } as const;
     const slot2 = { type: "paladin", tier: 3, count: 638 } as const;

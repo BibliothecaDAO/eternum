@@ -1,4 +1,4 @@
-import { BuildingType, ResourcesIds, type ID } from "@bibliothecadao/types";
+import { BuildingType, formatPopulationInWords, ResourcesIds, type ID } from "@bibliothecadao/types";
 
 import { type BuildOrder, type BuildOrderBuilding, type BuildOrderStep, DEFAULT_BUILD_ORDER } from "./build-order";
 
@@ -187,7 +187,7 @@ const resolvePopulationSuggestion = (input: BlitzRealmSuggestionInput): BlitzSug
     ? resolveBuildSuggestion(
         input,
         "workerHut",
-        `Population ${input.population} of ${input.populationCapacity}: a worker hut makes room for more.`,
+        `${formatPopulationInWords(input.population, input.populationCapacity)}: a worker hut makes room for more.`,
       )
     : null;
 
