@@ -29,7 +29,8 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * What a tap on a tile means for the selected army, the same tap for every order: a tile it can explore or move to
- * pins that order (the HUD shows its costs and its verb), a target in its reach opens the attack's preview with its
+ * pins that order (where the HUD carries the verb, it shows the costs and the verb; elsewhere the order's preview opens
+ * at the tile with them), a target in its reach opens the attack's preview with its
  * confirm, and a standing site out of its reach still opens that site's card for this army, which says what it lacks.
  * Anything else keeps its own tap.
  */

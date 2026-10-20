@@ -60,6 +60,7 @@ import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
 import { bindMapSelection } from "./worldmap-map-selection";
 import { reportSelectedArmy } from "./worldmap-selected-army-report";
+import { ORDER_PREVIEW_SURFACE, OrderPreview } from "./worldmap-order-preview";
 import { StructureManager } from "@/three/managers/structure-manager";
 import { FrameBudgetWorkQueue, type FrameBudgetWorkLane } from "@/three/frame-budget-work-queue";
 import { SceneManager } from "@/three/scene-manager";
@@ -455,6 +456,9 @@ import {
   type WorldmapTerrainSourceCellRef,
   type WorldmapVisualTerrainWindow,
 } from "./worldmap-terrain-presentation-runtime";
+
+/** A desktop order preview's order, as the player read it: the army, the tile, and the order's verb and cost there. */
+type PreviewedOrder = { army: ID; hex: HexPosition; tip: OrderTip };
 
 interface PreparedTerrainChunk {
   chunkKey: string;
@@ -1015,6 +1019,8 @@ export default class WorldmapScene extends WarpTravel {
   private actionPathsTransitionToken: number | null = null;
   /** Why each tile the selected army's rules looked at offers no order; set with its paths (updateEntityActionPaths). */
   private orderRefusals: Map<string, OrderRefusal> = new Map();
+  /** The order the open order preview names, while one is open. */
+  private previewedOrder: PreviewedOrder | null = null;
   /** The line under the pointer: the order a right-click sends at its tile, or why none. */
   private readonly pointerOrderTip = new PointerOrderTip(
     (hex) => this.placeOrderTip(hex),
@@ -2763,7 +2769,9 @@ export default class WorldmapScene extends WarpTravel {
       armySelected: this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined,
       standingSite: structure !== undefined && this.isStandingExpeditionSite(structure.id),
     });
-    if (order === "pin") {
+    if (order === "pin" && !this.hudCarriesOrderVerb()) {
+      this.openOrderPreview(hexCoords);
+    } else if (order === "pin") {
       // The tile becomes the order's target: its path and costs show, and the HUD's verb runs it.
       const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
       const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
@@ -2779,6 +2787,54 @@ export default class WorldmapScene extends WarpTravel {
     // The preview has the tile now; its name on the tooltip would only sit over it.
     if (order !== null) this.pointerOrderTip.take();
     return order !== null;
+  }
+
+  /**
+   * Where the HUD carries no verb (a desktop), a tap on a tile the army can explore or move to opens that order's
+   * preview at the tile, as a tap on a target opens the attack's: its cost and its verb, which sends it as the
+   * right-click does.
+   */
+  private openOrderPreview(hexCoords: HexPosition): void {
+    const army = this.selectedArmyId();
+    const tip = this.nameOrderAt(hexCoords);
+    if (army === null || !tip) return;
+    const shown: PreviewedOrder = { army, hex: hexCoords, tip };
+    this.previewedOrder = shown;
+    const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    this.openTargetActionSurface(
+      { col: contract.x, row: contract.y },
+      { id: ORDER_PREVIEW_SURFACE, content: <OrderPreview tip={tip} onSend={() => this.sendPreviewedOrder(shown)} /> },
+    );
+  }
+
+  /** The preview's verb sends the order the player read, and only while it still is the army's order at that tile. */
+  private sendPreviewedOrder(shown: PreviewedOrder): void {
+    if (this.holdsPreviewedOrder(shown)) this.actAtHex(shown.hex);
+  }
+
+  /** The same army is selected, and its order at the tile reads as shown: the same verb at the same cost. */
+  private holdsPreviewedOrder(shown: PreviewedOrder): boolean {
+    const now = this.nameOrderAt(shown.hex);
+    return this.selectedArmyId() === shown.army && now?.line === shown.tip.line && now.cost === shown.tip.cost;
+  }
+
+  /**
+   * The open preview closes once its order no longer holds (a reveal turned the explore into a move, another army was
+   * selected, the cost changed, the tile left the army's reach): a verb never sends another order than it names.
+   */
+  private closeStaleOrderPreview(): void {
+    const shown = this.previewedOrder;
+    if (!shown) return;
+    const popover = usePopoverStore.getState();
+    if (popover.surface?.id === ORDER_PREVIEW_SURFACE && this.holdsPreviewedOrder(shown)) return;
+    this.previewedOrder = null;
+    if (popover.surface?.id === ORDER_PREVIEW_SURFACE) popover.closeSurface();
+  }
+
+  /** What the selected army's orders read changed: the line under the pointer and the open preview read them again. */
+  private sayOrdersAgain(): void {
+    this.pointerOrderTip.refresh();
+    this.closeStaleOrderPreview();
   }
 
   /**
@@ -3596,7 +3652,7 @@ export default class WorldmapScene extends WarpTravel {
     const entityId = this.selectedOrderableArmyId();
     if (entityId !== null) this.selectedArmyOrders.followConfirmedHead(entityId, this.getArmyOwnerAddress(entityId));
     // A stamina wait counts down even where the orders stay the same.
-    this.pointerOrderTip.refresh();
+    this.sayOrdersAgain();
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3876,8 +3932,8 @@ export default class WorldmapScene extends WarpTravel {
         this.isApplyingLocalActionPathUpdate = false;
       }
     }
-    // The same paths can come with other reasons: the line under the pointer reads both again.
-    this.pointerOrderTip.refresh();
+    // The same paths can come with other reasons: the line under the pointer and the preview read both again.
+    this.sayOrdersAgain();
   }
 
   private syncEntityActionPathsTransitionToken(): void {

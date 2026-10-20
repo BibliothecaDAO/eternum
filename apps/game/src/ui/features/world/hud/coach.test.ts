@@ -80,7 +80,7 @@ it("moves on once the army is selected: the step says how to take it on the map,
   expect(route).toEqual([
     {
       key: "coach:explore:1:selected",
-      line: "Right-click a tile beside your army to explore it: +5 points a tile.",
+      line: "Click a tile beside your army to explore it: +5 points a tile.",
       verb: null,
       act: null,
     },

@@ -49,7 +49,7 @@ describe("Frontier's Next up", () => {
     ]);
     expect(lines({ ...out, armySelected: true })).toEqual([
       [
-        "Right-click a tile beside your army to explore it (30 stamina): each new tile sends Essence or labor home and gives 2 XP.",
+        "Click a tile beside your army to explore it (30 stamina): each new tile sends Essence or labor home and gives 2 XP.",
         null,
         null,
       ],

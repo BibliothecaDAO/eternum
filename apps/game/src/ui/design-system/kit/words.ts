@@ -111,6 +111,8 @@ export const SIGN_IN = "Sign in";
 /** An army's two ways across the map, and backing out of an order. */
 export const EXPLORE = "Explore";
 export const MOVE = "Move";
+/** What a desktop order's preview says under its verb: the right-click sends an order with no preview. */
+export const RIGHT_CLICK_SENDS = "A right-click sends it at once.";
 export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";

@@ -132,7 +132,7 @@ const explore = ({ armySelected, rules }: NextUpFacts, pointer: Pointer): Fronti
     : "each new tile sends Essence or labor home and gives XP";
   if (!armySelected) return step("explore", `Your army can explore: ${pays}.`, "Select the army", "select-army");
   const cost = rules ? ` (${rules.stamina.explore} stamina)` : "";
-  const send = pointer === "touch" ? "Hold a tile beside your army" : "Right-click a tile beside your army";
+  const send = pointer === "touch" ? "Hold a tile beside your army" : "Click a tile beside your army";
   return step("explore-on-map", `${send} to explore it${cost}: ${pays}.`);
 };
 
