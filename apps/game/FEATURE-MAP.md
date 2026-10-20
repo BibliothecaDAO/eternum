@@ -80,7 +80,7 @@ Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page,
 reachable, at most seven parts a region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next
 up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build
 steps), the panel as built (phase 1), a player's imported orders and the import as proposed (phase 2), and the default
-order as written. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate,
+order as written. `/lab/kit/progression` Frontier's Research as a skill tree and the army's detail panel, today's beside three proposals each at the page place's width, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one half, `?option=a|b|c|today` one proposal alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate,
 Renderer or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as
 here; a game loads the address's `rendererMode`, else the saved renderer, else the build's);
 `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
