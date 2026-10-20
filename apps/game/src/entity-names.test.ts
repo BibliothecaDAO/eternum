@@ -2,7 +2,14 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildStoryEventPresentation, configManager, getEntityName, getStructureName } from "@bibliothecadao/eternum";
+import {
+  buildStoryEventPresentation,
+  configManager,
+  getEntityName,
+  getStructureName,
+  setEntityNameLocalStorage,
+  siteDisplayName,
+} from "@bibliothecadao/eternum";
 import { BuildingType, buildingName, siteName, StructureType } from "@bibliothecadao/types";
 import { buildStructurePlate } from "./three/map-plates/map-plate-model";
 import { campBeside, SITE } from "./ui/features/frontier/sites/site-fixture";
@@ -115,23 +122,44 @@ describe("one name for each thing, read by every list, picker, event and panel",
     return campBeside().store;
   };
 
-  it("names a site as its map plate does, in the lists and in the events", () => {
+  it.each([
+    ["its generated name", null],
+    ["the name its holder gave it", "North Watch"],
+  ])("names a site by %s, alike on its map plate, in the lists, the stories and its receipt", (_, given) => {
     const store = frontierCamp();
-    const site = store.require("Structure", { game_id: 1, entity_id: SITE });
-    expect(getEntityName(SITE, store, false)).toBe(siteName(SITE));
-    expect(getStructureName(site, false).name).toBe(siteName(SITE));
-    const plate = buildStructurePlate({
-      entityId: SITE,
-      structureType: StructureType.Camp,
-      structureName: getStructureName(site, false).name,
-      owner: { address: 0n, ownerName: "", guildName: "" },
-      hexCoords: { col: 0, row: 0 },
-      isMine: false,
-      stage: 0,
-      level: 0,
-      guardArmies: [],
-    } as never);
-    expect(plate.place).toBe(getStructureName(site, false).name);
+    const site = { ...store.require("Structure", { game_id: 1, entity_id: SITE }), owner: 0x111n };
+    store.applyFacts([{ model: "Structure", key: "0x71", value: site }] as never);
+    if (given) setEntityNameLocalStorage(SITE, given);
+    try {
+      const name = given ?? siteName(SITE);
+      expect(getStructureName(site, false).name).toBe(name);
+      expect(getEntityName(SITE, store, false)).toBe(name);
+      // A cleared site's receipt keeps only the site's id: the same rule names it.
+      expect(siteDisplayName(SITE)).toBe(name);
+      const plate = buildStructurePlate({
+        entityId: SITE,
+        structureType: StructureType.Camp,
+        structureName: getStructureName(site, false).name,
+        owner: { address: 0x111n, ownerName: "", guildName: "" },
+        isMine: true,
+        guardArmies: [],
+      } as never);
+      expect(plate.place).toBe(name);
+      expect(plate.name).toBe("Camp");
+      const captured = buildStoryEventPresentation(
+        {
+          storyType: "StructureCapturedStory",
+          storyPayload: { previous_owner: "0x0", new_owner: "0x111", points: 0 },
+          entityId: SITE,
+          ownerAddress: "0x111",
+          viewerAddress: "0x111",
+        } as never,
+        store,
+      ).title;
+      expect(captured).toContain(` took ${name} from `);
+    } finally {
+      localStorage.removeItem(`entity-name-${SITE}`);
+    }
   });
 
   it("names a building as its game does: Frontier's Barracks, Blitz's Knight T1", () => {

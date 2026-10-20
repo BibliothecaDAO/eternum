@@ -22,7 +22,7 @@ import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/stor
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
+import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { ResourcesIds, siteName } from "@bibliothecadao/types";
@@ -158,6 +158,17 @@ describe("the tile card", () => {
       expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
     } finally {
       unmount();
+    }
+  });
+
+  it("titles the site by the name its holder gave it, as its plate, its lists and its stories do", () => {
+    setEntityNameLocalStorage(SITE, "North Watch");
+    const { host, unmount } = renderCard("beside");
+    try {
+      expect(host.querySelector('section[aria-label="North Watch"]')).not.toBeNull();
+    } finally {
+      unmount();
+      localStorage.removeItem(`entity-name-${SITE}`);
     }
   });
 

@@ -52,7 +52,7 @@ describe("a map plate's facts", () => {
     const camp = buildStructurePlate(
       structure({
         entityId: 129,
-        structureName: "",
+        structureName: siteName(129),
         structureType: StructureType.Camp,
         owner: { address: 0n, ownerName: "", guildName: "" },
       }),
@@ -67,7 +67,7 @@ describe("a map plate's facts", () => {
       reward: "640 Labor",
     });
     const rift = buildStructurePlate(
-      structure({ structureName: "Rift", structureType: StructureType.Mine, mineKind: 1 }),
+      structure({ structureName: siteName(29), structureType: StructureType.Mine, mineKind: 1 }),
       0,
       { amount: 1200.4, unit: "Essence" },
     );
@@ -128,7 +128,9 @@ describe("a map plate's facts", () => {
 
 it("marks a cleared site with a flag, never calls it undefended, and keeps the name every list reads it by", () => {
   expect(
-    buildStructurePlate(structure({ structureType: StructureType.Camp, clearedSite: true, guardArmies: [] })),
+    buildStructurePlate(
+      structure({ structureName: siteName(29), structureType: StructureType.Camp, clearedSite: true, guardArmies: [] }),
+    ),
   ).toMatchObject({ icon: "flag", name: "Camp · Cleared", guards: null, place: siteName(29) });
 });
 
@@ -136,7 +138,7 @@ it("names a Frontier guard by its beast while retaining its combat stack and sit
   const plate = buildStructurePlate(
     structure({
       structureType: StructureType.Ruin,
-      structureName: "",
+      structureName: siteName(29),
       owner: { address: 0n, ownerName: "", guildName: "" },
       frontierBeast: { beast: "wyvern", name: "Wyvern", scale: 1.35 },
       guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: 2800 }],

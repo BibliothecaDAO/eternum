@@ -1,4 +1,4 @@
-import { getHyperstructureName, getRealmNameById } from "@bibliothecadao/eternum";
+import { getHyperstructureName, getRealmNameById, siteDisplayName } from "@bibliothecadao/eternum";
 import { Box3, Matrix4, type Object3D, type Scene, Vector3 } from "three";
 
 import { CAMP_MODEL_PATH, RiftModelPath } from "../constants/scene-constants";
@@ -251,23 +251,26 @@ const siteEntity = (
   anchor: Vector3,
   home: MapLabelEntity | null,
   site: Placement & { guard: MapLabelTroops },
-): Omit<MapLabelEntity, "ground"> => ({
+): Omit<MapLabelEntity, "ground"> => {
   // An unowned site is the world's: allocated in the administrative namespace, zero, after the realms' setup ids.
-  entityId: home ? home.entityId * LOCAL_RANGE + 3 + site.slot : 100 + site.slot,
-  kind,
-  relation: site.relation,
-  owner: home?.owner ?? null,
-  anchor,
-  name: "",
-  homeName: home?.name ?? "",
-  level: 0,
-  guards: [site.guard],
-  // As a Blitz world holds them: a rift's Essence and a camp's Labor, each filling over time.
-  reward:
-    kind === "rift"
-      ? { amount: 1_200 + ((site.slot * 977) % 9_000), unit: "Essence" }
-      : { amount: 300 + ((site.slot * 331) % 2_000), unit: "Labor" },
-});
+  const entityId = home ? home.entityId * LOCAL_RANGE + 3 + site.slot : 100 + site.slot;
+  return {
+    entityId,
+    kind,
+    relation: site.relation,
+    owner: home?.owner ?? null,
+    anchor,
+    name: siteDisplayName(entityId),
+    homeName: home?.name ?? "",
+    level: 0,
+    guards: [site.guard],
+    // As a Blitz world holds them: a rift's Essence and a camp's Labor, each filling over time.
+    reward:
+      kind === "rift"
+        ? { amount: 1_200 + ((site.slot * 977) % 9_000), unit: "Essence" }
+        : { amount: 300 + ((site.slot * 331) % 2_000), unit: "Labor" },
+  };
+};
 
 const hyperstructureEntity = (
   anchor: Vector3,

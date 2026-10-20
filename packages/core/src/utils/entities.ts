@@ -93,6 +93,13 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
   return structure.metadata.has_wonder ? `WONDER - ${baseName}` : baseName;
 };
 
+/**
+ * A site's name (every structure but a realm and a Hyperstructure), the one its map plate, its card, every list and
+ * every story read: the name its holder gave it, else its generated name ("Gloomsgrasp"). It needs only the site's id,
+ * so a site whose Structure is gone (a cleared site's receipt) or not yet synced is named by the same rule.
+ */
+export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalStorage(entityId) || siteName(entityId);
+
 export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
   const cachedName = getEntityNameFromLocalStorage(safeInteger(structure.entity_id));
   let originalName = undefined;
@@ -102,7 +109,6 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
   } else if (structure.base.category === StructureType.Hyperstructure) {
     originalName = getHyperstructureName(structure);
   } else {
-    // A site is named as the map names it (its plate's place line): "Gloomsgrasp", never its kind.
     originalName = siteName(safeInteger(structure.entity_id));
   }
 

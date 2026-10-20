@@ -1,6 +1,6 @@
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName } from "@bibliothecadao/types";
-import { configManager, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
+import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
 import {
   FALLEN_REALM_RUIN_MODEL_INDEX,
   frontierBeastModelIndex,
@@ -585,7 +585,9 @@ export class StructureManager {
       structureName:
         structureComponent && this.store
           ? getStructureName(structureComponent, getIsBlitz()).name
-          : structureName(renderInfo.type),
+          : renderInfo.type === StructureType.Realm || renderInfo.type === StructureType.Hyperstructure
+            ? structureName(renderInfo.type)
+            : siteDisplayName(renderable.entityId),
       hexCoords: {
         col: renderable.hexCoords.col - FELT_CENTER(),
         row: renderable.hexCoords.row - FELT_CENTER(),

@@ -2,7 +2,7 @@ import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { displayPlayerName } from "@bibliothecadao/eternum";
-import { StructureType, siteName, structureName, formatExact } from "@bibliothecadao/types";
+import { StructureType, structureName, formatExact } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
 
@@ -44,7 +44,7 @@ export interface StructurePlate {
   name: string;
   /** Whether `name` is the place's own, set as a title, rather than its kind's. */
   named: boolean;
-  /** A nameless place's lore name, read off its id (`siteName`); absent for a named one. */
+  /** A site's name, as its holder and every list read it (siteDisplayName); absent for a realm or a Hyperstructure. */
   place?: string;
   /** What taking it gives, said in words: "1,200 Essence", "50 Labor". */
   reward?: string;
@@ -143,7 +143,8 @@ export const buildStructurePlate = (
         ? structure.structureName.trim()
         : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
-    place: named ? undefined : siteName(Number(structure.entityId)),
+    // A site's name as its holder and every list read it (siteDisplayName, through the manager): the plate never makes one.
+    place: named ? undefined : structure.structureName.trim() || undefined,
     reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
     holding: reward && reward.amount > 0 ? reward : undefined,
     icon: structure.clearedSite

@@ -1,4 +1,4 @@
-import type { BeastBand } from "@bibliothecadao/eternum";
+import { siteDisplayName, type BeastBand } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { StructureType } from "@bibliothecadao/types";
@@ -116,7 +116,7 @@ export function FrontierBeastLab() {
   const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;
   const plate = buildStructurePlate({
     entityId: 29,
-    structureName: "",
+    structureName: siteDisplayName(29),
     structureType: SITES[site].category,
     isMine: false,
     isAlly: false,
