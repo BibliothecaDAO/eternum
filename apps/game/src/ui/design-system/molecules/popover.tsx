@@ -126,6 +126,7 @@ const OpenPanel = ({
       )
         return;
       if (isInsideAnchorRef.current(event.target) || isInside(event.target, panelRef.current)) return;
+      if (isOpenedFrom(event.target, panelRef.current)) return;
       const policy = mapClickRef.current;
       if (event.target instanceof HTMLCanvasElement && policy !== "dismiss" && policy.reanchor(event)) return;
       onDismissRef.current();
@@ -493,3 +494,16 @@ function useSurfaceDrag(enabled: boolean) {
 
 const isInside = (target: EventTarget | null, element: HTMLElement | null): boolean =>
   element !== null && target instanceof Node && element.contains(target);
+
+/**
+ * A layer drawn over every surface (a select's list) belongs to the panel whose control opened it, named by that
+ * control's `aria-controls`: a press on it is inside, never an outside dismiss.
+ */
+const isOpenedFrom = (target: EventTarget | null, element: HTMLElement | null): boolean => {
+  if (element === null) return false;
+  const opened = new Set([...element.querySelectorAll("[aria-controls]")].map((c) => c.getAttribute("aria-controls")));
+  for (let node = target instanceof Element ? target : null; node !== null; node = node.parentElement) {
+    if (node.id && opened.has(node.id)) return true;
+  }
+  return false;
+};

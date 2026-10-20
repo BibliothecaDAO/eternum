@@ -1433,6 +1433,7 @@ export const HudSelect = <K extends string | number>({
   const [place, setPlace] = useState<ReturnType<typeof menuPlace> | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  const layerId = useId();
   const chosen = options.find((option) => option.value === value);
 
   const close = (refocus: boolean) => {
@@ -1498,6 +1499,7 @@ export const HudSelect = <K extends string | number>({
         data-tip={tip}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? layerId : undefined}
         disabled={disabled}
         onClick={() => (open ? close(false) : setOpen(true))}
         onKeyDown={onTriggerKey}
@@ -1507,7 +1509,7 @@ export const HudSelect = <K extends string | number>({
       </button>
       {open &&
         createPortal(
-          <div className="ui-select__layer" data-placed={place !== null} style={place ?? undefined}>
+          <div id={layerId} className="ui-select__layer" data-placed={place !== null} style={place ?? undefined}>
             <HudMenu
               ref={menu}
               aria-label={label}

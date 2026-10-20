@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPACT_HUD_MEDIA_QUERY } from "@/hooks/helpers/use-compact-hud";
 import { type SurfaceAnchor, usePopoverStore } from "@/hooks/store/use-popover-store";
 
-import { HudWindow } from "@/ui/design-system/kit/hud-elements";
+import { HudSelect, HudWindow } from "@/ui/design-system/kit/hud-elements";
 
 import { PopoverPanel, SurfaceFrame, SurfaceHost } from "./popover";
 import { dragHeader, panelOf, placementOf } from "./surface-panel-testing";
@@ -234,5 +234,47 @@ describe("a desk the player dragged, opened again", () => {
     await mountHost();
     await openDesk("production");
     expect(placementOf("production")).toEqual(CENTRED);
+  });
+});
+
+describe("a select inside the panel", () => {
+  beforeEach(() => useScreen(1440, 900));
+
+  it("takes a choice from its list, drawn outside the panel, without closing the panel; a press elsewhere closes it", async () => {
+    const dismiss = vi.fn();
+    const chosen = vi.fn();
+    const root = createRoot(document.createElement("div"));
+    await act(async () =>
+      root.render(
+        <PopoverPanel id="settings" ariaLabel="Settings" anchor={TILE} onDismiss={dismiss}>
+          <HudSelect
+            label="Quality"
+            value="high"
+            options={[
+              { value: "balanced", label: "Balanced" },
+              { value: "high", label: "High" },
+            ]}
+            onChange={chosen}
+          />
+        </PopoverPanel>,
+      ),
+    );
+    const panel = document.querySelector<HTMLElement>('[data-popover-panel="settings"]')!;
+    await act(async () => panel.querySelector<HTMLButtonElement>(".ui-select")!.click());
+    const balanced = [...document.querySelectorAll<HTMLButtonElement>(".ui-select__layer .ui-menu__item")].find(
+      (item) => item.textContent === "Balanced",
+    )!;
+    expect(panel.contains(balanced)).toBe(false);
+
+    await act(async () => {
+      balanced.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      balanced.click();
+    });
+    expect(dismiss).not.toHaveBeenCalled();
+    expect(chosen).toHaveBeenCalledWith("balanced");
+
+    await act(async () => document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
+    expect(dismiss).toHaveBeenCalledTimes(1);
+    await act(async () => root.unmount());
   });
 });
