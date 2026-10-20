@@ -19,6 +19,7 @@ import type { ArmyStaminaPresentation } from "@/lib/army-stamina/types";
 import { useCallback, useMemo, useState } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
@@ -126,7 +127,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
         explorer_id: armyEntityId,
       });
     } catch (error) {
-      console.error(error);
+      toast.failed(error, "The army could not be deleted.");
     } finally {
       setIsLoadingDelete(false);
     }

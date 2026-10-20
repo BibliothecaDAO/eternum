@@ -43,6 +43,7 @@ import {
   formatExact,
 } from "@bibliothecadao/types";
 import { TierChip } from "../utils/tier-chip";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface ActorSummary {
   type: ActorType;
@@ -346,7 +347,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       deselectEntity();
       closeSurface();
     } catch (error) {
-      console.error("Quick attack failed", error);
+      toast.failed(error, "The attack failed.");
     } finally {
       setIsSubmitting(false);
     }

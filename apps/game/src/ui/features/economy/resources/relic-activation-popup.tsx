@@ -1,5 +1,7 @@
 import { HudButton, HudChip, HudNotice, HudRow, HudWindow, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
+import { actionFailure } from "@/ui/features/event-feed/notify";
+import { useActNowRefusal } from "@/utils/can-issue-orders";
 import { ID, RelicRecipientType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 import { activateRelic, relicShortName } from "@/ui/design-system/kit/words";
@@ -41,6 +43,8 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
   const { relicInfo, resourceId: relicResourceId, essenceCost } = useRelicMetadata(relicId);
   const { essenceBalance, hasEnoughEssence, shortfall } = useRelicEssenceStatus(entityOwnerId, essenceCost);
   const compatible = isRelicCompatible(relicInfo, recipientType);
+  // Why the game takes no action yet ("Starts in 2m 33s"): Activate says so before the click, and stays shut.
+  const refusal = useActNowRefusal();
 
   const handleConfirm = async () => {
     if (!relicInfo) {
@@ -77,8 +81,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
       onActivated?.();
       onClose();
     } catch (err) {
-      console.error("Failed to activate relic:", err);
-      setError("Failed to activate relic. Please try again.");
+      setError(actionFailure(err, "Failed to activate relic. Please try again.").reason);
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +96,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
         <HudButton
           kind="primary"
           busy={isLoading ? "Activating…" : undefined}
-          disabled={!!error || !compatible || !hasEnoughEssence}
+          disabled={!!error || refusal !== null || !compatible || !hasEnoughEssence}
           onClick={handleConfirm}
         >
           Activate Relic
@@ -120,6 +123,7 @@ export const RelicActivationPopup: React.FC<RelicActivationPopupProps> = ({
           hasEnoughEssence={hasEnoughEssence}
         />
         {!compatible && <RelicIncompatibilityNotice relicInfo={relicInfo} recipientType={recipientType} />}
+        {refusal !== null && <HudNotice line={refusal} />}
         {error && <HudNotice tone="bad" line={error} />}
       </div>
     </HudWindow>

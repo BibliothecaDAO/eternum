@@ -47,6 +47,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { resolveBestPrice } from "./best-prices";
+import { toast } from "@/ui/features/event-feed/notify";
 
 const ONE_MONTH = 2628000;
 /** A table row's height, the sheet's control on the desk and its touch target on a phone (HUD_SHEET, HUD_PHONE): the
@@ -403,7 +404,7 @@ export const OrderRow = memo(
           taker_buys_count: takerBuysCount,
         });
       } catch (error) {
-        console.error("Failed to accept order", error);
+        toast.failed(error, "The order could not be accepted.");
       } finally {
         playTradeExecuteSound();
         setUpdateBalance(!updateBalance);
@@ -419,7 +420,7 @@ export const OrderRow = memo(
           trade_id: offer.tradeId,
         });
       } catch (error) {
-        console.error("Failed to cancel order", error);
+        toast.failed(error, "The order could not be cancelled.");
       } finally {
         setLoading(false);
       }
@@ -705,7 +706,7 @@ export const OrderCreation = memo(
         await create_order(calldata);
         playTradePlaceSound();
       } catch (error) {
-        console.error("Failed to create order:", error);
+        toast.failed(error, "The order could not be placed.");
       } finally {
         setLoading(false);
         setShowConfirmation(false);

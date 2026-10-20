@@ -15,7 +15,7 @@ import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView, readFactView, resourceArrivalsView, seasonClockView } from "@/sync/fact-views";
-import { toast } from "@/ui/features/event-feed/notify";
+import { actionFailure, toast } from "@/ui/features/event-feed/notify";
 import {
   startRealmProvisionRunner,
   type RealmProvisionCandidate,
@@ -28,7 +28,13 @@ import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY
 
 import { configManager, getBuildingCount, getStructureName, ResourceArrivalManager } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
-import { BuildingType, StructureType, formatCount, type ResourceArrivalInfo } from "@bibliothecadao/types";
+import {
+  ActionRefusedError,
+  BuildingType,
+  StructureType,
+  formatCount,
+  type ResourceArrivalInfo,
+} from "@bibliothecadao/types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { accountAddress } from "@/hooks/store/use-account-store";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
@@ -140,11 +146,15 @@ const ResourceArrivalAutoClaim = () => {
                 );
               } catch (error) {
                 if (signal.aborted) return;
-                if (error instanceof AutomationSignerUnavailable || error instanceof AutomationPending) {
+                if (
+                  error instanceof AutomationSignerUnavailable ||
+                  error instanceof AutomationPending ||
+                  error instanceof ActionRefusedError
+                ) {
                   toast.warning(`Automatic arrival claims paused: ${error.message}`, { id: "arrival-claim-pending" });
                   return;
                 }
-                console.error("Auto-claim arrival failed", { arrival, error });
+                actionFailure(error, "Auto-claim arrival failed");
                 lastFailureRef.current.set(arrivalKey, now);
               }
             }

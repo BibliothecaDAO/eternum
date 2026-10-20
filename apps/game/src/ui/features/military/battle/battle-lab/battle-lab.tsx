@@ -36,6 +36,7 @@ import { OutcomeBanner, type BattleOutcome } from "./outcome-banner";
 import { OutcomeStrip } from "./outcome-strip";
 import { useBattleLabLiveData } from "./use-battle-lab-live-data";
 import { useBattleLabState } from "./use-battle-lab-state";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface EntityRef {
   type: ActorType;
@@ -291,7 +292,7 @@ export const BattleLab = ({
       deselectEntity();
       closeSurface();
     } catch (error) {
-      console.error("Attack failed:", error);
+      toast.failed(error, "The attack failed.");
     } finally {
       setLoading(false);
     }

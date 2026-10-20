@@ -15,6 +15,7 @@ import { memo, useMemo, useState } from "react";
 import { useConfirmFor, useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
 import { HudConfirm, HudIconButton, HudMeter } from "@/ui/design-system/kit/hud-elements";
 import { TierChip } from "../../utils/tier-chip";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface ExistingArmiesPanelProps {
   structureId: ID;
@@ -103,7 +104,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       bumpMilitaryMapVersion();
       close();
     } catch (error) {
-      console.error("Failed to delete army", error);
+      toast.failed(error, "The army could not be deleted.");
     } finally {
       setDeleting(false);
     }

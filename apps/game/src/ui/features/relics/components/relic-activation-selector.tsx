@@ -12,6 +12,8 @@ import {
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
+import { actionFailure } from "@/ui/features/event-feed/notify";
+import { useActNowRefusal } from "@/utils/can-issue-orders";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibliothecadao/types";
 
@@ -77,6 +79,8 @@ const RelicActivationHolderCard = ({
   const isArmyHolder = holder.entityType === EntityType.ARMY || holder.recipientType === RelicRecipientType.Explorer;
   const staminaFull = useStaminaFull(isArmyHolder ? holder.troops : null);
   const armyUnknown = isArmyHolder && holder.troops === null;
+  // Why the game takes no action yet ("Starts in 2m 33s"): Activate says so before the click, and stays shut.
+  const refusal = useActNowRefusal();
   useEffect(() => {
     if (import.meta.env.DEV && armyUnknown)
       console.warn("Relic activation is waiting for synchronized army facts", { entityId: holder.entityId });
@@ -108,12 +112,13 @@ const RelicActivationHolderCard = ({
           <HudNotice tone="warn" line={STAMINA_FULL.line} why={STAMINA_FULL.why} />
         )}
         {armyUnknown && <HudNotice tone="warn" line="Army data unavailable. Waiting for synchronization." />}
+        {refusal !== null && <HudNotice line={refusal} />}
         {activationError && <HudNotice tone="bad" line={activationError} />}
         <span className="flex justify-end">
           <HudButton
             kind="secondary"
             busy={isActivating ? "Activating…" : undefined}
-            disabled={!compatible || !hasEnoughEssence || armyUnknown}
+            disabled={refusal !== null || !compatible || !hasEnoughEssence || armyUnknown}
             onClick={() => onActivate({ holder, hasEnoughEssence, shortfall })}
           >
             Activate
@@ -229,8 +234,8 @@ export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicA
       setActivationError({ holderId: null, message: null });
       onClose();
     } catch (error) {
-      console.error("Failed to activate relic:", error);
-      setActivationError({ holderId: holderKey, message: "Failed to activate relic. Please try again." });
+      const { reason } = actionFailure(error, "Failed to activate relic. Please try again.");
+      setActivationError({ holderId: holderKey, message: reason });
     } finally {
       setActivatingHolderId(null);
     }

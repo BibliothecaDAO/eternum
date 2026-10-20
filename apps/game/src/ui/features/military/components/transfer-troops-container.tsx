@@ -43,6 +43,7 @@ import {
 } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface TransferTroopsContainerProps {
   selectedEntityId: ID;
@@ -786,7 +787,7 @@ export const TransferTroopsContainer = ({
 
       onTransferComplete();
     } catch (error) {
-      console.error(error);
+      toast.failed(error, "The troops could not be moved.");
     } finally {
       setLoading(false);
     }

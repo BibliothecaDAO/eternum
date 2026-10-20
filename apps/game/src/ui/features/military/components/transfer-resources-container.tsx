@@ -11,6 +11,7 @@ import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { ActorType, ID, RelicRecipientType, RELICS, resources, formatExact, resourceName } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
 import { getActorTypes, TransferDirection } from "./transfer-troops/transfer-direction";
+import { toast } from "@/ui/features/event-feed/notify";
 
 const STRUCTURE_RELIC_IDS = new Set<number>(
   RELICS.filter(({ recipientType }) => recipientType === RelicRecipientType.Structure).map(({ id }) => id),
@@ -360,7 +361,7 @@ export const TransferResourcesContainer = ({
       }
       onTransferComplete();
     } catch (error) {
-      console.error(error);
+      toast.failed(error, "The transfer failed.");
     } finally {
       setLoading(false);
     }

@@ -36,9 +36,9 @@ import { calculatePresetAllocations, getAutomationOverallocation } from "@biblio
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds, StructureType, structureName } from "@bibliothecadao/types";
+import { ActionRefusedError, ResourcesIds, StructureType, structureName } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
-import { toast } from "@/ui/features/event-feed/notify";
+import { actionFailure, toast } from "@/ui/features/event-feed/notify";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { isInsufficientResourceBalanceRevert } from "@/utils/error-message";
 import { accountAddress } from "@/hooks/store/use-account-store";
@@ -498,13 +498,12 @@ export const useAutomation = () => {
               } catch (rawError) {
                 if (signal.aborted) break;
                 const errorMessage = rawError instanceof Error ? rawError.message : "Automation transaction failed";
+                // A refusal (play not open yet) pauses the pass as a missing signer does: nothing failed.
                 const isSignerFault =
-                  rawError instanceof AutomationSignerUnavailable || rawError instanceof AutomationPending;
-
-                console.error(`Automation: Failed to execute plan for ${realmLabel}`, {
-                  error: rawError,
-                  message: errorMessage,
-                });
+                  rawError instanceof AutomationSignerUnavailable ||
+                  rawError instanceof AutomationPending ||
+                  rawError instanceof ActionRefusedError;
+                actionFailure(rawError, `Automation: Failed to execute plan for ${realmLabel}`);
 
                 const prev = getRealmConfig(activeRealmConfig.realmId);
                 recordStatus(activeRealmConfig.realmId, {

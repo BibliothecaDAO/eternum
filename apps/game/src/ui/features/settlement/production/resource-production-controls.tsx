@@ -1,5 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
+import { actionFailure } from "@/ui/features/event-feed/notify";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { AmountInput, HudButton, HudNotice, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules";
@@ -8,7 +9,6 @@ import { configManager, getBuildingQuantity } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
-  ActionRefusedError,
   getBuildingFromResource,
   RealmInfo,
   ResourcesIds,
@@ -103,7 +103,7 @@ export const ResourceProductionControls = ({
         signer: account,
       });
     } catch (error) {
-      setError(productionError(error));
+      setError(actionFailure(error, "Production could not start. Try again.").reason);
     } finally {
       setIsLoading(false);
     }
@@ -301,10 +301,3 @@ const runInputs = (run: ProductionRun, sizing: RunSizing, balances: Record<numbe
 /** What the run makes: "10 Crossbowman T1", the whole cycles' output, which may be more than was typed. */
 const runOutputLine = (run: ProductionRun, resource: number) =>
   `${formatCharge(fromUnits(run.outputUnits))} ${resourceName(resource)}`;
-
-/** What a failed start says: the game's reason when it refused the order (play not open yet), else a retry. */
-const productionError = (error: unknown): string => {
-  if (error instanceof ActionRefusedError) return error.message;
-  console.error(error);
-  return "Production could not start. Try again.";
-};

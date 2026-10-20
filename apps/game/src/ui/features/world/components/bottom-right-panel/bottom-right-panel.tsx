@@ -67,6 +67,7 @@ import { DestroyBuildingButton } from "./destroy-building-button";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface ResourceAmountEntry {
   resource: number;
@@ -271,7 +272,7 @@ const LocalTilePanel = () => {
         await actions.pauseProduction(slot);
       }
     } catch (error) {
-      console.error("Failed to toggle production", error);
+      toast.failed(error, "Production could not be paused or resumed.");
     } finally {
       setIsActionLoading(false);
     }
@@ -287,7 +288,7 @@ const LocalTilePanel = () => {
         hex: { col: selectedBuildingHex.innerCol, row: selectedBuildingHex.innerRow },
       });
     } catch (error) {
-      console.error("Failed to destroy building", error);
+      toast.failed(error, "The building could not be destroyed.");
     } finally {
       setIsActionLoading(false);
     }

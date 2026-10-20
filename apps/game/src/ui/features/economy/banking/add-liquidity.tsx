@@ -23,6 +23,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, ID, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "@/ui/features/event-feed/notify";
 
 const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResourceId: number }) => {
   const {
@@ -106,7 +107,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
           },
         ],
       })
-      .catch((error) => console.error("Failed to add liquidity", error))
+      .catch((error) => toast.failed(error, "The liquidity could not be added."))
       .finally(() => {
         setIsLoading(false);
         setOpenConfirmation(false);

@@ -57,6 +57,7 @@ import {
   readFieldArmyRoom,
 } from "./field-army-room";
 import { useDeployRing } from "./use-deploy-ring";
+import { toast } from "@/ui/features/event-feed/notify";
 
 interface ArmyCreationOptions {
   /** The structure raising the army; undefined while the player has none to raise from. */
@@ -426,7 +427,7 @@ export const useArmyCreation = ({
     try {
       await submitArmyCreation(activeStructureId, selectedTroopCombo, troopCount, target);
     } catch (error) {
-      console.error("Failed to create army:", error);
+      toast.failed(error, "The army could not be raised.");
     } finally {
       submittingRef.current = false;
       setIsLoading(false);

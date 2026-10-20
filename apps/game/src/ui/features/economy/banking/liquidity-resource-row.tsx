@@ -40,6 +40,7 @@ import {
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import React, { useCallback, useMemo, useState } from "react";
 import { storyPayloadId } from "@/utils/native-id";
+import { toast } from "@/ui/features/event-feed/notify";
 
 type LiquidityResourceRowProps = {
   playerStructureIds: ID[];
@@ -106,7 +107,7 @@ export const LiquidityResourceRow = ({ playerStructureIds, entityId, resourceId 
 
       return gameContext.setup.systemCalls
         .remove_liquidity(calldata)
-        .catch((error) => console.error("Failed to withdraw liquidity", error))
+        .catch((error) => toast.failed(error, "The liquidity could not be withdrawn."))
         .finally(() => {
           setIsLoading(false);
           setOpenConfirmation(false);

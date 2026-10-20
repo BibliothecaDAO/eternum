@@ -20,6 +20,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
+import { actionFailure } from "@/ui/features/event-feed/notify";
 
 export interface PlotConstructionTarget {
   entityId: number;
@@ -101,9 +102,8 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
           close: () => usePopoverStore.getState().close("plot-construction"),
         },
       });
-    } catch (reason) {
-      console.error("[Plot construction] placement failed", reason);
-      setError("Building could not be placed. Try again.");
+    } catch (failure) {
+      setError(actionFailure(failure, "Building could not be placed. Try again.").reason);
     }
   };
   return {
