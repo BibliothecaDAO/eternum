@@ -105,7 +105,7 @@ describe("the holdings search", () => {
   it("says nothing matches only once something was searched, and that nothing is held otherwise", () => {
     facts.structures = [];
     render();
-    expect(host.querySelector('[role="tabpanel"]')!.textContent).toBe("You hold nothing.");
+    expect(host.querySelector('[role="tabpanel"]')!.textContent).toBe("You hold no realm. Watch until the end.");
 
     facts.structures = realms(12);
     render();
