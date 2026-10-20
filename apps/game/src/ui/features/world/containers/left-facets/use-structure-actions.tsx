@@ -1,3 +1,4 @@
+import { PRODUCTION } from "@/ui/design-system/kit/words";
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { useFactView } from "@/hooks/use-fact-view";
@@ -102,7 +103,7 @@ export function useStructureActions(): StructureAction[] | null {
     },
     {
       id: "production",
-      label: "Production",
+      label: PRODUCTION,
       active: openId === "production",
       onClick: openProduction,
       refusal,

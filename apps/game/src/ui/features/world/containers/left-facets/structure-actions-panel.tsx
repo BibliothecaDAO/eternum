@@ -33,7 +33,7 @@ export const ActionTile = ({ action }: { action: StructureAction }) => {
       <span
         className={cn(HUD_LABEL, "max-w-full truncate text-[11px] normal-case tracking-normal", active && "text-gold")}
       >
-        {action.id === "production" ? "Produce" : label}
+        {label}
       </span>
       {badges
         .filter((badge) => badge.count > 0)
