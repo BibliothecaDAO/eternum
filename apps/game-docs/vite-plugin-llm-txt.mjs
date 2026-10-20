@@ -64,7 +64,7 @@ const importsReadBy = (tree, expressions) => {
  * expressions run in a module beside the page, with the page's own imports, through Vite. A value that is not text or a
  * number (a component) stays as written; an expression that fails to run fails the export.
  */
-const evaluateExpressions = async (server, modules, file, tree) => {
+const evaluateExpressions = async (server, modules, root, file, tree) => {
   const expressions = expressionsOf(tree);
   if (expressions.length === 0) return;
   const id = `${file}.llm-expressions.mjs`;
@@ -77,13 +77,29 @@ const evaluateExpressions = async (server, modules, file, tree) => {
   const { default: values } = await server.ssrLoadModule(id);
   for (const [position, { parent, index, node }] of [...expressions.entries()].reverse()) {
     const value = values[position]();
-    if (typeof value !== "string" && typeof value !== "number") continue;
-    const text = String(value);
+    if (isElement(value)) continue;
+    const text = textOf(value, () => `${path.relative(root, file)}: {${node.value}}`);
     if (node.type === "mdxTextExpression") parent.children[index] = { type: "text", value: text };
     else if (text.trim() === "") parent.children.splice(index, 1);
     else parent.children[index] = { type: "paragraph", children: [{ type: "text", value: text }] };
   }
   for (const parent of new Set(expressions.map(({ parent }) => parent))) joinText(parent);
+};
+
+/** Markup a page renders as a component; it stays in the export as written. */
+const isElement = (value) => typeof value === "object" && value !== null && "$$typeof" in value;
+
+/**
+ * A rendered value as the export writes it: text, or a finite number. Anything else (undefined from a missing key,
+ * NaN, Infinity, a plain object) is a value the page cannot state, so it fails the export, naming the page and the
+ * expression.
+ */
+const textOf = (value, where) => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  throw new Error(
+    `${where()} renders ${typeof value === "number" ? value : typeof value}, not a value a page can state`,
+  );
 };
 
 /** Joins the text an expression left beside text, so `every{" "}` and the next line read as one run of words. */
@@ -114,16 +130,29 @@ const createExpressionServer = (modules) =>
     ],
   });
 
-const pageText = async (server, modules, file) => {
+const pageText = async (server, modules, root, file) => {
   const { content, data } = matter(await fs.promises.readFile(file, "utf-8"));
   const vfile = { path: path.relative(process.cwd(), file), value: content };
   const tree = await processor.run(processor.parse(vfile), vfile);
-  await evaluateExpressions(server, modules, file, tree);
-  return `file: docs/${path.relative(docsDir, file)}
+  await evaluateExpressions(server, modules, root, file, tree);
+  return `file: docs/${path.relative(root, file)}
 meta: ${JSON.stringify(data, null, 2)}
 
 ${processor.stringify(tree)}
 `;
+};
+
+/** The text export of these pages, each with its expressions evaluated, named relative to `root`. */
+export const renderLlmTxt = async (files, root) => {
+  const modules = new Map();
+  const server = await createExpressionServer(modules);
+  try {
+    const pages = [];
+    for (const file of files) pages.push(await pageText(server, modules, root, file));
+    return `${pages.join("\n\n---\n\n").trimEnd()}\n`;
+  } finally {
+    await server.close();
+  }
 };
 
 export default function llmTxtPlugin() {
@@ -140,15 +169,7 @@ export default function llmTxtPlugin() {
         return depthDifference || leftPath.localeCompare(rightPath);
       });
       console.log(`Found ${files.length} mdx files.`);
-      const modules = new Map();
-      const server = await createExpressionServer(modules);
-      try {
-        const pages = [];
-        for (const file of files) pages.push(await pageText(server, modules, file));
-        await fs.promises.writeFile(llmTxtFile, `${pages.join("\n\n---\n\n").trimEnd()}\n`);
-      } finally {
-        await server.close();
-      }
+      await fs.promises.writeFile(llmTxtFile, await renderLlmTxt(files, docsDir));
       console.log(`Successfully generated llm.txt at ${llmTxtFile}`);
     },
   };

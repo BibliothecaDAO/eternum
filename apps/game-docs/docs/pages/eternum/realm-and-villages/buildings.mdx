@@ -1,7 +1,4 @@
 import BuildingCard from "../../../components/BuildingCard";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfig } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
 
 # Buildings
 
@@ -343,12 +340,11 @@ have the same requirements in simple and standard mode.
 
 ### Economic Buildings
 
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
+These buildings define the utility of a Realm or Village, including food production, donkey production and population
+capacity. All of these buildings can be constructed in either standard or simple mode, but have varying costs and
+population requirements:
 
-[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
-increase (Storehouse)]
+[economic building table, including population cost / population capacity increase (Worker Hut)]
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
 <BuildingCard
@@ -359,18 +355,6 @@ increase (Storehouse)]
   description={[
     "Increases population capacity by 5",
     "Available in both simple and standard building modes"
-  ]}
-/>
-
-<BuildingCard
-  mode="eternum"
-  title="Storehouse"
-  image="/images/buildings/construction/storehouse.png"
-  buildingType={2}
-  description={[
-    `Increases storage capacity by ${formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse] / 1000)} kg for each material`,
-    "Requires 2 population to be constructed",
-    "Available in both simple and standard building modes",
   ]}
 />
 

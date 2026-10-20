@@ -6,6 +6,10 @@
  * drifted) fails the build. The text export (llm.txt) must state the same numbers, with no expression left as code.
  * Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
  */
+import fg from "fast-glob";
+import { remark } from "remark";
+import remarkGfm from "remark-gfm";
+import remarkMdx from "remark-mdx";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -238,8 +242,26 @@ export const exportPages = (llm) =>
     ]),
   );
 
-/** An expression the export would ship as code instead of the number it stands for. */
-const UNEVALUATED = /\{(?:FRONTIER\.|staminaOf\(|victoryPointsOf\(|ETERNUM_CONFIG\()/g;
+const mdx = remark().use(remarkMdx).use(remarkGfm);
+
+/**
+ * Every `{expression}` the export still holds, by page: the generator writes each value it renders, so any left is a
+ * value shipped as code, whatever its name.
+ */
+const unevaluatedExpressions = (llm) =>
+  llm.split("\n\n---\n\n").flatMap((section) => {
+    const page = section.match(/^file: (\S+)/)?.[1] ?? "llm.txt";
+    const body = section.replace(/^file: .*\nmeta: (\{[\s\S]*?\n\}|\{\})\n\n/, "");
+    const left = [];
+    const walk = (node) => {
+      for (const child of node.children ?? []) {
+        if (child.type === "mdxTextExpression" || child.type === "mdxFlowExpression") left.push(child.value);
+        walk(child);
+      }
+    };
+    walk(mdx.parse(body));
+    return left.map((value) => ({ page: `llm.txt ${page}`, run: [`unevaluated {${value}}`] }));
+  });
 
 /** The phrases the text export does not show, and every expression it ships unevaluated, each with its page. */
 export const exportProblems = (llm, pages) => {
@@ -249,12 +271,31 @@ export const exportProblems = (llm, pages) => {
       .filter((phrase) => !(sections.get(page) ?? "").includes(phrase))
       .map((phrase) => ({ page: `llm.txt ${page}`, run: [phrase] })),
   );
-  const unevaluated = [...llm.matchAll(UNEVALUATED)].map((match) => ({
-    page: "llm.txt",
-    run: [`unevaluated ${llm.slice(match.index, match.index + 60).split("\n")[0]}`],
-  }));
-  return [...missing, ...unevaluated];
+  return [...missing, ...unevaluatedExpressions(llm)];
 };
+
+/**
+ * Values no page may show: NaN or Infinity (a key read wrong), and the u64 maximum in any scale (a limit the game sets to
+ * "none", which a page states in words). A zero from a missing key fails earlier, at prerender (`ETERNUM_CONFIG`).
+ */
+const FORBIDDEN_VALUES = [/\bNaN\b/, /\bInfinity\b/, /18,?446,?744,?073/];
+
+/** Each forbidden value a text shows, with a little of what surrounds it. */
+const forbiddenIn = (text) =>
+  FORBIDDEN_VALUES.flatMap((pattern) => {
+    const match = text.match(pattern);
+    return match ? [`forbidden value: …${text.slice(Math.max(0, match.index - 60), match.index + 30)}…`] : [];
+  });
+
+/** Every built page, and the text export, showing a forbidden value. */
+export const forbiddenValues = (dist, llm) => [
+  ...fg
+    .sync("**/index.html", { cwd: dist })
+    .flatMap((file) =>
+      forbiddenIn(pageLine(readFileSync(join(dist, file), "utf8"))).map((found) => ({ page: file, run: [found] })),
+    ),
+  ...forbiddenIn(llm).map((found) => ({ page: "llm.txt", run: [found] })),
+];
 
 /** The runs a built site does not show, each with its page. */
 export const missingRuns = (dist, pages) =>
@@ -266,6 +307,7 @@ export const missingRuns = (dist, pages) =>
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
   const { relics, rules, firstRelicId, frontierPreset, llmTxtFile } = await loadBalanceSources();
+  const llm = readFileSync(llmTxtFile, "utf8");
   const phrases = expectedPhrases(configOf("blitz"), configOf("eternum"), configOf("frontier"), frontierPreset);
   const missing = [
     ...missingRuns(dist, [
@@ -273,9 +315,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       ...relicRuns(relics, rules, firstRelicId),
     ]),
     ...missingPhrases(dist, phrases),
-    ...exportProblems(readFileSync(llmTxtFile, "utf8"), phrases),
+    ...exportProblems(llm, phrases),
+    ...forbiddenValues(dist, llm),
   ];
   for (const { page, run } of missing) console.error(`${page}: expected "${run.join(" | ")}"`);
   if (missing.length) process.exit(1);
-  console.log("Rendered balance and the text export match each mode's config.");
+  console.log("Rendered balance and the text export match each mode's config, with no NaN or u64 maximum shown.");
 }

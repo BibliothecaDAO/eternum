@@ -896,7 +896,7 @@ This section outlines the core mechanics and systems that form the foundation of
 * **Building Types**:
   * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
   * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
-  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
+  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts and Markets.
   * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
 * **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
   and Villages are upgraded.
@@ -1137,13 +1137,12 @@ within Eternum and rely on player-driven interactions including arrangements of 
 file: docs/pages/eternum/victory.mdx
 meta: {}
 
-import { ETERNUM_CONFIG } from "@/utils/config";
+import { ETERNUM_CONFIG, victoryPointsOf } from "@/utils/config";
 import {
   HyperstructureInitializationShardsTable,
   HyperstructureConstructionCostTable,
   HyperstructurePointsTable,
   getTotalHyperstructureCompletionPoints,
-  HYPERSTRUCTURE_POINT_MULTIPLIER,
 } from "@/components/eternum-components/HyperstructureTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
@@ -1184,19 +1183,17 @@ available to claim throughout the construction process.
 ## Accumulation Victory Points
 
 Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
-accumulate
-**0
-victory points** for every second the structure remains under their control. These accumulating victory points can be
-shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
-cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
-owner, who may similarly decide on sharing arrangements.
+accumulate victory points, **1** for every second the
+structure remains under their control. These accumulating victory points can be shared among multiple Lords through a
+customizable share split, allowing the owner to distribute glory and reward cooperation. If a Hyperstructure is claimed
+by another Lord, future accumulated victory points are redirected to the new owner, who may similarly decide on sharing
+arrangements.
 
 ## Total Victory
 
 Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
-to reach
-**0
-total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+to reach **10,000,000 total victory points** unlocks the ability to select the ‘End
+Season’ option, concluding the current game season.
 
 <HyperstructurePointsTable />
 
@@ -1603,7 +1600,7 @@ Tap an open plot to build there. Buildings are paid in labor:
 | Farm                                         | Wheat                     | 400   | 1          |
 | Barracks                                     | Troops                    | 400   | 3          |
 | Workshop                                     | Labor                     | 2,000 | 2          |
-| Workers' hut                                 | Population                | 300   | 0          |
+| Workers' hut                                 | Population                | 300   | None       |
 | War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 3,000 | 2          |
 
 Each workers' hut houses 6, and every other building takes the population shown. Each further
@@ -3839,7 +3836,7 @@ import {
   RealmDefenseSlotsTable,
   WorldStructureDefenseSlotsTable,
 } from "@/components/eternum-components/DefendingArmies";
-import { ETERNUM_CONFIG } from "@/utils/config";
+import { ETERNUM_CONFIG, durationOf } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
 # Armies
@@ -3851,10 +3848,9 @@ interactions on the world map. Each hex can host only one army, so Lords must ca
 engagement opportunities.
 
 Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
-the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Each military
-building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
-**+NaN**). Lords can deploy armies from the Military tab in
-the Local view. The maximum size of an army is **30,000**
+the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Lords can deploy
+armies from the Military tab in the Local view. The largest army depends on the structure's level and the army's tier,
+as the [Troop Limits](/eternum/resources/resources) table shows.
 
 ### Field Armies
 
@@ -3891,10 +3887,10 @@ Unlike Realms and Villages, world structures have a static number of defense slo
 
 When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
 destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**0 hours**. Once all guard armies are
-defeated, the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages,
-which cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting
-their structure on the worldmap, then right-clicking the target hex.
+**10 minutes**. Once all guard armies are defeated, the
+structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages, which cannot be
+claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting their structure
+on the worldmap, then right-clicking the target hex.
 
 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
   <img src="/gifs/attack-from-structure.gif" alt="Attack field army" />
@@ -4189,9 +4185,6 @@ file: docs/pages/eternum/realm-and-villages/buildings.mdx
 meta: {}
 
 import BuildingCard from "../../../components/BuildingCard";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { CapacityConfig } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
 
 # Buildings
 
@@ -4533,12 +4526,11 @@ have the same requirements in simple and standard mode.
 
 ### Economic Buildings
 
-These buildings define the utility of a Realm or Village, including food production, donkey production, population
-capacity, and storage capacity. All of these buildings can be constructed in either standard or simple mode, but have
-varying costs and population requirements:
+These buildings define the utility of a Realm or Village, including food production, donkey production and population
+capacity. All of these buildings can be constructed in either standard or simple mode, but have varying costs and
+population requirements:
 
-\[economic building table, including population cost / population capacity increase (Worker Hut) / storage capacity
-increase (Storehouse)]
+\[economic building table, including population cost / population capacity increase (Worker Hut)]
 
 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.75rem' }}>
   <BuildingCard
@@ -4549,18 +4541,6 @@ increase (Storehouse)]
     description={[
   "Increases population capacity by 5",
   "Available in both simple and standard building modes"
-]}
-  />
-
-  <BuildingCard
-    mode="eternum"
-    title="Storehouse"
-    image="/images/buildings/construction/storehouse.png"
-    buildingType={2}
-    description={[
-  `Increases storage capacity by ${formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse] / 1000)} kg for each material`,
-  "Requires 2 population to be constructed",
-  "Available in both simple and standard building modes",
 ]}
   />
 
@@ -5465,55 +5445,26 @@ file: docs/pages/eternum/resources/storage.mdx
 meta: {}
 
 import { WeightTable } from "@/components/eternum-components/WeightTable";
-import { formatNumberWithCommas } from "@/utils/formatting";
-import { divideByPrecision } from "@/utils/resources";
-import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
-import { ETERNUM_CONFIG } from "@/utils/config";
+import { CapacityConfig } from "@bibliothecadao/types";
+import { storageOf } from "@/utils/config";
 
 # Storage System
 
-Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
-storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
-**0 kg**. You'll
-need to construct storehouses to expand your storage capabilities.
+What a structure can hold is set per kind of structure:
+
+| Structure Type | Storage Capacity |
+| -------------- | ---------------- |
+| Realm          | Unbounded        |
+| Village        | Unbounded        |
+| Hyperstructure | Unbounded        |
+| Bank           | Unbounded        |
+| Fragment Mine  | Unbounded        |
 
 ## Material Weights
 
-Materials in Eternum have different weights that affect storage:
+Materials in Eternum have different weights, which decide how much a donkey or an army can carry:
 
 <WeightTable />
-
-## Storehouses <img src="/images/buildings/construction/storehouse.png" alt="Storehouse" width="300" className="float-right" />
-
-Expand your storage capacity to support your growing realm:
-
-* **Capacity**: Each storehouse adds
-  0kg of storage
-  capacity.
-
-* **Expansion**: Build additional storehouses to increase total storage.
-
-* **Danger**: When storage is full new production is wasted
-
-## World Structure Storage
-
-All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
-capacities are as follows:
-
-| Structure Type | Storage Capacity          |
-| -------------- | ------------------------- |
-| Hyperstructure | 18,446,744,073,709,550 kg |
-| Bank           | 18,446,744,073,709,550 kg |
-| Fragment Mine  | 18,446,744,073,709,550 kg |
-
-## Storage Management Tips
-
-> 💡 **Best Practices**
->
-> * Check storage levels regularly
-> * Build new storehouses before reaching capacity
-> * Pause production when storage is nearly full
-> * Plan material usage to maximize storage efficiency
 
 
 

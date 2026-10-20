@@ -28,9 +28,10 @@ export const formatNumber = (num: number, decimals: number): string => {
   return str;
 };
 
-export function formatNumberWithCommas(number?: number | null): string {
-  if (typeof number !== "number" || Number.isNaN(number)) {
-    return "0";
+/** A number as pages write it. Anything else is a missing or misread value, and fails the build rather than reading 0. */
+export function formatNumberWithCommas(number: number): string {
+  if (typeof number !== "number" || !Number.isFinite(number)) {
+    throw new Error(`formatNumberWithCommas was given ${String(number)}, not a number`);
   }
   return number.toLocaleString("en-US");
 }

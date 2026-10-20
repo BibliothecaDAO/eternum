@@ -1,9 +1,9 @@
-import { ETERNUM_CONFIG } from "@/utils/config";
+import { ETERNUM_CONFIG, victoryPointsOf } from "@/utils/config";
 import { resources } from "@bibliothecadao/types";
 import ResourceIcon from "../ResourceIcon";
 import { formatAmount, section, table } from "../styles";
 
-export const HYPERSTRUCTURE_POINT_MULTIPLIER = 1_000_000;
+const HYPERSTRUCTURE_POINT_MULTIPLIER = 1_000_000;
 
 // Helper function to get resource name
 const getResourceName = (id: number): string => {
@@ -142,10 +142,6 @@ export const HyperstructureInitializationShardsTable = () => {
 
 // Component for Hyperstructure Points Information
 export const HyperstructurePointsTable = () => {
-  const config = ETERNUM_CONFIG("eternum");
-  const hyperstructurePointsPerCycle = config.hyperstructures.hyperstructurePointsPerCycle;
-  const hyperstructurePointsForWin = config.hyperstructures.hyperstructurePointsForWin;
-
   return (
     <div style={section.wrapper}>
       <div style={section.subtitle}>Hyperstructure Points Information</div>
@@ -161,16 +157,14 @@ export const HyperstructurePointsTable = () => {
             <td style={table.weightCell}>Points Per Cycle</td>
             <td style={table.weightCell}>
               <div style={componentStyles.resourceItemStyle}>
-                {formatAmount(Number(hyperstructurePointsPerCycle / HYPERSTRUCTURE_POINT_MULTIPLIER))} points
+                {victoryPointsOf("eternum", "hyperstructurePointsPerCycle")} points
               </div>
             </td>
           </tr>
           <tr>
             <td style={table.weightCell}>Points Required For Win</td>
             <td style={table.weightCell}>
-              <div style={componentStyles.resourceItemStyle}>
-                {formatAmount(Number(hyperstructurePointsForWin) / HYPERSTRUCTURE_POINT_MULTIPLIER)} points
-              </div>
+              <div style={componentStyles.resourceItemStyle}>{victoryPointsOf("eternum", "pointsForWin")} points</div>
             </td>
           </tr>
         </tbody>

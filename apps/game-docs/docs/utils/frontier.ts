@@ -128,7 +128,11 @@ export const FRONTIER = {
     name: name as string,
     makes: makes as string,
     labor: n(config.buildings.simpleBuildingCost[id as number][0].amount),
-    population: n(config.buildings.buildingPopulation[id as number]),
+    // A hut takes no population: a page says so in words rather than as a zero.
+    population:
+      config.buildings.buildingPopulation[id as number] === 0
+        ? "None"
+        : n(config.buildings.buildingPopulation[id as number]),
   })),
   research: {
     farm: researchRow(research.ROW_FARM),
