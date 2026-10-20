@@ -31,7 +31,7 @@ async function fixture(enabled: boolean) {
   return { root, original, model, config };
 }
 
-it.each(["dev", "preview"])("serves exact archived bytes only to the local %s lab", async (mode) => {
+it.each(["dev", "preview"])("serves lab pages and exact archived bytes in local %s", async (mode) => {
   const { root, original, model, config } = await fixture(true);
   const server =
     mode === "dev" ? await createServer(config).then((server) => server.listen()) : await previewAfterBuild(config);
@@ -56,7 +56,16 @@ it.each(["dev", "preview"])("serves exact archived bytes only to the local %s la
     expect((await fetch(`${origin}lab/%2e%2e%2Fprivate.png`)).status).toBe(403);
     expect((await fetch(`${origin}lab/%invalid.png`)).status).toBe(400);
     expect((await fetch(`${origin}lab/missing.png`, { headers: { Accept: "image/png" } })).status).toBe(404);
-    expect((await fetch(`${origin}lab/kit/resource-icons`)).status).toBe(200);
+    for (const path of ["lab", "lab/", "lab?capture=1", "lab/?capture=1", "lab/kit/resource-icons"]) {
+      for (const method of ["GET", "HEAD"]) {
+        const page = await fetch(`${origin}${path}`, { method });
+        expect(page.status, `${method} /${path}`).toBe(200);
+        expect(page.headers.get("Content-Type")).toContain("text/html");
+        const body = await page.text();
+        if (method === "GET") expect(body).toContain("<h1>Lab artwork</h1>");
+        else expect(body).toBe("");
+      }
+    }
   } finally {
     await close(server);
     await rm(root, { recursive: true, force: true });

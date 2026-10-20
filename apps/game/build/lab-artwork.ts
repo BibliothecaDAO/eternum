@@ -38,13 +38,13 @@ function artwork(directory: string): Connect.NextHandleFunction {
       response.writeHead(400).end();
       return;
     }
+    const contentType = CONTENT_TYPES[extname(pathname)];
+    if (!contentType) return next();
     const file = resolve(directory, `.${pathname}`);
     if (!file.startsWith(`${directory}${sep}`) || pathname.includes("\0")) {
       response.writeHead(403).end();
       return;
     }
-    const contentType = CONTENT_TYPES[extname(file)];
-    if (!contentType) return next();
     void readFile(file).then(
       (bytes) => {
         response.setHeader("Content-Type", contentType);
