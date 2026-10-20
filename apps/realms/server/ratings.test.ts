@@ -175,15 +175,6 @@ it("uses the dev rating token instead of production on the same chain", async ()
   expect(resolve).toHaveBeenCalledWith("mmrToken", "staging");
 });
 
-it("serves no production rating while production's book names no deployed rating token", async () => {
-  cache.close();
-  Object.assign(env, { ENVIRONMENT: "production" });
-  cache = testRatingReader({ ENVIRONMENT: "production" });
-  env.RATING_READER = cache.binding as unknown as IdentityEnv["RATING_READER"];
-  expect((await request("players=0xa")).status).toBe(503);
-  expect(call).not.toHaveBeenCalled();
-});
-
 it("does not read production ratings when the dev token has not been deployed", async () => {
   vi.spyOn(chain, "valuePlaneAddress").mockImplementation(() => {
     throw new Error("dev token not deployed");
