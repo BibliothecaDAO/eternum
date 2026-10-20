@@ -30,7 +30,9 @@ export function RelicChestLab() {
   const [showMap, setShowMap] = useState(true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => (frontier ? holdChestStudyClock() : undefined), [frontier]);
+  useEffect(() => {
+    if (frontier) return holdChestStudyClock();
+  }, [frontier]);
   const container = useRef<HTMLDivElement>(null);
   const scene = useRef<ChestProofScene | null>(null);
   useEffect(() => {
