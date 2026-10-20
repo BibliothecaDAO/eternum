@@ -1,6 +1,6 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
-import { usePlayers } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName, usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView, settlementPlayersView } from "@/sync/fact-views";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
@@ -121,7 +121,14 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
 
   useEffect(() => {
     setPlayerInfo(
-      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, store),
+      getPlayerInfo(
+        players,
+        ContractAddress(account.address),
+        playersByRank,
+        playerStructureCountsMap,
+        store,
+        getPlayerDisplayName,
+      ),
     );
   }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo]);
 

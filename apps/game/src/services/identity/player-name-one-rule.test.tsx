@@ -151,3 +151,15 @@ it("leaves the one rule as the only place in the client that turns a profile int
     .map((path) => relative(root, path));
   expect(formatters).toEqual(["services/identity/player-profiles.ts"]);
 });
+
+it("lets the game client's core format a name only from the resolver the client hands it", () => {
+  const core = join(__dirname, "../../../../../packages/core/src");
+  // A core view that formats a name it read itself (a profile's raw name) writes the stand-in for an unavailable one.
+  const calls = sources(core).flatMap((path) =>
+    [...readFileSync(path, "utf8").matchAll(/\bdisplayPlayerName\(([^,()]+),\s*([^\n]*)/g)].map(
+      ([, , named]) => `${relative(core, path)}: ${named.trim()}`,
+    ),
+  );
+  expect(calls.length).toBeGreaterThan(0);
+  expect(calls.filter((call) => !/: (playerName|resolvePlayerName\?\.)\(/.test(call))).toEqual([]);
+});
