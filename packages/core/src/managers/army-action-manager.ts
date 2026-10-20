@@ -160,6 +160,16 @@ export class ArmyActionManager {
   }
 
   /**
+   * Something holds the tile, by the tile's own occupancy: the contract refuses a move or an explore onto any held
+   * tile, so no step enters or crosses it, whatever the indexes this plan was handed saw there (they leave out a
+   * reserved Hyperstructure site, for one).
+   */
+  private isOccupiedHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.store, this._getCurrentPosition().alt, position.col, position.row);
+    return tile !== undefined && tile.occupier_type !== TileOccupier.None;
+  }
+
+  /**
    * Another player's structure where the game lets an army attack only what nobody owns: the contract refuses the
    * attack, so the hex is no target and no order leads onto it.
    */
@@ -340,6 +350,9 @@ export class ArmyActionManager {
         staminaCost = this.getAttackStaminaRequirement();
       } else if (hasChest) {
         actionType = ActionType.Chest;
+      } else if (this.isOccupiedHex({ col, row })) {
+        actionPaths.refuse(key, { reason: "occupied" });
+        continue;
       } else if (biome) {
         actionType = ActionType.Move;
         staminaCost = configManager.getTravelStaminaCost(biome, troopType);
@@ -414,13 +427,13 @@ export class ArmyActionManager {
           const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const hasSpire = this.isWorldSpireHex({ col, row });
 
-          if (hasSpire) continue;
-          if (this.isMapSiteHex({ col, row })) {
+          // A target ends a route where it stands: the attack paths or the distance decide it below.
+          if (hasSpire || hasArmy || hasStructure || hasChest) continue;
+          if (this.isOccupiedHex({ col, row })) {
             actionPaths.refuse(neighborKey, { reason: "occupied" });
             continue;
           }
-
-          if (!isExplored || hasArmy || hasStructure || hasChest) continue;
+          if (!isExplored) continue;
 
           const staminaCost = configManager.getTravelStaminaCost(biome!, troopType);
           const nextStaminaUsed = staminaUsed + staminaCost;

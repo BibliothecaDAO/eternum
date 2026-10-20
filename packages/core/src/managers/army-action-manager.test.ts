@@ -4,6 +4,7 @@ import {
   ETHEREAL_STRIDE,
   getLayerNeighborHexes,
   getDirectionBetweenAdjacentHexes,
+  getHexDistance,
   getHexesWithinRadius,
   getNeighborHexes,
   type HexEntityInfo,
@@ -201,6 +202,41 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(actionPaths.get(ActionPaths.posKey(dormantHex))).toBeUndefined();
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(openHex)) ?? [])).toBe(ActionType.Move);
     for (const hex of [shrineHex, wellHex, dormantHex]) {
+      expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "occupied" });
+    }
+  });
+
+  it("offers no move or explore onto a tile anything else holds, and no route across one, as the contract refuses both", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    // The indexes this plan is handed leave these out; the tile's own occupancy holds them.
+    const [reservedHex, openHex, ruinHex] = getNeighborHexes(oldFeltStart.col, oldFeltStart.row);
+    const beastsHex = getNeighborHexes(openHex.col, openHex.row).find(
+      (hex) => getHexDistance(hex, oldFeltStart) === 2,
+    )!;
+    setNestedMapValue(
+      exploredHexes,
+      beastsHex.col - TEST_FELT_CENTER,
+      beastsHex.row - TEST_FELT_CENTER,
+      1 as BiomeType,
+    );
+    exploredHexes.get(ruinHex.col - TEST_FELT_CENTER)?.delete(ruinHex.row - TEST_FELT_CENTER);
+    for (const [hex, occupierType, biome] of [
+      [reservedHex, TileOccupier.ReservedHyperstructure, 1],
+      [ruinHex, TileOccupier.Ruin, 0],
+      [beastsHex, TileOccupier.Beasts, 1],
+    ] as const) {
+      components.TileOpt.set(
+        toTileEntityKey(false, hex.col, hex.row),
+        buildTileOptData({ ...hex, biome, occupierType, occupierId: 900 + occupierType }),
+      );
+    }
+
+    const actionPaths = manager.findActionPaths(structureHexes, armyHexes, exploredHexes, chestHexes, 0, 0x123n as any);
+
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(openHex)) ?? [])).toBe(ActionType.Move);
+    for (const hex of [reservedHex, ruinHex, beastsHex]) {
+      expect(actionPaths.get(ActionPaths.posKey(hex))).toBeUndefined();
       expect(actionPaths.getRefusals().get(ActionPaths.posKey(hex))).toEqual({ reason: "occupied" });
     }
   });
