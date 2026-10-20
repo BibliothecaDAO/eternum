@@ -174,14 +174,13 @@ describe("gameplay account submits", () => {
     ["validation", "The shard does not accept this action from this account."],
     ["unavailable", "The shard could not reach its node. Try again."],
   ])("a refusal naming %s is not sent, and says why", async (reason, sentence) => {
-    const shard = fakeShard(`0x7a${reason.length}`, (invoke) => {
-      if (shard.sent.length === 1) {
-        throw Object.assign(new Error("Transaction refused"), { baseError: { code: -32010, data: { reason } } });
-      }
-      return shard.land(invoke);
+    const shard = fakeShard(`0x7a${reason.length}`, () => {
+      throw Object.assign(new Error("Transaction refused"), { baseError: { code: -32010, data: { reason } } });
     });
 
     await expect(send(shard)).rejects.toMatchObject({ name: "TransactionNotSentError", message: sentence });
+    // Only a nonce refusal is numbered again, and only once.
+    expect(shard.sent).toHaveLength(reason === "nonce" ? 2 : 1);
   });
 
   it("a refusal naming no reason it knows says only that the shard refused", async () => {
@@ -562,6 +561,41 @@ describe("a burst against a node that holds one play per nonce", () => {
     expect(node.safe()).toEqual({ nonceLandedTwice: false, orderLandedTwice: false, orderSentTwice: false });
   });
 
+  // The account spends a nonce this queue never numbered: this browser joining as a new device after a sign-in, or
+  // another device's play. The next order meets the spent nonce and is refused before forwarding, so it was never
+  // sent: it is numbered again from the node and leaves once more.
+  it("an order meeting a nonce spent outside the queue is numbered again and sent once more", async () => {
+    const node = fakeMempool("0xa07", () => false);
+    const told = await outcomes([order(node, 1)], [1]);
+    node.spendOutside();
+    Object.assign(told, await outcomes([order(node, 2)], [2]));
+    expect(node.sent()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [9n, 2],
+    ]);
+    expect(node.landed()).toEqual([
+      [7n, 1],
+      [8n, 0],
+      [9n, 2],
+    ]);
+    expect(told).toEqual({ 1: "landed", 2: "landed" });
+  });
+
+  it("an order whose fresh nonce is spent outside again is refused: it is numbered again only once", async () => {
+    const node = fakeMempool("0xa08", () => false);
+    await outcomes([order(node, 1)], [1]);
+    node.spendOutside();
+    node.spendOutsideAfterNextRead();
+    const told = await outcomes([order(node, 2)], [2]);
+    expect(node.sent()).toEqual([
+      [7n, 1],
+      [8n, 2],
+      [9n, 2],
+    ]);
+    expect(told).toEqual({ 2: "refused" });
+  });
+
   it("plays sent before a disposal keep their nonces: the next client's plays never displace them", async () => {
     const node = fakeMempool("0xa05", () => false, undefined, 2);
     const disposed = new AbortController();
@@ -643,7 +677,18 @@ function fakeMempool(
     }
   };
   setInterval(produceBlock, 250);
+  /** A transaction of this account that no queue numbered (a device join, another device's play), included at once. */
+  const spendOutside = () => {
+    landed.push({ nonce, hash: `0xf${nonce.toString(16)}`, value: 0 });
+    nonce += 1n;
+  };
+  let spendAfterRead = false;
   return {
+    spendOutside,
+    /** The next nonce read is answered, then that nonce is spent outside before the play that read it arrives. */
+    spendOutsideAfterNextRead: () => {
+      spendAfterRead = true;
+    },
     sent: () => sent,
     landed: () => landed.map((play) => [play.nonce, play.value]),
     /** What must hold whatever happened: no nonce or order landed twice, no order was sent twice. */
@@ -683,7 +728,14 @@ function fakeMempool(
         held.set(at, { hash, value });
         return { transaction_hash: hash };
       }),
-      getNonce: vi.fn(async () => `0x${nonce.toString(16)}`),
+      getNonce: vi.fn(async () => {
+        const answer = `0x${nonce.toString(16)}`;
+        if (spendAfterRead) {
+          spendAfterRead = false;
+          spendOutside();
+        }
+        return answer;
+      }),
       getTransactionStatus: vi.fn(async (transactionHash: string) => {
         if (landed.some((play) => play.hash === transactionHash)) return { finality_status: "PRE_CONFIRMED" };
         if ([...held.values()].some((play) => play.hash === transactionHash)) return { finality_status: "RECEIVED" };

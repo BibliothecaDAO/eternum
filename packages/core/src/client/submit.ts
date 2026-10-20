@@ -147,8 +147,8 @@ function submissionOf(chainId: string, address: string): AccountSubmission {
  * An account's plays leave one after another at the nonces it numbers itself, each once the one before it was
  * answered, without waiting for its inclusion: up to PLAYS_IN_FLIGHT sent and not yet included, as the shard admits.
  * A play never leaves behind one whose answer is still to come, so a refusal never leaves a later play waiting behind
- * its nonce. The send returns its hash or rejects on an explicit admission refusal. Other errors are reconciled,
- * never resent.
+ * its nonce. The send returns its hash or rejects on an explicit admission refusal; a refusal for a nonce spent
+ * outside the queue is numbered again and sent once more. Other errors are reconciled, never resent.
  */
 export function executeGameplayAccountTransaction({
   account,
@@ -171,7 +171,17 @@ export function executeGameplayAccountTransaction({
     await untilRoomInFlight(state);
     owner?.throwIfAborted();
     onStage?.("left-queue");
-    return sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction, onStage);
+    const send = () =>
+      sendAndReconcile(account, execute, calls, shard, details, owner, state, waitForTransaction, onStage);
+    return send().catch(async (error: unknown) => {
+      // The account spent this nonce on a send no queue numbered: this browser joining as a device, another device's
+      // play. The shard refused the play before forwarding it, so it was never sent: it is numbered again from the
+      // node, once none of the account's plays is in flight, and leaves once more.
+      if (!(error instanceof TransactionNotSentError) || playRefusalReasonOf(error.cause) !== "nonce") throw error;
+      await untilRoomInFlight(state);
+      owner?.throwIfAborted();
+      return send();
+    });
   });
   state.pending = sending.then(noop, noop);
   return sending;
