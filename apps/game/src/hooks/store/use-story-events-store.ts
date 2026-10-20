@@ -1,4 +1,4 @@
-import { getPlayerDisplayName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard, storyParticipants } from "@bibliothecadao/eternum/game-client";
 import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
@@ -392,6 +392,8 @@ export const useStoryReads = (reads: StoryRead[]) => {
     setup: { store },
   } = useGame();
   const streamed = useStoryEventsStore((state) => state.streamed);
+  // A story's words name its players by the one rule, so they are written again whenever a name may have changed.
+  const names = usePlayerNamesRevision();
   const viewer = useAccountAddress();
   const viewerAddress = viewer === null ? null : `0x${viewer.toString(16)}`;
   const shard = requireShard(getActiveGame()?.chainId);
@@ -478,7 +480,7 @@ export const useStoryReads = (reads: StoryRead[]) => {
       )
         .filter(isPresentableStory)
         .map((event) => processStoryEvent(event, store, viewerAddress)),
-    [store, queries, delivered, viewerAddress],
+    [store, queries, delivered, viewerAddress, ...names],
   );
 
   return { data, queries };
