@@ -23,6 +23,8 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "SettlementProgress",
   "Structure",
   "TileOccupancy",
+  // A cleared site's position: its clear vacated the tile, so TileOccupancy no longer holds it.
+  "ExpeditionSite",
   "PlayerEntry",
   "BlitzRoster",
   "BlitzResult",
@@ -38,6 +40,8 @@ import { integer, number, address, record, gameRows, required, type Row } from "
 interface DirectoryRows {
   structures: FoldRow[];
   position: DirectoryInput["fold"]["structurePosition"];
+  /** A site a player cleared, which keeps its discovery tile without occupying it; read only when a position needs it. */
+  clearedSite: (gameId: unknown, entityId: unknown) => Row | undefined;
   rules: FoldRow[];
   settlementRules: FoldRow[];
   progress: FoldRow[];
@@ -85,6 +89,10 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
   return {
     structures: rows("Structure"),
     position: (gameId, entityId) => input.fold.structurePosition(gameId, entityId),
+    clearedSite: (gameId, entityId) =>
+      gameRows(rows("ExpeditionSite"), gameId).find(
+        (site) => integer(site.entity_id) === integer(entityId) && site.clear != null,
+      ),
     rules: rows("SliceRules"),
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
@@ -261,8 +269,12 @@ function structurePosition(
     );
   }
   const tile = facts.position(integer(row.game_id).toString(), integer(row.entity_id).toString());
-  if (!tile) throw new Error(`Missing native position for entity ${row.game_id}:${row.entity_id}`);
-  return { col: number(tile.col), row: number(tile.row) };
+  if (tile) return { col: number(tile.col), row: number(tile.row) };
+  // Clearing a site deletes its TileOccupancy so armies can walk onto it (clear_expedition_site); the site keeps the
+  // tile it was discovered on, as the client's map places it.
+  const cleared = facts.clearedSite(row.game_id, row.entity_id);
+  if (cleared) return { col: number(cleared.col), row: number(cleared.row) };
+  throw new Error(`Missing native position for entity ${row.game_id}:${row.entity_id}`);
 }
 
 export function buildNativeLeaderboard(
