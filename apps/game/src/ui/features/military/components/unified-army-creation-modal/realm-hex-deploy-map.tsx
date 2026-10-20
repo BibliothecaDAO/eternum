@@ -45,6 +45,17 @@ const getBiomeFill = (biomeId?: number) => {
   return biomeType ? requireBiomeColor(biomeType).getStyle() : undefined;
 };
 
+/**
+ * A tile's name for a screen reader: where it is drawn around the structure, then whether an army can deploy there. The
+ * place is read from the drawing, not the contract's direction, whose north the map draws at the bottom.
+ */
+const tileName = (tile: DeployTile, pixel: { x: number; y: number }): string => {
+  const side = pixel.x < 0 ? "left" : "right";
+  const place = pixel.y < -1 ? `Upper ${side}` : pixel.y > 1 ? `Lower ${side}` : side === "left" ? "Left" : "Right";
+  const state = tile.open ? "free" : tile.explored ? "occupied" : "unexplored";
+  return `${place}, ${state}`;
+};
+
 /** Room around the ring for the chosen tile's halo. */
 const PAD = 3;
 
@@ -94,7 +105,7 @@ export const RealmHexDeployMap = ({
                   role="radio"
                   aria-checked={isSelected}
                   aria-disabled={!tile.open}
-                  aria-label={tile.open ? "free" : tile.explored ? "occupied" : "unexplored"}
+                  aria-label={tileName(tile, tile.pixel)}
                   className={cn("transition-opacity duration-150", tile.open ? "cursor-pointer" : "cursor-default")}
                   onClick={() => tile.open && onSelect(tile.direction)}
                 >

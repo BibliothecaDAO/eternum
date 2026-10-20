@@ -30,28 +30,56 @@ const draw = (tiles: DeployTile[], onSelect = vi.fn()) => {
   return { host, onSelect, done: () => (act(() => root.unmount()), host.remove()) };
 };
 
-it("draws only the realm and the six tiles an army can deploy onto, each marked free, occupied or unexplored", () => {
+/**
+ * Where each direction's tile is drawn around the realm: the map draws the contract's north (the next row) at the
+ * bottom, as the world map does.
+ */
+const DRAWN: Record<Direction, string> = {
+  [Direction.EAST]: "Right",
+  [Direction.NORTH_EAST]: "Lower right",
+  [Direction.NORTH_WEST]: "Lower left",
+  [Direction.WEST]: "Left",
+  [Direction.SOUTH_WEST]: "Upper left",
+  [Direction.SOUTH_EAST]: "Upper right",
+};
+
+it("draws only the realm and the six tiles an army can deploy onto, each named by its place and marked free, occupied or unexplored", () => {
   const { host, onSelect, done } = draw(ring(() => true));
   const tiles = [...host.querySelectorAll('[role="radio"]')];
   // The realm's hex and its six neighbours, nothing further out.
   expect(host.querySelectorAll("polygon")).toHaveLength(7);
   expect(tiles.map((tile) => tile.getAttribute("aria-label"))).toEqual(
-    getNeighborHexes(31, 44).map(({ direction }) =>
-      direction === Direction.NORTH_WEST ? "occupied" : direction === Direction.SOUTH_EAST ? "unexplored" : "free",
+    getNeighborHexes(31, 44).map(
+      ({ direction }) =>
+        `${DRAWN[direction]}, ${direction === Direction.NORTH_WEST ? "occupied" : direction === Direction.SOUTH_EAST ? "unexplored" : "free"}`,
     ),
   );
+  // Each tile drawn on the side its name says.
+  for (const tile of tiles) {
+    const [x, y] = tile
+      .querySelector("polygon")!
+      .getAttribute("points")!
+      .split(" ")
+      .map((corner) => corner.split(",").map(Number))
+      .reduce(([sx, sy], [cx, cy]) => [sx + cx / 6, sy + cy / 6], [0, 0]);
+    const name = tile.getAttribute("aria-label")!;
+    expect(x < 0).toBe(name.toLowerCase().includes("left"));
+    expect(y < -1 ? "Upper" : y > 1 ? "Lower" : "level").toBe(
+      name.startsWith("Upper") ? "Upper" : name.startsWith("Lower") ? "Lower" : "level",
+    );
+  }
   // A free tile wears the legend's green mark, a taken one its red mark, an unexplored one the "?".
   const mark = (label: string) => host.querySelector(`[aria-label="${label}"]`)!;
-  expect(mark("free").querySelector("circle")?.getAttribute("class")).toContain("fill-hud-good");
-  expect(mark("occupied").querySelector("circle")?.getAttribute("class")).toContain("fill-hud-bad");
-  expect(mark("unexplored").textContent).toBe("?");
+  expect(mark("Right, free").querySelector("circle")?.getAttribute("class")).toContain("fill-hud-good");
+  expect(mark("Lower left, occupied").querySelector("circle")?.getAttribute("class")).toContain("fill-hud-bad");
+  expect(mark("Upper right, unexplored").textContent).toBe("?");
   expect(host.textContent).toContain("free");
   expect(host.textContent).toContain("occupied");
   expect(host.textContent).toContain("? unexplored");
 
   // Only a free tile can be picked, and it picks its direction.
-  act(() => mark("occupied").dispatchEvent(new MouseEvent("click", { bubbles: true })));
-  act(() => mark("unexplored").dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  act(() => mark("Lower left, occupied").dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  act(() => mark("Upper right, unexplored").dispatchEvent(new MouseEvent("click", { bubbles: true })));
   expect(onSelect).not.toHaveBeenCalled();
   const east = tiles[getNeighborHexes(31, 44).findIndex(({ direction }) => direction === Direction.EAST)];
   act(() => east.dispatchEvent(new MouseEvent("click", { bubbles: true })));
