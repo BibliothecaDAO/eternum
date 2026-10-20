@@ -37,7 +37,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "star",
           "title": "Next up",
-          "line": "The HUD names one thing to do now, alerts first, with the button that does it. In a Blitz it is the step that scores most: open a crate beside your army, explore, take a camp, or level up first when an attack would wipe your army out, and after a loss where to raise the next army. In Frontier it is what the day calls for: barracks, a deploy, a guard in reach, a tier, the castle, research, exploring."
+          "line": "The HUD names one thing to do now, alerts first, with a button where the step has one, or what to do where it has none. In a Blitz it is the step that scores most: open a crate beside your army, explore, take a camp, or level up first when an attack would wipe your army out, and after a loss where to raise the next army. In Frontier it is what the day calls for: barracks, a deploy, a guard in reach, a tier, the castle, research, exploring."
         },
         {
           "kind": "new",
@@ -55,7 +55,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "map-realm",
           "title": "Map tokens",
-          "line": "Every army, realm, camp and rift wears a token in its side's colour: its troops' tier and count, an army's stamina bar, a dashed ring when nothing guards it. Hover or select it and its plate opens in its place: an army's player, home and exact stamina, a realm's guards in the order an attacker meets them, a camp's or rift's own name and what it holds."
+          "line": "Every army, realm, camp and rift wears a token in its side's colour: its troops' count and tier (a beast guard shows its beast instead), an army's stamina bar, and a dashed ring when nothing guards a structure that can be attacked. Hover or select it and its plate opens in its place: an army's player, home and exact stamina, a realm's guards in the order an attacker meets them, a camp's or rift's own name and what it holds."
         },
         {
           "kind": "new",
@@ -109,7 +109,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "notifications",
           "title": "Notifications",
-          "line": "Choose Off, Important or All. Important tells you when your Frontier day ends in an hour, your Blitz starts, a message reaches you, or you are attacked or a holding of yours is taken; All adds every clear, fight and build, and an army rested."
+          "line": "Choose Off, Important or All. Important tells you when your Frontier day ends in an hour, your Blitz starts, a message reaches you, or you are attacked or a holding of yours is taken; All adds every clear, fight and build, and a rested army."
         },
         {
           "kind": "new",
@@ -285,7 +285,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "chest",
           "title": "Chests in the wild",
-          "line": "One newly revealed surface tile in 10,000 holds a chest of LORDS, worth a common share at today's price and set aside from the season's pool. Open it with an army beside it before the day ends; the LORDS go to your realm."
+          "line": "Each newly revealed surface tile has a 1 in 10,000 chance of a chest of LORDS, found only while the season's pool can fund it: one common share at today's price, set aside as it is found. Open it with an army beside it before the day ends; the LORDS go to your realm."
         },
         {
           "kind": "new",
@@ -297,7 +297,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "star",
           "title": "Armies learn",
-          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, Scouting finds up to 40% more of a kind you pick. On a desktop, Upgrade on an army's row opens its tiers once its XP buys one."
+          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, each Scouting tier adds 10%, 20%, 30%, then 40% to the camps, rifts or beasts you pick for it, so all four on one kind find twice as many. On a desktop, Upgrade on an army's row opens its tiers once its XP buys one."
         },
         {
           "kind": "new",
