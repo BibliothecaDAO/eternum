@@ -1,6 +1,6 @@
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { describe, expect, it } from "vitest";
-import { boardRows, ownRank, wholeLords, wholeResource } from "./standings";
+import { boardRows, ownRank, wholeLords, earnedResource } from "./standings";
 
 const entry = (rank: number, address = `0x${(0xa00 + rank).toString(16)}`): HeraldFrontierLeaderboardEntry => ({
   address,
@@ -37,7 +37,7 @@ describe("the season standings", () => {
   });
 
   it("reads Herald's amounts in their declared units", () => {
-    expect(wholeResource("9000000000000")).toBe(9_000);
+    expect(earnedResource("9000000000000")).toBe(9_000);
     expect(wholeLords("400")).toBe(400);
   });
 });

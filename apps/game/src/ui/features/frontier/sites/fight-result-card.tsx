@@ -1,4 +1,4 @@
-import { formatExact } from "@bibliothecadao/types";
+import { formatCharge, formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -68,7 +68,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
             <span className="flex items-center gap-1.5">
               <SemanticIcon name={result.gained.pay.icon} size={26} />
               <span className="text-hud-display leading-none tabular-nums text-hud-gold">
-                +{formatExact(result.gained.pay.amount)}
+                +{formatCharge(result.gained.pay.amount)}
               </span>
               {result.gained.pay.storeFull && (
                 <HudChip label={STORE} tone="bad" tip={REST_DID_NOT_FIT}>

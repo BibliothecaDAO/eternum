@@ -62,3 +62,46 @@ it("writes a reveal's fractional reward the same in the army panel and in the Lo
   expect(log).toBe("Explored: +58 Essence");
   expect(panel).toBe("58");
 });
+
+// Today's own line and the day's totals read the same reward (they rewrite the story themselves), and so do a cleared
+// site's payout record and the season board's earned figure.
+it("writes the same 57.6 reveal on Today's line, and keeps its fraction until the day's total is written", async () => {
+  const { dayLogLine } = await import("./log/day-line");
+  const { totalToday } = await import("./log/today-totals");
+  const storyPayload = { explorer_id: 7, receiver: 5, resource_type: ResourcesIds.Essence, amount: String(PAYOUT) };
+  const presentation = buildStoryEventPresentation({
+    storyType: "ExplorationReward",
+    storyPayload,
+    entityId: null,
+    ownerAddress: "0x1",
+    viewerAddress: null,
+  } as never);
+  expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, {} as never)).toBe(
+    "+58 Essence",
+  );
+
+  const fiveReveals = Array.from({ length: 5 }, () => ({
+    story: "ExplorationReward",
+    storyPayload: { resource_type: ResourcesIds.Essence, amount: String(PAYOUT) },
+    owner: "0x1",
+    timestampMs: 1_000,
+  }));
+  expect(totalToday(fiveReveals, "0x1", { startMs: 0, endMs: 2_000 }).essence).toBe(288);
+});
+
+it("reads a cleared site's 57.6 payout and the season's earned Essence exactly, for the one rounding", async () => {
+  // The clear's own record, as the stream brought it for its transaction (fight-record read afresh with it).
+  vi.resetModules();
+  vi.doMock("@/hooks/store/use-story-events-store", () => ({
+    streamedStoriesOf: () => [
+      {
+        story: "SitePayout",
+        storyPayload: { reward: { resource_type: ResourcesIds.Essence, amount: String(PAYOUT) } },
+      },
+    ],
+  }));
+  const { readPayoutRecord } = await import("./sites/fight-record");
+  const { earnedResource } = await import("./board/standings");
+  expect(readPayoutRecord("0xabc")?.amount).toBe(57.6);
+  expect(earnedResource(String(PAYOUT))).toBe(57.6);
+});
