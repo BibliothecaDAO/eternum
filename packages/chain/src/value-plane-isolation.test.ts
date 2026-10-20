@@ -23,7 +23,7 @@ const books = vi.hoisted(() => ({
 vi.mock("../../../contracts/common/addresses/dev.json", () => ({
   default: books.dev,
 }));
-vi.mock("../../../contracts/common/addresses/mainnet.json", () => ({
+vi.mock("../../../contracts/common/addresses/production.json", () => ({
   default: books.production,
 }));
 
@@ -55,7 +55,7 @@ it.each(["ledger", "lords", "mmrToken", "lootChests", "cosmetics"] as const)(
       books.dev[contract] = original.dev[contract];
       books.production[contract] = missing;
       expect(() => valuePlaneAddress(contract, "production")).toThrow(
-        "contracts/common/addresses/mainnet.json",
+        "contracts/common/addresses/production.json",
       );
       expect(valuePlaneAddress(contract, "staging")).toBe(
         original.dev[contract],

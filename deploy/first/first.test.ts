@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { Account, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
+import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,
@@ -258,26 +258,35 @@ test("a lost invoke response retries the same nonce while it remains current", a
   expect(nonces).toEqual(["7", "7", "7"]);
 });
 
-test("dev deploys five assets; production deploys only a cold-admin ledger with existing assets", () => {
-  const dev = assetPlans(environments.dev, "0x20", "0x21", "0x22", assets);
-  expect(dev.map((plan) => plan.artifact)).toEqual([
-    "TestLords",
-    "MMRToken",
-    "RealmsCollectible",
-    "RealmsCollectible",
-    "GameLedger",
+test("each environment deploys what its book does not name: production reuses dev's test LORDS", () => {
+  // Dev, from an empty book: its test LORDS, rating token and two collections, then its ledger once they exist.
+  expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}).map((plan) => plan.name)).toEqual([
+    "lords",
+    "mmr",
+    "chests",
+    "cosmetics",
   ]);
-  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", assets);
-  expect(production).toHaveLength(1);
-  expect(production[0]!.constructor).toEqual([
-    "0xc01d",
-    "0x21",
-    "0x22",
-    assets.lords,
-    assets.mmr,
-    assets.chests,
-    assets.cosmetics,
+  // Production's book names dev's test LORDS, so it deploys only its own rating token and collections.
+  expect(addressBook(environments.production).lords).toBe(addressBook(environments.dev).lords);
+  const testLords = addressBook(environments.dev).lords!;
+  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords });
+  expect(production.map((plan) => [plan.name, plan.artifact])).toEqual([
+    ["mmr", "MMRToken"],
+    ["chests", "RealmsCollectible"],
+    ["cosmetics", "RealmsCollectible"],
   ]);
+  // Its collections carry production's names and description, and its cold admin owns all three.
+  const chest = production.find((plan) => plan.name === "chests")!;
+  expect(chest.constructor).toContain(BigInt("0xc01d").toString());
+  expect(chest.constructor).not.toEqual(
+    assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }).find((plan) => plan.name === "chests")!
+      .constructor,
+  );
+  // Once they exist, its own ledger is built on dev's test LORDS with production's admin, operator and treasury.
+  const deployed = { lords: testLords, mmr: "0x31", chests: "0x32", cosmetics: "0x33" };
+  const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed);
+  expect(ledger).toHaveLength(1);
+  expect(ledger[0]!.constructor).toEqual(["0xc01d", "0x21", "0x22", testLords, "0x31", "0x32", "0x33"]);
   expect(fixedSalt("dev", "0x123", "ledger")).not.toBe(fixedSalt("production", "0x123", "ledger"));
 });
 
@@ -329,7 +338,9 @@ test("setup keeps only missing role calls and uses the environment's two preset 
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["2", "5"]);
-  expect(production.some((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid")).toBe(false);
+  // Production's own collections get the same roles and metadata as dev's.
+  expect(production.map((call) => call.entrypoint)).toEqual(dev.map((call) => call.entrypoint));
+  expect(production.filter((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid").length).toBeGreaterThan(0);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];

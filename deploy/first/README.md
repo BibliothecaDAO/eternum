@@ -47,8 +47,8 @@ never the response text. The Resend key needs the environment's verified email s
 also used in the browser build and is therefore public to players.
 
 `environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
-SSH alias `realms-dev`, and the existing dev tunnel. Production uses the public `mainnet.json` asset addresses and
-requires a reviewed `deploy/release/production.json`, SSH alias `realms-production` and its own working tunnel/host
+SSH alias `realms-dev`, and the existing dev tunnel. Production's book, `production.json`, starts with dev's test LORDS
+and requires a reviewed `deploy/release/production.json`, SSH alias `realms-production` and its own working tunnel/host
 before first deployment. The command does not format a disk, invent production host credentials or move a live shard
 onto an unreviewed endpoint. On a fresh host, run the existing `deploy/athanor/host/bootstrap.sh` through sudo as its
 operator after preparing its backup disk and tunnel token; `OPERATOR` defaults to that sudo user. This infrastructure
@@ -73,9 +73,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 3. Deploy missing accounts and transfer only missing initial relay/monitor reserves.
 4. Build the ledger, rating token and collectible release artifacts on the box. Save the public artifacts privately.
 5. Declare missing classes and deploy absent contracts at deterministic salts. Dev creates devLords, devChest,
-   devCosmetics and the fresh rating token; production reuses its LORDS, rating token and collections. The MMR
-   contract's fixed token name is shared with production. Publish only public contract addresses to the environment
-   book, retaining the Realms collection and unrelated fields.
+   devCosmetics and the fresh rating token. Production reuses dev's test LORDS and deploys its own rating token and
+   collections, so each environment owns its ledger, roles and pause. The MMR contract's fixed token name is shared.
+   Publish only public contract addresses to the environment book, retaining the Realms collection and unrelated fields.
 6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
    each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
    in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
@@ -133,6 +133,7 @@ pnpm run season dev "$HOME/.realms-dev"
 This reads the existing private directory without migration: `inputs.json`, `keys.json` and `secrets.json`. It sets the
 missing calendar phases from the saved dates, preserves and displays existing published phases, waits for the launch
 cron's Frontier game, deposits the saved whole-LORDS amount, then watches pool publication and the automatic Blitz slot.
+The payer mints the test LORDS it lacks first; production's `cold-funding.json` carries that mint for the cold wallet.
 It uses the public address book written by setup. An existing deposit is verified rather than repeated. Mainnet funding
 remains an owner operation, including dev funding.
 

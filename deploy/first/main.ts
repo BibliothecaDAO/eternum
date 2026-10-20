@@ -238,11 +238,6 @@ export function preparationSteps(context: Deployment): Step[] {
         const admin = context.inputs!.admin ?? account.address;
         const treasury = context.inputs!.treasury ?? account.address;
         const assets = existingAssets(context.target);
-        if (
-          !context.target.freshAssets &&
-          ["lords", "mmr", "chests", "cosmetics"].some((name) => !assets[name as keyof Assets])
-        )
-          throw new PublicError("Production asset addresses must already exist in the public address book");
         for (const plan of assetPlans(
           context.target,
           admin,

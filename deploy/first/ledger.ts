@@ -12,12 +12,12 @@ import type { PrivateStore } from "./private-store";
 
 export type Assets = { ledger: string; lords: string; mmr: string; chests: string; cosmetics: string };
 export type AssetPlan = { name: keyof Assets; package: string; artifact: string; constructor: string[] };
-function collectibleConstructor(name: string, admin: string) {
+function collectibleConstructor(name: string, description: string, admin: string) {
   return CallData.compile([
     byteArray.byteArrayFromString(name),
     byteArray.byteArrayFromString(name),
     byteArray.byteArrayFromString(""),
-    byteArray.byteArrayFromString("Dev test collection (no value)"),
+    byteArray.byteArrayFromString(description),
     admin,
     admin,
     admin,
@@ -34,24 +34,25 @@ export function assetPlans(
   treasury: string,
   assets: Partial<Assets>,
 ): AssetPlan[] {
-  const plans: AssetPlan[] = target.freshAssets
-    ? [
-        { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
-        { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
-        {
-          name: "chests",
-          package: "collectibles",
-          artifact: "RealmsCollectible",
-          constructor: collectibleConstructor(target.chestName, admin),
-        },
-        {
-          name: "cosmetics",
-          package: "collectibles",
-          artifact: "RealmsCollectible",
-          constructor: collectibleConstructor(target.cosmeticsName, admin),
-        },
-      ]
-    : [];
+  // Each environment deploys the assets its book does not name: production's book names dev's test LORDS, so it
+  // deploys its own rating token and collections and owns its ledger, roles and pause.
+  const testAssets: AssetPlan[] = [
+    { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
+    { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
+    {
+      name: "chests",
+      package: "collectibles",
+      artifact: "RealmsCollectible",
+      constructor: collectibleConstructor(target.chestName, target.collectionDescription, admin),
+    },
+    {
+      name: "cosmetics",
+      package: "collectibles",
+      artifact: "RealmsCollectible",
+      constructor: collectibleConstructor(target.cosmeticsName, target.collectionDescription, admin),
+    },
+  ];
+  const plans = testAssets.filter((plan) => !assets[plan.name]);
   if (assets.lords && assets.mmr && assets.chests && assets.cosmetics)
     plans.push({
       name: "ledger",
@@ -171,26 +172,22 @@ export function setupCalls(
     call(assets.chests, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.cosmetics, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
-    ...(target.freshAssets
-      ? [
-          ...preset.bands.map((band: { metadata: number }) =>
-            call(assets.chests, "set_attrs_raw_to_ipfs_cid", [
-              band.metadata,
-              byteArray.byteArrayFromString(target.picture),
-              false,
-            ]),
-          ),
-          ...preset.items.flatMap((items: number[]) =>
-            items.map((item) =>
-              call(assets.cosmetics, "set_attrs_raw_to_ipfs_cid", [
-                item,
-                byteArray.byteArrayFromString(target.picture),
-                false,
-              ]),
-            ),
-          ),
-        ]
-      : []),
+    ...preset.bands.map((band: { metadata: number }) =>
+      call(assets.chests, "set_attrs_raw_to_ipfs_cid", [
+        band.metadata,
+        byteArray.byteArrayFromString(target.picture),
+        false,
+      ]),
+    ),
+    ...preset.items.flatMap((items: number[]) =>
+      items.map((item) =>
+        call(assets.cosmetics, "set_attrs_raw_to_ipfs_cid", [
+          item,
+          byteArray.byteArrayFromString(target.picture),
+          false,
+        ]),
+      ),
+    ),
     call(assets.ledger, "register_preset", [
       target.blitzPreset,
       buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment }),

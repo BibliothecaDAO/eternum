@@ -207,25 +207,12 @@ export function seasonSteps(context: Season): Step[] {
         if (state.funded) return;
         const account = signer(context);
         const pool = BigInt(context.inputs!.amount) * WEI;
-        if (
-          context.target.freshAssets &&
-          (await balance(account, context.assets!.lords, account.address, state.block)) < pool
-        )
-          await send(
-            account,
-            [
-              {
-                contractAddress: context.assets!.lords,
-                entrypoint: "mint",
-                calldata: CallData.compile([account.address, uint256.bnToUint256(pool)]),
-              },
-            ],
-            context.store,
-            `test-tokens-${state.shard.chainId}-${state.gameId}`,
-            context.output,
-            state.block,
-          );
-        const calls = buildFrontierFundingCalls(context.assets!.ledger, context.assets!.lords, {
+        const lords = context.assets!.lords;
+        const payer = context.target.coldAdmin ? context.inputs!.admin! : account.address;
+        // Both environments deposit dev's test LORDS, which anyone may mint: the payer mints the deposit it lacks.
+        const mint =
+          (await balance(account, lords, payer, state.block)) < pool ? [testLordsMint(lords, payer, pool)] : [];
+        const calls = buildFrontierFundingCalls(context.assets!.ledger, lords, {
           shard: state.shard.chainId,
           frontierSeasonId: state.gameId,
           presetId: context.target.frontierPreset,
@@ -235,12 +222,19 @@ export function seasonSteps(context: Season): Step[] {
           pool,
         });
         if (context.target.coldAdmin) {
-          context.store.write("cold-funding.json", { account: context.inputs!.admin, calls });
-          context.output(
-            "Cold admin: review and execute cold-funding.json with your wallet holding the LORDS deposit, then rerun.",
-          );
+          context.store.write("cold-funding.json", { account: payer, calls: [...mint, ...calls] });
+          context.output("Cold admin: review and execute cold-funding.json with your wallet, then rerun.");
           return;
         }
+        if (mint.length)
+          await send(
+            account,
+            mint,
+            context.store,
+            `test-tokens-${state.shard.chainId}-${state.gameId}`,
+            context.output,
+            state.block,
+          );
         const deposit = await funding(context);
         if (!deposit || deposit.gameId !== state.gameId || deposit.shard.chainId !== state.shard.chainId)
           throw new PublicError("Frontier game changed before the deposit");
@@ -275,6 +269,14 @@ export function seasonSteps(context: Season): Step[] {
       },
     },
   ];
+}
+
+function testLordsMint(lords: string, recipient: string, amount: bigint) {
+  return {
+    contractAddress: lords,
+    entrypoint: "mint",
+    calldata: CallData.compile([recipient, uint256.bnToUint256(amount)]),
+  };
 }
 
 async function poolPublished(context: Season) {

@@ -4,7 +4,7 @@ import { gamesAbi, response } from "../../../../../../packages/value-ledger/test
 import { ledgerAbi, ledgerCall } from "../../../../../../packages/value-ledger/test-support/ledger-abi";
 import { ShardReader } from "../../../../../../apps/value-relay/src/shard-rpc";
 import devBook from "../../../../../common/addresses/dev.json";
-import productionBook from "../../../../../common/addresses/mainnet.json";
+import productionBook from "../../../../../common/addresses/production.json";
 import { fundFrontier } from "./fund-frontier";
 
 const savedDev = { ...devBook };

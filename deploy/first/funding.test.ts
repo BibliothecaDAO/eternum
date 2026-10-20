@@ -163,3 +163,79 @@ test.each([
     hash: "0x4",
   });
 });
+
+test.each([
+  ["lacks the deposit", 0n, ["mint", "approve", "fund_frontier"]],
+  ["holds the deposit", 1000n * WEI, ["approve", "fund_frontier"]],
+] as const)("Cold-admin funding mints test LORDS to the cold admin only when it %s", async (_case, held, calls) => {
+  const base = mkdtempSync(join(tmpdir(), "frontier-cold-"));
+  temporary.push(base);
+  mkdirSync(join(base, "repo"));
+  const store = new PrivateStore(join(base, "private"), join(base, "repo"), true);
+  const start = "2027-02-01T00:00:00Z";
+  const startSeconds = Date.parse(start) / 1000;
+  const coldAdmin = "0xc01d";
+  const balanceOwners: string[] = [];
+  const account = {
+    address: "0x123",
+    getBlockNumber: async () => 7,
+    callContract: async (call: { calldata: string[] }) => {
+      balanceOwners.push(call.calldata[0]!);
+      return [String(held), "0"];
+    },
+    execute: async () => {
+      throw new Error("The deployer must not pay a cold admin's deposit");
+    },
+  };
+  spyOn(main, "signer").mockReturnValue(account as unknown as Account);
+  spyOn(box, "nativeDocument").mockImplementation(async () => ({
+    shard: { chainId: "0x10" },
+    world: { address: "0x20" },
+  }));
+  spyOn(native, "readFrontierGame").mockResolvedValue({
+    presetId: 5,
+    start: startSeconds,
+    end: startSeconds + 20 * 86400,
+    seed: "1",
+    dayUnit: 86400,
+    claimWindow: 86400,
+  });
+  spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
+  globalThis.fetch = (async (url) => {
+    const path = new URL(String(url)).pathname;
+    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });
+    if (path === "/games")
+      return Response.json({ games: [{ game_id: 1, mode: "frontier", clock: { start_main_at: startSeconds } }] });
+    if (path === "/manifest") return Response.json({ chainId: "0x10" });
+    throw new Error("Unexpected test request");
+  }) as typeof fetch;
+  const context = {
+    apply: true,
+    target: { ...environments.dev, coldAdmin: true },
+    inputs: { frontierStart: start, amount: "1000", admin: coldAdmin },
+    assets: { ledger: "0x1", lords: "0x2" },
+    store,
+    output: () => {},
+    provider: {
+      getBlockNumber: async () => 7,
+      callContract: async ({ entrypoint }: { entrypoint: string }) => {
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400"];
+        if (entrypoint === "lords") return ["0x2"];
+        throw new Error("Unexpected ledger read");
+      },
+    },
+  } as unknown as main.Deployment;
+  await seasonSteps(context)
+    .find((step) => step.name === "Frontier deposit")!
+    .apply();
+  const written = store.read<{ account: string; calls: Call[] }>("cold-funding.json")!;
+  expect(balanceOwners).toEqual([coldAdmin]);
+  expect(written.account).toBe(coldAdmin);
+  expect(written.calls.map((call) => call.entrypoint)).toEqual([...calls]);
+  if (held === 0n)
+    expect(written.calls[0]).toEqual({
+      contractAddress: "0x2",
+      entrypoint: "mint",
+      calldata: [BigInt(coldAdmin).toString(), String(1000n * WEI), "0"],
+    });
+});
