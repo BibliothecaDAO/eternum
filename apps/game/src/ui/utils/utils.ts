@@ -6,7 +6,7 @@ export { getEntityIdFromKeys };
 
 /**
  * A raw balance or amount, divided out exactly and never floored: an affordability check sees 28.2 wheat held against a
- * 28.15 cost as covered, and a fraction reaches the words module ("<1", "0.25 LORDS"). Undefined when it is not known
+ * 28.15 cost as covered, and a fraction reaches the words module ("<1", "28.1 / 28.2"). Undefined when it is not known
  * here, which shows as "—", never as zero. A whole-number field floors its own maximum; a count of whole troops floors
  * where it is counted.
  */

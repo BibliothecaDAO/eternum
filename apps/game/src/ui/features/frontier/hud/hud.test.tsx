@@ -372,7 +372,7 @@ describe("the order bar", () => {
 
     // 30 troops' step at 0.02 wheat each.
     act(() => bar({ cost: 0.6, held: 10 }));
-    expect(wheatChip()).toBe("wheat −0.6");
+    expect(wheatChip()).toBe("wheat −<1");
     // Short under a unit: what is held reads as held, below what is needed.
     act(() => bar({ cost: 0.6, held: 0.5 }));
     expect(wheatChip()).toBe("wheat 0.5 / 0.6");

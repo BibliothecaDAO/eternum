@@ -124,7 +124,7 @@ const AMOUNTS = [undefined, 0, 0.05, 2.5, 7, 28.15, 1_498, 9_999, 12_400, 1_234_
 const Numbers = () => (
   <Section
     title="Numbers"
-    note="Written for en-US whatever the device's language. An amount is exact to 9,999, then compact (12.4K, 1.2M), and under a unit reads <1; a count is whole and exact; a price, a cost or anything a trade moves is a charge, rounded: whole from one, compact past 9,999, two figures under one (0.05), never nothing. An amount field shows what was typed, exact. Unknown is a dash."
+    note="Written for en-US whatever the device's language. An amount is exact to 9,999, then compact (12.4K, 1.2M), and under a unit reads <1; a count is whole and exact; a price, a cost or anything a trade moves is a charge, rounded as an amount is: whole from one, compact past 9,999, <1 under one, never nothing; a unit price keeps its figures (0.05). An amount field shows what was typed, exact. Unknown is a dash."
   >
     <Rule
       head={["Amount", "formatAmount", "formatExact", "formatCharge"]}

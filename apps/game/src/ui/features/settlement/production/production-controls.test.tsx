@@ -85,7 +85,10 @@ const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false } 
   const burnLabor = vi.fn(async () => {});
   const setup = {
     store,
-    systemCalls: { burn_resource_for_resource_production: burnResources, burn_labor_for_resource_production: burnLabor },
+    systemCalls: {
+      burn_resource_for_resource_production: burnResources,
+      burn_labor_for_resource_production: burnLabor,
+    },
   } as unknown as GameClientSetup;
   const host = document.createElement("div");
   document.body.append(host);
@@ -128,7 +131,7 @@ it("quotes one whole cycle for an output of one, never zero inputs, and starts i
     expect(view.host.textContent).toContain("10 Crossbowman T1");
     expect(view.start().textContent).toBe("Start production");
     expect(view.input("Wheat")).toBe("40K / 2");
-    expect(view.input("Copper")).toBe("20 / 0.8");
+    expect(view.input("Copper")).toBe("20 / <1");
     await view.press(view.start());
     expect(view.burnResources).toHaveBeenCalledWith(
       expect.objectContaining({ produced_resource_types: [ResourcesIds.Crossbowman], production_cycles: [1] }),
@@ -200,7 +203,9 @@ it("sizes the run from an input's budget, in whole cycles, and shows the burn th
 it("runs the labor recipe on its own inputs and output, with the troop bonus on the total", async () => {
   const view = mount({ copper: 2.4, labor: 100, troopBonus: 2_000 }, { laborEnabled: true });
   try {
-    const laborTab = [...view.host.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === "Labor Production");
+    const laborTab = [...view.host.querySelectorAll('[role="tab"]')].find(
+      (tab) => tab.textContent === "Labor Production",
+    );
     await view.press(laborTab!);
     view.type("Amount of Crossbowman T1", "10");
     // One cycle makes 6 + 1.2 = 7.2, short of 10; two make 12 + 2.4 = 14.4.

@@ -219,7 +219,7 @@ describe("amounts", () => {
     expect(typedNumberText("abc")).toBeUndefined();
   });
 
-  it("writes a charge rounded: whole from one, compact past ten thousand, two figures under one, never nothing", () => {
+  it("writes a charge rounded: whole from one, compact past ten thousand, <1 under one, never nothing", () => {
     expect([28.15, 12.5, 2.5, 2.4, 1_250.6, 12_400, 1_234_567.125].map(formatCharge)).toEqual([
       "28",
       "13",
@@ -229,14 +229,7 @@ describe("amounts", () => {
       "12.4K",
       "1.2M",
     ]);
-    expect([0.25, 0.6, 0.0125, 0.000000001, -0.25, 0].map(formatCharge)).toEqual([
-      "0.25",
-      "0.6",
-      "0.013",
-      "0.000000001",
-      "-0.25",
-      "0",
-    ]);
+    expect([0.25, 0.6, 0.0125, 0.000000001, -0.25, 0].map(formatCharge)).toEqual(["<1", "<1", "<1", "<1", "-<1", "0"]);
     expect(formatCharge(undefined)).toBe("—");
   });
 
@@ -256,7 +249,8 @@ describe("amounts", () => {
     // Under a unit.
     expect(formatHeldAgainst(0.555, 0.556)).toEqual({ held: "0.555", need: "0.556" });
     expect(formatHeldAgainst(0.5, 0.6)).toEqual({ held: "0.5", need: "0.6" });
-    expect(formatHeldAgainst(0, 0.6)).toEqual({ held: "0", need: "0.6" });
+    expect(formatHeldAgainst(0, 0.6)).toEqual({ held: "0", need: "<1" });
+    expect(formatHeldAgainst(0.8, 0.6)).toEqual({ held: "<1", need: "<1" });
     expect(formatHeldAgainst(undefined, 30)).toEqual({ held: "—", need: "30" });
   });
 

@@ -28,13 +28,13 @@ const clear = (store: NativeFactStore, amount: bigint | null, resourceType = 23)
 };
 
 it.each([0n, 1n, 10_000_000_000n, 550_000_000_000n])(
-  "shows exactly the credited %s, including capped and empty credits",
+  "shows the credited %s, rounded as every reward reads, including capped and empty credits",
   (amount) => {
     const { store } = campBeside();
     clear(store, amount);
     const receipt = readClearedSite(store, 1, SITE_TILE)!;
     const markup = renderToStaticMarkup(<SiteReceipt selected={receipt} />);
-    expect(markup).toContain(`<strong>${amount === 1n ? "0.000000001" : amount / 1_000_000_000n}</strong>`);
+    expect(markup).toContain(`<strong>${amount === 1n ? "&lt;1" : amount / 1_000_000_000n}</strong>`);
     expect(markup).toContain("Labor");
     expect(markup).toContain("82");
     expect(receipt.site.clear?.reward?.amount).toBe(amount);
@@ -64,7 +64,7 @@ it.each([
     reward: { resource_type: resourceType, amount: 750_000_000n },
   });
   const markup = renderToStaticMarkup(<SiteReceipt selected={selected} />);
-  expect(markup).toContain("<strong>0.75</strong>");
+  expect(markup).toContain("<strong>&lt;1</strong>");
   expect(markup).toContain(name);
 });
 

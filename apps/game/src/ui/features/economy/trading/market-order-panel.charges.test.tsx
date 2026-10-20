@@ -70,7 +70,7 @@ afterEach(() => {
 describe("a new order's charge, on the form and its confirmation", () => {
   // The form starts at 100 Wheat: the price each sets what the order costs.
   it.each([
-    { each: 0.0025, shownEach: "0.0025", cost: "0.25" },
+    { each: 0.0025, shownEach: "0.0025", cost: "<1" },
     { each: 0.0125, shownEach: "0.013", cost: "1" },
     { each: 124, shownEach: "124", cost: "12.4K" },
   ])("buying 100 Wheat at $each LORDS each costs $cost LORDS, rounded", ({ each, shownEach, cost }) => {
@@ -106,7 +106,7 @@ describe("filling an offer: what it takes, on the book and in the confirmation",
   });
 
   it.each([
-    { wheat: 100, lords: 0.25, shown: ["100", "0.25"] },
+    { wheat: 100, lords: 0.25, shown: ["100", "<1"] },
     { wheat: 3, lords: 1.25, shown: ["3", "1"] },
     { wheat: 50_000, lords: 12_400, shown: ["50K", "12.4K"] },
   ])(

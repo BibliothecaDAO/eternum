@@ -1,5 +1,12 @@
 import { TROOP_RAISE_SHORT_REASON, type TroopRaiseCost } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds, formatWait, formatCharge, resourceName } from "@bibliothecadao/types";
+import {
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  formatWait,
+  formatCharge,
+  formatFigure,
+  resourceName,
+} from "@bibliothecadao/types";
 
 import type { SelectedTroopCombo, TroopSelectionOption } from "./types";
 
@@ -77,11 +84,11 @@ export function troopRaiseLine(costs: TroopRaiseCost[] | undefined) {
 
 /**
  * Where a troop comes from, for a realm that has none: "Knight T1 are trained by a Knight T1 barracks on the realm
- * board, from 2 wheat each." The inputs are the troop's recipe, per troop.
+ * board, from 2 wheat each." The inputs are the troop's recipe, per troop: a unit price, as precise as it is read.
  */
 export function describeTroopSource(name: string, inputs: readonly { resource: ResourcesIds; perTroop: number }[]) {
   const from = inputs.length
-    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatCharge(perTroop)} ${resourceName(resource).toLowerCase()}`).join(" and ")} each`
+    ? `, from ${inputs.map(({ resource, perTroop }) => `${formatFigure(perTroop)} ${resourceName(resource).toLowerCase()}`).join(" and ")} each`
     : "";
   return `${name} are trained by a ${name} barracks on the realm board${from}.`;
 }

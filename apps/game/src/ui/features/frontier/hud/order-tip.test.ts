@@ -40,11 +40,13 @@ describe("what a right-click on a tile does, said before the click", () => {
     const explore = [step(ActionType.Move), step(ActionType.Explore)];
     expect(cost(explore, { food: { wheat: 100, fish: 0 } })).toBe("21 stamina · 100 wheat");
     expect(cost(explore, { food: { wheat: 28.15, fish: 0 } })).toBe("21 stamina · 28 wheat");
-    expect(cost(explore, { food: { wheat: 0.05, fish: 0 } })).toBe("21 stamina · 0.05 wheat");
+    // QA's small-army hovers (qa-fresh-chain-frontier-1 #7): no decimal in a charge.
+    expect(cost(explore, { food: { wheat: 1.2, fish: 0 } })).toBe("21 stamina · 1 wheat");
+    expect(cost(explore, { food: { wheat: 0.05, fish: 0 } })).toBe("21 stamina · <1 wheat");
     expect(cost(explore, { food: { wheat: 30, fish: 30 } })).toBe("21 stamina · 30 wheat · 30 fish");
     expect(cost([step(ActionType.Move), step(ActionType.Move, 1), step(ActionType.Move, 1)])).toBe("2 stamina");
     expect(cost([step(ActionType.Move), step(ActionType.Move, 1)], { food: { wheat: 0, fish: 0.03 } })).toBe(
-      "1 stamina · 0.03 fish",
+      "1 stamina · <1 fish",
     );
     expect(cost([step(ActionType.Move), step(ActionType.Attack, 30)])).toBe("30 stamina");
   });

@@ -712,6 +712,10 @@ it("writes a small army's find rounded, as every charge and reward reads", () =>
     story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "1200000000" }),
   ).title;
   expect(title).toBe("Explored: +1 Labor");
+  const tiny = buildStoryEventPresentation(
+    story("ExplorationReward", { explorer_id: 7, receiver: 5, resource_type: 23, amount: "100000000" }),
+  ).title;
+  expect(tiny).toBe("Explored: +<1 Labor");
 });
 
 it("adds the points an opened crate scored", () => {

@@ -9,7 +9,6 @@ import { POINT, POINTS } from "./nouns";
 const exact = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 // Nine places: the resource precision every balance and charge settles to, which a typed amount keeps.
 const typed = new Intl.NumberFormat("en-US", { maximumFractionDigits: 9 });
-const twoFigures = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 2 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
 /**
@@ -31,14 +30,12 @@ export const formatExact = (value: number | bigint | undefined): string =>
 
 /**
  * A charge: a cost, a price, an order's amount and total, a swap's debit and credit, a fee, and a reward shown beside
- * them. Rounded, as a player reads it (owner, 10-20: "dont show exact charges"): whole from one ("28 wheat" for 28.15),
- * compact past ten thousand as an amount held reads ("12.4K"), so a cost and a balance read alike; under one, two
- * figures ("0.25 LORDS", "0.6 wheat"), so a real charge never reads as nothing. The chain still takes the exact charge.
+ * them. Rounded, as a player reads it (owner, 10-20: "dont show exact charges"), and written as an amount held is, so a
+ * cost and a balance read alike: whole from one ("28 wheat" for 28.15), compact past ten thousand ("12.4K"), and under
+ * one "<1" (owner, 10-20: no decimals in a charge or reward), so a real charge never reads as nothing. The chain still
+ * takes the exact charge; a short pair says more (formatHeldAgainst).
  */
-export const formatCharge = (value: number | undefined): string => {
-  if (value === undefined) return "—";
-  return value !== 0 && Math.abs(value) < 1 ? twoFigures.format(value) : formatAmount(value);
-};
+export const formatCharge = (value: number | undefined): string => formatAmount(value);
 
 // From whole units to the resource's last unit: the precisions a short pair steps through until its two sides differ.
 const PAIR_PRECISIONS = Array.from(
