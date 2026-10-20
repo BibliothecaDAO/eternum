@@ -60,8 +60,7 @@ const eslint = new ESLint({
       plugins: { "@typescript-eslint": tseslint.plugin },
       rules: TEXT_VALUES,
     },
-    // React code reads a player's name only through the name hooks, and a cache that reads one follows it
-    // (name-guards.mjs): an imperative read in a memo kept "…" after identity answered.
+    // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
     ...nameGuardConfigs,
   ],
 });

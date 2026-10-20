@@ -1,72 +1,56 @@
 // @vitest-environment node
-import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
 
 import { nameGuardConfigs } from "../scripts/name-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const eslint = new ESLint({
-  cwd: REPO,
-  overrideConfigFile: true,
-  overrideConfig: [
-    {
-      files: ["**/*.{ts,tsx}"],
-      languageOptions: { parser: tseslint.parser },
-      // As CI's lint guards run: a source's own eslint comments switch nothing off.
-      linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
-    },
-    ...nameGuardConfigs,
-  ],
-});
+const BASE = {
+  files: ["**/*.{ts,tsx}"],
+  languageOptions: { parser: tseslint.parser },
+  // As CI's lint guards run: a source's own eslint comments switch nothing off.
+  linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
+};
+const boundary = new ESLint({ cwd: REPO, overrideConfigFile: true, overrideConfig: [BASE, ...nameGuardConfigs] });
 
-/** The guards' messages for a source at a real path in the client, as CI's lint guards run them. */
+/** The boundary's errors for a source at a real path in the client, as CI's lint guards count them. */
 const hits = async (path, source) => {
-  const [result] = await eslint.lintText(source, { filePath: resolve(REPO, "apps/game/src", path) });
-  // What CI's lint guards count: errors (a warning, such as an inline comment switched off, is not a hit).
+  const [result] = await boundary.lintText(source, { filePath: resolve(REPO, "apps/game/src", path) });
   return result.messages.filter((message) => message.fatal || message.severity === 2).map((message) => message.message);
 };
 
 const UI = "ui/features/military/battle/battle-lab/zz-guard-fixture.tsx";
-const memoOf = (head, read, expression, deps) => `
-import { useMemo } from "react";
-${head}
-export const Line = ({ address }: { address: string }) => {
-  ${read}
-  return <span>{useMemo(() => ${expression}, [${deps}])}</span>;
-};`;
+const SERVICE = "services/leaderboard/zz-guard-fixture.ts";
 
-describe("only the imperative consumers import an imperative reader (review-player-name-one-rule-3, finding 2)", () => {
-  const memo = (from) =>
-    `import { useMemo } from "react";
-import { getPlayerDisplayName } from "${from}";
-export const Name = () => <span>{useMemo(() => getPlayerDisplayName("0x123"), [])}</span>;`;
+describe("only the imperative consumers reach an imperative name reader, by resolved module", () => {
+  it.each([
+    ["the alias", UI, "@/services/identity/player-profiles"],
+    ["a relative path from a screen (review 3)", UI, "../../../../../services/identity/player-profiles"],
+    ["a path with its extension", UI, "../../../../../services/identity/player-profiles.ts"],
+    ["a relative path from a sibling service (review 4)", SERVICE, "../identity/player-profiles"],
+    ["the alias from a new folder", "zz-new-folder/zz-guard-fixture.ts", "@/services/identity/player-profiles"],
+  ])("rejects an import by %s", async (_, path, from) => {
+    const source = `import { getPlayerDisplayName } from "${from}";\nexport const cachedName = getPlayerDisplayName;`;
+    expect(await hits(path, source)).toEqual([expect.stringMatching(/^Only the imperative consumers/)]);
+  });
 
   it.each([
-    ["the alias", "@/services/identity/player-profiles"],
-    ["a relative path", "../../../../../services/identity/player-profiles"],
-    ["a path with its extension", "../../../../../services/identity/player-profiles.ts"],
-  ])("rejects an import by %s", async (_, from) => {
-    expect(await hits(UI, memo(from))).toEqual([expect.stringMatching(/^React code reads a player's name/)]);
+    ["a namespace import", `import * as profiles from "../identity/player-profiles";`],
+    ["a renamed import", `import { readPlayerName as nameOf } from "../identity/player-profiles";`],
+    ["a renamed re-export", `export { getPlayerDisplayName as nameOf } from "../identity/player-profiles";`],
+    ["a re-export of the whole module", `export * from "../identity/player-profiles";`],
+    ["a dynamic import", `export const later = () => import("../identity/player-profiles");`],
+  ])("rejects %s", async (_, source) => {
+    expect(await hits(SERVICE, source)).toHaveLength(1);
   });
 
-  it("rejects the whole module, aliased or renamed", async () => {
-    expect(
-      await hits(UI, `import * as profiles from "../../../../../services/identity/player-profiles";`),
-    ).toHaveLength(1);
-    expect(
-      await hits(UI, `import { readPlayerName as nameOf } from "@/services/identity/player-profiles";`),
-    ).toHaveLength(1);
-  });
-
-  it("holds every module to it but the imperative consumers: a service a screen calls, a new folder", async () => {
+  it("leaves the module's other exports, and the imperative consumers, alone", async () => {
+    expect(await hits(UI, `import { identityProfiles } from "@/services/identity/player-profiles";`)).toEqual([]);
     const reader = `import { getPlayerDisplayName } from "@/services/identity/player-profiles";\nexport const x = getPlayerDisplayName;`;
-    // A service that wraps the reader is how a screen read it stale before (the Faith board's builder).
-    expect(await hits("services/leaderboard/zz-guard-fixture.ts", reader)).toHaveLength(1);
-    expect(await hits("zz-new-folder/zz-guard-fixture.ts", reader)).toHaveLength(1);
     for (const consumer of [
       "three/managers/zz-guard-fixture.ts",
       "hooks/use-player-profile.ts",
@@ -77,71 +61,59 @@ export const Name = () => <span>{useMemo(() => getPlayerDisplayName("0x123"), []
   });
 });
 
-describe("a cache that reads a name lists what it read it from (review-player-name-one-rule-3, finding 1)", () => {
-  const missing = [expect.stringMatching(/reads a player's name: list it in the dependencies/)];
-  const hooks = `import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";`;
+/**
+ * The reviews' dependency controls, read by React's own exhaustive-deps (the repo's rule), not a parser of ours: what
+ * it reports for a cache that holds a name without listing the reader. It runs in editors and `pnpm lint`, not CI's
+ * lint guards (the client has 59 missing-dependency reports today, many of them effects keyed on purpose).
+ */
+describe("a cache that holds a name, as React's exhaustive-deps reads it", () => {
+  const react = new ESLint({
+    cwd: REPO,
+    overrideConfigFile: true,
+    overrideConfig: [
+      { ...BASE, plugins: { "react-hooks": reactHooks }, rules: { "react-hooks/exhaustive-deps": "error" } },
+    ],
+  });
+  const reported = async (head, body) => {
+    const source = `${head}\nexport const Line = ({ address }: { address: string }) => {\n${body}\n};`;
+    const [result] = await react.lintText(source, { filePath: resolve(REPO, "apps/game/src", UI) });
+    return result.messages.map((message) => message.message);
+  };
+  const hooks = `import { useMemo } from "react";\nimport { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";`;
 
   it.each([
-    ["a plain binding", hooks, "const names = usePlayerNames();", "names.text(address)", "names"],
-    ["a typed binding", hooks, "const names: PlayerNames = usePlayerNames();", "names.text(address)", "names"],
-    ["a destructured binding", hooks, "const { text } = usePlayerNames();", "text(address)", "text"],
     [
-      "an aliased hook",
-      `import { usePlayerNames as useNames } from "@/hooks/use-player-profile";`,
-      "const names = useNames();",
-      "names.text(address)",
-      "names",
-    ],
-    [
-      "a relative hooks import",
-      `import { usePlayerNames } from "../../../../../hooks/use-player-profile";`,
-      "const names = usePlayerNames();",
-      "names.text(address)",
-      "names",
-    ],
-    [
-      "a value taken from the reader",
+      "a typed binding (review 3)",
       hooks,
-      "const names = usePlayerNames(); const say = names.text;",
-      "say(address)",
-      "say",
+      "const names: PlayerNames = usePlayerNames();\nreturn useMemo(() => names.text(address), [address]);",
+      /missing dependency: 'names'/,
     ],
     [
-      "a local function that reads it",
-      hooks,
-      "const names = usePlayerNames(); const line = (a: string) => names.text(a);",
-      "line(address)",
-      "line",
+      "a namespace import of the hooks (review 4)",
+      `import { useMemo } from "react";\nimport * as playerProfiles from "@/hooks/use-player-profile";`,
+      "const names = playerProfiles.usePlayerNames();\nreturn useMemo(() => names.text(address), [address]);",
+      /missing dependency: 'names'/,
     ],
     [
-      "one player's name",
+      "a value derived from the reader (review 4)",
       hooks,
-      'const defender = usePlayerDisplayName("0x1");',
-      "`${address} ${defender}`",
-      "defender",
+      "const names = usePlayerNames();\nconst shown = names.text(address);\nreturn useMemo(() => shown, []);",
+      /missing dependency: 'shown'/,
     ],
-  ])("fails %s left out of the dependencies, and passes it listed", async (_, head, read, expression, dependency) => {
-    expect(await hits(UI, memoOf(head, read, expression, "address"))).toEqual(missing);
-    expect(await hits(UI, memoOf(head, read, expression, `address, ${dependency}`))).toEqual([]);
+    [
+      "a callback passed by reference (review 4)",
+      hooks,
+      "const names = usePlayerNames();\nconst line = () => names.text(address);\nreturn useMemo(line, [address]);",
+      /missing dependency: 'names'/,
+    ],
+  ])("reports %s", async (_, head, body, expected) => {
+    expect(await reported(head, body)).toEqual([expect.stringMatching(expected)]);
   });
 
-  it("holds the live battle's Share text: fixed it passes; typed with its reader left out, it fails", async () => {
-    const path = "ui/features/military/battle/battle-lab/battle-lab.tsx";
-    const battle = readFileSync(resolve(REPO, "apps/game/src", path), "utf8");
-    expect(await hits(path, battle)).toEqual([]);
-    // The review's mutant: the reader typed, and dropped from the Share memo's dependencies. Each edit must land.
-    const edits = [
-      [
-        `import { usePlayerNames } from "@/hooks/use-player-profile";`,
-        `import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";`,
-      ],
-      ["const names = usePlayerNames();", "const names: PlayerNames = usePlayerNames();"],
-      ["account.address, names, store,", "account.address, store,"],
-    ];
-    const mutant = edits.reduce((source, [from, to]) => {
-      expect(source).toContain(from);
-      return source.replace(from, to);
-    }, battle);
-    expect(await hits(path, mutant)).toEqual(missing);
+  it("does not see a cache imported under another name (review 4): the design's known gap", async () => {
+    const head = `import { useMemo as useCached } from "react";\nimport { usePlayerNames } from "@/hooks/use-player-profile";`;
+    expect(
+      await reported(head, "const names = usePlayerNames();\nreturn useCached(() => names.text(address), [address]);"),
+    ).toEqual([]);
   });
 });
