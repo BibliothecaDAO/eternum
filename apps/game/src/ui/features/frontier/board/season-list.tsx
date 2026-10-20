@@ -19,10 +19,13 @@ import {
   LORDS_EARNED,
   PER_SHARE,
   POOL_NOT_PUBLISHED,
+  RANK,
+  REALM,
   SEASON,
   SEASON_ERROR,
   SEASON_POOL,
   SHARE_CEILING,
+  SITES,
   SITES_CLEARED,
   TODAY,
   TRY_AGAIN,
@@ -170,19 +173,18 @@ const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) =>
 );
 
 /**
- * The columns' icons over the rows' numbers: sites cleared, then LORDS. Each icon names its column on the tooltip:
- * hover it, or press and hold it on a phone.
+ * Each column's name over it, as Blitz's standings name theirs: Rank, the realm (its Order mark and name), Sites cleared
+ * (what ranks) and LORDS. The number columns' full names are on their heads' tooltip.
  */
 const BoardHead = () => (
   <HudTableHead cols={COLS}>
-    <span />
-    <span />
-    <span />
-    <span role="img" aria-label={SITES_CLEARED} className="flex justify-end">
-      <SemanticIcon name="flag" size={18} />
+    <span className="text-center">{RANK}</span>
+    <span className="col-span-2">{REALM}</span>
+    <span className="text-right" data-tip={SITES_CLEARED}>
+      {SITES}
     </span>
-    <span role="img" aria-label={LORDS_EARNED} className="flex justify-end">
-      <SemanticIcon name="lords" size={18} />
+    <span className="text-right" data-tip={LORDS_EARNED}>
+      {LORDS}
     </span>
   </HudTableHead>
 );

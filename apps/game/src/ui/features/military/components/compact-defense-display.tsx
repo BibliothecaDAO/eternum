@@ -39,6 +39,12 @@ import { GuardCooldownBadge } from "./guard-cooldown-badge";
 
 type DefenseTroop = NonNullable<ReturnType<typeof getGuardsByStructure>>[number];
 
+/**
+ * Every guard slot on one row, a column each: a structure holds at most four (owner, 20 October 2026: "the 4 guards
+ * should fit on the row").
+ */
+const GUARD_SLOT_ROW = "grid w-full grid-cols-4 justify-items-stretch gap-2 pb-1";
+
 interface CompactDefenseDisplayProps {
   troops: DefenseTroop[];
   className?: string;
@@ -225,8 +231,9 @@ export const CompactDefenseDisplay = ({
             </span>
           </>
         ) : (
-          <div className="flex min-w-0 w-full flex-col gap-0.5">
-            <div className="flex items-center gap-1 min-w-0">
+          // A quarter of the row each: the tier and the troop over the count, then the stamina.
+          <div className="flex min-w-0 w-full flex-col items-center gap-0.5">
+            <div className="flex items-center gap-1">
               <TierChip tier={defense.troops.tier} />
               <ResourceIcon
                 withTooltip={false}
@@ -234,10 +241,10 @@ export const CompactDefenseDisplay = ({
                 size={isBanner ? "xs" : "sm"}
                 className="shrink-0"
               />
-              <span className={cn(valueTextClass, "text-hud-accent truncate")}>
-                {formatAmount(knownAmount(troopCount))}
-              </span>
             </div>
+            <span className={cn(valueTextClass, "text-hud-accent tabular-nums")}>
+              {formatAmount(knownAmount(troopCount))}
+            </span>
             <GuardStaminaBar current={staminaCurrent} max={staminaMax} />
           </div>
         )}
@@ -296,7 +303,7 @@ export const CompactDefenseDisplay = ({
             )}
           </div>
         )}
-        <div className="grid grid-cols-2 gap-2 pb-1 justify-items-stretch w-full">
+        <div className={GUARD_SLOT_ROW}>
           {displayedTroops.toSorted((a, b) => b.slot - a.slot).map((defense) => renderSlot(defense))}
         </div>
       </div>
@@ -339,7 +346,7 @@ export const CompactDefenseDisplay = ({
           )}
         </div>
       )}
-      <div className={cn("grid grid-cols-2", "gap-2", "justify-items-stretch", isBanner ? "pb-0" : "pb-1", "w-full")}>
+      <div className={GUARD_SLOT_ROW}>
         {displayedTroops.toSorted((a, b) => b.slot - a.slot).map((defense) => renderSlot(defense))}
         {!isBanner && (
           <div

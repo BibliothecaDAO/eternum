@@ -78,7 +78,10 @@ const RenameButton = ({ entityId }: { entityId: ID }) => {
   );
 };
 
-/** The holding's population, tiles and automation, on one line under its panel's header. */
+/**
+ * The holding's population, tiles and automation, on one line under its panel's header; no line for a holding with
+ * none of them (an Essence Rift), so its rings sit right under the header.
+ */
 const HoldingLine = ({
   entityId,
   holding,
@@ -87,17 +90,20 @@ const HoldingLine = ({
   entityId: ID;
   holding: StructureWithMetadata | null;
   automation: "realm" | "village" | null;
-}) => (
-  <div className="flex min-h-9 items-center gap-4 text-hud-strong tabular-nums text-hud-ink">
-    {holding && <HoldingStats holding={holding} />}
-    <span className="flex-1" />
-    {automation && <AutomationSelect entityId={entityId} entityType={automation} />}
-  </div>
-);
+}) => {
+  const peopled = holding !== null && resolveStructureUiCapabilities(holding.structure).hasPopulationDetails;
+  if (!peopled && !automation) return null;
+  return (
+    <div className="flex min-h-9 items-center gap-4 text-hud-strong tabular-nums text-hud-ink">
+      {peopled && <HoldingStats holding={holding} />}
+      <span className="flex-1" />
+      {automation && <AutomationSelect entityId={entityId} entityType={automation} />}
+    </div>
+  );
+};
 
 /** Population used of its room, and building tiles used of those open, as the structure list reads them. */
 const HoldingStats = ({ holding }: { holding: StructureWithMetadata }) => {
-  if (!resolveStructureUiCapabilities(holding.structure).hasPopulationDetails) return null;
   const tiles =
     holding.buildingTilesOccupied !== null && holding.buildingTilesTotal !== null
       ? formatUsedBuildingTilesLabel(holding.buildingTilesOccupied, holding.buildingTilesTotal)

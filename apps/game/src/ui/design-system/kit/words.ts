@@ -85,7 +85,9 @@ export const STORE = "Store";
 /** On a payout's Full mark: the store took what it had room for. */
 export const REST_DID_NOT_FIT = "The store is full: the rest did not fit";
 export const SEASON = "Season";
-/** The season board's two number columns, named on their icons' tooltip. */
+/** The season board's columns, by their heads; the two number columns' full names on the heads' tooltip. */
+export const RANK = "Rank";
+export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
 export const LORDS_EARNED = "LORDS earned";
 export const SETTINGS = "Settings";

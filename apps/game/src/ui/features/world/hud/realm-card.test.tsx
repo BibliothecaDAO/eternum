@@ -3,7 +3,10 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const card = vi.hoisted(() => ({ balances: [] as Array<{ resourceId: number; amount: number }> }));
+const card = vi.hoisted(() => ({
+  balances: [] as Array<{ resourceId: number; amount: number }>,
+  category: 1 as number,
+}));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 0 }));
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
@@ -22,7 +25,7 @@ vi.mock("@/ui/features/world/components/entities/hooks/use-structure-entity-deta
   useStructureEntityDetail: () => ({
     isLoadingStructure: false,
     isMine: true,
-    structure: { base: { category: StructureType.Realm } },
+    structure: { base: { category: card.category } },
     structureName: "Egonal",
     resources: { balances: () => card.balances },
     relicEffects: [],
@@ -49,6 +52,7 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  card.category = StructureType.Realm;
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   host = document.createElement("div");
   document.body.append(host);
@@ -102,5 +106,33 @@ describe("the deploy proof's reading", () => {
     host.innerHTML = `<section aria-label="Selected holding"><ul aria-label="Resources"><li></li><li></li></ul></section>`;
 
     expect(troopsHeld()).toBeNull();
+  });
+});
+
+describe("the line under the card's header", () => {
+  /** What the card shows first under its header: the holding's line, else its rings. */
+  const firstUnderHeader = () => host.querySelector('[aria-label="Selected holding"] .min-w-0.flex-col > :first-child');
+  const holding = (category: StructureType) =>
+    ({
+      structure: { base: { category } },
+      population: 2,
+      populationCapacity: 12,
+      buildingTilesOccupied: null,
+      buildingTilesTotal: null,
+    }) as never;
+
+  it("reads a realm's population there", () => {
+    card.balances = [{ resourceId: ResourcesIds.Wheat, amount: 1_000 * 1e9 }];
+    act(() => root.render(<RealmCard holding={holding(StructureType.Realm)} />));
+
+    expect(firstUnderHeader()?.textContent).toBe("2/12");
+  });
+
+  it("leaves no empty line on an Essence Rift, which has no population or automation: its rings come first", () => {
+    card.category = StructureType.Mine;
+    card.balances = [{ resourceId: ResourcesIds.Essence, amount: 280 * 1e9 }];
+    act(() => root.render(<RealmCard holding={holding(StructureType.Mine)} />));
+
+    expect(firstUnderHeader()?.getAttribute("aria-label")).toBe("Resources");
   });
 });
