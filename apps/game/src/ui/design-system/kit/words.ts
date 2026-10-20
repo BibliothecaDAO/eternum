@@ -72,10 +72,12 @@ export const STAMINA = "stamina";
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
-/** The places: the nav's five words. */
+/** The places: the nav's words. */
 export const MAP = "Map";
 export const REALM = "Realm";
 export const RESEARCH = "Research";
+/** Every event and battle: the Events' history, a phone's place for Events. */
+export const LOG = "Log";
 export const CHAT = "Chat";
 export const MENU = "Menu";
 

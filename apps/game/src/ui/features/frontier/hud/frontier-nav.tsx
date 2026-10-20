@@ -11,6 +11,7 @@ import { type Place, PlaceNav } from "./place-nav";
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
 export type HudSurface =
   | "research"
+  | "log"
   | "chat"
   | "menu"
   | "today"
@@ -33,6 +34,7 @@ export const FrontierNav = ({
   board,
   surface,
   onSurface,
+  events,
   unread,
 }: {
   rules: ExpeditionRules;
@@ -42,11 +44,13 @@ export const FrontierNav = ({
   board: NativeRows["Structure"] | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
+  /** Events arrived since the Log was last read. */
+  events: number;
   unread: number;
 }) => {
   const { isMapView } = useQuery();
   const place: Place =
-    surface === "research" || surface === "chat" || surface === "menu"
+    surface === "research" || surface === "log" || surface === "chat" || surface === "menu"
       ? surface
       : surface === "season"
         ? "menu"
@@ -70,6 +74,7 @@ export const FrontierNav = ({
       onGo={go}
       realmDot={stores ? realmDot([stores.wheat, stores.labor, stores.troops]) : undefined}
       researchDot={realm ? researchDot : undefined}
+      events={events}
       unread={unread}
     />
   );

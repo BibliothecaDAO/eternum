@@ -3,10 +3,10 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import { CHAT, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
+import { CHAT, LOG, MAP, MENU, REALM, RESEARCH } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-export type Place = "map" | "realm" | "research" | "chat" | "menu";
+export type Place = "map" | "realm" | "research" | "log" | "chat" | "menu";
 
 /** A dot on a slot: lit is news (research to buy), amber and ember a store nearing or at its limit. */
 type Dot = "lit" | "amber" | "ember";
@@ -18,14 +18,16 @@ const DOTS: Record<Dot, string> = {
 };
 
 /**
- * The phone's place bar: Map and Realm as one switch (the two places of play), then Research, Chat and Menu, an icon
- * and one word each, at the foot of every nav page. The lit slot is where the player is.
+ * The phone's place bar: Map and Realm as one switch (the two places of play), then Research, the Log (the Events'
+ * history, with what arrived since it was read), Chat and Menu, an icon and one word each, at the foot of every nav
+ * page. The lit slot is where the player is.
  */
 export const PlaceNav = ({
   place,
   onGo,
   realmDot,
   researchDot,
+  events,
   unread,
 }: {
   place: Place;
@@ -33,9 +35,14 @@ export const PlaceNav = ({
   realmDot?: Dot;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
+  /** Events arrived since the Log was last read. */
+  events: number;
   /** Chat messages unread; none shows nothing. */
   unread: number;
 }) => {
+  /** What arrived since the player last looked, as a bare count beside the slot's icon. */
+  const count = (unseen: number) =>
+    unseen > 0 && <span className="text-hud-body leading-none tabular-nums">{formatAmount(unseen)}</span>;
   const slot = (to: Place, icon: IconMeaning, word: string, badge?: ReactNode) => (
     <Slot key={to} lit={place === to} icon={icon} word={word} badge={badge} onClick={() => onGo(to)} />
   );
@@ -47,12 +54,8 @@ export const PlaceNav = ({
         <i aria-hidden className="w-px shrink-0 self-stretch bg-hud-line" />
         {researchDot !== undefined &&
           slot("research", "research", RESEARCH, researchDot && <i className={cn("size-2 rounded-full", DOTS.lit)} />)}
-        {slot(
-          "chat",
-          "chat",
-          CHAT,
-          unread > 0 && <span className="text-hud-body leading-none tabular-nums">{formatAmount(unread)}</span>,
-        )}
+        {slot("log", "chronicles", LOG, count(events))}
+        {slot("chat", "chat", CHAT, count(unread))}
         {slot("menu", "menu", MENU)}
       </HudPanel>
     </nav>

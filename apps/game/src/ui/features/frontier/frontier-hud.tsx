@@ -5,6 +5,8 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
+import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
+import { useEventsFeed, useUnreadFeedCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useLayout } from "@/shell/frame/layout";
@@ -238,7 +240,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
 /**
  * Frontier's HUD on a phone, in its bands, and the one owner of its chat: the chat key and the place bar's Chat open
  * the chat page, and the place bar counts what is unread. A desktop's chat is the shared rail's own strip, so each
- * composition holds the chat's lifecycle once, and moving between them hands it over whole.
+ * composition holds the chat's lifecycle once, and moving between them hands it over whole. The place bar's Log opens
+ * the Events' history, the window the desktop's Events open.
  */
 const FrontierPhoneHud = ({
   rules,
@@ -272,6 +275,8 @@ const FrontierPhoneHud = ({
 }) => {
   const chat = useGameChat(surface === "chat");
   const chatPane = useChatKey(() => onSurface("chat"));
+  const { stories } = useEventsFeed();
+  const events = useUnreadFeedCount(stories, surface === "log");
   // A nav page starts right under the strip, where the purse hangs: the purse waits while one is open.
   const pageOpen = surface === "chat" || surface === "research" || surface === "season";
   return (
@@ -304,12 +309,19 @@ const FrontierPhoneHud = ({
             board={board}
             surface={surface}
             onSurface={onSurface}
+            events={events}
             unread={chat.unread}
           />
         )
       }
     >
       {children}
+      {surface === "log" && (
+        <EventLogPanel
+          onDismiss={() => onSurface(null)}
+          isInsideAnchor={(target) => target instanceof Element && target.closest('nav[aria-label="Places"]') !== null}
+        />
+      )}
     </HudBands>
   );
 };

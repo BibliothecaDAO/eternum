@@ -962,6 +962,7 @@ export const HudLab = () => {
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
+              events={lab.offline ? 0 : 2}
               unread={lab.offline ? 0 : 3}
             />
           )

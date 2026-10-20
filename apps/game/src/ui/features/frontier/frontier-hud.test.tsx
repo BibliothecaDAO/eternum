@@ -133,3 +133,23 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
   expect(wire.made).toBe(1);
   expect(wire.close).not.toHaveBeenCalled();
 });
+
+it("gives a phone the Events' Log on its place bar, with the filter the desktop's Events have, and takes it away", async () => {
+  viewport.set(390);
+  await renderHud();
+  const log = () =>
+    [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find((button) =>
+      button.textContent?.endsWith("Log"),
+    );
+  expect(log()).toBeDefined();
+  expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+  await act(async () => log()!.click());
+  const window = document.querySelector('[aria-label="Event log"]');
+  expect(window).not.toBeNull();
+  expect([...window!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
+    expect.arrayContaining(["Important", "Mine", "All"]),
+  );
+  expect(log()!.getAttribute("aria-current")).toBe("page");
+  await act(async () => log()!.click());
+  expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+});
