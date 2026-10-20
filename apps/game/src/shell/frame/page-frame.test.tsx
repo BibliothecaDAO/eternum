@@ -95,8 +95,10 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     if (layout === "phone") {
       // The top row holds the lockup, or Back and the title; nothing else there is to tap.
       expect(controlsIn(top).map((control) => control.dataset.role)).toEqual(isTabPage ? [] : ["back"]);
-      // The tabs are the foot, below the notice and the foot row; a page's footer closes its body.
-      if (band(container, "footer")) expect(band(container, "footer")!.closest('[data-band="body"]')).not.toBeNull();
+      // The tabs are the foot, below the notice and the foot row; a page's footer follows its body in the same scroll,
+      // as on the desktop.
+      if (band(container, "footer"))
+        expect(band(container, "footer")!.previousElementSibling).toBe(band(container, "body"));
       expect(bandOrder(container).filter((name) => name !== "body" && name !== "footer")).toEqual(
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );

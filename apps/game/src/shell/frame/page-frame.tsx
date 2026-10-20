@@ -73,10 +73,13 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, children }: PageFr
     >
       {back === undefined ? <Lockup /> : <PhoneTitle back={back} title={title} />}
     </header>
-    <main data-band="body" className="min-h-0 flex-1 overflow-y-auto px-gutter pb-4">
-      {children}
+    {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
+    <div className="min-h-0 flex-1 overflow-y-auto px-gutter pb-4">
+      <main data-band="body" className="min-h-full">
+        {children}
+      </main>
       {tabs && <AppFooter />}
-    </main>
+    </div>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-gutter pb-2">
         {notice}

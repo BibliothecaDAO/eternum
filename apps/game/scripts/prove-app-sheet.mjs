@@ -175,7 +175,8 @@ const sheetPageChecks = (page) => (b) => {
       return Math.max(0, ...inside.map((rect) => Math.max(rect.bottom - box.bottom, rect.right - box.right)));
     };
     const body = document.querySelector('[data-band="body"]');
-    const blocks = body ? [...body.querySelectorAll(":scope > * > *, :scope > *")] : [];
+    const footer = document.querySelector('[data-band="footer"]');
+    const blocks = [body, footer].flatMap((band) => (band ? [...band.querySelectorAll(":scope > * > *, :scope > *")] : []));
     const bar = document.querySelector('[data-band="bar"]')?.getBoundingClientRect();
     const player = document.querySelector(".app-bar__end > :last-child")?.getBoundingClientRect();
     return {
@@ -194,7 +195,7 @@ const sheetPageChecks = (page) => (b) => {
         const bands = ["notice", "foot", "tabs"].map((name) => document.querySelector('[data-band="' + name + '"]')).filter(Boolean);
         if (!body || bands.length === 0) return [];
         const edge = Math.min(...bands.map((band) => band.getBoundingClientRect().top));
-        return [...body.querySelectorAll("a[href], button")]
+        return [...document.querySelectorAll('[data-band="body"] :is(a[href], button), [data-band="footer"] a[href]')]
           .map((control) => ({ word: control.innerText.trim().slice(0, 30), rect: control.getBoundingClientRect() }))
           .filter(({ rect }) => rect.height > 0 && rect.top < edge - 1 && rect.bottom > edge + 1)
           .map(({ word, rect }) => word + " " + Math.round(rect.top) + "→" + Math.round(rect.bottom) + " at " + Math.round(edge));
