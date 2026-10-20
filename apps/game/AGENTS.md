@@ -187,6 +187,13 @@ path as shown above.
 2. Open a headed browser on the app shell (the home page) with a persistent profile. If the player is already logged in,
    continue immediately. If no wallet/account is visible, ask the user to log in themselves. Do not ask for credentials.
 
+   A test account on dev signs in with an emailed code once, then never again: every code spends the email quota real
+   players' codes share. After the first sign-in, enter a game once, then save the browser's state with Playwright's
+   `context.storageState({ path })` to a file outside the repository, and restore it in every new browser with
+   `context.setStorageState(path)` before opening the app (save it again at the end of a session, so its 30-day cookie
+   renews). The state holds the dev session cookie, host-only on the dev host so it never reaches production, and the
+   device key (`realms:device-key`), so the restored browser is the same signed-in device and no code is sent.
+
 ```bash
 mkdir -p .context/agent-browser-login-profile
 npx -y agent-browser --session game-check \
