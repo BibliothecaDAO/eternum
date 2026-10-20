@@ -1582,8 +1582,8 @@ tomorrow lasts.
    that to 6.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
-3. **Clear.** Trolls, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you attack,
-   and an attack needs 30 stamina.
+3. **Clear.** Trolls, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you
+   attack, and an attack needs 30 stamina.
 4. **Bring it home.** Everything found goes straight to the realm. An army never carries anything worth losing.
 
 When the day ends, the map and every army on it are gone. Your realm is raised again on the next map with everything it
