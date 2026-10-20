@@ -1,5 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
-import { colors, section, table } from "./styles";
+import { colors, fonts, section, table } from "./styles";
 
 export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
   // Unit names are now just [Tier][Type] format, so we return empty string
@@ -110,7 +110,7 @@ export const TroopTiers = () => {
       margin: 0,
       fontSize: "1rem",
       textAlign: "center" as const,
-      fontFamily: "'Exo 2', sans-serif",
+      fontFamily: fonts.body,
     },
     troopImageContainerStyle: {
       width: "100%",

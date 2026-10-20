@@ -3,10 +3,10 @@
 
 // Fonts
 export const fonts = {
-  body: "'Exo 2', sans-serif",
-  display: "'MedievalSharp', serif",
-  heading: "'Cinzel', serif",
-  mono: "'Source Code Pro', monospace",
+  body: "var(--docs-font-body)",
+  display: "var(--docs-font-title)",
+  heading: "var(--docs-font-body)",
+  mono: "var(--docs-font-mono)",
 };
 
 // Colors — Realms palette
@@ -375,8 +375,6 @@ export const resource = {
     fontSize: "0.65rem",
     fontWeight: 600,
     color: colors.secondary,
-    textTransform: "uppercase" as "uppercase",
-    letterSpacing: "0.05em",
     fontFamily: fonts.heading,
   },
   summaryContainerStyle: {

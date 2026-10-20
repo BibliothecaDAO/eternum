@@ -1,9 +1,9 @@
-import { colors, section } from "./styles";
+import { colors, fonts, section } from "./styles";
 
 const varStyle = {
   color: colors.primary,
   fontStyle: "italic" as const,
-  fontFamily: "'Source Code Pro', serif",
+  fontFamily: fonts.mono,
 };
 
 const Fraction = ({ top, bottom }: { top: React.ReactNode; bottom: React.ReactNode }) => (
@@ -53,7 +53,7 @@ export const DamageCalculation = () => {
           style={{
             fontSize: "1.35rem",
             color: colors.primary,
-            fontFamily: "'Source Code Pro', serif",
+            fontFamily: fonts.mono,
             fontWeight: 500,
             letterSpacing: "0.02em",
           }}
