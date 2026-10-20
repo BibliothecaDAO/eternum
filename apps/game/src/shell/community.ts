@@ -1,3 +1,4 @@
+import { REALMS_X_TAG, REALMS_X_URL } from "@realms-world/chain";
 import type { IconMeaning } from "@/ui/design-system/icon";
 
 /**
@@ -5,7 +6,7 @@ import type { IconMeaning } from "@/ui/design-system/icon";
  * socials.ts), each with its official mark.
  */
 export const COMMUNITY = [
-  { name: "X", href: "https://x.com/LootRealms", icon: "brand-x" },
+  { name: "X", href: REALMS_X_URL, icon: "brand-x" },
   { name: "Discord", href: "https://discord.gg/realmsworld", icon: "brand-discord" },
   { name: "Telegram", href: "https://t.me/+UpfCtj7qEO9hZjU1", icon: "brand-telegram" },
   { name: "CoinGecko", href: "https://www.coingecko.com/en/coins/lords", icon: "brand-coingecko" },
@@ -16,5 +17,5 @@ type Place = (typeof COMMUNITY)[number];
 
 export const communityPlace = (name: Place["name"]): Place => COMMUNITY.find((place) => place.name === name)!;
 
-/** The realm's X account as a post tags it ("@LootRealms"), read from its one link above. */
-export const X_HANDLE = `@${new URL(communityPlace("X").href).pathname.slice(1)}`;
+/** The realm's X account as a post tags it. */
+export const X_HANDLE = REALMS_X_TAG;

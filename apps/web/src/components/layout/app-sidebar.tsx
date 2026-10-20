@@ -1,3 +1,4 @@
+import { REALMS_X_URL } from "@realms-world/chain";
 import * as React from "react";
 import { NavMain } from "@/components/layout/nav-main";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail } from "@/components/ui/sidebar";
@@ -107,7 +108,7 @@ const data = {
         },
         {
           title: "Twitter",
-          url: "https://x.com/lootrealms",
+          url: REALMS_X_URL,
         },
         {
           title: "Github",

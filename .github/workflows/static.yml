@@ -57,5 +57,8 @@ jobs:
           node --test scripts/check-test-scripts-run-once.test.mjs
           node scripts/check-test-scripts-run-once.mjs
 
+      - name: Check the Realms X account is written in one place
+        run: pnpm check:realms-x
+
       - name: Check formatting
         run: pnpm run format:check

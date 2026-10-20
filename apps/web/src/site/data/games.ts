@@ -1,7 +1,5 @@
 import { appUrl } from "@/site/lib/app-links";
-import { socials } from "./socials";
-
-const X_URL = socials.find((social) => social.id === "x")!.href;
+import { REALMS_X_URL } from "@realms-world/chain";
 
 export interface Game {
   id: number;
@@ -50,7 +48,7 @@ export const games: Game[] = [
     links: {
       homepage: appUrl("/blitz"),
       discord: "https://discord.gg/realmsworld",
-      twitter: X_URL,
+      twitter: REALMS_X_URL,
       github: "https://github.com/BibliothecaDAO/eternum",
     },
   },
@@ -85,7 +83,7 @@ export const games: Game[] = [
     links: {
       homepage: appUrl("/eternum"),
       discord: "https://discord.gg/realmsworld",
-      twitter: X_URL,
+      twitter: REALMS_X_URL,
       github: "https://github.com/BibliothecaDAO/eternum",
     },
   },

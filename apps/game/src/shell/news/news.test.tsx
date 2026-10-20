@@ -1,3 +1,4 @@
+import { REALMS_X_URL } from "@realms-world/chain";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -167,7 +168,7 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
         link.querySelector("img")?.getAttribute("src"),
       ]),
     ).toEqual([
-      ["X", "https://x.com/LootRealms", "_blank", "/tokens/brand-x.svg"],
+      ["X", REALMS_X_URL, "_blank", "/tokens/brand-x.svg"],
       ["Discord", "https://discord.gg/realmsworld", "_blank", "/tokens/brand-discord.svg"],
       ["Telegram", "https://t.me/+UpfCtj7qEO9hZjU1", "_blank", "/tokens/brand-telegram.svg"],
       ["CoinGecko", "https://www.coingecko.com/en/coins/lords", "_blank", "/tokens/brand-coingecko.svg"],

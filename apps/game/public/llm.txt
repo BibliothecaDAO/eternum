@@ -2019,6 +2019,8 @@ meta: {
   "description": "Essential links for Realms games"
 }
 
+import { REALMS_X_URL } from "../../../../../packages/chain/src/community";
+
 # Quick Links
 
 ## Play & Learn
@@ -2034,7 +2036,7 @@ meta: {
 
 * [Realms World](https://realms.world/) - The DAO behind Eternum
 * [Discord](https://discord.gg/realmsworld) - Join our Discord
-* [X](https://x.com/LootRealms) - Follow Realms
+* <a href={REALMS_X_URL}>X</a> - Follow Realms, {REALMS_X_URL}
 
 
 
