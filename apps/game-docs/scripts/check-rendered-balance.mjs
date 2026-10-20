@@ -361,6 +361,22 @@ export const forbiddenValues = (dist, llm) => [
   ...forbiddenIn(llm).map((found) => ({ page: "llm.txt", run: [found] })),
 ];
 
+/**
+ * Every table, header cell or cell in the built pages that sets its own inline font size or leading. The reading scale's
+ * table step lives in docs/styles.css alone (--docs-table-size, --docs-table-leading), so a component table reads it as an
+ * MDX table does; a size of its own would override it.
+ */
+export const tableSizeOverrides = (dist) =>
+  fg.sync("**/index.html", { cwd: dist }).flatMap((file) =>
+    [...readFileSync(join(dist, file), "utf8").matchAll(/<(table|thead|tbody|tr|th|td)\b[^>]*\bstyle="([^"]*)"/g)]
+      .map(([, tag, style]) => [tag, style.match(/(?:font-size|line-height):\s*[^;]+/)?.[0]])
+      .filter(([, size]) => size !== undefined)
+      .map(([tag, size]) => ({
+        page: file,
+        run: [`<${tag}> sets its own ${size}; tables read the reading scale's step`],
+      })),
+  );
+
 /** The runs a built site does not show, each with its page. */
 export const missingRuns = (dist, pages) =>
   pages.flatMap(({ page, runs }) => {
@@ -388,6 +404,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     ...missingPhrases(dist, phrases),
     ...exportProblems(llm, phrases),
     ...forbiddenValues(dist, llm),
+    ...tableSizeOverrides(dist),
   ];
   for (const { page, run } of missing) console.error(`${page}: expected "${run.join(" | ")}"`);
   if (missing.length) process.exit(1);

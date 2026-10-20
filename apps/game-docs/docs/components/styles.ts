@@ -58,7 +58,6 @@ export const table = {
   table: {
     width: "100%",
     borderCollapse: "collapse" as const,
-    fontSize: "0.85rem",
   },
   tableHead: {
     backgroundColor: colors.background.dark,
@@ -71,7 +70,6 @@ export const table = {
     textAlign: "left" as const,
     borderBottom: `1px solid ${colors.borderDark}`,
     fontFamily: fonts.body,
-    fontSize: "0.85rem",
     letterSpacing: "0",
   },
   cell: {
@@ -110,7 +108,6 @@ export const table = {
     textAlign: "left" as const,
     padding: "0.75rem 0.5rem",
     color: colors.primary,
-    fontSize: "0.85rem",
     fontWeight: 700,
     fontFamily: fonts.body,
     letterSpacing: "0",
@@ -133,7 +130,6 @@ export const table = {
   tableCell: {
     padding: "0.75rem 0.5rem",
     color: colors.text.light,
-    fontSize: "0.95rem",
     borderBottom: `1px solid rgba(201, 169, 96, 0.13)`,
   },
   tableRow: {

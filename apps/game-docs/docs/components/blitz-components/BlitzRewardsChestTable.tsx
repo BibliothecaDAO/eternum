@@ -161,8 +161,6 @@ const componentStyles = {
   descriptionCell: {
     ...table.cell,
     maxWidth: "none",
-    fontSize: "0.8rem",
-    lineHeight: "1.4",
     color: colors.text.light,
     padding: "0.4rem 0.5rem",
   },

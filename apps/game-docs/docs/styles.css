@@ -43,6 +43,9 @@
   --docs-font-title: "Bokor", serif;
   --docs-font-body: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --docs-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* The reading scale's table step: every table, MDX or component, reads it here and sets no size of its own. */
+  --docs-table-size: 15px;
+  --docs-table-leading: 22px;
   --vocs-fontFamily_default: var(--docs-font-body);
   --vocs-fontFamily_mono: var(--docs-font-mono);
 }
@@ -107,8 +110,8 @@ h4 {
 
 .vocs_Content td,
 .vocs_Content th {
-  font-size: 15px;
-  line-height: 22px;
+  font-size: var(--docs-table-size);
+  line-height: var(--docs-table-leading);
 }
 
 code,

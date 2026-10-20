@@ -40,7 +40,6 @@ const componentStyles = {
   effectCell: {
     ...table.cell,
     maxWidth: "300px",
-    lineHeight: "1.4",
   },
   activatedByCell: {
     ...table.cell,
