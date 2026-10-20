@@ -100,19 +100,18 @@ const getRealmName = (structure: NativeRows["Structure"]) => {
  */
 export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalStorage(entityId) || siteName(entityId);
 
+/**
+ * A structure's name, and the name it had before its holder renamed it (originalName, which the rename control shows).
+ * A site is named by siteDisplayName, the rule every reader of a site shares.
+ */
 export const getStructureName = (structure: NativeRows["Structure"], isBlitz: boolean) => {
-  const cachedName = getEntityNameFromLocalStorage(safeInteger(structure.entity_id));
-  let originalName = undefined;
-
-  if (structure.base.category === StructureType.Realm) {
-    originalName = getRealmName(structure);
-  } else if (structure.base.category === StructureType.Hyperstructure) {
-    originalName = getHyperstructureName(structure);
-  } else {
-    originalName = siteName(safeInteger(structure.entity_id));
+  const entityId = safeInteger(structure.entity_id);
+  if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
+    return { name: siteDisplayName(entityId), originalName: siteName(entityId) };
   }
-
-  return { name: cachedName || originalName, originalName };
+  const originalName =
+    structure.base.category === StructureType.Realm ? getRealmName(structure) : getHyperstructureName(structure);
+  return { name: getEntityNameFromLocalStorage(entityId) || originalName, originalName };
 };
 
 /**
