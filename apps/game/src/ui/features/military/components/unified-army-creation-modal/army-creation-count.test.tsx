@@ -11,6 +11,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
 }));
 
 import { GameProvider } from "@/hooks/context/game-context";
+import { HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -49,6 +50,27 @@ it("keeps the troop count the player typed in the Military window: its sign, its
     typeInto(count(), text);
     expect(count().value, text).toBe(shown);
   }
+  act(() => root.unmount());
+  host.remove();
+});
+
+it("says in the Military window's foot the stamina a field army starts on, from the game's rules (live-qa-night-2 B-2)", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store } = frontierDay();
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+        <HudWindow title="Military" onClose={() => undefined}>
+          <UnifiedArmyCreationBody structureId={7} />
+        </HudWindow>
+      </GameProvider>,
+    ),
+  );
+  // The fixture's knights start at 150 under a 150 maximum: full.
+  expect(host.querySelector(".ui-window__foot")?.textContent).toContain("The new army starts full: 150/150 stamina");
   act(() => root.unmount());
   host.remove();
 });

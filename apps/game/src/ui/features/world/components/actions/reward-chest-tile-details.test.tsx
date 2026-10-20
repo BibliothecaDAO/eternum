@@ -34,7 +34,7 @@ it("reads the reserved amount, changes to zero exactly at rollover, and retains 
     await act(async () =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <ChestTileDetails rewardChestId={opening ? undefined : 9} opening={opening} onOpen={open} />
+          <ChestTileDetails rewardChestId={opening ? undefined : 9} opening={opening} open={{ onOpen: open }} />
         </GameProvider>,
       ),
     );

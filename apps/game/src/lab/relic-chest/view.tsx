@@ -155,7 +155,7 @@ export function RelicChestLab() {
               coordsLabel="Chest tile · 0,0"
               rewardChestId={frontier && !opening ? 9 : undefined}
               opening={opening}
-              onOpen={open}
+              open={{ onOpen: open }}
             />
           ) : (
             <p>Focus the chest to inspect its tile.</p>

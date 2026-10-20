@@ -1,4 +1,6 @@
 import { getGameModeId } from "@/config/game-modes";
+import { NEW_ARMY, startsOn } from "@/ui/design-system/kit/words";
+import { musterStamina } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
@@ -24,8 +26,10 @@ import {
   ID,
   ResourcesIds,
   StructureType,
+  TickIds,
   TroopTier,
   TroopType,
+  formatAmount,
   formatWait,
 } from "@bibliothecadao/types";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -508,7 +512,25 @@ export const useArmyCreation = ({
     troopSourceLine:
       selectedAvailable < 1 ? describeTroopSource(troopSupply.name, readTroopRecipe(store, selectedTroopCombo)) : null,
     raiseLine: troopRaiseLine(raiseCost),
+    // A field army's starting stamina, before it is raised (live-qa-night-2 B-2); a guard has no line.
+    startLine: armyType ? fieldArmyStartLine(selectedTroopCombo, currentBlockTimestamp) : null,
   };
+};
+
+/**
+ * The stamina a field army starts on, through the core's one rule for a new army (musterStamina). The Military window
+ * raises armies in games without army slots (Blitz, Eternum); Frontier deploys through its own sheet, by slot.
+ */
+const fieldArmyStartLine = (troop: SelectedTroopCombo, timestamp: number): string => {
+  const bar = musterStamina(
+    null,
+    { category: troop.type, tier: troop.tier },
+    timestamp,
+    configManager.getTroopStaminaRules(),
+    0,
+    configManager.getTick(TickIds.Armies),
+  );
+  return startsOn(NEW_ARMY, `${formatAmount(bar.amount)}/${formatAmount(bar.max)}`, bar.amount === bar.max);
 };
 
 /**

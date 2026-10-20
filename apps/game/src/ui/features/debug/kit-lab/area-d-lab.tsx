@@ -7,6 +7,7 @@ import { ArmyDeploymentPicker } from "@/ui/features/military/components/army-dep
 import { UnifiedArmyCreationBody } from "@/ui/features/military/components/unified-army-creation-modal/unified-army-creation-modal";
 import { GuildListHeader, GuildRow } from "@/ui/features/social/guilds/guild-list";
 import { PlayerList, type PlayerCustom } from "@/ui/features/social/player/player-list";
+import { CRATE_NEEDS_AN_ARMY } from "@/ui/design-system/kit/words";
 import { ChestTileDetails } from "@/ui/features/world/components/actions/chest-tile-details";
 import { ProductionStatusBadge } from "@/ui/shared";
 import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
@@ -183,7 +184,12 @@ export const AreaDLab = () => {
         </Surface>
         <Surface name="crate">
           <div className="w-80">
-            <ChestTileDetails opening={null} onOpen={() => undefined} />
+            <ChestTileDetails opening={null} open={{ onOpen: () => undefined }} />
+          </div>
+        </Surface>
+        <Surface name="crate-far">
+          <div className="w-80">
+            <ChestTileDetails opening={null} open={{ blocked: CRATE_NEEDS_AN_ARMY }} />
           </div>
         </Surface>
       </div>

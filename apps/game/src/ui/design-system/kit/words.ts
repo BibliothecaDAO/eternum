@@ -312,6 +312,23 @@ export const marchLine = (tiles: number) =>
  */
 export const startsOn = (army: string, bar: string, fresh: boolean) =>
   fresh ? `${army} starts full: ${bar} ${STAMINA}` : `${army} starts on ${bar} ${STAMINA}`;
+/**
+ * The word over each kind of news on the map's banner. A game's end is its result in every mode (live-qa-night-2 B-6:
+ * a Blitz, which has no ages, read "Age Result").
+ */
+export const HEADLINE_EYEBROWS = {
+  "realm-fall": "War Report",
+  "hyper-capture": "World Event",
+  elimination: "War Report",
+  "game-start": "Game started",
+  "game-end": "Game result",
+  "five-min-warning": "Timer Warning",
+  "t3-building": "Military Milestone",
+} as const;
+/** Where a crate cannot be opened from yet: what opening it needs, said in place of its Open. */
+export const CRATE_NEEDS_AN_ARMY = "Move one of your armies next to the crate to open it.";
+/** A field army about to be raised, before it has a number (the Military window's Deploy). */
+export const NEW_ARMY = "The new army";
 export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today" : "The bar its slot's last army left");
 
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */

@@ -114,3 +114,21 @@ it("says a winner's name is unavailable when identity's ask fails, never the sta
 it("still names a winner identity answered for with no claimed name by the unclaimed rule", async () => {
   await show(ended(0x5eed0abcn), (line) => expect(line).toMatch(/^Lord 0abc wins!$/));
 });
+
+it("heads a game's end 'Game result' in every mode, Blitz included, which has no ages (live-qa-night-2 B-6)", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () =>
+      root.render(<NewsHeadlineBanner headline={ended(0x5eed0154n)} onDismiss={() => undefined} />),
+    );
+    expect(container.querySelector(".ui-banner__eyebrow")?.textContent).toBe("Game result");
+    expect(container.textContent).not.toContain("Age");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    answer();
+  }
+});

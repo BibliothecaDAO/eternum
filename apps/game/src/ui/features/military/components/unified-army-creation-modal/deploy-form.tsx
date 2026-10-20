@@ -48,14 +48,15 @@ export const DeployTroops = ({ form }: { form: ArmyCreationForm }) => {
 };
 
 /**
- * The one verb, in the window's foot: Deploy, carrying its verb only, and beside it what it costs and the one reason it
- * cannot go.
+ * The one verb, in the window's foot: Deploy, carrying its verb only, and beside it what it costs, the stamina a field
+ * army starts on, and the one reason it cannot go.
  */
 export const DeployVerb = ({ form }: { form: ArmyCreationForm }) => (
   <HudWindowFoot
     note={
       <span className="flex flex-col items-start">
         <HudCost line={form.raiseLine} />
+        {form.startLine && <span>{form.startLine}</span>}
         <span role="status">{form.isActionDisabled ? form.blockedReason : null}</span>
       </span>
     }

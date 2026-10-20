@@ -63,6 +63,17 @@ const stack = (host: HTMLElement, name: string) =>
   )!;
 
 describe("the deploy form on the sheet", () => {
+  it("says the stamina a field army starts on beside what it costs, and none for a guard (live-qa-night-2 B-2)", () => {
+    const foot = (startLine: string | null) =>
+      render(
+        <HudWindow title="Military" onClose={() => undefined}>
+          <DeployVerb form={form({ startLine })} />
+        </HudWindow>,
+      ).querySelector(".ui-window__foot")!.textContent;
+    expect(foot("The new army starts on 30/120 stamina")).toBe("200 wheatThe new army starts on 30/120 staminaDeploy");
+    expect(foot(null)).toBe("200 wheatDeploy");
+  });
+
   it("chooses a held stack by its column and tier", () => {
     const chosen = form();
     const host = render(<DeployTroops form={chosen} />);

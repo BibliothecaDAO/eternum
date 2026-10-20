@@ -11,6 +11,12 @@ import type { ChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
 /**
+ * How a sealed chest opens from here: its Open, or, where it cannot open yet, the plain line that says what it needs
+ * (live-qa-night-2 B-4: a disabled gold "Move next to it" said why only on hover).
+ */
+export type ChestOpen = { onOpen: () => void } | { blocked: string };
+
+/**
  * A sealed crate keeps its contents a surprise. Only an opening receipt supplies relics to this panel.
  */
 export function ChestTileDetails({
@@ -18,16 +24,14 @@ export function ChestTileDetails({
   coordsLabel,
   headerAction,
   opening,
-  onOpen,
-  openBlockedReason,
+  open,
 }: {
   /** Only Frontier LORDS chests supply a metadata ID; sealed relic packs are never read here. */
   rewardChestId?: ID;
   coordsLabel?: string;
   headerAction?: ReactNode;
   opening: ChestOpening | null;
-  onOpen?: () => void;
-  openBlockedReason?: string;
+  open: ChestOpen;
 }) {
   return (
     <div className="flex shrink-0 flex-col gap-2">
@@ -48,14 +52,13 @@ export function ChestTileDetails({
           <ChestContents opening={opening} rewardChestId={rewardChestId} />
           {!opening && (
             <div className="mt-2">
-              <HudButton
-                kind="primary"
-                onClick={onOpen}
-                disabled={!onOpen}
-                data-tip={onOpen ? undefined : openBlockedReason}
-              >
-                {onOpen ? "Open" : "Move next to it"}
-              </HudButton>
+              {"onOpen" in open ? (
+                <HudButton kind="primary" onClick={open.onOpen}>
+                  Open
+                </HudButton>
+              ) : (
+                <p className="text-hud-body">{open.blocked}</p>
+              )}
             </div>
           )}
         </HudPanel>

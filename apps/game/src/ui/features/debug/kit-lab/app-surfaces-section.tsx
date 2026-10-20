@@ -42,6 +42,19 @@ export const AppSurfacesSection = () => {
               onNavigate={() => undefined}
             />
           </figure>
+          <figure className="relative h-96 overflow-hidden rounded-lg [transform:translateZ(0)]" data-game-end-banner>
+            <NewsHeadlineBanner
+              headline={{
+                id: "lab-end",
+                type: "game-end",
+                icon: "game-end",
+                title: "The game has ended",
+                description: ["Moonhand wins!"],
+                timestamp: 0,
+              }}
+              onDismiss={() => undefined}
+            />
+          </figure>
           <figure className="h-80">
             <SurfaceFrame
               title="Transfer"

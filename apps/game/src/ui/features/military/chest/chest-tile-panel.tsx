@@ -4,6 +4,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import type { ChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request";
 import { useAdjacentOwnExplorer } from "./use-adjacent-own-explorer";
+import { CRATE_NEEDS_AN_ARMY } from "@/ui/design-system/kit/words";
 import { ChestTileDetails } from "@/ui/features/world/components/actions/chest-tile-details";
 
 // The crate panel opens with the player's adjacent explorer; the contract accepts no other opener.
@@ -33,8 +34,7 @@ export const ChestTilePanel = ({
       coordsLabel={coordsLabel}
       headerAction={headerAction}
       opening={opening}
-      onOpen={canOpen ? handleOpen : undefined}
-      openBlockedReason={canOpen ? undefined : "Move one of your armies next to the crate."}
+      open={canOpen ? { onOpen: handleOpen } : { blocked: CRATE_NEEDS_AN_ARMY }}
     />
   );
 };
