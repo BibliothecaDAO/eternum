@@ -71,7 +71,6 @@ export const FRONTIER = {
   },
   stamina: {
     max: n(stamina.staminaKnightMax),
-    start: n(stamina.staminaInitial),
     perTick: n(stamina.staminaGainPerTick),
     tickMinutes: n(tickMinutes),
     fullHours: n(((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tickMinutes) / 60),

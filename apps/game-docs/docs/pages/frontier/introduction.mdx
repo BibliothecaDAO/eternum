@@ -20,9 +20,8 @@ season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.
 with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how long
 tomorrow lasts.
 
-1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army, at
-   {FRONTIER.stamina.start} stamina. A new realm fields {FRONTIER.realm.armies[0]} armies at once; its castle raises
-   that to {FRONTIER.realm.armies[3]}.
+1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army in one of the
+   realm's army slots: {FRONTIER.realm.armies[0]} for a new realm, up to {FRONTIER.realm.armies[3]} as its castle rises.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
 3. **Clear.** Trolls, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you
@@ -53,6 +52,20 @@ big army needs farms behind it.
 Refill tops an army's stamina up at once for {FRONTIER.stamina.refillLords} LORDS a missing point, paid from your
 realm's LORDS. A well gives {FRONTIER.stamina.well} stamina, buying an attribute tier gives{" "}
 {FRONTIER.stamina.tierBought}, and Logistics raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
+
+### Stamina stays with the slot
+
+Stamina belongs to the army slot, not to the army in it. A new army takes your realm's lowest free slot.
+
+- A slot's first army of the day starts with a full bar: {FRONTIER.stamina.max} stamina, plus what your Supply yard's
+  Logistics adds.
+- When an army dies, is disbanded or merges into another, its slot keeps the stamina it had left, and that stamina keeps
+  recovering.
+- The next army deployed into that slot starts with that stamina, not a full bar. Replacing a tired army never brings a
+  fresh one.
+- The new army's own maximum still caps it. Its XP and tiers start again from your realm's training; only the stamina
+  carries over.
+- When the day ends, every slot is cleared, so each slot's first army tomorrow starts full again.
 
 ## Fights roll dice
 
