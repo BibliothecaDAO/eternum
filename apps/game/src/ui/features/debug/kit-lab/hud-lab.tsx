@@ -20,6 +20,7 @@ import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
+import { FIGHT_CASES, type FightCase, type FightOption, FightOptionSheet } from "./fight-options";
 import { LabGame } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuSheet } from "@/ui/features/frontier/hud/menu-sheet";
@@ -455,7 +456,40 @@ const LAB_NEXT_UP_FACTS: NextUpFacts = {
   rules: { hutAdds: 6, stamina: { explore: 30, anHour: 30 }, xp: { reveal: 2 }, homecomingPercent: 3 },
 };
 
+/** Today's camp card for a fight the options read (fight-options.tsx). */
+const todaysCard = (fight: FightCase): LabSite => ({
+  site: "Camp",
+  beast:
+    fight.guard.art === "beast-troll" ? { name: fight.guard.name, beast: "troll", combatClass: "Knight" } : undefined,
+  army: fight.army,
+  guard: fight.guard.troops,
+  fight: {
+    outcome: fight.attacksToClear === 0 ? "loses" : "wins",
+    exchanges: fight.attacksToClear,
+    troopsLost: fight.attack.lost,
+    guardLeft: Math.max(0, fight.guard.troops - fight.attack.killed),
+  },
+  pay: { icon: fight.pay.icon, amount: fight.pay.amount },
+  xp: fight.xp,
+  verb:
+    fight.stamina.wait === 0
+      ? ATTACK_30
+      : { kind: "short", stamina: { cost: fight.stamina.cost, held: fight.stamina.held, wait: fight.stamina.wait } },
+});
+
+/** The fight card's options, each case beside today's card: fight-<today|a|b|c>-<short|ready|loses>. */
+const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
+  Object.entries(FIGHT_CASES).flatMap(([name, fight]) => [
+    [`fight-today-${name}`, { clock: CLOCK, stores: STORES, armies: ARMIES, site: todaysCard(fight) }],
+    ...(["a", "b", "c"] as const).map((option) => [
+      `fight-${option}-${name}`,
+      { clock: CLOCK, stores: STORES, armies: ARMIES, forecast: { option, fight } },
+    ]),
+  ]),
+);
+
 const STATES = {
+  ...FIGHT_STATES,
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0 },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
@@ -887,6 +921,8 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
+  /** One of the fight card's options for the owner to pick (fight-options.tsx). */
+  forecast?: { option: FightOption; fight: FightCase };
   fight?: FightResult;
   chest?: LabChest;
   deploy?: LabDeploy;
@@ -948,21 +984,39 @@ export const HudLab = () => {
           chat && !desktop ? (
             chat
           ) : lab.tree ? (
-            // A row's sheet opens from the page, as FrontierResearch opens it, so it takes the page's place.
-            <>
+            // A row's sheet stands in the page's place, as FrontierResearch shows it.
+            lab.tree === "page" ? (
               <TreePage
                 essence={18_250}
                 labor={9_640}
                 rows={TREE_ROWS}
                 castle={CASTLE_NODES}
-                chosen={lab.tree === "page" || lab.tree === "shrine" ? undefined : lab.tree}
                 onRow={noop}
                 onCastle={noop}
               />
-              {lab.tree !== "page" && <LabTreeSheet tree={lab.tree} />}
-            </>
+            ) : (
+              <LabTreeSheet tree={lab.tree} />
+            )
           ) : lab.season ? (
-            <>
+            // A realm's detail stands in the list's place, as FrontierSeason shows it.
+            lab.season === "detail" ? (
+              <SeasonDetailSheet
+                label="Aldric"
+                detail={{
+                  rank: 2,
+                  order: 2,
+
+                  sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
+                  chests: 9,
+                  lords: 640,
+                  reach: 0,
+                  essence: 212_000,
+                  labor: 96_000,
+                }}
+                onVisit={noop}
+                onClose={noop}
+              />
+            ) : (
               <SeasonList
                 rank={12}
                 chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
@@ -974,25 +1028,7 @@ export const HudLab = () => {
                 onOpen={noop}
                 onBack={noop}
               />
-              {lab.season === "detail" && (
-                <SeasonDetailSheet
-                  label="Aldric"
-                  detail={{
-                    rank: 2,
-                    order: 2,
-
-                    sites: { total: 132, camps: 70, rifts: 43, ruins: 9, beasts: 10 },
-                    chests: 9,
-                    lords: 640,
-                    reach: 0,
-                    essence: 212_000,
-                    labor: 96_000,
-                  }}
-                  onVisit={noop}
-                  onClose={noop}
-                />
-              )}
-            </>
+            )
           ) : undefined
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
@@ -1103,6 +1139,7 @@ export const HudLab = () => {
           />
         )}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
+        {lab.forecast && <FightOptionSheet {...lab.forecast} />}
         {lab.fight && (
           <Sheet label={TARGET_MARKS[lab.fight.site].word} onClose={noop}>
             <FightResultCard result={lab.fight} onClose={noop} />

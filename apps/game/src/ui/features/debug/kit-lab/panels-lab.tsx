@@ -13,20 +13,30 @@ import { BuildTag } from "@/ui/layouts/build-tag";
 import { RealmCard } from "@/ui/features/world/hud/realm-card";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { BiomeType, BiomeTypeToId, BUILDINGS_CENTER, BuildingType } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BiomeTypeToId,
+  BUILDINGS_CENTER,
+  BuildingType,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  TileOccupier,
+} from "@bibliothecadao/types";
 import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { nativeTilePackingConstants } from "../../../../../../../contracts/l3/world-native/schema/client.gen";
+import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { installBuildingRules, installFixtureGame, PLAYER } from "./fixture-game";
 
 /**
  * Dev only: the Blitz and Eternum HUD's panels as a player sees them, the real components on the deploy fixture's
  * realm in the War room skin, at /lab/kit/panels: the left column (the holdings, the selected realm's card and the
- * minimap), which a spectated game does not show, or the desktop HUD's left column and foot where they sit on the
+ * minimap; `?holding=rift` makes the realm an Essence Rift), which a spectated game does not show, or the desktop HUD's left column and foot where they sit on the
  * screen with `?part=hud`, or the top bar alone with `?part=top-header` (it selects for the
- * page, so it never shares one with the holdings), or the picked tile alone with `?tile=army|empty` (the sites
- * fixture's army beside its camp, a bare forest), or the realm view's building panel with
+ * page, so it never shares one with the holdings), or the picked tile alone with `?tile=army|realm|empty` (the sites
+ * fixture's army, the realm with a guard and many resources, a bare forest), or the realm view's building panel with
  * `?tile=castle|building|production` (the realm's castle with its level-up, a farm with what it makes, a wood mill
  * with its production to add). Each part carries the `data-lab` mark the HUD captures
  * (scripts/capture-hud-lab.mjs) look for.
@@ -34,15 +44,19 @@ import { installBuildingRules, installFixtureGame, PLAYER } from "./fixture-game
 export const PanelsLab = () => {
   const [params] = useSearchParams();
   const tile = params.get("tile");
-  if (tile === "army" || tile === "empty") return <TileLab tile={tile} />;
+  if (tile === "army" || tile === "empty" || tile === "realm") return <TileLab tile={tile} />;
   if (tile === "castle" || tile === "building" || tile === "production") return <BuildingLab building={tile} />;
   return <ColumnLab />;
 };
 
 const ColumnLab = () => {
   useDocumentClass("classic-hud");
-  const [store] = useState(installFixtureGame);
   const [params] = useSearchParams();
+  const [store] = useState(() => {
+    const store = installFixtureGame();
+    if (params.get("holding") === "rift") installRift(store);
+    return store;
+  });
   return (
     <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: PLAYER } as never}>
       <div className="flex min-h-screen flex-col items-start gap-6 bg-[#0b1418] p-6 text-gold">
@@ -79,6 +93,105 @@ const HudStage = () => {
       <BuildTag />
     </div>
   );
+};
+
+/**
+ * The realm on its tile, three guard slots and one guard of 1,000 T1 knights in them, and nine stores, so its tile panel shows a guard row and
+ * more resources than two rows hold.
+ */
+const installGuardedRealm = (store: NativeFactStore) => {
+  const { col, row } = LAB_TILES.realm;
+  const stores = [
+    ResourcesIds.Labor,
+    ResourcesIds.Donkey,
+    ResourcesIds.Wheat,
+    ResourcesIds.Wood,
+    ResourcesIds.Coal,
+    ResourcesIds.Ruby,
+    ResourcesIds.Knight,
+    ResourcesIds.Essence,
+    ResourcesIds.Fish,
+  ];
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  store.applyFacts([
+    { model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, troop_max_guard_count: 3 } } },
+    {
+      model: "TileOccupancy",
+      key: "0x9d0",
+      value: {
+        game_id: 1,
+        alt: false,
+        col,
+        row,
+        entity_id: 7,
+        category: TileOccupier.RealmRegularLevel1,
+        is_structure: true,
+      },
+    },
+    {
+      model: "Guard",
+      key: "0x9d1",
+      value: {
+        game_id: 1,
+        structure_id: 7,
+        slot: 0,
+        troops: {
+          ...ROW_SET.expected.value.troops,
+          count: String(1_000n * BigInt(RESOURCE_PRECISION)),
+          stamina: { Inline: { amount: "100", settled_at: "350000", remainder: "0" } },
+        },
+        destroyed_tick: 0,
+      },
+    },
+    ...stores
+      .filter((resource) => !store.get("ResourceBalance", { game_id: 1, entity_id: 7, resource_type: resource }))
+      .map((resource, index) => ({
+        model: "ResourceBalance",
+        key: `0x9e${index}`,
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: resource,
+          balance: String(BigInt(1_000 + 500 * index) * BigInt(RESOURCE_PRECISION)),
+        },
+      })),
+  ] as never);
+};
+
+/** The fixture's holding as an Essence Rift: no population or automation, 188 donkeys and 280 Essence held. */
+const installRift = (store: NativeFactStore) => {
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  const held = (resource: ResourcesIds, amount: bigint, key: string) => ({
+    model: "ResourceBalance",
+    key,
+    value: { game_id: 1, entity_id: 7, resource_type: resource, balance: String(amount * BigInt(RESOURCE_PRECISION)) },
+  });
+  store.applyFacts([
+    {
+      model: "Structure",
+      key: "0x7",
+      value: {
+        ...realm,
+        base: { ...realm.base, category: StructureType.Mine },
+        metadata: { ...realm.metadata, mine_kind: 1 },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x9c3",
+      value: {
+        game_id: 1,
+        alt: false,
+        col: 44,
+        row: 12,
+        entity_id: 7,
+        category: TileOccupier.Mine,
+        is_structure: true,
+      },
+    },
+    held(ResourcesIds.Donkey, 188n, "0x9c1"),
+    held(ResourcesIds.Essence, 280n, "0x9c2"),
+  ] as never);
 };
 
 /** The realm a few days in, as the card's widest row reads it: ten of its population used, four plots built. */
@@ -121,9 +234,13 @@ const LabHoldings = () => {
   );
 };
 
-/** The lab's tiles: the sites fixture's army (41, 12) on grass, and a bare forest two hexes off. */
+/**
+ * The lab's tiles: the sites fixture's army (41, 12) on grass, the player's realm with a guard and a full store two
+ * hexes off, and a bare forest.
+ */
 const LAB_TILES = {
   army: { col: 41, row: 12, biome: BiomeType.Grassland },
+  realm: { col: 44, row: 12, biome: BiomeType.Grassland },
   empty: { col: 42, row: 14, biome: BiomeType.TemperateDeciduousForest },
 } as const;
 
@@ -146,6 +263,8 @@ export const TileGame = ({ tile, children }: { tile: keyof typeof LAB_TILES; chi
   const [store] = useState(() => {
     const store = installFixtureGame(campBeside);
     installBiomes(store);
+    installGuardedRealm(store);
+    installLabClient(store);
     const { col, row } = LAB_TILES[tile];
     useUIStore.setState({ selectedHex: { col, row } });
     return store;
@@ -175,12 +294,7 @@ const BuildingLab = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => 
   const [store] = useState(() => {
     const store = installFixtureGame();
     installBuildings(store);
-    // The building panel reads the game through the booted client; the lab's sends nothing, as its tiles call nothing.
-    const client = { setup: { store, systemCalls: {} }, actions: {}, connect() {}, disconnect() {} };
-    installActiveGameClient({
-      ...client,
-      views: createGameViews(client as unknown as GameClient, BigInt(PLAYER), () => null),
-    } as unknown as GameClient);
+    installLabClient(store);
     const { innerCol, innerRow } = LAB_BUILDINGS[building];
     useUIStore.setState({ selectedHex: null, selectedBuildingHex: { structureId: 7, innerCol, innerRow } });
     return store;
@@ -195,6 +309,15 @@ const BuildingLab = ({ building }: { building: keyof typeof LAB_BUILDINGS }) => 
       </div>
     </GameProvider>
   );
+};
+
+/** A structure's panels read the game through the booted client; the lab's sends nothing, as its tiles call nothing. */
+const installLabClient = (store: NativeFactStore) => {
+  const client = { setup: { store, systemCalls: {} }, actions: {}, connect() {}, disconnect() {} };
+  installActiveGameClient({
+    ...client,
+    views: createGameViews(client as unknown as GameClient, BigInt(PLAYER), () => null),
+  } as unknown as GameClient);
 };
 
 const LabBuildingPanel = () => <>{useSelectedTileDetails()}</>;
