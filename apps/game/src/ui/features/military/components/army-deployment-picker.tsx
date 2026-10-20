@@ -20,7 +20,12 @@ export const ArmyDeploymentPicker = (target: ArmyDeploymentTarget) => {
 
 const ArmyDeploymentForm = (target: ArmyDeploymentTarget) => {
   const close = () => usePopoverStore.getState().close("army-deployment");
-  const form = useArmyCreation({ ...target, fixedContext: true, onSubmit: close });
+  const form = useArmyCreation({
+    ...target,
+    initialTroopCount: target.troopCount,
+    fixedContext: true,
+    onSubmit: close,
+  });
 
   return (
     <HudWindow title={describeDeploymentTarget(target)} icon="military" size="fit" onClose={close}>

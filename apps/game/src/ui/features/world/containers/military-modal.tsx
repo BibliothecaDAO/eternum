@@ -55,6 +55,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   const [initialIsExplorer, setInitialIsExplorer] = useState<boolean>(true);
   const [initialDirection, setInitialDirection] = useState<Direction | undefined>(undefined);
   const [initialGuardSlot, setInitialGuardSlot] = useState<number | undefined>(undefined);
+  const [initialTroopCount, setInitialTroopCount] = useState<number | undefined>(undefined);
   const [bodyKey, setBodyKey] = useState(0);
   const [mobileTab, setMobileTab] = useState<"deploy" | "armies">("deploy");
 
@@ -75,6 +76,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     setInitialIsExplorer(pendingMilitaryAction.isExplorer);
     setInitialDirection(pendingMilitaryAction.direction);
     setInitialGuardSlot(pendingMilitaryAction.initialGuardSlot);
+    setInitialTroopCount(pendingMilitaryAction.troopCount);
     setBodyKey((current) => current + 1);
     setPendingMilitaryAction(null);
   }, [pendingMilitaryAction, setPendingMilitaryAction]);
@@ -83,6 +85,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     setFocusedRealmId(id);
     setInitialDirection(undefined);
     setInitialGuardSlot(undefined);
+    setInitialTroopCount(undefined);
     // Remount so the body refetches guards + balances + free directions for
     // the newly selected realm and snaps troop count to max for the new state.
     setBodyKey((current) => current + 1);
@@ -130,6 +133,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
             isExplorer={initialIsExplorer}
             direction={initialDirection}
             initialGuardSlot={initialGuardSlot}
+            initialTroopCount={initialTroopCount}
           />
         </div>
         {showsArmies && (

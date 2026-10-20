@@ -51,7 +51,7 @@ interface CoachState {
  * realm up, or select an army on the map with the card of the target it should go for open (none for exploring).
  */
 export type CoachAct =
-  | { kind: "raise"; realmId: number }
+  | { kind: "raise"; realmId: number; troops: number }
   | { kind: "build" }
   | { kind: "open-crate"; armyId: number; hex: CoachHex }
   | { kind: "level-up"; realmId: number; name: string }
@@ -94,7 +94,7 @@ export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHa
         key: "coach:raise",
         line: `Raise an army at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.troops)} troops on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
         verb: "Raise an army",
-        act: { kind: "raise", realmId: troopsOnHand.realmId },
+        act: { kind: "raise", realmId: troopsOnHand.realmId, troops: troopsOnHand.troops },
       }
     : {
         key: "coach:barracks",

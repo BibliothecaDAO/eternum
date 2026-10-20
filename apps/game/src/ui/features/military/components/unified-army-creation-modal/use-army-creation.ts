@@ -70,6 +70,8 @@ interface ArmyCreationOptions {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  /** The troop count an order named; the form opens on it, within what the structure can raise. */
+  initialTroopCount?: number;
   fixedContext?: boolean;
   onSubmit?: () => void;
 }
@@ -83,6 +85,7 @@ export const useArmyCreation = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
+  initialTroopCount = 0,
   fixedContext = false,
   onSubmit,
 }: ArmyCreationOptions) => {
@@ -95,7 +98,7 @@ export const useArmyCreation = ({
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     direction !== undefined ? direction : null,
   );
-  const [troopCount, setTroopCount] = useState(0);
+  const [troopCount, setTroopCount] = useState(initialTroopCount);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
   const currentDefaultTick = useCurrentDefaultTick();
@@ -289,9 +292,9 @@ export const useArmyCreation = ({
   }, [direction]);
 
   useEffect(() => {
-    setTroopCount(0);
+    setTroopCount(initialTroopCount);
     setGuardSlot(initialGuardSlot ?? 0);
-  }, [activeStructureId, initialGuardSlot]);
+  }, [activeStructureId, initialGuardSlot, initialTroopCount]);
 
   const freeDirections = useMemo(
     () => deployRing.filter((tile) => tile.open).map((tile) => tile.direction),
@@ -364,9 +367,12 @@ export const useArmyCreation = ({
       ? 0
       : resolveArmyTroopAvailability(selectedAvailable, capacityRemainingForSelector);
 
+  // The count stays within what can be raised, once that is known: a count an order named is not lost to the zero the
+  // maximum reads while its facts load.
+  const maxKnown = armyType ? fieldRoom !== null : capacityRemainingForSelector !== null;
   useEffect(() => {
-    setTroopCount((current) => Math.max(0, Math.min(current, maxAffordable)));
-  }, [maxAffordable]);
+    if (maxKnown) setTroopCount((current) => Math.max(0, Math.min(current, maxAffordable)));
+  }, [maxAffordable, maxKnown]);
 
   const troopSupply = useMemo(
     () =>

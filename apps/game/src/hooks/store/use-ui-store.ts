@@ -28,6 +28,7 @@ type PendingMilitaryAction = {
   isExplorer: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  troopCount?: number;
 };
 
 interface UIStore {

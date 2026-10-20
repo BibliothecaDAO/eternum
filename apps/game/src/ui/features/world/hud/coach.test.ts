@@ -28,7 +28,8 @@ it("raises the first army at the realm with troops on hand, or asks for a barrac
       key: "coach:raise",
       line: "Raise an army at 'oak Leukue (1,000 troops on hand): it explores for +5 points a tile.",
       verb: "Raise an army",
-      act: { kind: "raise", realmId: 9 },
+      // Military opens at the count the line names.
+      act: { kind: "raise", realmId: 9, troops: 1_000 },
     },
   ]);
   expect(steps([], [], { troopsOnHand: null })).toEqual([

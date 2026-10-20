@@ -19,6 +19,8 @@ export interface ArmyDeploymentTarget {
   direction?: Direction;
   initialGuardSlot?: number;
   maxDefenseSlots?: number;
+  /** The troop count the order named (Next up's "1,000 troops on hand"): the form opens on it, within what it can raise. */
+  troopCount?: number;
 }
 
 /** Where on screen an order to deploy was given: the tile or the slot the shared HUD hangs its picker from. */

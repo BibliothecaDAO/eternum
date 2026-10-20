@@ -113,7 +113,7 @@ const toNextStep = (step: CoachStep, act: (action: ButtonAct) => void): NextStep
 const coachPlace = (hex: { col: number; row: number }): Position => Position.fromContract({ x: hex.col, y: hex.row });
 
 /**
- * What a coach step's button does: open Military on the realm it names, open Build, open a crate beside an army (on
+ * What a coach step's button does: open Military on the realm it names, at the troop count it named, open Build, open a crate beside an army (on
  * the map; from another view the army is shown there first), or select the army on the map with its target's card
  * open.
  */
@@ -123,7 +123,7 @@ const useCoachAct = () => {
   return (action: ButtonAct) => {
     switch (action.kind) {
       case "raise":
-        openArmyDeployment({ structureId: action.realmId, isExplorer: true });
+        openArmyDeployment({ structureId: action.realmId, isExplorer: true, troopCount: action.troops });
         return;
       case "build":
         useUIStore.getState().setLeftNavigationView(LeftView.ConstructionView);

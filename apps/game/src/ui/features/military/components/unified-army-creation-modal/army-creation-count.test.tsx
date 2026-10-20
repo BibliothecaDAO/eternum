@@ -74,3 +74,27 @@ it("says in the Military window's foot the stamina a field army starts on, from 
   act(() => root.unmount());
   host.remove();
 });
+
+it("opens on the troop count an order named (Next up's troops on hand), within what is on hand", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store } = frontierDay();
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  const openAt = (initialTroopCount: number) =>
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <UnifiedArmyCreationBody key={initialTroopCount} structureId={7} initialTroopCount={initialTroopCount} />
+        </GameProvider>,
+      ),
+    );
+  const count = () => host.querySelector<HTMLInputElement>('input[aria-label="Knight T1"]')!.value;
+  // The fixture realm holds 420 knights, under a 1,500 cap.
+  openAt(300);
+  expect(count()).toBe("300");
+  openAt(1_000);
+  expect(count()).toBe("420");
+  act(() => root.unmount());
+  host.remove();
+});

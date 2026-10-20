@@ -16,6 +16,8 @@ interface UnifiedArmyCreationProps {
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  /** The troop count an order named; the form opens on it, within what the structure can raise. */
+  initialTroopCount?: number;
   followSelectedStructure?: boolean;
 }
 
@@ -33,6 +35,7 @@ export const UnifiedArmyCreationBody = ({
   isExplorer = true,
   direction,
   initialGuardSlot,
+  initialTroopCount,
   followSelectedStructure,
   shown = true,
 }: UnifiedArmyCreationBodyProps) => {
@@ -108,6 +111,7 @@ export const UnifiedArmyCreationBody = ({
     isExplorer,
     direction,
     initialGuardSlot,
+    initialTroopCount,
   });
   if (!shown) return null;
 
