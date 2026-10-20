@@ -1,8 +1,7 @@
 {
-  "apps/game/src/ui/design-system/atoms/checkbox.tsx": 6,
   "apps/game/src/ui/design-system/atoms/hud-typography.ts": 11,
   "apps/game/src/ui/design-system/atoms/lib/utils.ts": 1,
-  "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 17,
+  "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 13,
   "apps/game/src/ui/features/world/components/actions/spire-travel-modal.tsx": 24,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 9,
   "apps/game/src/ui/features/world/containers/compact-hud.tsx": 35,
