@@ -16,6 +16,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
+import { RelicActivationSelector } from "./relic-activation-selector";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { nativePresetForId, nativePresetIdFor } from "../../../../../../../config/source/native";
 import explorerFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -270,4 +271,26 @@ it("counts the one whole relic the army holds as one, on its target row as in it
   await openInventory(game());
   expect(document.body.textContent).toMatch(/Veil Brands×1(?!\d)/);
   expect(document.body.textContent).not.toContain("×<1");
+});
+
+it("heads the window with every holder's whole relics, and gives each target row its own", async () => {
+  const state = game();
+  await act(async () =>
+    root.render(
+      <GameProvider value={state.setup} account={signer as never}>
+        <RelicActivationSelector
+          resourceId={ResourcesIds.StaminaRelic1}
+          holders={[
+            { entityId: ARMY_ID, held: 1, recipientType: RelicRecipientType.Explorer, entityType: EntityType.ARMY },
+            { entityId: 7, held: 2, recipientType: RelicRecipientType.Structure, entityType: EntityType.STRUCTURE },
+          ]}
+          onClose={() => {}}
+        />
+      </GameProvider>,
+    ),
+  );
+  const text = document.body.textContent ?? "";
+  expect(text).toMatch(/^Activate Stamina IStamina I×3(?!\d)/);
+  expect(text).toMatch(/Veil Brands×1(?!\d)/);
+  expect(text.match(/×(\d+|<1)/g)).toEqual(["×3", "×1", "×2"]);
 });
