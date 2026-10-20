@@ -10,6 +10,9 @@ const moves = vi.hoisted(() => ({
   goToPlace: vi.fn(),
   deploy: vi.fn(),
   selectArmy: vi.fn(),
+  /** A move or explore pinned on the map, and the screen it is pinned on. */
+  pinned: false,
+  layout: "desktop" as "phone" | "desktop",
 }));
 
 vi.mock("./next-up-facts", () => ({ useNextUpFacts: () => moves.facts }));
@@ -26,6 +29,8 @@ vi.mock("../hud/dock-armies", () => ({
   ],
 }));
 vi.mock("@/utils/can-issue-orders", () => ({ useActNowRefusal: () => null }));
+vi.mock("@/ui/features/frontier/hud/army-order", () => ({ useArmyOrder: () => (moves.pinned ? {} : null) }));
+vi.mock("@/shell/frame/layout", () => ({ useLayout: () => moves.layout }));
 
 const { FrontierNextUp } = await import("./frontier-next-up");
 
@@ -64,8 +69,10 @@ afterEach(() => {
   host.remove();
 });
 
-const show = (facts: Partial<NextUpFacts>) => {
+const show = (facts: Partial<NextUpFacts>, screen: { pinned?: boolean; layout?: "phone" | "desktop" } = {}) => {
   moves.facts = { ...MORNING, ...facts };
+  moves.pinned = screen.pinned ?? false;
+  moves.layout = screen.layout ?? "desktop";
   act(() =>
     root.render(<FrontierNextUp rules={{} as never} realm={{ entity_id: 7 } as never} onSurface={onSurface} />),
   );
@@ -104,4 +111,17 @@ it("opens the realm for barracks, and Research and Production where a step names
   show({ armies: 1, armiesTired: true, storeFull: "wheat" });
   press("Production");
   expect(onSurface).toHaveBeenCalledWith("production");
+});
+
+it("steps its button down to secondary while a phone's pinned order holds the action, and only then", () => {
+  const kindOf = () =>
+    host.querySelector<HTMLButtonElement>('section[aria-label="Next up"] [data-kind]:not([data-kind="quiet"])')?.dataset
+      .kind;
+  show({});
+  expect(kindOf()).toBe("primary");
+  show({}, { pinned: true, layout: "phone" });
+  expect(kindOf()).toBe("secondary");
+  // A desktop's hover names a tile's order without pinning a bar: Next up keeps the action.
+  show({}, { pinned: true, layout: "desktop" });
+  expect(kindOf()).toBe("primary");
 });

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({ useRealmLevelUp: () => null }));
 
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { NextUpView } from "./next-up";
 import { useNextUpShows } from "./next-up-shows";
 import type { NextStep } from "./next-step";
@@ -98,4 +99,19 @@ it("forgets a look once an alert interrupts it, even when the step it was taken 
   draw([]);
   draw([explore, crate]);
   expect(shown()).toBe("Step explore.");
+});
+
+it("steps its button down to secondary while an order's or attack's preview is open, and back once it closes", () => {
+  const kind = () => button("Do raise")!.dataset.kind;
+  draw([step("raise")]);
+  expect(kind()).toBe("primary");
+  act(() =>
+    usePopoverStore.setState({
+      openId: "order-preview",
+      surface: { id: "order-preview", content: null, anchor: null, placement: "below" },
+    }),
+  );
+  expect(kind()).toBe("secondary");
+  act(() => usePopoverStore.getState().closeSurface());
+  expect(kind()).toBe("primary");
 });

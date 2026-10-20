@@ -1,6 +1,7 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGame } from "@/hooks/context/game-context";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
@@ -45,9 +46,21 @@ export const NextUp = () => <NextUpView steps={useNextSteps()} refusal={useActNo
 
 /**
  * Next up as it draws its steps: the current one (the first), or one the player pages to. Paging is a look, not a
- * choice: once the current step changes, Next up is back on it.
+ * choice: once the current step changes, Next up is back on it. Its button is the screen's one primary action until
+ * another surface holds the action at hand: an open action surface (an order's or an attack's preview), or what the
+ * caller says `yields` to (a phone's pinned order). Then it steps down to secondary.
  */
-export const NextUpView = ({ steps, refusal = null }: { steps: NextStep[]; refusal?: string | null }) => {
+export const NextUpView = ({
+  steps,
+  refusal = null,
+  yields = false,
+}: {
+  steps: NextStep[];
+  refusal?: string | null;
+  yields?: boolean;
+}) => {
+  const surfaceOpen = usePopoverStore((state) => state.surface !== null);
+  const kind = yields || surfaceOpen ? "secondary" : "primary";
   const [paged, setPaged] = useState<{ from: string; to: string } | null>(null);
   const current = steps[0] as NextStep | undefined;
   // A look lives only as long as the step it was taken from is current: it ends there, never to come back.
@@ -73,13 +86,16 @@ export const NextUpView = ({ steps, refusal = null }: { steps: NextStep[]; refus
       }
     >
       {step.kind === "level-up" ? (
-        <LevelUpStep key={step.key} realmId={step.realmId} name={step.name} why={step.why} />
+        <LevelUpStep key={step.key} realmId={step.realmId} name={step.name} why={step.why} kind={kind} />
       ) : (
-        <StepBody line={step.line} verb={step.verb} busy={step.busy} refusal={refusal} run={step.run} />
+        <StepBody line={step.line} verb={step.verb} busy={step.busy} refusal={refusal} run={step.run} kind={kind} />
       )}
     </HudPanel>
   );
 };
+
+/** Next up's button: the screen's primary action, or secondary while another surface holds it. */
+type StepKind = "primary" | "secondary";
 
 /** A step's line and its one button; a step taken on the map has no button, and before play the button waits. */
 const StepBody = ({
@@ -89,6 +105,7 @@ const StepBody = ({
   disabled = false,
   refusal = null,
   run,
+  kind,
 }: {
   line: string;
   verb: string | null;
@@ -96,6 +113,7 @@ const StepBody = ({
   disabled?: boolean;
   refusal?: string | null;
   run: (() => void) | null;
+  kind: StepKind;
 }) => {
   const ready = verb !== null && run !== null && !busy && !disabled && refusal === null;
   usePublishAct(ready ? run : null);
@@ -104,7 +122,7 @@ const StepBody = ({
       <p className="text-hud-body text-hud-ink">{line}</p>
       {verb !== null && run !== null && (
         <HudButton
-          kind="primary"
+          kind={kind}
           busy={busy ? "Sending…" : undefined}
           disabled={disabled || refusal !== null}
           onClick={run}
@@ -129,7 +147,7 @@ const usePublishAct = (act: (() => void) | null) => {
  * A realm's level-up step as its hook reads it, whichever realm it is: the same readiness, send and lock as its card,
  * after the reason the step asks for it when it has one.
  */
-const LevelUpStep = ({ realmId, name, why }: { realmId: ID; name: string; why?: string }) => {
+const LevelUpStep = ({ realmId, name, why, kind }: { realmId: ID; name: string; why?: string; kind: StepKind }) => {
   const levelUp = useRealmLevelUp(realmId);
   if (!levelUp) return null;
   const state = levelUpLine(levelUp, name);
@@ -140,6 +158,7 @@ const LevelUpStep = ({ realmId, name, why }: { realmId: ID; name: string; why?: 
       busy={levelUp.loading}
       disabled={!levelUp.ready}
       run={levelUp.run}
+      kind={kind}
     />
   );
 };
