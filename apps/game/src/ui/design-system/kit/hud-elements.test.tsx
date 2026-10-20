@@ -4,8 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import type { Button } from "./button";
-
 import {
   HudButton,
   HudCard,
@@ -69,14 +67,12 @@ const key = (target: Element, name: string) =>
   act(() => target.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true })));
 
 describe("a verb and what it costs (owner, sheet 2026-10-18: a button carries its verb only)", () => {
-  // Neither button takes a price: typecheck fails here the day one does again. Its cost is the line beside it.
+  // The button takes no price: typecheck fails here the day it does again. Its cost is the line beside it.
   // @ts-expect-error A HUD button has no prices.
   const hud: ComponentProps<typeof HudButton> = { kind: "primary", prices: [{ of: "stamina", amount: 20 }] };
-  // @ts-expect-error The kit's button has no prices.
-  const kit: ComponentProps<typeof Button> = { role: "primary", word: "Move", prices: [{ of: "stamina", amount: 20 }] };
 
   it("draws the verb alone on its button, and its cost as one compact line beside it, as the order line writes it", () => {
-    expect([hud.kind, kit.word]).toEqual(["primary", "Move"]);
+    expect(hud.kind).toBe("primary");
     act(() =>
       root.render(
         <>

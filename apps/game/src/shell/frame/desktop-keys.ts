@@ -12,7 +12,7 @@ const isForTheApp = (event: KeyboardEvent): boolean => {
 const isFocusedControl = (target: EventTarget | null): boolean =>
   target instanceof Element && target.closest("a, button, summary, [role=button]") !== null;
 
-/** The screen's one step (its primary verb, marked by StepVerb), while it can be taken. */
+/** The screen's one step (its primary verb, an AppButton marked `step`), while it can be taken. */
 const stepButton = () => document.querySelector<HTMLButtonElement>("[data-role=step] button:enabled");
 
 /**

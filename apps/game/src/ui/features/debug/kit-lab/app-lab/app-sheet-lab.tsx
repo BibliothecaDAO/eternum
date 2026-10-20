@@ -22,12 +22,7 @@ import {
   AppTabs,
   AppTopBar,
 } from "@/ui/design-system/kit/app-elements";
-import { Button } from "@/ui/design-system/kit/button";
-import { Kbd } from "@/ui/design-system/kit/kbd";
-import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
-import { Notice } from "@/ui/design-system/kit/notice";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { Title } from "@/ui/design-system/kit/title";
 import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
@@ -280,7 +275,6 @@ const ColourSection = () => (
 const ButtonSection = () => (
   <Element
     name="Button"
-    todayLabel={TODAY}
     rule="Primary is the page's one verb (large where it leads the page, with Enter beside it on a desktop), secondary sits beside it, quiet is a way out; a loss is said in the bad tone. A verb takes its icon before its word."
     sheet={
       <>
@@ -317,15 +311,6 @@ const ButtonSection = () => (
             Pay and join
           </AppButton>
         </div>
-      </>
-    }
-    today={
-      <>
-        <Button role="primary" word="Resume" icon="play" />
-        <Button role="secondary" word="Join" icon="play" />
-        <Button role="outline" word="Later" />
-        <Button role="outline" word="Sign out" />
-        <Kbd keyName="Enter" />
       </>
     }
   />
@@ -490,7 +475,6 @@ const GameCardSection = () => (
 const RowSection = () => (
   <Element
     name="Row"
-    todayLabel={TODAY}
     rule="One thing of a list: its lead (a rank, a portrait), its words, then its figures or its own button. The player's own row lit; a row that opens something lights on hover."
     sheet={
       <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
@@ -544,24 +528,6 @@ const RowSection = () => (
         />
       </div>
     }
-    today={
-      <ul className="plate w-full px-3">
-        <ListRow
-          as="li"
-          gap={3}
-          lead={<RowThumb painting="blitz-spires" size={12} />}
-          title="Blitz 16:30"
-          line={<span className="font-body text-sm text-kit-muted">Entry closes 16:30 · 2h 4m left</span>}
-          spaced
-          trailing={<Button role="secondary" word="Join" />}
-          className="py-3"
-        />
-        <ListRow as="li" height={12} gap={3} own="lit" className="px-1">
-          <span className="w-8 text-right font-body text-base font-bold tabular-nums text-kit-cream">12</span>
-          <span className="min-w-0 flex-1">You</span>
-        </ListRow>
-      </ul>
-    }
   />
 );
 
@@ -600,24 +566,26 @@ const ChipFigureSection = () => (
 const NoticeSection = () => (
   <Element
     name="Notice"
-    todayLabel={TODAY}
-    rule="What the page must say, in its tone, why under it, and Try again where trying again helps."
+    rule="What the page must say, in its tone, its icon where one tells it at a glance, why under it, and what to do about it: Try again where trying again helps, a verb and Later."
     sheet={
       <div className="flex flex-col gap-3">
-        <AppNotice tone="bad" line="You are offline." why="The last values stay on screen." retry={() => undefined} />
+        <AppNotice
+          tone="bad"
+          icon="network-off"
+          line="You are offline."
+          why="The last values stay on screen."
+          actions={<AppButton kind="secondary">Try again</AppButton>}
+        />
         <AppNotice tone="warn" line="Link a payout wallet to join a paid Blitz." />
-        <AppNotice line="Realms on your home screen: install it for one tap." />
-      </div>
-    }
-    today={
-      <div className="flex w-full flex-col gap-2">
-        <Notice icon="network-off" line="Offline" verb="Try again" onVerb={() => undefined} ember />
-        <Notice
+        <AppNotice
           icon="download"
           line="Realms on your home screen"
-          verb="Install"
-          onVerb={() => undefined}
-          onLater={() => undefined}
+          actions={
+            <>
+              <AppButton kind="quiet">Later</AppButton>
+              <AppButton kind="secondary">Install</AppButton>
+            </>
+          }
         />
       </div>
     }
@@ -690,14 +658,8 @@ const PortraitSection = () => (
 const PageHeadSection = () => (
   <Element
     name="Page head"
-    todayLabel={TODAY}
     rule="Back to where the page came from (Esc on a desktop), its title, and what it does at its end."
     sheet={<AppPageHead title="Settings" back="#" aside={<AppChip>Signed in with Discord</AppChip>} />}
-    today={
-      <Title level="page" as="p" shadow="title">
-        Settings
-      </Title>
-    }
   />
 );
 

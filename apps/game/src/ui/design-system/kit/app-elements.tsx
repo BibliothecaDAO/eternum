@@ -496,28 +496,30 @@ export const AppFigure = ({
   </span>
 );
 
-/** Something the page must say: its line, why, and Try again where trying again can help. */
+/**
+ * Something the page must say: its icon where one tells it at a glance, its line, why, and what the player can do about
+ * it (Try again where trying again can help; Update, Later).
+ */
 export const AppNotice = ({
   tone,
+  icon,
   line,
   why,
-  retry,
+  actions,
 }: {
   tone?: Tone;
+  icon?: IconMeaning;
   line: string;
-  why?: string;
-  retry?: () => void;
+  why?: ReactNode;
+  actions?: ReactNode;
 }) => (
   <div className="app-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
+    {icon && <Icon name={icon} size={22} />}
     <span className="app-notice__words">
       <span>{line}</span>
       {why && <span className="app-notice__why">{why}</span>}
     </span>
-    {retry && (
-      <AppButton kind="secondary" onClick={retry}>
-        Try again
-      </AppButton>
-    )}
+    {actions}
   </div>
 );
 

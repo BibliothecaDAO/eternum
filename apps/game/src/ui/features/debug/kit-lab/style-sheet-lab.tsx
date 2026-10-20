@@ -5,7 +5,6 @@ import { Icon } from "@/ui/design-system/icon";
 import AtomButton from "@/ui/design-system/atoms/button";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Button as KitButton } from "@/ui/design-system/kit/button";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
@@ -55,7 +54,6 @@ import {
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { Notice } from "@/ui/design-system/kit/notice";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
@@ -437,9 +435,6 @@ const ButtonsSection = () => (
     }
     today={
       <>
-        <KitButton role="primary" word="Deploy" />
-        <KitButton role="secondary" word="Transfer" />
-        <KitButton role="outline" word="Cancel" />
         {(["default", "primary", "gold", "outline", "secondary", "success", "red", "danger", "opaque"] as const).map(
           (variant) => (
             <AtomButton key={variant} variant={variant}>
@@ -1420,7 +1415,6 @@ const EventsSection = ({ store }: { store: NativeFactStore }) => (
         {eventStories(store).map((event) => (
           <FeedRowLine key={event.id} event={event} />
         ))}
-        <Notice icon="wheat" line="Storage full" verb="Spend" onVerb={() => undefined} />
       </div>
     }
   />
@@ -1502,7 +1496,7 @@ const SheetSection = () => (
       <div className={SHEET_FRAME}>
         <KitSheet label="Refill" onClose={() => undefined}>
           <h2 className="frontier-title">Refill</h2>
-          <KitButton role="primary" word="Refill" />
+          <HudButton kind="primary">Refill</HudButton>
         </KitSheet>
       </div>
     }

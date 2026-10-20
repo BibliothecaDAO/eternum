@@ -1,25 +1,21 @@
 import { act, StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Button } from "./button";
 import { ClockLine } from "./clock-line";
 import { clockLineText } from "./clock-text";
 import { DayDial } from "./day-dial";
 import { ListRow } from "./list-row";
-import { Notice } from "./notice";
 import { Pill } from "./pill";
 import { Portrait } from "./portrait";
-import { ReasonPlate } from "./reason-plate";
 import { shortfallLine } from "./reasons";
 import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
 import { TierChip } from "./tier-chip";
-import { Title } from "./title";
 
 const text = (markup: string) => new DOMParser().parseFromString(markup, "text/html").body.textContent ?? "";
 
@@ -70,52 +66,11 @@ describe("stores and prices", () => {
   });
 });
 
-describe("Button", () => {
-  it("runs its verb, and while the action is under way shows the step's word and takes no second tap", () => {
-    const onClick = vi.fn();
-    act(() => root.render(<Button role="primary" word="Deploy" onClick={onClick} />));
-    const button = host.querySelector("button")!;
-    expect(button.textContent).toBe("Deploy");
-    act(() => button.click());
-    expect(onClick).toHaveBeenCalledTimes(1);
-
-    act(() => root.render(<Button role="primary" word="Deploy" loading="Deploying…" onClick={onClick} />));
-    expect(button.textContent).toBe("Deploying…");
-    expect(button.disabled).toBe(true);
-    act(() => button.click());
-    expect(onClick).toHaveBeenCalledTimes(1);
-  });
-
-  it("given a route, leads there after its verb has run", () => {
-    const order: string[] = [];
-    const Here = () => {
-      order.push(`at ${useLocation().pathname}`);
-      return null;
-    };
-    act(() =>
-      root.render(
-        <MemoryRouter initialEntries={["/nowhere"]}>
-          <Button role="primary" word="Play" to="/" onClick={() => order.push("verb")} />
-          <Here />
-        </MemoryRouter>,
-      ),
+describe("a shortfall's line", () => {
+  it("names what is counted, with the exact wait", () => {
+    expect(shortfallLine({ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 })).toBe(
+      "Needs 15K labor, have 9,640 · in 10h 44m",
     );
-    act(() => host.querySelector("button")!.click());
-    expect(order).toEqual(["at /nowhere", "verb", "at /"]);
-  });
-});
-
-describe("ReasonPlate", () => {
-  it("says a shortfall in one line that names what is counted, with the exact wait, and the step beside it", () => {
-    const plate = text(
-      renderToStaticMarkup(
-        <ReasonPlate
-          reason={{ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 }}
-          step={<Button role="primary" word="Map" />}
-        />,
-      ),
-    );
-    expect(plate).toBe("Needs 15K labor, have 9,640 · in 10h 44mMap");
   });
 
   it("counts what is free, or a store's own limit, in the same line", () => {
@@ -131,35 +86,14 @@ describe("ReasonPlate", () => {
   });
 
   it("never reads a shortfall as met where both sides round alike", () => {
-    const plate = (held: number, need: number) =>
-      text(renderToStaticMarkup(<ReasonPlate reason={{ kind: "short", of: "labor", held, need }} />));
-    expect(plate(28.1, 28.15)).toBe("Needs 28.2 labor, have 28.1");
-    expect(plate(12_440, 12_449)).toBe("Needs 12,449 labor, have 12,440");
-    expect(plate(0.555, 0.556)).toBe("Needs 0.556 labor, have 0.555");
+    const line = (held: number, need: number) => shortfallLine({ kind: "short", of: "labor", held, need });
+    expect(line(28.1, 28.15)).toBe("Needs 28.2 labor, have 28.1");
+    expect(line(12_440, 12_449)).toBe("Needs 12,449 labor, have 12,440");
+    expect(line(0.555, 0.556)).toBe("Needs 0.556 labor, have 0.555");
   });
 
   it("names what failed in one line", () => {
-    const plate = text(
-      renderToStaticMarkup(<ReasonPlate reason={{ kind: "failed", line: "Season did not answer." }} />),
-    );
-    expect(plate).toBe("Season did not answer.");
-  });
-});
-
-describe("Notice", () => {
-  it("runs its verb, and offers Later only when it can be put off", () => {
-    const onVerb = vi.fn();
-    const onLater = vi.fn();
-    act(() => root.render(<Notice icon="network-off" line="Offline" verb="Try again" onVerb={onVerb} ember />));
-    expect(host.querySelectorAll("button")).toHaveLength(1);
-    act(() => host.querySelector("button")!.click());
-    expect(onVerb).toHaveBeenCalled();
-
-    act(() =>
-      root.render(<Notice icon="network-off" line="Update ready" verb="Update" onVerb={onVerb} onLater={onLater} />),
-    );
-    act(() => host.querySelector("button")!.click());
-    expect(onLater).toHaveBeenCalled();
+    expect(shortfallLine({ kind: "failed", line: "Season did not answer." })).toBe("Season did not answer.");
   });
 });
 
@@ -191,31 +125,6 @@ describe("Pill", () => {
         </Pill>,
       ),
     ).toContain("bg-kit-red");
-  });
-});
-
-describe("Title", () => {
-  it("is the element the page's outline needs, in its words", () => {
-    expect(renderToStaticMarkup(<Title level="page">Season 3</Title>)).toMatch(/^<h1 [^>]*>Season 3<\/h1>$/);
-    expect(
-      renderToStaticMarkup(
-        <Title level="countdown" as="span">
-          0:59:12
-        </Title>,
-      ),
-    ).toMatch(/^<span [^>]*>0:59:12<\/span>$/);
-  });
-
-  it("takes a site's own size in place of its level's, never both", () => {
-    const name = renderToStaticMarkup(
-      <Title level="plate" as="h2" className="text-[30px] leading-none">
-        Ysabeau
-      </Title>,
-    );
-    expect(name).toContain("text-[30px]");
-    expect(name).toContain("leading-none");
-    expect(name).not.toContain("text-[34px]");
-    expect(name).not.toContain("leading-tight");
   });
 });
 

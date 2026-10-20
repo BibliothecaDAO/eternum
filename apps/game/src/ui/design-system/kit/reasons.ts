@@ -23,7 +23,7 @@ export type Reason =
     }
   | { kind: "failed"; line: string };
 
-export const COUNTED: Record<Counted, { word: string; icon?: IconMeaning }> = {
+const COUNTED: Record<Counted, { word: string; icon?: IconMeaning }> = {
   ...PRICE_FACES,
   population: { word: POPULATION, icon: "person" },
 };

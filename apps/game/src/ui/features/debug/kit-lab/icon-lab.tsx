@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, iconMeanings, type IconMeaning } from "@/ui/design-system/icon-meaning";
 import { ActionTile } from "@/ui/features/world/containers/left-facets/structure-actions-panel";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { RealmLevelIcons, RealmHexFillComparison } from "./realm-level-icons";
 import { IconMinimap } from "./icon-minimap";
 import "./icon-lab.css";
@@ -68,13 +68,14 @@ export function IconLab() {
             />
           ))}
           {(["move", "settings"] satisfies IconMeaning[]).map((name) => (
-            <Button
+            <HudButton
               key={name}
-              role="secondary"
-              word={iconDefinition(name).label}
+              kind="secondary"
               icon={name}
               onClick={() => setAction(`${iconDefinition(name).label} selected`)}
-            />
+            >
+              {iconDefinition(name).label}
+            </HudButton>
           ))}
         </div>
         <p role="status">{action}</p>

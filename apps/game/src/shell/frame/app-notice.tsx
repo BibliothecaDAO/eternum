@@ -4,8 +4,8 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useInstall } from "@/pwa/install-state";
 import { usePwaUpdate } from "@/pwa/pwa-update-prompt";
 import { appQueryClient } from "@/runtime/query-client";
-import { Notice } from "@/ui/design-system/kit/notice";
-import { OFFLINE, TRY_AGAIN, APP_STATE_WORDS } from "@/ui/design-system/kit/words";
+import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
+import { OFFLINE, TRY_AGAIN, APP_STATE_WORDS, LATER } from "@/ui/design-system/kit/words";
 
 /** Later on the install notice puts it off for a week, on this browser only. */
 const INSTALL_LATER_KEY = "realms.install-later-until";
@@ -59,40 +59,63 @@ export const useAppNotice = ({ offersInstall }: { offersInstall: boolean }) => {
 
   if (!online)
     return (
-      <Notice
+      <AppNotice
+        tone="bad"
         icon="network-off"
         line={OFFLINE}
-        verb={TRY_AGAIN}
-        onVerb={() => void appQueryClient.refetchQueries()}
-        ember
+        actions={
+          <AppButton kind="secondary" onClick={() => void appQueryClient.refetchQueries()}>
+            {TRY_AGAIN}
+          </AppButton>
+        }
       />
     );
   if (update.ready)
     return (
-      <Notice
+      <AppNotice
         icon="refresh"
         line={APP_STATE_WORDS.updateReady}
-        verb={APP_STATE_WORDS.update}
-        loading={updating || update.waiting ? APP_STATE_WORDS.updating : undefined}
-        onVerb={() => {
-          setUpdating(true);
-          void update.update().finally(() => setUpdating(false));
-        }}
-        onLater={update.later}
+        actions={
+          <>
+            <AppButton kind="quiet" onClick={update.later}>
+              {LATER}
+            </AppButton>
+            <AppButton
+              kind="secondary"
+              busy={updating || update.waiting ? APP_STATE_WORDS.updating : undefined}
+              onClick={() => {
+                setUpdating(true);
+                void update.update().finally(() => setUpdating(false));
+              }}
+            >
+              {APP_STATE_WORDS.update}
+            </AppButton>
+          </>
+        }
       />
     );
   // Install is offered once the player has an account, never to a first visit.
   if (offersInstall && session && !install.installed && !installLater)
     return (
-      <Notice
+      <AppNotice
         icon="download"
         line={APP_STATE_WORDS.onHomeScreen}
-        verb={APP_STATE_WORDS.install}
-        onVerb={() => void install.install()}
-        onLater={() => {
-          putInstallOff();
-          setInstallLater(true);
-        }}
+        actions={
+          <>
+            <AppButton
+              kind="quiet"
+              onClick={() => {
+                putInstallOff();
+                setInstallLater(true);
+              }}
+            >
+              {LATER}
+            </AppButton>
+            <AppButton kind="secondary" onClick={() => void install.install()}>
+              {APP_STATE_WORDS.install}
+            </AppButton>
+          </>
+        }
       />
     );
   return null;

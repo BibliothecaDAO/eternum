@@ -1,6 +1,5 @@
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { Notice } from "@/ui/design-system/kit/notice";
-import { HudChip } from "@/ui/design-system/kit/hud-elements";
+import { HudChip, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import {
   BARRACKS,
   CASTLE,
@@ -998,7 +997,7 @@ export const HudLab = () => {
         }
         stage={lab.lastHour && <LastHourBubble troopsOut={6_021} returned={470} tiersToBuy={2} />}
         nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} />}
-        notices={lab.offline && <Notice icon="network-off" line={OFFLINE} verb={TRY_AGAIN} onVerb={noop} ember />}
+        notices={lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
         action={
           <>
             {lab.realmView === "full" && (

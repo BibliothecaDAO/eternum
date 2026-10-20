@@ -12,7 +12,6 @@ import { useAppNotice } from "./app-notice";
 import { EnvEdge } from "./env-mark";
 import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
-import { Title } from "@/ui/design-system/kit/title";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { DesktopBar, TabBar } from "./tabs";
@@ -144,10 +143,6 @@ const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (
     >
       <SemanticIcon name="arrow-left" size={26} />
     </Link>
-    {title ? (
-      <Title level="page-phone" className="truncate">
-        {title}
-      </Title>
-    ) : null}
+    {title ? <h1 className="truncate text-app-title text-app-ink">{title}</h1> : null}
   </>
 );

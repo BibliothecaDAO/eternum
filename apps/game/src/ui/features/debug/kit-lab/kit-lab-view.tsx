@@ -1,20 +1,16 @@
-import { formatCountdown } from "@bibliothecadao/types";
-import { Button } from "@/ui/design-system/kit/button";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
 import { Kbd } from "@/ui/design-system/kit/kbd";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
-import { Notice } from "@/ui/design-system/kit/notice";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
-import { Title } from "@/ui/design-system/kit/title";
-import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
+import { YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
@@ -87,14 +83,10 @@ const Components = () => {
         <Link to="/lab/kit/construction">Construction models</Link>
         <ClockSection />
         <StoresSection />
-        <ButtonsSection />
         <PillsSection />
-        <ReasonsSection />
-        <NoticesSection />
         <TiersSection />
         <SeasonSection />
         <SheetSection />
-        <TitlesSection />
         <PortraitsSection />
         <ClockChipsSection />
         <ListRowsSection />
@@ -110,35 +102,6 @@ const Section = ({ title, children }: { title: string; children: ReactNode }) =>
     </h2>
     {children}
   </section>
-);
-
-const TitlesSection = () => (
-  <Section title="Title">
-    <Title level="page" as="p" shadow="title">
-      Season 3
-    </Title>
-    <Title level="page-phone" as="p">
-      Profile
-    </Title>
-    <Title level="plate" as="p">
-      Sign in
-    </Title>
-    <Title level="hero" as="p">
-      The mist lifted
-    </Title>
-    <Title level="card" as="p">
-      Blitz 1630
-    </Title>
-    <Title level="countdown" as="p">
-      0:59:12
-    </Title>
-    <Title level="headline" face="body" as="p">
-      Realm of Ysabeau
-    </Title>
-    <Title level="header" face="body" as="p">
-      Season
-    </Title>
-  </Section>
 );
 
 const PortraitsSection = () => (
@@ -172,9 +135,6 @@ const ClockChipsSection = () => (
       <ClockChip prefix="opens" at={ENDS_AT + 30 * HOUR} now={NOW} />
       <ClockChip prefix={null} at={NOW - 30 * HOUR} now={NOW} />
     </div>
-    <Title level="countdown" as="p">
-      {formatCountdown(59 * 60 + 12)}
-    </Title>
   </Section>
 );
 
@@ -188,7 +148,11 @@ const ListRowsSection = () => (
         title="Blitz 1630"
         line={<span className="font-body text-sm text-kit-muted">Starts 16:30 · in 2h 4m</span>}
         spaced
-        trailing={<Button role="secondary" word="Join" />}
+        trailing={
+          <HudButton kind="secondary" size="sm">
+            Join
+          </HudButton>
+        }
         className="py-3"
       />
       <ListRow
@@ -245,23 +209,6 @@ const StoresSection = () => (
   </Section>
 );
 
-const ButtonsSection = () => (
-  <Section title="Button">
-    <Button role="primary" word="Deploy" />
-    <Button role="primary" word="Deploy" loading="Deploying…" />
-    <div className="flex gap-2">
-      <Button role="outline" word="Cancel" className="w-[104px]" />
-      <Button role="primary" word="Explore" className="flex-1" />
-    </div>
-    <div className="flex gap-2">
-      <Button role="secondary" word="Refill" className="flex-1" />
-      <Button role="primary" word="Upgrade" className="flex-1" />
-    </div>
-    {/* `to`: a verb that leads to a route (Play on an unknown page, a card's Enter). */}
-    <Button role="secondary" word="Tokens" icon="play" to="/lab/kit/tokens" />
-  </Section>
-);
-
 const PillsSection = () => (
   <Section title="Pill">
     {/* On a painting: a state, a clock, the icon alone, a game under way. */}
@@ -294,37 +241,6 @@ const PillsSection = () => (
     </div>
   </Section>
 );
-
-const ReasonsSection = () => (
-  <Section title="ReasonPlate">
-    <ReasonPlate
-      reason={{ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 }}
-      step={<Button role="primary" word="Map" className="w-[104px]" />}
-    />
-    <ReasonPlate reason={{ kind: "short", of: "lords", held: 40, need: 60 }} />
-    <ReasonPlate
-      reason={{ kind: "failed", line: "Season did not answer." }}
-      step={<Button role="outline" word={TRY_AGAIN} />}
-    />
-  </Section>
-);
-
-const NoticesSection = () => {
-  const [trying, setTrying] = useState(false);
-  return (
-    <Section title="Notice">
-      <Notice
-        icon="network-off"
-        line={OFFLINE}
-        verb={TRY_AGAIN}
-        loading={trying ? "Trying…" : undefined}
-        onVerb={() => setTrying(true)}
-        ember
-      />
-      <Notice icon="refresh" line="Update ready" verb="Update" onVerb={() => undefined} onLater={() => undefined} />
-    </Section>
-  );
-};
 
 const TiersSection = () => (
   <Section title="TierChip">
@@ -373,13 +289,17 @@ const SheetSection = () => {
   const [open, setOpen] = useState(false);
   return (
     <Section title="Sheet">
-      <Button role="secondary" word="Menu" onClick={() => setOpen(true)} />
+      <HudButton kind="secondary" onClick={() => setOpen(true)}>
+        Menu
+      </HudButton>
       {open && (
         <Sheet label="Menu" onClose={() => setOpen(false)}>
           <p className="frontier-title">Menu</p>
           <div className="flex gap-2">
-            <Button role="secondary" word="Exit" className="w-[130px]" />
-            <Button role="primary" word="Resume" className="flex-1" onClick={() => setOpen(false)} />
+            <HudButton kind="secondary">Exit</HudButton>
+            <HudButton kind="primary" onClick={() => setOpen(false)}>
+              Resume
+            </HudButton>
           </div>
         </Sheet>
       )}

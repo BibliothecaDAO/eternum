@@ -5,8 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { Button } from "./button";
-import { HudChip } from "./hud-elements";
+import { HudButton, HudChip } from "./hud-elements";
 import { TierChip } from "./tier-chip";
 
 let host: HTMLDivElement;
@@ -47,7 +46,7 @@ const mount = (onClick = () => undefined) =>
           </HudChip>
         </button>
         <TierChip tier={1} showWord />
-        <Button role="primary" word="Deploy" />
+        <HudButton kind="primary">Deploy</HudButton>
         <span data-testid="store" data-tip="Wheat 1,771 of 6,000 · +302 an hour · Full in 14h">
           1,771
         </span>

@@ -285,7 +285,12 @@
 .app-bar__end > [data-band="notice"] {
   min-width: 0;
 }
-.app-bar__end > [data-band="notice"] :is([role="status"], [role="alert"]) > span {
+/* In the bar a notice keeps to the bar's height: its frame closer around its line and its verbs. */
+.app-bar__end > [data-band="notice"] > .app-notice {
+  gap: theme(spacing.2);
+  padding: theme(spacing.1) theme(spacing.1) theme(spacing.1) theme(spacing.3);
+}
+.app-bar__end > [data-band="notice"] .app-notice__words > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
