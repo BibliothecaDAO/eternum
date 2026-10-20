@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { mountStaticLineup, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
-import { BEAST_NAMES } from "@/ui/design-system/kit/words";
+import { BEAST_NAMES, RUIN } from "@/ui/design-system/kit/words";
 import { SITE_CONCEPTS, SITE_STUDIES, MIST_STRESS_SITES } from "./frontier-site-studies";
 import "./workshop-model-lab.css";
 import "./frontier-site-lab.css";
@@ -121,7 +121,7 @@ export function FrontierSiteLab() {
             <option value="lineup">Whole map</option>
             {lineup.map((site, i) => (
               <option key={i} value={i}>
-                {site.label}
+                {site.label || `${RUIN} ${i + 1}`}
               </option>
             ))}
           </select>

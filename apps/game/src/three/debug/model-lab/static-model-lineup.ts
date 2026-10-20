@@ -59,6 +59,7 @@ export async function mountStaticLineup(
   }[] = [];
   container.classList.add("model-lineup");
   const labels = lineup.map((asset) => {
+    if (!asset.label) return null;
     const label = document.createElement("div");
     label.className = "model-lineup-label";
     label.textContent = asset.label.replace(" · ", "\n");
@@ -68,6 +69,7 @@ export async function mountStaticLineup(
   const projected = new Vector3();
   const placeLabels = () => {
     labels.forEach((label, index) => {
+      if (!label) return;
       projected.copy(positions[index]).project(camera);
       label.hidden = (current.focus !== "lineup" && current.focus !== index) || Math.abs(projected.z) > 1;
       label.style.left = `${((projected.x + 1) / 2) * container.clientWidth}px`;
@@ -105,7 +107,7 @@ export async function mountStaticLineup(
     sampling = undefined;
     cancelAnimationFrame(frame);
     observer.disconnect();
-    labels.forEach((label) => label.remove());
+    labels.forEach((label) => label?.remove());
     controls.dispose();
     models.forEach((model) => model.dispose());
     environment.dispose();

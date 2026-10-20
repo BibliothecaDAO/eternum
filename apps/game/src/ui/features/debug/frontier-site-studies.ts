@@ -51,6 +51,7 @@ export const SITE_STUDIES = [
 
 export const MIST_STRESS_SITES: readonly LineupAsset[] = Array.from({ length: 100 }, (_, index) => ({
   ...site(`ruin-${index}`, BEAST_NAMES[FALLEN_REALM_DEPTHS[index % 4].beast], StructureType.Ruin, index % 4),
+  label: "",
   position: { x: ((index % 10) - 4.5) * Math.sqrt(3), z: (Math.floor(index / 10) - 4.5) * 1.5 },
 }));
 export const SITE_CONCEPTS = ["wraith", "ammit", "basilisk", "dark-fey"] as const;
