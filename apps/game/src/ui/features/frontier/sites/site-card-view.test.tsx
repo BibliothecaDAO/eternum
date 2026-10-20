@@ -133,6 +133,29 @@ describe("a guarded site's card", () => {
 });
 
 describe("a guarded site's card with no army chosen", () => {
+  it("keeps a named ruin's distinct kind and guard species beside its strength", () => {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Ruin"
+          name="North Watch"
+          beast={{ name: "Basilisk", beast: "basilisk", combatClass: "Knight" }}
+          army={null}
+          guard={1_100}
+          fight={undefined}
+          pay={null}
+          xp={undefined}
+          verb={null}
+          choices={[{ label: "Army 1", ...army, fight: undefined, onPick: () => {} }]}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const card = document.querySelector("section[aria-label='North Watch']")!;
+    expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1,100");
+  });
+
   it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {
     const onPick = vi.fn();
     act(() =>

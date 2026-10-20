@@ -117,7 +117,7 @@ export const SiteCardView = ({
       <header className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2">
           <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
-          {name && <span className="text-hud-label text-hud-muted">{kind}</span>}
+          {name && kind !== beast?.name && <span className="text-hud-label text-hud-muted">{kind}</span>}
         </span>
         {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>

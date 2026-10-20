@@ -148,11 +148,12 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toContain("Troll");
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
       expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
       act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+      expect(card!.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(button("Attack")?.disabled).toBe(false);
       await act(async () => button("Attack")!.click());
       expect(attack).toHaveBeenCalledWith(expect.objectContaining({ explorer_id: 201, structure_id: SITE }));
@@ -165,7 +166,12 @@ describe("the tile card", () => {
     setEntityNameLocalStorage(SITE, "North Watch");
     const { host, unmount } = renderCard("beside");
     try {
-      expect(host.querySelector('section[aria-label="North Watch"]')).not.toBeNull();
+      const card = host.querySelector('section[aria-label="North Watch"]')!;
+      expect(card).not.toBeNull();
+      expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
+      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Troll1,100");
+      expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
+      expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
       unmount();
       localStorage.removeItem(`entity-name-${SITE}`);
