@@ -547,7 +547,7 @@ export class StructureManager {
     if (renderable.clearedSite) {
       return {
         entityId: renderable.entityId,
-        structureName: structureName(renderInfo.type),
+        structureName: siteDisplayName(renderable.entityId),
         hexCoords: {
           col: renderable.hexCoords.col - FELT_CENTER(),
           row: renderable.hexCoords.row - FELT_CENTER(),

@@ -30,9 +30,10 @@ export const fightLogLine = (
   );
 };
 
+/** The site by its expedition row, which outlives the Structure its clear removes. */
 const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {
-  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
-  const kind = structure && StructureType[structure.base.category];
+  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
+  const kind = site && StructureType[site.category];
   if (!kind || !(kind in TARGET_MARKS)) return null;
   const beast = readFrontierBeast(store, configManager.getActiveGameId(), Number(entityId));
   const word = attackTargetName(kind as keyof typeof TARGET_MARKS, beast ?? undefined);

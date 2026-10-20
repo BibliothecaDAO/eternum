@@ -23,7 +23,7 @@ import {
   wholePoints,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
-import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
+import { displayPlayerName, getStructureName, siteDisplayName, type PlayerNameResolver } from "../utils/entities";
 import { readExpeditionRules } from "../utils/expeditions";
 import { readFrontierBeast } from "../utils/frontier-beast";
 import { Position } from "./position";
@@ -202,9 +202,12 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const label = frontierSiteName(category);
     const reward = payload.reward === null ? "XP only" : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
+    const siteId = toNumber(payload.site_id);
+    if (siteId === null) throw new Error("Site payout story names no site");
+    // The site's Structure goes with its clear; its id names it, as the receipt and the map do.
     return {
-      title: `${label} cleared`,
-      description: joinPieces([describeExplorer(payload.explorer_id, components), reward]),
+      title: `${siteDisplayName(siteId)} cleared`,
+      description: joinPieces([label, describeExplorer(payload.explorer_id, components), reward]),
       icon: "prize",
     };
   },

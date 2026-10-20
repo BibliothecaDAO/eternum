@@ -1,4 +1,4 @@
-import { RELICS, relicChestRelics, StructureType } from "@bibliothecadao/types";
+import { RELICS, relicChestRelics, siteName, StructureType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -244,7 +244,7 @@ it("shows the tier an Upgrade reached and the XP it cost from history", () => {
   ).toMatchObject({ title: "Logistics rare", description: "Army · 200 XP" });
 });
 
-it("renders the site's recorded kind and payout without a current structure", () => {
+it("names a cleared site by its map name, with its recorded kind and payout, without a current structure", () => {
   const result = buildStoryEventPresentation(
     story("SitePayout", {
       structure_id: 3,
@@ -254,8 +254,8 @@ it("renders the site's recorded kind and payout without a current structure", ()
       reward: { resource_type: 23, amount: "500000000000" },
     }),
   );
-  expect(result.title).toBe("Troll cleared");
-  expect(result.description).toContain("500");
+  expect(result.title).toBe(`${siteName(9)} cleared`);
+  expect(result.description).toMatch(/^Troll · Army · .*500/);
   expect(
     buildStoryEventPresentation(
       story("SitePayout", {
@@ -266,7 +266,26 @@ it("renders the site's recorded kind and payout without a current structure", ()
         reward: null,
       }),
     ),
-  ).toMatchObject({ title: "Beasts cleared", description: "Army · XP only" });
+  ).toMatchObject({ title: `${siteName(9)} cleared`, description: "Beasts · Army · XP only" });
+  // The name its holder gave it, as the rename control writes it.
+  const named = vi
+    .spyOn(localStorage, "getItem")
+    .mockImplementation((key: string) => (key === "entity-name-9" ? "North Watch" : null));
+  try {
+    expect(
+      buildStoryEventPresentation(
+        story("SitePayout", {
+          structure_id: 3,
+          explorer_id: 7,
+          site_id: 9,
+          category: StructureType.Camp,
+          reward: null,
+        }),
+      ).title,
+    ).toBe("North Watch cleared");
+  } finally {
+    named.mockRestore();
+  }
 });
 
 describe("every story the chain can tell", () => {

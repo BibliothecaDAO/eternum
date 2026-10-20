@@ -54,7 +54,8 @@ export const useSelectionCard = ({
     closeSelectedTile();
     setSelectedBuildingHex(null);
   };
-  // The result stands in the target's card: closing it (its close, Escape) closes the card, not back to before the fight.
+  // The result stands in the target's card, under the card's name: closing it (its close, Escape) closes the card, not
+  // back to before the fight.
   const closeFight = () => {
     closeFightResult();
     close();
@@ -64,7 +65,10 @@ export const useSelectionCard = ({
   if (fight)
     return card(
       "fight",
-      <HudSheet label={attackTargetName(fight.site, fight.guardIdentity)} onClose={closeFight}>
+      <HudSheet
+        label={fight.site === "Army" ? attackTargetName(fight.site) : siteDisplayName(fight.targetId)}
+        onClose={closeFight}
+      >
         <FightResultCard result={fight} onClose={closeFight} />
       </HudSheet>,
     );

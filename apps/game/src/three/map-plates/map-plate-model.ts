@@ -37,6 +37,7 @@ export interface ArmyPlate {
 export interface StructurePlate {
   kind: "structure";
   relation: PlateRelation;
+  /** Whose it is; empty for a cleared Frontier site, which nobody holds once its guard falls. */
   owner: string;
   /** The standing guard species, shown as the title above its strength. */
   beast?: string;
@@ -135,7 +136,7 @@ export const buildStructurePlate = (
   return {
     kind: "structure",
     relation: relationOf(structure),
-    owner: ownerOf(structure.owner),
+    owner: structure.clearedSite ? "" : ownerOf(structure.owner),
     beast: structure.frontierBeast?.name,
     name: structure.clearedSite
       ? `${frontierSiteName(structure.structureType)} · Cleared`

@@ -638,8 +638,10 @@ To regenerate only the Workshop thumbnail with the shared 85% fill normalizer:
 ## Cleared Frontier sites
 
 On the world map, win the adjacent fight at a guarded site. Its standard replaces the structure; select that tile to
-read the credited resource and XP, including with an army standing there. The normal Move order enters the cleared tile.
-The receipt remains after a snapshot reload. Yesterday’s sites leave the current region with the new day.
+read the credited resource and XP, including with an army standing there. The fight's result sheet, the receipt, the
+tile's plate (no holder: nobody owns a cleared site) and the clear's line in Events all name the site by its map name.
+The normal Move order enters the cleared tile. The receipt remains after a snapshot reload. Yesterday’s sites leave the
+current region with the new day.
 
 `/lab/models?family=cleared-sites&rendererMode=webgpu-force-webgl` compares the production standard with the standing
 camp and beasts, at gameplay and detail distance. Both use the game renderer; the selected standard uses the production

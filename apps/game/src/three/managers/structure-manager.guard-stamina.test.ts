@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { StructureType, TileOccupier } from "@bibliothecadao/types";
+import { siteName, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { Vector3 } from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +9,7 @@ import preset from "../../../../../contracts/l3/world-native/tests/fixtures/curr
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import type { StructurePlate } from "../map-plates/map-plate-model";
+import { plateRows } from "../map-plates/map-plate-rows";
 import { CameraView } from "../scenes/camera-view";
 import { StructureManager } from "./structure-manager";
 import { campBeside, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
@@ -162,5 +163,41 @@ it("presents a cleared standard from its receipt after the structure and guard a
     ownerAddress: 0n,
     structureType: StructureType.Camp,
   });
+  projection.dispose();
+});
+
+it("names a cleared site on its plate by the name every reader gives it, held by nobody", () => {
+  const { store, site } = campBeside();
+  store.applyFacts([
+    {
+      model: "ExpeditionSite",
+      key: "0x72",
+      value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
+    },
+    { model: "Structure", key: "0x71", value: null },
+    { model: "Guard", key: "0x73", value: null },
+  ]);
+  const projection = new WorldSpatialProjection({ store });
+  projection.start();
+  const plates: StructurePlate[] = [];
+  const manager = Object.assign(Object.create(StructureManager.prototype), {
+    store,
+    worldSpatialProjection: projection,
+    structureInfoCache: new Map(),
+    unpresentableStructures: new Set(),
+    metrics: { structureInfoCacheHits: 0, structureInfoCacheMisses: 0, compactLabelsShown: 0 },
+    updateTimedLabelTracking: vi.fn(),
+    compactLabelIds: new Set([SITE]),
+    currentCameraView: CameraView.Medium,
+    resolveStructureCompactLabelPosition: () => new Vector3(),
+    requestVisibleStructuresRefreshForEntities: vi.fn(),
+    plates: { setLabel: vi.fn(({ plate }: { plate: StructurePlate }) => plates.push(plate)), removeLabel: vi.fn() },
+  }) as { refreshStructurePresentation(entityId: number): void };
+  chainAt(400);
+  manager.refreshStructurePresentation(SITE);
+  const said = plateRows(plates.at(-1)!, "open").map((row) =>
+    row.flatMap((segment) => ("text" in segment ? [segment.text] : [])),
+  );
+  expect(said).toEqual([[siteName(SITE), "Camp · Cleared"]]);
   projection.dispose();
 });

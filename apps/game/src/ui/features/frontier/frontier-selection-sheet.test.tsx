@@ -447,42 +447,47 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
 });
 
 it.each([
-  ["Camp", "Troll", "beast-troll"],
-  ["Beasts", "Wraith", "beast-wraith"],
-  ["Rift", "Rift", "beast-dark-fey"],
-] as const)("titles the %s result sheet and closes it on Escape", (site, name, art) => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store } = campBeside();
-  tiles.current = [];
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
-  fightEnded({
-    site,
-    guardIdentity: { name, art },
-    verdict: "guard-holds",
-    armyArt: "knight-t1",
-    army: { before: 1_000, after: 694 },
-    guard: { before: 1_000, after: 572 },
-    gained: null,
-  });
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  act(() =>
-    root.render(
-      <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-        <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
-      </GameProvider>,
-    ),
-  );
-  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(name);
+  ["Camp", "Troll", "beast-troll", siteName(SITE)],
+  ["Beasts", "Wraith", "beast-wraith", siteName(SITE)],
+  ["Rift", "Rift", "beast-dark-fey", siteName(SITE)],
+  ["Army", "Army", "attack", "Army"],
+] as const)(
+  "titles the %s result sheet as its card was, by the site's map name, and closes it on Escape",
+  (site, name, art, title) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store } = campBeside();
+    tiles.current = [];
+    useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
+    fightEnded({
+      targetId: SITE,
+      site,
+      guardIdentity: { name, art },
+      verdict: "guard-holds",
+      armyArt: "knight-t1",
+      army: { before: 1_000, after: 694 },
+      guard: { before: 1_000, after: 572 },
+      gained: null,
+    });
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+          <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
+        </GameProvider>,
+      ),
+    );
+    expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(title);
 
-  act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
 
-  expect(host.querySelector("[data-kit-sheet]")).toBeNull();
-  expect(useUIStore.getState().mapSelection).toEqual({
-    kind: "army",
-    entityId: 201,
-    tile: null,
-  });
-  act(() => root.unmount());
-  useUIStore.getState().selectOnMap(null);
-});
+    expect(host.querySelector("[data-kit-sheet]")).toBeNull();
+    expect(useUIStore.getState().mapSelection).toEqual({
+      kind: "army",
+      entityId: 201,
+      tile: null,
+    });
+    act(() => root.unmount());
+    useUIStore.getState().selectOnMap(null);
+  },
+);

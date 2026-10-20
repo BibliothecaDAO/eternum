@@ -68,6 +68,7 @@ describe("an attack's result, from the battle's own record", () => {
 
   it("says only that the army was lost when no record of the battle is known", () => {
     expect(lostArmyResult(SENT)).toEqual({
+      targetId: SITE,
       site: "Camp",
       verdict: "army-lost",
       armyArt: SENT.armyArt,

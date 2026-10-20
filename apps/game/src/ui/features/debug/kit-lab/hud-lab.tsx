@@ -531,6 +531,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     fight: {
+      targetId: 29,
       site: "Camp",
       verdict: "victory",
       armyArt: ARMY_CHIP.art,
@@ -544,6 +545,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     fight: {
+      targetId: 29,
       site: "Beasts",
       verdict: "guard-holds",
       armyArt: ARMY_CHIP.art,
@@ -557,6 +559,7 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     fight: {
+      targetId: 29,
       site: "Rift",
       verdict: "army-lost",
       armyArt: ARMY_CHIP.art,

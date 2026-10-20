@@ -26,7 +26,7 @@ describe("the day log's line for a fight", () => {
     expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe("Dark fey Rift: Victory, lost 68, guard 150 to 0");
   });
 
-  it("names a camp by its Troll once, including after a clear", () => {
+  it("names a camp by its Troll once, including after a clear removed its structure and guard", () => {
     const { store, site } = campBeside("Camp");
     expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe("Troll: Guard holds, lost 68, guard 334 to 150");
     store.applyFacts([
@@ -35,7 +35,9 @@ describe("the day log's line for a fight", () => {
         key: "0x72",
         value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward: null } },
       },
-    ]);
+      { model: "Structure", key: "0x71", value: null },
+      { model: "Guard", key: "0x73", value: null },
+    ] as never);
     expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe("Troll: Victory, lost 68, guard 150 to 0");
   });
 

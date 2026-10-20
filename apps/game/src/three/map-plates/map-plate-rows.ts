@@ -63,8 +63,9 @@ const siteRows = (plate: StructurePlate): PlateRow[] => {
   const holds = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
   const kind = plate.name === plate.beast ? undefined : plate.name;
+  const owner = plate.beast ? [plate.place, kind].filter(Boolean).join(" ") : plate.owner;
   const rows: PlateRow[] = [
-    [{ kind: "owner", text: plate.beast ? [plate.place, kind].filter(Boolean).join(" ") : plate.owner }],
+    owner ? [{ kind: "owner", text: owner }] : [],
     !plate.beast && plate.place ? [name, { kind: "word", text: plate.name }] : [name],
     [...(plate.guards ? guard(plate.guards) : []), ...holds, ...arriving],
   ];

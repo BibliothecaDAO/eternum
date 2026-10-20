@@ -34,6 +34,8 @@ export interface FightGain {
 
 /** What one attack did, for its result: each side before and after, and what a clear paid. */
 export interface FightResult {
+  /** The site attacked, or the other player's army: a site's sheet keeps the name its card had. */
+  targetId: number;
   site: AttackTargetKind;
   verdict: FightVerdict;
   armyArt: IconMeaning;
@@ -55,6 +57,7 @@ export const fightResultOf = (
 ): FightResult => {
   const verdict = fightVerdict({ army: army.after, guard: guard.after });
   return {
+    targetId: sent.targetId,
     site: sent.site,
     verdict,
     armyArt: sent.armyArt,
@@ -67,6 +70,7 @@ export const fightResultOf = (
 
 /** The one thing known of a fight with no record once the army's own row is gone: the army was lost. */
 export const lostArmyResult = (sent: FightSent): FightResult => ({
+  targetId: sent.targetId,
   site: sent.site,
   verdict: "army-lost",
   armyArt: sent.armyArt,
