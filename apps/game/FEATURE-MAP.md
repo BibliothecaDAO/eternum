@@ -13,7 +13,14 @@ when the opened tile is selected again. The proof command above enters the real 
 and its mounted HUD, selects through map clicks, and checks missing metadata, amount/expiry, Open, the retained receipt
 and an expired reservation. The selection-sheet tests cross the exact clock rollover. Route proof uses local reward
 facts, a fixture release catalogue and a non-signing command transport; it does not prove a live payout. Blitz retains
-its visual lab proof. Both renderer backends are checked.
+its visual lab proof. Both renderer backends are checked. The route waits for the mounted Guided rail and canvas; it
+frames the chest through the minimap's Position bridge before clicking its tile. `/lab/relic-chest?gameMode=frontier`
+holds its clock until **Advance to day rollover**; **Reset chest** restores the funded time.
+
+Frontier fight cards and Events share **Victory**, **Army lost** and **Guard holds**, with the encounter's beast
+species. A roaming beast's card is titled by its species; the fight result retains that species' portrait after the
+guard clears. Events names camps, rifts and beasts found on the revealed tile. A Frontier founding line names the
+settler without the realm's off-map settlement coordinate.
 
 ## Cleared-site standard
 

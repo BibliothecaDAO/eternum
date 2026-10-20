@@ -1,5 +1,7 @@
 import {
   BuildingType,
+  fightVerdict,
+  VERDICT_WORDS,
   BuildingTypeToString,
   formatCharge,
   formatClockTime,
@@ -18,7 +20,8 @@ import {
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { displayPlayerName, getStructureName, type PlayerNameResolver } from "../utils/entities";
-import { siteKindOf } from "../utils/expeditions";
+import { siteKindOf, readExpeditionRules } from "../utils/expeditions";
+import { readFrontierBeast } from "../utils/frontier-beast";
 import { Position } from "./position";
 import { getIsBlitz } from "../utils/utils";
 import { StoryEventSystemUpdate } from "./types";
@@ -67,7 +70,7 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
   ExplorationReward: (_event, payload, components) => ({
-    title: findLine("Explored", payload),
+    title: findLine(discoveryName(payload, components) ?? "Explored", payload),
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
     icon: "resource",
   }),
@@ -205,7 +208,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     return { title: "LORDS withdrawn", description: `${amount} LORDS to L2`, icon: "prize" };
   },
   RealmCreatedStory: (event, payload, components, resolvePlayerName) => {
-    const coord = formatCoord(payload.coord);
+    const coord =
+      components && readExpeditionRules(components, configManager.getActiveGameId())
+        ? undefined
+        : formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
     return {
       title: `${describeStructureName(event.entityId, components) ?? "A realm"} founded`,
@@ -247,12 +253,17 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   BattleEvent: (event, payload, store, resolvePlayerName) => {
     const attacker = payload.attacker as Record<string, unknown>;
     const defender = payload.defender as Record<string, unknown>;
-    const attackerName = nameOwner(attacker.player, store, resolvePlayerName);
-    const defenderName = nameOwner(defender.player, store, resolvePlayerName);
-    const outcome = battleOutcome(
-      { name: attackerName, standing: BigInt(String(attacker.after)) > 0n },
-      { name: defenderName, standing: BigInt(String(defender.after)) > 0n },
-    );
+    const attackerName =
+      fightBeast(payload.attacker_id, store)?.name ?? nameOwner(attacker.player, store, resolvePlayerName);
+    const defenderName =
+      fightBeast(payload.defender_id, store)?.name ?? nameOwner(defender.player, store, resolvePlayerName);
+    const frontier = store && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
+    const outcome = frontier
+      ? VERDICT_WORDS[fightVerdict({ army: BigInt(String(attacker.after)), guard: BigInt(String(defender.after)) })]
+      : battleOutcome(
+          { name: attackerName, standing: BigInt(String(attacker.after)) > 0n },
+          { name: defenderName, standing: BigInt(String(defender.after)) > 0n },
+        );
     const side = (label: string, value: Record<string, unknown>) => [
       `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
@@ -261,7 +272,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     ];
     const sides = `${attackerName ?? "Attacker"} vs ${defenderName ?? "Defender"}`;
     // The viewer's own loss leads: who won is then plain, and the army it cost is what they need to read.
-    const lost = lostArmyLine(payload, event.viewerAddress ?? null);
+    const lost = frontier ? null : lostArmyLine(payload, event.viewerAddress ?? null);
     return {
       title: lost ? `${lost} · ${sides}` : `${sides} · ${outcome}`,
       description: joinPieces([
@@ -764,4 +775,25 @@ function nameOwner(
   if (owner === undefined || owner === null) return undefined;
   if (typeof owner === "string" && owner.startsWith("0x")) return displayPlayerName(owner, resolvePlayerName?.(owner));
   return components ? (describeStructureName(owner, components) ?? undefined) : undefined;
+}
+
+/** Encounter identity survives cleared guards and removed occupancy. */
+function fightBeast(entityId: unknown, store?: NativeFactStore) {
+  const id = toNumber(entityId);
+  return store && id !== null ? readFrontierBeast(store, configManager.getActiveGameId(), id) : undefined;
+}
+
+/** The revealed tile's retained site, not an army's later position or a guess from the reward. */
+function discoveryName(payload: Record<string, unknown>, store?: NativeFactStore): string | undefined {
+  if (!store || !payload.coord || typeof payload.coord !== "object") return undefined;
+  const coord = payload.coord as Record<string, unknown>;
+  const site = [...store.inGame("ExpeditionSite", configManager.getActiveGameId())].find(
+    (site) => site.col === toNumber(coord.x) && site.row === toNumber(coord.y) && site.alt === coord.alt,
+  );
+  if (!site) return undefined;
+  const structure = readStructure(site.entity_id, store);
+  if (!structure) return undefined;
+  const beast = fightBeast(site.entity_id, store);
+  const kind = siteKindOf(structure.base.category);
+  return `${beast?.name ?? ""}${kind === "Beasts" ? "" : ` ${kind}`} found`.trim();
 }

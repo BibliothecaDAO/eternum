@@ -64,3 +64,14 @@ export const AGES = {
   eternum: { game: "Eternum", age: "Age III" },
 } as const;
 export const ageLine = (game: keyof typeof AGES): string => `${AGES[game].game} · ${AGES[game].age}`;
+
+export const BEAST_NAMES = {
+  troll: "Troll",
+  wyvern: "Wyvern",
+  hydra: "Hydra",
+  minotaur: "Minotaur",
+  cyclops: "Cyclops",
+} as const;
+export const VICTORY = "Victory";
+export const ARMY_LOST = "Army lost";
+export const GUARD_HOLDS = "Guard holds";

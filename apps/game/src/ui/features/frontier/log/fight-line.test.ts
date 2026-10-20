@@ -18,10 +18,12 @@ describe("the day log's line for a fight", () => {
   it("names the site, how the attack ended, the troops it cost and the guard before and after", () => {
     const { store } = campBeside("Rift");
     expect(fightLogLine(battle([154, 0], [1_100, 1_028]), store)).toBe(
-      "Rift: Army lost, lost 154, guard 1,100 to 1,028",
+      "Wyvern Rift: Army lost, lost 154, guard 1,100 to 1,028",
     );
-    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe("Rift: Guard holds, lost 68, guard 334 to 150");
-    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe("Rift: Victory, lost 68, guard 150 to 0");
+    expect(fightLogLine(battle([500, 432], [334, 150]), store)).toBe(
+      "Wyvern Rift: Guard holds, lost 68, guard 334 to 150",
+    );
+    expect(fightLogLine(battle([432, 364], [150, 0]), store)).toBe("Wyvern Rift: Victory, lost 68, guard 150 to 0");
   });
 
   it("leaves every other story, and a battle against no site, to their own titles", () => {

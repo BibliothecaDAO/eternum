@@ -104,7 +104,8 @@ export const SiteCardView = ({
   onRealm?: () => void;
   onClose: () => void;
 }) => {
-  const { word, icon } = TARGET_MARKS[site];
+  const { word: kind, icon } = TARGET_MARKS[site];
+  const word = site === "Beasts" ? (beast?.name ?? kind) : kind;
   const lost = fight && fight.outcome === "loses";
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined && choices.length > 0;

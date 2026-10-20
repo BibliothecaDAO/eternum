@@ -3,30 +3,16 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
-import {
-  ARMY,
-  ARMY_LOST,
-  FULL,
-  GUARD_HOLDS,
-  REST_DID_NOT_FIT,
-  STORE,
-  TROOPS,
-  VICTORY,
-  XP,
-} from "@/ui/design-system/kit/words";
+import { ARMY, FULL, REST_DID_NOT_FIT, STORE, TROOPS, XP } from "@/ui/design-system/kit/words";
 
 import type { ReactNode } from "react";
 
 import type { TroopsChange } from "./fight-record";
-import type { FightResult, FightVerdict } from "./fight-result";
+import type { FightResult } from "./fight-result";
 import { SiteMark } from "./site-card-view";
 import { TARGET_MARKS } from "./site-marks";
 
-export const VERDICT_WORDS: Record<FightVerdict, string> = {
-  victory: VICTORY,
-  "army-lost": ARMY_LOST,
-  "guard-holds": GUARD_HOLDS,
-};
+import { VERDICT_WORDS, type FightVerdict } from "@bibliothecadao/types";
 
 const VERDICT_TONES: Record<FightVerdict, string> = {
   victory: "text-hud-gold",
@@ -41,7 +27,8 @@ const VERDICT_TONES: Record<FightVerdict, string> = {
  * it away.
  */
 export const FightResultCard = ({ result, onClose }: { result: FightResult; onClose: () => void }) => {
-  const { word, icon } = TARGET_MARKS[result.site];
+  const { word: kind, icon } = TARGET_MARKS[result.site];
+  const word = result.site === "Beasts" ? (result.guardIdentity?.name ?? kind) : kind;
   const verdict = VERDICT_WORDS[result.verdict];
   return (
     <button
@@ -51,7 +38,7 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
       className="flex w-full flex-col gap-2 text-left"
     >
       <span className="flex items-center gap-3">
-        <SiteMark icon={icon}>
+        <SiteMark icon={result.guardIdentity?.art ?? icon}>
           {result.verdict === "victory" && (
             <SemanticIcon name="flag" size={22} className="absolute bottom-0.5 right-0.5" />
           )}
@@ -67,7 +54,13 @@ export const FightResultCard = ({ result, onClose }: { result: FightResult; onCl
           mark={<SemanticIcon name={result.armyArt} alt="" className="size-7 rounded-full object-cover" />}
           troops={result.army}
         />
-        {result.guard && <Side label={TROOPS} mark={<SemanticIcon name="troops" size={24} />} troops={result.guard} />}
+        {result.guard && (
+          <Side
+            label={result.guardIdentity?.name ?? TROOPS}
+            mark={<SemanticIcon name={result.guardIdentity?.art ?? "troops"} size={24} />}
+            troops={result.guard}
+          />
+        )}
       </span>
       {result.gained && (
         <HudPanel collapsible={false} bodyClassName="flex h-14 items-center justify-center gap-3">

@@ -11,7 +11,8 @@ const port = option("--port", "4199"),
   out = option("--out", ".context/relic-chest-" + Date.now());
 const backends = option("--backends", "webgpu-auto,webgpu-force-webgl").split(",");
 mkdirSync(out, { recursive: false });
-const games = ["blitz", "frontier"];
+const games = option("--games", "blitz,frontier").split(",");
+if (!games.every((game) => ["blitz", "frontier"].includes(game))) throw new Error("Unknown chest proof game");
 const records = [];
 const check = (value, reason) => {
   if (!value) throw new Error(reason);
@@ -44,6 +45,13 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
           const result = await devtools.send("Runtime.evaluate", { expression, returnByValue: true });
           check(!result.exceptionDetails, JSON.stringify(result.exceptionDetails));
           return result.result.value;
+        };
+        const wait = async (expression) => {
+          const deadline = Date.now() + 15000;
+          while (!(await read(expression))) {
+            check(Date.now() < deadline, `Chest state timed out: ${expression}`);
+            await pause(100);
+          }
         };
         const capture = async (phase) => {
           const { data } = await devtools.send("Page.captureScreenshot", { format: "png" });
@@ -81,7 +89,9 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
         );
         await capture("focused-sealed");
         await click("[data-chest-panel] button", "Open");
-        await pause(750);
+        await wait(
+          "document.querySelectorAll('[data-chest-rewards] img').length === 3 && [...document.querySelectorAll('[data-chest-rewards] img')].every(img=>Number(img.parentElement.style.opacity) > 0.2)",
+        );
         revealed = await read(snapshot);
         const war = ["Damage Relic I", "Damage Reduction Relic I", "Stamina Relic I"];
         check(
@@ -94,7 +104,7 @@ await withDevClient({ base, port, out }, async (baseUrl) => {
           "Opening did not reveal the exact awarded icons",
         );
         await capture("reveal");
-        await pause(2400);
+        await wait("!document.querySelector('[data-chest-rewards]')");
         receipt = await read(snapshot);
         check(
           receipt.rewards.join("|") === war.join("|") && receipt.mapRewards.length === 0,

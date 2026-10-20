@@ -5,8 +5,7 @@ import { create } from "zustand";
 import type { FightRecord, TroopsChange } from "./fight-record";
 import type { AttackTargetKind } from "./site-marks";
 
-/** How one attack ended: the army is gone, the guard is gone, or both still stand and the fight goes on. */
-export type FightVerdict = "victory" | "army-lost" | "guard-holds";
+import { fightVerdict, type FightVerdict } from "@bibliothecadao/types";
 
 /** The player's own attack as it leaves: who fights whom. */
 export interface FightSent {
@@ -15,6 +14,7 @@ export interface FightSent {
   site: AttackTargetKind;
   armyId: number;
   armyArt: IconMeaning;
+  guardIdentity?: { name: string; art: IconMeaning };
   /** The army's whole troops as the attack leaves. */
   army: number;
   /** The realm the army answers to, whose stores take what a clear pays. */
@@ -37,15 +37,12 @@ export interface FightResult {
   site: AttackTargetKind;
   verdict: FightVerdict;
   armyArt: IconMeaning;
+  guardIdentity?: { name: string; art: IconMeaning };
   army: TroopsChange;
   /** The other side as the battle recorded it; null when no record of the battle reached this screen. */
   guard: TroopsChange | null;
   gained: FightGain | null;
 }
-
-/** A lost army is lost whatever is left of the other side; a victory needs the army standing and the guard gone. */
-export const fightVerdict = (after: { army: number; guard: number }): FightVerdict =>
-  after.army === 0 ? "army-lost" : after.guard === 0 ? "victory" : "guard-holds";
 
 /**
  * The attack's result from the battle's own record: nothing here is read from what a row no longer says. Only a
@@ -61,6 +58,7 @@ export const fightResultOf = (
     site: sent.site,
     verdict,
     armyArt: sent.armyArt,
+    guardIdentity: sent.guardIdentity,
     army,
     guard,
     gained: verdict === "victory" ? gained(sent) : null,
@@ -72,6 +70,7 @@ export const lostArmyResult = (sent: FightSent): FightResult => ({
   site: sent.site,
   verdict: "army-lost",
   armyArt: sent.armyArt,
+  guardIdentity: sent.guardIdentity,
   army: { before: sent.army, after: 0 },
   guard: null,
   gained: null,

@@ -280,3 +280,22 @@ describe("a cleared ruin's chest", () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+it("titles a single roaming Minotaur by its species", () => {
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Beasts"
+        beast={{ name: "Minotaur", beast: "minotaur", combatClass: "Knight" }}
+        army={null}
+        guard={314}
+        fight={undefined}
+        pay={null}
+        xp={44}
+        verb={null}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Minotaur");
+});

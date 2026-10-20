@@ -139,3 +139,14 @@ describe("the result card", () => {
     expect(card.textContent).not.toContain("+");
   });
 });
+
+it("keeps the Troll portrait and name through its result, including a guard cleared from the map", () => {
+  const sent = { ...SENT, guardIdentity: { name: "Troll", art: "beast-troll" as const } };
+  act(() =>
+    root.render(
+      <FightResultCard result={fightResultOf(sent, record([1000, 694], [1000, 572]), paid)} onClose={() => {}} />,
+    ),
+  );
+  expect(host.querySelector('[aria-label="Troll 1,000 → 572"] img')?.getAttribute("data-icon")).toBe("beast-troll");
+  expect(host.querySelectorAll('[data-icon="beast-troll"]')).toHaveLength(2);
+});

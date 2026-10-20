@@ -1,3 +1,4 @@
+import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
@@ -298,6 +299,7 @@ const fightSentBy = (army: NativeRows["ExplorerTroops"], selected: AttackTarget,
   site: plan.kind,
   armyId: safeInteger(army.explorer_id),
   armyArt: armyArt(army.troops),
+  guardIdentity: plan.beast ? { name: plan.beast.name, art: beastMeaning(plan.beast.beast) } : undefined,
   army: wholeTroops(army),
   homeId: safeInteger(army.owner),
   clearXp: plan.xp,

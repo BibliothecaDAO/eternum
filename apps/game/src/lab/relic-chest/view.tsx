@@ -10,6 +10,7 @@ import { ChestTileDetails } from "@/ui/features/world/components/actions/chest-t
 import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
 import {
   chestStudyGame,
+  holdChestStudyClock,
   INITIAL_PACK,
   openFixtureChest,
   setChestPack,
@@ -29,6 +30,7 @@ export function RelicChestLab() {
   const [showMap, setShowMap] = useState(true);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => (frontier ? holdChestStudyClock() : undefined), [frontier]);
   const container = useRef<HTMLDivElement>(null);
   const scene = useRef<ChestProofScene | null>(null);
   useEffect(() => {

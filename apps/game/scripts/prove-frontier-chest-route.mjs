@@ -1,3 +1,4 @@
+import { frontierChestRouteReady } from "./frontier-chest-route-contract.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { openPageDevTools } from "./client-playtest/browser-session.mjs";
@@ -84,35 +85,53 @@ export async function proveFrontierChestRoute(browser, { baseUrl, backend, out }
     );
     const route = `${baseUrl}/g/${game.chainId}/${game.gameId}/map?spectate=true&rendererMode=${backend}`;
     await devtools.send("Page.navigate", { url: route });
-    await wait("Boolean(document.querySelector('#main-canvas')) && document.body.innerText.includes('Day ends')");
+    await wait("Boolean(document.querySelector('#main-canvas')) && Boolean(document.querySelector('[data-hud-rail]'))");
     if (!(await read("location.pathname.endsWith('/map')"))) {
-      await click("button", "Map");
+      await click('[role="tab"]', "World");
       await wait("location.pathname.endsWith('/map')");
     }
-    await pause(1500);
+    await wait(`(${frontierChestRouteReady.toString()})()`);
+    await wait("window.__rendererDiagnostics?.sceneName === 'map'");
     const fixture = await read(
       "(async()=>{window.__frontierChestFixture=(await import('/scripts/relic-chest-route-fixture.mjs')).stageFrontierChest();return window.__frontierChestFixture.summary;})()",
     );
     await pause(1500);
+    let selections = 0;
     const selectChest = async () => {
-      const viewport = await read("({width:innerWidth,height:innerHeight})");
-      const scale = viewport.height / 720;
-      for (const [dx, dy] of [
-        [-40, 80],
-        [0, 0],
-        [0, 80],
-        [-80, 80],
-        [-40, 40],
-        [-40, 120],
-        [40, 80],
-        [0, 120],
-      ]) {
-        await tap({ x: viewport.width / 2 + dx * scale, y: viewport.height / 2 + dy * scale });
-        const selected = await snapshot();
-        if (selected.selection?.col === fixture.hex.col && selected.selection?.row === fixture.hex.row) return;
-        browser.press("Escape");
-      }
-      throw new Error("Map clicks did not select the fixture chest");
+      const selection = ++selections;
+      if (!(await read("location.pathname.endsWith('/map') && window.__rendererDiagnostics?.sceneName === 'map'")))
+        await click('[role="tab"]', "World");
+      await wait("location.pathname.endsWith('/map') && window.__rendererDiagnostics?.sceneName === 'map'");
+      const deadline = Date.now() + 15000;
+      const framed = `(async()=>{const state=(await import('/src/hooks/store/use-ui-store.ts')).useUIStore.getState();return window.__rendererDiagnostics?.sceneName === 'map' && state.cameraTargetHex?.col === ${fixture.hex.col} && state.cameraTargetHex?.row === ${fixture.hex.row}})()`;
+      do {
+        await read(
+          "window.dispatchEvent(new CustomEvent('minimapCameraMove', {detail: window.__frontierChestFixture.position}))",
+        );
+        await pause(300);
+        check(Date.now() < deadline, "Map camera did not reach the fixture chest");
+      } while (!(await read(framed)));
+      await capture(`framed-${selection}`);
+      writeFileSync(
+        join(out, `frontier-${backend}-framed-${selection}.json`),
+        JSON.stringify(
+          await read(
+            "(async()=>({url:location.href, scene:window.__rendererDiagnostics?.sceneName,fixture:window.__frontierChestFixture.summary,camera:(await import('/src/hooks/store/use-ui-store.ts')).useUIStore.getState().cameraTargetHex}))()",
+          ),
+          null,
+          2,
+        ),
+      );
+      const point = await read(
+        "(()=>{const r=document.querySelector('#main-canvas').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2}})()",
+      );
+      await tap(point);
+      const selected = await snapshot();
+      writeFileSync(join(out, `frontier-${backend}-selected-${selection}.json`), JSON.stringify(selected, null, 2));
+      check(
+        selected.selection?.col === fixture.hex.col && selected.selection?.row === fixture.hex.row,
+        "The framed map tile did not select the fixture chest",
+      );
     };
     await selectChest();
     await wait(`Boolean(document.querySelector(${JSON.stringify(panel)}))`);

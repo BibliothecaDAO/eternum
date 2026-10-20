@@ -332,7 +332,7 @@ describe("the result of the player's attack", () => {
     });
     expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
     expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Wyvern 1,100 → 1,028"]')).not.toBeNull();
     unmount();
   });
 
@@ -342,7 +342,7 @@ describe("the result of the player's attack", () => {
       store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never);
     });
     expect(result()?.getAttribute("aria-label")).toBe("Camp: Army lost");
-    expect(result()!.querySelector('[aria-label="troops 1,100 → 1,028"]')).not.toBeNull();
+    expect(result()!.querySelector('[aria-label="Wyvern 1,100 → 1,028"]')).not.toBeNull();
     expect(result()!.textContent).not.toContain("+550");
     expect(result()!.querySelector('[aria-label^="XP"]')).toBeNull();
     unmount();

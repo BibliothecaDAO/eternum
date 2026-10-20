@@ -1,3 +1,4 @@
+import type { BeastBand } from "@bibliothecadao/eternum";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { StructureType } from "@bibliothecadao/types";
@@ -8,7 +9,6 @@ import {
   frontierSiteComposition,
   FALLEN_REALM_RUIN_PATH,
   FALLEN_REALM_DEPTHS,
-  type BeastBand,
 } from "@/three/structures/frontier-beast";
 import { CAMP_MODEL_PATH } from "@/three/constants/scene-constants";
 import { Token } from "@/three/map-plates/map-plate-token";

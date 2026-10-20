@@ -1,11 +1,9 @@
 import { fightLine } from "@/ui/design-system/kit/words";
-import { configManager } from "@bibliothecadao/eternum";
+import { configManager, readFrontierBeast } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { StructureType, formatExact } from "@bibliothecadao/types";
+import { StructureType, formatExact, fightVerdict, VERDICT_WORDS } from "@bibliothecadao/types";
 
 import { battleRecordOf } from "../sites/fight-record";
-import { fightVerdict } from "../sites/fight-result";
-import { VERDICT_WORDS } from "../sites/fight-result-card";
 import { TARGET_MARKS } from "../sites/site-marks";
 
 /**
@@ -35,5 +33,8 @@ export const fightLogLine = (
 const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {
   const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
   const kind = structure && StructureType[structure.base.category];
-  return kind && kind in TARGET_MARKS ? TARGET_MARKS[kind as keyof typeof TARGET_MARKS].word : null;
+  if (!kind || !(kind in TARGET_MARKS)) return null;
+  const word = TARGET_MARKS[kind as keyof typeof TARGET_MARKS].word;
+  const beast = readFrontierBeast(store, configManager.getActiveGameId(), Number(entityId));
+  return beast ? (kind === "Beasts" ? beast.name : `${beast.name} ${word}`) : word;
 };

@@ -1,3 +1,4 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
@@ -11,6 +12,7 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   host?.remove();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
   window.history.replaceState({}, "", "/");
 });
 
@@ -79,6 +81,11 @@ it("focuses and opens a funded Frontier chest, then records zero after rollover 
   await click("Focus chest");
   expect(host.textContent).toContain("17 LORDS");
   expect(rewards()).toEqual([]);
+  const later = performance.now() + 90000;
+  vi.spyOn(performance, "now").mockReturnValue(later);
+  await act(async () => useChainTimeStore.getState().tick());
+  expect(host.textContent).toContain("17 LORDS");
+  expect(host.textContent).not.toContain("Reservation expired");
   await click("Open");
   expect(renderer.open).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "lords", amount: 17 }));
   expect(host.textContent).toContain("17 LORDS paid to the army's realm");

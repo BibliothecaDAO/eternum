@@ -20,13 +20,7 @@ import {
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
-export const BEAST_NAMES = {
-  troll: "Troll",
-  wyvern: "Wyvern",
-  hydra: "Hydra",
-  minotaur: "Minotaur",
-  cyclops: "Cyclops",
-} as const;
+export { BEAST_NAMES } from "@bibliothecadao/types";
 export const BEAST = "Beast";
 
 /** The clock line: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h". */
@@ -196,9 +190,6 @@ export const ON_ITS_WAY = "On its way…";
 export const NEXT_ORDER = "Next order";
 export const AFTER_THIS_ONE = "After this one";
 /** How an attack ended, the one word on its result: the guard gone, the army gone, or both still standing. */
-export const VICTORY = "Victory";
-export const ARMY_LOST = "Army lost";
-export const GUARD_HOLDS = "Guard holds";
 /** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
 export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
   `${site}: ${verdict}, lost ${lost}, guard ${guardBefore} to ${guardAfter}`;

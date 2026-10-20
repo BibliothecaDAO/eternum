@@ -580,12 +580,7 @@ export class StructureManager {
       mineKind: structureComponent ? presentedMineKind(structureComponent) : undefined,
       hasWonder: renderInfo.hasWonder,
       frontierBeast: this.store
-        ? readStandingFrontierBeast(
-            this.store,
-            configManager.getActiveGameId(),
-            renderable.entityId,
-            renderable.hexCoords,
-          )
+        ? readStandingFrontierBeast(this.store, configManager.getActiveGameId(), renderable.entityId)
         : undefined,
       realmOrder: renderInfo.type === StructureType.Realm ? structureComponent?.metadata.order : undefined,
       cosmeticId: cosmetic.skin.cosmeticId,

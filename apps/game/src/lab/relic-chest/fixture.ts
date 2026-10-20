@@ -124,3 +124,14 @@ export function openFixtureChest(store: NativeFactStore, pack: ChestStudyPack, f
     },
   });
 }
+
+/** A study advances only through its controls, and restores the game clock when it leaves. */
+export function holdChestStudyClock() {
+  const { tick, getNowMs, getNowSeconds } = useChainTimeStore.getState();
+  useChainTimeStore.setState({
+    tick: () => undefined,
+    getNowMs: () => useChainTimeStore.getState().nowMs!,
+    getNowSeconds: () => Math.floor(useChainTimeStore.getState().nowMs! / 1000),
+  });
+  return () => useChainTimeStore.setState({ tick, getNowMs, getNowSeconds });
+}

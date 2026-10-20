@@ -1,8 +1,9 @@
 import { configManager, dayOf, Position, readExpeditionRules } from "@bibliothecadao/eternum";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
-import { requireActiveGameClient } from "../src/sync/active-game-client";
+import { requireActiveGameClient, startRealmVisit } from "../src/sync/active-game-client";
 import { useChestOpeningStore } from "../src/hooks/store/use-chest-opening-store";
 import { useAccountStore } from "../src/hooks/store/use-account-store";
+import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { nativeTilePackingConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { useChainTimeStore } from "../src/hooks/store/use-chain-time-store";
 
@@ -57,7 +58,9 @@ export function stageFrontierChest() {
       reservation_day: day.index,
     });
   const originalConnect = client.connect;
+  const originalVisit = client.visit;
   client.connect = () => undefined;
+  client.visit = () => undefined;
   useAccountStore.setState({
     account: {
       address: `0x${home.owner.toString(16)}`,
@@ -66,7 +69,9 @@ export function stageFrontierChest() {
       },
     },
   });
+  startRealmVisit({ player: `0x${home.owner.toString(16)}`, structureId: Number(army.owner), opensOn: null });
   client.connect = originalConnect;
+  client.visit = originalVisit;
   systemCalls.open_chest = async ({ explorer_id, chest_coord }) => {
     if (explorer_id !== Number(army.explorer_id) || chest_coord.x !== hex.col || chest_coord.y !== hex.row)
       throw new Error("Open did not target the fixture chest with its adjacent army");
@@ -94,15 +99,19 @@ export function stageFrontierChest() {
     });
   };
   reset();
-  const normalized = Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
-  window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: { col: normalized.x, row: normalized.y } }));
+  const position = Position.fromContract({ x: hex.col, y: hex.row });
+  window.dispatchEvent(new CustomEvent("minimapCameraMove", { detail: position }));
   return {
     hex,
+    position,
     reset,
     fund,
     missing: () => write("SiteChest", chestKey, null),
     expire: () => {
-      if (day.index === 0) throw new Error("Expired-reservation route proof needs a completed game day");
+      if (day.index === 0) {
+        useChainTimeStore.getState().anchor({ timestamp: day.end * 1000 });
+        return;
+      }
       write("SiteChest", chestKey, {
         game_id: gameId,
         entity_id: chestId,
@@ -115,7 +124,19 @@ export function stageFrontierChest() {
       return sends;
     },
     get summary() {
-      return { gameId, armyId: Number(army.explorer_id), chestId, hex, sends };
+      return {
+        gameId,
+        armyId: Number(army.explorer_id),
+        chestId,
+        hex,
+        sends,
+        activeStore: store === requireActiveGameClient().setup.store,
+        occupancy: store.get("TileOccupancy", coord)?.entity_id?.toString(),
+        terrain: store.get("TileOpt", coord)?.data?.toString(),
+        projected: getActiveGameSyncRuntime()
+          ?.getWorldSpatialProjection()
+          ?.getTileAtHex({ ...hex, alt: false }),
+      };
     },
   };
 }
