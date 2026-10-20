@@ -3,11 +3,14 @@ import { ModelType } from "../types/army";
 
 export const MAX_INSTANCES = 1000;
 /**
- * How far above its tile an army's label point sits, where its token's foot stands: over the tallest army model (a
- * paladin, 1.44) by 0.15, so every army's token stands above it, never on it (the owner, 2026-10-20:
- * "label should be above not on the army"). The asset check measures it against every model in `MODEL_TYPE_TO_FILE`.
+ * How far above its tile an army's label point sits, where its token's foot stands (the owner, 2026-10-20: "label should
+ * be above not on the army"). The tallest army as drawn (grounded, a ship at its waterline) is a T3 ship at 1.28, a
+ * paladin within 0.01 of it: 1.45 stands 0.17 over it, and 0.43 over the T1 knight (1.02), near the 0.45 a structure's
+ * label keeps over its own model. The asset check measures every army as drawn against it.
  */
-export const ARMY_PLATE_HEIGHT = 1.6;
+export const ARMY_PLATE_HEIGHT = 1.45;
+/** The shipped T1 knight's articulated model: authored 0.6135 tall, drawn at the old T1 model's 1.02 height. */
+export const T1_KNIGHT_WORLD_SCALE = 1.67;
 export const ANIMATION_STATE_IDLE = 0;
 export const ANIMATION_STATE_MOVING = 1;
 

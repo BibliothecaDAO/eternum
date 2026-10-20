@@ -16,17 +16,23 @@ type Size = { width: number; height: number };
 
 /**
  * One thing on the map: its label point (`at`: right above the thing's model, where its token's foot stands), its
- * token's size, its plate's size when opened (its tile hovered, or it selected), and what its place is worth.
+ * token's size, its plate's size when opened (its tile hovered), and what its place is worth.
  */
 export interface PlateThing {
   id: string;
   at: { x: number; y: number };
   token: Size;
-  /** Its plate's size opened: its tile is hovered, or it is selected. Absent while it rests as its token. */
+  /** Its plate's size opened: its tile is hovered. Absent while it rests as its token (selected included). */
   opened?: Size;
   /** Higher is placed first: the player's own, then what threatens them. Hover and selection never change it. */
   priority: number;
-  /** Among opened plates, higher is placed first: the selected one, then the hovered one. */
+  /**
+   * It must stay in view however crowded (the owner, 2026-10-20: the selected thing, the player's own armies, anything
+   * under attack): the kept tokens are placed before every other, together (`placeKept`), each on its own point, slid
+   * while attached, or a row or two straight up; no plate or order line covers one. The others yield to them.
+   */
+  keep?: boolean;
+  /** Among opened plates, higher is placed first (the hovered one is the only plate a thing opens). */
   openRank?: number;
 }
 
@@ -60,7 +66,7 @@ const SCREEN_EDGE = 8;
  * stands where its token stood, slid aside at most this short of its own half (`inPlaceOf`).
  */
 const IN_PLACE_MARGIN = 12;
-/** What a plate hung from the top bar's edge costs, in pixels slid: only a token reaching under the bar needs it. */
+/** What a plate hung from the top bar's edge costs, in pixels slid: only a plate that cannot stand under the bar needs it. */
 const HANG_COST = 40;
 /**
  * A token slid aside keeps at least this much of itself past its label point on either side: it stays over its thing.
@@ -72,8 +78,6 @@ const ATTACH_MARGIN = 6;
  * 18 px would have kept in view). Where every place hides one, the cheapest still stands, and the token steps aside.
  */
 const HIDE_COST = 60;
-/** The selected plate is moved this much less willingly than the hovered one: it is the one the player is reading. */
-const RANK_WEIGHT = 2;
 
 const clear = (a: Rect, b: Rect) =>
   a.x >= b.x + b.width + GAP ||
@@ -113,19 +117,29 @@ const besideColumns = (box: Rect, anchorX: number, columns: readonly Rect[]): Re
 /**
  * A token's places (the owner, 2026-10-20: "label should be above not on the army"; "the camp label is gone way too far
  * at max zoom out"): standing on its thing's label point, centred over it, else slid aside, nearest first, never so far
- * that the point leaves the token (`ATTACH_MARGIN`). It is never lower than its thing's top nor away from it, at any
- * zoom; with none of its places clear it is not drawn.
+ * that the point leaves the token (`ATTACH_MARGIN`). A thing kept in view (`keep`) may also stand a row or two higher,
+ * straight over the same point, on screen. It is never lower than its thing's top nor away from it, at
+ * any zoom.
  */
-const tokenPlaces = (thing: PlateThing, columns: readonly Rect[]): Rect[] => {
+const tokenPlaces = (thing: PlateThing, screen: PlateScreen): Rect[] => {
   const { at, token } = thing;
   const reach = token.width / 2 - ATTACH_MARGIN;
+  // A kept token's slides come finer: its cluster is arranged as a whole, where a few pixels decide whether all fit.
+  const step = thing.keep ? KEPT_STEP : GAP;
   const shifts = [0];
-  for (let dx = GAP; dx < reach; dx += GAP) shifts.push(-dx, dx);
+  for (let dx = step; dx < reach; dx += step) shifts.push(-dx, dx);
   if (reach > 0) shifts.push(-reach, reach);
-  return shifts.map((dx) =>
-    besideColumns({ x: at.x - token.width / 2 + dx, y: at.y - token.height, ...token }, at.x, columns),
-  );
+  const rows = thing.keep ? KEPT_ROWS : 0;
+  return Array.from({ length: rows + 1 }, (_, row) => at.y - token.height - row * (token.height + GAP))
+    .filter((y, row) => row === 0 || y >= 0)
+    .flatMap((y) =>
+      shifts.map((dx) => besideColumns({ x: at.x - token.width / 2 + dx, y, ...token }, at.x, screen.columns)),
+    );
 };
+/** How many rows a kept thing's token may rise over its own point before it stands there regardless. */
+const KEPT_ROWS = 2;
+/** A kept token's slide step, in pixels. */
+const KEPT_STEP = 2;
 
 /** What an opened plate may not cover: the HUD's columns (but one over its token's middle) and the top bar. */
 const obstaclesFor = (token: Rect, screen: PlateScreen): Rect[] => {
@@ -140,8 +154,9 @@ const obstaclesFor = (token: Rect, screen: PlateScreen): Rect[] => {
  * A thing's plate, opened, replaces its token in place (the owner, 2026-10-19 13:00Z: "always keep the ring above the
  * structure/army and replace it by the hover/selected modal when i'm on it"): standing on the token's foot, its middle
  * over the token's, so above its thing as the token is; else slid aside, never so far that it stops covering where its
- * token was drawn (`inPlaceOf`). On screen and clear of the HUD, except as far as covering its token needs: a token
- * reaching under the top bar has its plate hung from the bar's edge. Cheapest first: pixels slid, a hung plate
+ * token was drawn (`inPlaceOf`). On screen and clear of the HUD, except as far as covering its token needs: a plate that
+ * would reach under the top bar standing is hung from the bar's edge instead; it never covers a token kept in view
+ * (`kept`), so a hover never hides or moves one. Cheapest first: pixels slid, a hung plate
  * `HANG_COST` more, and `HIDE_COST` for each resting token it would hide.
  */
 const placesInPlaceOf = (
@@ -149,6 +164,7 @@ const placesInPlaceOf = (
   size: Size,
   screen: PlateScreen,
   others: readonly Rect[],
+  kept: readonly Rect[],
 ): { rect: Rect; cost: number }[] => {
   const middle = token.x + token.width / 2;
   const reach = size.width / 2 - IN_PLACE_MARGIN;
@@ -159,11 +175,10 @@ const placesInPlaceOf = (
   const right = Math.max(screen.width - SCREEN_EDGE, middle + IN_PLACE_MARGIN);
   const bottom = Math.max(screen.height - SCREEN_EDGE, token.y + token.height);
   const obstacles = obstaclesFor(token, screen);
-  return [
-    { y: token.y + token.height - size.height, cost: 0 },
-    // A token reaching under the top bar: its plate hangs from the bar's edge instead, still over the token's middle.
-    ...(token.y < screen.top ? [{ y: screen.top, cost: HANG_COST }] : []),
-  ]
+  const standing = token.y + token.height - size.height;
+  // Standing, it would reach under the top bar: it hangs from the bar's edge instead, still over the token's middle.
+  const hangs = standing < screen.top ? [{ y: screen.top, cost: HANG_COST }] : [];
+  return [{ y: standing, cost: 0 }, ...hangs]
     .flatMap(({ y, cost }) =>
       shifts.map((dx) => ({ rect: { x: middle - size.width / 2 + dx, y, ...size }, cost: cost + Math.abs(dx) })),
     )
@@ -173,7 +188,8 @@ const placesInPlaceOf = (
         rect.x + rect.width <= right &&
         rect.y + rect.height <= bottom &&
         inPlaceOf(rect, token) &&
-        obstacles.every((obstacle) => clear(rect, obstacle)),
+        obstacles.every((obstacle) => clear(rect, obstacle)) &&
+        kept.every((box) => clear(rect, box)),
     )
     .map(({ rect, cost }) => ({ rect, cost: cost + HIDE_COST * others.filter((other) => !clear(rect, other)).length }))
     .toSorted((a, b) => a.cost - b.cost);
@@ -184,52 +200,54 @@ const placesInPlaceOf = (
  * everywhere, full plate on hover"): nothing drawn crowds or covers anything else, and every opened plate stands in its
  * token's place.
  *
- * 1. At rest every thing is its token; in priority order each takes the nearest of its places clear of every token kept
- *    before it, else it is not drawn. Hover and selection never move a resting token.
- * 2. The opened plates (the selected, the hovered) and the order line are placed together: each plate in its drawn
- *    token's place (`placesInPlaceOf`), clear of the others, and the line beside its tile, clear of them all, at the
- *    least sliding (the selected plate's weighs double). Where no such arrangement exists, the plate opened last (the
- *    hovered one) stays its token (`closed`): the layout never returns a plate over another, or away from its token.
- * 3. A resting token under an opened plate or the order line steps aside (`yields`) until they close.
+ * 1. At rest every thing is its token; a selected one too, ringed (owner, 2026-10-20: "on army select i want to remove
+ *    this panel"). The things kept in view (`keep`: the selected one, the player's own armies, anything in battle) are
+ *    placed first, together (`placeKept`); then the rest in priority order, each on the nearest of its places clear of
+ *    every token placed before it, else not drawn. A hover or a selection never moves a resting token.
+ * 2. The hovered plate and the order line are placed together: the plate in its drawn token's place
+ *    (`placesInPlaceOf`), the line beside its tile, clear of each other, of the HUD and of every kept token, at the least
+ *    sliding. Where no such arrangement exists, the plate stays its token (`closed`): the layout never returns a plate
+ *    over another label it must keep, or away from its token.
+ * 3. A resting token, not kept, under the opened plate or the order line steps aside (`yields`) until they close.
  */
 export const placePlates = (
   things: readonly PlateThing[],
   screen: PlateScreen,
   orderLine: OrderLineAsk | null = null,
 ): { spots: Map<string, PlateSpot>; orderLine: { x: number; y: number } | null; closed: Set<string> } => {
-  const kept: Rect[] = [];
-  const resting = new Map<string, Rect>();
-  for (const thing of things.toSorted((a, b) => b.priority - a.priority)) {
-    const places = tokenPlaces(thing, screen.columns);
-    const box = places.find((place) => kept.every((other) => clear(place, other)));
-    if (box) kept.push(box);
+  // The tokens kept in view stand first, placed together; then the others, by worth, around them.
+  const resting = placeKept(
+    things.filter((thing) => thing.keep),
+    screen,
+  );
+  const drawn: Rect[] = [...resting.values()];
+  for (const thing of things.filter((one) => !one.keep).toSorted((a, b) => b.priority - a.priority)) {
+    const places = tokenPlaces(thing, screen);
+    const box = places.find((place) => drawn.every((other) => clear(place, other)));
+    if (box) drawn.push(box);
     resting.set(thing.id, box ?? places[0]);
   }
+  const shown = new Set(drawn);
+  // The kept tokens no plate or order line may cover: those not asked to open (a hovered one is its plate).
+  const keptRects = things.filter((thing) => thing.keep && !thing.opened).map((thing) => resting.get(thing.id)!);
 
-  const asked = things
-    .filter((thing) => thing.opened)
-    .toSorted((a, b) => (b.openRank ?? 0) - (a.openRank ?? 0))
-    .map((thing, index, all) => ({
-      id: thing.id,
-      weight: index < all.length - 1 ? RANK_WEIGHT : 1,
-      places: placesInPlaceOf(
-        resting.get(thing.id)!,
-        thing.opened!,
-        screen,
-        kept.filter((box) => box !== resting.get(thing.id)),
-      ),
-    }));
-  let open = asked;
-  let arranged = arrange(open, orderLine, screen);
-  while (!arranged && open.length > 0) {
-    open = open.slice(0, -1);
-    arranged = arrange(open, orderLine, screen);
-  }
-  const plates = new Map(open.map((one, index) => [one.id, arranged!.rects[index]]));
+  // The hovered thing (the one plate a thing opens; a selected one rests as its token).
+  const hovered = things.filter((thing) => thing.opened).toSorted((a, b) => (b.openRank ?? 0) - (a.openRank ?? 0))[0];
+  const places =
+    hovered &&
+    placesInPlaceOf(
+      resting.get(hovered.id)!,
+      hovered.opened!,
+      screen,
+      drawn.filter((box) => box !== resting.get(hovered.id)),
+      keptRects.filter((box) => box !== resting.get(hovered.id)),
+    );
+  // Where the plate has no place clear of the line, the line stands alone and the plate stays its token.
+  const arranged = arrange(places ?? null, orderLine, screen, keptRects) ?? arrange(null, orderLine, screen, keptRects);
+  const plates = new Map(hovered && arranged?.plate ? [[hovered.id, arranged.plate]] : []);
   const line = arranged?.line ?? null;
 
   const covers = [...plates.values(), ...(line && orderLine ? [{ ...line, ...orderLine.size }] : [])];
-  const drawn = new Set(kept);
   const spots = new Map<string, PlateSpot>();
   for (const thing of things) {
     const plate = plates.get(thing.id);
@@ -238,45 +256,111 @@ export const placePlates = (
       thing.id,
       plate
         ? { shape: "plate", x: plate.x, y: plate.y }
-        : drawn.has(rest)
-          ? { shape: "token", x: rest.x, y: rest.y, yields: !covers.every((cover) => clear(rest, cover)) }
+        : shown.has(rest)
+          ? {
+              shape: "token",
+              x: rest.x,
+              y: rest.y,
+              yields: !thing.keep && !covers.every((cover) => clear(rest, cover)),
+            }
           : { shape: "none" },
     );
   }
-  const closed = new Set(asked.filter((one) => !plates.has(one.id)).map((one) => one.id));
+  const closed = new Set(hovered && !plates.has(hovered.id) ? [hovered.id] : []);
   return { spots, orderLine: line, closed };
 };
 
 /**
- * The cheapest arrangement of the opened plates (each among its places, clear of the others) with the order line clear
- * of them all; null where none exists. A branch and bound over each plate's places, cheapest first.
+ * The tokens kept in view, placed together (review-token-anchor-4: one at a time, the first could take the only place
+ * that let a third stand clear). Kept things whose places could meet form a cluster; each cluster takes the arrangement,
+ * every token on one of its own places and all clear of each other, that rises least: none risen, else one row at
+ * most, else two. Found by a search over each token's places (the token with fewest places still clear goes next,
+ * and a choice that leaves another none is dropped at once), within `KEPT_SEARCH` tries; a cluster with no such
+ * arrangement (or past the budget) takes each token's nearest place still clear, else its own point.
+ */
+const placeKept = (kept: readonly PlateThing[], screen: PlateScreen): Map<string, Rect> => {
+  const placed = new Map<string, Rect>();
+  for (const cluster of clustersOf(kept)) {
+    const options = cluster.map((thing) => tokenPlaces(thing, screen));
+    const rowOf = (thing: PlateThing, place: Rect) =>
+      Math.round((thing.at.y - thing.token.height - place.y) / (thing.token.height + GAP));
+    let found: Map<number, Rect> | null = null;
+    for (let top = 0; top <= KEPT_ROWS && !found; top += 1) {
+      let tries = 0;
+      // Each token's places still open, given the ones chosen so far; the one with fewest goes next.
+      const visit = (open: Map<number, Rect[]>, chosen: Map<number, Rect>): Map<number, Rect> | null => {
+        if (open.size === 0) return chosen;
+        const [index, places] = [...open].reduce((fewest, entry) =>
+          entry[1].length < fewest[1].length ? entry : fewest,
+        );
+        for (const place of places) {
+          if ((tries += 1) > KEPT_SEARCH) return null;
+          const rest = new Map<number, Rect[]>();
+          for (const [other, others] of open)
+            if (other !== index)
+              rest.set(
+                other,
+                others.filter((candidate) => clear(candidate, place)),
+              );
+          if ([...rest.values()].some((left) => left.length === 0)) continue;
+          const result = visit(rest, new Map(chosen).set(index, place));
+          if (result) return result;
+        }
+        return null;
+      };
+      found = visit(
+        new Map(cluster.map((thing, index) => [index, options[index].filter((place) => rowOf(thing, place) <= top)])),
+        new Map(),
+      );
+    }
+    if (found) {
+      cluster.forEach((thing, index) => placed.set(thing.id, found!.get(index)!));
+      continue;
+    }
+    for (const [index, thing] of cluster.entries()) {
+      const box = options[index].find((place) => [...placed.values()].every((other) => clear(place, other)));
+      placed.set(thing.id, box ?? options[index][0]);
+    }
+  }
+  return placed;
+};
+
+/** How many places the search for a cluster's arrangement tries at each height before it gives up. */
+const KEPT_SEARCH = 5_000;
+
+/** Kept things whose tokens' places could meet, risen or slid as far as they go: each group placed together. */
+const clustersOf = (kept: readonly PlateThing[]): PlateThing[][] => {
+  const reachOf = (thing: PlateThing) => ({
+    across: thing.token.width + GAP,
+    up: (KEPT_ROWS + 1) * (thing.token.height + GAP),
+  });
+  const meet = (a: PlateThing, b: PlateThing) =>
+    Math.abs(a.at.x - b.at.x) < reachOf(a).across + reachOf(b).across &&
+    Math.abs(a.at.y - b.at.y) < Math.max(reachOf(a).up, reachOf(b).up);
+  const group = kept.map((_, index) => index);
+  const root = (index: number): number => (group[index] === index ? index : (group[index] = root(group[index])));
+  kept.forEach((a, i) => kept.forEach((b, j) => j > i && meet(a, b) && (group[root(j)] = root(i))));
+  const clusters = new Map<number, PlateThing[]>();
+  kept.forEach((thing, index) => clusters.set(root(index), [...(clusters.get(root(index)) ?? []), thing]));
+  return [...clusters.values()];
+};
+
+/**
+ * The hovered plate's cheapest place with the order line clear of it, or the line alone with nothing hovered; null where
+ * none holds both.
  */
 const arrange = (
-  open: readonly { places: readonly { rect: Rect; cost: number }[]; weight: number }[],
+  places: readonly { rect: Rect; cost: number }[] | null,
   orderLine: OrderLineAsk | null,
   screen: PlateScreen,
-): { rects: Rect[]; line: { x: number; y: number } | null } | null => {
-  let best = null as { cost: number; rects: Rect[]; line: { x: number; y: number } | null } | null;
-  const chosen: Rect[] = [];
-  const visit = (index: number, cost: number) => {
-    if (index === open.length) {
-      const line = orderLine && placeOrderLine(orderLine, chosen, screen);
-      if (orderLine && !line) return;
-      best = { cost, rects: [...chosen], line };
-      return;
-    }
-    const { places, weight } = open[index];
-    for (const place of places) {
-      const total = cost + place.cost * weight;
-      if (best && total >= best.cost) return;
-      if (!chosen.every((other) => clear(place.rect, other))) continue;
-      chosen.push(place.rect);
-      visit(index + 1, total);
-      chosen.pop();
-    }
-  };
-  visit(0, 0);
-  return best;
+  kept: readonly Rect[],
+): { plate: Rect | null; line: { x: number; y: number } | null } | null => {
+  for (const place of places ?? [null]) {
+    const plate = place?.rect ?? null;
+    const line = orderLine && placeOrderLine(orderLine, [...(plate ? [plate] : []), ...kept], screen);
+    if (!orderLine || line) return { plate, line };
+  }
+  return null;
 };
 
 /**
@@ -296,7 +380,7 @@ const placeOrderLine = (
     { x: at.x + 2 * LINE_OFFSET.x, y: at.y - size.height / 2 },
     { x: at.x - 2 * LINE_OFFSET.x - size.width, y: at.y - size.height / 2 },
   ];
-  // With a plate opened on a neighbouring tile (the selected army's, in place of its token), the same places one and
+  // With a plate opened on a neighbouring tile (the hovered thing's, in place of its token), the same places one and
   // two rows further down, still beside the tile, before it would sit on a plate.
   const row = size.height + GAP;
   const blocked = [...opened, ...screen.columns.filter((column) => at.x < column.x || at.x > column.x + column.width)];

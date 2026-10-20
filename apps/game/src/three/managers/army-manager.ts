@@ -2970,7 +2970,10 @@ ${
 
         // Only update if timer has changed or expired
         if (army.battleTimerLeft !== newBattleTimerLeft) {
+          const ended = army.battleTimerLeft !== undefined && newBattleTimerLeft === undefined;
           army.battleTimerLeft = newBattleTimerLeft;
+          // Out of battle: its label says so, and the map no longer keeps it in view for that.
+          if (ended) this.refreshArmyCompactLabel(army);
         }
       }
     });

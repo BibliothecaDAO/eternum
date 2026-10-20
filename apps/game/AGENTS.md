@@ -129,19 +129,21 @@ army in place), from `__armyMovementLatencyTraceEntries`; needs two armies that 
 spectator's map steps in a Blitz game: the world map, idle, pan, zoom, a minute of watching; the matched frame-time run
 for Blitz), `--steps blitz-plates` (the map's labels in a Blitz game as a spectator sees them, opened with the dev
 overlays so the page reports its world: read at the map's zoom, the farthest and the closest, the tiles round the centre
-hovered one by one, failing on any label whose foot reaches below its thing's model top or whose span is not over that
-top, as the renderer places the thing, any token, plate or order line over or within 4px of another, or an opened plate
-that does not cover the token read for its thing before the hover; `--steps blitz-plates-player` takes the readiest army
-with Tab first, so each hovered tile shows its order line; `--steps frontier-plates` and `frontier-plates-player` the
-same in a Frontier game, entered on its map), `--steps still-map` (a Frontier spectator's map with nothing pressed, its
-frames recorded for 6 s at the default view and again at the closest, the camera distance read and required to be the
-closest, into `<step>-frames/` with `<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still
-view shimmers with, to compare two builds on the same view; `--steps blitz-still-map` the same in a Blitz game;
-`--steps still-map-frozen-sun` and `--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold
-the sun, and open the page with the dev overlays on, as the plate lists do), `--out <root>` (default
-`.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page opens to the world being
-interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command
-is run.
+hovered one by one, and at each zoom a click at each label in view, with the label layer shown then hidden, failing on
+any label that takes a pointer, a click on a token that does not select its thing's tile (clicked there with the labels
+hidden), a click on an open plate that selects another tile than with the labels hidden, any label whose foot reaches
+below its thing's model top or whose span is not over its thing, as the renderer places the thing, any token, plate or
+order line over or within 4px of another, or an opened plate that does not cover the token read for its thing before the
+hover; `--steps blitz-plates-player` takes the readiest army with Tab first, so each hovered tile shows its order line;
+`--steps frontier-plates` and `frontier-plates-player` the same in a Frontier game, entered on its map),
+`--steps still-map` (a Frontier spectator's map with nothing pressed, its frames recorded for 6 s at the default view
+and again at the closest, the camera distance read and required to be the closest, into `<step>-frames/` with
+`<step>-changes.png`, each pixel's share of frame pairs it changed in: what a still view shimmers with, to compare two
+builds on the same view; `--steps blitz-still-map` the same in a Blitz game; `--steps still-map-frozen-sun` and
+`--steps blitz-still-map-frozen-sun` first tick the dev tools' Override Time to hold the sun, and open the page with the
+dev overlays on, as the plate lists do), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each
+run's boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
+regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

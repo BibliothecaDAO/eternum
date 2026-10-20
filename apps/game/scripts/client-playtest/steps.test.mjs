@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
+import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
+import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
@@ -465,7 +467,19 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
   it("fails an opened plate that does not cover the token drawn for its thing before it opened", () => {
     const token = { kind: "token", key: "army:5", open: false, text: "T3 600", x: 400, y: 500, w: 64, h: 46 };
     const before = { ...clear, things: [token] };
-    const plate = (x, y) => ({ kind: "plate", key: "army:5", open: true, text: "Lord 3f2a", x, y, w: 174, h: 80 });
+    // Its army as drawn: its model's top at y 560 and its label point at y 546, under the token's foot (546).
+    const over = { tile: { x: 432, y: 600 }, top: { x: 432, y: 560 }, point: { x: 432, y: 546 } };
+    const plate = (x, y) => ({
+      kind: "plate",
+      key: "army:5",
+      open: true,
+      text: "Lord 3f2a",
+      x,
+      y,
+      w: 174,
+      h: 80,
+      over,
+    });
     // Over the token: its middle (432, 523) under the plate.
     const inPlace = { ...clear, things: [plate(345, 466)] };
     expect(verify({ played: { before, readings: [{ offset: null, seen: inPlace }] } }).status).toBe("completed");
@@ -476,9 +490,14 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
     );
   });
 
+  it("measures an army against its own label point", () => {
+    expect(ARMY_LABEL_POINT).toBe(ARMY_PLATE_HEIGHT);
+  });
+
   it("fails a label that reaches down onto its thing, or stands beside it, as the renderer places the thing", () => {
-    // An army's tile at (420, 560) on screen, its tallest model's top at (432, 520), leaning right as drawn.
-    const over = { tile: { x: 420, y: 560 }, top: { x: 432, y: 520 } };
+    // An army's tile at (420, 560) on screen, its tallest model's top at (432, 520) and its label point at (434, 514),
+    // leaning right as drawn.
+    const over = { tile: { x: 420, y: 560 }, top: { x: 432, y: 520 }, point: { x: 434, y: 514 } };
     const token = (x, y) => ({ kind: "token", key: "army:5", open: false, text: "T1 1,500", x, y, w: 64, h: 50, over });
     const reading = (thing) => ({ played: { readings: [{ offset: null, seen: { ...clear, things: [thing] } }] } });
     // Its foot on the label point, 6px over the model's top, across it: above it.
@@ -487,12 +506,64 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
     expect(verify(reading(token(400, 489))).reason).toBe("1 labels stand on their thing or away from it");
     // A step aside (owner-camp-label-zoomout.png): its span no longer over the thing.
     expect(verify(reading(token(470, 464))).reason).toBe("1 labels stand on their thing or away from it");
+    // A narrow token at a screen's edge, where the thing leans far: on its label point, past the top's x, still over it.
+    const leaning = { tile: { x: 1595, y: 329 }, top: { x: 1699, y: 172 }, point: { x: 1716, y: 146 } };
+    expect(verify(reading({ ...token(1701, 116), w: 30, h: 30, over: leaning })).status).toBe("completed");
+  });
+
+  it("fails a reading where a label takes pointer input, or a click at a label lands on it", () => {
+    const reading = (seen) => ({ played: { readings: [{ offset: null, seen: { ...clear, ...seen } }] } });
+    expect(verify(reading({ takers: 0, caught: [] })).status).toBe("completed");
+    expect(verify(reading({ takers: 2, caught: [] })).reason).toBe(
+      "labels take pointer input: 2 elements, a click caught on 0",
+    );
+    expect(verify(reading({ takers: 0, caught: ["T1 500"] })).reason).toBe(
+      "labels take pointer input: 0 elements, a click caught on 1",
+    );
+  });
+
+  it("passes a click on a token only where it selects its thing's tile, and on a plate only where it lands beneath", () => {
+    const click = STEP_SETS["frontier-plates"].steps.find((step) => step.name === "labels-click-through-far").verify;
+    const hex = (col, row) => ({ col, row });
+    const token = {
+      label: "T1 500",
+      kind: "token",
+      at: [10, -40],
+      expectedAt: [12, 8],
+      shown: hex(4, 7),
+      expected: hex(4, 7),
+    };
+    const plate = {
+      label: "Own B",
+      kind: "plate",
+      at: [60, -40],
+      expectedAt: [60, -40],
+      shown: hex(5, 6),
+      expected: hex(5, 6),
+    };
+    expect(click({ played: { clicks: [token, plate] } }).status).toBe("completed");
+    // The token's click selected the tile behind it, not its thing's (qa-fresh-chain-frontier-1 #1).
+    expect(click({ played: { clicks: [{ ...token, shown: hex(4, 6) }] } }).reason).toBe(
+      "1 clicks at a label did not select its thing's tile, or the tile beneath a plate",
+    );
+    expect(click({ played: { clicks: [{ ...plate, shown: null }] } }).status).toBe("failed");
+    expect(click({ played: { clicks: [] } }).status).toBe("blocked");
   });
 
   it("calls a page that does not report its world blocked: its labels were not measured against their things", () => {
-    expect(verify({ played: { readings: [{ offset: null, seen: { ...clear, world: false } }] } }).status).toBe(
-      "blocked",
-    );
+    const token = {
+      kind: "token",
+      key: "army:5",
+      open: false,
+      text: "T3 600",
+      x: 400,
+      y: 500,
+      w: 64,
+      h: 46,
+      over: null,
+    };
+    const seen = { ...clear, world: false, things: [token] };
+    expect(verify({ played: { readings: [{ offset: null, seen }] } }).status).toBe("blocked");
   });
 
   it("calls a view with no label drawn blocked: an empty map proves nothing either way", () => {

@@ -8,9 +8,14 @@
   z-index: 2;
   inset: 0;
   overflow: hidden;
-  pointer-events: none;
   font-family: var(--hud-font);
   color: rgb(var(--hud-ink));
+}
+/* No label ever takes a pointer (owner, 2026-10-20: "the label must not be clickable"): a click or hover lands on the
+   tile or unit beneath, whatever a token or plate is drawn from. The plate probe fails a page where one does. */
+.mp,
+.mp * {
+  pointer-events: none !important;
 }
 .mp [data-relation="own"] {
   --mp-side: var(--hud-own);
@@ -186,12 +191,6 @@
   background: linear-gradient(180deg, var(--hud-surface-from), var(--hud-surface-to));
   font-size: var(--hud-text-label);
   white-space: nowrap;
-}
-.mp-token__holding {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  color: var(--hud-muted);
 }
 .mp-token__stamina {
   width: 100%;
