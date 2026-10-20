@@ -615,7 +615,8 @@ export const HudTabs = <K extends string | number>({
 }: {
   /**
    * Each tab; `title` is its hover text, what the tab holds in full. A tab may be its painting (`icon`) and count with
-   * no word, named then by `ariaLabel`.
+   * no word, named then by `ariaLabel`: it draws compact, its count a badge on the painting, so a row of kinds fits a
+   * narrow column. A strip too wide for its place wraps; no tab ever leaves it.
    */
   tabs: readonly {
     key: K;
@@ -647,11 +648,21 @@ export const HudTabs = <K extends string | number>({
         title={tab.title}
         aria-label={tab.ariaLabel}
         data-state={states[tab.key]}
+        data-shape={tab.icon && !tab.label ? "mark" : undefined}
         onClick={() => onChange(tab.key)}
       >
-        {tab.icon && <Icon name={tab.icon} size={22} />}
-        {tab.label}
-        {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+        {tab.icon && !tab.label ? (
+          <span className="ui-tab__mark">
+            <Icon name={tab.icon} size={22} />
+            {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+          </span>
+        ) : (
+          <>
+            {tab.icon && <Icon name={tab.icon} size={22} />}
+            {tab.label}
+            {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+          </>
+        )}
       </button>
     ))}
   </div>

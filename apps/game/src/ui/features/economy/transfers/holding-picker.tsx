@@ -11,9 +11,10 @@ import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 /**
- * One end of a transfer, listed as the HUD's holdings panel lists them (holdings-model): the kinds held as tabs with
- * their counts, one kind at a time, a search once the kind outgrows a screen, starred first. Only holdings with an
- * inventory, and never the other end. Each row carries what that end needs to know (`note`).
+ * One end of a transfer, listed as the HUD's holdings panel lists them (holdings-model): the kinds held as compact tabs
+ * with their counts, the kind shown named in the heading, one kind at a time, a search once the kind outgrows a screen,
+ * starred first. Only holdings with an inventory (a Hyperstructure held included), and never the other end. Each row
+ * carries what that end needs to know (`note`).
  */
 export const HoldingPicker = ({
   title,
@@ -59,12 +60,11 @@ export const HoldingPicker = ({
 
   return (
     <section aria-label={title} className="flex min-h-0 flex-col gap-2">
-      <h3 className="text-hud-label text-hud-muted">{title}</h3>
-      {/* The kinds held as tabs, one even when only one is held: the lit tab names the kind its list shows. */}
+      <h3 className="text-hud-label text-hud-muted">{headingOf(title, kinds, kind)}</h3>
+      {/* The kinds held as compact tabs, one even when only one is held, so every kind fits the column. */}
       <HudTabs
         tabs={kinds.map((entry) => ({
           key: entry.kind,
-          label: entry.kind === kind ? entry.plural : undefined,
           icon: entry.icon,
           count: entry.count,
           ariaLabel: `${entry.plural}, ${entry.count}`,
@@ -115,4 +115,14 @@ export const HoldingPicker = ({
       </div>
     </section>
   );
+};
+
+/** "Send from · Realms": the end, and the kind its list shows, which the lit tab no longer spells out. */
+const headingOf = (
+  title: string,
+  kinds: ReadonlyArray<{ kind: LeftListFilter; plural: string }>,
+  shown: LeftListFilter,
+): string => {
+  const plural = kinds.find((entry) => entry.kind === shown)?.plural;
+  return plural ? `${title} · ${plural}` : title;
 };
