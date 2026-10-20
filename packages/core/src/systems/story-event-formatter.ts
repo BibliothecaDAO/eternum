@@ -5,6 +5,7 @@ import {
   VERDICT_WORDS,
   buildingName,
   formatCharge,
+  scaledToUnits,
   formatClockTime,
   formatDuration,
   formatExact,
@@ -12,7 +13,6 @@ import {
   GuardSlot,
   guardSlotName,
   LORDS,
-  RESOURCE_PRECISION,
   RealmLevels,
   rankName,
   relicChestDelivery,
@@ -679,14 +679,6 @@ function amountToBigInt(value: unknown): bigint | null {
   return null;
 }
 
-/** An amount at contract precision as the chain moved it, to its last unit: a charge ("1,000", "0.001"). */
-function formatAmountWithPrecision(amount: unknown, precision: number): string {
-  const bigIntAmount = amountToBigInt(amount);
-  if (bigIntAmount === null) return "0";
-  const divisor = BigInt(precision);
-  return formatCharge(Number(bigIntAmount / divisor) + Number(bigIntAmount % divisor) / precision);
-}
-
 function joinPieces(parts: Array<string | undefined>): string | undefined {
   const filtered = parts.filter((part): part is string => Boolean(part));
   return filtered.length ? filtered.join(" · ") : undefined;
@@ -727,7 +719,7 @@ function troopCount(amount: unknown): string {
 function formatResourceAmount(amount: unknown): string | undefined {
   const bigIntAmount = amountToBigInt(amount);
   if (bigIntAmount === null) return undefined;
-  return formatAmountWithPrecision(bigIntAmount, RESOURCE_PRECISION);
+  return formatCharge(scaledToUnits(bigIntAmount));
 }
 
 function formatSlotLabel(value: unknown): string | undefined {

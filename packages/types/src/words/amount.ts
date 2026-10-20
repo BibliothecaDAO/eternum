@@ -3,6 +3,7 @@
  * Every one is written for en-US, whatever the device's language, so "1,250" never reads "1.250". Unknown is a dash,
  * never zero.
  */
+import { RESOURCE_PRECISION } from "../constants/utils";
 import { formatCount } from "./count";
 import { POINT, POINTS } from "./nouns";
 
@@ -36,6 +37,16 @@ export const formatExact = (value: number | bigint | undefined): string =>
  * takes the exact charge; a short pair says more (formatHeldAgainst).
  */
 export const formatCharge = (value: number | undefined): string => formatAmount(value);
+
+const PRECISION = BigInt(RESOURCE_PRECISION);
+
+/**
+ * An amount the chain holds at its resource precision, in the units a player reads, exact: 57.6 stays 57.6, so the one
+ * rounding is the formatter's and every surface writes the same reward alike ("+58"). The one way from a scaled
+ * amount to a number a player reads.
+ */
+export const scaledToUnits = (scaled: bigint): number =>
+  Number(scaled / PRECISION) + Number(scaled % PRECISION) / RESOURCE_PRECISION;
 
 // From whole units to the resource's last unit: the precisions a short pair steps through until its two sides differ.
 const PAIR_PRECISIONS = Array.from(
