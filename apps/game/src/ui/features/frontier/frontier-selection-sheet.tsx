@@ -73,7 +73,7 @@ export const FrontierSelectionSheet = ({
     );
   if (cleared)
     return (
-      <HudSheet label={structureName(cleared.structure.base.category)} onClose={close}>
+      <HudSheet label={structureName(cleared.site.category)} onClose={close}>
         <SiteReceipt selected={cleared} />
       </HudSheet>
     );

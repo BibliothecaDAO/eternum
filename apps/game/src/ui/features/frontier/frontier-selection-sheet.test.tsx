@@ -20,7 +20,7 @@ import { useChestOpeningStore } from "@/hooks/store/use-chest-opening-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
-import { campBeside } from "./sites/site-fixture";
+import { campBeside, SITE_TILE } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { expeditionSpireTile, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
@@ -50,6 +50,51 @@ const sheetFor = (occupierType: number | null) => {
 };
 
 describe("Frontier's selection sheet", () => {
+  it("opens and closes a cleared site's receipt after its structure and guard are removed", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const { store, site } = campBeside();
+    store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x72",
+        value: {
+          ...site,
+          clear: {
+            explorer_id: 201n,
+            home_id: 7n,
+            reward: { resource_type: 23, amount: 550_000_000_000n },
+          },
+        },
+      },
+      { model: "Structure", key: "0x71", value: null },
+      { model: "Guard", key: "0x73", value: null },
+    ]);
+    tiles.current = [];
+    useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE });
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    try {
+      await act(async () =>
+        root.render(
+          <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+            <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+          </GameProvider>,
+        ),
+      );
+      expect(host.querySelector('[data-kit-sheet][aria-label="Camp"]')).not.toBeNull();
+      expect(host.textContent).toContain("Cleared · Camp");
+      expect(host.textContent).toContain("550 Labor");
+      expect(host.textContent).toContain("82 XP");
+      const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
+      expect(close).not.toBeNull();
+      await act(async () => close!.click());
+      expect(host.querySelector("[data-kit-sheet]")).toBeNull();
+    } finally {
+      act(() => root.unmount());
+      useUIStore.getState().selectOnMap(null);
+    }
+  });
+
   it("opens a Frontier card for a spire, and nothing for a tile without one", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 4, row: 5 } });
