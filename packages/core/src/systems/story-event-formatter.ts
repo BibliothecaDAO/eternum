@@ -72,11 +72,14 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  * variant is a type error here until it has its line, so no story ever reaches the feed as raw fields.
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
-  ExplorationReward: (_event, payload, components) => ({
-    title: findLine(discoveryName(payload, components) ?? "Explored", payload),
-    description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
-    icon: "resource",
-  }),
+  ExplorationReward: (_event, payload, components) => {
+    const site = discoveredSite(payload, components);
+    return {
+      title: findLine(site ? `${siteDisplayName(site.id)} found` : "Explored", payload),
+      description: joinPieces([site?.kind, describeExplorer(payload.explorer_id, components), "Reveal"]),
+      icon: "resource",
+    };
+  },
   SpireDiscovered: (_event, payload, components) => ({
     title: findLine("Dormant spire found", payload),
     description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
@@ -124,8 +127,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
         `${nameOwner(payload.new_owner, components, resolvePlayerName) ?? "Someone"} took ${subjectOf(event.entityId, components)} from ${
           isViewer(payload.previous_owner, event.viewerAddress)
             ? "you"
-            : (nameFightParticipant(payload.previous_owner, event.entityId, components, resolvePlayerName) ??
-              "its holder")
+            : (nameOwner(payload.previous_owner, components, resolvePlayerName) ?? "its holder")
         }`,
         toBigIntSafe(payload.previous_owner) ? CAPTURE_AFTERMATH : null,
       ]
@@ -283,13 +285,12 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
           { name: attackerName, standing: BigInt(String(attacker.after)) > 0n },
           { name: defenderName, standing: BigInt(String(defender.after)) > 0n },
         );
-    // A beast guarding an ownerless Frontier site fights under the name the title gives it ("Troll"), never the troop
-    // row the chain keeps for it.
-    const forces = (value: Record<string, unknown>, name: string | undefined) =>
-      (frontier && toBigIntSafe(value.player) === 0n ? name : undefined) ??
+    // A beast guarding an ownerless Frontier site fights as its species ("Troll"), never the troop row the chain keeps.
+    const forces = (value: Record<string, unknown>, entityId: unknown) =>
+      (frontier && toBigIntSafe(value.player) === 0n ? fightBeast(entityId, store)?.name : undefined) ??
       formatTroopDescriptor(value.category, value.tier);
-    const side = (label: string, value: Record<string, unknown>, name: string | undefined) => [
-      `${label} forces: ${forces(value, name)} [ ${formatUnitAmount(value.before)} ]`,
+    const side = (label: string, value: Record<string, unknown>, entityId: unknown) => [
+      `${label} forces: ${forces(value, entityId)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
       `${label} Troops Left: ${formatResourceAmount(value.after)}`,
       Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
@@ -301,9 +302,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       title: lost ? `${lost} · ${sides}` : `${sides} · ${outcome}`,
       description: joinPieces([
         `Attacker [${attackerName}]: ${describeEntity(payload.attacker_id, store) ?? "Army"}`,
-        `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? "Army"}`,
-        ...side("Attacker", attacker, attackerName),
-        ...side("Defender", defender, defenderName),
+        // A cleared site has no Structure left to describe; its name is the side's own.
+        `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? (frontier && toBigIntSafe(defender.player) === 0n ? defenderName : "Army")}`,
+        ...side("Attacker", attacker, payload.attacker_id),
+        ...side("Defender", defender, payload.defender_id),
         `Outcome: ${outcome}`,
       ]),
       icon: "battle",
@@ -808,20 +810,36 @@ function fightBeast(entityId: unknown, store?: NativeFactStore) {
   return store && id !== null ? readFrontierBeast(store, configManager.getActiveGameId(), id) : undefined;
 }
 
-/** Battles and captures name the recorded owner, or the beast guarding an ownerless Frontier site. */
+/**
+ * A battle's side: its recorded owner, or, for an ownerless Frontier site, the site by its one name (siteDisplayName),
+ * the name its map label, its receipt and its clear's story give it. It needs only the site's id, so a site this client
+ * has not synced is named the same.
+ */
 function nameFightParticipant(
   owner: unknown,
   entityId: unknown,
   store?: NativeFactStore,
   resolvePlayerName?: PlayerNameResolver,
 ): string | undefined {
-  if (toBigIntSafe(owner) === 0n && store && readExpeditionRules(store, configManager.getActiveGameId()))
-    return fightBeast(entityId, store)?.name ?? "Beast guard";
+  const siteId = toNumber(entityId);
+  if (
+    toBigIntSafe(owner) === 0n &&
+    siteId !== null &&
+    store &&
+    readExpeditionRules(store, configManager.getActiveGameId())
+  )
+    return siteDisplayName(siteId);
   return nameOwner(owner, store, resolvePlayerName);
 }
 
-/** The revealed tile's retained site, not an army's later position or a guess from the reward. */
-function discoveryName(payload: Record<string, unknown>, store?: NativeFactStore): string | undefined {
+/**
+ * The revealed tile's retained site, not an army's later position or a guess from the reward: its id, which names it
+ * (siteDisplayName), and its kind as Frontier words it ("Troll", "Dark fey Rift").
+ */
+function discoveredSite(
+  payload: Record<string, unknown>,
+  store?: NativeFactStore,
+): { id: number; kind: string } | undefined {
   if (!store || !payload.coord || typeof payload.coord !== "object") return undefined;
   const coord = payload.coord as Record<string, unknown>;
   const site = [...store.inGame("ExpeditionSite", configManager.getActiveGameId())].find(
@@ -834,5 +852,5 @@ function discoveryName(payload: Record<string, unknown>, store?: NativeFactStore
     beast && (site.category === StructureType.Rift || site.category === StructureType.Ruin)
       ? `${beast.name} ${label}`
       : label;
-  return `${named} found`;
+  return { id: Number(site.entity_id), kind: named };
 }

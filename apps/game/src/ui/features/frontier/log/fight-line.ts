@@ -1,13 +1,13 @@
 import { fightLine } from "@/ui/design-system/kit/words";
-import { configManager, readFrontierBeast } from "@bibliothecadao/eternum";
+import { configManager, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { StructureType, formatExact, fightVerdict, VERDICT_WORDS } from "@bibliothecadao/types";
+import { formatExact, fightVerdict, VERDICT_WORDS } from "@bibliothecadao/types";
 
 import { battleRecordOf } from "../sites/fight-record";
-import { TARGET_MARKS, attackTargetName } from "../sites/site-marks";
 
 /**
- * The day log's line for one of the player's attacks on a site, from its battle story: the site, how the attack ended
+ * The day log's line for one of the player's attacks on a site, from its battle story: the site by its one name
+ * (siteDisplayName, as its map label, its clear and every story name it), how the attack ended
  * (the result card's own word), the troops it cost and the guard before and after. Null for any other story, or a
  * battle whose defender is no site this client knows.
  */
@@ -30,12 +30,9 @@ export const fightLogLine = (
   );
 };
 
-/** The site by its expedition row, which outlives the Structure its clear removes. */
+/** The site by its one name, once its expedition row (which outlives the Structure its clear removes) says it is one. */
 const siteWord = (store: NativeFactStore, entityId: unknown): string | null => {
-  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: Number(entityId) });
-  const kind = site && StructureType[site.category];
-  if (!kind || !(kind in TARGET_MARKS)) return null;
-  const beast = readFrontierBeast(store, configManager.getActiveGameId(), Number(entityId));
-  const word = attackTargetName(kind as keyof typeof TARGET_MARKS, beast ?? undefined);
-  return beast && (kind === "Rift" || kind === "Ruin") ? `${beast.name} ${word}` : word;
+  const id = Number(entityId);
+  const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: id });
+  return site ? siteDisplayName(id) : null;
 };
