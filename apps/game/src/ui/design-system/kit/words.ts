@@ -5,6 +5,8 @@
  */
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import {
+  BuildingType,
+  buildingName,
   formatAmount,
   formatCount,
   formatDuration,
@@ -214,11 +216,16 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const FARM = "Farm";
-export const WORKSHOP = "Workshop";
-export const BARRACKS = "Barracks";
-export const HUT = "Hut";
-export const TRAINING_BUILDINGS = ["War hall", "Supply yard", "Scouts' lodge", "Hearth"] as const;
+export const FARM = buildingName(BuildingType.ResourceWheat, true);
+export const WORKSHOP = buildingName(BuildingType.ResourceLabor, true);
+export const BARRACKS = buildingName(BuildingType.ResourceKnightT1, true);
+export const HUT = buildingName(BuildingType.WorkersHut, true);
+export const TRAINING_BUILDINGS = [
+  buildingName(BuildingType.WarHall, true),
+  buildingName(BuildingType.SupplyYard, true),
+  buildingName(BuildingType.ScoutsLodge, true),
+  buildingName(BuildingType.Hearth, true),
+] as const;
 export const BUILDINGS = "Buildings";
 /** The castle rows that unlock the three reaches beyond the spire. */
 export const ETHEREAL = "Ethereal";

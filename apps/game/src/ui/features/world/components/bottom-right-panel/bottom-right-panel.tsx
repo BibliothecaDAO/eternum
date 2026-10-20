@@ -42,7 +42,7 @@ import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-fact
 import {
   BUILDINGS_CENTER,
   BuildingType,
-  BuildingTypeToString,
+  buildingName as nameOfBuilding,
   ID,
   ResourcesIds,
   StructureType,
@@ -174,7 +174,7 @@ const LocalTilePanel = () => {
       return "Structure";
     }
     if (hasBuilding) {
-      return BuildingTypeToString[buildingCategory as keyof typeof BuildingTypeToString] ?? "Building";
+      return nameOfBuilding(buildingCategory, mode.id === "frontier");
     }
     if (building) return "Empty Tile";
     return "Local Tile";

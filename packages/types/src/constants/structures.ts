@@ -17,7 +17,7 @@ export const StructureTypeToNameMapping: Record<StructureType, string> = {
 };
 
 export const MineKinds = {
-  1: { name: "Essence Rift", model: "/models/reward-tiles/rift.glb" },
+  1: { name: "Rift", model: "/models/reward-tiles/rift.glb" },
   2: { name: "Fragment Mine", model: "/models/new-buildings-opt/mine.glb" },
 } as const;
 
@@ -104,7 +104,7 @@ export const BuildingTypeToString: Record<BuildingType, string> = {
   [BuildingType.ResourceSapphire]: "Sapphire",
   [BuildingType.ResourceEtherealSilica]: "Ethereal Silica",
   [BuildingType.ResourceDragonhide]: "Dragonhide",
-  [BuildingType.ResourceLabor]: "Labor",
+  [BuildingType.ResourceLabor]: "Workshop",
   [BuildingType.ResourceAncientFragment]: "Ancient Fragment",
   [BuildingType.ResourceDonkey]: "Market",
   [BuildingType.ResourceKnightT1]: "Knight T1",

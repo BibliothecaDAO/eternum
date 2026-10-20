@@ -23,7 +23,7 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
     "draws the production Workshop outside the center at realm level %s",
     (stage) => {
       expect(modelPath(labor, stage)).toBe("/models/new-buildings-opt/workshop.glb");
-      expect(getBuildingDisplayName(labor, stage, "Village")).toBe("Workshop");
+      expect(getBuildingDisplayName(labor, stage, "Village", false)).toBe("Workshop");
       for (const tier of [2, 3])
         expect(modelPath({ ...labor, tier }, stage)).toBe("/models/new-buildings-opt/workshop.glb");
     },
@@ -34,7 +34,7 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
     (stage) => {
       const name = castleLevelToRealmCastle[stage];
       expect(modelPath(keep, stage)).toBe(buildingModelPaths(false)[BUILDINGS_GROUPS.REALMS][name]);
-      expect(getBuildingDisplayName(keep, stage, "Village")).toBe(name);
+      expect(getBuildingDisplayName(keep, stage, "Village", false)).toBe(name);
     },
   );
 
@@ -45,7 +45,7 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
       type: mainStructureType,
       tierPath: undefined,
     });
-    expect(getBuildingDisplayName(center, context.stage, "Outpost")).toBe("Outpost");
+    expect(getBuildingDisplayName(center, context.stage, "Outpost", false)).toBe("Outpost");
     expect(resolveBuildingModelSelection(labor, { ...context, mainStructureType })).toEqual({
       group: BUILDINGS_GROUPS.BUILDINGS,
       type: BuildingType.ResourceLabor,

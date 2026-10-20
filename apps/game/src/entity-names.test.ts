@@ -1,7 +1,11 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildStoryEventPresentation, configManager, getEntityName, getStructureName } from "@bibliothecadao/eternum";
+import { BuildingType, buildingName, siteName, StructureType } from "@bibliothecadao/types";
+import { buildStructurePlate } from "./three/map-plates/map-plate-model";
+import { campBeside, SITE } from "./ui/features/frontier/sites/site-fixture";
 
 /**
  * A player reads an army or a structure by its name (`getEntityName`, `getArmyName`, `getStructureName`), never by its
@@ -100,5 +104,88 @@ describe("entity names", () => {
       "row.tsx:8",
       "row.tsx:9",
     ]);
+  });
+});
+
+describe("one name for each thing, read by every list, picker, event and panel", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const frontierCamp = () => {
+    vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+    return campBeside().store;
+  };
+
+  it("names a site as its map plate does, in the lists and in the events", () => {
+    const store = frontierCamp();
+    const site = store.require("Structure", { game_id: 1, entity_id: SITE });
+    expect(getEntityName(SITE, store, false)).toBe(siteName(SITE));
+    expect(getStructureName(site, false).name).toBe(siteName(SITE));
+    const plate = buildStructurePlate({
+      entityId: SITE,
+      structureType: StructureType.Camp,
+      structureName: getStructureName(site, false).name,
+      owner: { address: 0n, ownerName: "", guildName: "" },
+      hexCoords: { col: 0, row: 0 },
+      isMine: false,
+      stage: 0,
+      level: 0,
+      guardArmies: [],
+    } as never);
+    expect(plate.place).toBe(getStructureName(site, false).name);
+  });
+
+  it("names a building as its game does: Frontier's Barracks, Blitz's Knight T1", () => {
+    const built = (store?: ReturnType<typeof frontierCamp>) =>
+      buildStoryEventPresentation(
+        {
+          storyType: "BuildingPaymentStory",
+          storyPayload: { category: BuildingType.ResourceKnightT1, cost: [] },
+          entityId: 7,
+          ownerAddress: "0x123",
+          viewerAddress: null,
+        } as never,
+        store,
+      ).title;
+    expect(built(frontierCamp())).toMatch(/^Barracks built at /);
+    expect(buildingName(BuildingType.ResourceKnightT1, true)).toBe("Barracks");
+    vi.restoreAllMocks();
+    expect(built()).toMatch(/^Knight T1 built at /);
+  });
+
+  it("names a beast guard in a fight's forces as the fight's title does, never as a troop", () => {
+    const store = frontierCamp();
+    const fight = buildStoryEventPresentation(
+      {
+        storyType: "BattleEvent",
+        storyPayload: {
+          attacker_id: 9,
+          defender_id: SITE,
+          attacker: {
+            player: "0x123",
+            category: "Knight",
+            tier: "T1",
+            before: "755000000000",
+            after: "359000000000",
+            roll: 0,
+          },
+          defender: {
+            player: "0x0",
+            category: "Knight",
+            tier: "T1",
+            before: "1300000000000",
+            after: "979000000000",
+            roll: 0,
+          },
+        },
+        entityId: null,
+        ownerAddress: "0x123",
+        viewerAddress: null,
+      } as never,
+      store,
+    );
+    const beast = fight.title.split(" vs ")[1].split(" · ")[0];
+    expect(beast).not.toBe("Beast guard");
+    expect(fight.description).toContain(`Defender forces: ${beast} [ 1,300 ]`);
+    expect(fight.description).toContain("Attacker forces: T1 Knight [ 755 ]");
   });
 });

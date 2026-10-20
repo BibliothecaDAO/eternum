@@ -74,7 +74,12 @@ const importsRetired = (specifier, fileName) => {
 
 const NAME_ENUMS = new Set(["ResourcesIds", "StructureType", "RealmLevels", "BuildingType", "GuardSlot", "TroopTier"]);
 // Tables that only hold names: any read outside the words module is a name written on its own, wherever it goes.
-const NAME_TABLES = new Set(["StructureTypeToNameMapping", "getMinePresentation", "GUARD_SLOT_NAMES"]);
+const NAME_TABLES = new Set([
+  "StructureTypeToNameMapping",
+  "getMinePresentation",
+  "GUARD_SLOT_NAMES",
+  "BuildingTypeToString",
+]);
 // Tables whose values are also keys (models, icons): a read counts only where a player reads it.
 const KEY_TABLES = new Set(["RealmLevelNames", "MineKinds"]);
 // Where a player reads a value: these attributes, and these fields of an object a screen draws.

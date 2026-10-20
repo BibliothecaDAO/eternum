@@ -1,3 +1,4 @@
+import { getGameModeId } from "@/config/game-modes";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
@@ -16,7 +17,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   Direction,
   DISPLAYED_SLOT_NUMBER_MAP,
   getBuildingFromResource,
@@ -554,7 +555,7 @@ function readTroopSupply(
   timestamp: number,
 ): TroopSupply {
   const resourceId = getTroopResourceId(troop.type, troop.tier);
-  const name = BuildingTypeToString[getBuildingFromResource(resourceId)];
+  const name = buildingName(getBuildingFromResource(resourceId), getGameModeId() === "frontier");
   if (structureId === undefined) return { name, perHour: 0, secondsToFullArmy: null };
   const manager = new ResourceManager(store, structureId);
   const production = manager.isActive(resourceId) ? manager.current(resourceId) : undefined;

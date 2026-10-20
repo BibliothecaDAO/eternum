@@ -40,7 +40,7 @@ export interface StructurePlate {
   owner: string;
   /** The standing guard species, shown as the title above its strength. */
   beast?: string;
-  /** A realm's or a hyperstructure's own name; else its kind's ("Camp", "Essence Rift"). */
+  /** A realm's or a hyperstructure's own name; else its kind's ("Camp", "Rift"). */
   name: string;
   /** Whether `name` is the place's own, set as a title, rather than its kind's. */
   named: boolean;

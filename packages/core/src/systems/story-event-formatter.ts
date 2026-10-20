@@ -1,8 +1,7 @@
 import {
-  BuildingType,
   fightVerdict,
   VERDICT_WORDS,
-  BuildingTypeToString,
+  buildingName,
   formatCharge,
   formatClockTime,
   formatDuration,
@@ -242,14 +241,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     };
   },
   BuildingPlacementStory: (event, payload, components) => ({
-    title: `${formatBuildingCategory(payload.category) ?? "Building"} ${describeBuildingStatus(payload)} at ${subjectOf(event.entityId, components)}`,
+    title: `${formatBuildingCategory(payload.category, components) ?? "Building"} ${describeBuildingStatus(payload)} at ${subjectOf(event.entityId, components)}`,
     icon: "building",
   }),
   // Paid in the same transaction as the building it pays for: the same action, told by the same title.
   BuildingPaymentStory: (event, payload, components) => {
     const cost = formatResourceList(payload.cost);
     return {
-      title: `${formatBuildingCategory(payload.category) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
+      title: `${formatBuildingCategory(payload.category, components) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
       description: cost ? `Paid ${cost}` : undefined,
       icon: "building",
     };
@@ -284,8 +283,13 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
           { name: attackerName, standing: BigInt(String(attacker.after)) > 0n },
           { name: defenderName, standing: BigInt(String(defender.after)) > 0n },
         );
-    const side = (label: string, value: Record<string, unknown>) => [
-      `${label} forces: ${formatTroopDescriptor(value.category, value.tier)} [ ${formatUnitAmount(value.before)} ]`,
+    // A beast guarding an ownerless Frontier site fights under the name the title gives it ("Troll"), never the troop
+    // row the chain keeps for it.
+    const forces = (value: Record<string, unknown>, name: string | undefined) =>
+      (frontier && toBigIntSafe(value.player) === 0n ? name : undefined) ??
+      formatTroopDescriptor(value.category, value.tier);
+    const side = (label: string, value: Record<string, unknown>, name: string | undefined) => [
+      `${label} forces: ${forces(value, name)} [ ${formatUnitAmount(value.before)} ]`,
       `${label} losses: ${formatResourceAmount(BigInt(String(value.before)) - BigInt(String(value.after)))}`,
       `${label} Troops Left: ${formatResourceAmount(value.after)}`,
       Number(value.roll) > 0 ? `${label} d20: ${Number(value.roll)} (+${Number(value.roll)}% damage)` : undefined,
@@ -298,8 +302,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       description: joinPieces([
         `Attacker [${attackerName}]: ${describeEntity(payload.attacker_id, store) ?? "Army"}`,
         `Defender [${defenderName}]: ${describeEntity(payload.defender_id, store) ?? "Army"}`,
-        ...side("Attacker", attacker),
-        ...side("Defender", defender),
+        ...side("Attacker", attacker, attackerName),
+        ...side("Defender", defender, defenderName),
         `Outcome: ${outcome}`,
       ]),
       icon: "battle",
@@ -389,14 +393,15 @@ export function buildStoryEventPresentation(
   };
 }
 
-function formatBuildingCategory(value: unknown): string | undefined {
+/** A building's name as its game names it (buildingName): a Frontier story says "Barracks" where Blitz says "Knight T1". */
+function formatBuildingCategory(value: unknown, store: NativeFactStore | undefined): string | undefined {
   const numeric = toNumber(value);
   if (numeric === null) {
     const label = formatEnum(value);
     return label ?? undefined;
   }
-  const type = numeric as BuildingType;
-  return BuildingTypeToString[type] ?? `Building ${numeric}`;
+  const frontier = store !== undefined && readExpeditionRules(store, configManager.getActiveGameId()) !== null;
+  return buildingName(numeric, frontier);
 }
 
 /** What each change a placement story carries (the contract's BuildingChange) reads as. */

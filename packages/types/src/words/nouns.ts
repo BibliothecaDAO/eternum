@@ -6,7 +6,12 @@
 import { RealmLevelNames } from "../constants/realmLevels";
 import { ResourcesIds } from "../constants/resource-ids";
 import { resources } from "../constants/resources";
-import { getMinePresentation, StructureTypeToNameMapping } from "../constants/structures";
+import {
+  BuildingType,
+  BuildingTypeToString,
+  getMinePresentation,
+  StructureTypeToNameMapping,
+} from "../constants/structures";
 import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
 
@@ -48,11 +53,35 @@ export const resourceName = (id: ResourcesIds | number | undefined): string => {
   return troop ? troopName(troop[1], troop[2] ?? "T1") : name;
 };
 
-/** A structure by its kind, a mine by what it yields: "Camp", "Essence Rift", "Hyperstructure". */
+/** A structure by its kind, a mine by what it yields: "Camp", "Rift", "Hyperstructure". */
 export const structureName = (type: StructureType, mineKind?: number): string =>
   type === StructureType.Mine && mineKind !== undefined
     ? getMinePresentation(mineKind).name
     : (StructureTypeToNameMapping[type] ?? UNKNOWN);
+
+/** The buildings Frontier raises, by Frontier's names: its barracks trains knights, its hut houses workers. */
+const FRONTIER_BUILDINGS: Partial<Record<BuildingType, string>> = {
+  [BuildingType.ResourceWheat]: "Farm",
+  [BuildingType.ResourceLabor]: "Workshop",
+  [BuildingType.ResourceKnightT1]: "Barracks",
+  [BuildingType.WorkersHut]: "Hut",
+  [BuildingType.WarHall]: "War hall",
+  [BuildingType.SupplyYard]: "Supply yard",
+  [BuildingType.ScoutsLodge]: "Scouts' lodge",
+  [BuildingType.Hearth]: "Hearth",
+};
+
+/** Whether Frontier raises this building. */
+export const isFrontierBuilding = (category: number): boolean => category in FRONTIER_BUILDINGS;
+
+/**
+ * A building as its game's player reads it, the one name every list, panel and story uses: Frontier's own name where
+ * Frontier raises it ("Barracks"), else the game's table ("Knight T1", "Farm"). Unknown is a dash.
+ */
+export const buildingName = (category: BuildingType | number, frontier: boolean): string =>
+  (frontier ? FRONTIER_BUILDINGS[category as BuildingType] : undefined) ??
+  BuildingTypeToString[category as BuildingType] ??
+  UNKNOWN;
 
 /** A guard slot by its wall, never its internal name: "Castle Wall", not "Gamma". */
 export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;

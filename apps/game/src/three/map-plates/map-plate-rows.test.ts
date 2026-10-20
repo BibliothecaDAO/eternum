@@ -53,7 +53,7 @@ const rift: StructurePlate = {
   kind: "structure",
   relation: "neutral",
   owner: "The Vanguard",
-  name: "Essence Rift",
+  name: "Rift",
   named: false,
   place: "Duskmere",
   reward: "1,200 Essence",
@@ -127,14 +127,11 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     const frontierRealm = { ...realm, relation: "own", owner: "djizus", name: "Niziz", guards: null } as const;
     expect(read(frontierRealm, "open")).toEqual(["djizus | Niziz"]);
     expect(plateSize(frontierRealm, "open").height).toBe(24 + 6);
-    expect(read({ ...rift, guards: null, reward: undefined }, "open")).toEqual([
-      "The Vanguard",
-      "Duskmere Essence Rift",
-    ]);
+    expect(read({ ...rift, guards: null, reward: undefined }, "open")).toEqual(["The Vanguard", "Duskmere Rift"]);
   });
 
   it("opens a rift or a camp on its owner, its lore name and kind, then its guard and what it holds", () => {
-    expect(read(rift, "open")).toEqual(["The Vanguard", "Duskmere Essence Rift", "T2 300 | 1,200 Essence"]);
+    expect(read(rift, "open")).toEqual(["The Vanguard", "Duskmere Rift", "T2 300 | 1,200 Essence"]);
     expect(read(camp, "open")).toEqual(["The Vanguard", "Orbroar Camp", "T1 250 | 640 Labor"]);
   });
 

@@ -16,7 +16,8 @@ import {
   typedNumberText,
 } from "./amount";
 import { formatCount } from "./count";
-import { ageLine, guardSlotName, rankName, resourceName, structureName } from "./nouns";
+import { ageLine, buildingName, guardSlotName, rankName, resourceName, structureName } from "./nouns";
+import { BuildingType } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
 import { VOICE_RULES } from "./voice";
 
@@ -159,9 +160,21 @@ describe("nouns", () => {
   it("names a rank, a structure, a guard wall and an age", () => {
     expect([0, 1, 2, 3, 9].map(rankName)).toEqual(["Settlement", "City", "Kingdom", "Empire", "—"]);
     expect(structureName(StructureType.Camp)).toBe("Camp");
-    expect(structureName(StructureType.Mine, 1)).toBe("Essence Rift");
+    expect(structureName(StructureType.Mine, 1)).toBe("Rift");
     expect(guardSlotName(GuardSlot.Gamma)).toBe("Castle Wall");
     expect(ageLine("frontier")).toBe("Frontier · Age II");
+  });
+
+  it("names a building as its game does, one name for each", () => {
+    expect(buildingName(BuildingType.ResourceKnightT1, true)).toBe("Barracks");
+    expect(buildingName(BuildingType.ResourceKnightT1, false)).toBe("Knight T1");
+    expect(buildingName(BuildingType.WorkersHut, true)).toBe("Hut");
+    expect(buildingName(BuildingType.WorkersHut, false)).toBe("Workers Hut");
+    expect([true, false].map((frontier) => buildingName(BuildingType.ResourceLabor, frontier))).toEqual([
+      "Workshop",
+      "Workshop",
+    ]);
+    expect(buildingName(999, true)).toBe("—");
   });
 });
 

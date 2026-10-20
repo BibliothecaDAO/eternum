@@ -2,7 +2,7 @@ import { safeInteger } from "../../utils/safe-integer";
 import {
   type Building,
   type BuildingType,
-  BuildingTypeToString,
+  buildingName,
   type ContractAddress,
   getProducedResource,
   type ID,
@@ -17,6 +17,7 @@ import { configManager } from "../../managers/config-manager";
 import { TileManager } from "../../managers/tile-manager";
 import { getRealmInfo } from "../../utils/realm";
 import { getStructure } from "../../utils/structure";
+import { readExpeditionRules } from "../../utils/expeditions";
 import type { PlayerNameResolver } from "../../utils/entities";
 
 export type StructureRow = NativeRows["Structure"];
@@ -71,8 +72,9 @@ export const readHyperstructureUpdates = (store: NativeFactStore, entityId: ID):
   return row ? [row] : [];
 };
 
-export const readBuildings = (store: NativeFactStore, structureId: number): Building[] =>
-  [...store.inGame("Building", configManager.getActiveGameId())]
+export const readBuildings = (store: NativeFactStore, structureId: number): Building[] => {
+  const frontier = readExpeditionRules(store, configManager.getActiveGameId()) !== null;
+  return [...store.inGame("Building", configManager.getActiveGameId())]
     .filter((row) => row.structure_id === BigInt(structureId))
     .flatMap((building) => {
       const category = building.category as BuildingType;
@@ -80,7 +82,7 @@ export const readBuildings = (store: NativeFactStore, structureId: number): Buil
       if (!resource) return [];
       return [
         {
-          name: BuildingTypeToString[category],
+          name: buildingName(category, frontier),
           category,
           paused: building.paused,
           produced: { resource },
@@ -89,3 +91,4 @@ export const readBuildings = (store: NativeFactStore, structureId: number): Buil
         },
       ];
     });
+};

@@ -8,7 +8,7 @@ import {
   resolveUseSimpleCost,
   isViewerOwner,
 } from "@bibliothecadao/eternum";
-import { BuildingType, BuildingTypeToString, type HexPosition } from "@bibliothecadao/types";
+import { BuildingType, buildingName, type HexPosition } from "@bibliothecadao/types";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -74,7 +74,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       const state = buildability(type);
       return {
         type,
-        label: BuildingTypeToString[type],
+        label: buildingName(type, mode.id === "frontier"),
         requirements: resolveBuildingRequirements(target.entityId, store, type, useSimpleCost, currentDefaultTick),
         reason: state.reason,
         disabled: !state.canSubmit || pending,

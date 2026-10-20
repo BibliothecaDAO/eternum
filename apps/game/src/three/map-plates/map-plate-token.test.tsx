@@ -32,7 +32,7 @@ const rift: StructurePlate = {
   ...realm,
   relation: "neutral",
   owner: "The Vanguard",
-  name: "Essence Rift",
+  name: "Rift",
   named: false,
   place: "Duskmere",
   reward: "1,200 Essence",

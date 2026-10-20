@@ -1,4 +1,4 @@
-import { armyName, StructureType } from "@bibliothecadao/types";
+import { armyName, siteName, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../managers/config-manager", () => ({ configManager: { getActiveGameId: () => 7 } }));
@@ -25,12 +25,12 @@ const camp = {
 };
 
 describe("the one name a player reads for an army or a structure", () => {
-  it("calls an unnamed camp by its kind and an unnamed army by its generated name, never by their entity id", () => {
+  it("calls an unnamed camp by its map name and an unnamed army by its generated name, never by their entity id", () => {
     const store = storeOf({
       Structure: { "12884901891": camp },
       ExplorerTroops: { "128490": { explorer_id: 128490 } },
     });
-    expect(getEntityName(12884901891, store, true)).toBe("Camp");
+    expect(getEntityName(12884901891, store, true)).toBe(siteName(12884901891));
     expect(getEntityName(128490, store, true)).toBe(armyName(128490));
     expect(getEntityName(128490, store, true)).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/);
   });

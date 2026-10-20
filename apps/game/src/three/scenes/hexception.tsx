@@ -1053,6 +1053,7 @@ export default class HexceptionScene extends HexagonScene {
       { ...building, ...normalizedCoords },
       this.structureStage,
       this.mode.labels.village,
+      this.mode.id === "frontier",
     );
     const producedResource = getProducedResource(building.category as BuildingType);
 

@@ -182,7 +182,7 @@ it("counts the structures the player owns, by kind, the most held first, and non
     owned(34, StructureType.Mine, 1);
   });
   const rows = [...host.querySelectorAll('[aria-label="Structures owned"] > div')].map((row) => row.textContent);
-  expect(rows).toEqual(["Realm2", "Camp1", "Essence Rift1"]);
+  expect(rows).toEqual(["Realm2", "Camp1", "Rift1"]);
   // The section's cue is the total; the other player's Hyperstructure 7 is not counted.
   expect(host.textContent).toContain("Structures4");
 });

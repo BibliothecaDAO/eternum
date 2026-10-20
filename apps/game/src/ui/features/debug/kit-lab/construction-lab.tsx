@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { GameProvider } from "@/hooks/context/game-context";
-import { BuildingType, BuildingTypeToString, ResourcesIds } from "@bibliothecadao/types";
-import { frontierBuildingName } from "@/ui/features/frontier/build/building-names";
+import { BuildingType, buildingName, ResourcesIds } from "@bibliothecadao/types";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingCard } from "@/ui/features/settlement/construction/select-preview-building";
 
@@ -55,7 +54,7 @@ const ConstructionCards = () => {
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
         {buildings.map((building) => {
           const count = counts[building] ?? 1;
-          const name = frontierBuildingName(building) ?? BuildingTypeToString[building];
+          const name = buildingName(building, true);
           return (
             <section key={building} aria-label={name}>
               <BuildingCard

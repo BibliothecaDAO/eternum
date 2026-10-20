@@ -2,7 +2,7 @@ import { ResourceIdToMiningType, StructureProgress } from "@bibliothecadao/etern
 import {
   BUILDINGS_CENTER,
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   RealmLevels,
   ResourceMiningTypes,
   ResourcesIds,
@@ -62,6 +62,7 @@ export function getBuildingDisplayName(
   building: BoardBuilding,
   stage: RealmLevels | StructureProgress,
   villageLabel: string,
+  frontier: boolean,
 ): string {
   const buildingType = building.category as BuildingType;
 
@@ -74,7 +75,7 @@ export function getBuildingDisplayName(
   }
 
   if (buildingType === BuildingType.ResourceLabor) {
-    if (!isCentralKeep(building)) return "Workshop";
+    if (!isCentralKeep(building)) return buildingName(BuildingType.ResourceLabor, frontier);
     // The board of a structure whose category is not known yet shows a plain keep.
     if (building.structureType == null) return "Castle";
     const keep = byStructureCategory(KEEP_NAMES, building.structureType, "keep name", "Castle");
@@ -82,16 +83,7 @@ export function getBuildingDisplayName(
     return keep === "village" ? villageLabel : keep;
   }
 
-  const baseName = BuildingTypeToString[buildingType];
-  if (!baseName) {
-    return "Building";
-  }
-
-  if (baseName.endsWith(" Resource")) {
-    return baseName.replace(" Resource", "");
-  }
-
-  return baseName;
+  return buildingName(buildingType, frontier);
 }
 
 export function resolveBuildingModelSelection(

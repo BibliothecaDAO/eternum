@@ -24,6 +24,7 @@ describe("buildRealmBuildingSummary", () => {
         BuildingType.ResourceKnightT2,
       ],
       getBuildingCount: (buildingType) => buildingCounts[buildingType] ?? 0,
+      frontier: false,
     });
 
     expect(items).toEqual([
@@ -40,6 +41,7 @@ describe("buildRealmBuildingSummary", () => {
       realmResourceIds: [ResourcesIds.Wheat],
       allowedBuildingTypes: [BuildingType.WorkersHut, BuildingType.ResourceWheat],
       getBuildingCount: () => 0,
+      frontier: false,
     });
 
     expect(items).toEqual([]);

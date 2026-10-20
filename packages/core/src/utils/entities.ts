@@ -8,7 +8,7 @@ import {
   ID,
   NEUTRAL_OWNER_NAME,
   StructureType,
-  structureName,
+  siteName,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -17,7 +17,6 @@ import knownAddressesJSONData from "../data/known-addresses.json";
 import { configManager } from "../managers/config-manager";
 import { getHyperstructureName } from "./hyperstructure";
 import { getRealmNameById } from "./realm";
-import { presentedMineKind } from "./structure";
 import { isViewerOwner } from "./viewer";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
@@ -103,7 +102,8 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
   } else if (structure.base.category === StructureType.Hyperstructure) {
     originalName = getHyperstructureName(structure);
   } else {
-    originalName = structureName(structure.base.category as StructureType, presentedMineKind(structure));
+    // A site is named as the map names it (its plate's place line): "Gloomsgrasp", never its kind.
+    originalName = siteName(safeInteger(structure.entity_id));
   }
 
   return { name: cachedName || originalName, originalName };
@@ -111,8 +111,8 @@ export const getStructureName = (structure: NativeRows["Structure"], isBlitz: bo
 
 /**
  * The one name a player reads for an army or a structure, on the map and in event text: its given name; else an army's
- * generated name (armyName, "Iron Wardens") and a structure's kind ("Camp"), never its entity id, which is a storage
- * key, not a name. Undefined when the store holds neither (an army already gone): the caller words that.
+ * generated name (armyName, "Iron Wardens") and a site's (siteName, "Gloomsgrasp"), never its entity id, which is a
+ * storage key, not a name. Undefined when the store holds neither (an army already gone): the caller words that.
  */
 export const getEntityName = (entityId: ID, store: NativeFactStore, isBlitz: boolean): string | undefined => {
   const game_id = configManager.getActiveGameId();

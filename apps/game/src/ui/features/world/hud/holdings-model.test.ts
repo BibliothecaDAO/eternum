@@ -15,11 +15,11 @@ const ESSENCE_RIFT = 1;
 const FRAGMENT_MINE = 2;
 
 describe("the kinds a player holds, as every holdings list names them", () => {
-  it("names rifts Essence Rifts, with the rift's painting, as the game does everywhere", () => {
+  it("names rifts Rifts, with the rift's painting, as the game does everywhere", () => {
     const held = kindsHeld([holding(StructureType.Realm), holding(StructureType.Mine, ESSENCE_RIFT)]);
     expect(held.map(({ plural, icon, count }) => ({ plural, icon, count }))).toEqual([
       { plural: "Realms", icon: "realm", count: 1 },
-      { plural: "Essence Rifts", icon: "rift", count: 1 },
+      { plural: "Rifts", icon: "rift", count: 1 },
     ]);
     expect(holdingIcon(holding(StructureType.Mine, ESSENCE_RIFT))).toBe("rift");
   });

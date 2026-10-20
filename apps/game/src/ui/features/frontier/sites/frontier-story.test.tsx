@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { buildStoryEventPresentation, configManager, type SiteKind } from "@bibliothecadao/eternum";
-import { VERDICT_WORDS } from "@bibliothecadao/types";
+import { siteName, VERDICT_WORDS } from "@bibliothecadao/types";
 import { campBeside, SITE, SITE_TILE } from "./site-fixture";
 import { fightResultOf } from "./fight-result";
 
@@ -163,26 +163,29 @@ function captured(entityId = SITE, previousOwner = "0x0") {
   } as never;
 }
 
-it.each(KINDS)("names the beast in a captured %s after its guard has been cleared", (kind) => {
-  const store = encounter(kind);
-  const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
-  const guard = store.require("Guard", { game_id: 1, structure_id: SITE, slot: 0 });
-  store.applyFacts([
-    { model: "Structure", key: "0x71", value: { ...structure, owner: "0x111" } },
-    {
-      model: "ExpeditionSite",
-      key: "0x72",
-      value: {
-        ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
-        clear: { explorer_id: 201, home_id: 7, reward: null },
+it.each(KINDS)(
+  "names a captured %s as its map does, and the beast that held it after its guard was cleared",
+  (kind) => {
+    const store = encounter(kind);
+    const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
+    const guard = store.require("Guard", { game_id: 1, structure_id: SITE, slot: 0 });
+    store.applyFacts([
+      { model: "Structure", key: "0x71", value: { ...structure, owner: "0x111" } },
+      {
+        model: "ExpeditionSite",
+        key: "0x72",
+        value: {
+          ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
+          clear: { explorer_id: 201, home_id: 7, reward: null },
+        },
       },
-    },
-    { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: "0" } } },
-  ] as never);
-  expect(buildStoryEventPresentation(captured(), store, names).title).toBe(
-    `clientlane took ${kind} from ${kind === "Beasts" ? "Minotaur" : "Troll"}`,
-  );
-});
+      { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: "0" } } },
+    ] as never);
+    expect(buildStoryEventPresentation(captured(), store, names).title).toBe(
+      `clientlane took ${siteName(SITE)} from ${kind === "Beasts" ? "Minotaur" : "Troll"}`,
+    );
+  },
+);
 
 it("does not invent a Vanguard holder for a captured site outside the synced scope", () => {
   expect(buildStoryEventPresentation(captured(999), encounter("Rift"), names).title).toBe(
@@ -192,6 +195,6 @@ it("does not invent a Vanguard holder for a captured site outside the synced sco
 
 it("names the previous player when a cleared site changes hands again", () => {
   expect(buildStoryEventPresentation(captured(SITE, "0x222"), encounter("Rift"), names).title).toBe(
-    "clientlane took Rift from rival. Its armies and incoming deliveries went with it",
+    `clientlane took ${siteName(SITE)} from rival. Its armies and incoming deliveries went with it`,
   );
 });

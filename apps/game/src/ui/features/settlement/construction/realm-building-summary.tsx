@@ -2,7 +2,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudChip, HudIconButton, HudTierChip } from "@/ui/design-system/kit/hud-elements";
 import {
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   getBuildingFromResource,
   getProducedResource,
   isEconomyBuilding,
@@ -28,6 +28,8 @@ type BuildRealmBuildingSummaryOptions = {
   realmResourceIds: ResourcesIds[];
   allowedBuildingTypes: BuildingType[];
   getBuildingCount: (buildingType: BuildingType) => number;
+  /** Whether the realm plays Frontier, which names its own buildings (buildingName). */
+  frontier: boolean;
 };
 
 type RealmBuildingSummaryBuildAction = {
@@ -80,8 +82,6 @@ const resolveRealmBuildingSummaryOrder = (realmResourceIds: ResourcesIds[], allo
     ...resolveMilitaryBuildingTypes(allowedBuildingTypes),
   ]);
 
-const toSummaryLabel = (buildingType: BuildingType) => BuildingTypeToString[buildingType] ?? "Building";
-
 /** A building's painting in the summary: the resource it makes, else its own (a hut is a home, a storehouse a granary). */
 const toSummaryIcon = (buildingType: BuildingType): IconMeaning => {
   if (buildingType === BuildingType.Storehouse) return "granary";
@@ -94,6 +94,7 @@ export const buildRealmBuildingSummary = ({
   realmResourceIds,
   allowedBuildingTypes,
   getBuildingCount,
+  frontier,
 }: BuildRealmBuildingSummaryOptions): RealmBuildingSummaryItem[] =>
   resolveRealmBuildingSummaryOrder(realmResourceIds, allowedBuildingTypes).reduce<RealmBuildingSummaryItem[]>(
     (items, buildingType) => {
@@ -102,7 +103,7 @@ export const buildRealmBuildingSummary = ({
 
       items.push({
         buildingId: buildingType,
-        label: toSummaryLabel(buildingType),
+        label: buildingName(buildingType, frontier),
         icon: toSummaryIcon(buildingType),
         count,
       });

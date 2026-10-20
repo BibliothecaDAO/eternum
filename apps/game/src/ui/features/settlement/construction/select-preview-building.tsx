@@ -44,7 +44,7 @@ import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-fact
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import {
   BuildingType,
-  BuildingTypeToString,
+  buildingName,
   getBuildingFromResource,
   ID,
   isEconomyBuilding,
@@ -556,8 +556,9 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
         realmResourceIds: realm?.resources ?? [],
         allowedBuildingTypes,
         getBuildingCount: getBuildingCountFor,
+        frontier: mode.id === "frontier",
       }),
-    [allowedBuildingTypes, getBuildingCountFor, realm?.resources],
+    [allowedBuildingTypes, getBuildingCountFor, realm?.resources, mode.id],
   );
   const realmBuildingSummaryActions = useMemo(
     () =>
@@ -813,7 +814,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                       });
                     }}
                     active={previewBuilding?.type === building}
-                    buildingName={BuildingTypeToString[building]}
+                    buildingName={buildingName(building, mode.id === "frontier")}
                     resource={configManager.getResourceBuildingProduced(building)}
                     isWorkersHut={isWorkersHut}
                     productionStatus={productionStatus}
@@ -924,7 +925,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
                                 selectBuildingCard({ type: building }, () => {});
                               }}
                               active={previewBuilding?.type === building}
-                              buildingName={`${BuildingTypeToString[building]}`}
+                              buildingName={buildingName(building, mode.id === "frontier")}
                               resource={configManager.getResourceBuildingProduced(building)}
                               productionStatus={productionStatus}
                               entityId={entityId}

@@ -67,11 +67,11 @@ describe("a map plate's facts", () => {
       reward: "640 Labor",
     });
     const rift = buildStructurePlate(
-      structure({ structureName: "Essence Rift", structureType: StructureType.Mine, mineKind: 1 }),
+      structure({ structureName: "Rift", structureType: StructureType.Mine, mineKind: 1 }),
       0,
       { amount: 1200.4, unit: "Essence" },
     );
-    expect(rift).toMatchObject({ name: "Essence Rift", named: false, reward: "1,200 Essence" });
+    expect(rift).toMatchObject({ name: "Rift", named: false, reward: "1,200 Essence" });
   });
 
   it("lists troops on their way to a structure, soonest first, with the time left", () => {

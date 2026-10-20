@@ -33,13 +33,13 @@ const KIND_RANK = new Map(KINDS.map(({ kind }, index) => [kind, index]));
 /** A search box earns its place once the kind shown no longer fits on one screen. */
 const SEARCH_FROM = 12;
 
-/** A held mine's kind as the game presents it (an Essence Rift, a Fragment Mine); none for any other holding. */
+/** A held mine's kind as the game presents it (a Rift, a Fragment Mine); none for any other holding. */
 const mineKindOf = (holding: Pick<ListedHolding, "category" | "structure">): number | undefined =>
   holding.category === StructureType.Mine ? presentedMineKind(holding.structure) : undefined;
 
 /**
  * The kinds held, in tab order, each with its name, its painting and its count. Mines are named and painted by the
- * kind they present, so a player holding rifts sees "Essence Rifts", as everywhere else; only both kinds at once
+ * kind they present, so a player holding rifts sees "Rifts", as everywhere else; only both kinds at once
  * share the word "Mines".
  */
 export const kindsHeld = (holdings: ReadonlyArray<Pick<ListedHolding, "category" | "structure">>) => {
