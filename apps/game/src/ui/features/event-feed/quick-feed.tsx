@@ -14,6 +14,7 @@ import { TickIds } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useState } from "react";
 import { orderHeadlineFeed, useHeadlineFeedStore } from "../news-headlines/headline-feed-store";
+import { HeadlineLine } from "../news-headlines/headline-line";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useEventFeedStore } from "./event-feed-store";
 import { eventsReads, selectEventStories } from "./event-stories";
@@ -111,7 +112,7 @@ export const FeedToasts = () => {
         <ToastRow
           key={headline.id}
           icon={headlineIcon(headline.type)}
-          text={headline.description}
+          text={<HeadlineLine parts={headline.description} />}
           place={headline.location ?? null}
         />
       ))}

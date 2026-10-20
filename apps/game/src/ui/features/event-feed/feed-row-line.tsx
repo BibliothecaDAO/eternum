@@ -6,6 +6,7 @@ import { Position } from "@bibliothecadao/eternum";
 import { formatClockTime } from "@bibliothecadao/types";
 import type { HeadlineType } from "../news-headlines/headline-types";
 import { useStoryOpener } from "./story-feed-row";
+import type { ReactNode } from "react";
 
 const HEADLINE_ICONS: Record<HeadlineType, IconMeaning> = {
   "realm-fall": "realm",
@@ -50,7 +51,7 @@ export const ToastRow = ({
 }: {
   icon: IconMeaning;
   tone?: "good" | "bad" | "warn";
-  text: string;
+  text: ReactNode;
   place: { x: number; y: number } | null;
 }) => {
   const navigate = useNavigateToMapView();

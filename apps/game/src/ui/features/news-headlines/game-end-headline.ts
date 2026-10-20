@@ -1,5 +1,5 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { Headline } from "./headline-types";
+import type { Headline, HeadlinePart } from "./headline-types";
 import { readFinalBlitzResult } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 
 /**
@@ -10,19 +10,20 @@ export function resolveGameEndHeadline(
   store: NativeFactStore,
   gameId: number,
   seasonWinner: bigint | null,
-  playerName: (address: bigint) => string,
 ): Headline | null {
   const winners = seasonWinner ? [seasonWinner] : finalBlitzWinners(store, gameId);
   if (!winners) return null;
-  const names = winners.map(playerName);
   return {
     id: `game-end:${gameId}`,
     type: "game-end",
     icon: "game-end",
     title: "The game has ended",
-    description: names.length
-      ? `${names.join(" and ")} ${names.length === 1 ? "wins" : "share victory"}!`
-      : "No player finished ranked.",
+    description: winners.length
+      ? [
+          ...winners.flatMap((player, index): HeadlinePart[] => (index === 0 ? [{ player }] : [" and ", { player }])),
+          winners.length === 1 ? " wins!" : " share victory!",
+        ]
+      : ["No player finished ranked."],
     timestamp: Date.now(),
   };
 }

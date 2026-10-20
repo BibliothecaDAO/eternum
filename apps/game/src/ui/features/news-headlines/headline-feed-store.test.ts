@@ -6,7 +6,7 @@ it("pins a major event for its tick, then returns it to the chronological feed w
     type: "realm-fall" as const,
     icon: "realm-fall" as const,
     title: "Captured",
-    description: "Realm captured",
+    description: ["Realm captured"],
     timestamp: 61000,
   };
   useHeadlineFeedStore.setState({ headlines: [] });

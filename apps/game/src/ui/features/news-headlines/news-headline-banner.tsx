@@ -2,6 +2,7 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 import { HudBanner, HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { HeadlineLine } from "./headline-line";
 import type { Headline, HeadlineType } from "./headline-types";
 
 /** Each kind of news: its painting, the word over its headline, and its tone (none reads in the age's accent). */
@@ -16,14 +17,6 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, { icon: IconMeaning; eyebrow: str
     "t3-building": { icon: "defend", eyebrow: "Military Milestone" },
   };
 
-const trimHeadlineDescription = (description: string) => {
-  if (description.startsWith('"') && description.endsWith('"')) {
-    return description.slice(1, -1);
-  }
-
-  return description;
-};
-
 interface NewsHeadlineBannerProps {
   headline: Headline | null;
   onDismiss: () => void;
@@ -32,7 +25,6 @@ interface NewsHeadlineBannerProps {
 
 export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHeadlineBannerProps) {
   const theme = headline ? HEADLINE_THEME_MAP[headline.icon] : null;
-  const description = headline ? trimHeadlineDescription(headline.description) : "";
   const navigationLocation = headline?.location ?? null;
   const canNavigate = Boolean(navigationLocation && onNavigate);
 
@@ -52,7 +44,7 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
             icon={theme.icon}
             eyebrow={theme.eyebrow}
             title={headline.title}
-            line={description}
+            line={<HeadlineLine parts={headline.description} />}
             actions={
               <>
                 {canNavigate && (

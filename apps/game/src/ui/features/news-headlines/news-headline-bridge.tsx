@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
-import { ContractAddress, StructureType } from "@bibliothecadao/types";
+import { StructureType } from "@bibliothecadao/types";
 import { useGame } from "@/hooks/context/game-context";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -25,7 +25,6 @@ import { NewsHeadlineBanner } from "./news-headline-banner";
 import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
-import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
@@ -116,7 +115,6 @@ export function NewsHeadlineBridge() {
             newOwner: BigInt(current.owner),
             site,
             viewer: address ? BigInt(address) : null,
-            nameOf: (owner) => entityReader.getPlayerName(ContractAddress(owner).toString()),
             at: Date.now(),
           }),
         );
@@ -137,7 +135,7 @@ export function NewsHeadlineBridge() {
       type: "game-start",
       icon: "game-start",
       title: "The game has begun",
-      description: goal,
+      description: [goal],
       timestamp: Date.now(),
     });
   }, [startAt, nowSeconds, enqueue, goal]);
@@ -159,7 +157,7 @@ export function NewsHeadlineBridge() {
           type: "t3-building",
           icon: "t3-building",
           title: "Tier 3 building raised",
-          description: `${realmName} has raised a Tier 3 ${buildingName}`,
+          description: [`${realmName} has raised a Tier 3 ${buildingName}`],
           location: structure ? { x: structure.coordX, y: structure.coordY, entityId: structureId } : undefined,
           timestamp: Date.now(),
         });
@@ -169,7 +167,7 @@ export function NewsHeadlineBridge() {
 
   // --- Game end detection ---
   useEffect(() => {
-    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), winner, getPlayerDisplayName);
+    const headline = resolveGameEndHeadline(setup.store, getScopedGameId(), winner);
     if (headline) enqueue(headline);
   }, [setup.store, winner, endRevision, enqueue]);
 

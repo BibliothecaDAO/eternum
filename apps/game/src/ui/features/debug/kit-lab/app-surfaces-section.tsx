@@ -34,7 +34,7 @@ export const AppSurfacesSection = () => {
                 type: "realm-fall",
                 icon: "realm-fall",
                 title: "Xeswet has fallen",
-                description: "Moonhand took it from Kestrel.",
+                description: ["Moonhand took it from Kestrel."],
                 location: { x: 0, y: 0, entityId: 1 },
                 timestamp: 0,
               }}

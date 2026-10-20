@@ -43,9 +43,7 @@ function result(store: NativeFactStore, gameId: number, players: { player: numbe
     },
   ]);
 }
-const name = (address: bigint) => `Player ${address}`;
-const headline = (store: NativeFactStore, winner: bigint | null = null) =>
-  resolveGameEndHeadline(store, 1, winner, name);
+const headline = (store: NativeFactStore, winner: bigint | null = null) => resolveGameEndHeadline(store, 1, winner);
 /** Every ranked account's registered points: a final result is read only once each of them is known. */
 function points(store: NativeFactStore, gameId: number, accounts: number[]) {
   store.applyFacts(
@@ -67,7 +65,8 @@ describe("game end headlines", () => {
     result(store, 1, [{ player: 42, rank: 1 }]);
     expect(headline(store)).toBeNull();
     points(store, 1, [42]);
-    expect(headline(store)).toMatchObject({ id: "game-end:1", description: "Player 42 wins!" });
+    // The winner by account, named where the banner draws it: never a name baked when the result landed.
+    expect(headline(store)).toMatchObject({ id: "game-end:1", description: [{ player: 42n }, " wins!"] });
   });
   it("recovers a finalized result from the snapshot and respects game scope and ties", () => {
     const store = new NativeFactStore();
@@ -80,13 +79,13 @@ describe("game end headlines", () => {
       { player: 44, rank: 3 },
     ]);
     points(store, 1, [42, 43, 44]);
-    expect(headline(store)?.description).toBe("Player 42 and Player 43 share victory!");
+    expect(headline(store)?.description).toEqual([{ player: 42n }, " and ", { player: 43n }, " share victory!"]);
   });
   it("announces the authoritative season winner without requiring a finite end clock", () => {
     const store = new NativeFactStore();
     game(store, 0);
     expect(headline(store)).toBeNull();
-    expect(headline(store, 42n)?.description).toBe("Player 42 wins!");
+    expect(headline(store, 42n)?.description).toEqual([{ player: 42n }, " wins!"]);
   });
   it("names no winner from a broken result: it is reported, never thrown into the headline bridge", () => {
     const store = new NativeFactStore();

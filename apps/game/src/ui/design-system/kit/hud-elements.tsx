@@ -1152,7 +1152,7 @@ export const HudBanner = ({
   icon: IconMeaning;
   eyebrow: string;
   title: string;
-  line?: string;
+  line?: ReactNode;
   actions?: ReactNode;
 }) => (
   <section className="ui ui-banner" data-tone={tone} role="status" aria-label={title}>
