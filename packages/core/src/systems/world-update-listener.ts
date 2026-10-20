@@ -130,35 +130,32 @@ export class WorldUpdateListener {
   get SitePayouts() {
     return {
       /**
-       * Each cleared site, with the exchange that won it. The contract pays the site from inside the capture and only
-       * then emits the winning BattleEvent (logic/combat.cairo), so a payout waits for the next battle, which must be
-       * its own: same transaction, same site. Any other battle, or another payout, leaves it without one: refused.
+       * The contract pays a site before emitting its winning battle. Pair them within that transaction only:
+       * a shared peer payout may arrive without its scoped battle, and ends quietly when the transaction changes.
        */
       onSitePayout: (callback: (value: SitePayoutSystemUpdate) => void) => {
         let waiting: { transaction: string; clear: PaidSite } | undefined;
-        const takeWaiting = () => {
+        return this.setup.store.subscribeEvents((event) => {
+          const value = event.value;
+          if (integer(value.game_id) !== configManager.getActiveGameId()) return;
+          const transaction = transactionOf(value);
+          if (waiting?.transaction !== transaction) waiting = undefined;
+          const payload = event.model === "StoryEvent" ? fields(fields(value.story)?.SitePayout) : undefined;
+          if (payload) {
+            const unanswered = waiting;
+            waiting = undefined;
+            waiting = { transaction, clear: paidSite(payload, value) };
+            if (unanswered)
+              throw new Error(`Site payout ${unanswered.clear.siteId} arrived without its winning battle`);
+            return;
+          }
+          if (event.model !== "BattleEvent" || !waiting) return;
           const payout = waiting;
           waiting = undefined;
-          return payout;
-        };
-        const stopPayouts = this.onStory("SitePayout", (payload, event) => {
-          const unanswered = takeWaiting();
-          waiting = { transaction: transactionOf(event), clear: paidSite(payload, event) };
-          if (unanswered) throw new Error(`Site payout ${unanswered.clear.siteId} arrived without its winning battle`);
-        });
-        const stopBattles = this.setup.store.subscribeEvents((event) => {
-          const battle = event.model === "BattleEvent" ? fields(event.value) : undefined;
-          if (!battle || integer(battle.game_id) !== configManager.getActiveGameId()) return;
-          const payout = takeWaiting();
-          if (!payout) return;
-          if (payout.transaction !== transactionOf(battle) || payout.clear.siteId !== integer(battle.defender_id))
+          if (payout.clear.siteId !== integer(value.defender_id))
             throw new Error(`Site payout ${payout.clear.siteId} arrived without its winning battle`);
-          callback({ ...payout.clear, ...wonExchange(battle) });
+          callback({ ...payout.clear, ...wonExchange(value) });
         });
-        return () => {
-          stopPayouts();
-          stopBattles();
-        };
       },
     };
   }

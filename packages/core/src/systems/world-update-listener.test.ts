@@ -160,25 +160,117 @@ describe("native scene updates", () => {
       expect.objectContaining({ siteId: 10, kind: "Beasts", reward: null }),
     ]);
 
-    // A payout the next battle does not answer is a contract bug, never a guess: another site's battle, another
-    // transaction's, or a second payout in its place.
+    // Within one transaction, a different site's battle or a second payout is still a pairing fault.
     story("0xd", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
     expectReported(() => battle("0xd", 12), "Site payout 11 arrived without its winning battle");
     story("0xe", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
-    expectReported(() => battle("0xf", 11), "Site payout 11 arrived without its winning battle");
-    story("0x10", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
     expectReported(
-      () => story("0x11", 13, StructureType.Camp, { resource_type: 23, amount: "1" }),
+      () => story("0xe", 13, StructureType.Camp, { resource_type: 23, amount: "1" }),
       "Site payout 11 arrived without its winning battle",
     );
+    battle("0xe", 13);
+    story("0x10", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
+    story("0x11", 13, StructureType.Camp, { resource_type: 23, amount: "1" });
     battle("0x11", 13);
-    expect(payout).toHaveBeenCalledTimes(3);
+    expect(payout).toHaveBeenCalledTimes(4);
     expectReported(() => story("0x12", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
 
     stop();
     story("0x13", 12, StructureType.Camp, { resource_type: 23, amount: "1" });
     battle("0x13", 12);
-    expect(payout).toHaveBeenCalledTimes(3);
+    expect(payout).toHaveBeenCalledTimes(4);
+  });
+
+  it("quietly leaves a peer's ruin receipt unpaired when its transaction ends, then delivers the viewer's clear", () => {
+    const { store, listener } = fixture();
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const delivered = vi.fn();
+    const stop = listener.SitePayouts.onSitePayout(delivered);
+    const at = (transaction_hash: string, event_index: number) => ({
+      event_position: { block_number: 9, transaction_hash, transaction_index: 0, event_index },
+    });
+    const story = (tx: string, owner: string, site_id: number, category: number) =>
+      store.applyEvent({
+        model: "StoryEvent",
+        key: `story-${tx}`,
+        value: {
+          game_id: 1,
+          owner,
+          timestamp: 100,
+          ...at(tx, 4),
+          story: {
+            SitePayout: {
+              structure_id: 3,
+              explorer_id: 7,
+              site_id,
+              category,
+              reward: {
+                resource_type: category === StructureType.Ruin ? ResourcesIds.Lords : ResourcesIds.Labor,
+                amount: String(5n * BigInt(RESOURCE_PRECISION)),
+              },
+            },
+          },
+        },
+      });
+    const battle = (tx: string, defender_id: number) =>
+      store.applyEvent({
+        model: "BattleEvent",
+        key: `battle-${tx}`,
+        value: {
+          game_id: 1,
+          defender_id,
+          coord: { x: 40, y: 12 },
+          attacker: { before: "1000000000000", after: "900000000000" },
+          defender: { before: "100000000000", after: "0" },
+          ...at(tx, 6),
+        },
+      });
+    const otherStory = (tx: string) =>
+      store.applyEvent({
+        model: "StoryEvent",
+        key: `other-story-${tx}`,
+        value: {
+          game_id: 1,
+          owner: "0xa",
+          timestamp: 100,
+          story: { FaithPointsClaimedStory: { wonder_id: 3, new_points: 1, total_points: 2 } },
+          ...at(tx, 5),
+        },
+      });
+    try {
+      // Shared peer receipt, then an unrelated own clear.
+      story("0xaa", "0xb", 99, StructureType.Ruin);
+      expect(delivered).not.toHaveBeenCalled();
+      story("0xbb", "0xa", 9, StructureType.Camp);
+      otherStory("0xbb");
+      battle("0xbb", 9);
+      expect(delivered.mock.calls).toEqual([
+        [
+          {
+            explorerId: 7,
+            siteId: 9,
+            ownerAddress: 0xan,
+            kind: "Camp",
+            reward: { resourceId: ResourcesIds.Labor, amount: 5 },
+            coord: { x: 40, y: 12 },
+            troopsLost: 100,
+          },
+        ],
+      ]);
+      expect(errors).not.toHaveBeenCalled();
+      // Even a battle naming the same site cannot pair across transactions.
+      story("0xcc", "0xb", 98, StructureType.Ruin);
+      battle("0xdd", 98);
+      // Any event from another transaction ends the pending pair, not just another payout or battle.
+      story("0xee", "0xb", 97, StructureType.Ruin);
+      otherStory("0xff");
+      battle("0xee", 97);
+      expect(delivered).toHaveBeenCalledTimes(1);
+      expect(errors).not.toHaveBeenCalled();
+    } finally {
+      stop();
+      errors.mockRestore();
+    }
   });
 
   it("reads building additions and removals from committed facts and unsubscribes", () => {
