@@ -1346,6 +1346,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
             <RealmPanel
               name={LAB_REALM_NAME}
               level={1}
+              population={LAB_POPULATION}
               stores={[...lab.stores]}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
@@ -1384,6 +1385,8 @@ const FRONTIER_PRESET = 5;
 /** The lab realm's name and its LORDS where a state names none, as the desktop's realm panel reads them. */
 const LAB_REALM_NAME = "Duskbite";
 const LAB_LORDS = 320;
+/** The fixture realm's population: what its buildings take of what its castle and Huts give. */
+const LAB_POPULATION = { used: 9, total: 18 };
 
 /** The place a lab state has open, as the desktop's round places light it. */
 const labSurface = (lab: LabState): HudSurface | null =>

@@ -53,6 +53,7 @@ import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
 import { RealmBuildingsRow } from "./realm/buildings-row";
+import { useRealmPopulation } from "./realm/realm-population";
 import { LastHourBubble } from "./rollover/last-hour";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useDocumentClass } from "@/hooks/use-document-class";
@@ -426,8 +427,8 @@ const HudMenu = ({
 };
 
 /**
- * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name, rank
- * and stores, and for the player's own realm its LORDS (Withdraw), its Realms' labor (Realms) and Production.
+ * The desktop's realm panel over the realm the HUD reads (the player's, or the one watched or visited): its name, rank,
+ * population and stores, and for the player's own realm its LORDS (Withdraw), its Realms' labor (Realms) and Production.
  */
 const FrontierRealmPanel = ({
   rules,
@@ -446,10 +447,12 @@ const FrontierRealmPanel = ({
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
   const lords = useRealmLords(own ?? realm);
+  const population = useRealmPopulation(realm);
   return (
     <RealmPanel
       name={name}
       level={realm.base.level}
+      population={population}
       stores={stores}
       {...(own && {
         lords,

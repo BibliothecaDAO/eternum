@@ -3,21 +3,24 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
 import { REALM } from "@/ui/design-system/kit/words";
+import { formatPopulationStatusLabel } from "@/ui/features/world/containers/structure-status";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 
+import type { RealmPopulation } from "../realm/realm-population";
 import { RealmsChip } from "../value/lords-purse";
 import { LandingDelta, STORE_TONES, STORES, type StoreReading, storeLine } from "./status-strip";
 
 /**
  * Frontier's realm on the desktop HUD's left column, read as Blitz's realm card reads a holding: its name, its rank
- * with the way to Realms (the labor they hold today on it), then a ring per store (Essence, Labor, Wheat, Troops), each filling toward its
+ * and population (used of all it can hold) with the way to Realms (the labor they hold today on it), then a ring per store (Essence, Labor, Wheat, Troops), each filling toward its
  * limit with the time until full on its rim, and a ring for its LORDS. A tap on a store opens Production, on the LORDS
  * Withdraw; a realm watched or visited shows its stores alone. The day's clock is the top bar's.
  */
 export const RealmPanel = ({
   name,
   level,
+  population,
   stores,
   lords,
   labor = 0,
@@ -27,6 +30,8 @@ export const RealmPanel = ({
 }: {
   name: string;
   level: number | undefined;
+  /** What the realm's buildings take of the population its castle and Huts give; unknown is left out. */
+  population?: RealmPopulation;
   stores: StoreReading[];
   /** The realm's LORDS; absent for a realm not the player's. */
   lords?: number;
@@ -44,6 +49,7 @@ export const RealmPanel = ({
           {rankName(level)}
         </>
       )}
+      {population && <PopulationReading population={population} />}
       <span className="flex-1" />
       {onRealms && <RealmsChip labor={labor} onOpen={onRealms} />}
     </div>
@@ -66,6 +72,17 @@ export const RealmPanel = ({
       )}
     </ul>
   </HudPanel>
+);
+
+/** The realm's population as Blitz's realm card reads a holding's: used of all it can hold, the whole line on hover. */
+const PopulationReading = ({ population: { used, total } }: { population: RealmPopulation }) => (
+  <span
+    className="flex items-center gap-1.5 tabular-nums"
+    data-tip={`Population ${formatExact(used)} of ${formatExact(total)}`}
+  >
+    <SemanticIcon name="people" size={16} />
+    {formatPopulationStatusLabel(used, total)}
+  </span>
 );
 
 /**

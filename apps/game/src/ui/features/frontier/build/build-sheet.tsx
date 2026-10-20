@@ -56,6 +56,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
+import { type RealmPopulation, readRealmPopulation } from "../realm/realm-population";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
@@ -162,7 +163,7 @@ export const BuildSheet = ({
     const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
     return balance === undefined ? undefined : Math.floor(balance);
   };
-  const population = realmPopulation(realmInfo);
+  const population = freePopulation(readRealmPopulation(setup.store, realmId));
   const choose = (category: BuildingType) =>
     setChosen(options.findIndex((candidate) => candidate.category === category));
   const priceOf = (category: BuildingType) =>
@@ -250,17 +251,13 @@ export const BuildSheet = ({
   );
 };
 
-/**
- * The realm's population as the contract counts it: what its buildings take against what the castle and the Huts
- * give, and what is free of it.
- */
-const realmPopulation = (
-  realm: ReturnType<typeof getRealmInfo>,
-): { free: number | undefined; total: number | undefined } => {
-  if (realm?.population === undefined || realm.capacity === undefined) return { free: undefined, total: undefined };
-  const total = realm.capacity + configManager.getBasePopulationCapacity();
-  return { free: total - realm.population, total };
-};
+/** What is free of the realm's population, and all it can hold. */
+const freePopulation = (
+  population: RealmPopulation | undefined,
+): { free: number | undefined; total: number | undefined } =>
+  population
+    ? { free: population.total - population.used, total: population.total }
+    : { free: undefined, total: undefined };
 
 /** Each attribute's mark, as a training building's gain shows it. */
 const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconMeaning> = {
