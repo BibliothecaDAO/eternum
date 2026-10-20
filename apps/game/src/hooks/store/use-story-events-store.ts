@@ -315,9 +315,12 @@ class StoryReadFailed extends Error {
   }
 }
 
-/** Whether a read's last answer was a failure asked under an older handshake than `handshake`. */
-const failedBefore = (query: UseQueryResult<StoryReadPage>, handshake: number): boolean =>
-  query.error instanceof StoryReadFailed && query.error.askedAtHandshake < handshake;
+/**
+ * Whether a read owes the handshake one attempt: it settled on a failure asked under an older handshake, whether it
+ * failed before the handshake came or was still pending when it came and failed after.
+ */
+const owesAttempt = (query: UseQueryResult<StoryReadPage>, handshake: number): boolean =>
+  !query.isFetching && query.error instanceof StoryReadFailed && query.error.askedAtHandshake < handshake;
 
 /** A read's page of Herald's history, as stories. */
 const fetchStoryRead = async (
@@ -424,12 +427,17 @@ export const useStoryReads = (reads: StoryRead[]) => {
     combine: sameResults,
   });
 
-  // Each handshake asks every read again, a failed one too if it failed under an older handshake; a remount or a render
-  // under the same handshake asks a failed read nothing.
+  // Each handshake asks every read that holds an answer again.
   useEffect(() => {
-    for (const query of queries)
-      if (!query.isError || failedBefore(query, handshake)) void query.refetch({ cancelRefetch: false });
+    for (const query of queries) if (!query.isError) void query.refetch({ cancelRefetch: false });
   }, [handshake, readsKey]);
+  // A failed read is asked once per handshake, as soon as it owes one: when the handshake comes, or when a request
+  // older than it fails after. One asked under this handshake owes nothing, so a remount, a render or a head asks it
+  // nothing, and a read that settles never makes its healthy peers ask again.
+  const owedKey = queries.map((query) => owesAttempt(query, handshake)).join();
+  useEffect(() => {
+    for (const query of queries) if (owesAttempt(query, handshake)) void query.refetch({ cancelRefetch: false });
+  }, [owedKey, readsKey]);
 
   // A handshake that meets an older read in flight shares it, so a covering read's answer can land behind a snapshot
   // that overtook it; it then catches up once per signal it was not asked under, and never on its own answer.

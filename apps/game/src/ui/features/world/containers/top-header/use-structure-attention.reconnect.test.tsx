@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const world = vi.hoisted(() => ({ now: 60, end: 100, revision: 0, structures: [{ entityId: 1 }] }));
 const history = vi.hoisted(() =>
@@ -363,4 +363,70 @@ it("recovers attack attention after a transient history failure and a successful
   await settleUntil(() => host.textContent === "1");
   expect(history).toHaveBeenCalledTimes(6);
   expect(host.textContent).toBe("1");
+});
+
+describe("an old history request still pending when the stream reconnects, failing after", () => {
+  /** Three reads asked under snapshot 35 that hang through the outage; the reconnect at 40 meets them in flight. */
+  const reconnectOverPendingReads = async () => {
+    resetGameSyncStoryEvents();
+    Object.assign(world, { now: 60, end: 100 });
+    useConnectionStore.getState().recordSnapshotBlock(35);
+    history.mockReset();
+    const timeOut: Array<(error: Error) => void> = [];
+    history.mockImplementation(() => new Promise((_, reject) => timeOut.push(reject)));
+    const probe = await mountProbe();
+    await settle();
+    expect(history).toHaveBeenCalledTimes(3);
+    return {
+      ...probe,
+      reconnect: (answer: () => void) =>
+        act(async () => {
+          answer();
+          useConnectionStore.getState().setGlobalStatus("reconnecting");
+          useConnectionStore.getState().recordGlobalHandshake();
+          useConnectionStore.getState().recordSnapshotBlock(40);
+          useConnectionStore.getState().recordConfirmedHead(40);
+          useConnectionStore.getState().setGlobalStatus("connected");
+          probe.show();
+        }),
+      failTheOldRequests: async () => {
+        await act(async () => timeOut.forEach((reject) => reject(new Error("old request timed out"))));
+        await settle();
+        await settle();
+      },
+    };
+  };
+
+  it("asks each read once under the new handshake, and recovers the attack", async () => {
+    const { host, reconnect, failTheOldRequests } = await reconnectOverPendingReads();
+    await reconnect(() => history.mockImplementation(historyWithHostileHit(30, 40) as never));
+    // The reconnect shares the reads in flight: no new request yet.
+    expect(history).toHaveBeenCalledTimes(3);
+    await failTheOldRequests();
+    expect(history).toHaveBeenCalledTimes(6);
+    expect(host.textContent).toBe("1");
+  });
+
+  it("asks once even when the new attempt fails too, then nothing on heads, renders or a remount", async () => {
+    const { host, show, reconnect, failTheOldRequests } = await reconnectOverPendingReads();
+    await reconnect(() => history.mockRejectedValue(new Error("history still unavailable")));
+    await failTheOldRequests();
+    expect(history).toHaveBeenCalledTimes(6);
+    expect(host.textContent).toBe("0");
+    for (let head = 41; head < 46; head += 1)
+      await act(async () => {
+        useConnectionStore.getState().recordConfirmedHead(head);
+        show();
+      });
+    await settle();
+    expect(history).toHaveBeenCalledTimes(6);
+    await act(async () => root!.unmount());
+    root = createRoot(host);
+    await act(async () => {
+      show();
+      show();
+    });
+    await settle();
+    expect(history).toHaveBeenCalledTimes(6);
+  });
 });
