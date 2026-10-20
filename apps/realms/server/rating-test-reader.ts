@@ -12,8 +12,7 @@ import { RatingReader } from "./rating-reader";
 
 /**
  * API tests use the real reader and budget storage; only the network is replaced. They read dev's book ("staging"),
- * which names a deployed rating token; production's book has none until its own setup deploys one, and it stays
- * fail-closed meanwhile.
+ * which names a deployed rating token, so no test depends on what production has deployed.
  */
 export function testRatingReader(configuration: Partial<ConstructorParameters<typeof RatingReader>[1]> = {}) {
   const database = new DatabaseSync(":memory:");
