@@ -318,12 +318,17 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
 
     /**
      * Every kept thing readable: its token drawn, not yielding, over its own point, and 6px clear of every other label
-     * drawn (tokens, the hovered plate) and of the order line.
+     * drawn (tokens, the hovered plate) and of the order line (at `line`'s size). A hovered one may be its plate instead.
      */
-    const expectKeptReadable = (things: readonly PlateThing[], placed: ReturnType<typeof placePlates>) => {
+    const expectKeptReadable = (
+      things: readonly PlateThing[],
+      placed: ReturnType<typeof placePlates>,
+      { line: lineSize = DRAWN.line, hovered }: { line?: { width: number; height: number }; hovered?: string } = {},
+    ) => {
       const rects = drawn(things, placed.spots);
-      const line = placed.orderLine ? [{ id: "line", ...placed.orderLine, ...DRAWN.line }] : [];
-      for (const one of things.filter((candidate) => candidate.keep)) {
+      const line = placed.orderLine ? [{ id: "line", ...placed.orderLine, ...lineSize }] : [];
+      const opened = (one: PlateThing) => one.id === hovered && placed.spots.get(one.id)?.shape === "plate";
+      for (const one of things.filter((candidate) => candidate.keep && !opened(candidate))) {
         const spot = placed.spots.get(one.id)!;
         expect({ id: one.id, shape: spot.shape, yields: spot.shape === "token" && spot.yields }).toEqual({
           id: one.id,
@@ -393,54 +398,130 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       },
     );
 
+    /**
+     * The world map's camera at its farthest distance, at a viewport's size: where a hex's label point (an army's, over
+     * its model) and its ground point stand on screen, and a centre hex with its ring of six, nearest first.
+     */
+    const farthestView = (width: number, height: number) => {
+      const distance = WORLDMAP_CAMERA_ZOOM.maxDistance;
+      const pitch = resolveWorldmapCameraPitchRadians(distance);
+      const camera = new PerspectiveCamera(
+        resolveWorldmapCameraFieldOfViewDegrees(),
+        width / height,
+        0.1,
+        distance * 3.5,
+      );
+      camera.position.set(0, Math.sin(pitch) * distance, Math.cos(pitch) * distance);
+      camera.lookAt(0, 0, 0);
+      camera.updateMatrixWorld(true);
+      const at = (col: number, row: number, y = ARMY_PLATE_HEIGHT) => {
+        const p = latticeToWorld(col, row);
+        const ndc = new Vector3(p.x, y, p.z).project(camera);
+        return { x: ((ndc.x + 1) * width) / 2, y: ((1 - ndc.y) * height) / 2 };
+      };
+      const centre = latticeToWorld(0, 0);
+      const flower = Array.from({ length: 25 }, (_, index) => ({
+        col: (index % 5) - 2,
+        row: Math.floor(index / 5) - 2,
+      }))
+        .map((hex) => ({
+          ...hex,
+          d: Math.hypot(latticeToWorld(hex.col, hex.row).x - centre.x, latticeToWorld(hex.col, hex.row).z - centre.z),
+        }))
+        .toSorted((a, b) => a.d - b.d)
+        .slice(0, 7);
+      const armyAt = (col: number, row: number, fields: Partial<PlateThing> = {}) =>
+        army(`${col},${row}`, at(col, row).x, at(col, row).y, fields);
+      return { at, flower, armyAt, screen: { ...SCREEN, width, height } };
+    };
+
+    it.each([
+      [1280, 720, 6],
+      [1440, 900, 7],
+      [1920, 1080, 7],
+    ])(
+      "keeps every set of kept armies on a hex and its ring apart and on their points, in any order, at %sx%s, up to %s (review-token-anchor-5)",
+      (width, height, most) => {
+        const { flower, armyAt, screen } = farthestView(width, height);
+        // The reviewer's three of review-token-anchor-4, and their six of review-token-anchor-5 in the order they came.
+        const reviewed = [armyAt(0, 0), armyAt(1, 0), armyAt(1, 1)];
+        expectKeptReadable(reviewed, placePlates(reviewed, screen));
+        const six = [armyAt(0, 0), armyAt(1, -1), armyAt(-1, 0), armyAt(1, 0), armyAt(0, 1), armyAt(1, 1)];
+        expectKeptReadable(six, placePlates(six, screen));
+        // Every set of two or more of the seven, up to the most this viewport packs, in every rotation of its order and
+        // each reversed: each kept token readable, and every order standing the same.
+        for (let mask = 1; mask < 1 << flower.length; mask += 1) {
+          const chosen = flower.filter((_, index) => mask & (1 << index));
+          if (chosen.length < 2 || chosen.length > most) continue;
+          const things = chosen.map(({ col, row }) => armyAt(col, row));
+          const first = placePlates(things, screen);
+          expectKeptReadable(things, first);
+          for (let shift = 0; shift < things.length; shift += 1)
+            for (const reversed of [false, true]) {
+              const order = [...things.slice(shift), ...things.slice(0, shift)];
+              const { spots } = placePlates(reversed ? order.toReversed() : order, screen);
+              for (const one of things) expect(spots.get(one.id)).toEqual(first.spots.get(one.id));
+            }
+        }
+      },
+    );
+
+    it("has no arrangement for a whole ring of seven kept armies at 1280x720 within two rows: each stands on its point", () => {
+      // The stated limit: the owner accepted that these may overlap. Every token still stands over its own point.
+      const { flower, armyAt, screen } = farthestView(1280, 720);
+      const things = flower.map(({ col, row }) => armyAt(col, row));
+      const { spots } = placePlates(things, screen);
+      for (const one of things) expect(overItsPoint(one, spots.get(one.id)), one.id).toBe(true);
+      expect(narrowest(drawn(things, spots))).toBeLessThan(6);
+    });
+
+    /** The reviewer's longer order line (review-token-anchor-5). */
+    const REVIEWED_LINE = { width: 190, height: 46 };
+
     it.each([
       [1280, 720],
       [1440, 900],
       [1920, 1080],
     ])(
-      "keeps up to six kept armies on neighbouring hexes apart and on their points at the farthest zoom, %sx%s (review-token-anchor-4)",
+      "keeps the order line off a hovered kept army whose plate has no room, on real hexes at the bottom edge, %sx%s (review-token-anchor-5)",
       (width, height) => {
-        // The world map's camera at its farthest distance, and the label points of armies on real hexes: a centre hex
-        // and its ring, the first selected (kept, resting as its token).
-        const distance = WORLDMAP_CAMERA_ZOOM.maxDistance;
-        const pitch = resolveWorldmapCameraPitchRadians(distance);
-        const camera = new PerspectiveCamera(
-          resolveWorldmapCameraFieldOfViewDegrees(),
-          width / height,
-          0.1,
-          distance * 3.5,
-        );
-        camera.position.set(0, Math.sin(pitch) * distance, Math.cos(pitch) * distance);
-        camera.lookAt(0, 0, 0);
-        camera.updateMatrixWorld(true);
-        const at = (col: number, row: number) => {
-          const p = latticeToWorld(col, row);
-          const ndc = new Vector3(p.x, ARMY_PLATE_HEIGHT, p.z).project(camera);
-          return { x: ((ndc.x + 1) * width) / 2, y: ((1 - ndc.y) * height) / 2 };
-        };
-        const centre = latticeToWorld(0, 0);
-        const ring = Array.from({ length: 25 }, (_, index) => ({
-          col: (index % 5) - 2,
-          row: Math.floor(index / 5) - 2,
-        }))
-          .map((hex) => ({
-            ...hex,
-            d: Math.hypot(latticeToWorld(hex.col, hex.row).x - centre.x, latticeToWorld(hex.col, hex.row).z - centre.z),
-          }))
-          .toSorted((a, b) => a.d - b.d);
-        // The reviewer's three first: (0,0), (1,0), (1,1).
-        const reviewed = [
-          army("0,0", at(0, 0).x, at(0, 0).y),
-          army("1,0", at(1, 0).x, at(1, 0).y),
-          army("1,1", at(1, 1).x, at(1, 1).y),
-        ];
-        expectKeptReadable(reviewed, placePlates(reviewed, { ...SCREEN, width, height }));
-        for (let n = 2; n <= 6; n += 1) {
-          const things = ring.slice(0, n).map(({ col, row }) => army(`${col},${row}`, at(col, row).x, at(col, row).y));
-          expectKeptReadable(things, placePlates(things, { ...SCREEN, width, height }));
-        }
+        const { at, armyAt, screen } = farthestView(width, height);
+        let closedNearTheLine = 0;
+        for (let row = 1; row <= 12; row += 1)
+          for (const hover of [0, 1, 2]) {
+            const hexes = [
+              [0, row],
+              [1, row],
+              [1, row + 1],
+            ];
+            const things = hexes.map(([col, r], index) =>
+              armyAt(col, r, index === hover ? { opened: DRAWN.armyPlate, openRank: 1 } : {}),
+            );
+            if (things.some((one) => one.at.y > height || one.at.y < 100)) continue;
+            const [col, r] = hexes[hover];
+            const placed = placePlates(things, screen, { at: at(col, r, 0), size: REVIEWED_LINE });
+            if (placed.closed.has(things[hover].id) && placed.orderLine) closedNearTheLine += 1;
+            // The hovered one resting as its token is kept like the others: the line stands clear of it, or is not drawn.
+            expectKeptReadable(things, placed, { line: REVIEWED_LINE, hovered: things[hover].id });
+          }
+        // The case the reviewer found: (0,9), (1,9), (1,10) at 1920x1080, the last hovered, its plate with no room.
+        if (width === 1920) expect(closedNearTheLine).toBeGreaterThan(0);
       },
     );
+
+    it("keeps the order line off a hovered kept token whose plate closes, beside two kept neighbours at the bottom edge", () => {
+      for (const y of [650, 680, 700, 710])
+        for (const dx of [30, 40, 50]) {
+          const things = [
+            army("hovered", 640, y, { opened: DRAWN.armyPlate, openRank: 1 }),
+            army("b", 640 + dx, y),
+            army("c", 640 + dx / 2, y - 30),
+          ];
+          const screen = { ...SCREEN, width: 1280, height: 720 };
+          const placed = placePlates(things, screen, { at: { x: 640, y: y + 20 }, size: REVIEWED_LINE });
+          expectKeptReadable(things, placed, { line: REVIEWED_LINE, hovered: "hovered" });
+        }
+    });
   });
 
   it("puts the order line beside its tile clear of the opened plates and the HUD, and what it covers steps aside", () => {

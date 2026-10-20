@@ -387,13 +387,14 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   troops on their way, each time before its troops ("Arriving 13m T2 300"). A camp or rift: its owner (the Vanguard for
   nobody's), its lore name, read off its id on every client (`site-name.ts`), and kind ("Grimtear Camp"), and what it
   holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). With a thing selected,
-  the hovered tile's order line stands beside the tile, clear of the opened plates; the tokens under it step aside.
-  Crowded tokens slide aside only as far as keeps their thing's label point under them, else are not drawn; the selected
-  thing, the player's own armies and anything in battle (on its battle cooldown) always stay in view: placed first,
-  together (`placeKept`), each on its own point, slid while attached, or a row or two straight up, and the others yield
-  to them. Elsewhere an unnamed army or structure is called by its kind, never by its entity id (`getEntityName`,
-  `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture world,
-  `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `game=frontier`,
+  the hovered tile's order line stands beside the tile, clear of the opened plates and of every token kept in view, or
+  is not drawn; the tokens under it step aside. Crowded tokens slide aside only as far as keeps their thing's label
+  point under them, else are not drawn; the selected thing, the player's own armies and anything in battle (on its
+  battle cooldown) always stay in view: placed first, together (`placeKept`), each on its own point, slid while
+  attached, or a row or two straight up, in the arrangement that rises least, the same whatever order they arrive in,
+  and the others yield to them. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
+  (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture
+  world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `game=frontier`,
   `panel=0` in the address; with a thing selected, the hovered tile shows the order line). In a live game,
   `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
   `frontier-plates-player` (a seated player, the readiest army selected), reads every drawn token, plate and order line

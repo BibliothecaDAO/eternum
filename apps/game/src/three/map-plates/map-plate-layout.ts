@@ -124,10 +124,8 @@ const besideColumns = (box: Rect, anchorX: number, columns: readonly Rect[]): Re
 const tokenPlaces = (thing: PlateThing, screen: PlateScreen): Rect[] => {
   const { at, token } = thing;
   const reach = token.width / 2 - ATTACH_MARGIN;
-  // A kept token's slides come finer: its cluster is arranged as a whole, where a few pixels decide whether all fit.
-  const step = thing.keep ? KEPT_STEP : GAP;
   const shifts = [0];
-  for (let dx = step; dx < reach; dx += step) shifts.push(-dx, dx);
+  for (let dx = GAP; dx < reach; dx += GAP) shifts.push(-dx, dx);
   if (reach > 0) shifts.push(-reach, reach);
   const rows = thing.keep ? KEPT_ROWS : 0;
   return Array.from({ length: rows + 1 }, (_, row) => at.y - token.height - row * (token.height + GAP))
@@ -138,8 +136,6 @@ const tokenPlaces = (thing: PlateThing, screen: PlateScreen): Rect[] => {
 };
 /** How many rows a kept thing's token may rise over its own point before it stands there regardless. */
 const KEPT_ROWS = 2;
-/** A kept token's slide step, in pixels. */
-const KEPT_STEP = 2;
 
 /** What an opened plate may not cover: the HUD's columns (but one over its token's middle) and the top bar. */
 const obstaclesFor = (token: Rect, screen: PlateScreen): Rect[] => {
@@ -228,22 +224,27 @@ export const placePlates = (
     resting.set(thing.id, box ?? places[0]);
   }
   const shown = new Set(drawn);
-  // The kept tokens no plate or order line may cover: those not asked to open (a hovered one is its plate).
-  const keptRects = things.filter((thing) => thing.keep && !thing.opened).map((thing) => resting.get(thing.id)!);
+  // The kept tokens no plate or order line may cover.
+  const keptRects = things.filter((thing) => thing.keep).map((thing) => resting.get(thing.id)!);
 
   // The hovered thing (the one plate a thing opens; a selected one rests as its token).
   const hovered = things.filter((thing) => thing.opened).toSorted((a, b) => (b.openRank ?? 0) - (a.openRank ?? 0))[0];
+  const hoveredToken = hovered && resting.get(hovered.id)!;
+  // Opened, its plate stands in its token's place; the other kept tokens stay in view around both.
+  const keptBesideHovered = keptRects.filter((box) => box !== hoveredToken);
   const places =
     hovered &&
     placesInPlaceOf(
-      resting.get(hovered.id)!,
+      hoveredToken!,
       hovered.opened!,
       screen,
-      drawn.filter((box) => box !== resting.get(hovered.id)),
-      keptRects.filter((box) => box !== resting.get(hovered.id)),
+      drawn.filter((box) => box !== hoveredToken),
+      keptBesideHovered,
     );
-  // Where the plate has no place clear of the line, the line stands alone and the plate stays its token.
-  const arranged = arrange(places ?? null, orderLine, screen, keptRects) ?? arrange(null, orderLine, screen, keptRects);
+  // Where the plate has no place clear of the line, it stays its token, and the line stands clear of every kept token
+  // left on screen, that one included; where it has none, no line is drawn.
+  const arranged =
+    arrange(places ?? null, orderLine, screen, keptBesideHovered) ?? arrange(null, orderLine, screen, keptRects);
   const plates = new Map(hovered && arranged?.plate ? [[hovered.id, arranged.plate]] : []);
   const line = arranged?.line ?? null;
 
@@ -272,60 +273,142 @@ export const placePlates = (
 
 /**
  * The tokens kept in view, placed together (review-token-anchor-4: one at a time, the first could take the only place
- * that let a third stand clear). Kept things whose places could meet form a cluster; each cluster takes the arrangement,
- * every token on one of its own places and all clear of each other, that rises least: none risen, else one row at
- * most, else two. Found by a search over each token's places (the token with fewest places still clear goes next,
- * and a choice that leaves another none is dropped at once), within `KEPT_SEARCH` tries; a cluster with no such
- * arrangement (or past the budget) takes each token's nearest place still clear, else its own point.
+ * that let a third stand clear; review-token-anchor-5: a search over slides depended on the order things came in).
+ * Kept things whose places could meet form a cluster; each cluster takes the arrangement that rises least (none risen,
+ * else one row at most, else two), every token in one of its rows and slid within its reach (`roomsOf`), all clear of
+ * each other (`packCluster`). Where the search proves a cluster has none, or stops at `KEPT_SEARCH` steps without an
+ * answer, each token takes its nearest place still clear, else its own point.
  */
 const placeKept = (kept: readonly PlateThing[], screen: PlateScreen): Map<string, Rect> => {
   const placed = new Map<string, Rect>();
   for (const cluster of clustersOf(kept)) {
-    const options = cluster.map((thing) => tokenPlaces(thing, screen));
-    const rowOf = (thing: PlateThing, place: Rect) =>
-      Math.round((thing.at.y - thing.token.height - place.y) / (thing.token.height + GAP));
-    let found: Map<number, Rect> | null = null;
-    for (let top = 0; top <= KEPT_ROWS && !found; top += 1) {
-      let tries = 0;
-      // Each token's places still open, given the ones chosen so far; the one with fewest goes next.
-      const visit = (open: Map<number, Rect[]>, chosen: Map<number, Rect>): Map<number, Rect> | null => {
-        if (open.size === 0) return chosen;
-        const [index, places] = [...open].reduce((fewest, entry) =>
-          entry[1].length < fewest[1].length ? entry : fewest,
-        );
-        for (const place of places) {
-          if ((tries += 1) > KEPT_SEARCH) return null;
-          const rest = new Map<number, Rect[]>();
-          for (const [other, others] of open)
-            if (other !== index)
-              rest.set(
-                other,
-                others.filter((candidate) => clear(candidate, place)),
-              );
-          if ([...rest.values()].some((left) => left.length === 0)) continue;
-          const result = visit(rest, new Map(chosen).set(index, place));
-          if (result) return result;
-        }
-        return null;
-      };
-      found = visit(
-        new Map(cluster.map((thing, index) => [index, options[index].filter((place) => rowOf(thing, place) <= top)])),
-        new Map(),
+    // Taken in one order whatever order they came in, so the same things on the same points always stand the same.
+    const ordered = cluster.toSorted((a, b) => a.at.x - b.at.x || a.at.y - b.at.y || (a.id < b.id ? -1 : 1));
+    const packed = packCluster(ordered, screen);
+    for (const [index, thing] of ordered.entries()) {
+      if (packed) {
+        placed.set(thing.id, packed[index]);
+        continue;
+      }
+      const places = tokenPlaces(thing, screen);
+      placed.set(
+        thing.id,
+        places.find((place) => [...placed.values()].every((other) => clear(place, other))) ?? places[0],
       );
-    }
-    if (found) {
-      cluster.forEach((thing, index) => placed.set(thing.id, found!.get(index)!));
-      continue;
-    }
-    for (const [index, thing] of cluster.entries()) {
-      const box = options[index].find((place) => [...placed.values()].every((other) => clear(place, other)));
-      placed.set(thing.id, box ?? options[index][0]);
     }
   }
   return placed;
 };
 
-/** How many places the search for a cluster's arrangement tries at each height before it gives up. */
+/** A kept token's room in one of its rows: the row, its top, and how far its left edge may slide while attached. */
+type Room = { row: number; y: number; left: number; right: number };
+
+/**
+ * A kept token's rooms: on its own point and up to `KEPT_ROWS` rows straight above it on screen, each slid aside no
+ * further than its point stays under it (`ATTACH_MARGIN`), and beside a HUD column it would reach under, as
+ * `besideColumns` stands one.
+ */
+const roomsOf = (thing: PlateThing, screen: PlateScreen): Room[] => {
+  const { at, token } = thing;
+  const centred = at.x - token.width / 2;
+  const reach = Math.max(0, token.width / 2 - ATTACH_MARGIN);
+  const rooms: Room[] = [];
+  for (let row = 0; row <= KEPT_ROWS; row += 1) {
+    const y = at.y - token.height - row * (token.height + GAP);
+    if (row > 0 && y < 0) break;
+    let left = centred - reach;
+    let right = centred + reach;
+    for (const column of screen.columns) {
+      if (y >= column.y + column.height || y + token.height <= column.y) continue;
+      if (at.x >= column.x && at.x <= column.x + column.width) break;
+      const rightOfIt = at.x > column.x + column.width;
+      const edge = rightOfIt ? column.x + column.width : column.x - token.width;
+      if (rightOfIt) left = Math.max(left, edge);
+      else right = Math.min(right, edge);
+      if (left > right) left = right = edge;
+    }
+    rooms.push({ row, y, left, right });
+  }
+  return rooms;
+};
+
+/**
+ * One arrangement of a cluster's tokens, all clear of each other, rising least; null where there is none, or where the
+ * search stops at `KEPT_SEARCH` steps without an answer.
+ *
+ * Read left to right, an arrangement is an order and a room for each token. Given those, each token's leftmost place
+ * is exact: its room's left edge, or just clear of the tokens before it whose rows meet its own. Any arrangement, its
+ * tokens taken in that order, has every token at or right of it, so the leftmost places are clear wherever any
+ * arrangement is: the search tries orders and rows, never slides. It drops a choice that leaves a later token no room,
+ * and tries two neighbours whose rows do not meet in one order only (either stands the same). The arrangement found
+ * then draws each token as near its own point as the tokens to its left and right allow.
+ */
+const packCluster = (cluster: readonly PlateThing[], screen: PlateScreen): Rect[] | null => {
+  const rooms = cluster.map((thing) => roomsOf(thing, screen));
+  const meet = (a: number, ay: number, b: number, by: number) =>
+    !(ay >= by + cluster[b].token.height + GAP || by >= ay + cluster[a].token.height + GAP);
+  type Step = { index: number; room: Room; leftmost: number };
+  for (let top = 0; top <= KEPT_ROWS; top += 1) {
+    const steps: Step[] = [];
+    let tries = 0;
+    const leftmostOf = (index: number, room: Room) =>
+      steps.reduce(
+        (x, step) =>
+          meet(index, room.y, step.index, step.room.y)
+            ? Math.max(x, step.leftmost + cluster[step.index].token.width + GAP)
+            : x,
+        room.left,
+      );
+    const fits = (index: number) =>
+      rooms[index].some((room) => room.row <= top && leftmostOf(index, room) <= room.right);
+    const visit = (remaining: readonly number[]): boolean | null => {
+      if (remaining.length === 0) return true;
+      const last = steps.at(-1);
+      for (const index of remaining)
+        for (const room of rooms[index]) {
+          if (room.row > top) break;
+          if (last && index < last.index && !meet(index, room.y, last.index, last.room.y)) continue;
+          const leftmost = leftmostOf(index, room);
+          if (leftmost > room.right) continue;
+          if ((tries += 1) > KEPT_SEARCH) return null;
+          steps.push({ index, room, leftmost });
+          const rest = remaining.filter((other) => other !== index);
+          const found = rest.every(fits) ? visit(rest) : false;
+          if (found !== false) return found;
+          steps.pop();
+        }
+      return false;
+    };
+    if (!visit(cluster.map((_, index) => index))) continue;
+    // Right to left, each token's rightmost place given those after it; then left to right, each as near its own point
+    // as its leftmost and rightmost allow.
+    const rightmost = steps.map((step) => step.room.right);
+    for (let i = steps.length - 1; i >= 0; i -= 1)
+      for (let j = i + 1; j < steps.length; j += 1)
+        if (meet(steps[i].index, steps[i].room.y, steps[j].index, steps[j].room.y))
+          rightmost[i] = Math.min(rightmost[i], rightmost[j] - cluster[steps[i].index].token.width - GAP);
+    const result: Rect[] = new Array(cluster.length);
+    const xs: number[] = [];
+    steps.forEach((step, i) => {
+      const thing = cluster[step.index];
+      const leftmost = steps
+        .slice(0, i)
+        .reduce(
+          (x, before, j) =>
+            meet(step.index, step.room.y, before.index, before.room.y)
+              ? Math.max(x, xs[j] + cluster[before.index].token.width + GAP)
+              : x,
+          step.room.left,
+        );
+      xs.push(Math.min(Math.max(thing.at.x - thing.token.width / 2, leftmost), rightmost[i]));
+      result[step.index] = { x: xs[i], y: step.room.y, ...thing.token };
+    });
+    return result;
+  }
+  return null;
+};
+
+/** How many choices the search for a cluster's arrangement makes at each height before it stops without an answer. */
 const KEPT_SEARCH = 5_000;
 
 /** Kept things whose tokens' places could meet, risen or slid as far as they go: each group placed together. */
