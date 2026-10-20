@@ -6,6 +6,8 @@ import { TickIds, type Troops } from "@bibliothecadao/types";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveMovementStamina } from "@/lib/army-stamina/movement-affordability";
 import { BlockTimestampPoller } from "@/ui/shared/components/block-timestamp-poller";
+import { takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
+import { LeftView } from "@/types";
 import { ExistingArmiesPanel } from "./existing-armies-panel";
 
 const fixture = vi.hoisted(() => {
@@ -15,10 +17,12 @@ const fixture = vi.hoisted(() => {
 vi.mock("@/hooks/helpers/use-armies", () => ({
   useExplorersByStructure: () => [{ entityId: 9, isMine: true, troops: fixture.troops, position: { x: 0, y: 0 } }],
 }));
+const setLeftNavigationView = vi.hoisted(() => vi.fn());
 vi.mock("@/hooks/store/use-ui-store", () => ({
   useUIStore: (select: (state: object) => unknown) =>
-    select({ bumpMilitaryMapVersion: () => {}, selectOnMap: () => {}, setLeftNavigationView: () => {} }),
+    select({ bumpMilitaryMapVersion: () => {}, selectOnMap: () => {}, setLeftNavigationView }),
 }));
+vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: null } }) }));
 const deleteExplorerArmy = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("@/sync/active-game-client", () => ({
   requireActiveGameClient: () => ({ actions: { deleteExplorerArmy } }),
@@ -134,4 +138,23 @@ describe("disbanding an army", () => {
     act(() => root.unmount());
     host.remove();
   });
+});
+
+it("closes the sheet and asks the map to frame and select the army, as Next up's Select the army does", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  window.history.replaceState({}, "", "/g/0xa1/1/map");
+  fixture.troops = null;
+  takeArmySelectRequest();
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    act(() => root.render(<ExistingArmiesPanel structureId={7} />));
+    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Navigate to army"]')!.click());
+    expect(setLeftNavigationView).toHaveBeenCalledWith(LeftView.None);
+    expect(takeArmySelectRequest()).toEqual({ entityId: 9, forSite: null });
+  } finally {
+    act(() => root.unmount());
+    host.remove();
+  }
 });

@@ -8,6 +8,7 @@ import { knownAmount } from "@/ui/utils/utils";
 import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
+import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { type ArmyInfo, type ID, type TroopTier, type TroopType, formatAmount } from "@bibliothecadao/types";
 
 import { memo, useMemo, useState } from "react";
@@ -54,7 +55,7 @@ export const ExistingArmiesPanel = memo(({ structureId, className }: ExistingArm
 ExistingArmiesPanel.displayName = "ExistingArmiesPanel";
 
 const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: ID }) => {
-  const selectOnMap = useUIStore((state) => state.selectOnMap);
+  const selectArmy = useSelectArmyOnMap();
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const timestamp = useCurrentDefaultTick();
   const { confirming, ask, close } = useConfirmFor(army.entityId);
@@ -85,9 +86,10 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     [army.troops],
   );
 
+  // The sheet closes and the map frames and selects the army, as every "go to this army" does.
   const handleJump = () => {
-    selectOnMap({ kind: "hex", hex: { col: Number(army.position.x), row: Number(army.position.y) } });
     setLeftNavigationView(LeftView.None);
+    selectArmy(army.entityId);
   };
 
   const bumpMilitaryMapVersion = useUIStore((state) => state.bumpMilitaryMapVersion);
