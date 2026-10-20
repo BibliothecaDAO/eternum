@@ -466,6 +466,14 @@ const STATES = {
   empty: { clock: CLOCK, stores: STORES, armies: [] },
   explore: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: EXPLORE },
   move: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, order: MOVE },
+  // QA's charge (qa-blitz-2 #5): 563 troops at 0.05 wheat a step take 28.15 wheat, which reads rounded.
+  "explore-fraction": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    order: { ...EXPLORE, wheat: { cost: 28.15, held: 4_410, wait: undefined } },
+  },
   "wheat-short": {
     clock: CLOCK,
     stores: [

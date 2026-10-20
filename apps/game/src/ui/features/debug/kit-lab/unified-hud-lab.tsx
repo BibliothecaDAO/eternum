@@ -8,7 +8,7 @@ import { TopHeader } from "@/ui/features/world/containers/top-header/top-header"
 import { DesktopHud } from "@/ui/features/world/hud/desktop-hud";
 import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ActorType } from "@bibliothecadao/types";
+import { ActorType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
@@ -17,11 +17,12 @@ import { LabGame } from "./lab-game";
 
 /**
  * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
- * attack forecast on an enemy army beside it; Frontier's, and with an army out whose XP buys a tier), and a spectator
+ * attack forecast on an enemy army beside it, or stocked for its build steps; Frontier's, and with an army out whose XP buys a tier), and a spectator
  * of a game running and of one finished.
  */
 const VIEWS = {
   blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
+  "blitz-build": { preset: 2, spectating: false, finished: false, army: false, attack: false, stocked: true },
   "blitz-attack": { preset: 2, spectating: false, finished: false, army: true, attack: true },
   frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
@@ -33,7 +34,7 @@ type View = keyof typeof VIEWS;
 
 /**
  * Dev only: the in-game HUD on a desktop as the game mounts it, every mode's, on the lab's game, at
- * /lab/kit/unified/<view>: blitz, blitz-attack, frontier, frontier-army, blitz-spectator, blitz-finished. Frontier's states on the same
+ * /lab/kit/unified/<view>: blitz, blitz-attack, blitz-build, frontier, frontier-army, blitz-spectator, blitz-finished. Frontier's states on the same
  * HUD are the Frontier HUD lab's, /lab/kit/hud/<state>.
  */
 export const UnifiedHudLab = () => {
@@ -44,6 +45,7 @@ export const UnifiedHudLab = () => {
 
 const ViewLab = ({ view }: { view: View }) => {
   const { preset, spectating, finished, army, attack } = VIEWS[view];
+  const stocked = "stocked" in VIEWS[view];
   const frontier = preset === VIEWS.frontier.preset;
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(frontier ? "frontier" : "blitz");
@@ -57,7 +59,13 @@ const ViewLab = ({ view }: { view: View }) => {
         preset={preset}
         spectating={spectating}
         finished={finished}
-        facts={army ? (store) => [...armyOut(store), ...(attack ? enemyArmyBeside(store) : [])] : undefined}
+        facts={
+          army
+            ? (store) => [...armyOut(store), ...(attack ? enemyArmyBeside(store) : [])]
+            : stocked
+              ? stockedRealm
+              : undefined
+        }
         systemCalls={army ? (store) => ({ buy_tier: recordTierBought(store) }) : undefined}
       >
         {(store) => {
@@ -76,6 +84,24 @@ const ViewLab = ({ view }: { view: View }) => {
     </>
   );
 };
+
+/**
+ * The lab realm stocked with the building inputs it lacks, 50,000 of each (it holds wheat already), so the build order's
+ * next steps can be taken.
+ */
+const STOCKED = [ResourcesIds.Wood, ResourcesIds.Stone, ResourcesIds.Coal, ResourcesIds.Copper, ResourcesIds.Labor];
+
+const stockedRealm = (): unknown[] =>
+  STOCKED.map((resource) => ({
+    model: "ResourceBalance",
+    key: `0xb5${resource}`,
+    value: {
+      game_id: 1,
+      entity_id: 7,
+      resource_type: resource,
+      balance: String(50_000n * BigInt(RESOURCE_PRECISION)),
+    },
+  }));
 
 /** The lab realm's army out today: beside the realm's site, 5,000 Knights, 90 stamina, and 260 XP, which buys a tier. */
 const ARMY_ID = 90;
