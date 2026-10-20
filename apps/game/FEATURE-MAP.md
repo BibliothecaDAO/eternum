@@ -658,8 +658,8 @@ cost, not an FPS claim. The proof refuses timing on machine load above 12 or a s
 
 `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the visible lab controls and records
 models, contexts, motion captures, eight HUD portraits, plates and panels. Append `mist` to run the hundred-ruin timing
-comparison separately. `verify:beasts` checks all eight deliveries, budgets and editable-source hashes;
-`verify:fallen-realm` checks decoded triangles for zero masonry contacts at each production scale. All authoring sources
-and paint live in `asset-sources/frontier-beasts/refined/`;
-`scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those exact eight packed sources. There is one
-production path per species and no separate study GLB.
+comparison separately, or `site-map webgpu-auto` to repeat the final-map proof on native WebGPU. `verify:beasts` checks
+all eight deliveries, budgets and editable-source hashes; `verify:fallen-realm` checks decoded triangles for zero
+masonry contacts at each production scale. All authoring sources and paint live in
+`asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
+exact eight packed sources. There is one production path per species and no separate study GLB.

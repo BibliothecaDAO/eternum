@@ -4,7 +4,8 @@ import { runProof, waitFor } from "../prove-run.mjs";
 import { proveSiteStudies, proveMistCost } from "./prove-site-studies.mjs";
 
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
-export async function proveBeasts(b, out, records, baseUrl, only) {
+export async function proveBeasts(b, out, records, baseUrl, only, rendererMode = "webgpu-force-webgl") {
+  if (!["webgpu-force-webgl", "webgpu-auto"].includes(rendererMode)) throw new Error("Unknown renderer mode");
   await b.run(
     "open",
     "about:blank",
@@ -13,7 +14,7 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
   );
   await b.run("set", "viewport", "1600", "1000");
   if (only === "mist") return proveMistCost(b, out, records, baseUrl);
-  if (!only || only === "site-map") await proveSiteStudies(b, out, records, baseUrl);
+  if (!only || only === "site-map") await proveSiteStudies(b, out, records, baseUrl, rendererMode);
   for (const scenario of [
     { name: "models-gameplay", group: "models", focus: "lineup", models: 8, species: "ammit" },
     { name: "ruins-gameplay", group: "ruins", focus: "lineup", models: 8, species: "ammit" },
@@ -76,11 +77,7 @@ export async function proveBeasts(b, out, records, baseUrl, only) {
     const record = { name: scenario.name, ready: false, presses: [], checks: [] };
     records.push(record);
     try {
-      await b.run(
-        "open",
-        `${baseUrl}/lab/models?family=beasts&rendererMode=webgpu-force-webgl`,
-        "--ignore-https-errors",
-      );
+      await b.run("open", `${baseUrl}/lab/models?family=beasts&rendererMode=${rendererMode}`, "--ignore-https-errors");
       record.ready = await waitFor(b, 'document.querySelector("[data-beasts-ready=true]")', 60000);
       if (!record.ready) continue;
       for (const [label, value] of [
@@ -196,6 +193,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       baseUrl,
       where: (record) => ({ name: record.name }),
     },
-    (b, out, records) => proveBeasts(b, out, records, baseUrl, process.argv[4]),
+    (b, out, records) => proveBeasts(b, out, records, baseUrl, process.argv[4], process.argv[5]),
   );
 }

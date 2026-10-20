@@ -6,13 +6,13 @@ import { waitFor } from "../prove-run.mjs";
 const contexts = ["cyclops", "wraith", "troll", "dark-fey", "ammit", "basilisk", "wyvern", "hydra"];
 
 /** Select each production encounter through the same owner-facing lab controls. */
-export async function proveSiteStudies(b, out, records, baseUrl) {
+export async function proveSiteStudies(b, out, records, baseUrl, rendererMode) {
   const record = { name: "site-map", ready: false, presses: [], checks: [] };
   records.push(record);
   try {
     await b.run(
       "open",
-      `${baseUrl}/lab/models?family=beasts&group=site-map&rendererMode=webgpu-force-webgl`,
+      `${baseUrl}/lab/models?family=beasts&group=site-map&rendererMode=${rendererMode}`,
       "--ignore-https-errors",
     );
     record.ready = await waitFor(b, 'document.querySelector("[data-site-studies-ready=true]")', 60000);
@@ -23,6 +23,12 @@ export async function proveSiteStudies(b, out, records, baseUrl) {
       await b.run("screenshot", join(out, `${record.name}-not-ready.png`));
       return;
     }
+    record.renderer = await b.evaluate("window.__rendererDiagnostics");
+    record.checks.push({
+      check: "requested renderer backend is active",
+      ok: record.renderer?.activeMode === (rendererMode === "webgpu-auto" ? "webgpu" : "webgl2-fallback"),
+      actual: record.renderer,
+    });
     const overview = await readDrawn(b, "lineup", 0);
     record.checks.push({
       check: "eight final contexts draw all thirteen production parts",
