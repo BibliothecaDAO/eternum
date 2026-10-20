@@ -23,44 +23,6 @@ export default defineConfig({
   iconUrl: "/images/logos/eternum-new.svg",
   logoUrl: "/images/logos/eternum-new.svg",
   ogImageUrl: "https://docs.eternum.realms.world/images/covers/og-image.png?4362984380",
-  head: {
-    link: [
-      {
-        rel: "stylesheet",
-        href: "/styles.css",
-      },
-    ],
-    script: [
-      {
-        children: `
-(function () {
-  function bindSidebarToggles() {
-    const headers = document.querySelectorAll('.vocs_Sidebar_sectionHeader');
-    headers.forEach((header) => {
-      const chevron = header.querySelector('.vocs_Sidebar_sectionCollapse');
-      const toggleBtn = header.querySelector('div[role="button"]');
-      if (!chevron || !toggleBtn) return;
-
-      header.addEventListener('click', (e) => {
-        // If user clicked the chevron button itself, let Vocs handle it.
-        if (e.target.closest('.vocs_Sidebar_sectionCollapse')) return;
-        // Toggle instead of navigating for collapsible sections.
-        e.preventDefault();
-        toggleBtn.click();
-      });
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindSidebarToggles);
-  } else {
-    bindSidebarToggles();
-  }
-})();
-        `.trim(),
-      },
-    ],
-  },
   theme: {
     colorScheme: "dark",
     variables: {
