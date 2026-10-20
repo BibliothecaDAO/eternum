@@ -27,4 +27,20 @@ describe("failure notices", () => {
     });
     expect(offenders).toEqual([]);
   });
+
+  it("log once, in toast.failed: no failure handler logs beside it, which would also log a refusal as an error", () => {
+    const offenders = sources(SRC).flatMap((path) => {
+      const lines = readFileSync(path, "utf8").split("\n");
+      return lines.flatMap((line, index) =>
+        line.includes("console.error(") &&
+        lines
+          .slice(index, index + LINES_BEFORE)
+          .join("\n")
+          .includes("toast.failed(")
+          ? [`${relative(SRC, path)}:${index + 1}`]
+          : [],
+      );
+    });
+    expect(offenders).toEqual([]);
+  });
 });

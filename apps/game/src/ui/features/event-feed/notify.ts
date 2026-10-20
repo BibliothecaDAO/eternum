@@ -1,3 +1,4 @@
+import { ActionRefusedError } from "@bibliothecadao/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { type FeedNoticeKind, useEventFeedStore } from "./event-feed-store";
@@ -33,10 +34,15 @@ export const toast = Object.assign((title: string, options?: NoticeOptions) => p
   error: (title: string, options?: NoticeOptions) => push("error", title, options),
   /**
    * An action that failed, the one way every failure handler says so: the reason its error names (the shard's refusal,
-   * the game's revert, the client's own gate), and `fallback` only when it names none.
+   * the game's revert), and `fallback` only when it names none. It logs the failure once, so its callers don't. An
+   * action the game does not take yet (ActionRefusedError: "Starts in 2m 33s") did not fail: its reason is told as
+   * news, never logged as an error.
    */
-  failed: (error: unknown, fallback: string, options?: NoticeOptions) =>
-    toast.error(extractReadableErrorMessage(error, fallback), options),
+  failed: (error: unknown, fallback: string, options?: NoticeOptions) => {
+    if (error instanceof ActionRefusedError) return toast.info(error.message, options);
+    console.error(fallback, error);
+    return toast.error(extractReadableErrorMessage(error, fallback), options);
+  },
   warning: (title: string, options?: NoticeOptions) => push("warning", title, options),
   dismiss: (id?: string) => useEventFeedStore.getState().dismiss(id),
 });

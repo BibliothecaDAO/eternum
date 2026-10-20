@@ -2468,7 +2468,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
-    if (!canIssueOrders()) return;
+    if (!canIssueOrders() || refusedBeforePlay()) return;
     const contract = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const contractHex = { col: contract.x, row: contract.y };
     if (isPendingReservedHyperstructureCreation(contractHex)) {
@@ -2492,7 +2492,6 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
     } catch (error) {
-      console.error("[Worldmap] Failed to create reserved hyperstructure", error);
       toast.failed(error, "Unable to create this Hyperstructure right now.");
     }
   }
@@ -3142,7 +3141,6 @@ export default class WorldmapScene extends WarpTravel {
           if (exploreLatencyActionId) recordClientActionFailed(exploreLatencyActionId, error);
           this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
-          console.error("Army movement failed:", error);
           toast.failed(error, ORDER_NOT_SENT);
           this.pointerOrderTip.sayRefusal(order.to, extractReadableErrorMessage(error, ORDER_NOT_SENT));
         },

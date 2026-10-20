@@ -212,7 +212,6 @@ export const useTransferAutomationRunner = () => {
                   toast.warning(err.message, { id: "transfer-automation-pending" });
                   return;
                 }
-                console.error("Transfer automation: execution failed", err);
                 scheduleNext(entry.id, nowMs);
                 toast.failed(err, "Scheduled transfer failed.");
               }

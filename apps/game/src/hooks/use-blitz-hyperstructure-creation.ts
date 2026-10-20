@@ -6,7 +6,7 @@ import {
 import { useGame } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import type { HexPosition } from "@bibliothecadao/types";
 import { useCallback, useState, useSyncExternalStore } from "react";
 
@@ -23,6 +23,8 @@ export const useBlitzHyperstructureCreation = ({
   } = useGame();
   useCurrentBlockTimestamp();
   const ordersAllowed = useUIStore(canIssueOrders);
+  // Why the game takes no action yet ("Starts in 2m 33s"): the control says so before the click, and stays shut.
+  const refusal = useActNowRefusal();
   const [isCreating, setIsCreating] = useState(false);
   const isPending = useSyncExternalStore(
     subscribeBlitzHyperstructureCreationPending,
@@ -30,7 +32,9 @@ export const useBlitzHyperstructureCreation = ({
     () => false,
   );
 
-  const canCreate = Boolean(ordersAllowed && enabled && account && contractHex && !isPending && !isCreating);
+  const canCreate = Boolean(
+    ordersAllowed && refusal === null && enabled && account && contractHex && !isPending && !isCreating,
+  );
 
   const createHyperstructure = useCallback(async () => {
     if (!enabled) {
@@ -57,6 +61,7 @@ export const useBlitzHyperstructureCreation = ({
 
   return {
     canCreate,
+    refusal,
     createHyperstructure,
     isCreating: isCreating || isPending,
   };
