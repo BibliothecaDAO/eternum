@@ -70,7 +70,7 @@ const renderHud = async () => {
       </MemoryRouter>,
     ),
   );
-  const store = writes.mock.instances.at(-1)!;
+  const store = writes.mock.instances.at(-1) as unknown as InstanceType<typeof NativeFactStore>;
   writes.mockRestore();
   return store;
 };
