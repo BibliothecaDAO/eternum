@@ -14,7 +14,10 @@ vi.mock("@/shell/sign-in/sign-in-route", () => ({ useRequestSignIn: () => fixtur
 vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada" }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: {} }));
-vi.mock("@bibliothecadao/types", () => ({ GLOBAL_CHAT_CHANNEL_ID: "global" }));
+vi.mock("@bibliothecadao/types", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@bibliothecadao/types")>()),
+  GLOBAL_CHAT_CHANNEL_ID: "global",
+}));
 vi.mock("@/ui/features/social", () => ({
   RealtimeChatShell: () => <input aria-label="Message" />,
   useRealtimeChatInitializer: () => {},
