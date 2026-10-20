@@ -670,6 +670,7 @@ describe("a story's subject", () => {
     expect(title("ExplorerDeleteStory", { explorer_id: 7 })).toBe("djizus disbanded an army");
     expect(title("StructureLevelUpStory", { new_level: 1 })).toBe("djizus's realm became a City");
     expect(title("ResourceBurnStory", { resources: [] })).toBe("djizus spent resources");
+    expect(title("RealmCreatedStory", { coord: { x: 1, y: 1 } })).toBe("djizus founded a realm");
     expect(title("ResourceReceiveArrivalStory", { resources: [] })).toBe("Resources arrived at djizus's realm");
     for (const line of [
       title("ProductionStory", { received_resource_type: 35, received_amount: "1", cost: [] }),

@@ -255,9 +255,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
         ? undefined
         : formatCoord(payload.coord);
     const ownerLabel = nameOwner(event.ownerAddress, components, resolvePlayerName);
+    const realm = describeStructureName(event.entityId, components);
     return {
-      title: `${describeStructureName(event.entityId, components) ?? "A realm"} founded`,
-      description: joinPieces([ownerLabel ? `Settled by ${ownerLabel}` : undefined, coord ? `at ${coord}` : undefined]),
+      // Another player's realm, which this client never synced, is told by its settler.
+      title: realm ? `${realm} founded` : `${ownerLabel ?? "Someone"} founded a realm`,
+      description: joinPieces([
+        realm && ownerLabel ? `Settled by ${ownerLabel}` : undefined,
+        coord ? `at ${coord}` : undefined,
+      ]),
       icon: "realm",
     };
   },
