@@ -20,7 +20,7 @@ import { ConstructionModal } from "@/ui/features/world/containers/construction-m
 import { SettingsPanel } from "@/ui/modules/settings/settings";
 import { createGameViews, type GameClient } from "@bibliothecadao/eternum";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { EntityType, RelicRecipientType, ResourcesIds } from "@bibliothecadao/types";
+import { EntityType, RelicRecipientType, ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -123,6 +123,11 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
     name: "Transfer",
     draw: () => <Opened open={() => openTransfer({ sourceId: REALM, destinationIds: [] })} />,
   },
+  // A Blitz player holding every kind a transfer can use: each end's tabs as they stand when the kinds pile up.
+  "transfer-holdings": {
+    name: "Transfer, many holdings",
+    draw: () => <Opened open={() => openTransfer({ sourceId: REALM, destinationIds: [] })} />,
+  },
   "structure-edit": {
     name: "Edit structure",
     draw: () => (
@@ -208,6 +213,7 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
  */
 export const WindowsLab = () => {
   useDocumentClass("classic-hud");
+  const { surface = "build" } = useParams();
   const [store] = useState(() => {
     const fixture = installFixtureGame();
     // What the windows read that the fixture leaves out: the research a relic costs, each building's rule, and the
@@ -228,10 +234,10 @@ export const WindowsLab = () => {
         },
       })),
     ] as never);
+    if (surface === "transfer-holdings") fixture.applyFacts(holdingsOfEveryKind() as never);
     installLabGameClient(fixture);
     return fixture;
   });
-  const { surface = "build" } = useParams();
   const shown = SURFACES[surface];
   return (
     <GameProvider
@@ -264,3 +270,70 @@ export const WindowsLab = () => {
     </GameProvider>
   );
 };
+
+/** What stands on a holding's tile, by its kind. */
+const OCCUPIER: Partial<Record<StructureType, TileOccupier>> = {
+  [StructureType.Realm]: TileOccupier.RealmRegularLevel1,
+  [StructureType.Village]: TileOccupier.Village,
+  [StructureType.Mine]: TileOccupier.Mine,
+  [StructureType.Hyperstructure]: TileOccupier.Hyperstructure,
+  [StructureType.Camp]: TileOccupier.Camp,
+};
+
+/** One more of the player's holdings, on its own tile: its kind, and for a rift which kind of mine it is. */
+const holding = (entityId: number, category: StructureType, mineKind = 0) => [
+  {
+    model: "TileOccupancy",
+    key: `0x7${entityId.toString(16)}0`,
+    value: {
+      game_id: 1,
+      alt: false,
+      col: (entityId % 6) * 4,
+      row: Math.floor(entityId / 6) * 4,
+      entity_id: entityId,
+      category: OCCUPIER[category],
+      is_structure: true,
+    },
+  },
+  structureRow(entityId, category, mineKind),
+];
+
+const structureRow = (entityId: number, category: StructureType, mineKind: number) => ({
+  model: "Structure",
+  key: `0x${entityId.toString(16)}`,
+  value: {
+    game_id: 1,
+    entity_id: entityId,
+    owner: PLAYER,
+    base: {
+      category,
+      level: 0,
+      created_at: "0x1",
+      troop_max_guard_count: 1,
+      troop_max_explorer_count: category === StructureType.Realm ? 1 : 0,
+      starting_troops_granted: false,
+    },
+    resources_packed: "0x0",
+    metadata: {
+      realm_id: category === StructureType.Realm ? entityId : 0,
+      village_realm: 0,
+      mine_kind: mineKind,
+      deepest_depth: 0,
+      has_wonder: false,
+      order: 0,
+    },
+  },
+});
+
+/**
+ * The owner's Blitz holdings of 20 October beside the fixture's realm: five more realms, four villages, three rifts,
+ * and a Hyperstructure and a camp taken from The Vanguard, so both ends list five kinds, each on its own tile a few
+ * hexes from the realms (which the fixture's rules place by the origin).
+ */
+const holdingsOfEveryKind = () => [
+  ...[8, 9, 10, 11, 12].flatMap((id) => holding(id, StructureType.Realm)),
+  ...[13, 14, 15, 16].flatMap((id) => holding(id, StructureType.Village)),
+  ...[17, 18, 19].flatMap((id) => holding(id, StructureType.Mine, 1)),
+  ...holding(20, StructureType.Hyperstructure),
+  ...holding(21, StructureType.Camp),
+];

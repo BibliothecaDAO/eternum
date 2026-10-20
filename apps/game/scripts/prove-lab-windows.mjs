@@ -50,13 +50,27 @@ const pressTab = (words) => `(() => {
   return tab !== undefined;
 })()`;
 
-/** What holds for a window drawn whole: it did not fall to the error boundary, and the page does not scroll sideways. */
+/** Every tab of every strip stands inside the panel it belongs to: none is cut, none past the edge, out of reach. */
+const TABS_FIT = `[...document.querySelectorAll('[data-popover-panel] [role="tablist"], [data-lab-stage] [role="tablist"]')]
+  .every((row) => {
+    const panel = (row.closest(".ui-panel, [data-popover-panel]") ?? row.parentElement).getBoundingClientRect();
+    return [...row.querySelectorAll('[role="tab"]')].every((tab) => {
+      const { left, right } = tab.getBoundingClientRect();
+      return left >= panel.left - 0.5 && right <= panel.right + 0.5;
+    });
+  })`;
+
+/**
+ * What holds for a window drawn whole: it did not fall to the error boundary, the page does not scroll sideways, and
+ * every tab strip fits its panel.
+ */
 const windowChecks = (b) => [
   {
     check: "drawn, not the error boundary",
     ok: b.evaluate(`!document.body.innerText.includes("Something went wrong")`),
   },
   { check: "no horizontal overflow", ok: b.evaluate("document.documentElement.scrollWidth <= innerWidth") },
+  { check: "every tab strip fits its panel", ok: b.evaluate(TABS_FIT) },
 ];
 
 /**
