@@ -419,6 +419,38 @@ describe("the build sheet", () => {
     built.close();
   });
 
+  it("says on the Hut's card what the chain grants for one more: its grant and the change in the rounded bonus", () => {
+    const { store, realm } = realmBoard();
+    const grant = configManager.getBuildingCategoryConfig(BuildingType.WorkersHut).capacity_grant;
+    // The Hut row at its first tier (research.cairo: bit 21), on the fixture board's 2,500 bps step.
+    store.applyFacts([
+      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 21n) }),
+    ] as never);
+    const hutGives = (standing: number) => {
+      store.applyFacts([
+        fact("0x72", "StructureBuildings", {
+          game_id: 1,
+          entity_id: 7,
+          ...countsWith(BuildingType.WorkersHut, standing),
+          population: { current: 0, max: 6 },
+        }),
+      ] as never);
+      const sheet = open(store, realm);
+      // What one more gives stands beside its painting (a Hut takes no population, so the only person mark).
+      const gives = sheet
+        .card("Hut")
+        .querySelector('[data-icon="person"]')!
+        .parentElement!.textContent!.replace("+", "");
+      sheet.close();
+      return Number(gives);
+    };
+    // buildings.cairo's hut_bonus over all standing Huts, the difference granted: floor(2 × 6 × 0.25) − floor(6 × 0.25)
+    // = 3 − 1 with one standing, floor(3 × 6 × 0.25) − floor(2 × 6 × 0.25) = 4 − 3 with two.
+    expect(grant).toBe(6);
+    expect(hutGives(1)).toBe(6 + 2);
+    expect(hutGives(2)).toBe(6 + 1);
+  });
+
   it("says what opens a locked training building, with the way there on the gold button", () => {
     const { store, realm } = realmBoard();
     const onResearch = vi.fn();
