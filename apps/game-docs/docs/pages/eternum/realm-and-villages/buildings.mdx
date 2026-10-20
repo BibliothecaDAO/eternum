@@ -1,3 +1,4 @@
+import { iconUrl } from "@/utils/icons";
 import BuildingCard from "../../../components/BuildingCard";
 
 # Buildings
@@ -57,7 +58,7 @@ population capacity of 5.
 <BuildingCard
   mode="eternum"
   title="Labor Camp"
-  image="/images/buildings/construction/castleZero.png"
+  image={iconUrl("realm-0", 256)}
   buildingType={25}
   description={[
     "Produces Labor resource",

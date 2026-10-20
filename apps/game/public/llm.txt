@@ -452,6 +452,7 @@ accumulate Victory Points and secure a position at the top of the leaderboard.
 file: docs/pages/blitz/world-structures.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import ResourceIcon from "@/components/ResourceIcon";
 import { table } from "@/components/styles";
 
@@ -466,7 +467,7 @@ In Blitz, Hyperstructures are **fully constructed** and positioned around the ma
 claimed by eliminating the resident bandit forces. There is no construction process - Hyperstructures are immediately
 functional once claimed and will begin accumulating Victory Points for the owning player.
 
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+<img src={iconUrl("hyperstructure", 256)} width="256" alt="Hyperstructure" />
 
 The number of Hyperstructures in the game, and their positioning on the world map, is explained in the
 [World Map](/blitz/worldmap-movement/worldmap) section.
@@ -1360,6 +1361,8 @@ Initial scouting reports have revealed some key details about the world:
 file: docs/pages/eternum/world-structures.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
+
 # World Structures
 
 ## Hyperstructures
@@ -1370,7 +1373,7 @@ Foundations through exploration and combat, then invest substantial quantities o
 fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
 path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
 
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+<img src={iconUrl("hyperstructure", 256)} width="256" alt="Hyperstructure" />
 
 ### Hyperstructure Foundations
 
@@ -1413,7 +1416,7 @@ a Fragment Mine must first be claimed by defeating its resident bandit forces. O
 mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
 production when depleted.
 
-<img src="/images/buildings/construction/fragment-mine.png" width="800" />
+<img src={iconUrl("mine", 256)} width="256" alt="Fragment Mine" />
 
 The chance of discovering a Fragment Mine when exploring an unrevealed hex is static at 1 in 150, or 0.67%. Mines can
 contain between 300,000 and 3 million ancient fragments in incremental amounts (i.e. 300k, 600k, 900k…). It will take
@@ -2045,10 +2048,12 @@ import { REALMS_X_URL } from "../../../../../packages/chain/src/community";
 file: docs/pages/overview/lords.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
+
 # $LORDS Token
 
 <div style={{ textAlign: "center" }}>
-  <img src="/images/resources/37.png" alt="LORDS Token" style={{ width: "120px", height: "auto", display: "inline-block" }} />
+  <img src={iconUrl("lords")} alt="LORDS Token" style={{ width: "120px", height: "auto", display: "inline-block" }} />
 </div>
 
 $LORDS is the native token of the Realms. It serves as the primary currency within the ecosystem, enabling economic
@@ -3077,6 +3082,7 @@ structure owner.
 file: docs/pages/blitz/realms/buildings.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import BuildingCard from "../../../components/BuildingCard";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
@@ -3132,7 +3138,7 @@ All Realms start the game with a structure in the center of the buildable hexes,
 represents the central point of governance of the Realm, and facilitates key functions such as Realm upgrades and labor
 production. This building cannot be destroyed and provides a baseline population capacity of 6.
 
-<BuildingCard mode="blitz" title="Keep" image="/images/buildings/construction/castleZero.png" buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
+<BuildingCard mode="blitz" title="Keep" image={iconUrl("realm-0", 256)} buildingType={25} description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]} />
 
 ### Resource Buildings
 
@@ -3531,6 +3537,7 @@ Mill (both being resource buildings) would not be subject to this cost increase.
 file: docs/pages/blitz/realms/realm.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import { StartingMilitary } from "@/components/StartingMilitary";
 import { BlitzRealmDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import { BuildableHexes } from "@/components/BuildableHexes";
@@ -3545,7 +3552,7 @@ functionally identical and are not related to the 8,000 Realm NFTs that are the 
 of the nine resources available in Blitz and are equally capable in all aspects of the game, limited only by the skill
 and strategy of their Lord.
 
-<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+<img src={iconUrl("realm-1", 256)} width="256" alt="Realm" style={{ margin: "0 auto", display: "block" }} />
 
 ## Registration
 
@@ -4237,6 +4244,7 @@ Each troop tier provides escalating advantages in terms of damage output and sta
 file: docs/pages/eternum/realm-and-villages/buildings.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import BuildingCard from "../../../components/BuildingCard";
 
 # Buildings
@@ -4296,7 +4304,7 @@ population capacity of 5.
 <BuildingCard
   mode="eternum"
   title="Labor Camp"
-  image="/images/buildings/construction/castleZero.png"
+  image={iconUrl("realm-0", 256)}
   buildingType={25}
   description={[
   "Produces Labor resource",
@@ -4785,6 +4793,7 @@ Lumber Camp (both being resource buildings) would not be subject to this cost in
 file: docs/pages/eternum/realm-and-villages/realm.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
 import { RealmDefenseSlotsTable } from "@/components/eternum-components/DefendingArmies";
@@ -4800,7 +4809,7 @@ in Eternum can produce between one and seven different resources, depending on t
 and its associated Season Pass. This metadata also aligns each Realm to one of sixteen ancient Orders, however the
 meaning of this alignment has been lost to the mist… for now.
 
-<img src="/images/buildings/construction/castleOne.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+<img src={iconUrl("realm-1", 256)} width="256" alt="Realm" style={{ margin: "0 auto", display: "block" }} />
 
 ### Settling
 
@@ -4860,6 +4869,7 @@ your defenses. Each progression requires specific materials, outlined in the tab
 file: docs/pages/eternum/realm-and-villages/villages.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import ResourceProbability from "@/components/eternum-components/ResourceProbability";
 import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
@@ -4872,7 +4882,7 @@ settlers and loyal subjects. Additionally, they can act as supplementary playing
 wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
 Villages in Season 1!
 
-<img src="/images/buildings/construction/village.png" width="800" style={{ margin: "0 auto", transform: "scale(1.2)" }} />
+<img src={iconUrl("village", 256)} width="256" alt="Village" style={{ margin: "0 auto", display: "block" }} />
 
 ### Settling
 
@@ -4944,10 +4954,6 @@ Key Notes:
 
 * Production rates are not increased by this bonus, more is produced overall for the same amount of input.
 * These bonuses do not stack. There is no benefit to settling multiple wonders in a limited range.
-
-<br />
-
-<img src="/images/buildings/construction/wonder.png" width="800" style={{ margin: "0 auto", display: "block", maxWidth: "100%" }} />
 
 <br />
 
@@ -5526,6 +5532,7 @@ Materials in Eternum have different weights, which decide how much a donkey or a
 file: docs/pages/eternum/resources/transfers-and-trade.mdx
 meta: {}
 
+import { iconUrl } from "@/utils/icons";
 import { importantNote } from "@/components/styles";
 
 # Transfers & Trade
@@ -5576,7 +5583,7 @@ be manually claimed via the 'Resource Arrivals' tab before they become available
 ### Banks
 
 <div style={{ display: "flex", justifyContent: "center", margin: "2rem 0" }}>
-  <img src="/images/buildings/construction/bank.png" alt="Bank Building" style={{ maxWidth: "100%", height: "auto", borderRadius: "8px" }} />
+  <img src={iconUrl("bank", 256)} width="256" alt="Bank" style={{ maxWidth: "100%", height: "auto" }} />
 </div>
 
 Six ancient Banks stand evenly distributed around, and equidistant from, the center of the map.

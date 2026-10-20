@@ -1,4 +1,5 @@
 import { TroopTier, TroopType } from "@bibliothecadao/types";
+import { iconUrl } from "@/utils/icons";
 import { colors, fonts, section, table } from "./styles";
 
 export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string => {
@@ -7,37 +8,9 @@ export const getTroopName = (troopType: TroopType, troopTier: TroopTier): string
   return "";
 };
 
-export const troopTypeTierImages = (tier: TroopTier, type: TroopType) => {
-  switch (tier) {
-    case TroopTier.T1:
-      switch (type) {
-        case TroopType.Crossbowman:
-          return "/images/armies/crossbowmanT1.png";
-        case TroopType.Paladin:
-          return "/images/armies/paladinT1.png";
-        case TroopType.Knight:
-          return "/images/armies/knightT1.png";
-      }
-    case TroopTier.T2:
-      switch (type) {
-        case TroopType.Crossbowman:
-          return "/images/armies/crossbowmanT2.png";
-        case TroopType.Paladin:
-          return "/images/armies/paladinT2.png";
-        case TroopType.Knight:
-          return "/images/armies/knightT2.png";
-      }
-    case TroopTier.T3:
-      switch (type) {
-        case TroopType.Crossbowman:
-          return "/images/armies/crossbowmanT3.png";
-        case TroopType.Paladin:
-          return "/images/armies/paladinT3.png";
-        case TroopType.Knight:
-          return "/images/armies/knightT3.png";
-      }
-  }
-};
+/** A troop's painted icon, as the app shows it: knight-t1 to paladin-t3. */
+export const troopTypeTierImages = (tier: TroopTier, type: TroopType) =>
+  iconUrl(`${type.toLowerCase()}-${tier.toLowerCase()}` as Parameters<typeof iconUrl>[0], 128);
 
 const getTroopTypeName = (type: TroopType): string => {
   switch (type) {

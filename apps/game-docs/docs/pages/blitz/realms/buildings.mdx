@@ -1,3 +1,4 @@
+import { iconUrl } from "@/utils/icons";
 import BuildingCard from "../../../components/BuildingCard";
 import { formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
@@ -56,7 +57,7 @@ production. This building cannot be destroyed and provides a baseline population
 <BuildingCard
   mode="blitz"
   title="Keep"
-  image="/images/buildings/construction/castleZero.png"
+  image={iconUrl("realm-0", 256)}
   buildingType={25}
   description={["Produces labor", "Provides a baseline population capacity of 6", "Cannot be constructed or destroyed"]}
 />

@@ -1,3 +1,4 @@
+import { iconUrl, resourceMeaning } from "@/utils/icons";
 const STYLES = {
   size: {
     xs: "w-2 h-2 md:w-4 md:h-4",
@@ -40,7 +41,7 @@ export default function ResourceIcon({ name, id, size = "xl" }: Props) {
                     ? { width: "3rem", height: "3rem" }
                     : { width: "4rem", height: "4rem" }
         }
-        src={`/images/resources/${id}.png`}
+        src={iconUrl(resourceMeaning(id as number), 128)}
         alt={name}
         title={name}
       />

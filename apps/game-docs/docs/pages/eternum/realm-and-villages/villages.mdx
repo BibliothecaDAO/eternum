@@ -1,3 +1,4 @@
+import { iconUrl } from "@/utils/icons";
 import ResourceProbability from "@/components/eternum-components/ResourceProbability";
 import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
@@ -10,11 +11,7 @@ settlers and loyal subjects. Additionally, they can act as supplementary playing
 wish to maximise their potential. Each settled Realm can have up to six Villages surrounding it, allowing up to 48,000
 Villages in Season 1!
 
-<img
-  src="/images/buildings/construction/village.png"
-  width="800"
-  style={{ margin: "0 auto", transform: "scale(1.2)" }}
-/>
+<img src={iconUrl("village", 256)} width="256" alt="Village" style={{ margin: "0 auto", display: "block" }} />
 
 ### Settling
 
