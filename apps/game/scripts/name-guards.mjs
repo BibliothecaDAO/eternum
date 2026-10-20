@@ -41,7 +41,7 @@ const noImperativeNames = {
           node,
           message:
             "React code reads a player's name through usePlayerNames() (or usePlayerName), which follows names that " +
-            "land; getPlayerDisplayName and readPlayerName are for the scenes and the services.",
+            "land; getPlayerDisplayName and readPlayerName are for the imperative consumers in name-guards.mjs.",
         });
     },
   }),
@@ -148,11 +148,25 @@ const cachedNamesFollow = {
   },
 };
 
+/**
+ * The modules that may read a name imperatively, because nothing caches what they read: the hooks module, which turns
+ * the readers into the hooks; the scenes, which redraw labels through watchPlayerNames; the game client's core wiring,
+ * which hands the rule to core as its resolver; the fact views; and the name service itself.
+ */
+const IMPERATIVE_CONSUMERS = [
+  "apps/game/src/hooks/use-player-profile.ts",
+  "apps/game/src/three/**",
+  "apps/game/src/services/game-client.ts",
+  "apps/game/src/sync/fact-views.ts",
+  "apps/game/src/services/identity/**",
+];
+
 const namesPlugin = { rules: { "no-imperative-names": noImperativeNames, "cached-names-follow": cachedNamesFollow } };
 
 /**
  * The two guards as flat-config blocks, for lint-guards.mjs and the test alike: every cache in the client follows the
- * names it reads; React code (ui/, hooks/, shell/; tests and the hooks module aside) imports no imperative reader.
+ * names it reads; and no module imports an imperative reader but the imperative consumers below. The boundary is an
+ * allowlist, so a new folder, or a service a screen calls, is held to it by default.
  */
 export const nameGuardConfigs = [
   {
@@ -162,8 +176,8 @@ export const nameGuardConfigs = [
     rules: { "names/cached-names-follow": "error" },
   },
   {
-    files: ["apps/game/src/ui/**/*.{ts,tsx}", "apps/game/src/hooks/**/*.{ts,tsx}", "apps/game/src/shell/**/*.{ts,tsx}"],
-    ignores: ["**/*.test.{ts,tsx}", "apps/game/src/hooks/use-player-profile.ts"],
+    files: ["apps/game/src/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}", ...IMPERATIVE_CONSUMERS],
     plugins: { names: namesPlugin },
     rules: { "names/no-imperative-names": "error" },
   },

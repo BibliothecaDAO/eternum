@@ -39,7 +39,7 @@ export const Line = ({ address }: { address: string }) => {
   return <span>{useMemo(() => ${expression}, [${deps}])}</span>;
 };`;
 
-describe("the imperative readers stay out of React code (review-player-name-one-rule-3, finding 2)", () => {
+describe("only the imperative consumers import an imperative reader (review-player-name-one-rule-3, finding 2)", () => {
   const memo = (from) =>
     `import { useMemo } from "react";
 import { getPlayerDisplayName } from "${from}";
@@ -62,11 +62,18 @@ export const Name = () => <span>{useMemo(() => getPlayerDisplayName("0x123"), []
     ).toHaveLength(1);
   });
 
-  it("leaves the scenes, the services and the hooks module their imperative reader", async () => {
+  it("holds every module to it but the imperative consumers: a service a screen calls, a new folder", async () => {
     const reader = `import { getPlayerDisplayName } from "@/services/identity/player-profiles";\nexport const x = getPlayerDisplayName;`;
-    expect(await hits("three/managers/zz-guard-fixture.ts", reader)).toEqual([]);
-    expect(await hits("services/leaderboard/zz-guard-fixture.ts", reader)).toEqual([]);
-    expect(await hits("hooks/use-player-profile.ts", reader)).toEqual([]);
+    // A service that wraps the reader is how a screen read it stale before (the Faith board's builder).
+    expect(await hits("services/leaderboard/zz-guard-fixture.ts", reader)).toHaveLength(1);
+    expect(await hits("zz-new-folder/zz-guard-fixture.ts", reader)).toHaveLength(1);
+    for (const consumer of [
+      "three/managers/zz-guard-fixture.ts",
+      "hooks/use-player-profile.ts",
+      "services/game-client.ts",
+      "sync/fact-views.ts",
+    ])
+      expect(await hits(consumer, reader), consumer).toEqual([]);
   });
 });
 
