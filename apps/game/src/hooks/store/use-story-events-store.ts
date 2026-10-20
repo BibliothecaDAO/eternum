@@ -342,6 +342,20 @@ const fetchStoryRead = async (
   return { stories, completeThroughBlock: page.complete_through_block, askedUnder };
 };
 
+/**
+ * A history answer as it replaces what its read holds: it decides every story up to the block its history was complete
+ * through, and none after. A confirmed story the read already holds beyond that block (the stream delivered it, maybe
+ * since gone from the stream's ring) stays; all of them stay when Herald does not know its coverage. A pre-confirmed one
+ * does not: only the stream can confirm it or let it go.
+ */
+const answerOverHeld = (answer: StoryReadPage, held: StoryReadPage | undefined, limit: number): StoryReadPage => {
+  const through = answer.completeThroughBlock;
+  const beyond = (held?.stories ?? []).filter(
+    ({ position: { block } }) => block !== null && (through === null || block > through),
+  );
+  return { ...answer, stories: latestStories([...beyond, ...answer.stories], limit) };
+};
+
 /** An answer that holds history through a block before the snapshot applied now: it cannot vouch for those facts. */
 const isBehindSnapshot = (page: StoryReadPage, snapshotBlock: number | null): boolean =>
   snapshotBlock !== null && page.completeThroughBlock !== null && page.completeThroughBlock < snapshotBlock;
@@ -396,7 +410,12 @@ export const useStoryReads = (reads: StoryRead[]) => {
   const queries = useQueries({
     queries: reads.map((read, index) => ({
       queryKey: queryKeys[index],
-      queryFn: () => fetchStoryRead(shard, scope, read),
+      queryFn: async () =>
+        answerOverHeld(
+          await fetchStoryRead(shard, scope, read),
+          queryClient.getQueryData<StoryReadPage>(queryKeys[index]),
+          read.limit,
+        ),
       staleTime: Number.POSITIVE_INFINITY,
       ...(read.story
         ? { retry: false, retryOnMount: false, refetchOnWindowFocus: false, refetchOnReconnect: false }

@@ -325,6 +325,79 @@ describe("a story read", () => {
   });
 });
 
+describe("a history answer that lands late", () => {
+  /** The player's battles read, its history answer held until `finish`, and a reconnect asking it. */
+  const holdTheAnswer = async () => {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <PlayerBattles />
+        </QueryClientProvider>,
+      ),
+    );
+    let finish!: (through: number) => void;
+    history.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = (through) => resolve({ items: [], complete_through_block: through, limit: 10, offset: 0, total: 0 });
+        }),
+    );
+    await act(async () => useConnectionStore.getState().recordGlobalHandshake());
+    return (through: number) =>
+      act(async () => {
+        finish(through);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      });
+  };
+  /** 599 unrelated moves in one block: the stream's 512-story ring moves past everything before them. */
+  const rollTheRing = () =>
+    act(async () => {
+      for (let index = 1001; index < 1600; index++)
+        storyAt(index, { ExplorerMove: {} }, { block: 1001, transaction: index - 1001 });
+    });
+
+  it("keeps a delivered battle when an older history read finishes after the mixed ring rolled over", async () => {
+    const answer = await holdTheAnswer();
+    await act(async () => battleStreamed(1000, "0x0c", "0x0a"));
+    expect(host.textContent).toBe("0x0c");
+    await rollTheRing();
+    expect(host.textContent).toBe("0x0c");
+    // History complete through 999 cannot speak for the battle at 1000.
+    await answer(999);
+    expect(host.textContent).toBe("0x0c");
+  });
+
+  it("lets history covering a delivered story's block decide it, and keeps no pre-confirmed story it rolled past", async () => {
+    const answer = await holdTheAnswer();
+    await act(async () => {
+      battleStreamed(1000, "0x0c", "0x0a");
+      // A pre-confirmed battle has no block yet: only the stream can confirm it, or let it go.
+      acceptGameSyncStoryEvent(
+        {
+          model: "BattleEvent",
+          key: "0xbattlepending",
+          value: {
+            game_id: "0x1",
+            attacker_id: "0x385",
+            defender_id: "0x7",
+            attacker: { player: "0x0d" },
+            defender: { player: "0x0a" },
+            timestamp: "0x500",
+            event_position: { block_number: null, transaction_hash: "0xbeef", transaction_index: 0, event_index: 0 },
+          },
+        },
+        scope,
+        { block: null, preconfirmed: true },
+      );
+    });
+    expect(host.textContent).toBe("0x0d0x0c");
+    await rollTheRing();
+    // History complete through 1000 holds no battle at 1000: it decides.
+    await answer(1000);
+    expect(host.textContent).toBe("");
+  });
+});
+
 it("asks a failed history read again once on each handshake, never on a remount or a render", async () => {
   history.mockClear();
   history.mockRejectedValue(new Error("temporary HTTP 503"));
