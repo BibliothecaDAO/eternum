@@ -11,7 +11,6 @@ import {
   HudRow,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
-import { knownAmount } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { EntityType, ID, RelicRecipientType, Troops, formatAmount } from "@bibliothecadao/types";
@@ -26,17 +25,16 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/lib/army-stamina/source-resolution";
 import { activateRelic, relicHolderLine, STAMINA_FULL } from "@/ui/design-system/kit/words";
 
-/** A structure or army holding a relic, with how many it holds: one choice of who activates it. */
+/** A structure or army holding a relic, with how many whole relics it holds: one choice of who activates it. */
 export interface RelicHolderPreview {
   entityId: ID;
-  amount: number;
+  held: number;
   recipientType: RelicRecipientType;
   entityType: EntityType;
 }
 
 interface RelicActivationSelectorProps {
   resourceId: ID;
-  displayAmount: string;
   holders: RelicHolderPreview[];
   onClose: () => void;
 }
@@ -85,12 +83,7 @@ const RelicActivationHolderCard = ({
   }, [armyUnknown, holder.entityId]);
 
   return (
-    <HudPanel
-      kind="section"
-      title={holder.entityName}
-      cue={`×${formatAmount(knownAmount(holder.amount))}`}
-      collapsible={false}
-    >
+    <HudPanel kind="section" title={holder.entityName} cue={`×${formatAmount(holder.held)}`} collapsible={false}>
       <div className="flex flex-col gap-2">
         <HudRow
           title={relicHolderLine(isArmyHolder, holder.parentStructureName)}
@@ -138,12 +131,7 @@ const useStaminaFull = (troops: Troops | null): boolean => {
   return stamina !== null && stamina.current >= stamina.max;
 };
 
-export const RelicActivationSelector = ({
-  resourceId,
-  displayAmount: _initialDisplayAmount,
-  holders,
-  onClose,
-}: RelicActivationSelectorProps) => {
+export const RelicActivationSelector = ({ resourceId, holders, onClose }: RelicActivationSelectorProps) => {
   const {
     setup: { store, systemCalls },
     account: { account },
@@ -196,8 +184,7 @@ export const RelicActivationSelector = ({
     });
   }, [store, holders, mode, revision]);
 
-  const visibleHolders = enrichedHolders;
-  const visibleDisplayAmount = _initialDisplayAmount;
+  const held = holders.reduce((total, holder) => total + holder.held, 0);
 
   const handleActivate = async ({ holder, hasEnoughEssence, shortfall }: ActivationRequest) => {
     if (!relicInfo) {
@@ -252,12 +239,12 @@ export const RelicActivationSelector = ({
   return (
     <HudWindow title={activateRelic(relicResourceId)} icon="relics" size="task" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        <HeldRelic relicId={relicResourceId} held={visibleDisplayAmount} />
+        <HeldRelic relicId={relicResourceId} held={formatAmount(held)} />
         {relicDescription && <p className="text-hud-label text-hud-muted">{relicDescription}</p>}
-        {visibleHolders.length === 0 ? (
+        {enrichedHolders.length === 0 ? (
           <HudEmpty icon="relics" line="No entities currently hold this relic." />
         ) : (
-          visibleHolders.map((holder) => {
+          enrichedHolders.map((holder) => {
             const holderKey = String(holder.entityId);
             return (
               <RelicActivationHolderCard

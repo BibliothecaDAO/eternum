@@ -193,21 +193,14 @@ export const CompactEntityInventory = memo(
 
         const holder: RelicHolderPreview = {
           entityId: safeInteger(entityId),
-          amount: item.amount,
+          held: Math.floor(item.amount),
           recipientType,
           entityType,
         };
 
         openSurface({
           id: "relic-activation",
-          content: (
-            <RelicActivationSelector
-              resourceId={item.resourceId}
-              displayAmount={formatAmount(Math.floor(item.amount))}
-              holders={[holder]}
-              onClose={closeSurface}
-            />
-          ),
+          content: <RelicActivationSelector resourceId={item.resourceId} holders={[holder]} onClose={closeSurface} />,
         });
       },
       [allowRelicActivation, entityId, entityType, recipientType, openSurface],

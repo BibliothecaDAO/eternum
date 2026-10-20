@@ -265,3 +265,9 @@ it("activates from inventory while map occupancy facts are absent", async () => 
   await act(async () => confirm.click());
   expect(state.apply_relic).toHaveBeenCalledTimes(1);
 });
+
+it("counts the one whole relic the army holds as one, on its target row as in its heading", async () => {
+  await openInventory(game());
+  expect(document.body.textContent).toMatch(/Veil Brands×1(?!\d)/);
+  expect(document.body.textContent).not.toContain("×<1");
+});

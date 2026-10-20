@@ -117,11 +117,10 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
             "relic-target",
             <RelicActivationSelector
               resourceId={ResourcesIds.ProductionRelic1}
-              displayAmount="2"
               holders={[
                 {
                   entityId: REALM,
-                  amount: 2,
+                  held: 2,
                   recipientType: RelicRecipientType.Structure,
                   entityType: EntityType.STRUCTURE,
                 },
