@@ -7,7 +7,6 @@ import {
   shouldHoldShortcutArmySelectionProtection,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldClearEntitySelectionForEntityActionTransition,
-  shouldClearEntitySelectionForChunkSwitch,
   resolveRefreshCompletionActions,
   resolveRefreshExecutionPlan,
   resolveRefreshRunningActions,
@@ -91,35 +90,6 @@ describe("resolveChunkSwitchActions", () => {
       shouldUnregisterPreviousChunk: false,
       shouldRestorePreviousState: false,
     });
-  });
-});
-
-describe("shouldClearEntitySelectionForChunkSwitch", () => {
-  it("clears selection for default chunk switches outside shortcut tabbing", () => {
-    expect(
-      shouldClearEntitySelectionForChunkSwitch({
-        reason: "default",
-        isShortcutArmySelectionInFlight: false,
-      }),
-    ).toBe(true);
-  });
-
-  it("preserves selection for explicit shortcut chunk switches", () => {
-    expect(
-      shouldClearEntitySelectionForChunkSwitch({
-        reason: "shortcut",
-        isShortcutArmySelectionInFlight: false,
-      }),
-    ).toBe(false);
-  });
-
-  it("preserves selection when a default refresh overlaps shortcut tabbing", () => {
-    expect(
-      shouldClearEntitySelectionForChunkSwitch({
-        reason: "default",
-        isShortcutArmySelectionInFlight: true,
-      }),
-    ).toBe(false);
   });
 });
 

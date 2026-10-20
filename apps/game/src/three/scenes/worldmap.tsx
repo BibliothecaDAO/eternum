@@ -294,7 +294,6 @@ import {
   resolveEntityActionPathsTransitionTokenSync,
   resolvePendingChunkRefreshUiReason,
   shouldRequestTileRefreshForStructureBoundsChange,
-  shouldClearEntitySelectionForChunkSwitch,
   shouldClearEntitySelectionForEntityActionTransition,
   shouldClearEntitySelectionForMissingActionPathOwnership,
   shouldForceShortcutNavigationRefresh,
@@ -3658,6 +3657,17 @@ export default class WorldmapScene extends WarpTravel {
   private refreshSelectedArmyOrders(): void {
     const entityId = this.selectedOrderableArmyId();
     if (entityId !== null) this.selectedArmyOrders.offer(entityId, this.getArmyOwnerAddress(entityId));
+  }
+
+  /**
+   * A pan into another chunk keeps the selection. The selected army's orders are planned again for the chunk now
+   * shown, or dropped while it stands outside it; the switch that brings it back plans them again.
+   */
+  private replanSelectedArmyOrdersForChunk(): void {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId == null) return;
+    if (this.selectedOrderableArmyId() !== null) this.refreshSelectedArmyOrders();
+    else this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
   }
 
   /** Chain time moved: the selected army's orders are planned again once its stamina or food pays for others. */
@@ -7185,7 +7195,7 @@ export default class WorldmapScene extends WarpTravel {
         const transitionToken = this.claimNextChunkTransitionToken();
         const switchStartedAt = performance.now();
         recordChunkDiagnosticsEvent(this.chunkDiagnostics, "transition_started");
-        return runWorldmapChunkTransition({
+        const committed = await runWorldmapChunkTransition({
           hardTimeoutMs: WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS,
           onFinally: () => {
             recordChunkDiagnosticsEvent(this.chunkDiagnostics, "switch_duration_recorded", {
@@ -7207,11 +7217,12 @@ export default class WorldmapScene extends WarpTravel {
             startRow,
             force,
             transitionToken,
-            options.reason,
             triggerReason,
             focusPoint.clone(),
           ),
         });
+        if (committed) this.replanSelectedArmyOrdersForChunk();
+        return committed;
       }
 
       if (chunkDecision.action === "refresh_current_chunk") {
@@ -7354,7 +7365,6 @@ export default class WorldmapScene extends WarpTravel {
     startRow: number,
     force: boolean,
     transitionToken: number,
-    reason: "default" | "shortcut",
     triggerReason: string,
     switchPosition?: Vector3,
   ) {
@@ -7366,17 +7376,6 @@ export default class WorldmapScene extends WarpTravel {
     const preChunkStats = memoryMonitor?.getCurrentStats(`chunk-switch-pre-${chunkKey}`);
 
     try {
-      // Keep selection continuity during shortcut tabbing, including any
-      // overlapping scheduled refresh that still routes through the default branch.
-      if (
-        shouldClearEntitySelectionForChunkSwitch({
-          reason,
-          isShortcutArmySelectionInFlight: this.isShortcutArmySelectionInFlight,
-        })
-      ) {
-        this.clearEntitySelection();
-      }
-
       const {
         effectiveForce,
         hasFiniteOldChunkCoordinates,
@@ -8395,8 +8394,8 @@ export default class WorldmapScene extends WarpTravel {
   /**
    * Selects the army the HUD asked for, framed in the map's open area, the way the Tab shortcut does. Asked from a
    * site's card or Next up, the card stays open on that site with the army as its actor: the attack's preview, or what
-   * the army lacks. The framing moves the camera, into another chunk when the site is far, so it runs inside the
-   * selection's protection, where a chunk switch keeps the selection.
+   * the army lacks. The framing moves the camera, into another chunk when the site is far, so it runs as the shortcut
+   * does: the chunk under the framed view switches at once, without the delay a pan's switch waits out.
    */
   private async selectRequestedArmy(entityId: number, forSite: Position | null): Promise<void> {
     const account = accountAddress();
@@ -8490,7 +8489,10 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  /** Shortcut selections hold chunk refreshes on the shortcut's reason until the camera and chunks settle. */
+  /**
+   * Shortcut selections hold chunk refreshes on the shortcut's reason until the camera and chunks settle, so the chunk
+   * the jump lands in switches at once, without a pan's switch delay or refresh debounce.
+   */
   private async runShortcutArmySelection(select: () => Promise<void>): Promise<void> {
     this.isShortcutArmySelectionInFlight = true;
     if (this.chunkRefreshTimeout !== null || this.chunkRefreshRunning) {
