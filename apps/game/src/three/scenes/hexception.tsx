@@ -914,13 +914,13 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       this.clearBuildingMode();
+      AudioManager.getInstance().play("ui.build_place");
       try {
         await sendBuilding({
           realmId: structureEntityId,
           type: buildingType.type,
           plot: normalizedCoords,
           useSimpleCost,
-          onSent: () => AudioManager.getInstance().play("ui.build_place"),
         });
       } catch (error) {
         console.error("[Hexception] building placement failed", error);

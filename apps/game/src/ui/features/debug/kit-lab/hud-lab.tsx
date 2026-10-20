@@ -249,38 +249,60 @@ const DAY_DONE = {
   onContinue: () => undefined,
 };
 
-/** A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor. */
-const BUILD_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "workshop", icon: "workshop", name: "Workshop", tip: "", foot: { kind: "price", labor: 10_000, short: true } },
-  { key: "barracks", icon: "barracks", name: "Barracks", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
-  { key: "hut", icon: "workers-hut", name: "Hut", tip: "", foot: { kind: "price", labor: 5_100, short: false } },
-  { key: "war", icon: "war-hall", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "built" } },
-  {
-    key: "supply",
-    icon: "supply-yard",
-    name: TRAINING_BUILDINGS[1],
-    tip: "",
-    foot: { kind: "price", labor: 3_000, short: false },
-  },
-  {
-    key: "lodge",
-    icon: "scout-lodge",
-    name: TRAINING_BUILDINGS[2],
-    tip: "",
-    foot: { kind: "price", labor: 3_000, short: false },
-  },
-  { key: "hearth", icon: "hearth", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "built" } },
+type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
+/** A building card for the lab: its painting and name, what it gives and takes, and where it stands. */
+const tile = (
+  key: string,
+  icon: LabTile["icon"],
+  name: string,
+  gives: LabTile["gives"],
+  takes: number,
+  standing: LabTile["standing"],
+): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
+const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
+  ({ kind: "price", labor, short }) as const;
+const TRAINS = { icon: "order-rage", value: "Common" } as const;
+
+/**
+ * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
+ * Workshop 3h 10m from its 10,000.
+ */
+const BUILD_TILES: LabTile[] = [
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, 1, price(6_800)),
+  tile(
+    "workshop",
+    "workshop",
+    "Workshop",
+    { icon: "labor", value: "+0.83/min" },
+    1,
+    price(10_000, { of: "labor", wait: 3 * HOUR + 10 * 60 }),
+  ),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(6_800)),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(5_100)),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "built" }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, price(3_000)),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, price(3_000)),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, { kind: "built" }),
 ];
-const EARLY_TILES: Parameters<typeof BuildView>[0]["tiles"] = [
-  { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 800, short: false } },
-  { key: "workshop", icon: "workshop", name: "Workshop", tip: "", foot: { kind: "price", labor: 2_000, short: false } },
-  { key: "barracks", icon: "barracks", name: "Barracks", tip: "", foot: { kind: "price", labor: 800, short: false } },
-  { key: "hut", icon: "workers-hut", name: "Hut", tip: "", foot: { kind: "price", labor: 300, short: false } },
-  { key: "war", icon: "war-hall", name: TRAINING_BUILDINGS[0], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "supply", icon: "supply-yard", name: TRAINING_BUILDINGS[1], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "lodge", icon: "scout-lodge", name: TRAINING_BUILDINGS[2], tip: "", foot: { kind: "locked", gate: 3 } },
-  { key: "hearth", icon: "hearth", name: TRAINING_BUILDINGS[3], tip: "", foot: { kind: "locked", gate: 3 } },
+/** A fresh realm: the training buildings locked behind the Barracks at Rare. */
+const EARLY_TILES: LabTile[] = [
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, 1, price(800)),
+  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
+  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "locked", gate: 3 }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, {
+    kind: "locked",
+    gate: 3,
+  }),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, {
+    kind: "locked",
+    gate: 3,
+  }),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, {
+    kind: "locked",
+    gate: 3,
+  }),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -1000,17 +1022,6 @@ export const HudLab = () => {
             tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
             chosen={lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
-            gains={
-              lab.realmView === "build"
-                ? [
-                    { icon: "wheat", value: "+375/h", label: "produces" },
-                    { icon: "person", value: "1", label: "population" },
-                  ]
-                : [
-                    { icon: "troops", value: "+100/h", label: "produces" },
-                    { icon: "person", value: "3", label: "population" },
-                  ]
-            }
             prices={[{ of: "labor", amount: lab.realmView === "build" ? 6_800 : 800 }]}
             refusal={undefined}
             sending={false}

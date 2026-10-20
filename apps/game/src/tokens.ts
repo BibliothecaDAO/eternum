@@ -576,9 +576,10 @@ export const HUD_LAYOUT = {
   "frontier-page-room": "calc(100% - 92px)",
   "frontier-stage-top": "150px",
   "frontier-stage-bottom": "140px",
-  /** The Frontier HUD's cards: an army token, a site card. */
+  /** The Frontier HUD's cards: an army token, a site card, and the Build sheet's building card (option B's band). */
   "frontier-token": "72px",
   "frontier-card": "92px",
+  "frontier-build-card": "136px",
 } as const;
 
 /**

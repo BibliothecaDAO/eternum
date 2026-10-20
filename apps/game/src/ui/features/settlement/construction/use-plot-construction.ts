@@ -14,7 +14,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useInFlight } from "@/hooks/store/use-actions-in-flight";
-import { plotKey, sendBuilding } from "./send-building";
+import { plotKey, sendBuilding, useStillShowing } from "./send-building";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
@@ -40,6 +40,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const currentDefaultTick = useCurrentDefaultTick();
+  const stillShowing = useStillShowing(target.spot);
   useNativeRevision([
     "Structure",
     "StructureBuildings",
@@ -94,7 +95,10 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
         type,
         plot: target.spot,
         useSimpleCost,
-        onSent: () => usePopoverStore.getState().close("plot-construction"),
+        from: {
+          isOpen: () => target.isCurrentTarget() && stillShowing(),
+          close: () => usePopoverStore.getState().close("plot-construction"),
+        },
       });
     } catch (reason) {
       console.error("[Plot construction] placement failed", reason);
