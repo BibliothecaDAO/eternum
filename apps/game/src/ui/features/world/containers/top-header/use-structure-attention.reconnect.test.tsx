@@ -339,3 +339,28 @@ it.each(Object.entries(stuckAnswers))(
     expect(host.textContent).toBe("0");
   },
 );
+
+it("recovers attack attention after a transient history failure and a successful reconnect", async () => {
+  resetGameSyncStoryEvents();
+  Object.assign(world, { now: 60, end: 100 });
+  useConnectionStore.getState().recordSnapshotBlock(35);
+  history.mockReset();
+  history.mockRejectedValue(new Error("temporary HTTP 503"));
+  const { host, show } = await mountProbe();
+  await settle();
+  expect(host.textContent).toBe("0");
+  expect(history).toHaveBeenCalledTimes(3);
+  // HTTP recovers; the stream reconnects with a snapshot and head at 40, the guards' cooldown still set by the hit at 30.
+  history.mockImplementation(historyWithHostileHit(30, 40) as never);
+  await act(async () => {
+    useConnectionStore.getState().setGlobalStatus("reconnecting");
+    useConnectionStore.getState().recordGlobalHandshake();
+    useConnectionStore.getState().recordSnapshotBlock(40);
+    useConnectionStore.getState().recordConfirmedHead(40);
+    useConnectionStore.getState().setGlobalStatus("connected");
+    show();
+  });
+  await settleUntil(() => host.textContent === "1");
+  expect(history).toHaveBeenCalledTimes(6);
+  expect(host.textContent).toBe("1");
+});

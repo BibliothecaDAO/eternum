@@ -324,3 +324,33 @@ describe("a story read", () => {
     act(() => logRoot.unmount());
   });
 });
+
+it("asks a failed history read again once on each handshake, never on a remount or a render", async () => {
+  history.mockClear();
+  history.mockRejectedValue(new Error("temporary HTTP 503"));
+  const client = new QueryClient();
+  const show = () =>
+    act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <PlayerBattles />
+        </QueryClientProvider>,
+      ),
+    );
+  await show();
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  expect(history).toHaveBeenCalledTimes(1);
+  // A remount and renders of the same read, under the same handshake: nothing new to ask under.
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await show();
+  await show();
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+  expect(history).toHaveBeenCalledTimes(1);
+  // Each new handshake asks it once more, whether it fails again or not.
+  for (const asked of [2, 3]) {
+    await act(async () => useConnectionStore.getState().recordGlobalHandshake());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+    expect(history).toHaveBeenCalledTimes(asked);
+  }
+});

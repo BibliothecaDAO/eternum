@@ -305,6 +305,20 @@ const currentRecoverySignals = (): RecoverySignals => {
   return { snapshotBlock, confirmedHead: lastConfirmedBlock };
 };
 
+/** A read that failed, and the handshake it was asked under: the next handshake asks it again, once. */
+class StoryReadFailed extends Error {
+  constructor(
+    readonly askedAtHandshake: number,
+    cause: unknown,
+  ) {
+    super("Herald's history did not answer a story read", { cause });
+  }
+}
+
+/** Whether a read's last answer was a failure asked under an older handshake than `handshake`. */
+const failedBefore = (query: UseQueryResult<StoryReadPage>, handshake: number): boolean =>
+  query.error instanceof StoryReadFailed && query.error.askedAtHandshake < handshake;
+
 /** A read's page of Herald's history, as stories. */
 const fetchStoryRead = async (
   shard: ReturnType<typeof requireShard>,
@@ -312,11 +326,14 @@ const fetchStoryRead = async (
   { limit, story, owner, entityId }: StoryRead,
 ): Promise<StoryReadPage> => {
   const askedUnder = currentRecoverySignals();
+  const askedAtHandshake = useConnectionStore.getState().lastGlobalHandshake;
   const page = await fetchHeraldGameHistory(shard, scope.gameId, {
     limit,
     ...(story ? (EVENT_MODELS.has(story) ? { model: story } : { model: "StoryEvent", story }) : {}),
     owner,
     entityId,
+  }).catch((cause: unknown) => {
+    throw new StoryReadFailed(askedAtHandshake, cause);
   });
   const stories = page.items.flatMap((event) => {
     const story = historyStoryEvent(event, scope);
@@ -334,8 +351,8 @@ const signalsMovedSince = (page: StoryReadPage, now: RecoverySignals): boolean =
 
 /**
  * A settled answer behind the snapshot is worth reading again only under a signal it was not asked under: the same
- * history asked again answers the same. A failed read or one whose coverage Herald does not know stays as it is, and
- * the read stays incomplete.
+ * history asked again answers the same. A failed read waits for the next handshake; one whose coverage Herald does not
+ * know stays as it is, and the read stays incomplete.
  */
 const shouldCatchUp = (query: UseQueryResult<StoryReadPage>, now: RecoverySignals): boolean =>
   query.data !== undefined &&
@@ -388,8 +405,11 @@ export const useStoryReads = (reads: StoryRead[]) => {
     combine: sameResults,
   });
 
+  // Each handshake asks every read again, a failed one too if it failed under an older handshake; a remount or a render
+  // under the same handshake asks a failed read nothing.
   useEffect(() => {
-    for (const query of queries) if (!query.isError) void query.refetch({ cancelRefetch: false });
+    for (const query of queries)
+      if (!query.isError || failedBefore(query, handshake)) void query.refetch({ cancelRefetch: false });
   }, [handshake, readsKey]);
 
   // A handshake that meets an older read in flight shares it, so a covering read's answer can land behind a snapshot
