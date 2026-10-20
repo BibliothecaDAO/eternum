@@ -76,7 +76,7 @@ it("sends the nearest army to a crate farther off, and asks to explore only whil
   ]);
 });
 
-it("moves on once the army is selected: the step says how to take it on the map, with no button", () => {
+it("moves on once the army is selected: the step says how to take it on the map, and a target's button still frames it", () => {
   const route = steps([army(1, 0, { selected: true })], [target("crate", "the relic crate", 4)]);
   expect(route).toEqual([
     {
@@ -88,8 +88,9 @@ it("moves on once the army is selected: the step says how to take it on the map,
     {
       key: "coach:crate:4:0:selected",
       line: "Move your army next to the relic crate, then right-click it: +250 points.",
-      verb: null,
-      act: null,
+      // The crate is often in the fog, tiles away: Show the crate frames it with the army.
+      verb: "Show the crate",
+      act: { kind: "go", armyId: 1, target: { col: 4, row: 0 } },
     },
   ]);
 });

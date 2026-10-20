@@ -72,7 +72,7 @@ export interface CoachStep {
  * farther off; The Vanguard's camps and rifts (+250) and Hyperstructures (+1,000, then points every second). A target
  * the nearest army would surely lose to asks for its home realm's level-up first, which raises bigger armies; one whose
  * home is at the top level is out of that army's reach. Once the army a step names is selected, the step says how to
- * take it on the map instead.
+ * take it on the map, and a target's button still frames it.
  */
 export const coachSteps = (state: CoachState): CoachStep[] => {
   if (state.armies.length === 0) return state.holds ? [raiseStep(state)] : [];
@@ -152,8 +152,8 @@ const nearest = (
 
 /**
  * The nearest target of a kind, as a step that selects that army with the target's card open; once that army is
- * selected, the step says how to take it on the map. A camp, rift or Hyperstructure the army would surely lose to asks
- * for its home realm's level-up first.
+ * selected, the step says how to take it on the map and its button still frames the target with the army. A camp, rift
+ * or Hyperstructure the army would surely lose to asks for its home realm's level-up first.
  */
 const goFor = (
   kind: CoachTarget["kind"],
@@ -175,10 +175,12 @@ const goFor = (
     ];
   }
   const words = goWords(kind, target.name, state.grants);
+  // The target is often in the fog, far off: its button frames it with the army, also once the army is selected.
+  const go: CoachAct = { kind: "go", armyId: army.entityId, target: target.hex };
   return [
     army.selected
-      ? { key: `${key}:selected`, line: words.onMap, verb: null, act: null }
-      : { key, line: words.line, verb: words.verb, act: { kind: "go", armyId: army.entityId, target: target.hex } },
+      ? { key: `${key}:selected`, line: words.onMap, verb: words.verb, act: go }
+      : { key, line: words.line, verb: words.verb, act: go },
   ];
 };
 
