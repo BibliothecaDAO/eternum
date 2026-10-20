@@ -57,7 +57,7 @@ import {
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -176,7 +176,7 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
     entity_id: entityId,
   });
   const resourceData = useResourceManager(entityId);
-  const realm = getRealmInfo(entityId, game.setup.store, getPlayerName);
+  const realm = getRealmInfo(entityId, game.setup.store, getPlayerDisplayName);
 
   const existingBuildings = useMemo(
     () => (realm?.position ? requireActiveGameClient().views.buildingTiles(entityId).existingBuildings() : []),

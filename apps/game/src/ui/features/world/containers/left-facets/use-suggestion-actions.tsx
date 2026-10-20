@@ -9,7 +9,7 @@ import { type BuildingType, type ResourcesIds } from "@bibliothecadao/types";
 import { useCallback } from "react";
 import { create } from "zustand";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** A suggestion this hook runs: every one but a realm's level-up, which is the realm's own step (useRealmLevelUp). */
@@ -54,7 +54,7 @@ export const useSuggestionActions = () => {
       const entityId = safeInteger(suggestion.realmId);
       if (!Number.isFinite(entityId)) return;
 
-      const realm = getRealmInfo(entityId, setup.store, getPlayerName);
+      const realm = getRealmInfo(entityId, setup.store, getPlayerDisplayName);
       await buildRealmBuilding({
         entityId,
         realmPosition: realm?.position,

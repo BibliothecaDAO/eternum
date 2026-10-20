@@ -4,7 +4,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../blitz-slot";
 import { YOU, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
-import { displayPlayerName } from "@bibliothecadao/eternum";
+import { resolveChatSenderName } from "@/hooks/use-player-profile";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { AppField, AppPanel } from "@/ui/design-system/kit/app-elements";
@@ -74,7 +74,7 @@ const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
           <b className="mr-2 text-app-accent">
             {isOwn(message, session?.user.realmsId)
               ? YOU
-              : displayPlayerName(message.sender.playerId, message.sender.displayName ?? null)}
+              : resolveChatSenderName(message.sender.playerId, message.sender.displayName)}
           </b>
           <span>{message.content}</span>
         </li>

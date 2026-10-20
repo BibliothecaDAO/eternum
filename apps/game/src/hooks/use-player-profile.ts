@@ -2,32 +2,31 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
-  getPlayerDisplayName,
   identityProfiles,
   isPlayerProfileKnown,
-  isPlayerProfileUnavailable,
+  type PlayerNameReading,
+  readPlayerName,
   readPlayerProfile,
 } from "@/services/identity/player-profiles";
 import { readPlayers } from "@/sync/fact-views";
-import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
 import { useMemo, useSyncExternalStore } from "react";
 
 /**
- * What every surface shows for a player: the resolved name (or nothing) and the portrait, whether they are known yet,
- * and whether their name is unavailable: until identity answers, a surface shows it is waiting rather than the
- * address's stand-in name and face; when identity's ask failed, it says the name is unavailable, never the stand-in.
+ * A player's profile as a surface draws their face: the claimed name (or nothing), the portrait, and whether they are
+ * known yet: until then a surface shows an empty ring, never the address's stock face. Their name reads through
+ * `usePlayerName`, the one rule.
  */
-type PlayerProfile = Pick<Player, "name" | "portrait"> & { known: boolean; unavailable: boolean };
+type PlayerProfile = Pick<Player, "name" | "portrait"> & { known: boolean };
 
-const NO_PROFILE: PlayerProfile = { name: null, portrait: null, known: true, unavailable: false };
+const NO_PROFILE: PlayerProfile = { name: null, portrait: null, known: true };
 const PLAYER_FACTS = ["PlayerEntry"] as const;
 
 const toAddress = (address: string | bigint): ContractAddress => BigInt(address);
 
-export { getPlayerDisplayName, getPlayerName } from "@/services/identity/player-profiles";
+export { getPlayerDisplayName, type PlayerNameReading, readPlayerName } from "@/services/identity/player-profiles";
 
 /** Changes whenever a player name may: an identity answer, or the signed-in session. Names never come from the chain. */
 export const usePlayerNamesRevision = () => {
@@ -67,22 +66,21 @@ export const usePlayerProfile = (address: string | bigint | null | undefined): P
   const names = usePlayerNamesRevision();
   const owner = address === null || address === undefined ? null : toAddress(address);
   return useMemo(
-    () =>
-      owner === null
-        ? NO_PROFILE
-        : {
-            ...readPlayerProfile(owner),
-            known: isPlayerProfileKnown(owner),
-            unavailable: isPlayerProfileUnavailable(owner),
-          },
+    () => (owner === null ? NO_PROFILE : { ...readPlayerProfile(owner), known: isPlayerProfileKnown(owner) }),
     [owner, ...names],
   );
 };
 
-export const usePlayerDisplayName = (address: string | bigint | null | undefined): string | null => {
-  const profile = usePlayerProfile(address);
-  return address === null || address === undefined ? null : displayPlayerName(toAddress(address), profile.name);
+/** A player's name as the one rule reads it (named, waiting or unavailable), read again whenever a name may change. */
+export const usePlayerName = (address: string | bigint | null | undefined): PlayerNameReading | null => {
+  const names = usePlayerNamesRevision();
+  const owner = address === null || address === undefined ? null : toAddress(address);
+  return useMemo(() => (owner === null ? null : readPlayerName(owner)), [owner, ...names]);
 };
+
+/** The name a surface writes for a player: the one rule's text. */
+export const usePlayerDisplayName = (address: string | bigint | null | undefined): string | null =>
+  usePlayerName(address)?.text ?? null;
 
 /** The chosen portrait, else one of the stock portraits picked from the address so it stays stable. */
 export const playerAvatarUrl = (
@@ -100,9 +98,7 @@ export const resolveChatSenderName = (playerId: string, displayName: string | nu
   if (!isStarknetAddress(playerId)) return displayName?.trim() || playerId;
   // The chat server stores the sender's address as its display name when they had none; that never shows.
   const serverName = displayName?.trim();
-  return (
-    readPlayerProfile(playerId).name ??
-    (serverName && !isStarknetAddress(serverName) ? serverName : null) ??
-    getPlayerDisplayName(playerId)
-  );
+  const reading = readPlayerName(playerId);
+  if (reading.state === "named" && reading.claimed) return reading.text;
+  return serverName && !isStarknetAddress(serverName) ? serverName : reading.text;
 };

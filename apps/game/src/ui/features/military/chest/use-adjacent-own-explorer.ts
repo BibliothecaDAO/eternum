@@ -5,7 +5,7 @@ import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, getNeighborHexes, type ID } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 /** The player's explorer standing next to a hex, if any: the contract lets only an adjacent explorer open a crate. */
 export const useAdjacentOwnExplorer = (hex: { col: number; row: number }): ID | null => {
@@ -26,7 +26,7 @@ export const useAdjacentOwnExplorer = (hex: { col: number; row: number }): ID | 
     const playerAddress = ContractAddress(address);
     for (const neighbor of getNeighborHexes(hex.col, hex.row)) {
       for (const army of projection.getArmiesAtHex({ ...neighbor, alt: mapLayer })) {
-        if (getArmy(army.entityId, playerAddress, store, getPlayerName)?.isMine) return army.entityId;
+        if (getArmy(army.entityId, playerAddress, store, getPlayerDisplayName)?.isMine) return army.entityId;
       }
     }
     return null;

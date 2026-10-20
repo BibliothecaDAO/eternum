@@ -3,7 +3,7 @@ import type { ContractAddress } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "./use-native-facts";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { usePlayerNamesRevision } from "@/hooks/use-player-profile";
 
 export const usePlayerStructures = (owner?: ContractAddress) => {
@@ -15,7 +15,7 @@ export const usePlayerStructures = (owner?: ContractAddress) => {
   const names = usePlayerNamesRevision();
   const address = owner ?? BigInt(account.address);
   return useMemo(
-    () => readStructures(store, address, BigInt(account.address), getPlayerName),
+    () => readStructures(store, address, BigInt(account.address), getPlayerDisplayName),
     [store, address, account.address, revision, ...names],
   );
 };

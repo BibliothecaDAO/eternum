@@ -7,7 +7,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
@@ -130,7 +130,7 @@ export const BuildSheet = ({
   const goToPlace = useGoToFrontierPlace(realm);
   const mode = useGameModeConfig();
   const realmInfo = useMemo(
-    () => getRealmInfo(safeInteger(realm.entity_id), setup.store, getPlayerName),
+    () => getRealmInfo(safeInteger(realm.entity_id), setup.store, getPlayerDisplayName),
     [realm.entity_id, revision, setup.store],
   );
   useBuildingGhost(option?.category, plot);

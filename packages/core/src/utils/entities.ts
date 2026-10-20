@@ -150,9 +150,9 @@ export const displayPlayerName = (address: ContractAddress | string, name: strin
   BigInt(address) === 0n ? NEUTRAL_OWNER_NAME : name || unclaimedPlayerName(address);
 
 /**
- * A player's name, from the one place names live: the player's Realms profile, looked up by the client that owns the
- * store (a headless client may name no one). Null when the player has not chosen a name; `displayPlayerName` then
- * shows the fallback.
+ * The name to show for a player, from the client that owns the store and its one name rule: a claimed name, the
+ * unclaimed one, or that the name is waiting or unavailable (the game client's readPlayerName). Null where the client
+ * names no one (a headless client); `displayPlayerName` then shows the unclaimed rule.
  */
 export type PlayerNameResolver = (address: ContractAddress | string) => string | null;
 

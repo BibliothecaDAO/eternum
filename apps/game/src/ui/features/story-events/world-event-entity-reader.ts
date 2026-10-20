@@ -41,7 +41,7 @@ export const createWorldEventEntityReader = (
   store: NativeFactStore,
   projection: WorldSpatialProjection,
 ): WorldEventEntityReader => {
-  // The one player resolver: identity profile over chain name, Player-xxxxxx for neither.
+  // The one name rule (readPlayerName): a player's name, waiting or unavailable, never the stand-in for either.
   const getPlayerName = (ownerAddress: string): string => getPlayerDisplayName(ownerAddress);
 
   const getStructure = (entityId: number): WorldEventStructure | null => {

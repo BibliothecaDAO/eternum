@@ -8,7 +8,7 @@ import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision, useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { formatWait, rankName } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 
 interface RawUpgradeCost {
@@ -72,7 +72,9 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   );
   const structureInfo = useMemo(
     () =>
-      liveStructure && structureEntityId ? (getRealmInfo(structureEntityId, setup.store, getPlayerName) ?? null) : null,
+      liveStructure && structureEntityId
+        ? (getRealmInfo(structureEntityId, setup.store, getPlayerDisplayName) ?? null)
+        : null,
     [liveStructure, setup.store, structureEntityId, revision],
   );
 

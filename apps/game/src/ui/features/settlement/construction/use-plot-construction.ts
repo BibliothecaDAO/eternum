@@ -18,7 +18,7 @@ import { plotKey, sendBuilding } from "./send-building";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 
 export interface PlotConstructionTarget {
@@ -49,7 +49,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     "ProductionBonus",
     "Building",
   ]);
-  const realm = getRealmInfo(target.entityId, store, getPlayerName);
+  const realm = getRealmInfo(target.entityId, store, getPlayerDisplayName);
   const isOwner = isViewerOwner(realm?.owner, viewer);
   const [error, setError] = useState<string | null>(null);
   // The plot's building in flight, sent from here or any other surface: one at a time until its outcome.

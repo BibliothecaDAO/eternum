@@ -2,11 +2,10 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import {
   configManager,
   getExplorerOwner,
-  displayPlayerName,
   getArmyRelicEffects,
   getGuildFromPlayerAddress,
   isViewerOwner,
@@ -76,7 +75,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     [currentTroops, timestamp],
   );
 
-  const ownerProfile = usePlayerProfile(owner);
+  const addressName = usePlayerDisplayName(owner) ?? "";
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
@@ -93,8 +92,6 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
 
     const guild = owner ? getGuildFromPlayerAddress(owner, store) : undefined;
     const isMine = isViewerOwner(owner, userAddress);
-
-    const addressName = displayPlayerName(owner.toString(), ownerProfile.name);
 
     const structureOwnerName = structure ? mode.structure.getName(structure).name : undefined;
 
@@ -115,7 +112,7 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     timestamp,
     explorer,
     mode,
-    ownerProfile.name,
+    addressName,
     staminaSnapshot,
     structure,
     userAddress,

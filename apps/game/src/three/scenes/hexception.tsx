@@ -152,7 +152,7 @@ import { SceneName } from "../types";
 import { LOCAL_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { localHexPosition } from "./hexception-layout";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 const loader = gltfLoader;
 const BUILDING_RENDER_SIGNATURE = "eternumBuildingRenderSignature";
@@ -894,7 +894,7 @@ export default class HexceptionScene extends HexagonScene {
 
       const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, this.state.useSimpleCost);
       const structureEntityId = useUIStore.getState().structureEntityId;
-      const realm = getRealmInfo(structureEntityId, this.game.store, getPlayerName);
+      const realm = getRealmInfo(structureEntityId, this.game.store, getPlayerDisplayName);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
         buildingType: buildingType.type,
@@ -978,7 +978,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus || refusedBeforePlay()) return false;
     const entityId = useUIStore.getState().structureEntityId;
     const account = useAccountStore.getState().account;
-    const realm = getRealmInfo(entityId, this.game.store, getPlayerName);
+    const realm = getRealmInfo(entityId, this.game.store, getPlayerDisplayName);
     if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
     if (spot.col === BUILDINGS_CENTER[0] && spot.row === BUILDINGS_CENTER[1]) return false;
     if (this.tileManager.isHexOccupied(spot)) return false;

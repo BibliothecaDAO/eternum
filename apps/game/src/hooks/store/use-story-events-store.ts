@@ -1,4 +1,4 @@
-import { getPlayerName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard, storyParticipants } from "@bibliothecadao/eternum/game-client";
 import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
@@ -228,7 +228,7 @@ const processStoryEvent = (
       viewerAddress,
     },
     store,
-    getPlayerName,
+    getPlayerDisplayName,
   );
   return { ...event, id: event.event_id, timestampMs, presentation };
 };

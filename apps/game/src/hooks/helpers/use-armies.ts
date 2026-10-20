@@ -3,7 +3,7 @@ import type { ID } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "./use-native-facts";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { usePlayerNamesRevision } from "@/hooks/use-player-profile";
 
 export const useExplorersByStructure = ({ structureEntityId }: { structureEntityId: ID }) => {
@@ -21,7 +21,7 @@ export const useExplorersByStructure = ({ structureEntityId }: { structureEntity
   ]);
   const names = usePlayerNamesRevision();
   return useMemo(
-    () => readExplorers(store, structureEntityId, BigInt(account.address), getPlayerName),
+    () => readExplorers(store, structureEntityId, BigInt(account.address), getPlayerDisplayName),
     [store, structureEntityId, account.address, revision, ...names],
   );
 };

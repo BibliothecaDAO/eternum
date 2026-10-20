@@ -9,7 +9,7 @@ import { useNativeRowOrAbsent, useNativeRow } from "@/hooks/helpers/use-native-f
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds, formatCount, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 export const BuildingsList = ({
   realm,
@@ -32,7 +32,7 @@ export const BuildingsList = ({
   const structureBuildings = useNativeRow("StructureBuildings", keys);
   const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
   const realmInfo = useMemo(
-    () => getRealmInfo(realm.entityId, setup.store, getPlayerName),
+    () => getRealmInfo(realm.entityId, setup.store, getPlayerDisplayName),
     [realm.entityId, setup.store, structureBuildings, resourceManager],
   );
 

@@ -1,5 +1,5 @@
 import { StructureType, structureName } from "@bibliothecadao/types";
-import { getPlayerName } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName } from "@/hooks/use-player-profile";
 import { getRealmNameById } from "@bibliothecadao/eternum";
 import { feltEquals } from "@bibliothecadao/eternum/game-client";
 
@@ -116,7 +116,8 @@ const wonderFaith = (rows: FaithReadModels, wonderId: bigint): ReadModelRow =>
   rows.wonderFaith.find((row) => feltEquals(row.wonder_id, wonderId)) ?? {};
 
 const ownerName = (owner: unknown): string | null =>
-  typeof owner === "string" || typeof owner === "bigint" ? getPlayerName(owner) : null;
+  // An unowned wonder has no player to name: the board says "Unclaimed" for it.
+  (typeof owner === "string" || typeof owner === "bigint") && BigInt(owner) !== 0n ? getPlayerDisplayName(owner) : null;
 
 const structureLabel = (structureId: bigint, structureType: number, realmId: number): string => {
   if (structureType === REALM_STRUCTURE_TYPE && realmId > 0) {

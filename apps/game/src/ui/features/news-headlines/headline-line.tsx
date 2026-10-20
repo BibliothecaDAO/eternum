@@ -1,6 +1,5 @@
-import { usePlayerProfile } from "@/hooks/use-player-profile";
-import { NAME_UNAVAILABLE } from "@/ui/design-system/kit/words";
-import { displayPlayerName } from "@bibliothecadao/eternum";
+import { usePlayerName } from "@/hooks/use-player-profile";
+import { NAME_UNAVAILABLE, NAME_WAITING } from "@/ui/design-system/kit/words";
 
 import type { HeadlinePart } from "./headline-types";
 
@@ -13,12 +12,14 @@ export const HeadlineLine = ({ parts }: { parts: readonly HeadlinePart[] }) => (
   </>
 );
 
-/**
- * A player in a headline: their name once identity answers (an unclaimed one by the stand-in rule), "…" while it has
- * not, and a dash when its ask failed: never the account's stand-in in place of a name that may exist.
- */
+/** A player in a headline, as the one name rule reads them: the name, "…" while it is on its way, "—" when unavailable. */
 const HeadlinePlayer = ({ account }: { account: bigint }) => {
-  const profile = usePlayerProfile(account);
-  if (profile.known) return <>{displayPlayerName(account, profile.name)}</>;
-  return profile.unavailable ? <span aria-label={NAME_UNAVAILABLE}>—</span> : <span aria-busy>…</span>;
+  const reading = usePlayerName(account)!;
+  if (reading.state === "named") return <>{reading.text}</>;
+  const waiting = reading.state === "waiting";
+  return (
+    <span aria-busy={waiting || undefined} aria-label={waiting ? NAME_WAITING : NAME_UNAVAILABLE}>
+      {reading.text}
+    </span>
+  );
 };

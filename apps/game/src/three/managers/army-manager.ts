@@ -59,7 +59,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { displayPlayerName, getEntityName, getGameMode } from "@bibliothecadao/eternum";
+import { getEntityName, getGameMode } from "@bibliothecadao/eternum";
 import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -601,7 +601,7 @@ export class ArmyManager {
     this.addArmy({
       entityId: input.entityId,
       hexCoords: Position.fromNormalized({ x: input.col, y: input.row }),
-      owner: { address, ownerName: displayPlayerName(address, null), guildName: "None" },
+      owner: { address, ownerName: getPlayerDisplayName(address), guildName: "None" },
       category: TroopType.Paladin,
       tier: TroopTier.T1,
       troopCount: 10,

@@ -6,7 +6,6 @@ import { realmMeaning, structureMeaning, mineMeaning } from "@/ui/design-system/
 import {
   Position,
   configManager,
-  displayPlayerName,
   getGuardsByStructure,
   getGuildFromPlayerAddress,
   getHyperstructureProgress,
@@ -16,7 +15,7 @@ import {
   structureMapPosition,
   isViewerOwner,
 } from "@bibliothecadao/eternum";
-import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRowOrAbsent, useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
@@ -58,7 +57,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   const guards = structure ? getGuardsByStructure(structure, store) : [];
   const isMine = isViewerOwner(structure?.owner, userAddress);
   const isAlly = isMine || Boolean(playerGuild && userGuild && playerGuild.entityId === userGuild.entityId);
-  const ownerProfile = usePlayerProfile(structure?.owner);
+  const ownerDisplayName = usePlayerDisplayName(structure?.owner ?? 0n) ?? "";
   const timestamp = useCurrentDefaultTick();
   const relicEffects: RelicEffect[] = useMemo(() => {
     const effects: RelicEffect[] = [];
@@ -81,8 +80,6 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
         : undefined,
     [structure, store, structureEntityId, shares, revision],
   );
-
-  const ownerDisplayName = displayPlayerName(structure?.owner ?? 0n, ownerProfile.name);
 
   const isHyperstructure = structure?.base.category === StructureType.Hyperstructure;
 

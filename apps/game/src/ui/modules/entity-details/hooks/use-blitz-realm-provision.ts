@@ -5,7 +5,7 @@ import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type StructureBuildingsCounts = {
   packed_counts_1?: bigint | number | string;
@@ -65,7 +65,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const structureInfo = useMemo(() => {
     if (structureEntityId === null || !liveStructure) return null;
-    return getRealmInfo(structureEntityId, setup.store, getPlayerName);
+    return getRealmInfo(structureEntityId, setup.store, getPlayerDisplayName);
   }, [revision, liveStructure, liveStructureBuildings, setup.store, structureEntityId]);
 
   const realmBuildings = useBuildings(structureEntityId ?? undefined);

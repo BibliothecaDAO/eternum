@@ -130,6 +130,8 @@ export const TRANSFER = "Transfer";
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
 /** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
 export const NAME_UNAVAILABLE = "Name unavailable";
+/** A player whose name identity has not answered yet: an ellipsis, named so for a screen reader, never the stand-in. */
+export const NAME_WAITING = "Name on its way";
 
 /** A realm's room for buildings: every building takes some, a Hut gives some. */
 export const POPULATION = "population";

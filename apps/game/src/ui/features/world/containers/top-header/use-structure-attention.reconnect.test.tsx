@@ -12,7 +12,7 @@ vi.mock("@/hooks/context/game-context", () => ({
     setup: { store: { inGame: () => [{ structure_id: 1n, troops: { battle_cooldown_end: world.end } }] } },
   }),
 }));
-vi.mock("@/hooks/use-player-profile", () => ({ getPlayerName: () => null }));
+vi.mock("@/hooks/use-player-profile", () => ({ getPlayerDisplayName: () => null }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum/game-client")>()),
