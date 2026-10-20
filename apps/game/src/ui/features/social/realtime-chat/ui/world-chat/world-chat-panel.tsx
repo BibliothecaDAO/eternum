@@ -6,7 +6,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
-import { resolveChatSenderName } from "@/hooks/use-player-profile";
+import { type PlayerNames, resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
@@ -99,8 +99,8 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
 };
 
 /** The registered name first; the chat server's display name only for a sender this game has not registered. */
-const formatSenderName = (message: WorldChatMessage) =>
-  resolveChatSenderName(message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
+const formatSenderName = (names: PlayerNames, message: WorldChatMessage) =>
+  resolveChatSenderName(names, message.sender.playerId, message.sender.displayName) || "Unknown adventurer";
 
 export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
@@ -127,6 +127,8 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const hasInitialAnchorRef = useRef(false);
 
   const navigateToMapView = useNavigateToMapView();
+  // A sender's name is read as the list draws, and the list draws again when one lands.
+  const names = usePlayerNames();
   const handleNavigateToCoordinates = useCallback(
     (coordinates: { x: number; y: number }) => {
       navigateToMapView(Position.fromNormalized({ x: coordinates.x, y: coordinates.y }));
@@ -296,7 +298,7 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
               {/* Anchored to the input: a short history sits at the bottom, next to where the reply goes. */}
               <ul className="mt-auto flex flex-col gap-0.5">
                 {messages.map((message, index) => {
-                  const senderName = formatSenderName(message);
+                  const senderName = formatSenderName(names, message);
                   const messageParts = processMessage(message.content);
                   return (
                     <Fragment key={message.id}>

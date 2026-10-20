@@ -1,6 +1,6 @@
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
-import { usePlayers } from "@/hooks/use-player-profile";
+import { usePlayerNames, usePlayers } from "@/hooks/use-player-profile";
 import { gameStructuresView, settlementPlayersView } from "@/sync/fact-views";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { filterPlayersByBlitzSettlement } from "@/services/blitz/blitz-settlement-players";
@@ -96,6 +96,7 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
 
   // The world slices are the subscription: the bridge publishes each once per ingest slice, already active-game scoped.
   const allPlayers = usePlayers();
+  const names = usePlayerNames();
   const blitzSettlementPlayerAddresses = useFactView(settlementPlayersView);
   const structures = useFactView(gameStructuresView);
   const players = useMemo(
@@ -121,9 +122,16 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
 
   useEffect(() => {
     setPlayerInfo(
-      getPlayerInfo(players, ContractAddress(account.address), playersByRank, playerStructureCountsMap, store),
+      getPlayerInfo(
+        players,
+        ContractAddress(account.address),
+        playersByRank,
+        playerStructureCountsMap,
+        store,
+        names.text,
+      ),
     );
-  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo]);
+  }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo, names]);
 
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {

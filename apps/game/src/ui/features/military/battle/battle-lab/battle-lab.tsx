@@ -2,7 +2,7 @@ import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
@@ -81,7 +81,7 @@ export const BattleLab = ({
   } = useGame();
 
   const gameMode = useGameModeConfig();
-  const accountName = usePlayerDisplayName(account.address);
+  const names = usePlayerNames();
   const selectedHex = useUIStore((s) => s.selectedHex);
   const closeSurface = usePopoverStore((s) => s.closeSurface);
   const deselectEntity = useUIStore((s) => s.deselectEntity);
@@ -297,30 +297,24 @@ export const BattleLab = ({
     }
   };
 
-  const tweet = useMemo(() => {
-    if (mode !== "live" || !hasAttacker || !state.hasDefender || !target) return undefined;
+  // Both names are asked as the sheet draws, so they have landed by the time Share is pressed; the shared line is
+  // written then, from the live name reader: never a cached string.
+  usePlayerName(account.address);
+  usePlayerName(target?.addressOwner ?? null);
+  const shareLine = (defender: NonNullable<typeof target>) => {
     const attackerGuild = getGuildFromPlayerAddress(ContractAddress(account.address), store)?.name;
-    const defenderGuild = target.addressOwner
-      ? getGuildFromPlayerAddress(ContractAddress(target.addressOwner), store)?.name
+    const defenderGuild = defender.addressOwner
+      ? getGuildFromPlayerAddress(ContractAddress(defender.addressOwner), store)?.name
       : undefined;
     return formatSocialText(twitterTemplates.combat, {
-      attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+      attackerNameText: `${names.text(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
-      defenderNameText: `${getPlayerDisplayName(target.addressOwner ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+      defenderNameText: `${names.text(defender.addressOwner ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
       url: env.VITE_SOCIAL_LINK,
     });
-  }, [
-    mode,
-    hasAttacker,
-    state.hasDefender,
-    target,
-    account.address,
-    accountName,
-    store,
-    state.attacker,
-    state.defender,
-  ]);
+  };
+  const share = mode === "live" && hasAttacker && state.hasDefender && target ? () => shareLine(target) : undefined;
 
   return (
     <HudWindow title="Combat" icon="military" size="workspace" onClose={closeSurface}>
@@ -431,7 +425,7 @@ export const BattleLab = ({
               loading={loading}
               onAction={onAttack}
               warning={warning}
-              tweet={tweet}
+              share={share}
               cooldownEnd={state.attacker.battle_cooldown_end}
             />
           </div>

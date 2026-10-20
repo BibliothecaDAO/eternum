@@ -4,11 +4,11 @@ import { HudButton, HudWindow } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { buildWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
-import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
+import type { WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
+import { useWonderFaithDetail } from "@/services/leaderboard/use-faith-leaderboard";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const isZeroAddress = (address: string): boolean => /^0x0+$/i.test(address.trim());
 
@@ -55,8 +55,7 @@ export const WonderFaithDetailPanel = ({
       setClaiming(false);
     }
   };
-  const readModels = useFaithReadModels();
-  const wonderDetail = useMemo(() => buildWonderFaithDetail(readModels, wonderId), [readModels, wonderId]);
+  const wonderDetail = useWonderFaithDetail(wonderId);
 
   if (!wonderDetail) {
     return (

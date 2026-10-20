@@ -2,7 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { LordName } from "./realm-marks";
@@ -18,7 +18,6 @@ import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
 import { type SeasonLords, seasonLordsOf } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
-import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -125,19 +124,21 @@ const useSeasonListRows = (
   length: number,
 ): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
   const own = findOwnEntry(entries ?? [], useViewer());
+  // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
+  const names = usePlayerNames();
   const top = (entries ?? []).slice(0, length);
   return {
-    rows: top.map((entry) => listRow(entry, entry === own)),
-    pinned: own && !top.includes(own) ? listRow(own, true) : undefined,
+    rows: top.map((entry) => listRow(entry, entry === own, names)),
+    pinned: own && !top.includes(own) ? listRow(own, true, names) : undefined,
   };
 };
 
-const listRow = (entry: Entry, own: boolean): SeasonListRow => ({
+const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
   name: <LordName account={entry.address} you={own} />,
-  label: getPlayerDisplayName(entry.address),
+  label: names.text(entry.address),
   sitesCleared: entry.sites_cleared.total,
   lords: wholeLords(entry.rewards.lords),
   own,

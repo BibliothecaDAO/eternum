@@ -12,7 +12,9 @@ vi.mock("@/hooks/context/game-context", () => ({
     setup: { store: { inGame: () => [{ structure_id: 1n, troops: { battle_cooldown_end: world.end } }] } },
   }),
 }));
-vi.mock("@/hooks/use-player-profile", () => ({ getPlayerName: () => null }));
+// Names are not what these reads are about: no player has one, and none ever lands.
+const NAMES = vi.hoisted(() => ({ text: () => "", reading: () => ({ state: "waiting" as const, text: "…" }) }));
+vi.mock("@/hooks/use-player-profile", () => ({ usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum/game-client")>()),

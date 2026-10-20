@@ -3,7 +3,7 @@ import { getActiveGameStore } from "@/sync/active-game-client";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { readBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
-import { getPlayerName, readPlayerProfile } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName, readPlayerProfile } from "@/services/identity/player-profiles";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import {
   ClientConfigManager,
@@ -78,10 +78,10 @@ export const watchFactView = <T>(
 const activeGameId = () => configManager.getActiveGameId();
 
 const readPlayerStructures = (store: NativeFactStore, viewer: ContractAddress | null): Structure[] =>
-  viewer === null ? [] : readStructures(store, viewer, viewer, getPlayerName);
+  viewer === null ? [] : readStructures(store, viewer, viewer, getPlayerDisplayName);
 
 const readSelectableArmies = (store: NativeFactStore, viewer: ContractAddress | null) =>
-  formatArmies(store.inGame("ExplorerTroops", activeGameId()), viewer, store, getPlayerName)
+  formatArmies(store.inGame("ExplorerTroops", activeGameId()), viewer, store, getPlayerDisplayName)
     .filter((army) => army.isMine)
     .map((army) => ({ entityId: army.entityId }));
 

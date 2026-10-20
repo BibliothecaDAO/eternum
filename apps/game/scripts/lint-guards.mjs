@@ -6,6 +6,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
+import { nameGuardConfigs } from "./name-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCES = ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"];
@@ -59,6 +60,8 @@ const eslint = new ESLint({
       plugins: { "@typescript-eslint": tseslint.plugin },
       rules: TEXT_VALUES,
     },
+    // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
+    ...nameGuardConfigs,
   ],
 });
 

@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getArmy } from "@bibliothecadao/eternum";
@@ -5,7 +6,6 @@ import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, getNeighborHexes, type ID } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
-import { getPlayerName } from "@/services/identity/player-profiles";
 
 /** The player's explorer standing next to a hex, if any: the contract lets only an adjacent explorer open a crate. */
 export const useAdjacentOwnExplorer = (hex: { col: number; row: number }): ID | null => {
@@ -21,15 +21,16 @@ export const useAdjacentOwnExplorer = (hex: { col: number; row: number }): ID | 
     return projection?.subscribeArmies(() => setRevision((current) => current + 1));
   }, [projection]);
 
+  const names = usePlayerNames();
   return useMemo(() => {
     if (!projection || !address) return null;
     const playerAddress = ContractAddress(address);
     for (const neighbor of getNeighborHexes(hex.col, hex.row)) {
       for (const army of projection.getArmiesAtHex({ ...neighbor, alt: mapLayer })) {
-        if (getArmy(army.entityId, playerAddress, store, getPlayerName)?.isMine) return army.entityId;
+        if (getArmy(army.entityId, playerAddress, store, names.text)?.isMine) return army.entityId;
       }
     }
     return null;
     // revision re-runs the scan whenever an army moves.
-  }, [address, store, hex.col, hex.row, projection, revision, mapLayer]);
+  }, [address, store, hex.col, hex.row, projection, revision, mapLayer, names]);
 };

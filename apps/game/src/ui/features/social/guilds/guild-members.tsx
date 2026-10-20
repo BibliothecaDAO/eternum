@@ -119,13 +119,15 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
     [update_whitelist, account],
   );
 
-  const socialsText =
+  // Written when Share is pressed, as every shared line is.
+  const shareTribe =
     userGuild?.entityId === selectedGuildEntityId
-      ? formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
-          tribeName: selectedGuild?.name,
-          addressName: playerName,
-          url: env.VITE_SOCIAL_LINK,
-        })
+      ? () =>
+          formatSocialText(userGuild?.isOwner ? twitterTemplates.createdTribe : twitterTemplates.joinedTribe, {
+            tribeName: selectedGuild?.name,
+            addressName: playerName,
+            url: env.VITE_SOCIAL_LINK,
+          })
       : undefined;
 
   return (
@@ -138,7 +140,7 @@ export const GuildMembers = ({ players, viewPlayerInfo, setIsExpanded }: GuildMe
               {selectedGuild?.isPublic ? "Public Tribe" : "Private Tribe"}
             </p>
           </div>
-          {socialsText && <TwitterShareButton text={socialsText} />}
+          {shareTribe && <TwitterShareButton text={shareTribe} />}
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">

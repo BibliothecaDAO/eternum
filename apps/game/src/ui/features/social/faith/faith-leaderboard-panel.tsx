@@ -1,10 +1,10 @@
 import { formatExact } from "@bibliothecadao/types";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { displayAddress } from "@/ui/utils/utils";
-import { buildFaithLeaderboard, type FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
-import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
+import type { FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
+import { useFaithLeaderboard } from "@/services/leaderboard/use-faith-leaderboard";
 import { WonderFaithDetailModal } from "./wonder-faith-detail-panel";
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 
 /** Rank, wonder, owner, total faith, faith a second and followers. */
@@ -29,8 +29,7 @@ const buildOwnerLabel = (entry: FaithLeaderboardEntry): string => {
 export const FaithLeaderboardPanel = () => {
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const readModels = useFaithReadModels();
-  const entries = useMemo(() => buildFaithLeaderboard(readModels), [readModels]);
+  const entries = useFaithLeaderboard();
 
   const hasEntries = entries.length > 0;
   const openWonderDetails = useCallback(

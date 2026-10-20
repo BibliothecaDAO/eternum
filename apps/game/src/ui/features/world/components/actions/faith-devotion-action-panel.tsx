@@ -2,10 +2,10 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import {
-  buildFaithLeaderboard,
   buildFaithfulStructureStatus,
   type FaithLeaderboardEntry,
 } from "@/services/leaderboard/faith-leaderboard-service";
+import { useFaithLeaderboard } from "@/services/leaderboard/use-faith-leaderboard";
 import { useFaithReadModels } from "@/services/leaderboard/use-faith-read-models";
 import { WonderFaithDetailModal, WonderFaithDetailPanel } from "@/ui/features/social/faith/wonder-faith-detail-panel";
 import {
@@ -101,7 +101,7 @@ export const FaithDevotionActionPanel = ({ structureEntityId, className }: Faith
   const eligibleForDevotion = isDevotionEligible(structureCategory);
   const isWonderStructure = Boolean(structure?.metadata?.has_wonder);
 
-  const wonderEntries = useMemo(() => buildFaithLeaderboard(faithReadModels), [faithReadModels]);
+  const wonderEntries = useFaithLeaderboard();
   const devotionStatus = useMemo(
     () => (eligibleForDevotion ? buildFaithfulStructureStatus(faithReadModels, structureEntityId) : null),
     [eligibleForDevotion, faithReadModels, structureEntityId],
@@ -272,7 +272,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedWonderId, setSelectedWonderId] = useState<bigint | null>(null);
 
-  const wonderEntries = useMemo(() => buildFaithLeaderboard(faithReadModels), [faithReadModels]);
+  const wonderEntries = useFaithLeaderboard();
   const devotionStatus = useMemo(
     () => buildFaithfulStructureStatus(faithReadModels, structureEntityId),
     [faithReadModels, structureEntityId],

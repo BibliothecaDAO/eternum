@@ -7,10 +7,15 @@ const profiles: Record<string, { name: string | null; portrait: string | null }>
   "0xabc": { name: "Aldric", portrait: null },
   "0x1234": { name: null, portrait: null },
 };
-vi.mock("@/hooks/use-player-profile", () => ({
-  usePlayerProfile: (account: string) => profiles[account],
-  playerAvatarUrl: (account: string) => `/portraits/${account}.webp`,
-}));
+// Identity has answered for both: the one rule names them.
+vi.mock("@/hooks/use-player-profile", async () => {
+  const { readKnownPlayerName } = await import("@/services/identity/player-profiles");
+  return {
+    usePlayerProfile: (account: string) => profiles[account],
+    usePlayerName: (account: string) => readKnownPlayerName(account, profiles[account].name),
+    playerAvatarUrl: (account: string) => `/portraits/${account}.webp`,
+  };
+});
 
 import { LordName, OrderMark } from "./realm-marks";
 

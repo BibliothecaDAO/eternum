@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useMemo } from "react";
 import { configManager, getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
@@ -5,7 +6,6 @@ import { useBuildings } from "@/hooks/helpers/use-buildings";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRow, useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
-import { getPlayerName } from "@/services/identity/player-profiles";
 
 type StructureBuildingsCounts = {
   packed_counts_1?: bigint | number | string;
@@ -63,10 +63,11 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const liveStructure = useNativeRow("Structure", keys);
   const liveStructureBuildings = useNativeRow("StructureBuildings", keys);
   const revision = useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight"]);
+  const names = usePlayerNames();
   const structureInfo = useMemo(() => {
     if (structureEntityId === null || !liveStructure) return null;
-    return getRealmInfo(structureEntityId, setup.store, getPlayerName);
-  }, [revision, liveStructure, liveStructureBuildings, setup.store, structureEntityId]);
+    return getRealmInfo(structureEntityId, setup.store, names.text);
+  }, [revision, liveStructure, liveStructureBuildings, setup.store, structureEntityId, names]);
 
   const realmBuildings = useBuildings(structureEntityId ?? undefined);
   const isRealm = structureInfo?.category === StructureType.Realm;

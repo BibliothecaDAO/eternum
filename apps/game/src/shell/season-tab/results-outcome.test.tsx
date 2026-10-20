@@ -40,7 +40,7 @@ vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));
 
-import { displayPlayerName } from "@bibliothecadao/eternum";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { gameTitle } from "./history-row";
@@ -101,7 +101,9 @@ it.each([390, 1440])(
 it("names the player's portrait by the one name rule, never by their address", async () => {
   const page = await open(1440);
   const portrait = page.querySelector<HTMLElement>(".app-portrait")!;
-  expect(portrait.title).toBe(displayPlayerName("0xb7", null));
+  // Identity never answers here: the rule says the name is on its way, never the address or the stand-in.
+  expect(portrait.title).toBe(getPlayerDisplayName("0xb7"));
+  expect(portrait.title).toBe("…");
   expect(portrait.title).not.toContain("0x");
 });
 

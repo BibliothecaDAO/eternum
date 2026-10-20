@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -7,7 +8,6 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getPlayerName } from "@/services/identity/player-profiles";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
@@ -129,9 +129,10 @@ export const BuildSheet = ({
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const goToPlace = useGoToFrontierPlace(realm);
   const mode = useGameModeConfig();
+  const names = usePlayerNames();
   const realmInfo = useMemo(
-    () => getRealmInfo(safeInteger(realm.entity_id), setup.store, getPlayerName),
-    [realm.entity_id, revision, setup.store],
+    () => getRealmInfo(safeInteger(realm.entity_id), setup.store, names.text),
+    [realm.entity_id, revision, setup.store, names],
   );
   useBuildingGhost(option?.category, plot);
   const stillShowing = useStillShowing(plot);

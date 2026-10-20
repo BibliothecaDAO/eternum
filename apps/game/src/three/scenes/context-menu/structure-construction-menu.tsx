@@ -18,7 +18,7 @@ import {
   StructureType,
   structureName as structureKindName,
 } from "@bibliothecadao/types";
-import { getPlayerName } from "@/services/identity/player-profiles";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type Store = SetupResult["store"];
@@ -121,7 +121,7 @@ export const createConstructionMenu = ({
   const mode = getGameModeConfig();
   const simpleCostEnabled = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
-  const realmInfo = getRealmInfo(structureEntityId, store, getPlayerName);
+  const realmInfo = getRealmInfo(structureEntityId, store, getPlayerDisplayName);
   const structureName = getEntityName(structureEntityId, store) ?? structureKindName(StructureType.Realm);
 
   const makeBuildingAction = ({

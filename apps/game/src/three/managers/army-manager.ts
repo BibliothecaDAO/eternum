@@ -5,7 +5,8 @@ import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
-import { getPlayerDisplayName, watchPlayerNames } from "@/hooks/use-player-profile";
+import { watchPlayerNames } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import type { ProceduralMeleeContactEvent, ProceduralRangedReleaseEvent } from "@/three/characters";
 import type { ArrowImpactEvent } from "@/three/projectiles/arrow-projectile-system";
@@ -59,7 +60,7 @@ import type {
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
 import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
-import { displayPlayerName, getEntityName } from "@bibliothecadao/eternum";
+import { getEntityName } from "@bibliothecadao/eternum";
 import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
@@ -599,7 +600,7 @@ export class ArmyManager {
     this.addArmy({
       entityId: input.entityId,
       hexCoords: Position.fromNormalized({ x: input.col, y: input.row }),
-      owner: { address, ownerName: displayPlayerName(address, null), guildName: "None" },
+      owner: { address, ownerName: getPlayerDisplayName(address), guildName: "None" },
       category: TroopType.Paladin,
       tier: TroopTier.T1,
       troopCount: 10,
