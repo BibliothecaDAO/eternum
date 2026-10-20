@@ -2,15 +2,20 @@ import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
 import {
   bankLiquidityCopy,
   bankSwapCopy,
+  bitcoinAwardCopy,
   battleCopy,
   buildingStoryCopy,
   captureStoryCopy,
+  explorationRewardCopy,
   hyperstructurePointsCopy,
   levelUpCopy,
   raidStoryCopy,
   rewardChestCopy,
   says,
+  sitePayoutCopy,
+  spireDiscoveredCopy,
   type StoryCopy,
+  tierBoughtCopy,
   transferStoryCopy,
 } from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
@@ -23,11 +28,7 @@ type StoryRule =
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const STORY_RULES = {
-  BitcoinAwardStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("The Bitcoin mine paid out", "Your share has reached your realm."),
-  },
+  BitcoinAwardStory: { level: "all", recipients: "owner", copy: bitcoinAwardCopy },
   TradeCreated: {
     level: "all",
     recipients: "owner",
@@ -46,17 +47,9 @@ const STORY_RULES = {
   BankSwap: { level: "all", recipients: "owner", copy: bankSwapCopy },
   BankLiquidity: { level: "all", recipients: "owner", copy: bankLiquidityCopy },
   HyperstructurePoints: { level: "all", recipients: "owner", copy: hyperstructurePointsCopy },
-  SitePayout: { level: "all", recipients: "owner", copy: says("A site is cleared", "Your army took what it held.") },
-  TierBought: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Your army rose a tier", "It spent its XP on a new tier."),
-  },
-  ExplorationReward: {
-    level: "all",
-    recipients: "owner",
-    copy: says("A find on the trail", "Your army turned up resources; they are on their way home."),
-  },
+  SitePayout: { level: "all", recipients: "owner", copy: sitePayoutCopy },
+  TierBought: { level: "all", recipients: "owner", copy: tierBoughtCopy },
+  ExplorationReward: { level: "all", recipients: "owner", copy: explorationRewardCopy },
   SeasonEnded: { level: "all", recipients: "owner", copy: says("The season has ended", "The final standings are in.") },
   FaithPledged: {
     level: "all",
@@ -84,11 +77,7 @@ const STORY_RULES = {
     recipients: "owner",
     copy: says("A new realm rises", "Your banner now flies over fresh lands."),
   },
-  SpireDiscovered: {
-    level: "standard",
-    recipients: "owner",
-    copy: says("A dormant spire is found", "Your army found a spire; its Essence is on its way home."),
-  },
+  SpireDiscovered: { level: "standard", recipients: "owner", copy: spireDiscoveredCopy },
   BuildingPlacementStory: { level: "standard", recipients: "owner", copy: buildingStoryCopy },
   StructureLevelUpStory: { level: "standard", recipients: "owner", copy: levelUpCopy },
   ResourceReceiveArrivalStory: {
@@ -105,7 +94,7 @@ const STORY_RULES = {
   ProductionStory: {
     level: "all",
     recipients: "owner",
-    copy: says("The workshops are humming", "A new batch of resources is ready."),
+    copy: says("The workshops are humming", "Production has started."),
   },
   BuildingPaymentStory: {
     level: "all",
@@ -116,7 +105,7 @@ const STORY_RULES = {
   ResourceBurnStory: {
     level: "all",
     recipients: "owner",
-    copy: says("Resources committed", "The realm has paid its due."),
+    copy: says("Resources burned", "They are gone from your stores."),
   },
   ExplorerCreateStory: {
     level: "all",
@@ -131,7 +120,7 @@ const STORY_RULES = {
   ExplorerDeleteStory: {
     level: "all",
     recipients: "owner",
-    copy: says("The banners return home", "An army has stood down."),
+    copy: says("An army was disbanded", "Its troops and what it carried are gone."),
   },
   GuardAddStory: {
     level: "all",
@@ -141,7 +130,7 @@ const STORY_RULES = {
   GuardDeleteStory: {
     level: "all",
     recipients: "owner",
-    copy: says("A guard post is clear", "Those troops are ready for new orders."),
+    copy: says("A guard was dismissed", "Its troops have left the walls for good."),
   },
   TroopsTransferred: {
     level: "all",
