@@ -1,4 +1,4 @@
-import { formatAmount, LORDS } from "@bibliothecadao/types";
+import { formatAmount, LORDS, resourceName, ResourcesIds } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
@@ -7,7 +7,6 @@ import {
   CHESTS,
   ESSENCE,
   EXIT,
-  LABOR,
   REACH,
   REACH_NUMERALS,
   SEASON,
@@ -86,7 +85,7 @@ export const SeasonOverCard = ({
             { icon: "lords", name: LORDS, value: formatAmount(totals.lords) },
             { icon: "portal", name: REACH, value: REACH_NUMERALS[totals.reach - 1] ?? "—" },
             { icon: "essence", name: ESSENCE, value: formatAmount(totals.essence) },
-            { icon: "labor", name: LABOR, value: formatAmount(totals.labor) },
+            { icon: "labor", name: resourceName(ResourcesIds.Labor), value: formatAmount(totals.labor) },
           ]}
         />
       </div>

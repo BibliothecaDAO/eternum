@@ -1,4 +1,4 @@
-import { LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
+import { BLITZ_WORDS, LORE_LINE, WORDS } from "@/ui/design-system/kit/words";
 import type { CSSProperties, ReactNode } from "react";
 
 import { AppAgeColumn, AppButton, AppGameCard } from "@/ui/design-system/kit/app-elements";
@@ -20,7 +20,7 @@ import { ItemRows, LeadCard } from "./play-item";
 export const PlayPage = () => {
   const facts = usePlayFacts();
   const firstVisit = !facts.signedIn && facts.board?.lead?.verb === "play";
-  const ages = facts.board ? agesWithGames(facts.board) : [];
+  const ages = facts.board ? agesShown(facts.board, facts.gaps) : [];
   return (
     <PageFrame painting={firstVisit ? "dark-plains" : "brooding-plains"} stage={firstVisit} offersInstall>
       {firstVisit && <h1 className="mb-6 max-w-[48rem] text-app-display text-app-ink">{LORE_LINE}</h1>}
@@ -41,8 +41,16 @@ export const PlayPage = () => {
   );
 };
 
-/** The ages holding a game besides the lead, in Play's order. */
-const agesWithGames = (board: PlayBoard): PlayMode[] => PLAY_MODES.filter((mode) => board.ages[mode].length > 0);
+/**
+ * The ages holding a game besides the lead, in Play's order; and Blitz's always once its slots answered, saying none is
+ * scheduled when it has no game anywhere, the lead included (a slot outage stands as its gap, never as "none").
+ */
+const agesShown = (board: PlayBoard, gaps: readonly SourceGap[]): PlayMode[] =>
+  PLAY_MODES.filter(
+    (mode) =>
+      board.ages[mode].length > 0 ||
+      (mode === "blitz" && board.lead?.mode !== "blitz" && !gaps.some((gap) => gap.service === "slots")),
+  );
 
 /** The lead; the directory's failure, the wait, or the quiet card in its place. */
 const LeadOrState = ({ facts }: { facts: PlayFacts }) => {
@@ -92,7 +100,7 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-/** One age's column: its painting and its name, then its games in its well. */
+/** One age's column: its painting and its name, then its games in its well (Blitz's, with none: none scheduled). */
 const AgeColumn = ({
   mode,
   facts,
@@ -105,7 +113,11 @@ const AgeColumn = ({
   const age = ageOf(mode);
   return (
     <AppAgeColumn age={mode} painting={age.painting} name={age.name}>
-      <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
+      {items.length > 0 ? (
+        <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
+      ) : (
+        <p className="text-app-body text-app-muted">{BLITZ_WORDS.noneScheduled}</p>
+      )}
     </AppAgeColumn>
   );
 };

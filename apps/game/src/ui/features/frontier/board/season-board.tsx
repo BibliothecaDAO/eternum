@@ -17,7 +17,7 @@ import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
 import { type SeasonLords, seasonLordsOf } from "./season-pool";
-import { findOwnEntry, ownRank, wholeLords, wholeResource } from "./standings";
+import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -162,8 +162,8 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
   reach: entry.deepest_depth,
-  essence: wholeResource(entry.rewards.essence),
-  labor: wholeResource(entry.rewards.labor),
+  essence: earnedResource(entry.rewards.essence),
+  labor: earnedResource(entry.rewards.labor),
 });
 
 /**
@@ -204,6 +204,6 @@ const seasonTotals = (entry: Entry): SeasonTotals => ({
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
   reach: entry.deepest_depth,
-  essence: wholeResource(entry.rewards.essence),
-  labor: wholeResource(entry.rewards.labor),
+  essence: earnedResource(entry.rewards.essence),
+  labor: earnedResource(entry.rewards.labor),
 });

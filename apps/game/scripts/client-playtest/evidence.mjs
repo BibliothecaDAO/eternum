@@ -37,16 +37,19 @@ export function buildPlaytestUrl({ baseUrl, chainId, gameId, rendererMode, devOv
   url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
   // Measure what players run: the dev overlays stay off even if this browser profile once enabled them, unless the
-  // steps play the dev tools themselves.
+  // steps need them (they play the dev tools, or read the world the dev build reports).
   url.searchParams.set("dev", devOverlays ? "1" : "0");
   return url.toString();
 }
 
-/** A player starts on the home page, signed in by the browser profile, and enters with its call to action. */
-export function buildPlayerHomeUrl({ baseUrl, rendererMode }) {
+/**
+ * A player starts on the home page, signed in by the browser profile, and enters with its call to action. The dev
+ * overlays are set there, as for a spectator's link: the page keeps the setting into the game.
+ */
+export function buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays = false }) {
   const url = new URL(baseUrl);
   url.searchParams.set("rendererMode", rendererMode);
-  url.searchParams.set("dev", "0");
+  url.searchParams.set("dev", devOverlays ? "1" : "0");
   return url.toString();
 }
 

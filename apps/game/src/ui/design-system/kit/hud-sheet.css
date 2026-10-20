@@ -1858,9 +1858,10 @@ button.ui-card__choose:disabled {
   line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
-/* A small card, three to a sheet's row (a Frontier building): its painting above its name, its words centred under it. */
+/* A small card, three to a sheet's row (a Frontier building): its painting above its name, what it gives and its band
+   centred under it. */
 .ui-card[data-size="sm"] {
-  height: theme(spacing.hud-frontier-card);
+  height: theme(spacing.hud-frontier-build-card);
 }
 .ui-card[data-size="sm"] .ui-card__picture {
   inset: theme(spacing.2) 0 auto;

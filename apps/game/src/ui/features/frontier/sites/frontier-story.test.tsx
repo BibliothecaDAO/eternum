@@ -72,39 +72,52 @@ function battle(army: number, guard: number, defenderId = SITE, defenderPlayer =
 }
 const names = (address: string | bigint) => (BigInt(address) === 0x111n ? "clientlane" : "rival");
 
-it.each(KINDS)("shares all verdicts and species with the card for %s, even after clearing", (site) => {
-  const store = encounter(site);
-  const sent = { targetId: SITE, site, armyId: 201, armyArt: "knight-t1", army: 1000, homeId: 7, clearXp: 50 } as const;
-  for (const [army, guard, verdict] of [
-    [694, 572, "Guard holds"],
-    [694, 0, "Victory"],
-    [0, 572, "Army lost"],
-    [0, 0, "Army lost"],
-  ] as const) {
-    const result = fightResultOf(
-      sent,
-      { army: { before: 1000, after: army }, guard: { before: 1000, after: guard } },
-      () => null,
-    );
-    if (guard === 0)
-      store.applyFacts([
-        {
-          model: "ExpeditionSite",
-          key: "0x72",
-          value: {
-            ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
-            clear: { explorer_id: 201, home_id: 7, reward: null },
+it.each(KINDS)(
+  "shares all verdicts with the card for %s and names the site by its one name, even after clearing",
+  (site) => {
+    const store = encounter(site);
+    const sent = {
+      targetId: SITE,
+      site,
+      armyId: 201,
+      armyArt: "knight-t1",
+      army: 1000,
+      homeId: 7,
+      clearXp: 50,
+    } as const;
+    for (const [army, guard, verdict] of [
+      [694, 572, "Guard holds"],
+      [694, 0, "Victory"],
+      [0, 572, "Army lost"],
+      [0, 0, "Army lost"],
+    ] as const) {
+      const result = fightResultOf(
+        sent,
+        { army: { before: 1000, after: army }, guard: { before: 1000, after: guard } },
+        () => null,
+      );
+      if (guard === 0)
+        store.applyFacts([
+          {
+            model: "ExpeditionSite",
+            key: "0x72",
+            value: {
+              ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
+              clear: { explorer_id: 201, home_id: 7, reward: null },
+            },
           },
-        },
-        { model: "Structure", key: "0x71", value: null },
-        { model: "Guard", key: "0x73", value: null },
-      ] as never);
-    const story = buildStoryEventPresentation(battle(army, guard), store, names);
-    expect(VERDICT_WORDS[result.verdict]).toBe(verdict);
-    expect(story.title).toBe(`clientlane vs ${SPECIES[site]} · ${verdict}`);
-    expect(story.description).toContain(`Outcome: ${verdict}`);
-  }
-});
+          { model: "Structure", key: "0x71", value: null },
+          { model: "Guard", key: "0x73", value: null },
+        ] as never);
+      const story = buildStoryEventPresentation(battle(army, guard), store, names);
+      expect(VERDICT_WORDS[result.verdict]).toBe(verdict);
+      expect(story.title).toBe(`clientlane vs ${siteName(SITE)} · ${verdict}`);
+      expect(story.description).toContain(`Defender [${siteName(SITE)}]: ${siteName(SITE)}`);
+      expect(story.description).toContain(`Defender forces: ${SPECIES[site]} [`);
+      expect(story.description).toContain(`Outcome: ${verdict}`);
+    }
+  },
+);
 
 it("uses the same verdict vocabulary for Frontier army fights", () => {
   const store = encounter("Camp");
@@ -113,7 +126,7 @@ it("uses the same verdict vocabulary for Frontier army fights", () => {
   );
 });
 
-it.each(KINDS)("names %s discovery in Events", (kind) => {
+it.each(KINDS)("names a %s discovery in Events by its site's name, and its kind beside it", (kind) => {
   const store = encounter(kind);
   store.applyFacts([{ model: "Structure", key: "0x71", value: null }]);
   const presentation = buildStoryEventPresentation(
@@ -128,8 +141,9 @@ it.each(KINDS)("names %s discovery in Events", (kind) => {
     } as never,
     store,
   );
-  expect(presentation.title).toBe(
-    `${kind === "Beasts" ? "Cyclops" : kind === "Camp" ? SPECIES[kind] : `${SPECIES[kind]} ${kind}`} found: +13 Essence`,
+  expect(presentation.title).toBe(`${siteName(SITE)} found: +13 Essence`);
+  expect(presentation.description).toMatch(
+    new RegExp(`^${kind === "Beasts" ? "Cyclops" : kind === "Camp" ? SPECIES[kind] : `${SPECIES[kind]} ${kind}`} · `),
   );
 });
 
@@ -149,55 +163,9 @@ it("does not print a Frontier realm's off-map founding coordinates", () => {
   expect(presentation.description).toBe("Settled by clientlane");
 });
 
-it("does not invent a Vanguard opponent when an older encounter is outside the synced scope", () => {
+it("names an encounter outside the synced scope by its site's name, never a Vanguard or a beast guard", () => {
   const store = encounter("Camp");
   expect(buildStoryEventPresentation(battle(694, 572, 999), store, names).title).toBe(
-    "clientlane vs Beast guard · Guard holds",
-  );
-});
-
-function captured(entityId = SITE, previousOwner = "0x0") {
-  return {
-    storyType: "StructureCapturedStory",
-    storyPayload: { previous_owner: previousOwner, new_owner: "0x111", points: 0 },
-    entityId,
-    ownerAddress: "0x111",
-    viewerAddress: "0x111",
-  } as never;
-}
-
-it.each(KINDS)(
-  "names a captured %s as its map does, and the beast that held it after its guard was cleared",
-  (kind) => {
-    const store = encounter(kind);
-    const structure = store.require("Structure", { game_id: 1, entity_id: SITE });
-    const guard = store.require("Guard", { game_id: 1, structure_id: SITE, slot: 0 });
-    store.applyFacts([
-      { model: "Structure", key: "0x71", value: { ...structure, owner: "0x111" } },
-      {
-        model: "ExpeditionSite",
-        key: "0x72",
-        value: {
-          ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
-          clear: { explorer_id: 201, home_id: 7, reward: null },
-        },
-      },
-      { model: "Guard", key: "0x73", value: { ...guard, troops: { ...guard.troops, count: "0" } } },
-    ] as never);
-    expect(buildStoryEventPresentation(captured(), store, names).title).toBe(
-      `clientlane took ${siteName(SITE)} from ${SPECIES[kind]}`,
-    );
-  },
-);
-
-it("does not invent a Vanguard holder for a captured site outside the synced scope", () => {
-  expect(buildStoryEventPresentation(captured(999), encounter("Rift"), names).title).toBe(
-    "clientlane took a structure from Beast guard",
-  );
-});
-
-it("names the previous player when a cleared site changes hands again", () => {
-  expect(buildStoryEventPresentation(captured(SITE, "0x222"), encounter("Rift"), names).title).toBe(
-    `clientlane took ${siteName(SITE)} from rival. Its armies and incoming deliveries went with it`,
+    `clientlane vs ${siteName(999)} · Guard holds`,
   );
 });

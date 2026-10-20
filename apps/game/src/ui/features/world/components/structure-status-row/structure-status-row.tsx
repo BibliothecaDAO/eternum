@@ -7,12 +7,9 @@ import {
   StructureRealmActions,
   type StructureWithMetadata,
 } from "@/ui/features/world/containers/top-header/structure-picker/chip";
-import {
-  formatPopulationStatusLabel,
-  formatUsedBuildingTilesLabel,
-} from "@/ui/features/world/containers/structure-status";
+import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { type ID, StructureType } from "@bibliothecadao/types";
+import { formatPopulation, type ID, StructureType } from "@bibliothecadao/types";
 import { memo, useCallback } from "react";
 
 const getCategoryIcon = (category: StructureType | number | undefined): IconMeaning =>
@@ -113,7 +110,7 @@ export const StructureStatusRow = memo(
         : null;
     const populationLabel =
       statsVariant === "default" && capabilities.hasPopulationDetails
-        ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
+        ? formatPopulation(structure.population, structure.populationCapacity)
         : null;
     const buildingTilesLabel =
       statsVariant === "default" &&

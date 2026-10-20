@@ -9,7 +9,6 @@ import {
   NEUTRAL_OWNER_NAME,
   StructureType,
   siteName,
-  type StructureNamingMode,
 } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
@@ -22,12 +21,7 @@ import { isViewerOwner } from "./viewer";
 
 const knownAddressesJSON: Record<string, string> = knownAddressesJSONData;
 
-export const getEntityInfo = (
-  entityId: ID,
-  playerAccount: ContractAddress | null,
-  store: NativeFactStore,
-  mode: StructureNamingMode,
-) => {
+export const getEntityInfo = (entityId: ID, playerAccount: ContractAddress | null, store: NativeFactStore) => {
   const game_id = configManager.getActiveGameId();
 
   const explorer = store.get("ExplorerTroops", { game_id, explorer_id: entityId });
@@ -42,7 +36,7 @@ export const getEntityInfo = (
     };
   } else {
     if (structure) {
-      name = getStructureName(structure, mode);
+      name = getStructureName(structure);
     }
   }
 
@@ -105,7 +99,7 @@ export const siteDisplayName = (entityId: ID): string => getEntityNameFromLocalS
  * A structure's name, and the name it had before its holder renamed it (originalName, which the rename control shows).
  * A site is named by siteDisplayName, the rule every reader of a site shares.
  */
-export const getStructureName = (structure: NativeRows["Structure"], mode: StructureNamingMode) => {
+export const getStructureName = (structure: NativeRows["Structure"]) => {
   const entityId = safeInteger(structure.entity_id);
   if (structure.base.category !== StructureType.Realm && structure.base.category !== StructureType.Hyperstructure) {
     return { name: siteDisplayName(entityId), originalName: siteName(entityId) };
@@ -120,11 +114,11 @@ export const getStructureName = (structure: NativeRows["Structure"], mode: Struc
  * generated name (armyName, "Iron Wardens") and a site's (siteName, "Gloomsgrasp"), never its entity id, which is a
  * storage key, not a name. Undefined when the store holds neither (an army already gone): the caller words that.
  */
-export const getEntityName = (entityId: ID, store: NativeFactStore, mode: StructureNamingMode): string | undefined => {
+export const getEntityName = (entityId: ID, store: NativeFactStore): string | undefined => {
   const game_id = configManager.getActiveGameId();
   if (store.get("ExplorerTroops", { game_id, explorer_id: entityId })) return getArmyName(entityId, store);
   const structure = store.get("Structure", { game_id, entity_id: entityId });
-  return structure ? getStructureName(structure, mode).name : undefined;
+  return structure ? getStructureName(structure).name : undefined;
 };
 
 export const setEntityNameLocalStorage = (entityId: ID, name: string) => {

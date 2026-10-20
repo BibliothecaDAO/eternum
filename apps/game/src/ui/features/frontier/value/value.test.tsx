@@ -95,17 +95,26 @@ describe("a withdrawal's rules", () => {
     expect(withdrawalRefusal({ ...open, closesAt: undefined, paused: undefined })).toBeNull();
   });
 
-  it("follows a withdrawal from the shard to its payment on Starknet", () => {
-    const sent = { amount: 500, claimId: "0x7f3a", fromBlock: 812_000 };
-    const none = { sending: null, sent: null, paidIn: undefined, paused: false };
+  it("follows a withdrawal from the shard's outcome to its payment on Starknet", () => {
+    const applied = { kind: "applied", amount: 500, claimId: "0x7f3a", fromBlock: 812_000 } as const;
+    const none = { sending: null, outcome: null, paidIn: undefined, paused: false };
     expect(withdrawStepOf(none)).toEqual({ kind: "pick" });
     expect(withdrawStepOf({ ...none, sending: 500 })).toEqual({ kind: "sending", amount: 500 });
-    expect(withdrawStepOf({ ...none, sent })).toEqual({ kind: "sending", amount: 500 });
-    expect(withdrawStepOf({ ...none, sent, paused: true })).toEqual({ kind: "waiting", amount: 500 });
-    expect(withdrawStepOf({ ...none, sent, paused: true, paidIn: "https://x/tx/0x1" })).toEqual({
+    expect(withdrawStepOf({ ...none, outcome: applied })).toEqual({ kind: "sending", amount: 500 });
+    expect(withdrawStepOf({ ...none, outcome: applied, paused: true })).toEqual({ kind: "waiting", amount: 500 });
+    expect(withdrawStepOf({ ...none, outcome: applied, paused: true, paidIn: "https://x/tx/0x1" })).toEqual({
       kind: "paid",
       amount: 500,
       transactionUrl: "https://x/tx/0x1",
+    });
+    // Not applied: back to the choice, with the game's reason. No answer: said so, with nothing to send again.
+    expect(withdrawStepOf({ ...none, outcome: { kind: "not-applied", reason: "Insufficient LORDS" } })).toEqual({
+      kind: "pick",
+      notApplied: "Insufficient LORDS",
+    });
+    expect(withdrawStepOf({ ...none, outcome: { kind: "unknown", amount: 500 } })).toEqual({
+      kind: "unknown",
+      amount: 500,
     });
   });
 });
@@ -192,6 +201,39 @@ describe("the Realm holder's labor", () => {
         labor: { held: 0, limit: 18_000 },
       }).rows[0].state,
     ).toBe("claimed");
+  });
+
+  it("says what Realms are for before anything else, with no wallet linked too (live-qa-night-1 P3-3)", () => {
+    const onLinkWallet = vi.fn();
+    const show = (wallet: string | null, cap: number) =>
+      act(() =>
+        root.render(
+          <RealmsSheet
+            wallet={wallet}
+            plan={planRealmLabor({ realms: [], perRealm: 1_000, cap, labor: { held: 0, limit: 18_000 } })}
+            perRealm={1_000}
+            cap={cap}
+            labor={0}
+            secondsLeft={3_600}
+            sending={false}
+            adding={false}
+            onClaim={() => undefined}
+            onAdd={() => undefined}
+            onRealm={() => undefined}
+            onLinkWallet={onLinkWallet}
+            onClose={() => undefined}
+          />,
+        ),
+      );
+    show(null, 3);
+    expect(host.textContent).toContain("Each Realm in your Starknet wallet gives 1,000 labor a day, up to 3 Realms.");
+    expect(host.textContent).toContain("No wallet linked");
+    act(() => button("Link wallet")!.click());
+    expect(onLinkWallet).toHaveBeenCalledTimes(1);
+    // With no cap on the day's Realms, the line says none; a linked wallet reads the same line at its head.
+    show(ADDRESS, 0);
+    expect(host.textContent).toContain("Each Realm in your Starknet wallet gives 1,000 labor a day.");
+    expect(host.textContent).not.toContain("No wallet linked");
   });
 
   it("adds a Realm by its number, its first claim, and offers nothing to add once the day's cap is spent", () => {

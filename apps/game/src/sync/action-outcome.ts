@@ -1,3 +1,5 @@
+import { TransactionNotSentError } from "@bibliothecadao/provider";
+
 import { requireActiveGameClient } from "./active-game-client";
 
 /** An action the game did not apply: refused by its rules or reverted, with the reason the game gave. */
@@ -31,3 +33,11 @@ export const untilApplied = async (sent: Promise<SentCommand>): Promise<string> 
   if (outcome.status !== "SUCCEEDED") throw new ActionNotAppliedError(outcome.revertReason);
   return transactionHash;
 };
+
+/**
+ * Whether a send or its outcome proves the action did not apply: the game refused it (ActionNotAppliedError) or the
+ * shard never took it (TransactionNotSentError). Any other failure, a no-answer above all, leaves it unknown: it may
+ * still apply, so a surface says so and never sends it again on its own.
+ */
+export const isDefinitelyNotApplied = (error: unknown): boolean =>
+  error instanceof ActionNotAppliedError || error instanceof TransactionNotSentError;

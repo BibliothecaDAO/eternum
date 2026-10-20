@@ -78,15 +78,24 @@ describe("the page a run opens", () => {
       buildRunUrl({ baseUrl: "https://127.0.0.1:4173", game, player, rendererMode: "webgpu-auto", stepSet }),
     ).searchParams.get("dev");
 
-  it("keeps the dev overlays off for every spectator list that does not play the dev tools", () => {
-    const ordinary = Object.keys(STEP_SETS).filter((stepSet) => !stepSet.endsWith("frozen-sun"));
+  const plateLists = ["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"];
+
+  it("keeps the dev overlays off for every spectator list that needs no dev tools", () => {
+    const ordinary = Object.keys(STEP_SETS).filter(
+      (stepSet) => !stepSet.endsWith("frozen-sun") && !plateLists.includes(stepSet),
+    );
     expect(ordinary).toContain("blitz-still-map");
     for (const stepSet of ordinary) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "0"]);
   });
 
-  it("turns them on for the lists that hold the sun through the dev tools", () => {
+  it("turns them on for the lists that hold the sun through the dev tools, and for the plate lists", () => {
     expect(devOf("still-map-frozen-sun")).toBe("1");
     expect(devOf("blitz-still-map-frozen-sun")).toBe("1");
+    // The page then reports its world (window.__gameRenderer): every label is measured against its thing.
+    for (const stepSet of plateLists) expect([stepSet, devOf(stepSet)]).toEqual([stepSet, "1"]);
+    // A seated player's plates as well: the home page sets them, and the page keeps them into the game.
+    expect(devOf("frontier-plates-player", "a@b.c")).toBe("1");
+    expect(devOf("blitz-orders", "a@b.c")).toBe("0");
   });
 
   it("opens a player's home page, not the game", () => {

@@ -19,14 +19,28 @@ describe("Frontier's tile card", () => {
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
     // The fight takes two attacks. The figures are the one Attack sends now, as its result will show them: this
     // attack's losses and the guard it leaves standing, never the whole fight's total.
-    expect(plan.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
+    expect(plan.fight).toEqual({
+      outcome: "wins",
+      exchanges: 2,
+      troopsLost: 320,
+      guardLeft: 492,
+      // Over both attacks: the whole guard killed, and what the army loses and spends doing it.
+      whole: { troopsLost: 476, guardKilled: 1_100, stamina: 94 },
+    });
   });
 
   it("counts the fight for an army short of the attack's stamina, as its Attack will send it once it can", () => {
     const { store, site, structure, attack } = campBeside("Camp", true, 0n);
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
     // The one attack its stamina will then pay for. The guard has rested by then, so it costs more than now (320 above).
-    expect(plan.fight).toEqual({ outcome: "stalls", exchanges: 1, troopsLost: 457, guardLeft: 492 });
+    expect(plan.fight).toEqual({
+      outcome: "stalls",
+      exchanges: 1,
+      troopsLost: 457,
+      guardLeft: 492,
+      // One attack is the whole fight: its figures and the fight's are the same.
+      whole: { troopsLost: 457, guardKilled: 608, stamina: 50 },
+    });
   });
 
   it("has no fight for an army out of reach or none selected", () => {

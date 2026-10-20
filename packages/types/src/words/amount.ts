@@ -3,6 +3,7 @@
  * Every one is written for en-US, whatever the device's language, so "1,250" never reads "1.250". Unknown is a dash,
  * never zero.
  */
+import { RESOURCE_PRECISION } from "../constants/utils";
 import { formatCount } from "./count";
 import { POINT, POINTS } from "./nouns";
 
@@ -36,6 +37,16 @@ export const formatExact = (value: number | bigint | undefined): string =>
  * takes the exact charge; a short pair says more (formatHeldAgainst).
  */
 export const formatCharge = (value: number | undefined): string => formatAmount(value);
+
+const PRECISION = BigInt(RESOURCE_PRECISION);
+
+/**
+ * An amount the chain holds at its resource precision, in the units a player reads, exact: 57.6 stays 57.6, so the one
+ * rounding is the formatter's and every surface writes the same reward alike ("+58"). The one way from a scaled
+ * amount to a number a player reads.
+ */
+export const scaledToUnits = (scaled: bigint): number =>
+  Number(scaled / PRECISION) + Number(scaled % PRECISION) / RESOURCE_PRECISION;
 
 // From whole units to the resource's last unit: the precisions a short pair steps through until its two sides differ.
 const PAIR_PRECISIONS = Array.from(
@@ -134,3 +145,17 @@ export const formatOrdinal = (place: number | undefined): string =>
 /** Points, always exact: a player counts them to the unit against the one above. "1 point", "1,250 points". */
 export const formatPoints = (points: number | undefined): string =>
   points === undefined ? `— ${POINTS}` : formatCount(points, POINT, POINTS);
+
+/** A count read off the chain or a holding's metadata, written whole: unknown or below zero is none. */
+const wholeCount = (value: number) => exact.format(Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
+
+/**
+ * A realm's population, the one way every screen writes it, Blitz's and Frontier's alike: what its buildings take of
+ * all it can hold, "5/6". Never what is free; a shortfall says that in its own line.
+ */
+export const formatPopulation = (used: number, capacity: number): string =>
+  `${wholeCount(used)}/${wholeCount(capacity)}`;
+
+/** The same in words, on a hover or in a line: "Population 5 of 6". */
+export const formatPopulationInWords = (used: number, capacity: number): string =>
+  `Population ${wholeCount(used)} of ${wholeCount(capacity)}`;

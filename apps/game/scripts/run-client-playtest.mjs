@@ -113,8 +113,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
  * that play the dev tools.
  */
 export function buildRunUrl({ baseUrl, game, player, rendererMode, stepSet }) {
-  if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode });
   const { devOverlays = false } = STEP_SETS[stepSet];
+  if (player) return buildPlayerHomeUrl({ baseUrl, rendererMode, devOverlays });
   return buildPlaytestUrl({ baseUrl, chainId: game.chainId, gameId: game.gameId, rendererMode, devOverlays });
 }
 

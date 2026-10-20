@@ -10,6 +10,7 @@ import {
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
 } from "@/ui/features/social";
+import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { configManager } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -56,8 +57,8 @@ export function GameChatConnection() {
 }
 
 /**
- * The game's chat as a view reads it: the room, the connection, its last message and unread count, and the room
- * marked read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
+ * The game's chat as a view reads it: the room, the strip's line (chatStripLine) and unread count, and the room marked
+ * read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
  */
 export function useGameChat(open: boolean) {
   const { status, gameZoneId, zoneId, initializer } = useGameChatRoom();
@@ -65,6 +66,7 @@ export function useGameChat(open: boolean) {
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
+  const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
   const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   useEffect(() => {
@@ -72,8 +74,50 @@ export function useGameChat(open: boolean) {
     return () => setShellOpen(false);
   }, [open, setShellOpen]);
 
-  return { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread };
+  // The strip names the last sender, and draws again when a name lands.
+  const names = usePlayerNames();
+  const stripLine = chatStripLine({
+    signedIn: initializer !== null,
+    connection,
+    hasGameChat,
+    history,
+    last:
+      lastMessage &&
+      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`,
+  });
+  return { status, initializer, requestSignIn, gameZoneId, unread, stripLine };
 }
+
+/** Where the room's history stands: not answered yet, answered (with or without messages), or failed. */
+type HistoryState = "loading" | "answered" | "failed";
+const historyState = (zone: { historyError?: string; lastFetchedCursor?: string | null } | undefined): HistoryState =>
+  zone?.historyError ? "failed" : zone?.lastFetchedCursor !== undefined ? "answered" : "loading";
+
+/**
+ * What the chat strip says, from what chat has actually told: the last message once one is known; that chat is
+ * unavailable when the room is not joined, the connection failed or the history read failed; "No messages yet" only
+ * once the room's history answered with none; and that it is loading until then, never an empty room it has not read.
+ */
+const chatStripLine = ({
+  signedIn,
+  connection,
+  hasGameChat,
+  history,
+  last,
+}: {
+  signedIn: boolean;
+  connection: RealtimeConnectionStatus;
+  hasGameChat: boolean;
+  history: HistoryState;
+  last: string | undefined;
+}): string => {
+  if (!signedIn) return "Sign in to chat";
+  if (connection === "connected" && !hasGameChat) return CHAT_UNAVAILABLE;
+  if (last) return last;
+  if (connection === "error" || history === "failed") return CHAT_UNAVAILABLE;
+  return history === "answered" ? "No messages yet" : "Loading chat…";
+};
+const CHAT_UNAVAILABLE = "Chat unavailable";
 
 /** The strip at the foot of the right column: last message and unread count, on the sheet's strip so it reads over any
  *  ground the map shows under it, and pressable once the player's identity has loaded. Open, a pane rises above it, as
@@ -89,8 +133,7 @@ export function HudChatWindow({
   onOpenChange: (open: boolean) => void;
   foldToIcon?: boolean;
 }) {
-  const { status, initializer, requestSignIn, gameZoneId, connection, hasGameChat, lastMessage, unread } =
-    useGameChat(open);
+  const { status, initializer, requestSignIn, gameZoneId, unread, stripLine } = useGameChat(open);
   const pane = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -119,16 +162,6 @@ export function HudChatWindow({
       document.removeEventListener("pointerdown", onMapPointerDown, true);
     };
   }, [initializer, onOpenChange, open]);
-
-  // The strip names the last sender, and draws again when a name lands.
-  const names = usePlayerNames();
-  const stripText = !initializer
-    ? "Sign in to chat"
-    : connection === "connected" && !hasGameChat
-      ? "Chat unavailable"
-      : lastMessage
-        ? `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
-        : "No messages yet";
 
   return (
     <div className={cn("mt-auto flex flex-col gap-2", open ? "min-h-hud-chat-least" : "shrink-0")}>
@@ -163,7 +196,7 @@ export function HudChatWindow({
           {[
             <span key="last" className="flex min-w-0 items-center gap-1.5">
               <Icon name="chat" size={20} />
-              <span className={cn("min-w-0 truncate", foldToIcon && "portrait:sr-only")}>{stripText}</span>
+              <span className={cn("min-w-0 truncate", foldToIcon && "portrait:sr-only")}>{stripLine}</span>
             </span>,
             ...(initializer && !open && unread > 0
               ? [

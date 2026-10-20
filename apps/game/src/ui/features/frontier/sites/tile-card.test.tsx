@@ -234,7 +234,9 @@ describe("the tile card", () => {
     );
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="troops 300"]')).not.toBeNull();
+    // The other army stands where a guard does: its 300 troops before this attack, on the guard's side.
+    const sides = [...host.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
+    expect(sides[1]).toMatch(/^300 →/);
     const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
     await act(async () => button.click());
     expect(attack).toHaveBeenCalledWith(

@@ -310,21 +310,29 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   }
 }
 
+type HistoryItem = HeraldStoryHistoryPage["items"][number];
+
+/** One story the notifier cannot read or put into words must not hold back every story after it: it is logged and left. */
+const perStory = <T>(shard: Required<WatchedShard>, item: HistoryItem, step: () => T[]): T[] => {
+  try {
+    return step();
+  } catch (error) {
+    console.error("shard_notifier_unreadable_story", shard.url, item.transaction_hash, item.event_index, error);
+    return [];
+  }
+};
+
 /** Every alert a page of stories owes: each story's recipients, by their level, to their opted-in devices. */
 const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: HeraldStoryHistoryPage) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const recipientsByStory = page.items.flatMap((item) => {
-        try {
+      const recipientsByStory = page.items.flatMap((item) =>
+        perStory(shard, item, () => {
           const read = readHistoryStory(item.model, item.value);
           if (!read) return [];
           return [{ item, story: read.story, recipients: storyRecipients(read.story, item.value.owner, read.payload) }];
-        } catch (error) {
-          // One story the policy cannot read must not hold back every story after it.
-          console.error("shard_notifier_unreadable_story", shard.url, item.transaction_hash, item.event_index, error);
-          return [];
-        }
-      });
+        }),
+      );
       const realmsIds = yield* Effect.promise(() =>
         realmsIdsOfAccounts(env.DB, [...new Set(recipientsByStory.flatMap((entry) => entry.recipients))]),
       );
@@ -334,22 +342,27 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
       const games = owners.length > 0 ? yield* Effect.promise(() => gameNames(shard.url)) : new Map<number, string>();
       const now = Date.now();
       return recipientsByStory.flatMap(({ item, story, recipients }) =>
-        recipients.flatMap((account) => {
-          const owner = realmsIds.get(account);
-          if (!owner || !includesStoryNotification(levels.get(owner) ?? "off", story)) return [];
-          const gameId = Number(item.value.game_id);
-          const notification = buildStoryNotification({
-            sourceId: historyStoryIdentity({ chainId: shard.chainId, worldAddress: shard.worldAddress, gameId }, item),
-            model: item.model,
-            recipient: account,
-            value: item.value,
-            owner,
-            gameName: games.get(gameId) ?? `Game ${gameId}`,
-            target: gamePath({ chainId: shard.chainId, gameId }),
-            now,
-          });
-          return notification ? alertsForDevices(owner, devices, notification, now) : [];
-        }),
+        perStory(shard, item, () =>
+          recipients.flatMap((account) => {
+            const owner = realmsIds.get(account);
+            if (!owner || !includesStoryNotification(levels.get(owner) ?? "off", story)) return [];
+            const gameId = Number(item.value.game_id);
+            const notification = buildStoryNotification({
+              sourceId: historyStoryIdentity(
+                { chainId: shard.chainId, worldAddress: shard.worldAddress, gameId },
+                item,
+              ),
+              model: item.model,
+              recipient: account,
+              value: item.value,
+              owner,
+              gameName: games.get(gameId) ?? `Game ${gameId}`,
+              target: gamePath({ chainId: shard.chainId, gameId }),
+              now,
+            });
+            return notification ? alertsForDevices(owner, devices, notification, now) : [];
+          }),
+        ),
       );
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),

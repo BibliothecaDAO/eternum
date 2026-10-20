@@ -132,14 +132,14 @@ describe("one name for each thing, read by every list, picker, event and panel",
     if (given) setEntityNameLocalStorage(SITE, given);
     try {
       const name = given ?? siteName(SITE);
-      expect(getStructureName(site, "frontier").name).toBe(name);
-      expect(getEntityName(SITE, store, "frontier")).toBe(name);
+      expect(getStructureName(site).name).toBe(name);
+      expect(getEntityName(SITE, store)).toBe(name);
       // A cleared site's receipt keeps only the site's id: the same rule names it.
       expect(siteDisplayName(SITE)).toBe(name);
       const plate = buildStructurePlate({
         entityId: SITE,
         structureType: StructureType.Camp,
-        structureName: getStructureName(site, "frontier").name,
+        structureName: getStructureName(site).name,
         owner: { address: 0x111n, ownerName: "", guildName: "" },
         isMine: true,
         guardArmies: [],
@@ -180,7 +180,7 @@ describe("one name for each thing, read by every list, picker, event and panel",
     expect(built()).toMatch(/^Knight T1 built at /);
   });
 
-  it("names a beast guard in a fight's forces as the fight's title does, never as a troop", () => {
+  it("names a fight's site by its one name and its beast guard's forces by species, never as a troop", () => {
     const store = frontierCamp();
     const fight = buildStoryEventPresentation(
       {
@@ -211,9 +211,8 @@ describe("one name for each thing, read by every list, picker, event and panel",
       } as never,
       store,
     );
-    const beast = fight.title.split(" vs ")[1].split(" · ")[0];
-    expect(beast).not.toBe("Beast guard");
-    expect(fight.description).toContain(`Defender forces: ${beast} [ 1,300 ]`);
+    expect(fight.title.split(" vs ")[1].split(" · ")[0]).toBe(siteName(SITE));
+    expect(fight.description).toContain("Defender forces: Troll [ 1,300 ]");
     expect(fight.description).toContain("Attacker forces: T1 Knight [ 755 ]");
   });
 });

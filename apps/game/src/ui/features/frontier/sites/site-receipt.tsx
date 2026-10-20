@@ -8,7 +8,7 @@ import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { XP } from "@/ui/design-system/kit/words";
 import { configManager, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatExact, resourceName, frontierSiteName, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { formatCharge, formatExact, resourceName, frontierSiteName, scaledToUnits } from "@bibliothecadao/types";
 import { siteClearXp } from "./site-card-plan";
 
 const RECEIPT_MODELS = ["ExpeditionSite"] as const;
@@ -74,8 +74,7 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
         {reward && (
           <span className="flex items-center gap-1">
             <Icon name={resourceMeaning(reward.resource_type)} size={28} />
-            <strong>{formatCharge(Number(reward.amount) / RESOURCE_PRECISION)}</strong>{" "}
-            {resourceName(reward.resource_type)}
+            <strong>{formatCharge(scaledToUnits(BigInt(reward.amount)))}</strong> {resourceName(reward.resource_type)}
           </span>
         )}
         <span>

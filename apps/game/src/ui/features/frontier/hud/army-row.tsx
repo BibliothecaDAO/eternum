@@ -1,10 +1,10 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudMeter, HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, STAMINA, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
-import { xpLine, type XpGoal } from "./army-token";
+import { StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
@@ -62,12 +62,7 @@ export const ArmyRow = ({
     detail={
       <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
         <span>{troops === undefined ? "—" : troopCount(troops)}</span>
-        <span className="flex flex-1 items-center gap-2">
-          <span className="min-w-8 flex-1">
-            <HudMeter amount={stamina} tone="good" label={STAMINA} />
-          </span>
-          <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
-        </span>
+        <StaminaReading stamina={stamina} />
       </span>
     }
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.

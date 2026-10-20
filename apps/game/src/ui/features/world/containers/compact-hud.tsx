@@ -1,3 +1,4 @@
+import { useQuery } from "@/hooks/helpers/use-query";
 import { EMPIRE } from "@/ui/design-system/kit/words";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -106,7 +107,10 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const ordersAllowed = useUIStore(canIssueOrders);
   const tileDetails = useSelectedTileDetails();
-  const { open, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
+  const { open: requested, navigation, toggle, close, closeAndFocusTab, setChatOpen } = useCompactPanels();
+  // The minimap is the world map's: the realm view has no Map tab, and a Map sheet left open there closes.
+  const { isMapView } = useQuery();
+  const open = requested === "map" && !isMapView ? null : requested;
   const { stories } = useEventsFeed();
   const unread = useUnreadFeedCount(stories, open === "log");
   const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
@@ -120,7 +124,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
       label: ordersAllowed ? EMPIRE : "Standings",
       image: ordersAllowed ? COMPACT_TAB_IMAGES.empire : COMPACT_TAB_IMAGES.standings,
     },
-    { id: "map", label: "Map", image: COMPACT_TAB_IMAGES.map },
+    ...(isMapView ? [{ id: "map" as const, label: "Map", image: COMPACT_TAB_IMAGES.map }] : []),
     { id: "log", label: "Log", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
     { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: chatUnread },
     { id: "details", label: "Details", image: COMPACT_TAB_IMAGES.details },

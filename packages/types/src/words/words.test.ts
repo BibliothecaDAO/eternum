@@ -12,6 +12,8 @@ import {
   formatOrdinal,
   formatPercent,
   formatPoints,
+  formatPopulation,
+  formatPopulationInWords,
   formatRate,
   formatTypedNumber,
   readTypedNumber,
@@ -217,6 +219,13 @@ describe("amounts", () => {
     expect(typedNumberText("0.")).toBe("0.");
     expect(typedNumberText("x1,2y")).toBe("1,2");
     expect(typedNumberText("abc")).toBeUndefined();
+  });
+
+  it("writes a realm's population one way: used of all it can hold, whole, never below none", () => {
+    expect(formatPopulation(5, 6)).toBe("5/6");
+    expect(formatPopulation(1_250, 2_000)).toBe("1,250/2,000");
+    expect(formatPopulation(-1, Number.NaN)).toBe("0/0");
+    expect(formatPopulationInWords(5, 6)).toBe("Population 5 of 6");
   });
 
   it("writes a charge rounded: whole from one, compact past ten thousand, <1 under one, never nothing", () => {

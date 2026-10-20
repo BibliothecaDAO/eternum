@@ -20,7 +20,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { disposeGameSyncSession, installActiveGameClient, startRealmVisit } from "@/sync/active-game-client";
 import { configManager, type GameClient } from "@bibliothecadao/eternum";
 import { type GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RealmVisitFoot } from "./realm-visit";
+import { RealmVisitFoot, useRealmVisitNavigation } from "./realm-visit";
 
 const realmRow = (entityId: number, owner: string) => ({
   model: "Structure",
@@ -77,13 +77,34 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+type Home = Parameters<typeof RealmVisitFoot>[0]["home"];
+type Layout = "desktop" | "phone";
+
+/**
+ * As FrontierHud holds a visit: its way in and out once, above the layouts, and the foot inside the layout shown, a
+ * different parent on each, so a layout change remounts the foot and only the foot.
+ */
+const VisitHud = ({ home, layout }: { home: Home; layout: Layout }) => {
+  useRealmVisitNavigation(home);
+  return layout === "desktop" ? (
+    <div>
+      <RealmVisitFoot home={home} />
+    </div>
+  ) : (
+    <section>
+      <RealmVisitFoot home={home} />
+    </section>
+  );
+};
+
 const renderFoot = (
-  home: Parameters<typeof RealmVisitFoot>[0]["home"] = store.require("Structure", { game_id: 1, entity_id: 7 }),
+  home: Home = store.require("Structure", { game_id: 1, entity_id: 7 }),
+  layout: Layout = "desktop",
 ) =>
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-        <RealmVisitFoot home={home} />
+        <VisitHud home={home} layout={layout} />
       </GameProvider>,
     ),
   );
@@ -183,4 +204,19 @@ it("returns home when the replacement account's realm arrives after the visit cl
   expect(goTo).not.toHaveBeenCalled();
   renderFoot();
   expect(goTo).toHaveBeenCalledWith(7, expect.anything(), false, { spectator: false });
+});
+
+it("replays no visit when the layout changes, desktop to phone and back, after the viewer moved on from its arrival", () => {
+  act(() => store.applyFacts([realmRow(8, "0x222")] as never));
+  act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: "map" }));
+  renderFoot(null, "desktop");
+  expect(goTo).toHaveBeenCalledOnce();
+
+  // The viewer has since opened Realm; no new visit is asked for, and each layout keeps the foot.
+  goTo.mockClear();
+  renderFoot(null, "phone");
+  expect(host.querySelector("section [role='status']")).not.toBeNull();
+  renderFoot(null, "desktop");
+  expect(host.querySelector("div > [role='status']")).not.toBeNull();
+  expect(goTo).not.toHaveBeenCalled();
 });

@@ -1,7 +1,6 @@
-import { formatClockTime, formatDuration } from "@bibliothecadao/types";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { HUD_TONE, type Tone } from "@/ui/design-system/kit/tone";
-import { DAY_ENDS, LEFT } from "@/ui/design-system/kit/words";
+import { dayEnds, dayLeft, phraseText } from "@/ui/design-system/kit/words";
 
 /**
  * When today ends, for a sheet that needs it (the army deployed now ends then): "Day ends 21:40 · 7h 14m left", in the
@@ -17,6 +16,6 @@ export const DayEnds = ({
   tone: Tone;
 }) => (
   <HudChip icons={["clock"]} tone={HUD_TONE[tone]}>
-    {`${DAY_ENDS} ${formatClockTime(endsAt)} · ${formatDuration(secondsLeft)} ${LEFT}`}
+    {`${phraseText(dayEnds(endsAt))} · ${phraseText(dayLeft(secondsLeft))}`}
   </HudChip>
 );

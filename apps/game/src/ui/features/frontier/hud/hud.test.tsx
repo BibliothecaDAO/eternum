@@ -86,6 +86,15 @@ describe("the status strip", () => {
     flyTarget: `test-${kind}`,
   });
 
+  it("reads a 24-hour day in hours, as Play does: never '1d' (live-qa-night-1 P3-8)", () => {
+    const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+    const clock = { ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 };
+    const line = text(renderToStaticMarkup(<StatusStrip clock={clock} stores={[store("essence", 1)]} />));
+    expect(line).toContain("24h left");
+    expect(line).toContain("Tomorrow lasts 24h");
+    expect(line).not.toMatch(/\b1d\b/);
+  });
+
   it("shows each store with a limit bar where it has a limit, and dashes the unknown", () => {
     const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
     const markup = renderToStaticMarkup(

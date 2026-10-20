@@ -1,6 +1,7 @@
 import { formatAmount, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 
 import { STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
@@ -100,13 +101,15 @@ export const ArmyToken = ({
 };
 
 /**
- * An open army slot: a plus in a dashed ring that opens Deploy; the first one pulses while no army is out.
+ * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
+ * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
  */
 export const OpenSlot = ({
   label,
   pulse,
   filling,
   wide = false,
+  start,
   onDeploy,
 }: {
   label: string;
@@ -115,6 +118,8 @@ export const OpenSlot = ({
   filling?: string;
   /** Desktop's full card: the plus with Deploy beside it. */
   wide?: boolean;
+  /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
+  start?: { bar: { current: number; max: number }; words: string };
   onDeploy: () => void;
 }) => (
   <button
@@ -122,6 +127,7 @@ export const OpenSlot = ({
     aria-label={filling ?? label}
     aria-busy={filling !== undefined}
     disabled={filling !== undefined}
+    data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
     className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface")}
   >
@@ -134,7 +140,20 @@ export const OpenSlot = ({
       {filling === undefined ? "+" : "…"}
     </span>
     {wide && <span className="text-hud-strong text-hud-ink">{filling ?? label}</span>}
+    {start &&
+      filling === undefined &&
+      (wide ? <StaminaReading stamina={start.bar} /> : <StaminaSegments stamina={start.bar} />)}
   </button>
+);
+
+/** A desktop row's stamina: the bar, and its exact count beside it ("58/120"), as an army's row and an open slot read it. */
+export const StaminaReading = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => (
+  <span className="flex flex-1 items-center gap-2">
+    <span className="min-w-8 flex-1">
+      <HudMeter amount={stamina} tone="good" label={STAMINA} />
+    </span>
+    <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
+  </span>
 );
 
 const StaminaSegments = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => {

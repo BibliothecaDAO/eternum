@@ -23,7 +23,12 @@ describe("the refill", () => {
     enough.unmount();
     const short = render(<RefillButton price={130} held={40} onRefill={onRefill} />);
     expect(short.host.querySelector("button")).toBeNull();
-    expect(short.host.querySelector('[aria-label="LORDS 40 / 130"]')).not.toBeNull();
+    // Named Refill, and its hover says what the two numbers are: the LORDS held, against the refill's whole price.
+    const chip = short.host.querySelector('[role="img"]')!;
+    expect(chip.getAttribute("aria-label")).toBe(
+      "Refill to full: 130 LORDS, one a missing stamina point. The realm holds 40.",
+    );
+    expect(chip.textContent).toBe("Refill40 / 130");
     short.unmount();
   });
 

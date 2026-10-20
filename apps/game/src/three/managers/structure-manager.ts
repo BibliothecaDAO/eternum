@@ -43,7 +43,6 @@ import {
   divideByPrecision,
   getBlockTimestamp,
   getGuardsByStructure,
-  getGameMode,
   getStructureInfoFromTileOccupier,
   getStructureName,
   TROOP_TIERS,
@@ -501,6 +500,12 @@ export class StructureManager {
     };
   }
 
+  /** The tile a structure stands on, by its id; undefined for one not in the map's projection. */
+  public getStructureHex(entityId: ID): { col: number; row: number } | undefined {
+    const structure = this.resolveStructureInfoByEntityId(entityId);
+    return structure ? { col: structure.hexCoords.col, row: structure.hexCoords.row } : undefined;
+  }
+
   private resolveStructureInfoByEntityId(entityId: ID): StructureInfo | undefined {
     const renderable = this.worldSpatialProjection.getStructure(entityId);
     return renderable ? this.resolveStructureInfo(renderable) : undefined;
@@ -586,7 +591,7 @@ export class StructureManager {
       entityId: renderable.entityId,
       structureName:
         structureComponent && this.store
-          ? getStructureName(structureComponent, getGameMode()).name
+          ? getStructureName(structureComponent).name
           : renderInfo.type === StructureType.Realm || renderInfo.type === StructureType.Hyperstructure
             ? structureName(renderInfo.type)
             : siteDisplayName(renderable.entityId),

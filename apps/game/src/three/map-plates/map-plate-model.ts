@@ -27,6 +27,8 @@ export interface ArmyPlate {
   troops: PlateTroops;
   /** Its stamina now and at most; absent when it is not known. */
   stamina?: { current: number; max: number };
+  /** It fought and is on its battle cooldown: the map keeps its label in view (`keep`, map-plate-layout). */
+  inBattle?: boolean;
 }
 
 /**
@@ -57,6 +59,8 @@ export interface StructurePlate {
   guards: PlateTroops[] | null;
   /** Troops on their way to it (the player's own reinforcements), soonest first, at most three. */
   arrivals: { troops: PlateTroops; secondsLeft: number }[];
+  /** Its guard fought and is on its battle cooldown: the map keeps its label in view (`keep`, map-plate-layout). */
+  inBattle?: boolean;
   /** Its kind's painting, drawn only as the pin of a plate with no room. */
   icon: IconMeaning;
 }
@@ -119,6 +123,7 @@ export const buildStructurePlate = (
     | "guardArmies"
     | "incomingTroopArrivals"
     | "frontierBeast"
+    | "battleTimerLeft"
   >,
   nowSeconds = 0,
   reward?: PlateReward,
@@ -160,6 +165,7 @@ export const buildStructurePlate = (
           ? mineMeaning(structure.mineKind)
           : structureMeaning(structure.structureType),
     guards: structure.clearedSite ? null : guards,
+    ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),
     arrivals: (structure.incomingTroopArrivals ?? [])
       .map((arrival) => ({
         troops: { type: troopType(arrival.troopType), tier: tierOf(arrival.troopTier), count: arrival.count },
@@ -173,7 +179,15 @@ export const buildStructurePlate = (
 export const buildArmyPlate = (
   army: Pick<
     ArmyData,
-    "entityId" | "isMine" | "owner" | "category" | "tier" | "troopCount" | "currentStamina" | "maxStamina"
+    | "entityId"
+    | "isMine"
+    | "owner"
+    | "category"
+    | "tier"
+    | "troopCount"
+    | "currentStamina"
+    | "maxStamina"
+    | "battleTimerLeft"
   > & { isAlly?: boolean },
   homeName: string,
 ): ArmyPlate => ({
@@ -186,7 +200,14 @@ export const buildArmyPlate = (
     army.currentStamina === undefined || army.maxStamina <= 0
       ? undefined
       : { current: Math.max(0, Math.min(army.maxStamina, army.currentStamina)), max: army.maxStamina },
+  ...(inBattle(army.battleTimerLeft) ? { inBattle: true } : {}),
 });
+
+/**
+ * Its troops fought and are still on their battle cooldown (the time its manager keeps left on it): it is under attack,
+ * or attacking.
+ */
+const inBattle = (battleTimerLeft: number | undefined): boolean => (battleTimerLeft ?? 0) > 0;
 
 /**
  * Guard slots in the order an attacker meets them: the contract attacks the highest occupied slot first, slot zero last

@@ -6,10 +6,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import {
-  formatPopulationStatusLabel,
-  formatUsedBuildingTilesLabel,
-} from "@/ui/features/world/containers/structure-status";
+import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import {
   ID,
@@ -17,6 +14,7 @@ import {
   type Structure,
   StructureType,
   formatExact,
+  formatPopulation,
   resourceName,
   rankName,
 } from "@bibliothecadao/types";
@@ -226,7 +224,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
     : null;
 
   const populationStatusLabel = hasPopulationDetails
-    ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
+    ? formatPopulation(structure.population, structure.populationCapacity)
     : null;
   const buildingTilesStatusLabel =
     hasPopulationDetails && structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null

@@ -5,6 +5,7 @@ import type {
   ProceduralUnitConfig,
   ProceduralUnitRuntime,
 } from "@/three/characters";
+import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
 import { CombatImpactRegistry } from "@/three/combat/combat-impact-registry";
 import { intersectSweptSphere } from "@/three/projectiles/arrow-ballistics";
@@ -101,8 +102,6 @@ export interface ProceduralArmyRaycastHit {
 }
 
 const WORLD_CHARACTER_SCALE = 0.72;
-// The authored Knight is 0.6135 units tall; keep the previous T1 footprint's 1.024-unit height.
-const T1_KNIGHT_WORLD_SCALE = 1.67;
 const MAX_ACTOR_CREATIONS_PER_SYNC = 4;
 const DEFEAT_LIFETIME_SECONDS = 2.6;
 const NAVAL_DEFEAT_LIFETIME_SECONDS = 5.2;

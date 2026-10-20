@@ -1,12 +1,15 @@
-import { formatAmount, formatExact, formatPercent } from "@bibliothecadao/types";
+import { formatExact, formatPercent } from "@bibliothecadao/types";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudTierChip } from "@/ui/design-system/kit/hud-elements";
 import { UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import { chipWidth, labelWidth } from "./map-plate-layout";
-import { type MapPlate, type PlateReward, type PlateTroops } from "./map-plate-model";
+import { type MapPlate, type PlateTroops } from "./map-plate-model";
 
-/** What a token says: whose, what kind, how strong (tier and count, or undefended), its stamina, what it holds. */
+/**
+ * What a token says: whose, what kind, how strong (tier and count, or undefended), an army's stamina. Never what a site
+ * holds (the owner, 2026-10-20: "dont display the rift essence and the camp labor"): its opened plate tells it.
+ */
 interface TokenReading {
   icon: IconMeaning;
   /**
@@ -20,7 +23,6 @@ interface TokenReading {
   undefended: boolean;
   /** An army's stamina, 0 to 1. */
   stamina: number | null;
-  holding: PlateReward | null;
 }
 
 export const tokenReading = (plate: MapPlate): TokenReading => {
@@ -31,7 +33,6 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
       beast: null,
       undefended: false,
       stamina: plate.stamina ? plate.stamina.current / plate.stamina.max : null,
-      holding: null,
     };
   const guards = plate.guards ?? [];
   return {
@@ -48,21 +49,19 @@ export const tokenReading = (plate: MapPlate): TokenReading => {
     beast: plate.beast ?? null,
     undefended: plate.guards !== null && guards.length === 0,
     stamina: null,
-    holding: plate.holding ?? null,
   };
 };
 
 /** The token's sizes (map-plates.css .mp-token__*): its disk, the strip's row and its overlap of the disk, the
- * stamina bar, the gap between readings, the strip's padding and frame, a holding's icon. */
-const TOKEN = { disk: 30, row: 18, overlap: 2, stamina: 4, gap: 3, frame: 2 * 4 + 2, icon: 14 };
+ * stamina bar, the gap between readings, the strip's padding and frame. */
+const TOKEN = { disk: 30, row: 18, overlap: 2, stamina: 4, gap: 3, frame: 2 * 4 + 2 };
 
 /** A token's box, as map-plates.css draws it. */
 export const tokenSize = (plate: MapPlate): { width: number; height: number } => {
   const reading = tokenReading(plate);
   if (!reading.strength) return { width: TOKEN.disk, height: TOKEN.disk };
-  const holding = reading.holding ? TOKEN.gap + TOKEN.icon + 2 + labelWidth(formatAmount(reading.holding.amount)) : 0;
   const chip = reading.strength.tier === null ? 0 : chipWidth(reading.strength.tier) + TOKEN.gap;
-  const width = TOKEN.frame + chip + labelWidth(formatExact(reading.strength.count), true) + holding;
+  const width = TOKEN.frame + chip + labelWidth(formatExact(reading.strength.count), true);
   return {
     width: Math.max(TOKEN.disk, Math.ceil(width)),
     height: TOKEN.disk - TOKEN.overlap + TOKEN.row + (reading.stamina === null ? 0 : TOKEN.stamina),
@@ -73,7 +72,7 @@ export const tokenSize = (plate: MapPlate): { width: number; height: number } =>
  * A thing's token, its plate closed (the owner's 2026-10-19 pick: "icons everywhere, full plate on hover"; at 13:00Z,
  * "3 rings is too much. Tokens are actually way better."): the pin, its kind's painting (an army's troop painting) in a
  * disk ringed in its side's colour, and under it what the plate's second row says, in brief: the tier chip and count (an
- * army's troops, a structure's guard), a camp's or rift's holding beside it, an army's stamina as a tight bar; an
+ * army's troops, a structure's guard; a camp's or rift's guard alone), an army's stamina as a tight bar; an
  * undefended structure's ring dashed, with nothing under it. A beast's guard shows its species' portrait and its count,
  * never a tier.
  */
@@ -88,12 +87,6 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
       <span className="mp-token__strip">
         {reading.strength.tier !== null && <HudTierChip tier={reading.strength.tier} />}
         <span className="mp-count">{formatExact(reading.strength.count)}</span>
-        {reading.holding && (
-          <span className="mp-token__holding">
-            <Icon name={reading.holding.unit === "Essence" ? "essence" : "labor"} size={14} />
-            {formatAmount(reading.holding.amount)}
-          </span>
-        )}
       </span>
     )}
     {reading.stamina !== null && (
@@ -104,7 +97,7 @@ const TokenView = ({ reading }: { reading: TokenReading }) => (
   </div>
 );
 
-/** A mark in words, for whoever reads the map without seeing it: its strength, stamina and holding. */
+/** A mark in words, for whoever reads the map without seeing it: its strength and stamina. */
 const tokenWords = (reading: TokenReading): string =>
   [
     reading.undefended
@@ -112,7 +105,6 @@ const tokenWords = (reading: TokenReading): string =>
       : reading.strength &&
         `${reading.strength.tier === null ? reading.beast : `T${reading.strength.tier}`} ${formatExact(reading.strength.count)}`,
     reading.stamina !== null && `Stamina ${formatPercent(reading.stamina)}`,
-    reading.holding && `${formatExact(reading.holding.amount)} ${reading.holding.unit}`,
   ]
     .filter(Boolean)
     .join(", ");

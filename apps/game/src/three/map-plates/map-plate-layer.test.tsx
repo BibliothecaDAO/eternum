@@ -124,6 +124,152 @@ describe("the map's plate layer, as the world map's managers drive it", () => {
     ]);
   });
 
+  /** A world point on the ground the camera projects to this height on the 800 × 600 view (by bisection). */
+  const groundAtScreenY = (screenY: number) => {
+    // Projecting needs the camera's matrices, which a layer's frame would otherwise update first.
+    camera.updateMatrixWorld();
+    let [near, far] = [12, -40];
+    for (let step = 0; step < 40; step += 1) {
+      const z = (near + far) / 2;
+      const y = ((1 - new Vector3(0, 0, z).project(camera).y) / 2) * 600;
+      if (y > screenY) near = z;
+      else far = z;
+    }
+    return (near + far) / 2;
+  };
+
+  /** A ground point the camera projects to this point of the 800 × 600 view. */
+  const groundAt = (screenX: number, screenY: number) => {
+    const z = groundAtScreenY(screenY);
+    const unit = new Vector3(1, 0, z).project(camera).x * 400 - new Vector3(0, 0, z).project(camera).x * 400;
+    return new Vector3((screenX - 400) / unit, 0, z);
+  };
+  // Two frames: one mounts or redraws the labels, the next lays them out as drawn.
+  const settle = async () => {
+    await frame();
+    await frame();
+  };
+  const element = (key: string) => container.querySelector<HTMLElement>(`.mp-at[data-key="${key}"]`)!;
+  type Box = { x: number; y: number; width: number; height: number };
+  /** A label's rectangle as drawn: where the layer put it, at its token's or opened plate's size. */
+  const boxOf = (key: string, plate: ArmyPlate | StructurePlate): Box => ({
+    ...placeOf(element(key)),
+    ...(element(key).dataset.view === "token" ? tokenSize(plate) : plateSize(plate)),
+  });
+  const gapBetween = (a: Box, b: Box) =>
+    Math.max(a.x - b.x - b.width, b.x - a.x - a.width, a.y - b.y - b.height, b.y - a.y - a.height);
+  /** Each kept label genuinely readable: shown, opaque (not the transparent yielding rule), clear of every other box. */
+  const expectReadable = (kept: [string, ArmyPlate][], others: Box[]) => {
+    for (const [key, plate] of kept) {
+      expect({ key, display: element(key).style.display, yields: element(key).dataset.yields }).toEqual({
+        key,
+        display: "",
+        yields: "false",
+      });
+      for (const [otherKey, otherPlate] of kept)
+        if (otherKey !== key)
+          expect(gapBetween(boxOf(key, plate), boxOf(otherKey, otherPlate))).toBeGreaterThanOrEqual(0);
+      for (const other of others) expect(gapBetween(boxOf(key, plate), other)).toBeGreaterThanOrEqual(0);
+    }
+  };
+
+  it.each([
+    ["mid-screen", 330],
+    ["under the top bar", 120],
+  ])(
+    "keeps the own armies and the army in battle readable %s: at rest, one selected (resting, ringed), hovered, with the order line",
+    async (_where, screenY) => {
+      // Four things on neighbouring tiles, about 30px apart on screen as hexes stand at the farthest zoom: two of the
+      // player's armies, an enemy army in battle, and a neutral camp between the first two.
+      const armies = layer.createScope("army");
+      const structures = layer.createScope("structure");
+      const camp: StructurePlate = {
+        ...realm,
+        relation: "neutral",
+        owner: "The Vanguard",
+        name: "Camp",
+        named: false,
+        icon: "camp",
+      };
+      const plates = {
+        1: { ...army, relation: "own", owner: "Own A" },
+        2: { ...army, relation: "own", owner: "Own B" },
+        3: { ...army, owner: "Raider", inBattle: true },
+      } as const satisfies Record<number, ArmyPlate>;
+      armies.setLabel({ entityId: 1, position: groundAt(400, screenY), plate: plates[1] });
+      armies.setLabel({ entityId: 2, position: groundAt(430, screenY), plate: plates[2] });
+      armies.setLabel({ entityId: 3, position: groundAt(460, screenY), plate: plates[3] });
+      structures.setLabel({ entityId: 4, position: groundAt(415, screenY), plate: camp });
+      const kept = (ids: (1 | 2 | 3)[]): [string, ArmyPlate][] => ids.map((id) => [`army:${id}`, plates[id]]);
+
+      await settle();
+      expectReadable(kept([1, 2, 3]), []);
+      expect(element("structure:4").style.display).toBe("none");
+
+      // Own A selected: it rests as its token, ringed; no plate opens (owner, 2026-10-20: "on army select i want to
+      // remove this panel"). All three stay readable.
+      layer.setSelected(1);
+      await settle();
+      expect([element("army:1").dataset.view, element("army:1").dataset.selected]).toEqual(["token", "true"]);
+      expectReadable(kept([1, 2, 3]), []);
+
+      // The Raider hovered: its plate opens, or stays its token without room; Own A and Own B stay readable, clear of it.
+      armies.setHover(3);
+      await settle();
+      const raider = element("army:3").dataset.view === "open" ? [boxOf("army:3", plates[3])] : [];
+      expectReadable(kept([1, 2]), raider);
+      armies.clearHover();
+      await settle();
+
+      // The order line beside Own B's tile: it keeps clear of them all.
+      const line = { width: 89, height: 52 };
+      const at = layer.placeOrderLine({ at: { ...placeOf(element("army:2")) }, size: line });
+      await settle();
+      expect(at).not.toBeNull();
+      expectReadable(kept([1, 2, 3]), [{ ...at!, ...line }]);
+    },
+  );
+
+  it.each([120, 330])(
+    "keeps three kept armies in a 30px triangle readable after one is selected, at y %s (review-token-anchor-4)",
+    async (y) => {
+      const armies = layer.createScope("army");
+      const plates = [0, 1, 2].map((index) => ({ ...army, relation: "own" as const, owner: `Own ${index}` }));
+      [
+        [400, y],
+        [430, y],
+        [415, y + 26],
+      ].forEach(([x, sy], index) =>
+        armies.setLabel({ entityId: index + 1, position: groundAt(x, sy), plate: plates[index] }),
+      );
+      await settle();
+      layer.setSelected(1);
+      await settle();
+      expectReadable(
+        plates.map((plate, index) => [`army:${index + 1}`, plate]),
+        [],
+      );
+    },
+  );
+
+  it("says which thing's resting token is under a point, so a click there selects it; an open plate says none", async () => {
+    const armies = layer.createScope("army");
+    armies.setLabel({ entityId: 1, position: groundAt(300, 330), plate: { ...army, owner: "Tokened" } });
+    armies.setLabel({ entityId: 2, position: groundAt(560, 330), plate: { ...army, owner: "Hovered" } });
+    armies.setHover(2);
+    await settle();
+    const middle = (key: string, plate: ArmyPlate) => {
+      const box = boxOf(key, plate);
+      const origin = container.getBoundingClientRect();
+      return [origin.left + box.x + box.width / 2, origin.top + box.y + box.height / 2] as const;
+    };
+    expect(element("army:1").dataset.view).toBe("token");
+    expect(layer.tokenAt(...middle("army:1", { ...army, owner: "Tokened" }))).toBe("army:1");
+    expect(element("army:2").dataset.view).toBe("open");
+    expect(layer.tokenAt(...middle("army:2", { ...army, owner: "Hovered" }))).toBeNull();
+    expect(layer.tokenAt(5, 5)).toBeNull();
+  });
+
   it("draws every thing as its token right over it, and follows the thing as it moves", async () => {
     const armies = layer.createScope("army");
     armies.setLabel({ entityId: 2, position: new Vector3(0, 0, 0), plate: army });

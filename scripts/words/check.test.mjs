@@ -127,6 +127,33 @@ test("finds each kind of number, time and naming work a player reads, and the fu
   ]);
 });
 
+test("finds a realm's population written by hand, any way but the words module's", () => {
+  const source = [
+    // 1: the Build panel as it shipped in 75665e7370e (build-view.tsx), which read free of capacity, "1 / 6"
+    "const chip = <HudChip>{`${formatExact(population.free)} / ${formatExact(population.total)}`}</HudChip>;",
+    // 2: a Hut's upgrade figure as it shipped in 75665e7370e (type-upgrade.tsx)
+    "const figure = { value: `${formatAmount(total - people.current)} / ${formatAmount(total)}` };",
+    "const tip = <span data-tip={`Population ${formatExact(holding.population)} of ${holding.populationCapacity}`} />;", // 3
+    "const row = <p>{structure.population}/{structure.populationCapacity}</p>;", // 4
+    "const free = `${population.free} free of ${population.total}`;", // 5
+    // 6: the Frontier realm panel's tooltip as it shipped in 75665e7370e (realm-panel.tsx)
+    "const tip = <span data-tip={`Population ${formatExact(used)} of ${formatExact(total)}`} />;",
+    // Left alone: the words module's writer, a cost, a step, and a store's amount against its limit.
+    "const chip = <p>{formatPopulation(used, total)}</p>;",
+    "const cost = `Cost +${populationCost}`;",
+    "const step = `${formatAmount(population(tier))} → ${formatAmount(population(tier + 1))}`;",
+    "const store = `${formatAmount(held)} / ${formatAmount(limit)}`;",
+  ].join("\n");
+  assert.deepEqual(scan(source), [
+    "1 number.population",
+    "2 number.population",
+    "3 number.population",
+    "4 number.population",
+    "5 number.population",
+    "6 number.population",
+  ]);
+});
+
 test("checks the voice only in what a player reads", () => {
   const source = [
     "export const Score = () => <p title='+250 VP'>Level 2</p>;", // 1

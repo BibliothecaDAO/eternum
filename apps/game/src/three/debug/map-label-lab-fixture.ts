@@ -59,7 +59,7 @@ const OWN = "djizus";
 /** A realm's plate height above its ground (the realm models are placed by the benchmark, not here). */
 const REALM_PLATE_HEIGHT = 2.5;
 /** A plate's clearance above a placed model's top. */
-const PLATE_CLEARANCE = 0.3;
+export const PLATE_CLEARANCE = 0.3;
 
 /**
  * The lab's map: the benchmark's 48 real realms (a dense block on two-hex spacing) and, in the hexes between them, real
