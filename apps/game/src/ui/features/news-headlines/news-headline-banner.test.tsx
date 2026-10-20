@@ -6,15 +6,26 @@ import { NewsHeadlineBanner } from "./news-headline-banner";
 import { buildCaptureHeadline } from "./capture-headline";
 import type { Headline } from "./headline-types";
 
-/** Identity's answer for the profiles asked, held until `answer` lets it through: a profile that answers late. */
+/**
+ * Identity's answer for the profiles asked, held until `answer` lets it through: a profile that answers late. An ask for
+ * 0x5eed0789 fails (the network refuses it); 0x5eed0abc answers with no claimed name.
+ */
 const held: Array<() => void> = [];
 const answer = () => held.splice(0).forEach((let_through) => let_through());
 vi.stubGlobal(
   "fetch",
   (url: string) =>
-    new Promise<Response>((resolve) => {
+    new Promise<Response>((resolve, reject) => {
       const accounts = new URL(url).searchParams.get("accounts")!.split(",");
-      const names: Record<string, string> = { "0x5eed0154": "jeanchristophemehrcl", "0x5eed0292": "Maelis" };
+      if (accounts.includes("0x5eed0789")) {
+        held.push(() => reject(new TypeError("Failed to fetch")));
+        return;
+      }
+      const names: Record<string, string | null> = {
+        "0x5eed0154": "jeanchristophemehrcl",
+        "0x5eed0292": "Maelis",
+        "0x5eed0abc": null,
+      };
       held.push(() =>
         resolve(
           Response.json({
@@ -81,4 +92,25 @@ it("names both sides of a capture once identity answers, and the neutral side at
         "jeanchristophemehrcl took Stolsli from Maelis. Its armies and incoming deliveries went with it.",
       ),
   );
+});
+
+const ended = (player: bigint): Headline => ({
+  id: `game-end:${player}`,
+  type: "game-end",
+  icon: "game-end",
+  title: "The game has ended",
+  description: [{ player }, " wins!"],
+  timestamp: 0,
+});
+
+it("says a winner's name is unavailable when identity's ask fails, never the stand-in (review P2)", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  await show(ended(0x5eed0789n), (line) => {
+    expect(line).toBe("— wins!");
+    expect(line).not.toMatch(/Lord/);
+  });
+});
+
+it("still names a winner identity answered for with no claimed name by the unclaimed rule", async () => {
+  await show(ended(0x5eed0abcn), (line) => expect(line).toMatch(/^Lord 0abc wins!$/));
 });

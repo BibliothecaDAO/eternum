@@ -1,4 +1,5 @@
 import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { NAME_UNAVAILABLE } from "@/ui/design-system/kit/words";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 
 import type { HeadlinePart } from "./headline-types";
@@ -12,8 +13,12 @@ export const HeadlineLine = ({ parts }: { parts: readonly HeadlinePart[] }) => (
   </>
 );
 
-/** A player in a headline: "…" while identity has not answered, never the account's stand-in name meanwhile. */
+/**
+ * A player in a headline: their name once identity answers (an unclaimed one by the stand-in rule), "…" while it has
+ * not, and a dash when its ask failed: never the account's stand-in in place of a name that may exist.
+ */
 const HeadlinePlayer = ({ account }: { account: bigint }) => {
   const profile = usePlayerProfile(account);
-  return profile.known ? <>{displayPlayerName(account, profile.name)}</> : <span aria-busy>…</span>;
+  if (profile.known) return <>{displayPlayerName(account, profile.name)}</>;
+  return profile.unavailable ? <span aria-label={NAME_UNAVAILABLE}>—</span> : <span aria-busy>…</span>;
 };

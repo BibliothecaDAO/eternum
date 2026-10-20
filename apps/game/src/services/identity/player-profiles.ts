@@ -20,8 +20,10 @@ interface IdentityProfilesDeps {
 const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
   const profiles = new Map<string, IdentityProfile>();
   const requested = new Set<string>();
-  /** Addresses identity has answered for (a profile, or none to give), or whose ask failed: what they show is known. */
+  /** Addresses identity has answered for: a profile, or none to give, which leaves the player unclaimed. */
   const answered = new Set<string>();
+  /** Addresses whose ask failed: their name is unavailable, which is not the same as unclaimed. */
+  const unavailable = new Set<string>();
   const listeners = new Set<Listener>();
   const pending: string[] = [];
   let version = 0;
@@ -32,7 +34,7 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
   };
 
   // A failed batch stays asked: retrying on the next derive would loop, since the derive is what asks. A reload
-  // asks again; until then those players read by their chain name.
+  // asks again; until then those players' names are unavailable.
   const load = async (accounts: string[]) => {
     let landed = false;
     for (let start = 0; start < accounts.length; start += IDENTITY_PROFILES_BATCH_LIMIT) {
@@ -41,10 +43,11 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
         Object.entries(await deps.fetchProfiles(batch)).forEach(([account, profile]) =>
           profiles.set(normalize(account), profile),
         );
+        batch.forEach((account) => answered.add(account));
       } catch (error) {
         console.error("identity_profiles_load_failed", error);
+        batch.forEach((account) => unavailable.add(account));
       }
-      batch.forEach((account) => answered.add(account));
       landed = true;
     }
     if (landed) notify();
@@ -52,8 +55,10 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
 
   return {
     get: (account: string | bigint): IdentityProfile | undefined => profiles.get(normalize(account)),
-    /** Whether identity answered for this address (or its ask failed): until then its name is not known, not absent. */
+    /** Whether identity answered for this address: until then its name is not known, not absent. */
     isAnswered: (account: string | bigint): boolean => answered.has(normalize(account)),
+    /** Whether the ask for this address failed: its name is unavailable until the next load asks again. */
+    isUnavailable: (account: string | bigint): boolean => unavailable.has(normalize(account)),
     /** Asks identity for every address not asked before, in one batch per task; the listeners fire when an answer lands. */
     request: (accounts: Iterable<string | bigint>): void => {
       const fresh = [...accounts].map(normalize).filter((account) => !requested.has(account));
@@ -92,6 +97,13 @@ export const isPlayerProfileKnown = (address: string | bigint): boolean =>
   getInternalAddressName(address.toString()) !== undefined ||
   readOwnProfile(address) !== null ||
   identityProfiles.isAnswered(address);
+
+/**
+ * Whether a player's name is unavailable: identity's ask failed and nothing else names them. A surface says so, never
+ * the address's stand-in, which would claim the player chose no name (whole-review P2-1).
+ */
+export const isPlayerProfileUnavailable = (address: string | bigint): boolean =>
+  !isPlayerProfileKnown(address) && identityProfiles.isUnavailable(address);
 
 export const readPlayerProfile = (address: string | bigint): IdentityProfile => {
   const internalName = getInternalAddressName(address.toString());

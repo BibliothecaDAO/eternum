@@ -5,6 +5,7 @@ import {
   getPlayerDisplayName,
   identityProfiles,
   isPlayerProfileKnown,
+  isPlayerProfileUnavailable,
   readPlayerProfile,
 } from "@/services/identity/player-profiles";
 import { readPlayers } from "@/sync/fact-views";
@@ -15,12 +16,13 @@ import type { ContractAddress, Player } from "@bibliothecadao/types";
 import { useMemo, useSyncExternalStore } from "react";
 
 /**
- * What every surface shows for a player: the resolved name (or nothing) and the portrait, and whether they are known
- * yet: until identity answers, a surface shows it is waiting rather than the address's stand-in name and face.
+ * What every surface shows for a player: the resolved name (or nothing) and the portrait, whether they are known yet,
+ * and whether their name is unavailable: until identity answers, a surface shows it is waiting rather than the
+ * address's stand-in name and face; when identity's ask failed, it says the name is unavailable, never the stand-in.
  */
-type PlayerProfile = Pick<Player, "name" | "portrait"> & { known: boolean };
+type PlayerProfile = Pick<Player, "name" | "portrait"> & { known: boolean; unavailable: boolean };
 
-const NO_PROFILE: PlayerProfile = { name: null, portrait: null, known: true };
+const NO_PROFILE: PlayerProfile = { name: null, portrait: null, known: true, unavailable: false };
 const PLAYER_FACTS = ["PlayerEntry"] as const;
 
 const toAddress = (address: string | bigint): ContractAddress => BigInt(address);
@@ -65,7 +67,14 @@ export const usePlayerProfile = (address: string | bigint | null | undefined): P
   const names = usePlayerNamesRevision();
   const owner = address === null || address === undefined ? null : toAddress(address);
   return useMemo(
-    () => (owner === null ? NO_PROFILE : { ...readPlayerProfile(owner), known: isPlayerProfileKnown(owner) }),
+    () =>
+      owner === null
+        ? NO_PROFILE
+        : {
+            ...readPlayerProfile(owner),
+            known: isPlayerProfileKnown(owner),
+            unavailable: isPlayerProfileUnavailable(owner),
+          },
     [owner, ...names],
   );
 };

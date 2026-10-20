@@ -128,6 +128,8 @@ export const UNEXPLORED = "Unexplored";
 export const TRANSFER = "Transfer";
 /** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
 export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
+/** A player whose name identity could not give: shown as a dash, named so for a screen reader, never the stand-in. */
+export const NAME_UNAVAILABLE = "Name unavailable";
 
 /** A realm's room for buildings: every building takes some, a Hut gives some. */
 export const POPULATION = "population";
