@@ -2,6 +2,12 @@ import { TroopTier, TroopType } from "@bibliothecadao/types";
 import { ModelType } from "../types/army";
 
 export const MAX_INSTANCES = 1000;
+/**
+ * How far above its tile an army's label point sits, where its token's foot stands: over the tallest army model (a
+ * paladin, 1.44) by 0.15, so every army's token stands above it, never on it (the owner, 2026-10-20:
+ * "label should be above not on the army"). The asset check measures it against every model in `MODEL_TYPE_TO_FILE`.
+ */
+export const ARMY_PLATE_HEIGHT = 1.6;
 export const ANIMATION_STATE_IDLE = 0;
 export const ANIMATION_STATE_MOVING = 1;
 

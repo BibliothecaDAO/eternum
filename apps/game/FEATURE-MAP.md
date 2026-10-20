@@ -368,10 +368,11 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
 - **Map labels**: every realm, structure and army carries its label at gameplay zoom (the near and mid bands; none when
-  zoomed out, `worldmap-content-ladder.ts`), and at rest the label is its token, right above it
-  (`src/three/map-plates/map-plate-token.tsx`): a disk in its side's colour, then the tier chip and count of its troops
-  or guard, a site's holding, an army's stamina bar; an undefended one shows a dashed ring. Hover a tile and its full
-  plate opens where its token was drawn: on the token's foot, or hung from its top, slid aside but always covering the
+  zoomed out, `worldmap-content-ladder.ts`), and at rest the label is its token, standing on its thing's label point
+  just over the model's top, never on the thing, at every zoom (`src/three/map-plates/map-plate-token.tsx`): a disk in
+  its side's colour, then the tier chip and count of its troops or guard, a site's holding, an army's stamina bar; an
+  undefended one shows a dashed ring. Hover a tile and its full plate opens where its token was drawn: on the token's
+  foot (hung from the top bar's edge only where it would reach under the bar), slid aside but always covering the
   token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token ringed in gold: its detail is
   the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens again when it comes back. The
   open plate and the order line are placed together, clear of each other, the screen's edges and the HUD; where the
@@ -384,8 +385,8 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   nobody's), its lore name, read off its id on every client (`site-name.ts`), and kind ("Grimtear Camp"), and what it
   holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). With a thing selected,
   the hovered tile's order line stands beside the tile, clear of the opened plates; the tokens under it step aside.
-  Crowded tokens take the nearest clear place within a step of their thing, else are not drawn. Elsewhere an unnamed
-  army or structure is called by its kind, never by its entity id (`getEntityName`,
+  Crowded tokens slide aside only as far as keeps their thing's label point under them, else are not drawn. Elsewhere an
+  unnamed army or structure is called by its kind, never by its entity id (`getEntityName`,
   `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture world,
   `/lab/map-labels` (`zoom`, `hover`, `select`, `focus`, `busy=1`, `game=frontier`, `panel=0` in the address; with a
   thing selected, the hovered tile shows the order line). In a live game, `playtest --steps blitz-plates` or

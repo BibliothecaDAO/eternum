@@ -35,7 +35,7 @@ import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "@/three/terrain/te
 import type { TerrainMovementInteraction, TerrainMovementMode } from "@/three/terrain/terrain-movement-effects";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { isAnimationPositionVisible } from "@/three/utils/animation-visibility";
-import { isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
+import { ARMY_PLATE_HEIGHT, isShipModel, TROOP_TO_SHIP_MODEL } from "@/three/constants/army-constants";
 import { ModelType } from "@/three/types/army";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
@@ -122,8 +122,6 @@ import type { PipelineCompiler } from "../pipeline-compiler";
 import { armyHomeStructureId } from "@/utils/native-id";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-// How far above its tile an army's plate sits: just over the unit's head, so the plate reads as this unit's.
-const ARMY_PLATE_HEIGHT = 1.45;
 
 interface MovingArmySourceState {
   col: number;

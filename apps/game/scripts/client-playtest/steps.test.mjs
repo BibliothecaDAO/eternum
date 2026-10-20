@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
-import { CLOSEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
@@ -46,6 +46,15 @@ describe("the still map's zoom to the closest view", () => {
 
   it("is the map's own closest distance", () => {
     expect(CLOSEST_CAMERA_DISTANCE).toBe(WORLDMAP_CAMERA_ZOOM.minDistance);
+  });
+
+  it("has a farthest view the plates read too: the map's own farthest distance", () => {
+    expect(FARTHEST_CAMERA_DISTANCE).toBe(WORLDMAP_CAMERA_ZOOM.maxDistance);
+    const out = STEP_SETS["frontier-plates"].steps.find((step) => step.name === "zoom-out").verify;
+    expect(out({ seen: onTheMap, played: { distance: 45 } }).status).toBe("completed");
+    expect(out({ seen: onTheMap, played: { distance: 30 } }).reason).toBe(
+      "the camera stopped at distance 30, not the farthest (45)",
+    );
   });
 
   it("completes at the closest distance, including a camera that started there", () => {
@@ -467,6 +476,25 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
     );
   });
 
+  it("fails a label that reaches down onto its thing, or stands beside it, as the renderer places the thing", () => {
+    // An army's tile at (420, 560) on screen, its tallest model's top at (432, 520), leaning right as drawn.
+    const over = { tile: { x: 420, y: 560 }, top: { x: 432, y: 520 } };
+    const token = (x, y) => ({ kind: "token", key: "army:5", open: false, text: "T1 1,500", x, y, w: 64, h: 50, over });
+    const reading = (thing) => ({ played: { readings: [{ offset: null, seen: { ...clear, things: [thing] } }] } });
+    // Its foot on the label point, 6px over the model's top, across it: above it.
+    expect(verify(reading(token(400, 464))).status).toBe("completed");
+    // Centred on that point (owner-army-label-on.png): its lower half over the army.
+    expect(verify(reading(token(400, 489))).reason).toBe("1 labels stand on their thing or away from it");
+    // A step aside (owner-camp-label-zoomout.png): its span no longer over the thing.
+    expect(verify(reading(token(470, 464))).reason).toBe("1 labels stand on their thing or away from it");
+  });
+
+  it("calls a page that does not report its world blocked: its labels were not measured against their things", () => {
+    expect(verify({ played: { readings: [{ offset: null, seen: { ...clear, world: false } }] } }).status).toBe(
+      "blocked",
+    );
+  });
+
   it("calls a view with no label drawn blocked: an empty map proves nothing either way", () => {
     const empty = { ...clear, labels: 0, opened: 0, tokens: 0 };
     expect(verify({ played: { readings: [{ offset: null, seen: empty }] } }).status).toBe("blocked");
@@ -478,6 +506,10 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
     expect(names("blitz-plates-player").slice(0, 2)).toEqual(["open-world", "select-army"]);
     // A Frontier session enters on the world map, as a player's does.
     expect(names("frontier-plates").slice(0, 2)).toEqual(["enter-on-map", "plates"]);
+    expect(names("frontier-plates")).toEqual(expect.arrayContaining(["zoom-out", "plates-far", "plates-far-hovered"]));
+    // Each opens the page with the dev overlays: the page then reports its world, and every label is measured.
+    for (const set of ["blitz-plates", "blitz-plates-player", "frontier-plates", "frontier-plates-player"])
+      expect(STEP_SETS[set].devOverlays).toBe(true);
     expect(names("frontier-plates-player").slice(0, 2)).toEqual(["enter-on-map", "select-army"]);
   });
 });

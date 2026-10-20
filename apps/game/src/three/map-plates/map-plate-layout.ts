@@ -15,8 +15,8 @@ export interface Rect {
 type Size = { width: number; height: number };
 
 /**
- * One thing on the map: where its token stands (its middle: the thing's label point, right above it), its token's size,
- * its plate's size when opened (its tile hovered, or it selected), and what its place is worth.
+ * One thing on the map: its label point (`at`: right above the thing's model, where its token's foot stands), its
+ * token's size, its plate's size when opened (its tile hovered, or it selected), and what its place is worth.
  */
 export interface PlateThing {
   id: string;
@@ -60,11 +60,15 @@ const SCREEN_EDGE = 8;
  * stands where its token stood, slid aside at most this short of its own half (`inPlaceOf`).
  */
 const IN_PLACE_MARGIN = 12;
-/** What a plate hung from its token's top (over its thing, not standing on the token's foot) costs, in pixels slid. */
+/** What a plate hung from the top bar's edge costs, in pixels slid: only a token reaching under the bar needs it. */
 const HANG_COST = 40;
 /**
- * What hiding another thing's resting token costs an opened plate's place, in pixels slid: a plate slides or hangs
- * before it hides a neighbour's label (qa-blitz-4 #4: a selected army's plate hid the army beside it, which a slide of
+ * A token slid aside keeps at least this much of itself past its label point on either side: it stays over its thing.
+ */
+const ATTACH_MARGIN = 6;
+/**
+ * What hiding another thing's resting token costs an opened plate's place, in pixels slid: a plate slides before it
+ * hides a neighbour's label (qa-blitz-4 #4: a selected army's plate hid the army beside it, which a slide of
  * 18 px would have kept in view). Where every place hides one, the cheapest still stands, and the token steps aside.
  */
 const HIDE_COST = 60;
@@ -107,23 +111,19 @@ const besideColumns = (box: Rect, anchorX: number, columns: readonly Rect[]): Re
 };
 
 /**
- * A token's places, nearest its thing first: centred over it; a step to either side; half a step to either side, one
- * row up or down. A token never strays further than one token from its thing; with none of them clear it is not drawn.
+ * A token's places (the owner, 2026-10-20: "label should be above not on the army"; "the camp label is gone way too far
+ * at max zoom out"): standing on its thing's label point, centred over it, else slid aside, nearest first, never so far
+ * that the point leaves the token (`ATTACH_MARGIN`). It is never lower than its thing's top nor away from it, at any
+ * zoom; with none of its places clear it is not drawn.
  */
 const tokenPlaces = (thing: PlateThing, columns: readonly Rect[]): Rect[] => {
   const { at, token } = thing;
-  const across = token.width + GAP;
-  const down = token.height + GAP;
-  return [
-    [0, 0],
-    [-across, 0],
-    [across, 0],
-    [-across / 2, -down],
-    [across / 2, -down],
-    [-across / 2, down],
-    [across / 2, down],
-  ].map(([dx, dy]) =>
-    besideColumns({ x: at.x - token.width / 2 + dx, y: at.y - token.height / 2 + dy, ...token }, at.x, columns),
+  const reach = token.width / 2 - ATTACH_MARGIN;
+  const shifts = [0];
+  for (let dx = GAP; dx < reach; dx += GAP) shifts.push(-dx, dx);
+  if (reach > 0) shifts.push(-reach, reach);
+  return shifts.map((dx) =>
+    besideColumns({ x: at.x - token.width / 2 + dx, y: at.y - token.height, ...token }, at.x, columns),
   );
 };
 
@@ -139,9 +139,10 @@ const obstaclesFor = (token: Rect, screen: PlateScreen): Rect[] => {
 /**
  * A thing's plate, opened, replaces its token in place (the owner, 2026-10-19 13:00Z: "always keep the ring above the
  * structure/army and replace it by the hover/selected modal when i'm on it"): standing on the token's foot, its middle
- * over the token's; else slid aside, or hung from the token's top over its thing, never so far that it stops covering
- * where its token was drawn (`inPlaceOf`). On screen and clear of the HUD, except as far as covering its token needs.
- * Cheapest first: pixels slid, a hung plate `HANG_COST` more, and `HIDE_COST` for each resting token it would hide.
+ * over the token's, so above its thing as the token is; else slid aside, never so far that it stops covering where its
+ * token was drawn (`inPlaceOf`). On screen and clear of the HUD, except as far as covering its token needs: a token
+ * reaching under the top bar has its plate hung from the bar's edge. Cheapest first: pixels slid, a hung plate
+ * `HANG_COST` more, and `HIDE_COST` for each resting token it would hide.
  */
 const placesInPlaceOf = (
   token: Rect,
@@ -160,7 +161,6 @@ const placesInPlaceOf = (
   const obstacles = obstaclesFor(token, screen);
   return [
     { y: token.y + token.height - size.height, cost: 0 },
-    { y: token.y, cost: HANG_COST },
     // A token reaching under the top bar: its plate hangs from the bar's edge instead, still over the token's middle.
     ...(token.y < screen.top ? [{ y: screen.top, cost: HANG_COST }] : []),
   ]

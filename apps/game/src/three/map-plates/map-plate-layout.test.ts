@@ -47,6 +47,13 @@ const gap = (a: Rect, b: Rect) =>
 const narrowest = (rects: readonly Rect[]) =>
   Math.min(...rects.flatMap((a, i) => rects.slice(i + 1).map((b) => gap(a, b))));
 
+/** A drawn token stands on its thing's label point: its foot there, the point under it with 6px of token either side. */
+const onItsPoint = (one: PlateThing, spot: PlateSpot | undefined) =>
+  spot?.shape === "token" &&
+  spot.y + one.token.height === one.at.y &&
+  one.at.x >= spot.x + 6 &&
+  one.at.x <= spot.x + one.token.width - 6;
+
 /** The same things with nothing opened: what the map drew before the hover or the selection. */
 const atRest = (things: readonly PlateThing[]) =>
   things.map((one) => ({ id: one.id, at: one.at, token: one.token, priority: one.priority }));
@@ -91,19 +98,20 @@ const expectInPlaceAndClear = (
 };
 
 describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons everywhere, full plate on hover')", () => {
-  it("stands a thing's token right over it, its middle on the thing's label point", () => {
+  it("stands a thing's token on its label point, centred over it: above the thing, never on it", () => {
     const { spots } = placePlates([thing("a", 200, 300, 1)], SCREEN);
-    expect(spots.get("a")).toEqual({ shape: "token", x: 168, y: 277, yields: false });
+    expect(spots.get("a")).toEqual({ shape: "token", x: 168, y: 300 - 46, yields: false });
   });
 
-  it("gives a crowded token the nearest clear place, a step aside at most, else draws none", () => {
-    const things = [thing("a", 200, 300, 3), thing("b", 200, 300, 2), thing("c", 200, 300, 1)];
+  it("slides a crowded token aside only while its label point stays under it, else draws none", () => {
+    // b's place is 50px from a's: slid 24px right it is clear of a, its point still 8px inside its left edge. c shares
+    // a's point: no slide keeps it over its own thing and clear of a's token.
+    const things = [thing("a", 200, 300, 3), thing("b", 250, 300, 2), thing("c", 200, 300, 1)];
     const { spots } = placePlates(things, SCREEN);
-    expect(spots.get("a")).toMatchObject({ shape: "token", x: 168, y: 277 });
-    // Over it is a's: a step (a token and the gap) to the left, then to the right.
-    expect(spots.get("b")).toMatchObject({ shape: "token", x: 98, y: 277 });
-    expect(spots.get("c")).toMatchObject({ shape: "token", x: 238, y: 277 });
-    // A wall of tokens over every place within a step: not drawn.
+    expect(spots.get("a")).toMatchObject({ shape: "token", x: 168, y: 254 });
+    expect(spots.get("b")).toMatchObject({ shape: "token", x: 242, y: 254 });
+    expect(spots.get("c")).toEqual({ shape: "none" });
+    // A wall of tokens over every place: not drawn.
     const wall = Array.from({ length: 9 }, (_, index) =>
       thing(`w${index}`, 130 + (index % 3) * 70, 230 + Math.floor(index / 3) * 70, 5),
     );
@@ -124,12 +132,16 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
     );
     const { spots } = placePlates(things, SCREEN);
     const shown = drawn(things, spots);
-    expect(shown.length).toBeGreaterThan(40);
+    // A third of the block is drawn: every token on its own point (the old layout drew 65, none on its point).
+    expect(shown.length).toBeGreaterThanOrEqual(40);
     expect(narrowest(shown)).toBeGreaterThanOrEqual(6);
+    // However crowded, each drawn token stands on its own thing's point.
+    for (const one of things)
+      if (spots.get(one.id)?.shape === "token") expect(onItsPoint(one, spots.get(one.id))).toBe(true);
   });
 
   it("never moves a resting token for a hover or a selection: what an opened plate covers steps aside", () => {
-    // s between r above and q below: standing on its foot it covers r, hung from its top it would cover q.
+    // s between r above and q below: standing on its foot it covers r.
     const things = [
       thing("r", 200, 230, 2),
       thing("s", 200, 300, 1),
@@ -139,8 +151,8 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
     const before = placePlates(things, SCREEN).spots;
     const opened = things.map((one) => (one.id === "s" ? { ...one, opened: OPEN, openRank: 2 } : one));
     const after = placePlates(opened, SCREEN).spots;
-    // s opens in place of its token, growing up from its foot (300 + 46 / 2), over r: r stays put and steps aside.
-    expect(after.get("s")).toEqual({ shape: "plate", x: 110, y: 323 - 78 });
+    // s opens in place of its token, growing up from its foot (its label point, 300), over r: r stays put and steps aside.
+    expect(after.get("s")).toEqual({ shape: "plate", x: 110, y: 300 - 78 });
     expect(after.get("r")).toEqual({ ...before.get("r"), yields: true });
     expect(after.get("q")).toEqual(before.get("q"));
     expect(after.get("far")).toEqual(before.get("far"));
@@ -168,17 +180,18 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
     it("stands on its token's foot, its middle over the token's", () => {
       const selected = thing("army", 400, 500, 1, { opened: OPEN, openRank: 2 });
       const placed = placePlates([selected], SCREEN);
-      expect(placed.spots.get("army")).toEqual({ shape: "plate", x: 310, y: 523 - 78 });
+      expect(placed.spots.get("army")).toEqual({ shape: "plate", x: 310, y: 500 - 78 });
       expectInPlaceAndClear([selected], placed, { opened: 1 });
     });
 
-    it("replaces a token that stood aside or above its thing where it was drawn, not where its thing is", () => {
-      // Four things on one tile: the fourth's token was drawn half a step left, one row up.
-      const things = Array.from({ length: 4 }, (_, index) => thing(String(index), 400, 500, 4 - index));
-      const before = placePlates(things, SCREEN).spots.get("3") as { x: number; y: number };
-      const opened = things.map((one) => (one.id === "3" ? { ...one, opened: OPEN, openRank: 1 } : one));
+    it("replaces a token that slid aside where it was drawn, not where its thing is", () => {
+      // Two things 50px apart: the second's token was drawn slid 24px right of its point.
+      const things = [thing("first", 400, 500, 2), thing("slid", 450, 500, 1)];
+      const before = placePlates(things, SCREEN).spots.get("slid") as { x: number; y: number };
+      expect(before.x).toBe(450 - 32 + 24);
+      const opened = things.map((one) => (one.id === "slid" ? { ...one, opened: OPEN, openRank: 1 } : one));
       const placed = placePlates(opened, SCREEN);
-      const after = placed.spots.get("3") as { x: number; y: number };
+      const after = placed.spots.get("slid") as { x: number; y: number };
       expect(after.y + OPEN.height).toBe(before.y + TOKEN.height);
       expectInPlaceAndClear(opened, placed, { opened: 1 });
     });
@@ -210,8 +223,8 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
         const one = [thing("edge", x, 500, 1, { token: DRAWN.armyToken, opened: DRAWN.armyPlate, openRank: 2 })];
         expectInPlaceAndClear(one, placePlates(one, SCREEN), { opened: 1 });
       }
-      // Its token reaching a pixel under the top bar (56): the plate hangs from the bar's edge, over its thing.
-      const top = [thing("top", 600, 80, 1, { token: DRAWN.armyToken, opened: DRAWN.armyPlate, openRank: 2 })];
+      // Its token reaching under the top bar (56): the plate hangs from the bar's edge, over its thing.
+      const top = [thing("top", 600, 100, 1, { token: DRAWN.armyToken, opened: DRAWN.armyPlate, openRank: 2 })];
       const placed = placePlates(top, SCREEN);
       expect(placed.spots.get("top")).toMatchObject({ shape: "plate", y: 56 });
       expectInPlaceAndClear(top, placed, { opened: 1 });
@@ -254,6 +267,44 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
     });
   });
 
+  describe("a label stands above its thing, never on it, at every zoom (the owner, 2026-10-20, playing dev Frontier)", () => {
+    it("near: an army's and a camp's token stand on their label points, above them (owner-army-label-on.png)", () => {
+      const things = [
+        thing("army", 500, 400, 1, { token: DRAWN.armyToken }),
+        thing("camp", 900, 400, 1, { token: DRAWN.campToken }),
+      ];
+      const { spots } = placePlates(things, SCREEN);
+      for (const one of things) expect(onItsPoint(one, spots.get(one.id))).toBe(true);
+      expect(spots.get("army")).toMatchObject({ x: 500 - 37, y: 400 - 50 });
+    });
+
+    it("near: an opened army plate stands above its army, never hung over it, though it hides a token above", () => {
+      // The selected army's plate standing on its foot covers the token of the thing above it; hung from the token's top
+      // it would have spared that token and covered the army instead.
+      const things = [
+        thing("selected", 400, 500, 1, { token: DRAWN.armyToken, opened: DRAWN.armyPlate, openRank: 2 }),
+        thing("above", 400, 440, 2, { token: DRAWN.armyToken }),
+      ];
+      const placed = placePlates(things, SCREEN);
+      const plate = placed.spots.get("selected") as { shape: string; y: number };
+      expect(plate.shape).toBe("plate");
+      expect(plate.y + DRAWN.armyPlate.height).toBeLessThanOrEqual(500);
+      expect(placed.spots.get("above")).toMatchObject({ shape: "token", yields: true });
+    });
+
+    it("max zoom out: a camp's token stays on its camp beside an army's, not a step away (owner-camp-label-zoomout.png)", () => {
+      // Dev Frontier game 2 at max zoom out, read off the page: an army's token (64 × 50) on its point at 559,175, and a
+      // site's (32 × 46) at 604,168, whose centred place meets the army's; the old layout drew it a step right, at 626.
+      const things = [
+        thing("army", 559, 175, 2, { token: { width: 64, height: 50 } }),
+        thing("site", 604, 168, 1, { token: { width: 32, height: 46 } }),
+      ];
+      const { spots } = placePlates(things, SCREEN);
+      for (const one of things) expect(onItsPoint(one, spots.get(one.id))).toBe(true);
+      expect(narrowest(drawn(things, spots))).toBeGreaterThanOrEqual(6);
+    });
+  });
+
   it("puts the order line beside its tile clear of the opened plates and the HUD, and what it covers steps aside", () => {
     const line = { at: { x: 200, y: 310 }, size: { width: 80, height: 40 } };
     // Under its tile to the right when nothing opened is there.
@@ -264,7 +315,7 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
     // Plates opened on both neighbouring tiles (their feet at y 364): every place beside the tile meets one, so the
     // line takes the first a row further down.
     const opened = (id: string, x: number, openRank: number) =>
-      thing(id, x, 364 - 23, 1, { opened: { width: 120, height: 40 }, openRank });
+      thing(id, x, 364, 1, { opened: { width: 120, height: 40 }, openRank });
     const below = placePlates([opened("left", 150, 2), opened("right", 290, 1)], SCREEN, line);
     expect(below.orderLine).toEqual({ x: 212, y: 336 + 40 + 6 });
     // A HUD column right of the tile: the line takes the tile's other side.
