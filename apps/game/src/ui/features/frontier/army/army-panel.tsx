@@ -236,7 +236,7 @@ const LevelUpFoot = ({
         </span>
         <span className={cn("text-hud-label tabular-nums", chosen.next.affordable ? "text-hud-muted" : "text-hud-bad")}>
           {chosen.next.affordable
-            ? ARMY_DETAIL.refills(formatExact(chosen.next.xp), formatExact(army.refill))
+            ? ARMY_DETAIL.refills(formatExact(chosen.next.xp), formatExact(chosen.next.refill))
             : ARMY_DETAIL.short(formatExact(chosen.next.xp), formatExact(chosen.next.xp - army.xp))}
         </span>
       </span>

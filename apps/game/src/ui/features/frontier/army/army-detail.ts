@@ -37,7 +37,8 @@ export interface AttributeView {
   stat: string;
   level: number;
   now: string;
-  next?: { word: string; change: string; xp: number; affordable: boolean };
+  /** The next level: its word, the change in one line, its XP, whether it is held, and the stamina buying it refills. */
+  next?: { word: string; change: string; xp: number; affordable: boolean; refill: number };
 }
 
 export interface ArmyView {
@@ -53,7 +54,7 @@ export interface ArmyView {
   affordable: number;
   /** How XP is earned, with this game's figures. */
   earn: { icon: IconMeaning; line: string; xp?: number }[];
-  /** Stamina a level bought refills now, the most that fits. */
+  /** Stamina a level of an attribute other than Logistics refills now, the most that fits under today's maximum. */
   refill: number;
 }
 
@@ -93,6 +94,10 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
                   : RESEARCH_TREE.step(now, figure(level + 1)),
               xp: price,
               affordable: army.xp >= price,
+              refill: levelRefill(
+                army,
+                key === "logistics" ? logisticsStamina(level + 1) - logisticsStamina(level) : 0,
+              ),
             },
     };
   });
@@ -112,9 +117,16 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
       { icon: "shrine", line: ARMY_DETAIL.earn.shrine, xp: army.shrineXp },
       { icon: "camp", line: ARMY_DETAIL.earn.clear },
     ],
-    refill: Math.max(0, Math.min(army.refillOnLevel, army.stamina.max - army.stamina.current)),
+    refill: levelRefill(army, 0),
   };
 };
+
+/**
+ * The stamina a level bought refills, as relics.cairo's buy_tier grants it: the level is written first, so the refill
+ * fits under the maximum after it (a Logistics level raises the maximum by `raised`), up to the grant's own size.
+ */
+const levelRefill = (army: ArmyDetailFacts, raised: number): number =>
+  Math.max(0, Math.min(army.refillOnLevel, army.stamina.max + raised - army.stamina.current));
 
 /**
  * What an attribute gives at a level, as the army's own figure: the damage it adds, its maximum stamina (its troop's
