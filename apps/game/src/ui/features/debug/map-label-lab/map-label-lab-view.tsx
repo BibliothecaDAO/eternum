@@ -240,15 +240,18 @@ const useOrderLine = (
     const order =
       target.relation === "own" ? { line: "Transfer troops", cost: null } : { line: "Attack", cost: "30 stamina" };
     const point = new Vector3();
+    /** A line beside the hovered thing, placed as the map's scene places its order line. */
+    const placeBeside = (line: string, cost: string | null) => {
+      point.copy(target.ground).project(world.stage.camera);
+      const at = { x: ((point.x + 1) / 2) * overlay.clientWidth, y: ((1 - point.y) / 2) * overlay.clientHeight };
+      const place = plates.placeOrderLine({ at, size: orderLineSize(line, cost) });
+      const page = overlay.getBoundingClientRect();
+      return place && { line, cost, at: { x: place.x + page.left, y: place.y + page.top } };
+    };
     const tip = new PointerOrderTip(
-      () => {
-        point.copy(target.ground).project(world.stage.camera);
-        const at = { x: ((point.x + 1) / 2) * overlay.clientWidth, y: ((1 - point.y) / 2) * overlay.clientHeight };
-        const place = plates.placeOrderLine({ at, size: orderLineSize(order.line, order.cost) });
-        const page = overlay.getBoundingClientRect();
-        return place && { ...order, at: { x: place.x + page.left, y: place.y + page.top } };
-      },
+      () => placeBeside(order.line, order.cost),
       () => plates.placeOrderLine(null),
+      (_, line) => placeBeside(line, null),
     );
     tip.point({ col: 0, row: 0 });
     // The camera settles after the view opens: the line is said again, as the map's scene says it on a camera move.

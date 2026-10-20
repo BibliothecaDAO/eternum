@@ -17,7 +17,8 @@ import { PointerOrderTip } from "./worldmap-order-tip";
 const tile = {
   path: undefined as ActionPath[] | undefined,
   refusal: undefined as OrderRefusal | undefined,
-  at: { x: 200, y: 200 },
+  /** Where the tile's line can stand on screen now; null where it cannot (the tile is off screen). */
+  at: { x: 200, y: 200 } as { x: number; y: number } | null,
 };
 
 const pointer = new PointerOrderTip(
@@ -30,10 +31,13 @@ const pointer = new PointerOrderTip(
       refusal: tile.refusal,
       staminaWait: undefined,
     });
-    return tip && { ...tip, at: tile.at };
+    return tip && tile.at && { ...tip, at: tile.at };
   },
   () => {},
+  (_, line) => tile.at && { line, cost: null, at: tile.at },
 );
+
+const shownAt = () => useTooltipStore.getState().tooltip?.fixed ?? null;
 
 const shownLine = (): string | null => {
   const tooltip = useTooltipStore.getState().tooltip;
@@ -58,6 +62,7 @@ const move = (staminaCost: number): ActionPath[] => [
 describe("the line under a still pointer", () => {
   afterEach(() => {
     pointer.point(null);
+    useTooltipStore.getState().setTooltip(null);
     Object.assign(tile, { path: undefined, refusal: undefined, at: { x: 200, y: 200 } });
   });
 
@@ -87,12 +92,11 @@ describe("the line under a still pointer", () => {
   it("follows its tile across the screen as the camera moves", () => {
     tile.path = move(2);
     pointer.point({ col: 1, row: 0 });
-    const before = useTooltipStore.getState().tooltip?.fixed;
+    expect(shownAt()).toEqual({ x: 200, y: 200 });
 
     tile.at = { x: 400, y: 300 };
     pointer.refresh();
-    const after = useTooltipStore.getState().tooltip?.fixed;
-    expect({ x: after!.x - before!.x, y: after!.y - before!.y }).toEqual({ x: 200, y: 100 });
+    expect(shownAt()).toEqual({ x: 400, y: 300 });
   });
 
   it("stays away once a click takes the tile, while the pointer rests on it, until the pointer leaves it", () => {
@@ -112,6 +116,65 @@ describe("the line under a still pointer", () => {
     pointer.point({ col: 2, row: 0 });
     pointer.point({ col: 1, row: 0 });
     expect(shownLine()).toBe("Open crate");
+  });
+
+  it("says a refused order at the tile it was sent to, following the tile as the camera moves, until the pointer leaves it", () => {
+    const refused = "Another action from this account was sent first, perhaps from another tab. Try again.";
+    tile.path = move(2);
+    pointer.point({ col: 1, row: 0 });
+    pointer.take();
+    pointer.sayRefusal({ col: 1, row: 0 }, refused);
+    expect([shownLine(), shownAt()]).toEqual([refused, { x: 200, y: 200 }]);
+
+    // The camera pans: the refusal stands where its tile stands now, in the same words.
+    tile.at = { x: 400, y: 300 };
+    pointer.refresh();
+    expect([shownLine(), shownAt()]).toEqual([refused, { x: 400, y: 300 }]);
+
+    // The tile leaves the screen, then comes back.
+    tile.at = null;
+    pointer.refresh();
+    expect(shownLine()).toBeNull();
+    tile.at = { x: 120, y: 80 };
+    pointer.refresh();
+    expect([shownLine(), shownAt()]).toEqual([refused, { x: 120, y: 80 }]);
+
+    // The scene points at the same tile again while the pointer rests there: the refusal stays.
+    pointer.point({ col: 1, row: 0 });
+    expect(shownLine()).toBe(refused);
+
+    pointer.point({ col: 2, row: 0 });
+    expect(shownLine()).toBe("Move / 2 stamina");
+  });
+
+  it("takes the earlier refusal away for good when a new click takes the same tile", () => {
+    tile.path = move(2);
+    pointer.point({ col: 1, row: 0 });
+    pointer.take();
+    pointer.sayRefusal({ col: 1, row: 0 }, "movement tile occupied");
+    expect(shownLine()).toBe("movement tile occupied");
+
+    // The player clicks the same tile again without moving away: its preview or its order stands there now.
+    pointer.take();
+    expect(shownLine()).toBeNull();
+    pointer.point({ col: 1, row: 0 });
+    tile.at = { x: 400, y: 300 };
+    pointer.refresh();
+    expect(shownLine()).toBeNull();
+
+    // This click's own order refused in turn says its own words.
+    pointer.sayRefusal({ col: 1, row: 0 }, "Not enough stamina");
+    expect([shownLine(), shownAt()]).toEqual(["Not enough stamina", { x: 400, y: 300 }]);
+  });
+
+  it("leaves another surface's tooltip in place of a refusal while the camera moves", () => {
+    pointer.sayRefusal({ col: 1, row: 0 }, "movement tile occupied");
+    const another = { content: "Wheat", fixed: { x: 10, y: 10 } };
+    useTooltipStore.getState().setTooltip(another);
+
+    tile.at = { x: 400, y: 300 };
+    pointer.refresh();
+    expect(useTooltipStore.getState().tooltip).toBe(another);
   });
 
   it("says nothing after the pointer leaves the map, whatever changes", () => {

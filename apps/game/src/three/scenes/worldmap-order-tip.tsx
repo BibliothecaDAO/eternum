@@ -18,6 +18,8 @@ export type PlacedOrderTip = OrderTip & { at: { x: number; y: number } };
 export class PointerOrderTip {
   private hex: HexPosition | null = null;
   private taken = false;
+  /** A refused order's words, said at its tile in place of the tile's line until the pointer moves to another tile. */
+  private refusal: string | null = null;
 
   /**
    * `place` names the tile's order, or why none, and where its line stands now; null where there is no line. `gone` is
@@ -26,6 +28,8 @@ export class PointerOrderTip {
   constructor(
     private readonly place: (hex: HexPosition) => PlacedOrderTip | null,
     private readonly gone: () => void,
+    /** Where a line of the scene's own words stands beside a tile; null where it cannot stand. */
+    private readonly placeLine: (hex: HexPosition, line: string) => PlacedOrderTip | null,
   ) {}
 
   /**
@@ -37,23 +41,44 @@ export class PointerOrderTip {
     if (this.taken && hex !== null && this.hex !== null && hex.col === this.hex.col && hex.row === this.hex.row) return;
     this.hex = hex;
     this.taken = false;
+    this.refusal = null;
     this.say();
   }
 
-  /** What the line reads changed under the still pointer; another surface's tooltip keeps the screen. */
+  /**
+   * What the line reads, or where its tile stands on screen, changed under the still pointer; another surface's
+   * tooltip keeps the screen.
+   */
   refresh(): void {
-    if (!this.taken && !showsAnotherTip()) this.say();
+    if (showsAnotherTip()) return;
+    if (this.refusal !== null || !this.taken) this.say();
   }
 
-  /** A click took the tile: its preview or its order stands where the line was, until the pointer moves on. */
+  /**
+   * A click took the tile: its preview or its order stands where the line was, until the pointer moves on. A refusal
+   * of an earlier order there goes for good: it is not this click's.
+   */
   take(): void {
     this.taken = true;
+    this.refusal = null;
     this.gone();
     showOrderTip(null);
   }
 
+  /**
+   * An order sent to this tile was refused: the refusal stands where the order's line stood, in the place the player
+   * gave the order, until the pointer moves to another tile. A refusal said only in a corner of the screen is missed.
+   */
+  sayRefusal(hex: HexPosition, words: string): void {
+    this.hex = hex;
+    this.taken = true;
+    this.refusal = words;
+    this.say();
+  }
+
+  /** The refusal or the tile's line, placed where its tile stands now; nothing where it cannot stand. */
   private say(): void {
-    const tip = this.hex && this.place(this.hex);
+    const tip = this.hex && (this.refusal === null ? this.place(this.hex) : this.placeLine(this.hex, this.refusal));
     if (!tip) this.gone();
     showOrderTip(tip);
   }

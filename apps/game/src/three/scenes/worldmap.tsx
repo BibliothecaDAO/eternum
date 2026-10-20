@@ -594,6 +594,8 @@ const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
+/** What a refused order says when its error names no reason. */
+const ORDER_NOT_SENT = "The order was not sent.";
 const MAX_TRAVEL_EFFECT_LIFETIME_MS = 90_000;
 const SHORTCUT_NAVIGATION_DURATION_SECONDS = 0;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
@@ -1025,6 +1027,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly pointerOrderTip = new PointerOrderTip(
     (hex) => this.placeOrderTip(hex),
     () => this.mapPlates.placeOrderLine(null),
+    (hex, line) => this.placeLineAt(hex, line),
   );
   private readonly selectedArmyOrders = new SelectedArmyOrders({
     reach: (entityId) =>
@@ -2409,6 +2412,15 @@ export default class WorldmapScene extends WarpTravel {
     return at && { ...tip, at };
   }
 
+  /** A line of the scene's own words beside a tile, clear of the opened plates, as the order's line stands. */
+  private placeLineAt(hexCoords: HexPosition, line: string): PlacedOrderTip | null {
+    const at = this.mapPlates.placeOrderLine({
+      at: projectHexToScreen(hexCoords, this.camera),
+      size: orderLineSize(line, null),
+    });
+    return at && { line, cost: null, at };
+  }
+
   /** The army whose orders the map shows, or null when the selection is no army. */
   private selectedArmyId(): ID | null {
     const { selectedEntityId } = getLiveWorldmapEntityActions();
@@ -3144,7 +3156,8 @@ export default class WorldmapScene extends WarpTravel {
           this.pendingExploreLatencyActions.delete(selectedEntityId);
           this.handlePendingArmyMovementFailure(selectedEntityId, cleanup);
           console.error("Army movement failed:", error);
-          toast.failed(error, "The order was not sent.");
+          toast.failed(error, ORDER_NOT_SENT);
+          this.pointerOrderTip.sayRefusal(order.to, extractReadableErrorMessage(error, ORDER_NOT_SENT));
         },
       });
       return;

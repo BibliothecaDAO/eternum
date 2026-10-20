@@ -57,6 +57,18 @@ it("says on screen why the game refused an action, whichever handler sent it", a
   expect(shownNotices()).toEqual(["movement tile occupied"]);
 });
 
+it("says on screen an action the shard refused before sending it, in the refusal's words", async () => {
+  const refusal = new Error("Another action from this account was sent first, perhaps from another tab. Try again.");
+  await fail({
+    stage: "submit",
+    failureKind: "not_sent",
+    transactionHash: "0x4771",
+    message: refusal.message,
+    error: refusal,
+  });
+  expect(shownNotices()).toEqual([refusal.message]);
+});
+
 it("says nothing of an action whose outcome is still being checked, which may yet apply", async () => {
   await fail({
     transactionHash: "0x4770",
