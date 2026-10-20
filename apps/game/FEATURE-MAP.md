@@ -639,12 +639,14 @@ Standing sites share one species identity between model, plate, selected card an
 for the lowly encounter and Wraith for the stronger encounter. Their inclusive count bands, Knight T1 combat and
 immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show Dark fey
 hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through depth
-III. Cleared sites remove their guard and standing effects.
+III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's hover/wings.
+Instance phases differ; clearing a site removes its guard and standing effects.
 
 `/lab/models?family=beasts&group=site-map` opens the final eight encounter contexts on their tiles. View focuses a tile;
 Turn and Light inspect it. The sidebar shows the selected concepts and a recorded screenshot of the previous production
 lineup, so retired deliveries need not remain in the app. Ground mist toggles the production effect for comparison. The
-original ruin masonry remains; low animated mist replaces the removed violet residue surfaces.
+original ruin masonry remains; low animated mist replaces the removed violet residue surfaces. Beast idle toggles
+between the real animated shader and an undeformed shader without changing placements or mist.
 
 `/lab/models?family=beasts` shows all eight production species, all four ruin depths, standing site compositions and
 both roaming beasts. Site, Depth and Beast strength control the real plate and selected card. Select site opens that
@@ -654,12 +656,14 @@ combat-tier badge. The retired Minotaur, Ghoul, Kappa and Golem deliveries and t
 Scene → 100 ruins (`/lab/models?family=beasts&group=site-map&population=100&rendererMode=webgpu-force-webgl`) batches
 one hundred complete ruin/guardian compositions through the production models. Measure mist cost takes six alternating
 on/off runs, 30 warm-up and 90 sampled frames each, synchronizing WebGL completion. Its result is synchronized frame
-cost, not an FPS claim. The proof refuses timing on machine load above 12 or a software renderer.
+cost, not an FPS claim. Scene → 128 beasts (`population=128`) shows sixteen of every species in its production site
+composition. Measure idle cost uses the same six-run protocol with mist on throughout. The proof refuses timing on
+machine load above 12 or a software renderer.
 
 `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory>` drives the visible lab controls and records
 models, contexts, motion captures, eight HUD portraits, plates and panels. Append `mist` to run the hundred-ruin timing
-comparison separately, or `site-map webgpu-auto` to repeat the final-map proof on native WebGPU. `verify:beasts` checks
-all eight deliveries, budgets and editable-source hashes; `verify:fallen-realm` checks decoded triangles for zero
-masonry contacts at each production scale. All authoring sources and paint live in
+comparison separately, `idle` for the 128-beast idle comparison, or `site-map webgpu-auto` to repeat the final-map proof
+on native WebGPU. `verify:beasts` checks all eight deliveries, budgets and editable-source hashes; `verify:fallen-realm`
+checks decoded triangles for zero masonry contacts at each production scale. All authoring sources and paint live in
 `asset-sources/frontier-beasts/refined/`; `scripts/frontier-beasts/rebuild.sh <fresh-absolute-directory>` exports those
 exact eight packed sources. There is one production path per species and no separate study GLB.

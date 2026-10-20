@@ -54,6 +54,21 @@ export async function proveSiteStudies(b, out, records, baseUrl, rendererMode) {
         await b.run("screenshot", join(out, `site-${name}-${yaw}.png`));
       }
     }
+    for (const [index, name] of contexts.entries()) {
+      await b.run("select", 'select[aria-label="Site view"]', String(index));
+      await b.run("select", 'select[aria-label="Turn"]', "30");
+      await readDrawn(b, index, 30);
+      await b.run("uncheck", 'input[aria-label="Beast idle"]');
+      await b.run("screenshot", join(out, `idle-${name}-off.png`));
+      await b.run("check", 'input[aria-label="Beast idle"]');
+      await b.run("screenshot", join(out, `idle-${name}-a.png`));
+      await b.run("wait", "1100");
+      await b.run("screenshot", join(out, `idle-${name}-b.png`));
+      record.checks.push({
+        check: `${name} idle control is restored`,
+        ok: await b.evaluate("document.querySelector('input[aria-label=\"Beast idle\"]').checked"),
+      });
+    }
     await b.run("select", 'select[aria-label="Site view"]', "3");
     await b.run("select", 'select[aria-label="Turn"]', "30");
     await b.run("screenshot", join(out, "fey-motion-a.png"));
@@ -71,8 +86,9 @@ export async function proveSiteStudies(b, out, records, baseUrl, rendererMode) {
 }
 
 /** Six alternating runs on the same 100-ruin scene; retain every sample and machine-load bound. */
-export async function proveMistCost(b, out, records, baseUrl) {
-  const record = { name: "mist-cost", ready: false, presses: [], checks: [], loadBefore: loadavg() };
+export async function proveEffectCost(b, out, records, baseUrl, effect) {
+  const idle = effect === "idle";
+  const record = { name: `${effect}-cost`, ready: false, presses: [], checks: [], loadBefore: loadavg() };
   records.push(record);
   if (record.loadBefore[0] > 12) {
     record.error = "Machine load exceeds 12; frame measurements would be invalid";
@@ -84,7 +100,7 @@ export async function proveMistCost(b, out, records, baseUrl) {
     await b.run("set", "viewport", "1600", "1000");
     await b.run(
       "open",
-      `${baseUrl}/lab/models?family=beasts&group=site-map&population=100&rendererMode=webgpu-force-webgl`,
+      `${baseUrl}/lab/models?family=beasts&group=site-map&population=${idle ? 128 : 100}&rendererMode=webgpu-force-webgl`,
       "--ignore-https-errors",
     );
     record.ready = await waitFor(b, 'document.querySelector("[data-site-studies-ready=true]")', 60000);
@@ -97,17 +113,25 @@ export async function proveMistCost(b, out, records, baseUrl) {
     }
     const scene = await readDrawn(b, "lineup", 0);
     record.checks.push({
-      check: "one hundred complete ruin compositions are submitted",
-      ok: scene.models === 200 && scene.drawnParts.length === 200,
+      check: "all complete production compositions are submitted",
+      ok: scene.models === (idle ? 208 : 200) && scene.drawnParts.length === (idle ? 208 : 200),
       actual: scene.models,
     });
-    await b.run("find", "role", "button", "click", "--name", "Measure mist cost", "--exact");
-    const complete = await waitFor(b, 'document.querySelector("[data-mist-measurement]")', 90000);
-    if (!complete) throw new Error("Mist measurement did not complete");
-    const result = await b.evaluate("JSON.parse(document.querySelector('[data-mist-measurement]').textContent)");
+    await b.run(
+      "find",
+      "role",
+      "button",
+      "click",
+      "--name",
+      idle ? "Measure idle cost" : "Measure mist cost",
+      "--exact",
+    );
+    const complete = await waitFor(b, 'document.querySelector("[data-effect-measurement]")', 90000);
+    if (!complete) throw new Error("Effect measurement did not complete");
+    const result = await b.evaluate("JSON.parse(document.querySelector('[data-effect-measurement]').textContent)");
     record.loadAfter = loadavg();
     writeFileSync(
-      join(out, "mist-frames.json"),
+      join(out, `${effect}-frames.json`),
       JSON.stringify(
         { ...result, viewport: [1600, 1000], loadSamples, loadBefore: record.loadBefore, loadAfter: record.loadAfter },
         null,
@@ -119,11 +143,58 @@ export async function proveMistCost(b, out, records, baseUrl) {
       ok:
         result.runs?.length === 6 &&
         result.runs.every((run) => run.frames.length === 90 && !/swiftshader|llvmpipe|software/i.test(run.gpu)) &&
+        result.effect === effect &&
+        (!idle || result.mist === true) &&
         record.loadAfter[0] <= 12 &&
         loadSamples.every((load) => load[0] <= 12),
       error: result.error,
     });
-    await b.run("screenshot", join(out, "hundred-ruins.png"));
+    if (result.runs?.length === 6) {
+      const summarize = (enabled) => {
+        const runs = result.runs.filter((run) => run.enabled === enabled);
+        const frames = runs.flatMap((run) => run.frames).sort((a, b) => a - b);
+        const percentile = (values, fraction) => values[Math.ceil(values.length * fraction) - 1];
+        return {
+          runs: runs.length,
+          samples: frames.length,
+          median: percentile(frames, 0.5),
+          p95: percentile(frames, 0.95),
+          min: frames[0],
+          max: frames.at(-1),
+          runMedians: runs.map((run) =>
+            percentile(
+              [...run.frames].sort((a, b) => a - b),
+              0.5,
+            ),
+          ),
+          calls: runs.map((run) => run.calls),
+          triangles: runs.map((run) => run.triangles),
+        };
+      };
+      const off = summarize(false),
+        on = summarize(true);
+      const summary = {
+        effect,
+        off,
+        on,
+        medianDelta: on.median - off.median,
+        p95Delta: on.p95 - off.p95,
+        maxLoad: Math.max(...loadSamples.map(([load]) => load)),
+        gpu: result.runs[0].gpu,
+      };
+      writeFileSync(join(out, `${effect}-summary.json`), JSON.stringify(summary, null, 2));
+      if (idle)
+        record.checks.push({
+          check: "idle adds no draws or triangles and stays within 0.5 ms median / 1 ms P95 on this GPU",
+          ok:
+            summary.medianDelta <= 0.5 &&
+            summary.p95Delta <= 1 &&
+            new Set([...off.calls, ...on.calls]).size === 1 &&
+            new Set([...off.triangles, ...on.triangles]).size === 1,
+          actual: summary,
+        });
+    }
+    await b.run("screenshot", join(out, idle ? "128-beasts.png" : "hundred-ruins.png"));
   } finally {
     clearInterval(monitor);
     await b.run("open", "about:blank");

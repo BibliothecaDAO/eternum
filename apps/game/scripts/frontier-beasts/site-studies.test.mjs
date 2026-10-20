@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { SITE_STUDIES, MIST_STRESS_SITES } from "../../src/ui/features/debug/frontier-site-studies";
+import { SITE_STUDIES, MIST_STRESS_SITES, BEAST_STRESS_SITES } from "../../src/ui/features/debug/frontier-site-studies";
 import { FRONTIER_BEASTS, FALLEN_REALM_RUIN_PATH } from "../../src/three/structures/frontier-beast";
 
 it("shows the final map using production model paths and centered site compositions", () => {
@@ -26,4 +26,13 @@ it("stresses one hundred real ruin compositions, not stand-in geometry", () => {
     true,
   );
   expect(new Set(MIST_STRESS_SITES.map(({ position }) => JSON.stringify(position))).size).toBe(100);
+});
+
+it("stresses sixteen of every beast using the complete production compositions", () => {
+  expect(BEAST_STRESS_SITES).toHaveLength(128);
+  for (const { path } of Object.values(FRONTIER_BEASTS)) {
+    expect(BEAST_STRESS_SITES.filter(({ parts }) => parts.some((part) => part.path === path))).toHaveLength(16);
+  }
+  expect(BEAST_STRESS_SITES.flatMap(({ parts }) => parts)).toHaveLength(208);
+  expect(new Set(BEAST_STRESS_SITES.map(({ position }) => JSON.stringify(position))).size).toBe(128);
 });

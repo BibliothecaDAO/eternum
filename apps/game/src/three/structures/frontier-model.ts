@@ -19,21 +19,24 @@ import { FrostedStandardNodeMaterial } from "../effects/game-map-material-librar
 import { mapAnimationTime as time } from "../effects/endgame/state";
 import { createInstancedMeshWithSharedMatrices } from "../utils/create-instanced-mesh";
 import { MaterialPool } from "../utils/material-pool";
-import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS } from "./frontier-beast";
+import { FALLEN_REALM_RUIN_PATH, FRONTIER_BEASTS, type FrontierSpecies } from "./frontier-beast";
 
 export function frontierModelKind(path: string) {
   if (path === FALLEN_REALM_RUIN_PATH) return "ruin";
-  if (path === FRONTIER_BEASTS["dark-fey"].path) return "fey";
-  return undefined;
+  return (Object.keys(FRONTIER_BEASTS) as FrontierSpecies[]).find((species) => FRONTIER_BEASTS[species].path === path);
 }
 
 /** GPU motion and one mist draw per ruin batch, shared by the map and its lab. */
 export class FrontierModel extends InstancedModel {
   private readonly mist?: InstancedMesh;
   private readonly animatedGeometry: BufferGeometry[] = [];
+  private readonly idleMaterials: {
+    material: FrostedStandardNodeMaterial;
+    motion: FrostedStandardNodeMaterial["positionNode"];
+  }[] = [];
   private disposed = false;
 
-  constructor(gltf: GLTF, capacity: number, kind: "ruin" | "fey") {
+  constructor(gltf: GLTF, capacity: number, kind: "ruin" | FrontierSpecies) {
     super(gltf, capacity, false, kind, "cache");
     if (kind === "ruin") {
       this.mist = createInstancedMeshWithSharedMatrices(mistGeometry(), mistMaterial(), this.instancedMeshes[0]);
@@ -46,14 +49,16 @@ export class FrontierModel extends InstancedModel {
     } else {
       for (const mesh of this.instancedMeshes) {
         const previous = mesh.material as MeshStandardMaterial;
-        mesh.material = feyMaterial(previous);
+        const material = beastMaterial(previous, kind);
+        mesh.material = material;
+        this.idleMaterials.push({ material, motion: material.positionNode });
         MaterialPool.getInstance().releaseMaterial(previous);
         mesh.geometry = mesh.geometry.clone();
         this.animatedGeometry.push(mesh.geometry);
         mesh.geometry.computeBoundingBox();
-        mesh.geometry.boundingBox!.expandByScalar(0.14);
+        mesh.geometry.boundingBox!.expandByScalar(kind === "dark-fey" ? 0.14 : 0.035);
         mesh.geometry.computeBoundingSphere();
-        mesh.geometry.boundingSphere!.radius += 0.14;
+        mesh.geometry.boundingSphere!.radius += kind === "dark-fey" ? 0.14 : 0.035;
       }
     }
   }
@@ -65,6 +70,16 @@ export class FrontierModel extends InstancedModel {
 
   setMistVisible(visible: boolean): void {
     if (this.mist) this.mist.visible = visible;
+  }
+
+  /** The lab compares the real animated shader with a shader that has no idle displacement. */
+  setBeastMotionEnabled(enabled: boolean): void {
+    for (const { material, motion } of this.idleMaterials) {
+      const position = enabled ? motion : null;
+      if (material.positionNode === position) continue;
+      material.positionNode = position;
+      material.needsUpdate = true;
+    }
   }
 
   override dispose(): void {
@@ -81,7 +96,7 @@ export class FrontierModel extends InstancedModel {
   }
 }
 
-function feyMaterial(source: MeshStandardMaterial) {
+function beastMaterial(source: MeshStandardMaterial, species: FrontierSpecies) {
   const material = new FrostedStandardNodeMaterial();
   material.color.copy(source.color);
   material.map = source.map;
@@ -90,15 +105,42 @@ function feyMaterial(source: MeshStandardMaterial) {
   material.roughness = source.roughness;
   material.metalness = source.metalness;
   material.side = source.side;
-  const phase = float(instanceIndex).mul(2.399963);
+  material.positionNode = positionLocal.add(vec3(0, species === "dark-fey" ? feyIdle() : beastIdle(species), 0));
+  return material;
+}
+
+const phase = float(instanceIndex).mul(2.399963);
+
+/** Feet stay planted and the horizontal silhouette stays inside its checked ruin clearance. */
+function beastIdle(species: Exclude<FrontierSpecies, "dark-fey">) {
+  const rhythms = {
+    cyclops: [1.5, 0.016],
+    troll: [1.1, 0.014],
+    ammit: [1.4, 0.01],
+    basilisk: [1.3, 0.014],
+    wyvern: [1.0, 0.018],
+    hydra: [0.9, 0.018],
+    wraith: [1.2, 0.028],
+  } as const;
+  const [speed, lift] = rhythms[species];
+  const breath = time
+    .mul(speed)
+    .add(phase)
+    .add(positionGeometry.x.mul(0.8))
+    .sin()
+    .add(1)
+    .mul(lift / 2);
+  return species === "wraith" ? breath : breath.mul(smoothstep(0.08, 0.45, positionGeometry.y));
+}
+
+function feyIdle() {
   const wing = smoothstep(0.065, 0.18, positionGeometry.x.abs()).mul(
     smoothstep(-0.045, -0.005, positionGeometry.z).oneMinus(),
   );
   const radius = positionGeometry.x.abs().sub(0.052).max(0);
   const flap = time.mul(4.2).add(phase).sin().mul(radius).mul(0.16).mul(wing);
   const hover = time.mul(1.7).add(phase).sin().mul(0.026);
-  material.positionNode = positionLocal.add(vec3(0, hover.add(flap), 0));
-  return material;
+  return hover.add(flap);
 }
 
 function mistMaterial() {

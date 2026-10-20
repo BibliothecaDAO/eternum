@@ -2,15 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { mountStaticLineup, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import { BEAST_NAMES, RUIN } from "@/ui/design-system/kit/words";
-import { SITE_CONCEPTS, SITE_STUDIES, MIST_STRESS_SITES } from "./frontier-site-studies";
+import { SITE_CONCEPTS, SITE_STUDIES, MIST_STRESS_SITES, BEAST_STRESS_SITES } from "./frontier-site-studies";
 import "./workshop-model-lab.css";
 import "./frontier-site-lab.css";
 
 /** The final encounter map in the production renderer, beside its recorded predecessor. */
 export function FrontierSiteLab() {
   const [params, setParams] = useSearchParams();
-  const stress = params.get("population") === "100";
-  const lineup = stress ? MIST_STRESS_SITES : SITE_STUDIES;
+  const population = params.get("population");
+  const idleStress = population === "128";
+  const stress = idleStress || population === "100";
+  const lineup = idleStress ? BEAST_STRESS_SITES : stress ? MIST_STRESS_SITES : SITE_STUDIES;
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
@@ -27,6 +29,7 @@ export function FrontierSiteLab() {
   const [status, setStatus] = useState("Loading final sites…");
   const [ready, setReady] = useState(false);
   const [mist, setMist] = useState(true);
+  const [idle, setIdle] = useState(true);
   const [measuring, setMeasuring] = useState(false);
   const [measurement, setMeasurement] = useState<unknown>(null);
   useEffect(() => {
@@ -60,6 +63,9 @@ export function FrontierSiteLab() {
   useEffect(() => {
     renderer.current?.setMistVisible(mist);
   }, [mist, ready]);
+  useEffect(() => {
+    renderer.current?.setBeastMotionEnabled(idle);
+  }, [idle, ready]);
   const change = (key: string, value: string) =>
     setParams((previous) => {
       const next = new URLSearchParams(previous);
@@ -76,20 +82,26 @@ export function FrontierSiteLab() {
     const runs = [];
     try {
       for (const enabled of [false, true, true, false, false, true]) {
-        active.setMistVisible(enabled);
+        if (idleStress) {
+          active.setMistVisible(true);
+          active.setBeastMotionEnabled(enabled);
+        } else active.setMistVisible(enabled);
         await active.measureFrames(30);
-        runs.push({ mist: enabled, ...(await active.measureFrames(90)) });
+        runs.push({ enabled, ...(await active.measureFrames(90)) });
       }
       setMeasurement({
         method:
           "Synchronized WebGL frame cost (render plus GPU completion), milliseconds; 30 warm-up and 90 sampled frames per run",
-        ruins: 100,
+        effect: idleStress ? "idle" : "mist",
+        beasts: lineup.length,
+        mist: idleStress ? true : undefined,
         runs,
       });
     } catch (error) {
       setMeasurement({ error: String(error) });
     } finally {
       active.setMistVisible(mist);
+      active.setBeastMotionEnabled(idle);
       setMeasuring(false);
     }
   };
@@ -102,12 +114,13 @@ export function FrontierSiteLab() {
           Scene{" "}
           <select
             aria-label="Scene"
-            value={stress ? "100" : "8"}
+            value={idleStress ? "128" : stress ? "100" : "8"}
             disabled={measuring}
             onChange={(e) => change("population", e.target.value)}
           >
             <option value="8">Final map</option>
             <option value="100">100 ruins · mist check</option>
+            <option value="128">128 beasts · idle check</option>
           </select>
         </label>
         <label>
@@ -163,9 +176,19 @@ export function FrontierSiteLab() {
           />{" "}
           Ground mist
         </label>
+        <label>
+          <input
+            aria-label="Beast idle"
+            type="checkbox"
+            checked={idle}
+            disabled={measuring}
+            onChange={(e) => setIdle(e.target.checked)}
+          />{" "}
+          Beast idle
+        </label>
         {stress && (
           <button disabled={!ready || measuring} onClick={() => void measure()}>
-            {measuring ? "Measuring…" : "Measure mist cost"}
+            {measuring ? "Measuring…" : idleStress ? "Measure idle cost" : "Measure mist cost"}
           </button>
         )}
       </header>
@@ -209,7 +232,7 @@ export function FrontierSiteLab() {
               </figcaption>
             </figure>
           ))}
-          {measurement !== null && <pre data-mist-measurement>{JSON.stringify(measurement)}</pre>}
+          {measurement !== null && <pre data-effect-measurement>{JSON.stringify(measurement)}</pre>}
         </aside>
       </div>
       <footer>

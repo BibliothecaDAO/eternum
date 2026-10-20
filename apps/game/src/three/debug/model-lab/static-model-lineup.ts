@@ -239,6 +239,11 @@ export async function mountStaticLineup(
           if (model instanceof FrontierModel) model.setMistVisible(visible);
         });
       },
+      setBeastMotionEnabled(enabled: boolean) {
+        models.forEach((model) => {
+          if (model instanceof FrontierModel) model.setBeastMotionEnabled(enabled);
+        });
+      },
       measureFrames(count: number) {
         const backend = (renderer as unknown as { backend: { getContext?: () => WebGL2RenderingContext } }).backend;
         const gl = backend.getContext?.();

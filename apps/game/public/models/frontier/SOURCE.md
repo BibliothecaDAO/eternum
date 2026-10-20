@@ -51,6 +51,12 @@ the approved polished versions. Minotaur and the unselected Ghoul/Kappa/Golem ou
 paintings remain in the lab archive and appear beside the live final-map page. Its predecessor comparison is an actual
 renderer screenshot, `production-before.png`, captured at `3d4f8c734334bb7e952c9440a5716e09909799ad` before promotion.
 
+All beast deliveries remain static primitives. `FrontierModel` adds small vertex-shader idle displacements using the
+shared animation clock and different phases per instance. Grounded beasts breathe above planted feet, the Wraith lifts
+through its shroud, and the fey retains hover and wing motion. No bones, animation textures, extra draws or per-frame
+instance-matrix uploads are added. The lab's Beast idle checkbox removes the displacement shader for comparison;
+`population=128` measures sixteen of every species with ruin mist on in both conditions.
+
 The fey delivery remains one static primitive; `FrontierModel` animates hover and wing membrane displacement on the GPU,
 using the game's shared animation clock. It retains the painted color and normal maps. The rift and fey share a tile
 center; runtime height offset is 0.2, above the landmark scaled to 0.5. Its small authored hovering foot clearance is

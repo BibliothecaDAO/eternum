@@ -54,4 +54,10 @@ export const MIST_STRESS_SITES: readonly LineupAsset[] = Array.from({ length: 10
   label: "",
   position: { x: ((index % 10) - 4.5) * Math.sqrt(3), z: (Math.floor(index / 10) - 4.5) * 1.5 },
 }));
+/** Sixteen of every shipped species, with their actual landmarks and mist. */
+export const BEAST_STRESS_SITES: readonly LineupAsset[] = Array.from({ length: 128 }, (_, index) => ({
+  ...SITE_STUDIES[index % SITE_STUDIES.length],
+  label: "",
+  position: { x: ((index % 12) - 5.5) * Math.sqrt(3), z: (Math.floor(index / 12) - 5) * 1.5 },
+}));
 export const SITE_CONCEPTS = ["wraith", "ammit", "basilisk", "dark-fey"] as const;

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Matrix4, InstancedMesh, Texture } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { FrontierModel } from "./frontier-model";
+import { FRONTIER_BEASTS } from "./frontier-beast";
+import type { FrostedStandardNodeMaterial } from "../effects/game-map-material-library";
+import { FrontierModel, frontierModelKind } from "./frontier-model";
 
 function source() {
   const geometry = new BoxGeometry(0.5, 0.5, 0.5);
@@ -37,17 +39,38 @@ describe("Frontier effects on real instance placements", () => {
     model.dispose();
     expect(dispose).toHaveBeenCalledTimes(1);
   });
-  it("retains the fey paint and normal map while isolating animated bounds from the cached source", () => {
-    const { gltf, geometry } = source();
-    const dispose = vi.fn();
-    geometry.addEventListener("dispose", dispose);
-    const model = new FrontierModel(gltf, 10, "fey");
-    const mesh = model.instancedMeshes[0];
-    expect(mesh.geometry).not.toBe(geometry);
-    expect((mesh.material as MeshStandardMaterial).map).not.toBeNull();
-    expect((mesh.material as MeshStandardMaterial).normalMap).not.toBeNull();
-    expect(mesh.geometry.boundingBox!.max.x).toBeGreaterThan(0.25);
-    model.dispose();
-    expect(dispose).not.toHaveBeenCalled();
-  });
+  it.each(Object.entries(FRONTIER_BEASTS))(
+    "animates %s through the production catalog, retaining paint, placements and cached geometry",
+    (species, { path }) => {
+      const { gltf, geometry } = source();
+      const dispose = vi.fn();
+      geometry.addEventListener("dispose", dispose);
+      const kind = frontierModelKind(path)!;
+      expect(kind).toBe(species);
+      const model = new FrontierModel(gltf, 10, kind);
+      const mesh = model.instancedMeshes[0];
+      expect(mesh.geometry).not.toBe(geometry);
+      expect((mesh.material as MeshStandardMaterial).map).not.toBeNull();
+      expect((mesh.material as MeshStandardMaterial).normalMap).not.toBeNull();
+      expect(mesh.geometry.boundingBox!.max.x).toBeGreaterThan(0.25);
+      const material = mesh.material as FrostedStandardNodeMaterial;
+      const motion = material.positionNode;
+      expect(motion).not.toBeNull();
+      const matrix = new Matrix4().makeTranslation(9, 2, 8);
+      model.setMatrixAt(3, matrix);
+      model.setBeastMotionEnabled(false);
+      expect(material.positionNode).toBeNull();
+      model.setBeastMotionEnabled(true);
+      expect(material.positionNode).toBe(motion);
+      const actual = new Matrix4();
+      mesh.getMatrixAt(3, actual);
+      expect(actual.elements).toEqual(matrix.elements);
+      const materialDispose = vi.fn();
+      material.addEventListener("dispose", materialDispose);
+      model.dispose();
+      model.dispose();
+      expect(materialDispose).toHaveBeenCalledTimes(1);
+      expect(dispose).not.toHaveBeenCalled();
+    },
+  );
 });
