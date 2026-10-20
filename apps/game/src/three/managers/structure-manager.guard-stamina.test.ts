@@ -195,9 +195,9 @@ it("names a cleared site on its plate by the name every reader gives it, held by
   }) as { refreshStructurePresentation(entityId: number): void };
   chainAt(400);
   manager.refreshStructurePresentation(SITE);
-  const said = plateRows(plates.at(-1)!, "open").map((row) =>
+  const said = plateRows(plates.at(-1)!).map((row) =>
     row.flatMap((segment) => ("text" in segment ? [segment.text] : [])),
   );
-  expect(said).toEqual([[siteName(SITE), "Camp · Cleared"]]);
+  expect(said).toEqual([[siteName(SITE), "Troll · Cleared"]]);
   projection.dispose();
 });

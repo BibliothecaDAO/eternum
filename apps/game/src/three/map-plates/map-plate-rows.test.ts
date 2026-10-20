@@ -135,7 +135,7 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
       reward: undefined,
       icon: "flag",
     } as const;
-    expect(read(cleared, "open")).toEqual(["Orbroar Camp · Cleared"]);
+    expect(read(cleared)).toEqual(["Orbroar Camp · Cleared"]);
   });
 
   it("keeps every plate within three rows", () => {

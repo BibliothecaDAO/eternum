@@ -75,7 +75,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     buildStoryEventPresentation(
       {
         storyType: "SitePayout",
-        storyPayload: { category: StructureType.Camp, explorer_id: 201, reward: null },
+        storyPayload: { site_id: SITE, category: StructureType.Camp, explorer_id: 201, reward: null },
       } as never,
       store,
     ),
@@ -89,6 +89,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
   ];
   const coach = frontierCoachSteps({ realm: true, barracks: true, armies: 0, camp: { x: 40, y: 12 } } as NextUpFacts, {
     pointer: "mouse",
+    where: "map",
     tips: true,
   });
   const words = {
@@ -123,7 +124,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
   }
   expect(mode.structure.getName(structure).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(words.kindLine.match(/Troll/g)).toHaveLength(1);
-  expect(events[0].title).toBe("Troll cleared");
+  expect(events[0].title).toBe(`${siteDisplayName(SITE)} cleared`);
   expect(events[1].title).toContain("Troll found");
 });
 
