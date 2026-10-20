@@ -163,20 +163,3 @@ it("lets the game client's core format a name only from the resolver the client 
   expect(calls.length).toBeGreaterThan(0);
   expect(calls.filter((call) => !/: (playerName|resolvePlayerName\?\.)\(/.test(call))).toEqual([]);
 });
-
-it("has every React reader that writes a name follow the names' revision, so it draws again when one lands", () => {
-  const root = join(__dirname, "../..");
-  // A name written into a render or a memo stays "…" until something else draws it again: the reader must follow the
-  // revision (usePlayerNamesRevision), or read through a hook that does (usePlayerName, usePlayerDisplayName).
-  const writesName =
-    /\b(getPlayerDisplayName|readPlayerName|buildFaithLeaderboard|buildWonderFaithDetail|processStoryEvent)\s*\(/;
-  const usesReact = /\buse[A-Z]\w*\s*\(/;
-  const followsNames = /\b(usePlayerNamesRevision|usePlayerName|usePlayerDisplayName)\s*\(/;
-  const stale = sources(root)
-    .filter((path) => {
-      const text = readFileSync(path, "utf8");
-      return writesName.test(text) && usesReact.test(text) && !followsNames.test(text);
-    })
-    .map((path) => relative(root, path));
-  expect(stale).toEqual([]);
-});

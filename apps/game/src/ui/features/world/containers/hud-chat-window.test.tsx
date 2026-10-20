@@ -11,7 +11,8 @@ const fixture = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: fixture.status }) }));
 vi.mock("@/shell/sign-in/sign-in-route", () => ({ useRequestSignIn: () => fixture.signIn }));
-vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada" }));
+const NAMES = vi.hoisted(() => ({ text: () => "Ada", reading: () => ({ state: "waiting" as const, text: "…" }) }));
+vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada", usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: {} }));
 vi.mock("@bibliothecadao/types", async (importOriginal) => ({

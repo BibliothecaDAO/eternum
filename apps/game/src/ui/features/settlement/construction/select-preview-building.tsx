@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
@@ -57,7 +58,6 @@ import {
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
-import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -176,7 +176,8 @@ export const SelectPreviewBuildingMenu = ({ entityId }: { entityId: number }) =>
     entity_id: entityId,
   });
   const resourceData = useResourceManager(entityId);
-  const realm = getRealmInfo(entityId, game.setup.store, getPlayerDisplayName);
+  const names = usePlayerNames();
+  const realm = getRealmInfo(entityId, game.setup.store, names.text);
 
   const existingBuildings = useMemo(
     () => (realm?.position ? requireActiveGameClient().views.buildingTiles(entityId).existingBuildings() : []),

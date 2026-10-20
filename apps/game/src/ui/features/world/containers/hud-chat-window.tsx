@@ -1,6 +1,6 @@
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useRequestSignIn } from "@/shell/sign-in/sign-in-route";
-import { resolveChatSenderName } from "@/hooks/use-player-profile";
+import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
@@ -120,12 +120,14 @@ export function HudChatWindow({
     };
   }, [initializer, onOpenChange, open]);
 
+  // The strip names the last sender, and draws again when a name lands.
+  const names = usePlayerNames();
   const stripText = !initializer
     ? "Sign in to chat"
     : connection === "connected" && !hasGameChat
       ? "Chat unavailable"
       : lastMessage
-        ? `${resolveChatSenderName(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
+        ? `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`
         : "No messages yet";
 
   return (

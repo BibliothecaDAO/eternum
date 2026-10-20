@@ -10,7 +10,8 @@ const history = vi.hoisted(() =>
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
 // Names are not what these reads are about: no player has one, and none ever lands.
-vi.mock("@/hooks/use-player-profile", () => ({ getPlayerDisplayName: () => null, usePlayerNamesRevision: () => [] }));
+const NAMES = vi.hoisted(() => ({ text: () => "", reading: () => ({ state: "waiting" as const, text: "…" }) }));
+vi.mock("@/hooks/use-player-profile", () => ({ usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => ({ chainId: "0x1" }) }));
 vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum/game-client")>()),

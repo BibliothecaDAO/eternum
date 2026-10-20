@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -41,7 +42,6 @@ import { ActiveRelicEffects } from "../../world/components/entities/active-relic
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
 import { RaidResult } from "./raid-result";
-import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 enum RaidOutcome {
   Success = "Success",
@@ -97,8 +97,9 @@ export const RaidContainer = ({
   const biome = useStoredBiome(target.hex.x, target.hex.y) ?? BiomeType.None;
 
   // Get the current army states for display
+  const names = usePlayerNames();
   const attackerArmyData = useMemo(() => {
-    const army = getArmy(attackerEntityId, ContractAddress(account.address), store, getPlayerDisplayName);
+    const army = getArmy(attackerEntityId, ContractAddress(account.address), store, names.text);
     // An army this client cannot see raids nothing: no simulation runs on a phantom attacker.
     if (!army) return null;
 
@@ -112,7 +113,7 @@ export const RaidContainer = ({
         battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
-  }, [account.address, attackerEntityId, store, timestamp, revision]);
+  }, [account.address, attackerEntityId, store, timestamp, revision, names]);
   const attackerRecharging =
     attackerArmyData !== null &&
     isStaminaRecharging(Number(attackerArmyData.troops.stamina.amount), combatConfig.stamina_attack_req);

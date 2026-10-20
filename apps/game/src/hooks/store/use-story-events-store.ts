@@ -1,4 +1,4 @@
-import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
+import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";
 import { fetchHeraldGameHistory, requireShard, storyParticipants } from "@bibliothecadao/eternum/game-client";
 import { storyPayloadId } from "@/utils/native-id";
 import { getActiveGame } from "@/runtime/world";
@@ -213,6 +213,7 @@ const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
   store: Parameters<typeof buildStoryEventPresentation>[1],
   viewerAddress: string | null,
+  playerName: PlayerNames["text"],
 ): ProcessedStoryEvent => {
   const timestampMs = Number(BigInt(event.timestamp)) * 1_000;
   const presentation = buildStoryEventPresentation(
@@ -228,7 +229,7 @@ const processStoryEvent = (
       viewerAddress,
     },
     store,
-    getPlayerDisplayName,
+    playerName,
   );
   return { ...event, id: event.event_id, timestampMs, presentation };
 };
@@ -393,7 +394,7 @@ export const useStoryReads = (reads: StoryRead[]) => {
   } = useGame();
   const streamed = useStoryEventsStore((state) => state.streamed);
   // A story's words name its players by the one rule, so they are written again whenever a name may have changed.
-  const names = usePlayerNamesRevision();
+  const names = usePlayerNames();
   const viewer = useAccountAddress();
   const viewerAddress = viewer === null ? null : `0x${viewer.toString(16)}`;
   const shard = requireShard(getActiveGame()?.chainId);
@@ -479,8 +480,8 @@ export const useStoryReads = (reads: StoryRead[]) => {
         Number.POSITIVE_INFINITY,
       )
         .filter(isPresentableStory)
-        .map((event) => processStoryEvent(event, store, viewerAddress)),
-    [store, queries, delivered, viewerAddress, ...names],
+        .map((event) => processStoryEvent(event, store, viewerAddress, names.text)),
+    [store, queries, delivered, viewerAddress, names],
   );
 
   return { data, queries };

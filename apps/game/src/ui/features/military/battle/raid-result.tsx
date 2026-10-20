@@ -3,7 +3,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, formatCharge, ID, RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -15,13 +15,13 @@ import { storyPayloadId } from "@/utils/native-id";
 
 // Add the tweet formatting function
 const getFormattedRaidTweet = ({
-  accountName,
+  names,
   accountAddress,
   targetAddress,
   stolenResources,
   store,
 }: {
-  accountName: string | null;
+  names: PlayerNames;
   accountAddress: string;
   targetAddress: ContractAddress | null;
   stolenResources: Array<{ resourceId: number; amount: number }>;
@@ -38,8 +38,8 @@ const getFormattedRaidTweet = ({
     .join(", ");
 
   return formatSocialText(twitterTemplates.raid, {
-    attackerNameText: `${accountName || accountAddress.slice(0, 6) + "..." + accountAddress.slice(-4)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
-    defenderNameText: `${getPlayerDisplayName(targetAddress ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+    attackerNameText: `${names.text(accountAddress)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+    defenderNameText: `${names.text(targetAddress ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
     raidResources: resourcesText,
     url: env.VITE_SOCIAL_LINK,
   });
@@ -97,18 +97,18 @@ export const RaidResult = ({
     if (raidResult) setIsSlowingDown(true);
   }, [raidResult]);
 
-  const accountName = usePlayerDisplayName(account.address);
+  const names = usePlayerNames();
 
-  // Format the tweet text
+  // The shared text names both sides by the one rule, written again when either name lands.
   const formattedTweet = useMemo(() => {
     return getFormattedRaidTweet({
-      accountName,
+      names,
       accountAddress: account.address,
       targetAddress: target.addressOwner,
       stolenResources: initialStolenResources,
       store,
     });
-  }, [raidResult, account.address, initialStolenResources, store, accountName]);
+  }, [raidResult, account.address, initialStolenResources, store, names]);
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(

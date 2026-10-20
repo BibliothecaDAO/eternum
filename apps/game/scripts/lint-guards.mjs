@@ -2,6 +2,7 @@
 // The repo's full ESLint config is not run in CI, so a rule that must hold lives here.
 //   node scripts/lint-guards.mjs      fails, naming each hit (CI: pnpm --dir apps/game lint:guards)
 import { ESLint } from "eslint";
+import { readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -41,6 +42,30 @@ const TEXT_VALUES = {
 // for the first one added above the return; the rule catches both.
 const HOOK_ORDER = { "react-hooks/rules-of-hooks": "error" };
 
+// React code reads a player's name only through the hooks (usePlayerNames, usePlayerName, usePlayerDisplayName), whose
+// values change when a name lands: an imperative read in a memo or an effect kept "…" after identity answered (the
+// story reader, the Faith board, the battle share). The imperative readers are for the scenes and the services.
+const REACT_CODE = [
+  "apps/game/src/ui/**/*.{ts,tsx}",
+  "apps/game/src/hooks/**/*.{ts,tsx}",
+  "apps/game/src/shell/**/*.{ts,tsx}",
+];
+const NO_IMPERATIVE_NAMES = {
+  "no-restricted-imports": [
+    "error",
+    {
+      paths: [
+        {
+          name: "@/services/identity/player-profiles",
+          importNames: ["getPlayerDisplayName", "readPlayerName"],
+          message:
+            "React code reads a name through usePlayerNames() (or usePlayerName), which follows names that land.",
+        },
+      ],
+    },
+  ],
+};
+
 const eslint = new ESLint({
   cwd: REPO,
   overrideConfigFile: true,
@@ -57,15 +82,46 @@ const eslint = new ESLint({
       ignores: ["**/*.test.{ts,tsx}"],
       languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: resolve(REPO, "apps/game") } },
       plugins: { "@typescript-eslint": tseslint.plugin },
-      rules: TEXT_VALUES,
+      // Read below for the names a hook returns only: the codebase keys many memos by store revisions on purpose.
+      rules: { ...TEXT_VALUES, "react-hooks/exhaustive-deps": "warn" },
+    },
+    {
+      files: REACT_CODE,
+      // The hooks module is where the imperative readers become the hooks.
+      ignores: ["**/*.test.{ts,tsx}", "apps/game/src/hooks/use-player-profile.ts"],
+      rules: NO_IMPERATIVE_NAMES,
     },
   ],
 });
 
+/** Each name a file holds from a name hook: `const names = usePlayerNames()`, `const { text } = …`, `usePlayerName(…)`. */
+const NAME_HOOK = /const\s+(\{[^}]*\}|\w+)\s*=\s*use(?:PlayerNames|PlayerName|PlayerDisplayName)\(/g;
+const nameHookValues = (path) =>
+  new Set(
+    [...readFileSync(path, "utf8").matchAll(NAME_HOOK)].flatMap(([, held]) =>
+      held.startsWith("{")
+        ? held
+            .slice(1, -1)
+            .split(",")
+            .map((part) => part.split(":").at(-1).trim())
+        : [held],
+    ),
+  );
+
+/**
+ * A memo, a callback or an effect that reads a name hook's value without listing it: it keeps the name it first read
+ * when the name lands ("Its missing dependency 'names'"). Other missing dependencies are the codebase's own choice.
+ */
+const missesNames = (result, message) => {
+  if (message.ruleId !== "react-hooks/exhaustive-deps" || !/missing dependenc/.test(message.message)) return false;
+  const held = nameHookValues(result.filePath);
+  return [...message.message.matchAll(/'([\w$]+)/g)].some(([, root]) => held.has(root));
+};
+
 const results = await eslint.lintFiles(SOURCES);
 const hits = results.flatMap((result) =>
   result.messages
-    .filter((message) => message.fatal || message.severity === 2)
+    .filter((message) => message.fatal || message.severity === 2 || missesNames(result, message))
     .map((message) => `${relative(REPO, result.filePath)}:${message.line}:${message.column} ${message.message}`),
 );
 for (const hit of hits) console.log(hit);

@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { actNowRefusal, canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -9,7 +10,6 @@ import { type BuildingType, type ResourcesIds } from "@bibliothecadao/types";
 import { useCallback } from "react";
 import { create } from "zustand";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
-import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 /** A suggestion this hook runs: every one but a realm's level-up, which is the realm's own step (useRealmLevelUp). */
@@ -43,6 +43,7 @@ export const useSuggestionActions = () => {
   const requestedSimpleCost = useUIStore((state) => state.useSimpleCost);
   const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
+  const names = usePlayerNames();
   const runAutoBuildSuggestion = useCallback(
     async (suggestion: EmpireSuggestion) => {
       const target = resolveAutoBuildTarget(suggestion);
@@ -54,7 +55,7 @@ export const useSuggestionActions = () => {
       const entityId = safeInteger(suggestion.realmId);
       if (!Number.isFinite(entityId)) return;
 
-      const realm = getRealmInfo(entityId, setup.store, getPlayerDisplayName);
+      const realm = getRealmInfo(entityId, setup.store, names.text);
       await buildRealmBuilding({
         entityId,
         realmPosition: realm?.position,
@@ -64,7 +65,7 @@ export const useSuggestionActions = () => {
         useSimpleCost,
       });
     },
-    [mode, setLeftNavigationView, setup.store, useSimpleCost],
+    [mode, setLeftNavigationView, setup.store, useSimpleCost, names],
   );
 
   const runSuggestionClick = useCallback(

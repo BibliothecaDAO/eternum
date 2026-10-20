@@ -5,7 +5,7 @@ import { useNavigateToMapView } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGame } from "@/hooks/context/game-context";
 import { useFactView } from "@/hooks/use-fact-view";
-import { getPlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { gameStructuresView } from "@/sync/fact-views";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
@@ -37,8 +37,8 @@ function StandingsRows() {
   const {
     setup: { store },
   } = useGame();
-  // Names are read as each row draws; this redraws the rows when one lands.
-  usePlayerNamesRevision();
+  // Names are read as each row draws, and the rows draw again when one lands.
+  const names = usePlayerNames();
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
@@ -55,7 +55,7 @@ function StandingsRows() {
       </HudTableHead>
       {rows.map((row) => {
         const address = BigInt(row.address);
-        const name = getPlayerDisplayName(address);
+        const name = names.text(address);
         const shown = row.own ? YOU : name;
         const capital = structures
           .filter((structure) => structure.owner === address && structure.base.category === StructureType.Realm)

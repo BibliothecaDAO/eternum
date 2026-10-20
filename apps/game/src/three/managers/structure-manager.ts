@@ -11,7 +11,8 @@ import {
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
-import { getPlayerDisplayName, watchPlayerNames } from "@/hooks/use-player-profile";
+import { watchPlayerNames } from "@/hooks/use-player-profile";
+import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";

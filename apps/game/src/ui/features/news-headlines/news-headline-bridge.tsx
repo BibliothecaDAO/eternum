@@ -25,6 +25,7 @@ import { NewsHeadlineBanner } from "./news-headline-banner";
 import { usePointsGoal } from "@/ui/features/world/hud/points-goal";
 import { buildCaptureHeadline, NEWSWORTHY_CAPTURES } from "./capture-headline";
 import { createWorldEventEntityReader } from "../story-events/world-event-entity-reader";
+import { usePlayerNames } from "@/hooks/use-player-profile";
 
 export function NewsHeadlineBridge() {
   const { setup } = useGame();
@@ -34,10 +35,11 @@ export function NewsHeadlineBridge() {
   const endRevision = useNativeRevision(["BlitzResult", "BlitzRoster", "PlayerPoints"]);
   const goToStructure = useGoToStructure(setup);
   const navigateToMapView = useNavigateToMapView();
+  const names = usePlayerNames();
   const entityReader = useMemo(() => {
     const projection = getActiveGameSyncRuntime()?.getWorldSpatialProjection();
-    return projection ? createWorldEventEntityReader(setup.store, projection) : null;
-  }, [setup.store]);
+    return projection ? createWorldEventEntityReader(setup.store, projection, names.text) : null;
+  }, [setup.store, names]);
 
   const address = useAccountStore((state) => state.account?.address);
   const startAt = useFactView(seasonClockView).gameStartMainAt;

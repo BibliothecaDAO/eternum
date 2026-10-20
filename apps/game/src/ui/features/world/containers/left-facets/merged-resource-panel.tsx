@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { memo, useCallback, useMemo, useRef } from "react";
@@ -33,7 +34,6 @@ import {
   ResourcesIds,
   formatAmount,
 } from "@bibliothecadao/types";
-import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 
 type ProductionItem = StructureProductionSummary["items"][number];
@@ -79,10 +79,10 @@ export const MergedResourcePanel = memo(
     const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, requestedSimpleCost);
 
     const entityId = safeInteger(structureEntityId);
+    const names = usePlayerNames();
     const realm = useMemo(
-      () =>
-        Number.isFinite(entityId) && entityId > 0 ? getRealmInfo(entityId, store, getPlayerDisplayName) : undefined,
-      [entityId, store],
+      () => (Number.isFinite(entityId) && entityId > 0 ? getRealmInfo(entityId, store, names.text) : undefined),
+      [entityId, store, names],
     );
 
     const now = useCurrentDefaultTick();

@@ -1,3 +1,4 @@
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { HudButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -9,7 +10,6 @@ import { useNativeRowOrAbsent, useNativeRow } from "@/hooks/helpers/use-native-f
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { Building, RealmInfo, ResourcesIds, formatCount, resourceName } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 
 export const BuildingsList = ({
   realm,
@@ -31,9 +31,10 @@ export const BuildingsList = ({
   const keys = { game_id: configManager.getActiveGameId(), entity_id: realm.entityId };
   const structureBuildings = useNativeRow("StructureBuildings", keys);
   const productionBoostBonus = useNativeRowOrAbsent("ProductionBonus", keys);
+  const names = usePlayerNames();
   const realmInfo = useMemo(
-    () => getRealmInfo(realm.entityId, setup.store, getPlayerDisplayName),
-    [realm.entityId, setup.store, structureBuildings, resourceManager],
+    () => getRealmInfo(realm.entityId, setup.store, names.text),
+    [realm.entityId, setup.store, structureBuildings, resourceManager, names],
   );
 
   const activeRelicEffects = useMemo(() => {

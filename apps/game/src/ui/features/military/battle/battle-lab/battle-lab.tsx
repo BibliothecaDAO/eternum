@@ -2,7 +2,7 @@ import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { getPlayerDisplayName, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { usePlayerNames } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { HudCheck, HudNotice, HudWindow } from "@/ui/design-system/kit/hud-elements";
@@ -81,7 +81,7 @@ export const BattleLab = ({
   } = useGame();
 
   const gameMode = useGameModeConfig();
-  const accountName = usePlayerDisplayName(account.address);
+  const names = usePlayerNames();
   const selectedHex = useUIStore((s) => s.selectedHex);
   const closeSurface = usePopoverStore((s) => s.closeSurface);
   const deselectEntity = useUIStore((s) => s.deselectEntity);
@@ -304,23 +304,13 @@ export const BattleLab = ({
       ? getGuildFromPlayerAddress(ContractAddress(target.addressOwner), store)?.name
       : undefined;
     return formatSocialText(twitterTemplates.combat, {
-      attackerNameText: `${accountName || getPlayerDisplayName(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
+      attackerNameText: `${names.text(account.address)} ${attackerGuild ? `from ${attackerGuild} tribe` : ""}`,
       attackerTroopsText: `${Math.floor(state.attacker.troopCount)} ${state.attacker.tier} ${state.attacker.troopType}`,
       defenderTroopsText: `${Math.floor(state.defender.troopCount)} ${state.defender.tier} ${state.defender.troopType}`,
-      defenderNameText: `${getPlayerDisplayName(target.addressOwner ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
+      defenderNameText: `${names.text(target.addressOwner ?? 0n)} ${defenderGuild ? `from ${defenderGuild}` : ""}`,
       url: env.VITE_SOCIAL_LINK,
     });
-  }, [
-    mode,
-    hasAttacker,
-    state.hasDefender,
-    target,
-    account.address,
-    accountName,
-    store,
-    state.attacker,
-    state.defender,
-  ]);
+  }, [mode, hasAttacker, state.hasDefender, target, account.address, names, store, state.attacker, state.defender]);
 
   return (
     <HudWindow title="Combat" icon="military" size="workspace" onClose={closeSurface}>
