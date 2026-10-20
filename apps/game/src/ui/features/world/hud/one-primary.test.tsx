@@ -45,10 +45,12 @@ vi.mock("@/ui/modules/entity-details/hooks/use-structure-upgrade", () => ({
 }));
 // Another realm, North, can take its build-order step: the Build order panel's, never Next up's.
 vi.mock("@/ui/features/world/containers/left-facets/use-empire-suggestions", () => ({
-  useEmpireSuggestions: () => [{ id: "s2", realmId: 2, realmName: "North" }],
+  useEmpireSuggestions: () => [
+    { id: "s2", realmId: 2, realmName: "North", label: "Build wheat farm", reason: "Wheat farms: 0 of 2 built" },
+  ],
 }));
 vi.mock("@/ui/features/world/containers/left-facets/use-suggestion-actions", () => ({
-  isOrderSuggestion: () => false,
+  isOrderSuggestion: () => true,
   useSuggestionActions: () => ({ handleSuggestionClick: vi.fn(), pendingSuggestionIds: [] }),
 }));
 vi.mock("@/ui/features/world/containers/left-facets/suggestions-panel", () => ({ SuggestionsPanel: () => null }));
