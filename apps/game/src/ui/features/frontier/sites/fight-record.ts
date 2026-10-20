@@ -36,7 +36,7 @@ type PayoutRecord = { resourceId: ResourcesIds; amount: number };
 
 /**
  * What the action's clear paid, by its transaction, from the payout story the contract emits with the winning
- * battle: the reward, null for a site that pays none (beasts, or a ruin, whose chest is its own), and undefined
+ * battle: the reward, null when the story has no resource reward, and undefined
  * when no payout story of that transaction reached this client.
  */
 export const readPayoutRecord = (transactionHash: string): PayoutRecord | null | undefined => {

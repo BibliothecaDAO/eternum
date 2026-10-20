@@ -200,12 +200,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
     const label = frontierSiteName(category);
-    const reward =
-      payload.reward === null
-        ? label === "Ruin"
-          ? "Closed chest on the tile"
-          : "XP only"
-        : formatResourceList([payload.reward]);
+    const reward = payload.reward === null ? "XP only" : formatResourceList([payload.reward]);
     if (!reward) throw new Error("Incomplete site resource reward");
     return {
       title: `${label} cleared`,
