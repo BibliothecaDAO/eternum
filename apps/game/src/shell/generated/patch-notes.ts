@@ -13,19 +13,19 @@ export const patchNotes = [
           "kind": "new",
           "icon": "play",
           "title": "A new app",
-          "line": "Play, Season, What's new and You across the top, and Market opens Realms' marketplace. Play leads with your next step, then each mode's games; Season shows each mode's board and your Blitz rating; You holds your card, your finished games and Settings. A finished game opens Results on your score card, and a phone plays either way up."
+          "line": "Play, Season, What's new and You across the top, along the bottom on a phone, and Market opens Realms' marketplace. Play leads with your next step, then each mode's games; Season shows each mode's board and your Blitz rating; You holds your card, your finished games and Settings. A finished game opens Results on your score card, and a phone plays either way up."
         },
         {
           "kind": "new",
           "icon": "person",
           "title": "Sign in your way",
-          "line": "Sign in with Discord or a code sent to your email, and choose the name every player sees. Settings lists your devices, up to eight, and removing one signs it out. Link a payout wallet (Ready, Braavos or Ready by email) with an emailed code; it can be paid at once."
+          "line": "Sign in with Discord or a code sent to your email, and choose the name every player sees. Settings lists your devices, up to eight, and removing one signs it out. Link a payout wallet (Ready, Braavos or Controller, or Ready by email if you have none) with an emailed code; it can be paid at once."
         },
         {
           "kind": "new",
           "icon": "map",
           "title": "One HUD for every mode",
-          "line": "Your holdings on the left, one kind per tab, with a star to pin a realm; the selected realm's card and the minimap under them; Next up, the events, the picked tile and chat on the right. A phone shows Empire, Map, Log, Chat and Details as tabs."
+          "line": "Your holdings on the left, one kind per tab, with a star to pin a realm; the selected realm's card and the minimap under them; Next up, the events, the picked tile and chat on the right. Every game opens on the world map. On a phone, Blitz shows Empire, Map, Log, Chat and Details as tabs."
         },
         {
           "kind": "new",
@@ -37,7 +37,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "star",
           "title": "Next up",
-          "line": "The HUD names the one step that scores most now: open a crate beside your army, explore, take a camp, or level up first when an attack would wipe your army out. After a loss it says where to raise the next army."
+          "line": "The HUD names one thing to do now, alerts first, with the button that does it. In a Blitz it is the step that scores most: open a crate beside your army, explore, take a camp, or level up first when an attack would wipe your army out, and after a loss where to raise the next army. In Frontier it is what the day calls for: barracks, a deploy, a guard in reach, a tier, the castle, research, exploring."
         },
         {
           "kind": "new",
@@ -54,8 +54,8 @@ export const patchNotes = [
         {
           "kind": "new",
           "icon": "map-realm",
-          "title": "Map labels",
-          "line": "Every army, realm, camp and rift wears a short label: an army's player, troops and stamina, a realm's player and rank, a camp's or rift's own name and guard. Hover a label for the rest."
+          "title": "Map tokens",
+          "line": "Every army, realm, camp and rift wears a token in its side's colour: its troops' tier and count, an army's stamina bar, a dashed ring when nothing guards it. Hover or select it and its plate opens in its place: an army's player, home and exact stamina, a realm's guards in the order an attacker meets them, a camp's or rift's own name and what it holds."
         },
         {
           "kind": "new",
@@ -109,13 +109,13 @@ export const patchNotes = [
           "kind": "new",
           "icon": "notifications",
           "title": "Notifications",
-          "line": "Choose Off, Important or All. You are told when an army is rested and when a realm of yours is taken."
+          "line": "Choose Off, Important or All. Important tells you when your Frontier day ends in an hour, your Blitz starts, a message reaches you, or you are attacked or a holding of yours is taken; All adds every clear, fight and build, and an army rested."
         },
         {
           "kind": "new",
           "icon": "victory",
           "title": "The game's end",
-          "line": "A fractured veil spreads from the spires, and the map, its doorway and Game finished lead to Results, where standings stay final. Anyone can open a finished game's end map to scout how it stood."
+          "line": "A fractured veil spreads from the spires, and the map, its doorway and Game finished lead to Results, where standings stay final. From Results, See the end map lets anyone scout the map as the game ended."
         },
         {
           "kind": "new",
@@ -158,6 +158,12 @@ export const patchNotes = [
           "icon": "chat",
           "title": "Chat reconnects",
           "line": "Chat comes back by itself after a dropped connection."
+        },
+        {
+          "kind": "fix",
+          "icon": "move",
+          "title": "Armies on the ground",
+          "line": "A marching army keeps its feet on the ground instead of floating and bobbing above the map."
         },
         {
           "kind": "fix",
@@ -219,13 +225,13 @@ export const patchNotes = [
           "kind": "new",
           "icon": "deploy",
           "title": "Deploy",
-          "line": "Barracks train for free, and each troop costs 2 wheat when it deploys, onto the tile you pick beside your realm. Two of your armies side by side can merge, keeping the lower stamina."
+          "line": "Barracks train for free, and each troop costs 2 wheat when it deploys, onto the tile you pick beside your realm; Deploy shows the price and how far the wheat left lets the army march. Two of your armies side by side can merge, keeping the lower stamina."
         },
         {
           "kind": "new",
           "icon": "map",
           "title": "Frontier's screen",
-          "line": "One strip holds your stores and the day's clock, a card per army shows its strength, stamina and XP, and chat folds away while you command. Ysolde's guide walks you through your first day and says each rule once, with the game's numbers."
+          "line": "On a desktop, Frontier plays on the HUD Blitz plays: your realm's panel, a ring per store and your LORDS, over a row per army with its exact stamina; Next up, the events and chat on the right; the day's clock in the top bar; Research, Production, Today and Season at the foot. Orders go from the map, by right-click. A phone keeps a strip of stores at the top, a bar of places at the foot and one sheet at a time."
         },
         {
           "kind": "new",
@@ -255,7 +261,13 @@ export const patchNotes = [
           "kind": "new",
           "icon": "camp",
           "title": "Sites to clear",
-          "line": "Camps, rifts, ruins and bands of stragglers hold the land's riches, and each shows its guard and its payout before you attack. A cleared site leaves a standard that armies can walk onto."
+          "line": "Camps, rifts, ruins and beasts hold the land's riches, and each shows its guard and its payout before you attack: a camp pays labor, a rift Essence, a ruin its chest. A site pays once: a cleared one leaves a standard that shows what the clear paid, and armies can walk onto it."
+        },
+        {
+          "kind": "new",
+          "icon": "camp",
+          "title": "Beasts",
+          "line": "Beasts roam the land in two strengths, as likely as each other: a Minotaur, 300 to 350 troops on the surface, or a stronger Cyclops, 450 to 550, with more of each deeper down. They are the weakest guards and pay only XP. A camp, a rift or a ruin shows its depth's beast: a Troll on the surface, then a Wyvern, then a Hydra."
         },
         {
           "kind": "new",
@@ -272,8 +284,8 @@ export const patchNotes = [
         {
           "kind": "new",
           "icon": "chest",
-          "title": "Chests",
-          "line": "A chest opens where you earn it: a relic, a cosmetic or a claim to LORDS."
+          "title": "Chests in the wild",
+          "line": "One newly revealed surface tile in 10,000 holds a chest of LORDS, worth a common share at today's price and set aside from the season's pool. Open it with an army beside it before the day ends; the LORDS go to your realm."
         },
         {
           "kind": "new",
@@ -285,7 +297,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "star",
           "title": "Armies learn",
-          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, Scouting finds up to 40% more of a kind you pick."
+          "line": "An army spends its XP on the attribute tiers you choose, up to tier 5: Battle hits up to twice as hard, Logistics carries up to 150 more stamina, Scouting finds up to 40% more of a kind you pick. On a desktop, Upgrade on an army's row opens its tiers once its XP buys one."
         },
         {
           "kind": "new",
@@ -321,7 +333,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "chronicles",
           "title": "Today and the season",
-          "line": "Today totals your day; Menu, Season ranks every realm, and you can visit one."
+          "line": "Today totals your day; Season ranks every realm, and you can visit one."
         }
       ],
       "blitz": [
@@ -368,6 +380,12 @@ export const patchNotes = [
           "icon": "calendar",
           "title": "Entry closes before the start",
           "line": "Entry closes five minutes before the games start. A game opens on time once its whole roster is seated, in games of up to 24; until then, every action says when play opens."
+        },
+        {
+          "kind": "new",
+          "icon": "build",
+          "title": "Build order",
+          "line": "On a desktop, a Build order panel under Next up names each realm's next building on a recommended order, with the button that builds it. Levelling the realm up comes first, then a worker hut when population is 3 from full."
         },
         {
           "kind": "new",
