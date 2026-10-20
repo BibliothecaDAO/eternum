@@ -84,3 +84,51 @@ it("applies Reduced motion at once, with nothing to reload", async () => {
   expect(reloadRow()).toBe(false);
   await toggle("Reduced motion");
 });
+
+it("keeps a renderer chosen and another setting through closing Settings, and reloads onto both with the page kept", async () => {
+  window.history.replaceState(null, "", "/g/0x1/6/map?spectate=true");
+  await choose("Renderer", "WebGL2");
+  await choose("Quality", "Balanced");
+  // Settings closes (its panel unmounts) and opens again.
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await act(async () => root.render(<VideoSettings />));
+  expect(host.querySelector(".ui-select[aria-label='Renderer']")!.textContent).toBe("WebGL2");
+  expect(host.querySelector(".ui-select[aria-label='Quality']")!.textContent).toBe("Balanced");
+  expect(reloadRow()).toBe(true);
+
+  const assign = vi.fn();
+  const reload = vi.fn();
+  const location = vi
+    .spyOn(window, "location", "get")
+    .mockReturnValue({ href: window.location.href, assign, reload } as unknown as Location);
+  await act(async () =>
+    [...host.querySelectorAll("button")].find((button) => button.textContent === "Reload")!.click(),
+  );
+  location.mockRestore();
+  expect(reload).not.toHaveBeenCalled();
+  const target = new URL(assign.mock.calls[0][0]);
+  expect([target.pathname, Object.fromEntries(target.searchParams)]).toEqual([
+    "/g/0x1/6/map",
+    { spectate: "true", rendererMode: "webgpu-force-webgl" },
+  ]);
+  // Undone, nothing waits for a reload.
+  await choose("Renderer", "WebGPU");
+  await choose("Quality", "High");
+  expect(reloadRow()).toBe(false);
+  window.history.replaceState(null, "", page);
+});
+
+it("reloads the page as it is when no renderer choice waits", async () => {
+  await toggle("Shadows");
+  const assign = vi.fn();
+  const reload = vi.fn();
+  const location = vi
+    .spyOn(window, "location", "get")
+    .mockReturnValue({ href: window.location.href, assign, reload } as unknown as Location);
+  await act(async () =>
+    [...host.querySelectorAll("button")].find((button) => button.textContent === "Reload")!.click(),
+  );
+  location.mockRestore();
+  expect([assign.mock.calls.length, reload.mock.calls.length]).toEqual([0, 1]);
+});

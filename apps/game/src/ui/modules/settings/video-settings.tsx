@@ -12,7 +12,12 @@ import {
   type RenderMode,
   writeRenderMode,
 } from "@/three/render-profile";
-import { buildRendererDebugUrl } from "@/three/renderer-build-mode";
+import {
+  buildRendererUrl,
+  readRendererPreference,
+  type RendererBuildMode,
+  writeRendererPreference,
+} from "@/three/renderer-build-mode";
 import { RENDERER_MODES, requestedRendererMode } from "@/ui/debug/renderer-debug-control";
 import { HudButton, HudSelect, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 import { useState } from "react";
@@ -23,13 +28,14 @@ const QUALITY_OPTIONS = [
 ] as const;
 
 /**
- * Video & Graphics' rows. Quality, Frame rate and Shadows are saved at once and the renderer is chosen, but the game
- * reads them when it loads: while one differs from what this page loaded with, one row says so and reloads on asking.
+ * Video & Graphics' rows. Quality, Frame rate, Renderer and Shadows are saved at once, but the game reads them when it
+ * loads: while one differs from what this page loaded with, one row says so and reloads on asking, onto the saved
+ * renderer with the page's own address kept.
  */
 export function VideoSettings() {
   const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage));
   const [renderMode, setRenderMode] = useState(() => readRenderMode(localStorage));
-  const [renderer, setRenderer] = useState(requestedRendererMode);
+  const [renderer, setRenderer] = useState(() => readRendererPreference(localStorage) ?? requestedRendererMode());
   const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     const next = { ...preferences, ...change };
@@ -40,12 +46,16 @@ export function VideoSettings() {
     writeRenderMode(localStorage, mode);
     setRenderMode(mode);
   };
+  const changeRenderer = (mode: RendererBuildMode) => {
+    writeRendererPreference(localStorage, mode);
+    setRenderer(mode);
+  };
   const rendererChanged = renderer !== requestedRendererMode();
   const waiting =
     rendererChanged || JSON.stringify(createRenderProfile(renderMode, preferences)) !== JSON.stringify(renderProfile);
   const reload = () =>
     rendererChanged
-      ? window.location.assign(buildRendererDebugUrl(window.location.href, renderer))
+      ? window.location.assign(buildRendererUrl(window.location.href, renderer))
       : window.location.reload();
   return (
     <>
@@ -70,7 +80,7 @@ export function VideoSettings() {
           label="Renderer"
           value={renderer}
           options={RENDERER_MODES.map((option) => ({ value: option.mode, label: option.label }))}
-          onChange={setRenderer}
+          onChange={changeRenderer}
         />
       </HudSetting>
       <HudSetting name="Shadows">

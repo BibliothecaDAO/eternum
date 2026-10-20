@@ -8,6 +8,7 @@ import {
 import type { RendererBackendFactory, RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBackend, RendererDeviceLostEvent, RendererInitDiagnostics } from "./renderer-backend";
 import {
+  readRendererPreference,
   removeRetiredRendererModePreference,
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
@@ -41,6 +42,7 @@ export async function initializeRendererBackendRuntime(input: InitializeRenderer
 
   const requestedMode = resolveRendererBuildModeFromSearch({
     envBuildMode: input.envBuildMode,
+    saved: readRendererPreference(getBrowserStorage()),
     search: input.search,
   });
   const explicitOverride = hasExplicitRendererMode(input.search);
@@ -95,6 +97,6 @@ function completeRendererBackendInitialization(
   };
 }
 
-function getBrowserStorage(): Pick<Storage, "removeItem"> | null {
+function getBrowserStorage(): Pick<Storage, "getItem" | "removeItem"> | null {
   return typeof localStorage === "undefined" ? null : localStorage;
 }
