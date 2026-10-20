@@ -45,6 +45,9 @@ const CHOOSING_ROWS = new Set<number>([
 
 const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECISION));
 
+/** A price the tree reads that the store does not hold yet: the tree stays unknown until it arrives. */
+class PricePending extends Error {}
+
 /** The realm's tree with the Essence and labor it holds, live; none while its knowledge or balances are unknown. */
 export const useResearchTree = (
   realm: NativeRows["Structure"] | null,
@@ -54,11 +57,20 @@ export const useResearchTree = (
   const revision = useNativeRevision(RESEARCH_MODELS);
   return useMemo(() => {
     const facts = realm ? readResearchFacts(setup.store, realm, tick) : undefined;
-    return facts && { nodes: readResearchTree(facts), essence: facts.essence, labor: facts.labor };
+    if (!facts) return undefined;
+    try {
+      return { nodes: readResearchTree(facts), essence: facts.essence, labor: facts.labor };
+    } catch (error) {
+      if (error instanceof PricePending) return undefined;
+      throw error;
+    }
   }, [realm, revision, setup.store, tick]);
 };
 
-/** What the tree reads of a realm and its game, from the store; none while any of it is not known yet. */
+/**
+ * What the tree reads of a realm and its game, from the store; none while any of it is not known yet. Prices are read
+ * as the tree asks for them, so a missing one stops the reading (PricePending) rather than defaulting.
+ */
 const readResearchFacts = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
@@ -81,7 +93,8 @@ const readResearchFacts = (
     standing: standingByRow(store, entity),
     learned: rows,
     price: (row, tier) => {
-      const price = store.require("ResearchPrice", { game_id: realm.game_id, row, tier });
+      const price = store.get("ResearchPrice", { game_id: realm.game_id, row, tier });
+      if (!price) throw new PricePending(`ResearchPrice row ${row} tier ${tier}`);
       return { essence: whole(price.essence), labor: whole(price.labor) };
     },
     board: {
