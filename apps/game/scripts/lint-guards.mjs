@@ -4,6 +4,7 @@
 import { ESLint } from "eslint";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -34,6 +35,12 @@ const TEXT_VALUES = {
   "@typescript-eslint/restrict-plus-operands": "error",
 };
 
+// A hook called after an early return, or in a branch, runs in some renders and not others: when the condition flips
+// React throws "Rendered more hooks than during the previous render" and the panel is gone (Transfer's Balances when a
+// player's holdings crossed zero). Where the shorter render calls no stateful hook React cannot tell, so the bug waits
+// for the first one added above the return; the rule catches both.
+const HOOK_ORDER = { "react-hooks/rules-of-hooks": "error" };
+
 const eslint = new ESLint({
   cwd: REPO,
   overrideConfigFile: true,
@@ -42,7 +49,8 @@ const eslint = new ESLint({
       files: SOURCES,
       languageOptions: { parser: tseslint.parser },
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
-      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID] },
+      plugins: { "react-hooks": reactHooks },
+      rules: { "no-restricted-syntax": ["error", ...NO_BITWISE_ID], ...HOOK_ORDER },
     },
     {
       files: ["apps/game/src/**/*.{ts,tsx}"],
