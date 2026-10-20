@@ -25,6 +25,13 @@ const mount = (maxAffordable: number, held = maxAffordable) => {
     press: (text: string) => act(() => button(text).click()),
     button,
     count: () => host.querySelector<HTMLInputElement>("input")!.value,
+    slider: () => host.querySelector<HTMLInputElement>('input[type="range"]')!,
+    drag: (to: number) =>
+      act(() => {
+        const slider = host.querySelector<HTMLInputElement>('input[type="range"]')!;
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, String(to));
+        slider.dispatchEvent(new Event("input", { bubbles: true }));
+      }),
     text: () => host.textContent,
   };
 };
@@ -40,6 +47,18 @@ describe("the troop amount", () => {
     expect(amount.count()).toBe("1,200");
     expect(amount.button("+500").disabled).toBe(true);
     expect(amount.button("Max").disabled).toBe(true);
+  });
+
+  it("sets the count where its slider is dragged, over the same range, and follows the count set by the buttons", () => {
+    const amount = mount(1_500);
+    expect(amount.slider().getAttribute("aria-label")).toBe("Troops: how many go");
+    expect(amount.slider().max).toBe("1500");
+
+    amount.drag(1_250);
+    expect(amount.count()).toBe("1,250");
+
+    amount.press("Max");
+    expect(amount.slider().value).toBe("1500");
   });
 
   it("goes to all of them with Max from any count", () => {

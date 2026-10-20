@@ -270,7 +270,8 @@ const QUICK_ADD = 500;
 
 /**
  * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press and Max
- * right beside it, then out of how many can ("that fit" when the army's room runs out first).
+ * right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
+ * across the same range, to drag the count by hand (the owner, playing dev: "I kinda wish I still had the slider").
  */
 export const HudTroopAmount = ({
   name,
@@ -303,6 +304,7 @@ export const HudTroopAmount = ({
         of {formatExact(most)}
         {held > most && " that fit"}
       </span>
+      <HudSlider label={`${name}: how many go`} value={value} max={most} disabled={disabled} onChange={onChange} />
     </div>
   );
 };
@@ -315,7 +317,7 @@ export type HudTroopStack = { key: string; icon: IconMeaning; tier: 1 | 2 | 3; h
 
 /**
  * Deploying an army: a column per troop, its tiers under its name, every one always in the same place (an empty one
- * dimmed), so the hand learns where to click; under them, the chosen stack's amount with +500 and Max beside it. Where
+ * dimmed), so the hand learns where to click; under them, the chosen stack's amount with +500, Max and its slider. Where
  * the army goes and the Deploy verb with its cost are the caller's: the map's picker hangs on a tile, the Military
  * window adds its map selector.
  */

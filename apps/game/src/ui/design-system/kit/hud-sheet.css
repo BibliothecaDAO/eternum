@@ -1079,10 +1079,15 @@ button.ui-relic:focus-visible {
 }
 
 /* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */
+/* The count typed, +500, Max and out of how many on one line; the slider across the whole control under them. */
 .ui-amount {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: theme(spacing.2);
+}
+.ui-amount > .ui-slider {
+  flex-basis: 100%;
 }
 .ui-amount .ui-field input {
   width: 6rem;

@@ -177,7 +177,7 @@ export const DeploySection = () => (
   <Element
     name="Deploy army"
     wide
-    rule="A column per troop, its tiers always in the same place, then the amount with +500 and Max beside it; one Deploy, its cost the line beside it in the foot. The Military window keeps its map selector for where the army steps out."
+    rule="A column per troop, its tiers always in the same place, then the amount with +500 and Max beside it and a slider under it; one Deploy, its cost the line beside it in the foot. The Military window keeps its map selector for where the army steps out."
     sheet={
       <div data-deploy className="flex flex-wrap items-start gap-6">
         <MapPicker />
@@ -187,8 +187,9 @@ export const DeploySection = () => (
     today={
       <span className="text-sm text-white/70">
         Today: the map's picker (military/components/army-deployment-picker.tsx) and the Military window's form
-        (unified-army-creation-modal) share the troop grid, TroopAmount with +500 and Max at the far right, and a
-        footer; the window adds the army type toggle, the guard slots or the hex map, and the cost in a note line.
+        (unified-army-creation-modal) share the troop grid, TroopAmount with +500 and Max at the far right and its
+        slider under them, and a footer; the window adds the army type toggle, the guard slots or the hex map, and the
+        cost in a note line.
       </span>
     }
   />

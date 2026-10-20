@@ -74,7 +74,7 @@ const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
-  it("opens at half of what the realm can field, with +500 and Max beside the count, and deploys the count typed", async () => {
+  it("opens at half of what the realm can field, with +500, Max and a slider for the count, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
@@ -96,8 +96,14 @@ describe("the Deploy sheet", () => {
     // Deploy in the foot, beside its price and how far the wheat left lets the army march.
     expect(deployButton(host)?.textContent).toBe("Deploy");
     expect(foot(host)).toMatch(/^240 wheatLeaves wheat to march [\d.,]+K? tiles?Deploy$/);
-    // The window shows the decision only: no slider, stamina, attribute marks or day clock.
-    expect(host.querySelector("input[type=range]")).toBeNull();
+    // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
+    // clock.
+    const slider = host.querySelector<HTMLInputElement>("input[type=range]");
+    expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
+      "troops: how many go",
+      "420",
+      "120",
+    ]);
     expect(host.textContent).not.toMatch(/stamina|Day ends/i);
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(

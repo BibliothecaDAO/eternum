@@ -19,7 +19,7 @@ import type { Direction } from "@bibliothecadao/types";
 
 /**
  * Deploy, from its props: the two choices a deploy makes and its one verb. How many troops go (the count typed, +500
- * and Max beside it, out of how many can), onto which tile beside the realm (the map selector), then Deploy in the foot
+ * and Max beside it, out of how many can, a slider under them), onto which tile beside the realm (the map selector), then Deploy in the foot
  * with its wheat price and how far the wheat left lets the army march: the trade the count makes. With no troops at
  * home, Build is the step.
  */
