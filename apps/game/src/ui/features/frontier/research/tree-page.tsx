@@ -52,14 +52,13 @@ export type CastleNode = {
 /**
  * The castle's tree (wireframe 09), a nav page: the realm's Essence and labor held, a row per building type that
  * stands (its tier, the sides taken, the next price and the seal where it is a choice), then the castle rows Research
- * unlocks (shrine, well, Ethereal I to III). A row opens its sheet over the page.
+ * unlocks (shrine, well, Ethereal I to III). A row opens its sheet in the page's place.
  */
 export const TreePage = ({
   essence,
   labor,
   rows,
   castle,
-  chosen,
   onRow,
   onCastle,
 }: {
@@ -67,7 +66,6 @@ export const TreePage = ({
   labor: number | undefined;
   rows: readonly TreeRow[];
   castle: readonly CastleNode[];
-  chosen?: string;
   onRow: (key: string) => void;
   onCastle: (key: string) => void;
 }) => (
@@ -89,7 +87,7 @@ export const TreePage = ({
     bodyClassName="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto"
   >
     {rows.map((row) => (
-      <Row key={row.key} row={row} chosen={row.key === chosen} onOpen={() => onRow(row.key)} />
+      <Row key={row.key} row={row} onOpen={() => onRow(row.key)} />
     ))}
     <div className="flex shrink-0 items-start justify-around gap-1 border-t border-hud-divider pt-2">
       {castle.map((node) => (
@@ -100,7 +98,7 @@ export const TreePage = ({
 );
 
 /** A building type: its sides taken, its tier, and the next tier's price (or what is under way, or done). */
-const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: () => void }) => (
+const Row = ({ row, onOpen }: { row: TreeRow; onOpen: () => void }) => (
   <HudRow
     lead={<SemanticIcon name={row.icon} size={26} />}
     title={row.name}
@@ -113,7 +111,6 @@ const Row = ({ row, chosen, onOpen }: { row: TreeRow; chosen: boolean; onOpen: (
         </span>
       ) : undefined
     }
-    selected={chosen}
     tip={row.tip}
     onClick={onOpen}
     trail={

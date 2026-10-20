@@ -14,7 +14,7 @@ import { ArmyToken, OpenSlot, xpLine } from "./army-token";
 import { useChatKey } from "./chat-key";
 import { dayClock } from "./day-clock";
 import { HudBands } from "./hud-bands";
-import { useHudSurface } from "./frontier-nav";
+import { useOnePanel } from "./one-panel";
 import { MenuSheet } from "./menu-sheet";
 import { OrderBar } from "./order-bar";
 import { PlaceNav } from "./place-nav";
@@ -292,9 +292,9 @@ describe("the Menu", () => {
 describe("the HUD's surfaces", () => {
   it("lets go of the tapped plot when a surface opens, so one sheet stands at a time", () => {
     const Host = () => {
-      const [, setSurface] = useHudSurface();
+      const { openSurface } = useOnePanel(null);
       return (
-        <button type="button" onClick={() => setSurface("research")}>
+        <button type="button" onClick={() => openSurface("research")}>
           Research
         </button>
       );

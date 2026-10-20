@@ -1,6 +1,4 @@
 import { useQuery } from "@/hooks/helpers/use-query";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useState } from "react";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -22,24 +20,6 @@ export type HudSurface =
   | "army"
   | "withdraw"
   | "realms";
-
-/**
- * What the HUD has open. Opening a surface lets go of the tile, plot or building the player had tapped, so one sheet
- * stands at a time.
- */
-export const useHudSurface = () => {
-  const [surface, setSurface] = useState<HudSurface | null>(null);
-  const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
-  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
-  const open = (next: HudSurface | null) => {
-    if (next) {
-      closeSelectedTile();
-      setSelectedBuildingHex(null);
-    }
-    setSurface(next);
-  };
-  return [surface, open] as const;
-};
 
 /**
  * The place bar over the game: Map and Realm move the camera between the day's map and the realm board, the other

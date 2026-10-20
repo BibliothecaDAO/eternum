@@ -70,27 +70,27 @@ export const FrontierSeason = ({ rules, onBack }: { rules: ExpeditionRules; onBa
     startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOn: "realm" });
     onBack();
   };
-  return (
-    <>
-      <SeasonList
-        rank={ownRank(board.data, viewer)}
-        chest={chest}
-        pool={pool}
-        rows={rows}
-        pinned={pinned}
-        state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
-        onRetry={() => void board.refetch()}
-        onOpen={setOpened}
-        onBack={onBack}
+  // A realm's detail stands in the list's place, never over it; its Back returns to the list.
+  if (chosen)
+    return (
+      <EntryDetail
+        entry={chosen}
+        onVisit={chosen === own ? undefined : () => visit(chosen)}
+        onClose={() => setOpened(null)}
       />
-      {chosen && (
-        <EntryDetail
-          entry={chosen}
-          onVisit={chosen === own ? undefined : () => visit(chosen)}
-          onClose={() => setOpened(null)}
-        />
-      )}
-    </>
+    );
+  return (
+    <SeasonList
+      rank={ownRank(board.data, viewer)}
+      chest={chest}
+      pool={pool}
+      rows={rows}
+      pinned={pinned}
+      state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
+      onRetry={() => void board.refetch()}
+      onOpen={setOpened}
+      onBack={onBack}
+    />
   );
 };
 

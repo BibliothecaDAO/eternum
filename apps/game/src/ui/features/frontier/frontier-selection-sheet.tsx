@@ -4,7 +4,9 @@ import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { FrontierSpireSheet } from "./frontier-spire-sheet";
+import { useSpireArmy } from "./spire-army";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import type { ReactNode } from "react";
 import { siteDisplayName, type ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
@@ -20,13 +22,14 @@ import { useSelectedBuildingRow } from "./research/selected-building";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 
 /**
- * What the player tapped, as its Frontier card: an open plot of the realm the build sheet, the keep its upgrade sheet,
- * a standing building its type's Upgrade sheet, a standing site or another player's army the tile card, a Shrine or
- * Well its card, a spire or reward chest its own. Cleared sites and opened chests keep their receipts on the tile.
+ * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
+ * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the realm opens the
+ * build sheet, the keep its upgrade sheet, a standing building its type's Upgrade sheet, a standing site or another
+ * player's army the tile card, a Shrine or Well its card, a spire or reward chest its own. Cleared sites and opened chests keep their receipts on the tile.
  * A cleared site shows its receipt even with an army on the tile. Other empty tiles and armies the dock already
  * shows open no card. The player's own attack result stands in the card's place until it is closed, with the card.
  */
-export const FrontierSelectionSheet = ({
+export const useSelectionCard = ({
   rules,
   realm,
   onResearch,
@@ -35,9 +38,10 @@ export const FrontierSelectionSheet = ({
   realm: NativeRows["Structure"] | null;
   /** Opens Research, for a card whose next step is there. */
   onResearch: () => void;
-}) => {
+}): { key: string; sheet: ReactNode } | null => {
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
+  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
   const mapLayer = useUIStore((state) => state.mapLayer);
   const opening = useChestOpening(selectedHex);
   const fight = useFightResult();
@@ -48,6 +52,7 @@ export const FrontierSelectionSheet = ({
   const tileObject = useSelectedTileObject();
   const keep = useKeepSelected(realm);
   const building = useSelectedBuildingRow(realm);
+  const spireArmy = useSpireArmy(realm);
   const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const close = () => {
@@ -59,26 +64,33 @@ export const FrontierSelectionSheet = ({
     closeFightResult();
     close();
   };
+  const at = `${selectedHex?.col},${selectedHex?.row}:${selectedBuildingHex?.innerCol},${selectedBuildingHex?.innerRow}`;
+  const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
   if (fight)
-    return (
+    return card(
+      "fight",
       <HudSheet label={attackTargetName(fight.site, fight.guardIdentity)} onClose={closeFight}>
         <FightResultCard result={fight} onClose={closeFight} />
-      </HudSheet>
+      </HudSheet>,
     );
-  if (realm && openPlot) return <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />;
+  if (realm && openPlot)
+    return card("plot", <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />);
   if (target)
-    return (
-      <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />
+    return card(
+      "target",
+      <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />,
     );
   if (cleared)
-    return (
+    return card(
+      "cleared",
       <HudSheet label={siteDisplayName(Number(cleared.site.entity_id))} onClose={close}>
         <SiteReceipt selected={cleared} />
-      </HudSheet>
+      </HudSheet>,
     );
-  if (mapSite) return <MapSiteCard selected={mapSite} onClose={close} />;
+  if (mapSite) return card("site", <MapSiteCard selected={mapSite} onClose={close} />);
   if (selectedHex && isMapView && !mapLayer && (tileObject?.kind === "chest" || opening?.kind === "lords"))
-    return (
+    return card(
+      "chest",
       <HudSheet label="Reward Chest" onClose={close}>
         <ChestTilePanel
           rewardChestId={tileObject?.kind === "chest" ? tileObject.tile.occupierId : undefined}
@@ -86,12 +98,13 @@ export const FrontierSelectionSheet = ({
           selectedHex={selectedHex}
           coordsLabel={formatTilePanelTitle("Chest Tile", selectedHex)}
         />
-      </HudSheet>
+      </HudSheet>,
     );
-  if (tileObject?.kind === "spire") return <SpireCard onClose={close} />;
-  if (realm && keep) return <CastleUpgrade realm={realm} onClose={close} />;
+  if (tileObject?.kind === "spire") return card("spire", <SpireCard onClose={close} />);
+  if (realm && keep) return card("keep", <CastleUpgrade realm={realm} onClose={close} />);
   if (realm && building)
-    return (
+    return card(
+      "building",
       <TypeUpgrade
         realm={realm}
         rules={rules}
@@ -99,7 +112,8 @@ export const FrontierSelectionSheet = ({
         essence={building.essence}
         onResearch={onResearch}
         onClose={close}
-      />
+      />,
     );
-  return realm ? <FrontierSpireSheet realm={realm} onClose={close} /> : null;
+  if (spireArmy !== null) return card("spire-depths", <FrontierSpireSheet armyEntityId={spireArmy} onClose={close} />);
+  return null;
 };

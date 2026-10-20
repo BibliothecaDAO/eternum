@@ -94,38 +94,39 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
       }),
     };
   };
-  return (
-    <>
-      <TreePage
-        essence={essence === undefined ? undefined : Math.floor(essence)}
-        labor={labor === undefined ? undefined : Math.floor(labor)}
-        rows={
-          plan
-            ? plan.types.map((view) => ({
-                ...treeRow(view, typeRowLine(setup.store, realm, view)),
-                researching: isResearching(view.row),
-              }))
-            : []
-        }
-        chosen={openRow === null ? undefined : String(openRow)}
-        castle={castle.map(({ node, view }) => ({ ...node, researching: isResearching(view.row) }))}
-        onRow={(key) => setOpenRow(Number(key))}
-        onCastle={setOpen}
+  // A row's sheet stands in the tree's place, never over it (owner, 20 October 2026: "it opens panel over panel"); its
+  // Back returns to the tree.
+  if (typeRow)
+    return (
+      <TypeUpgrade realm={realm} rules={rules} view={typeRow} essence={essence} onClose={() => setOpenRow(null)} />
+    );
+  if (chosen)
+    return (
+      <CastleNodeSheet
+        node={chosen.node}
+        gives={chosen.gives}
+        refusal={nodeRefusal(chosen)}
+        sending={isResearching(chosen.view.row)}
+        onResearch={() => void research(chosen.view)}
+        onClose={() => setOpen(null)}
       />
-      {typeRow && (
-        <TypeUpgrade realm={realm} rules={rules} view={typeRow} essence={essence} onClose={() => setOpenRow(null)} />
-      )}
-      {chosen && (
-        <CastleNodeSheet
-          node={chosen.node}
-          gives={chosen.gives}
-          refusal={nodeRefusal(chosen)}
-          sending={isResearching(chosen.view.row)}
-          onResearch={() => void research(chosen.view)}
-          onClose={() => setOpen(null)}
-        />
-      )}
-    </>
+    );
+  return (
+    <TreePage
+      essence={essence === undefined ? undefined : Math.floor(essence)}
+      labor={labor === undefined ? undefined : Math.floor(labor)}
+      rows={
+        plan
+          ? plan.types.map((view) => ({
+              ...treeRow(view, typeRowLine(setup.store, realm, view)),
+              researching: isResearching(view.row),
+            }))
+          : []
+      }
+      castle={castle.map(({ node, view }) => ({ ...node, researching: isResearching(view.row) }))}
+      onRow={(key) => setOpenRow(Number(key))}
+      onCastle={setOpen}
+    />
   );
 };
 

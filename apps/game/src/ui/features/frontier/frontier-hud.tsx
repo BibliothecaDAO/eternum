@@ -17,7 +17,7 @@ import { useSpectatorWatchesTheLeader } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
 import { FrontierArmy } from "./army/frontier-army";
-import { FrontierSelectionSheet } from "./frontier-selection-sheet";
+import { useSelectionCard } from "./frontier-selection-sheet";
 import { useRealmStores } from "./realm-stores";
 import { FrontierSurfaces } from "./frontier-surfaces";
 import { SelectedArmyBar, useArmyRevealYield } from "./hud/action-bar";
@@ -29,7 +29,8 @@ import { canResearchNow } from "./research/research-plan";
 import { useResearchPlan } from "./research/research-reader";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
-import { FrontierNav, type HudSurface, useHudSurface } from "./hud/frontier-nav";
+import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
+import { useOnePanel } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
@@ -76,7 +77,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const dockRealm = visit ? visited : realm;
   // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
   useSpectatorWatchesTheLeader();
-  const [surface, setSurface] = useHudSurface();
+  // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
+  const card = useSelectionCard({ rules, realm, onResearch: () => setSurface("research") });
+  const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null);
   const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
   const researchPlan = useResearchPlan(realm);
@@ -130,7 +133,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const sheets = (
     <>
       <FrontierSurfaces realm={realm} />
-      <FrontierSelectionSheet rules={rules} realm={realm} onResearch={() => setSurface("research")} />
+      {showsCard && card?.sheet}
       {surface === "menu" && (
         <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
       )}
