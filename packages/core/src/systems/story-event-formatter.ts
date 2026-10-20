@@ -160,7 +160,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   HyperstructurePoints: (_event, payload, components, resolvePlayerName) => ({
     title: "Hyperstructure points",
-    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatNumber(payload.points) ?? "—"}`,
+    // Story points are at the contract's precision (a millionth of a point); a player reads whole points.
+    description: `${nameOwner(payload.player, components, resolvePlayerName) ?? "—"} +${formatPoints(Math.floor(wholePoints(BigInt(String(payload.points)))))}`,
     icon: "prize",
   }),
   BitcoinAwardStory: (_event, payload, components, resolvePlayerName) => ({
