@@ -245,6 +245,11 @@
       "meaning": "workers-hut",
       "group": "Models",
       "note": "Tiled timber hut and yard from the current workers hut model."
+    },
+    {
+      "meaning": "workshop",
+      "group": "Models",
+      "note": "Orange tiled roofs, open timber work bays and workbench from the shipped Craft Yard model."
     }
   ],
   "kept": [
@@ -258,7 +263,6 @@
     "paladin-t1",
     "paladin-t2",
     "paladin-t3",
-    "workshop",
     "move",
     "transfer",
     "production",
@@ -460,7 +464,12 @@
     "workers-hut": {
       "64": "946997056fbb03e5aa4acfc63c8486b2e08cb174f43fc3d7dcaed143dce7b2c8",
       "128": "d560ced7ccd9d0b08376b0a04eff9578f99a4bfe5718ad45c8596bfe800e8a2a"
+    },
+    "workshop": {
+      "64": "9dac90355c5082f9f1c6719ca6f9f21a3a5f746c2ed5c9b1c793f8c330193e4a",
+      "128": "5a15121fe253de09882573d49732895ececc9d9eab66808a7c159c8f7ca4e0dc"
     }
   },
-  "relicsBefore": "0220d0a1bd60c33eb6c35064d055ffb7fe8429ac"
+  "relicsBefore": "0220d0a1bd60c33eb6c35064d055ffb7fe8429ac",
+  "workshopBefore": "549586f46ea922767564a83e94c6b752a17f7d33"
 }

@@ -406,7 +406,9 @@ export async function proveResourceIcons(b, out, records, baseUrl) {
               return i.width===size && i.getAttribute('src')===url;
             });
           });
-        }) && (section!=='Models'||document.querySelectorAll('.rss-model img').length===7);
+        }) && (section!=='Models'||expected.every(meaning=>
+          document.querySelector('[data-change="'+meaning+'"] .rss-model img')?.getAttribute('src')===
+            '/lab/rss-icons/models/'+meaning+'.png'));
       })()`,
       );
       if (section === "Relics")

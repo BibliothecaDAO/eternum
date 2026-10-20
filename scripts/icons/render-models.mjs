@@ -10,6 +10,9 @@ const root = `${repo}/apps/game/asset-sources/facets`;
 const file = `${root}/catalog.json`;
 const catalog = JSON.parse(readFileSync(file, "utf8"));
 const baseUrl = process.argv[2] ?? "https://127.0.0.1:4193";
+const selected = process.argv[4];
+const models = catalog.icons.filter((icon) => icon.source?.model && (!selected || icon.id === selected));
+if (!models.length) throw new Error(`No model-backed icon found: ${selected}`);
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
 await runProof(
   {
@@ -20,7 +23,7 @@ await runProof(
   },
   async (b, out, records) => {
     await b.run("open", `${baseUrl}/lab/kit/resource-icons`, "--ignore-https-errors");
-    for (const { id, source } of catalog.icons.filter((icon) => icon.source?.model)) {
+    for (const { id, source } of models) {
       const data = await b.evaluate(`(${renderBuildingModel.toString()})(${JSON.stringify(source.model)},1024)`);
       const bytes = Buffer.from(data.split(",")[1], "base64");
       writeFileSync(`${root}/masters/${id}.png`, bytes);

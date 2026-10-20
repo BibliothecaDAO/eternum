@@ -2633,7 +2633,14 @@
       "id": "workshop",
       "label": "Workshop",
       "family": "Structures",
-      "prompt": "prompts/workshop.txt"
+      "source": {
+        "model": "/models/new-buildings-opt/workshop.glb",
+        "inputs": {
+          "apps/game/public/models/new-buildings-opt/workshop.glb": "f9b2864946c7d9122de26ee471447b2aeb042c0cc2a4bb4467bfe997b8298210",
+          "apps/game/src/ui/features/debug/kit-lab/render-model.ts": "edcb0230aae42d2864749056008104452a64b2e75a49eaa3e2409bb86c652aca"
+        },
+        "sha256": "b4e88a332b13a62fa3a78a207f9608b0e3b8fa044ddef072d0b7debed2e95aa1"
+      }
     },
     {
       "id": "barracks",

@@ -112,8 +112,8 @@ export function ResourceIconsLab() {
       )}
       {section === "Models" && (
         <p>
-          Rendered directly from the current game models. Workshop keeps its shipped icon until its dedicated model is
-          ready. The Hyperstructure icon renders the completed game model, including its shaft and crown.
+          Rendered directly from the current game models, including the Workshop's Craft Yard. The Hyperstructure icon
+          renders the completed game model, including its shaft and crown.
         </p>
       )}
       {study.changes
@@ -139,7 +139,7 @@ export function ResourceIconsLab() {
         <>
           <p>
             Other resources, all nine troop tiers and Labor keep their art. Utilities use the approved Ivory relief
-            style. Workshop waits for its model.
+            style.
           </p>
           <div className="rss-inventory">
             {study.kept.map((meaning) => (

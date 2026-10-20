@@ -528,10 +528,10 @@ phone comparisons remain side by side. The paintings preserve the original symbo
 unchanged.
 
 **Resources** compares 22 live production resource designs, shipped Essence and teal Research with their previous
-paintings. **Models** shows before/current icons beside actual renders for Farm, Workers Hut, camp, rift, the completed
-Hyperstructure, spire and the chest body without its tile. Workshop waits for its model. **Kept** shows the existing
-Labor and nine troop tiers with tighter crops, alongside the current Ivory relief utilities. **Inventory** compares all
-58 historical and current resources. Construction cards retain model thumbnails.
+paintings. **Models** shows before/current icons beside actual renders for Farm, Workers Hut, Workshop (Craft Yard),
+camp, rift, the completed Hyperstructure, spire and the chest body without its tile. **Kept** shows the existing Labor
+and nine troop tiers with tighter crops, alongside the current Ivory relief utilities. **Inventory** compares all 58
+historical and current resources. Construction cards retain model thumbnails.
 
 The approved relic masters, prompts, source hashes and verdicts now live in `asset-sources/facets/`; the separate
 proposal deliveries are removed. `pnpm icons:build` delivers the selected paintings through the existing semantic path.
@@ -541,7 +541,9 @@ accommodate those tighter crops; `icons:prove --catalog` checks painted extent, 
 restore/check commands use pinned committed archives and work without historical Git objects. Start
 `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`, then run
 `pnpm icons:prove <new-evidence-root> https://127.0.0.1:4193 --resources` for desktop/phone comparisons, exact URL,
-decode, pixel-size and overflow checks. Regeneration commands are in `asset-sources/rss-icons/README.md`.
+decode, pixel-size and overflow checks. Regeneration commands are in `asset-sources/rss-icons/README.md`. To rerender
+just the Workshop: `pnpm icons:render-models https://127.0.0.1:4193 <new-evidence-root> workshop`, then
+`pnpm icons:build workshop` and `pnpm icons:study`.
 
 ## End of game: Fractured veil
 

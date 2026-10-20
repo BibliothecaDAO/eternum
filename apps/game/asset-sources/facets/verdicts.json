@@ -768,8 +768,8 @@
     "reason": "Windmill, wheat field and fence from the current farm model."
   },
   "faceted/workshop": {
-    "verdict": "equal",
-    "reason": "Workshop: identifiable silhouette at 24 and 32 px, coherent broad painted planes, no gilded frame. Matched against the shipped image in round-4/review-02."
+    "verdict": "beats shipped",
+    "reason": "Renders the shipped Craft Yard model with its orange tiled roofs and open timber work bays, replacing the unrelated painting. Tight subject crop follows the shared fill rule."
   },
   "faceted/barracks": {
     "verdict": "equal",

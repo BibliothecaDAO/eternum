@@ -1440,6 +1440,31 @@
       "art": "beast-cyclops",
       "label": "Cyclops",
       "family": "Beasts"
+    },
+    "brand-x": {
+      "token": "brand-x",
+      "label": "X",
+      "family": "Brands"
+    },
+    "brand-discord": {
+      "token": "brand-discord",
+      "label": "Discord",
+      "family": "Brands"
+    },
+    "brand-telegram": {
+      "token": "brand-telegram",
+      "label": "Telegram",
+      "family": "Brands"
+    },
+    "brand-github": {
+      "token": "brand-github",
+      "label": "GitHub",
+      "family": "Brands"
+    },
+    "brand-coingecko": {
+      "token": "brand-coingecko",
+      "label": "CoinGecko",
+      "family": "Brands"
     }
   },
   "resources": {

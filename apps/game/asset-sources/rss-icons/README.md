@@ -34,9 +34,10 @@ From the repository root:
   Essence. The approved relic paintings are their own committed production masters. Research's teal edit and model
   renders are their own committed masters.
 - Start the client: `pnpm --dir apps/game dev --host 127.0.0.1 --port 4193 --strictPort`.
-- `node scripts/icons/render-models.mjs https://127.0.0.1:4193 <new-evidence-directory>` rerenders seven model masters
-  with the shared building-thumbnail renderer and refreshes their source hashes. It uses the client's compressed-model
-  loader and releases each graphics context after capture.
+- `node scripts/icons/render-models.mjs https://127.0.0.1:4193 <new-evidence-directory> [icon-id]` rerenders model
+  masters with the shared building-thumbnail renderer and refreshes their source hashes. It uses the client's
+  compressed-model loader and releases each graphics context after capture. Pass `workshop` to render just the shipped
+  Craft Yard.
 - `pnpm icons:build` delivers production masters. Pass IDs to rebuild only selected art.
 - `pnpm icons:study` refreshes normalized model references and the comparison manifest; `pnpm icons:study --check`
   verifies committed before snapshots and historical source hashes. Production delivery verification belongs to
@@ -61,11 +62,12 @@ sizes are unchanged.
 
 **Resources** compares the previous paintings with the selected 22 live resource designs, Essence and Research.
 **Models** compares the previous icons with subject-only current icons and a tightly cropped model reference. **Kept**
-shows the existing Labor, nine troop tiers, Workshop and UI glyph designs with the common crop. **Inventory** retains
-all 58 historical resource comparisons. LORDS remains the official SVG.
+shows the existing Labor, nine troop tiers and UI glyph designs with the common crop. Workshop is in **Models**.
+**Inventory** retains all 58 historical resource comparisons. LORDS remains the official SVG.
 
-`catalog.json` pins the before snapshot at `d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89` and hashes every before image.
-`history.json` maps 57 committed original PNGs plus the old SAT text glyph. There is one production semantic path.
+`catalog.json` pins the original before snapshot at `d79d9985eea0d6fe63990a3f8be8f4c93ecb2c89` and hashes every before
+image; `workshopBefore` records the later Workshop comparison's revision. `history.json` maps 57 committed original PNGs
+plus the old SAT text glyph. There is one production semantic path.
 
 ## Selected Facets relics
 

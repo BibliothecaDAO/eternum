@@ -11,6 +11,25 @@ import { normalizeMaster, deliverIcon } from "./normalize.mjs";
 import { readHistoricalArtwork } from "./resource-history.mjs";
 
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
+test("Farm, Workers Hut and Workshop icons follow their construction models and appear in the model comparison", async () => {
+  const game = fileURLToPath(new URL("../../apps/game/", import.meta.url));
+  const { icons } = JSON.parse(await readFile(`${game}/asset-sources/facets/catalog.json`, "utf8"));
+  const thumbnails = JSON.parse(await readFile(`${game}/asset-sources/building-thumbnails.json`, "utf8"));
+  const study = JSON.parse(await readFile(`${game}/asset-sources/rss-icons/catalog.json`, "utf8"));
+  for (const id of ["farm", "workers-hut", "workshop"]) {
+    const { model } = thumbnails[`/images/buildings/construction/${id.replaceAll("-", "_")}.png`];
+    const icon = icons.find((icon) => icon.id === id);
+    assert.equal(icon.source?.model, model, `${id} must render its shipped model`);
+    assert.equal(icon.source.inputs[`apps/game/public${model}`], hash(await readFile(`${game}/public${model}`)));
+    assert.ok(study.changes.some((entry) => entry.meaning === id && entry.group === "Models"));
+    assert.ok(!study.kept.includes(id));
+    for (const size of [64, 128]) {
+      const before = await readFile(`${game}/asset-sources/lab/rss-icons/before/${size}/${id}.webp`);
+      assert.equal(hash(before), study.beforeHashes[id][size]);
+    }
+  }
+});
+
 test("lab comparisons and historical masters stay outside the deployable public directory", async () => {
   const game = fileURLToPath(new URL("../../apps/game/", import.meta.url));
   await assert.rejects(readdir(`${game}/public/lab`), { code: "ENOENT" });
