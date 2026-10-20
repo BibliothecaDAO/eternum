@@ -44,8 +44,8 @@ export const FrontierToday = ({
   const bounds = day === undefined ? null : dayBounds(rules, now, day);
   const span = bounds && { startMs: bounds.start * 1_000, endMs: bounds.end * 1_000 };
   const own = player && span ? ownStoriesOfDay(stories.data, player, span) : [];
-  // Unknown until the stories answer: every total shows as a dash, never a zero.
-  const totals = player && span && !stories.isPending ? totalToday(stories.data, player, span) : undefined;
+  // Only a read that answered counts, an empty day as zero; while it waits, or when it failed, every total is a dash.
+  const totals = player && span && stories.isSuccess ? totalToday(stories.data, player, span) : undefined;
   const step = (to: number) => setChosen(to === today ? null : to);
   const buyers = useDockArmies(onOpenArmy ? realm : null).filter(({ canBuyTier }) => canBuyTier);
   return (
