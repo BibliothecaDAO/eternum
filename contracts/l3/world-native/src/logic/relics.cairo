@@ -115,6 +115,7 @@ pub mod RelicState {
                     context.timestamp,
                     crate::commands::resource_context(context),
                 );
+            self.record_activation(game_id, actor, command, rule, context);
         }
     }
     #[embeddable_as(ArmyProgressionImpl)]
@@ -608,6 +609,38 @@ pub mod RelicState {
                         story: crate::ownership::Story::RelicCrafted(relic),
                     },
                 );
+        }
+        fn record_activation(
+            self: @ComponentState<TContractState>,
+            game_id: u32,
+            actor: ContractAddress,
+            command: ApplyRelic,
+            rule: RelicRule,
+            context: ExecutionContext,
+        ) {
+            let ticks: u64 = match command.relic_id {
+                39 | 40 => rule.uses.into(),
+                45 | 46 => 0,
+                _ => rule.duration.into(),
+            };
+            crate::logic::stories::emit_entity_story(
+                ResourceKey { game_id, entity_id: command.entity_id },
+                actor,
+                crate::ownership::Story::RelicActivated(
+                    crate::relics::RelicActivated {
+                        relic_id: command.relic_id,
+                        recipient: command.recipient,
+                        rate_bps: rule.rate_bps,
+                        duration_seconds: ticks * context.rules.unbox().tick_config.armies_tick_in_seconds,
+                        radius: if command.relic_id == 45 || command.relic_id == 46 {
+                            rule.uses
+                        } else {
+                            0
+                        },
+                    },
+                ),
+                context.timestamp,
+            );
         }
         fn record_chest_opened(
             ref self: ComponentState<TContractState>,

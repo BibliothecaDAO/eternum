@@ -52,7 +52,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 }));
 
 import { FeedRowLine } from "./feed-row-line";
-import { selectEventStories } from "./event-stories";
+import { eventsReads, selectEventStories } from "./event-stories";
+import { StoryFeedRow } from "./story-feed-row";
 import { relicChestRelics } from "@bibliothecadao/types";
 
 const PLAYER = "0x1";
@@ -218,4 +219,71 @@ it("keeps the player's LORDS chest in Events and opens its receiving realm even 
   await clickRow(opened);
   expect(game.goToStructure).toHaveBeenCalledWith(5, expect.anything(), true);
   expect(game.selectArmy).not.toHaveBeenCalled();
+});
+
+describe("an activated relic in Events and the Log", () => {
+  it.each(["important", "mine", "all"] as const)(
+    "reads and shows the player's activation under %s, with its recorded effect after the army is gone",
+    async (filter) => {
+      const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
+      const { toStreamStoryEvent } = await import("@/hooks/store/use-story-events-store");
+      const activation = toStreamStoryEvent(
+        {
+          model: "StoryEvent",
+          key: "0x1",
+          value: {
+            game_id: 1,
+            owner: PLAYER,
+            entity_id: 9,
+            tx_hash: "0x123",
+            timestamp: 100,
+            story: {
+              RelicActivated: {
+                relic_id: 41,
+                recipient: "Explorer",
+                rate_bps: 1250,
+                duration_seconds: 1800,
+                radius: 0,
+              },
+            },
+            event_position: { block_number: 10, transaction_hash: "0x123", transaction_index: 0, event_index: 2 },
+          },
+        },
+        { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
+      )!;
+      const presentation = buildStoryEventPresentation(
+        {
+          storyType: activation.story,
+          storyPayload: activation.storyPayload,
+          entityId: activation.entity_id,
+          ownerAddress: activation.owner,
+        } as never,
+        undefined,
+        () => "Ada",
+      );
+      const event: ProcessedStoryEvent = {
+        ...activation,
+        id: activation.event_id,
+        timestampMs: Number(BigInt(activation.timestamp)) * 1000,
+        presentation,
+      };
+      expect(eventsReads(filter, PLAYER, [])).toContainEqual({ limit: 100, story: "RelicActivated", owner: PLAYER });
+      const [row] = selectEventStories([event], filter, PLAYER, () => false);
+      expect(row).toBe(event);
+      expect(selectEventStories([{ ...event, owner: "0x2" }], filter, PLAYER, () => false)).toEqual([]);
+      game.armies = new Set();
+      const root = createRoot(host);
+      await act(async () =>
+        root.render(
+          <>
+            <FeedRowLine event={row} />
+            <StoryFeedRow event={row} />
+          </>,
+        ),
+      );
+      expect(host.textContent).toContain("Ada activated Damage Relic I on Army · Increases damage by 12.5% for 30m");
+      expect(host.textContent!.match(/Ada activated Damage Relic I/g)).toHaveLength(2);
+      await act(async () => root.unmount());
+    },
+  );
 });

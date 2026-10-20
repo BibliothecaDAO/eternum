@@ -5,6 +5,7 @@ import {
   BuildingTypeToString,
   formatCharge,
   formatClockTime,
+  formatDuration,
   formatExact,
   formatPoints,
   GuardSlot,
@@ -14,6 +15,8 @@ import {
   RealmLevels,
   rankName,
   relicChestDelivery,
+  relicEffect,
+  relicName,
   resourceName,
   type ResourcesIds,
   wholePoints,
@@ -96,6 +99,24 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     description: resourceName(Number(payload.value)),
     icon: "prize",
   }),
+  RelicActivated: (event, payload, components, resolvePlayerName) => {
+    const relicId = Number(payload.relic_id) as ResourcesIds;
+    const recipient = formatEnum(payload.recipient);
+    const target =
+      recipient === "Explorer"
+        ? describeExplorer(event.entityId, components)
+        : `${subjectOf(event.entityId, components)}${recipient === "StructureGuard" ? "'s guards" : ""}`;
+    const effect = relicEffect(relicId, { rateBps: Number(payload.rate_bps), radius: Number(payload.radius) });
+    const duration = Number(payload.duration_seconds);
+    const stamina = relicId === 39 || relicId === 40;
+    const applied =
+      duration > 0 ? `${effect} for ${formatDuration(duration)}${stamina ? " of regeneration" : ""}` : effect;
+    const actor = nameOwner(event.ownerAddress, components, resolvePlayerName) ?? "Someone";
+    return {
+      title: `${actor} activated ${relicName(relicId)} on ${target} · ${applied}`,
+      icon: "prize",
+    };
+  },
   // Who took what from whom; from a player, what went with it; from a guard, the points it paid.
   StructureCapturedStory: (event, payload, components, resolvePlayerName) => ({
     title: withPoints(

@@ -21,6 +21,7 @@ const STORY_RULES = {
   FaithRemoved: { level: "all", recipients: "owner" },
   BlitzFinalized: { level: "all", recipients: "owner" },
   RelicCrafted: { level: "all", recipients: "owner" },
+  RelicActivated: { level: "all", recipients: "owner" },
 
   BattleEvent: { level: "important", recipients: "nativeBattle" },
   StructureCapturedStory: { level: "important", recipients: "capture" },

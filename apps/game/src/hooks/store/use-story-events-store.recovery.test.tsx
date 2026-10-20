@@ -1,10 +1,11 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { notifyManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 
 const history = vi.hoisted(() =>
-  vi.fn(async () => ({ items: [], complete_through_block: 0, limit: 1, offset: 0, total: 0 })),
+  vi.fn(async () => ({ items: [] as HeraldHistoryEvent[], complete_through_block: 0, limit: 1, offset: 0, total: 0 })),
 );
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
@@ -80,6 +81,7 @@ let root: Root;
 
 beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  notifyManager.setNotifyFunction((notify) => act(notify));
   history.mockClear();
   resetGameSyncStoryEvents();
   host = document.createElement("div");
@@ -93,7 +95,69 @@ beforeEach(async () => {
   );
 });
 
-afterEach(() => act(() => root.unmount()));
+afterEach(() => {
+  history.mockReset();
+  history.mockResolvedValue({ items: [], complete_through_block: 0, limit: 1, offset: 0, total: 0 });
+  act(() => root.unmount());
+  notifyManager.setNotifyFunction((notify) => notify());
+});
+
+it("recovers the exact relic activation from history on reload without an active effect or a streamed event", async () => {
+  const payload = {
+    relic_id: "0x29",
+    recipient: "Explorer",
+    rate_bps: "0x4e2",
+    duration_seconds: "0x708",
+    radius: "0x0",
+  };
+  history.mockResolvedValue({
+    items: [
+      {
+        model: "StoryEvent",
+        game_id: "1",
+        block_number: 10,
+        transaction_hash: "0xfeed",
+        transaction_index: 0,
+        event_index: 2,
+        value: {
+          game_id: "0x1",
+          owner: "0xa",
+          entity_id: "0x9",
+          timestamp: "0x64",
+          story: { RelicActivated: payload },
+        },
+      },
+    ],
+    complete_through_block: 10,
+    limit: 1,
+    offset: 0,
+    total: 1,
+  });
+  const RelicLog = () => (
+    <ol>
+      {useStoryEvents(10, "RelicActivated", "0xa").data.map((event) => (
+        <li key={event.id}>
+          {JSON.stringify({ owner: event.owner, target: event.entity_id, effect: event.storyPayload })}
+        </li>
+      ))}
+    </ol>
+  );
+  for (let reload = 0; reload < 2; reload++) {
+    await act(async () => resetGameSyncStoryEvents());
+    const log = document.createElement("div");
+    const logRoot = createRoot(log);
+    await act(async () =>
+      logRoot.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <RelicLog />
+        </QueryClientProvider>,
+      ),
+    );
+    await vi.waitFor(() => expect(log.querySelectorAll("li")).toHaveLength(1));
+    expect(JSON.parse(log.querySelector("li")!.textContent!)).toEqual({ owner: "0xa", target: 9, effect: payload });
+    await act(async () => logRoot.unmount());
+  }
+});
 
 /** A streamed battle: `striker`'s army against `holder`'s structure 7. */
 const battleStreamed = (index: number, striker: string, holder: string) =>

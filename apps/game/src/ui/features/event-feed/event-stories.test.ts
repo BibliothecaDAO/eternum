@@ -123,12 +123,13 @@ it("lists a building placed and paid for in one transaction once, and two buildi
   expect(oneStoryPerAction(stories).map((event) => event.id)).toEqual(["b4", "b2"]);
 });
 
-it("reads under Important only the player's fights, raids, captures and crates, and each Hyperstructure's captures", () => {
+it("reads under Important the player's fights, raids, captures, crates and relic activations, and each Hyperstructure's captures", () => {
   expect(eventsReads("important", "0x1", [900, 901])).toEqual([
     { limit: 100, story: "BattleEvent", owner: "0x1" },
     { limit: 100, story: "RaidEvent", owner: "0x1" },
     { limit: 100, story: "StructureCapturedStory", owner: "0x1" },
     { limit: 100, story: "RelicChestOpened", owner: "0x1" },
+    { limit: 100, story: "RelicActivated", owner: "0x1" },
     { limit: 100, story: "RewardChestOpened", owner: "0x1" },
     { limit: 100, story: "StructureCapturedStory", entityId: 900 },
     { limit: 100, story: "StructureCapturedStory", entityId: 901 },
@@ -151,6 +152,7 @@ it("reads under Mine each Events story naming the player, and under All the worl
     "StructureLevelUpStory",
     "ResourceReceiveArrivalStory",
     "RelicChestOpened",
+    "RelicActivated",
     "RewardChestOpened",
     "BuildingPaymentStory",
     "ExplorationReward",

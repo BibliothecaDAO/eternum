@@ -350,6 +350,7 @@ describe("every story the chain can tell", () => {
     FaithRemoved: { structure_id: 5, wonder_id: 6 },
     BlitzFinalized: { value: "0x1" },
     RelicCrafted: { value: 39 },
+    RelicActivated: { relic_id: 41, recipient: "Explorer", rate_bps: 2000, duration_seconds: 1800, radius: 0 },
     ExplorerCreateStory: {
       structure_id: 5,
       explorer_id: 7,
@@ -453,6 +454,77 @@ it("names a gone army's chest delivery without its names", () => {
     story("RelicChestOpened", { explorer_id: 7, chest, relics: relicChestRelics(chest) }),
   );
   expect(title).toBe("Crate opened: 3 relics to its realm");
+});
+
+describe("a relic activation", () => {
+  const effects = [
+    "Increases stamina regeneration by 50%",
+    "Increases stamina regeneration by 100%",
+    "Increases damage by 20%",
+    "Increases damage by 40%",
+    "Reduces damage taken by 20%",
+    "Reduces damage taken by 40%",
+    "Instantly explores a 1-tile radius",
+    "Instantly explores a 2-tile radius",
+    "Increases exploration rewards by 100%",
+    "Increases exploration rewards by 200%",
+    "Reduces attacker damage to the structure by 15%",
+    "Reduces attacker damage to the structure by 30%",
+    "Increases resource production rate by 20%",
+    "Increases resource production rate by 40%",
+    "Increases labor production rate by 20%",
+    "Increases labor production rate by 40%",
+    "Increases troop production rate by 15%",
+    "Increases troop production rate by 30%",
+  ];
+
+  it.each(RELICS)("names $name, its actor, recipient and effect in the Events line", (relic) => {
+    vi.spyOn(configManager, "getPresetId").mockReturnValue(2);
+    const { store, setStructure, setExplorer } = buildStore();
+    setStructure(5, 1, 1);
+    setExplorer(7, 5, "T1");
+    const reveal = relic.id === 45 || relic.id === 46;
+    const recipient = relic.id < 49 ? "Explorer" : relic.id < 51 ? "StructureGuard" : "StructureProduction";
+    const target = relic.id < 49 ? "Stolsli T1 army" : relic.id < 51 ? "Stolsli's guards" : "Stolsli";
+    const presentation = buildStoryEventPresentation(
+      story(
+        "RelicActivated",
+        {
+          relic_id: relic.id,
+          recipient,
+          rate_bps: relic.rateBps,
+          duration_seconds: reveal ? 0 : 1800,
+          radius: reveal ? relic.id - 44 : 0,
+        },
+        relic.id < 49 ? 7 : 5,
+      ),
+      store,
+      () => "Ada",
+    );
+    expect(presentation.title).toBe(
+      `Ada activated ${relic.name} on ${target} · ${effects[relic.id - 39]}${reveal ? "" : relic.id < 41 ? " for 30m of regeneration" : " for 30m"}`,
+    );
+  });
+
+  it("retains the applied effect after the target is gone and without looking up an active boost", () => {
+    expect(
+      buildStoryEventPresentation(
+        story(
+          "RelicActivated",
+          {
+            relic_id: 41,
+            recipient: "Explorer",
+            rate_bps: 1250,
+            duration_seconds: 1800,
+            radius: 0,
+          },
+          7,
+        ),
+        undefined,
+        () => "Ada",
+      ).title,
+    ).toBe("Ada activated Damage Relic I on Army · Increases damage by 12.5% for 30m");
+  });
 });
 
 describe("a capture", () => {

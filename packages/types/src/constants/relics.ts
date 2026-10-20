@@ -24,11 +24,12 @@ export interface RelicInfo {
   /** The rate the contract applies, in basis points; zero for the reveal-radius relics. */
   rateBps: number;
   effect: string;
+  effectWords: RelicEffectWords;
   bonus: number;
 }
 
 /** What a relic's rate does, in words, and the multiplier it applies. */
-type RelicEffectWords = (rateBps: number) => Pick<RelicInfo, "effect" | "bonus">;
+type RelicEffectWords = (rateBps: number, radius?: number) => Pick<RelicInfo, "effect" | "bonus">;
 
 const raises =
   (what: string): RelicEffectWords =>
@@ -38,7 +39,10 @@ const lowers =
   (rateBps) => ({ effect: `Reduces ${what} by ${rateBps / 100}%`, bonus: 1 - rateBps / 10000 });
 const revealsRadius =
   (radius: number, words: string): RelicEffectWords =>
-  () => ({ effect: `Instantly explores a ${words}-tile radius`, bonus: radius });
+  (_rateBps, recordedRadius) => ({
+    effect: `Instantly explores a ${recordedRadius === undefined ? words : recordedRadius}-tile radius`,
+    bonus: recordedRadius ?? radius,
+  });
 
 const explorerRelic = {
   recipientTypeParam: RelicRecipientTypeParam.Explorer,
@@ -54,10 +58,10 @@ const guardRelic = {
 };
 
 const relic = (
-  info: Omit<RelicInfo, "craftable" | "effect" | "bonus" | "rateBps">,
+  info: Omit<RelicInfo, "craftable" | "effect" | "effectWords" | "bonus" | "rateBps">,
   rateBps: number,
   words: RelicEffectWords,
-): RelicInfo => ({ ...info, craftable: false, rateBps, ...words(rateBps) });
+): RelicInfo => ({ ...info, craftable: false, rateBps, effectWords: words, ...words(rateBps) });
 
 /**
  * Every relic, the one source of its name, rate and effect: the presets read each rate from here (see
@@ -251,10 +255,10 @@ export const isRelic = (resourceId: ResourcesIds): boolean => {
 };
 
 /** A relic's effect, the one every surface words. */
-export const relicEffect = (relicId: ResourcesIds): string => {
+export const relicEffect = (relicId: ResourcesIds, recorded?: { rateBps: number; radius: number }): string => {
   const relic = getRelicInfo(relicId);
   if (!relic) throw new Error(`Resource ${relicId} is not a relic`);
-  return relic.effect;
+  return recorded ? relic.effectWords(recorded.rateBps, recorded.radius).effect : relic.effect;
 };
 
 type RelicPackName = "War" | "Explore" | "Produce" | "Fortress";

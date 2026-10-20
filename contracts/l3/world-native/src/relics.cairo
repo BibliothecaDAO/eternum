@@ -31,6 +31,14 @@ pub struct ApplyRelic {
     pub recipient: Recipient,
 }
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct RelicActivated {
+    pub relic_id: u8,
+    pub recipient: Recipient,
+    pub rate_bps: u16,
+    pub duration_seconds: u64,
+    pub radius: u8,
+}
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct OpenChest {
     pub explorer_id: u64,
     pub coord: Coord,

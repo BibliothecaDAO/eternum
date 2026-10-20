@@ -31,6 +31,7 @@ it.each([
   ["ExplorerDeleteStory", {}, {}, "The banners return home"],
   ["GuardAddStory", {}, {}, "The walls are reinforced"],
   ["GuardDeleteStory", {}, {}, "A guard post is clear"],
+  ["RelicActivated", { relic_id: 41, recipient: "Explorer" }, {}, "Relic activated"],
 ] as const)("gives %s its own expressive action copy", (story, payload, value, title) => {
   expect(storyNotificationCopy(story, payload, value).title).toBe(title);
 });

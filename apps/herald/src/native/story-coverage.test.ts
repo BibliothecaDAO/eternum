@@ -130,6 +130,10 @@ const stories: Record<string, { fields: number[]; expected: unknown }> = {
   FaithRemoved: { fields: [3, 9], expected: { structure_id: 3n, wonder_id: 9n } },
   BlitzFinalized: { fields: [11], expected: 11n },
   RelicCrafted: { fields: [4], expected: 4n },
+  RelicActivated: {
+    fields: [41, 0, 2000, 1800, 0],
+    expected: { relic_id: 41n, recipient: "Explorer", rate_bps: 2000n, duration_seconds: 1800n, radius: 0n },
+  },
   SitePayout: {
     fields: [3, 7, 9, 7, 0, 23, 500],
     expected: {

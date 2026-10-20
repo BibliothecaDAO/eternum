@@ -81,6 +81,8 @@ export function storyNotificationCopy(
       return { title: "A guard post is clear", body: "Those troops are ready for new orders." };
     case "RelicChestOpened":
       return { title: "A crate is open", body: "Your army has pulled relics from the fog." };
+    case "RelicActivated":
+      return { title: "Relic activated", body: "Your relic's effect was applied." };
     default:
       if (process.env.NODE_ENV !== "production") throw new Error(`Unknown notification copy: ${story}`);
       return { title: "The realm is stirring", body: "New confirmed activity awaits your attention." };

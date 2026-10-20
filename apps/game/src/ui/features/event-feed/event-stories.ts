@@ -33,7 +33,7 @@ const FIGHT_STORIES = ["BattleEvent", "RaidEvent", "StructureCapturedStory"];
 /**
  * The stories of the player's own realms and actions, which Events tells when they name the player: a realm founded, a
  * spire found, a building placed or paid for, a level gained, a delivery, a crate opened, an explore's find, an army
- * raised, a caravan sent.
+ * raised, a caravan sent, a relic activated.
  */
 const PLAYER_STORIES = [
   "RealmCreatedStory",
@@ -42,6 +42,7 @@ const PLAYER_STORIES = [
   "StructureLevelUpStory",
   "ResourceReceiveArrivalStory",
   "RelicChestOpened",
+  "RelicActivated",
   "RewardChestOpened",
   "BuildingPaymentStory",
   "ExplorationReward",
@@ -56,12 +57,13 @@ const PLAYER_STORIES = [
 const isEventsStory = (event: ProcessedStoryEvent, address: string | null): boolean =>
   FIGHT_STORIES.includes(event.story) || (PLAYER_STORIES.includes(event.story) && involvesPlayer(event, address));
 
-/** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened. */
+/** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened, a relic used. */
 const IMPORTANT_STORIES = [
   "BattleEvent",
   "RaidEvent",
   "StructureCapturedStory",
   "RelicChestOpened",
+  "RelicActivated",
   "RewardChestOpened",
 ];
 

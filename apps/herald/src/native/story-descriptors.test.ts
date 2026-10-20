@@ -48,6 +48,12 @@ function renderedStory(storyType: string, payload: number[]) {
 // names the troops and the slot's wall in plain words, never the slot's internal name, and leaves the spawn direction
 // out (the owner ruled it debug wording).
 describe("compiled native story descriptors", () => {
+  it("decodes a relic activation into the line Events shows, retaining its applied rate", () => {
+    expect(renderedStory("RelicActivated", [41, 0, 1250, 1800, 0])).toBe(
+      "Lord 0123 activated Damage Relic I on Army · Increases damage by 12.5% for 30m · ",
+    );
+  });
+
   for (const [category, categoryName] of categories.entries()) {
     for (const [tier, tierName] of tiers.entries()) {
       for (const [slot, slotName] of slots.entries()) {

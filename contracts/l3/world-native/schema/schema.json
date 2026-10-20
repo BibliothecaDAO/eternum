@@ -10297,6 +10297,10 @@
         {
           "name": "RewardChestOpened",
           "type": "world_native::relics::RewardChestOpened"
+        },
+        {
+          "name": "RelicActivated",
+          "type": "world_native::relics::RelicActivated"
         }
       ]
     },
@@ -11115,6 +11119,32 @@
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::relics::RelicActivated": {
+      "type": "struct",
+      "name": "world_native::relics::RelicActivated",
+      "members": [
+        {
+          "name": "relic_id",
+          "type": "core::integer::u8"
+        },
+        {
+          "name": "recipient",
+          "type": "world_native::relics::Recipient"
+        },
+        {
+          "name": "rate_bps",
+          "type": "core::integer::u16"
+        },
+        {
+          "name": "duration_seconds",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "radius",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13095,5 +13125,5 @@
       ]
     }
   },
-  "identity": "59f5ee157bccf4670a2ae27732e6f5498ea1a06908b0da0e38346d8ce563089e"
+  "identity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e"
 }
