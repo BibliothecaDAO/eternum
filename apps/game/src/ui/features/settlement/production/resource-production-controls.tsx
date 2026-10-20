@@ -136,7 +136,7 @@ export const ResourceProductionControls = ({
     allResources.forEach((resource) => {
       // An unknown balance is left out, so the amount it would cover reads as over balance.
       const balance = resourceManager.balanceWithProduction(currentDefaultTick, resource.resource)?.balance;
-      if (balance !== undefined) balances[resource.resource] = divideByPrecision(balance);
+      if (balance !== undefined) balances[resource.resource] = divideByPrecision(balance, false);
     });
     return balances;
   })();

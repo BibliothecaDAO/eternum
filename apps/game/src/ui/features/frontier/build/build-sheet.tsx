@@ -28,7 +28,7 @@ import {
   TIER_WORDS,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { plotKey, sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -157,10 +157,8 @@ export const BuildSheet = ({
     }
   };
 
-  const held = (resource: number) => {
-    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-    return balance === undefined ? undefined : Math.floor(balance);
-  };
+  const held = (resource: number) =>
+    knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
   const population = freePopulation(readRealmPopulation(setup.store, realmId));
   const choose = (category: BuildingType) =>
     setChosen(options.findIndex((candidate) => candidate.category === category));

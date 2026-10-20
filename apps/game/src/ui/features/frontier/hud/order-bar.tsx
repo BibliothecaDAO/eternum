@@ -15,6 +15,7 @@ import {
   STAMINA,
   WHEAT,
   XP,
+  heldAgainstNeed,
 } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -135,11 +136,9 @@ const CostChip = ({
     );
   return (
     <>
-      <HudChip
-        icons={[icon]}
-        label={label}
-        tone="bad"
-      >{`${formatAmount(cost.held === undefined ? undefined : Math.floor(cost.held))} / ${formatCharge(cost.cost)}`}</HudChip>
+      <HudChip icons={[icon]} label={label} tone="bad">
+        {heldAgainstNeed(cost.held, cost.cost)}
+      </HudChip>
       {cost.wait !== undefined && (
         <HudChip icons={["hourglass"]} label={LEFT}>
           {formatDuration(cost.wait)}

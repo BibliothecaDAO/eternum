@@ -1,4 +1,5 @@
 import { configManager } from "@bibliothecadao/eternum";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { useUISound } from "@/audio";
@@ -20,7 +21,7 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { knownBalance, knownAmount } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
   divideByPrecision,
@@ -385,7 +386,7 @@ export const OrderRow = memo(
     }, [orderWeightKg]);
 
     const donkeyBalance = useMemo(() => {
-      return knownBalance(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
+      return knownAmount(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance);
     }, [resourceManager, currentDefaultTick]);
 
     const onAccept = async () => {
@@ -564,7 +565,7 @@ const TakeOfferForm = memo(
               title="Donkeys Required"
               trail={
                 <span className={`tabular-nums ${sideTone(!shortOfDonkeys)}`}>
-                  {formatCharge(donkeysNeeded)} [{formatAmount(donkeyBalance)}]
+                  {heldAgainstNeed(donkeyBalance, donkeysNeeded)}
                 </span>
               }
             />
@@ -787,7 +788,7 @@ export const OrderCreation = memo(
           label={`${name} to ${isBuy ? "buy" : "sell"}`}
           value={resource}
           onChange={setResource}
-          max={!isBuy ? (knownBalance(resourceBalance) ?? 0) : Infinity}
+          max={!isBuy ? (knownAmount(resourceBalance) ?? 0) : Infinity}
         />
       </OrderField>
     );
@@ -812,16 +813,16 @@ export const OrderCreation = memo(
           label={`${LORDS} to ${isBuy ? "pay" : "gain"}`}
           value={lords}
           onChange={setLords}
-          max={isBuy ? (knownBalance(lordsBalance) ?? 0) : Infinity}
+          max={isBuy ? (knownAmount(lordsBalance) ?? 0) : Infinity}
         />
       </OrderField>
     );
     const logisticsChips = (
       <div className="flex items-center gap-1.5">
-        <span title="Donkeys needed / available">
+        <span title="Donkeys available / needed">
           <HudChip tone={enoughDonkeys ? undefined : "bad"}>
             <ResourceIcon resource={ResourcesIds.Donkey} size="xs" withTooltip={false} />
-            {formatCharge(donkeysNeeded)} / {formatAmount(knownAmount(donkeyBalance))}
+            {heldAgainstNeed(knownAmount(donkeyBalance), donkeysNeeded)}
           </HudChip>
         </span>
         <span title="Weight">

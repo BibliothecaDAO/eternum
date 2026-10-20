@@ -130,6 +130,14 @@ describe("ReasonPlate", () => {
     );
   });
 
+  it("never reads a shortfall as met where both sides round alike", () => {
+    const plate = (held: number, need: number) =>
+      text(renderToStaticMarkup(<ReasonPlate reason={{ kind: "short", of: "labor", held, need }} />));
+    expect(plate(28.1, 28.15)).toBe("Needs 28.2 labor, have 28.1");
+    expect(plate(12_440, 12_449)).toBe("Needs 12,449 labor, have 12,440");
+    expect(plate(0.555, 0.556)).toBe("Needs 0.556 labor, have 0.555");
+  });
+
   it("names what failed in one line", () => {
     const plate = text(
       renderToStaticMarkup(<ReasonPlate reason={{ kind: "failed", line: "Season did not answer." }} />),

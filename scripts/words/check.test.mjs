@@ -43,7 +43,7 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "};",
     "const score = <p>{formatAmount(player.points)}</p>;", // 26: points by the compact rule
     "const line = `${formatAmount(total)} points`;", // 27
-    "const held = formatAmount(knownBalance(raw));", // 28: floored, so 0.5 reads 0, never <1
+    "const held = formatCharge(divideByPrecision(raw));", // 28: floored, so 0.5 reads 0, never 0.5
     'import { formatExact } from "@/ui/design-system/kit/amount";', // 29: a retired words file
     'export { siteName } from "../../../three/map-plates/site-name";', // 30
     "const pool = <p>{formatAmount(divideByPrecision(total))}</p>;", // 31: divideByPrecision floors by default
@@ -68,6 +68,9 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "const tier = <p>{formatExact(price)} {XP}</p>;",
     "const takes = takesPopulation(formatAmount(option.populationCost));",
     "const fee = `${formatExact(lpFee)} LORDS`;",
+    // 49-50: cost pairs as they shipped in 1823bab5b9c (order-bar, chip): "28 / 28" for 28.10 of 28.15
+    "const chip = <b>{`${formatAmount(held)} / ${formatCharge(cost)}`}</b>;",
+    "const row = <span>{formatAmount(held)} / {formatCharge(req.amount)}</span>;",
   ].join("\n");
   assert.deepEqual(scan(source), [
     "1 formatter",
@@ -119,6 +122,8 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "46 number.charge",
     "47 number.charge",
     "48 number.charge",
+    "49 number.pair",
+    "50 number.pair",
   ]);
 });
 
@@ -156,7 +161,7 @@ test("leaves code alone: arithmetic, coordinates, logs, CSS, keys and components
     "const hex = parseInt(address.replace(/^0x/, ''), 16);",
     "const typed = Number(event.target.value);",
     "const held = <p>{formatAmount(wheat)} wheat</p>;",
-    "const max = knownBalance(raw) ?? 0;",
+    "const max = knownAmount(raw) ?? 0;",
     'import { formatAmount } from "@bibliothecadao/types";',
     "const troops = formatExact(divideByPrecision(raw));",
     "const exact = formatAmount(divideByPrecision(raw, false));",
@@ -170,6 +175,8 @@ test("leaves code alone: arithmetic, coordinates, logs, CSS, keys and components
     "const fed = <p>{formatAmount(feedCount)}</p>;",
     "const after = <p>{formatExact(held - price)}</p>;",
     "const held = <p>{formatExact(Math.floor(cost.held))}</p>;",
+    "const bar = <p>{formatExact(stamina.current)} / {formatExact(stamina.max)}</p>;",
+    "const pair = <p>{heldAgainstNeed(held, cost)}</p>;",
     "const left = `${formatDuration(s)} left`;",
     "const more = <p>{formatWait(s)} more</p>;",
     'const held = `${formatCount(n, "relic")} held`;',

@@ -61,7 +61,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   const [deleting, setDeleting] = useState(false);
   const confirmsDisband = useConfirmsLoss();
 
-  // troops.count is the raw precision value; knownBalance divides it.
+  // troops.count is the raw precision value; knownAmount divides it.
   const rawCount = Number(army.troops?.count ?? 0);
 
   const stamina = useMemo(() => {

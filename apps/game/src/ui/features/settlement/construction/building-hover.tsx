@@ -1,17 +1,10 @@
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { type ResourceRequirement } from "@/ui/design-system/molecules/requirement-chips";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { adjustWonderLordsCost } from "@/ui/utils/utils";
 import { configManager } from "@bibliothecadao/eternum";
-import {
-  type BuildingType,
-  formatExact,
-  formatFigure,
-  resourceName,
-  ResourcesIds,
-  formatCharge,
-  formatAmount,
-} from "@bibliothecadao/types";
+import { type BuildingType, formatExact, formatFigure, resourceName, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 
 /**
@@ -72,9 +65,7 @@ const BuildCost = ({ requirements }: { requirements: ResourceRequirement[] | und
         >
           <ResourceIcon resource={resource} size="xs" withTooltip={false} />
           <span className="flex-1">{resourceName(resource)}</span>
-          <span className="text-right tabular-nums">
-            {current === undefined ? "—" : formatAmount(Math.floor(current))} / {formatCharge(amount)}
-          </span>
+          <span className="text-right tabular-nums">{heldAgainstNeed(current, amount)}</span>
         </li>
       ))}
     </ul>

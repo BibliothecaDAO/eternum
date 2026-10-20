@@ -1,4 +1,5 @@
 import { HudRow } from "@/ui/design-system/kit/hud-elements";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useGame } from "@/hooks/context/game-context";
@@ -12,14 +13,7 @@ import {
   isMilitaryResource,
 } from "@bibliothecadao/eternum";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
-import {
-  ResourcesIds,
-  type ID,
-  type Resource,
-  formatClockTime,
-  formatExact,
-  formatCharge,
-} from "@bibliothecadao/types";
+import { ResourcesIds, type ID, type Resource, formatClockTime } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
 /**
@@ -52,7 +46,8 @@ export const TravelInfo = ({
     : (resources.find((resource) => resource.resourceId === ResourcesIds.Donkey)?.amount ?? 0);
   // Undefined when this client cannot see the sender's donkeys: nothing can then be carried.
   const heldDonkeys = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey)?.balance;
-  const donkeyBalance = heldDonkeys === undefined ? undefined : divideByPrecision(heldDonkeys) - transferredDonkeys;
+  const donkeyBalance =
+    heldDonkeys === undefined ? undefined : divideByPrecision(heldDonkeys, false) - transferredDonkeys;
   const onlyWeightlessResources = resources.every(
     (resource) => resource.resourceId === ResourcesIds.Donkey || resource.resourceId === ResourcesIds.Lords,
   );
@@ -82,7 +77,7 @@ export const TravelInfo = ({
         <dd className="text-hud-strong">{`${resourceWeightKg} kg`}</dd>
         <dt className="text-right text-hud-label text-hud-muted">Donkeys Burnt for Transfer</dt>
         <dd className={canCarry ? "text-hud-strong text-hud-good" : "text-hud-strong text-hud-bad"}>
-          {formatCharge(neededDonkeys)} 🔥🫏 [{donkeyBalance === undefined ? "—" : formatExact(donkeyBalance)}]
+          🔥🫏 {heldAgainstNeed(donkeyBalance, neededDonkeys)}
         </dd>
       </dl>
       <ResourceWeight />

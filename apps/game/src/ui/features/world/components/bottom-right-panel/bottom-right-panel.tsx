@@ -1,8 +1,9 @@
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { getMinePresentation, resourceName, structureName, formatAmount, formatCharge } from "@bibliothecadao/types";
+import { getMinePresentation, resourceName, structureName } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -525,14 +526,13 @@ const LocalTilePanel = () => {
                   {buildCost.map((entry, index) => {
                     const name = resourceName(Number(entry.resource));
                     const balanceInfo = getBalance(structureEntityId, entry.resource, currentDefaultTick, setup.store);
-                    const balance = knownBalance(balanceInfo.balance);
+                    const balance = knownAmount(balanceInfo.balance);
                     const hasEnough = balance !== undefined && balance >= entry.amount;
                     return (
                       <span key={`build-cost-${entry.resource}-${index}`} title={name}>
                         <HudChip tone={hasEnough ? undefined : "bad"}>
                           <ResourceIcon withTooltip={false} resource={entry.resource} size="xs" />
-                          {formatAmount(balance === undefined ? undefined : Math.floor(balance))} /{" "}
-                          {formatCharge(entry.amount)}
+                          {heldAgainstNeed(balance, entry.amount)}
                         </HudChip>
                       </span>
                     );

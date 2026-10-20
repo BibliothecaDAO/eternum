@@ -1,5 +1,5 @@
 import { HudButton, HudNumberField, HudSelect } from "@/ui/design-system/kit/hud-elements";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { getBlockTimestamp, getBalance } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -41,7 +41,7 @@ export const ResourceBar = memo(
     useNativeRevision(["ResourceBalance", "ResourceProduction", "ResourceWeight", "Market", "Liquidity", "Structure"]);
     const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
     const balanceOf = (id: number) =>
-      knownBalance(getBalance(entityId, id, currentDefaultTick, game.setup.store).balance);
+      knownAmount(getBalance(entityId, id, currentDefaultTick, game.setup.store).balance);
 
     const selectedResourceBalance = balanceOf(Number(resourceId));
     const hasLordsFees = lordsFee > 0 && resourceId === ResourcesIds.Lords;

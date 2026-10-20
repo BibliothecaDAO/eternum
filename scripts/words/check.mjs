@@ -31,11 +31,13 @@ const CATEGORIES = {
   "number.points": "points written by the compact amount rule (formatAmount(points)): points are exact",
   "number.charge":
     "a cost, price or fee written by formatAmount or formatExact: every charge reads rounded, by formatCharge",
+  "number.pair":
+    "a cost held against what is held, written as two figures (`${formatAmount(held)} / ${formatCharge(cost)}`): formatHeldAgainst writes the pair, so a shortfall never reads as met",
   "number.plural":
     'a noun\'s number picked by hand (n === 1 ? "army" : "armies"), or a count before a fixed plural (`${max} slots`, `${count} ${WORDS.players}`): formatCount picks it',
   "words.doubled": "a writer's own noun or unit written again after it ({formatPoints(n)} points)",
   "number.floored":
-    "a figure floored before it is written (formatAmount(knownBalance(x)), divideByPrecision(x) inside a writer): write knownAmount(x)",
+    "a figure floored before it is written (divideByPrecision(x) inside a writer): write knownAmount(x)",
   "time.intl": "Intl.DateTimeFormat / RelativeTimeFormat",
   "time.locale": "toLocaleTimeString / toLocaleDateString",
   "time.units": "a duration built by hand (`${h}h ${m}m`, minutes, seconds)",
@@ -204,6 +206,44 @@ const chargeByOtherWriter = (node) =>
   /^(formatAmount|formatExact)$/.test(calleeName(node)) &&
   node.arguments[0] !== undefined &&
   CHARGE_NAME.test(valueName(node.arguments[0]));
+
+// A cost beside what is held, each side rounded alone, can read as met while short ("28 / 28" for 28.10 of 28.15); the
+// pair is one writer's (formatHeldAgainst). Read here: two writer calls joined by a slash, one of them a charge.
+const writerName = (node) =>
+  node && ts.isCallExpression(node) && /^format[A-Z]/.test(calleeName(node)) ? calleeName(node) : null;
+const SLASH = /^\s*\/\s*$/;
+const isChargePair = (left, right) => {
+  const names = [writerName(left), writerName(right)];
+  return names.every(Boolean) && names.includes("formatCharge");
+};
+// What reads between two figures in JSX: text, less the blank lines and the {" "} a formatter puts at a line's end.
+const isBlank = (child) =>
+  (ts.isJsxText(child) && child.text.trim() === "") ||
+  (ts.isJsxExpression(child) &&
+    child.expression &&
+    ts.isStringLiteral(child.expression) &&
+    child.expression.text.trim() === "");
+const handPair = (node) => {
+  if (ts.isTemplateExpression(node))
+    return node.templateSpans.some(
+      (span, index) =>
+        SLASH.test(span.literal.text) && isChargePair(span.expression, node.templateSpans[index + 1]?.expression),
+    );
+  if (!ts.isJsxElement(node) && !ts.isJsxFragment(node)) return false;
+  const children = node.children.filter((child) => !isBlank(child));
+  return children.some((child, index) => {
+    const [left, right] = [children[index - 1], children[index + 1]];
+    return (
+      ts.isJsxText(child) &&
+      SLASH.test(child.text) &&
+      left !== undefined &&
+      right !== undefined &&
+      ts.isJsxExpression(left) &&
+      ts.isJsxExpression(right) &&
+      isChargePair(left.expression, right.expression)
+    );
+  });
+};
 
 // What each writer already writes after its figure. Written again after the call, it reads twice: "35 points points".
 // A "%" or a rate's unit after any figure is number.percent or number.rate already.
@@ -489,6 +529,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (readsBackWritten(node)) hit("number.parse", node);
     if (compactPoints(node)) hit("number.points", node);
     if (chargeByOtherWriter(node)) hit("number.charge", node);
+    if (handPair(node)) hit("number.pair", node);
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
     if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))
@@ -501,8 +542,8 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
       /^(formatAmount|formatCharge)$/.test(calleeName(node)) &&
       node.arguments[0] &&
       ts.isCallExpression(node.arguments[0]) &&
-      (calleeName(node.arguments[0]) === "knownBalance" ||
-        (calleeName(node.arguments[0]) === "divideByPrecision" && node.arguments[0].arguments.length === 1))
+      calleeName(node.arguments[0]) === "divideByPrecision" &&
+      node.arguments[0].arguments.length === 1
     )
       hit("number.floored", node);
     if (

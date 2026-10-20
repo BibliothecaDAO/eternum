@@ -4,13 +4,11 @@ import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
 
 export { getEntityIdFromKeys };
 
-/** A raw balance for display: undefined when it is not known here, which shows as "—", never as zero. */
-export const knownBalance = (raw: bigint | number | undefined): number | undefined =>
-  raw === undefined ? undefined : divideByPrecision(Number(raw));
-
 /**
- * A raw amount as it is written: divided out exactly, never floored, so a fraction reaches the words module ("<1",
- * "0.25 LORDS"). Undefined when it is not known here. knownBalance floors it for what a player can spend.
+ * A raw balance or amount, divided out exactly and never floored: an affordability check sees 28.2 wheat held against a
+ * 28.15 cost as covered, and a fraction reaches the words module ("<1", "0.25 LORDS"). Undefined when it is not known
+ * here, which shows as "—", never as zero. A whole-number field floors its own maximum; a count of whole troops floors
+ * where it is counted.
  */
 export const knownAmount = (raw: bigint | number | undefined): number | undefined =>
   raw === undefined ? undefined : divideByPrecision(Number(raw), false);

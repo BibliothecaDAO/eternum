@@ -1,4 +1,5 @@
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -18,8 +19,6 @@ import {
   formatExact,
   resourceName,
   rankName,
-  formatCharge,
-  formatAmount,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
 
@@ -111,7 +110,7 @@ export const LevelUpRequirements = ({ step }: { step: RealmLevelUp }) => {
                 <ResourceIcon resource={req.resource} size="xs" withTooltip={false} />
                 <span className="flex-1 text-hud-body text-hud-ink">{resourceName(req.resource)}</span>
                 <span className={clsx("text-hud-strong ", isMet ? "text-hud-ink" : "text-hud-bad")}>
-                  {req.current === undefined ? "—" : formatAmount(Math.floor(req.current))} / {formatCharge(req.amount)}
+                  {heldAgainstNeed(req.current, req.amount)}
                 </span>
               </div>
               {req.incoming && (

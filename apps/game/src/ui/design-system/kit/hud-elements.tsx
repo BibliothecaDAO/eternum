@@ -213,7 +213,8 @@ const AmountInput = ({
 
 /**
  * A number set in steps (a simulated army's troops or stamina, a price): the amount typed, between `min` and `max`, and
- * a step down and up on either side; whole units, or with `decimals` its fraction too.
+ * a step down and up on either side; whole units, or with `decimals` its fraction too. A whole field tops out at the
+ * whole part of `max`: a 28.2 balance allows 28.
  */
 export const HudNumberField = ({
   label,
@@ -233,37 +234,40 @@ export const HudNumberField = ({
   decimals?: boolean;
   disabled?: boolean;
   onChange: (amount: number) => void;
-}) => (
-  <div className="ui-number">
-    <HudButton
-      kind="secondary"
-      size="sm"
-      aria-label={`Fewer: ${label}`}
-      disabled={disabled || value <= min}
-      onClick={() => onChange(Math.max(value - step, min))}
-    >
-      −
-    </HudButton>
-    <AmountInput
-      label={label}
-      value={value}
-      min={min}
-      max={max}
-      decimals={decimals}
-      disabled={disabled}
-      onChange={onChange}
-    />
-    <HudButton
-      kind="secondary"
-      size="sm"
-      aria-label={`More: ${label}`}
-      disabled={disabled || value >= max}
-      onClick={() => onChange(Math.min(value + step, max))}
-    >
-      +
-    </HudButton>
-  </div>
-);
+}) => {
+  const top = decimals ? max : Math.floor(max);
+  return (
+    <div className="ui-number">
+      <HudButton
+        kind="secondary"
+        size="sm"
+        aria-label={`Fewer: ${label}`}
+        disabled={disabled || value <= min}
+        onClick={() => onChange(Math.max(value - step, min))}
+      >
+        −
+      </HudButton>
+      <AmountInput
+        label={label}
+        value={value}
+        min={min}
+        max={top}
+        decimals={decimals}
+        disabled={disabled}
+        onChange={onChange}
+      />
+      <HudButton
+        kind="secondary"
+        size="sm"
+        aria-label={`More: ${label}`}
+        disabled={disabled || value >= top}
+        onClick={() => onChange(Math.min(value + step, top))}
+      >
+        +
+      </HudButton>
+    </div>
+  );
+};
 
 /** What one press of the quick button adds. */
 const QUICK_ADD = 500;

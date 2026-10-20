@@ -3,7 +3,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { useMemo } from "react";
 
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { useResourceManager } from "@/hooks/helpers/use-resources";
 import { getRelicInfo, ID, RelicRecipientType, ResourcesIds, resourceName, formatCharge } from "@bibliothecadao/types";
 
@@ -36,7 +36,7 @@ export const useRelicMetadata = (relicId: ID) => {
 export const useRelicEssenceStatus = (entityOwnerId: ID | undefined, essenceCost: number) => {
   const resourceManager = useResourceManager(entityOwnerId);
 
-  const essenceBalance = useMemo(() => knownBalance(resourceManager?.balance(ResourcesIds.Essence)), [resourceManager]);
+  const essenceBalance = useMemo(() => knownAmount(resourceManager?.balance(ResourcesIds.Essence)), [resourceManager]);
 
   // A balance this client cannot see never covers the cost.
   const hasEnoughEssence = essenceBalance !== undefined && essenceBalance >= essenceCost;
@@ -71,5 +71,5 @@ export const useRelicPayerEssence = (holderId: ID | undefined, isArmy: boolean):
   );
   const payerId = isArmy ? (explorer ? Number(explorer.owner) : undefined) : holderId;
   const payer = useResourceManager(payerId);
-  return useMemo(() => knownBalance(payer?.balance(ResourcesIds.Essence)), [payer]);
+  return useMemo(() => knownAmount(payer?.balance(ResourcesIds.Essence)), [payer]);
 };

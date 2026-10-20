@@ -2,7 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { type ExpeditionRules, getBalance, getTroopResourceId, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -52,7 +52,7 @@ export const readRealmStore = (
 };
 
 const wholeBalance = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds, tick: number) => {
-  const balance = knownBalance(getBalance(realmId, resourceId, tick, store).balance);
+  const balance = knownAmount(getBalance(realmId, resourceId, tick, store).balance);
   return balance === undefined ? undefined : Math.floor(balance);
 };
 

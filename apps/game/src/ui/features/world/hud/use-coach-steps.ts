@@ -13,7 +13,7 @@ import { requestChestOpening } from "@/three/scenes/worldmap-chest-open-request"
 import { LeftView } from "@/types";
 import { forecastAttack } from "@/ui/features/military/battle/fight-forecast";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   activeCombatRules,
   ArmyActionManager,
@@ -222,7 +222,7 @@ const useTroopsOnHand = (): TroopsOnHand | null => {
  */
 const troopsOnHand = (store: NativeFactStore, entityId: number, tick: number): number =>
   Math.floor(
-    Math.max(...TROOP_RESOURCES.map((troop) => knownBalance(getBalance(entityId, troop, tick, store).balance) ?? 0)),
+    Math.max(...TROOP_RESOURCES.map((troop) => knownAmount(getBalance(entityId, troop, tick, store).balance) ?? 0)),
   );
 
 /**

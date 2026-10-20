@@ -1,4 +1,5 @@
 import { knownAmount } from "@/ui/utils/utils";
+import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
@@ -326,7 +327,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
                   title="Research ready"
                   trail={
                     <span className="tabular-nums">
-                      {formatAmount(knownAmount(researchBalance))} / {formatCharge(knownAmount(configuredResearchCost))}
+                      {heldAgainstNeed(knownAmount(researchBalance), knownAmount(configuredResearchCost) ?? 0)}
                     </span>
                   }
                 />

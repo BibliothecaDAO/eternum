@@ -72,7 +72,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
   // Frontier's preset charges no fish; the wheat is the order's whole food.
   const wheatCost = orderFood(path, army.troops).wheat;
   const wheatBalance = getBalance(safeInteger(army.owner), ResourcesIds.Wheat, tick, setup.store).balance;
-  const wheatHeld = wheatBalance === undefined ? undefined : divideByPrecision(wheatBalance);
+  const wheatHeld = wheatBalance === undefined ? undefined : divideByPrecision(wheatBalance, false);
   const wheatPerHour = new ResourceManager(setup.store, safeInteger(army.owner)).wheatPerHour(tick);
 
   return {

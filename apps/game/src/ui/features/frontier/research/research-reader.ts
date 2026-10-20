@@ -1,7 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   getBalance,
   getBuildingQuantity,
@@ -55,7 +55,7 @@ const readResearchPlan = (
     .filter(({ row, tier }) => drawnEffect(row, tier) !== undefined)
     .toSorted((left, right) => left.row - right.row || left.tier - right.tier);
   return {
-    essence: knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Essence, tick, store).balance),
+    essence: knownAmount(getBalance(safeInteger(realm.entity_id), ResourcesIds.Essence, tick, store).balance),
     types: readTypeRows(store, realm, learned),
     nodes: prices.map(({ row, tier, essence }) => {
       const effect = drawnEffect(row, tier)!;

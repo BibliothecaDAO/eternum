@@ -12,7 +12,7 @@ import { ProductionModal } from "@/ui/features/settlement/production/production-
 import { CountUpNumber } from "@/ui/shared";
 import { HudIconButton, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { knownBalance, knownAmount } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import {
   bonusActive,
   configManager,
@@ -292,7 +292,7 @@ export const ResourceChip = ({
                 size="sm"
                 disabled={disableButtons || relicTimeRemaining > 0}
                 onMouseEnter={tipOn(
-                  `Activate · ${relicLine(resourceId, configManager.getRelicActivation(resourceId), knownBalance(resourceManager.balance(ResourcesIds.Essence)))}`,
+                  `Activate · ${relicLine(resourceId, configManager.getRelicActivation(resourceId), knownAmount(resourceManager.balance(ResourcesIds.Essence)))}`,
                 )}
                 onMouseLeave={tipOff}
                 onClick={(event) => {

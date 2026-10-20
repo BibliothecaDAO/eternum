@@ -147,7 +147,7 @@ const resolveStructureFoodBalance = (
     return { wheat: Number.POSITIVE_INFINITY, fish: Number.POSITIVE_INFINITY };
   }
 
-  return { wheat: divideByPrecision(wheat.balance), fish: divideByPrecision(fish.balance) };
+  return { wheat: divideByPrecision(wheat.balance, false), fish: divideByPrecision(fish.balance, false) };
 };
 
 // Travel reaches only revealed tiles, so the cheapest step reads the neighbours' stored biomes and skips the rest.

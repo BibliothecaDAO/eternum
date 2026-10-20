@@ -1,4 +1,4 @@
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { configManager, getBalance, getTroopResourceId, liveHomeArmies } from "@bibliothecadao/eternum";
 import { type NativeFactStore, type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 import { type ID, type ResourcesIds, TroopType, type TroopTier } from "@bibliothecadao/types";
@@ -10,9 +10,12 @@ type Store = NativeFactStore;
 /** A troop as the Military window names it: "Crossbow", "Knight", "Paladin". */
 export const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "Crossbow" : type);
 
-/** Troops of one kind a structure holds, as far as this client sees; troops it cannot see can't join an army. */
+/**
+ * Whole troops of one kind a structure holds, as far as this client sees: an army takes whole troops, and troops it
+ * cannot see can't join one.
+ */
 export const heldTroops = (store: Store, structureId: ID, resourceId: ResourcesIds, tick: number): number =>
-  knownBalance(getBalance(structureId, resourceId, tick, store).balance) ?? 0;
+  Math.floor(knownAmount(getBalance(structureId, resourceId, tick, store).balance) ?? 0);
 
 /** What a new field army of one troop can take from a structure now. */
 interface FieldArmyRoom {

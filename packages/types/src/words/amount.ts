@@ -40,6 +40,25 @@ export const formatCharge = (value: number | undefined): string => {
   return value !== 0 && Math.abs(value) < 1 ? twoFigures.format(value) : formatAmount(value);
 };
 
+// From whole units to the resource's last unit: the precisions a short pair steps through until its two sides differ.
+const PAIR_PRECISIONS = Array.from(
+  { length: 10 },
+  (_, places) => new Intl.NumberFormat("en-US", { maximumFractionDigits: places }),
+);
+
+/**
+ * What is held against what is needed ("28 / 30", "Needs 15K labor, have 9,640"), both rounded as a charge reads, so the
+ * pair reads as the comparison it is. Rounding never makes a covered pair read short; a short one it would write equal
+ * ("28 / 28" for 28.10 of 28.15, "12.4K / 12.4K", "0.56 / 0.56") is written at the first precision that tells the two
+ * apart ("28.1 / 28.2"), so a shortfall never reads as met. Unknown held is "—".
+ */
+export const formatHeldAgainst = (held: number | undefined, need: number): { held: string; need: string } => {
+  const rounded = { held: formatCharge(held), need: formatCharge(need) };
+  if (held === undefined || held >= need || rounded.held !== rounded.need) return rounded;
+  const precise = PAIR_PRECISIONS.find((writer) => writer.format(held) !== writer.format(need)) ?? typed;
+  return { held: precise.format(held), need: precise.format(need) };
+};
+
 /**
  * The number an amount field shows: what the player typed or set, exact to the resource's last unit ("1,234.5"), never
  * rounded, as the transaction will carry it.

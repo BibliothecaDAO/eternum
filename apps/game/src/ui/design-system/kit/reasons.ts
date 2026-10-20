@@ -1,4 +1,4 @@
-import { formatAmount, formatDuration, formatCharge } from "@bibliothecadao/types";
+import { formatDuration, formatHeldAgainst } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 
 import { PRICE_FACES, type PriceKind } from "./price-faces";
@@ -34,11 +34,12 @@ export const COUNTED: Record<Counted, { word: string; icon?: IconMeaning }> = {
  */
 export const shortfallLine = ({ of, held, need, counted, wait }: Extract<Reason, { kind: "short" }>): string => {
   const noun = COUNTED[of].word;
+  const pair = formatHeldAgainst(held, need);
   const line =
     counted === "free"
-      ? needsFree(formatCharge(need), noun, formatAmount(held))
+      ? needsFree(pair.need, noun, pair.held)
       : counted === "limit"
-        ? needsOverLimit(formatCharge(need), noun, formatAmount(held))
-        : needsHave(formatCharge(need), noun, formatAmount(held));
+        ? needsOverLimit(pair.need, noun, pair.held)
+        : needsHave(pair.need, noun, pair.held);
   return wait === undefined ? line : `${line} · ${inTime(formatDuration(wait, { days: false }))}`;
 };

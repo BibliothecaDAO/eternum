@@ -6,7 +6,7 @@ import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
@@ -216,7 +216,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
-          max={isLords ? (knownBalance(lordsBalance) ?? 0) : Infinity}
+          max={isLords ? (knownAmount(lordsBalance) ?? 0) : Infinity}
         />
       );
     },

@@ -8,7 +8,9 @@ import { costLine } from "@/ui/design-system/kit/words";
 import { RequirementChips } from "./requirement-chips";
 
 it("writes a cost as the Build card does, the cost first and then what is held, the noun where nothing paints it", () => {
-  expect(costLine(10, 1_574.6, ResourcesIds.Labor)).toBe("10 Labor (you have 1,574)");
+  expect(costLine(10, 1_574.6, ResourcesIds.Labor)).toBe("10 Labor (you have 1,575)");
+  // Short of a cost that rounds to what is held: the pair tells them apart.
+  expect(costLine(28.15, 28.1, ResourcesIds.Wheat)).toBe("28.2 Wheat (you have 28.1)");
   expect(costLine(1_200, undefined, ResourcesIds.Wood)).toBe("1,200 Wood");
   expect(costLine(11, 3_800)).toBe("11 (you have 3,800)");
 });

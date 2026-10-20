@@ -379,9 +379,56 @@ describe("the order bar", () => {
     // 30 troops' step at 0.02 wheat each.
     act(() => bar({ cost: 0.6, held: 10 }));
     expect(wheatChip()).toBe("wheat −0.6");
-    // Short: what is held counts down to whole units, so 0.5 held never reads as the 0.6 it needs.
+    // Short under a unit: what is held reads as held, below what is needed.
     act(() => bar({ cost: 0.6, held: 0.5 }));
-    expect(wheatChip()).toBe("wheat 0 / 0.6");
+    expect(wheatChip()).toBe("wheat 0.5 / 0.6");
+  });
+
+  describe("a cost on either side of its rounding", () => {
+    const explore = (wheat: { cost: number; held: number }, onGo = vi.fn()) => {
+      act(() =>
+        root.render(
+          <OrderBar
+            kind="explore"
+            tiles={1}
+            stamina={{ cost: 21, held: 120, wait: undefined }}
+            wheat={{ ...wheat, wait: undefined }}
+            revealYield={500}
+            xp={2}
+            onCancel={() => {}}
+            onGo={onGo}
+          />,
+        ),
+      );
+      return onGo;
+    };
+    const wheatChip = () => host.querySelector('[aria-label^="wheat "]')!.getAttribute("aria-label");
+    const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+
+    // QA's 28.15 wheat (563 troops at 0.05 a step) rounds to 28; held just under it must not read as 28 of 28.
+    it.each([
+      [28, "wheat 28 / 28.2"],
+      [28.1, "wheat 28.1 / 28.2"],
+      [28.149, "wheat 28.1 / 28.2"],
+    ])("never reads a short %s of 28.15 as met, and offers only Cancel", (held, chip) => {
+      const onGo = explore({ cost: 28.15, held });
+      expect(wheatChip()).toBe(chip);
+      expect(buttons()).toEqual(["Cancel"]);
+      act(() => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+      expect(onGo).not.toHaveBeenCalled();
+    });
+
+    it.each([28.15, 28.2, 28.99])("takes a covered %s of 28.15 at its rounded charge, once", (held) => {
+      const onGo = explore({ cost: 28.15, held });
+      expect(wheatChip()).toBe("wheat −28");
+      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Explore")!.click());
+      expect(onGo).toHaveBeenCalledOnce();
+    });
+
+    it("tells a short compact cost from what is held", () => {
+      explore({ cost: 12_449, held: 12_440 });
+      expect(wheatChip()).toBe("wheat 12,440 / 12,449");
+    });
   });
 
   it("confirms on Enter and takes the key, but never while the player types", () => {

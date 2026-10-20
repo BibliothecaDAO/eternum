@@ -14,8 +14,8 @@ import {
   relicEffect,
   type ResourcesIds,
   formatCharge,
-  formatExact,
   resourceName,
+  formatHeldAgainst,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
@@ -133,12 +133,20 @@ export const needsOverLimit = (need: string, noun: string, limit: string) =>
 export const inTime = (duration: string) => `in ${duration}`;
 /**
  * Every cost the HUD shows, the cost first and then what is held, as a newcomer reads it: "10 Labor (you have 1,574)".
- * Where a painting already names the resource (a cost chip) the noun is left out: "10 (you have 1,574)".
+ * Where a painting already names the resource (a cost chip) the noun is left out: "10 (you have 1,574)". The pair is
+ * written as one (formatHeldAgainst), so a cost not yet held never reads as held.
  */
 export const costLine = (amount: number, held: number | undefined, resource?: ResourcesIds): string => {
   const noun = resource === undefined ? "" : ` ${resourceName(resource)}`;
-  const holding = held === undefined ? "" : ` (you have ${formatExact(Math.floor(held))})`;
-  return `${formatCharge(amount)}${noun}${holding}`;
+  const pair = formatHeldAgainst(held, amount);
+  const holding = held === undefined ? "" : ` (you have ${pair.held})`;
+  return `${pair.need}${noun}${holding}`;
+};
+
+/** What is held against what is needed, as a cost chip reads it: "9,640 / 15K", never an equal pair while short. */
+export const heldAgainstNeed = (held: number | undefined, need: number): string => {
+  const pair = formatHeldAgainst(held, need);
+  return `${pair.held} / ${pair.need}`;
 };
 /** A tier that is a choice of two sides waits for one: "Choose Drill or Rations". */
 export const chooseOne = (first: string, second: string) => `Choose ${first} or ${second}`;
@@ -946,8 +954,9 @@ export const relicEffectLine = (
  */
 export const relicLine = (relicId: ResourcesIds, activation: RelicActivation, essenceHeld?: number): string => {
   const short = essenceHeld !== undefined && essenceHeld < activation.essenceCost;
-  const cost = `Costs ${formatCharge(activation.essenceCost)} ${ESSENCE} to activate`;
-  const held = short ? `; you have ${formatAmount(Math.floor(essenceHeld))}` : "";
+  const pair = formatHeldAgainst(essenceHeld, activation.essenceCost);
+  const cost = `Costs ${short ? pair.need : formatCharge(activation.essenceCost)} ${ESSENCE} to activate`;
+  const held = short ? `; you have ${pair.held}` : "";
   return `${relicShortName(relicId)}: ${relicEffectLine(relicId, activation)}. ${cost}${held}.`;
 };
 

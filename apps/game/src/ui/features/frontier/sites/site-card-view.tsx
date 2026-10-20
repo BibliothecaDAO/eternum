@@ -1,5 +1,5 @@
 import type { FrontierBeast } from "@/three/structures/frontier-beast";
-import { formatAmount, formatExact, formatDuration, LORDS, formatCharge } from "@bibliothecadao/types";
+import { formatAmount, formatExact, formatDuration, LORDS, formatHeldAgainst } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -418,7 +418,8 @@ const verbReason = (verb: SiteVerb, site: string): string | undefined => {
   if (verb.kind === "attack") return undefined;
   if (verb.kind !== "short") return tooFarFrom(site);
   const { cost, held, wait } = verb.stamina;
-  const line = needsStamina(formatCharge(cost), formatExact(held));
+  const pair = formatHeldAgainst(held, cost);
+  const line = needsStamina(pair.need, pair.held);
   return wait === undefined ? line : `${line} · ${formatDuration(wait, { days: false })}`;
 };
 

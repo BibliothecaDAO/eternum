@@ -28,7 +28,7 @@ import {
   StructureType,
   TickIds,
 } from "@bibliothecadao/types";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { useMemo } from "react";
 import { affordableUpgrades } from "../attributes/attributes";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
@@ -238,7 +238,7 @@ const firstTypeTierAffordable = (
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (learned === undefined) return null;
   const held = (resource: ResourcesIds) =>
-    knownBalance(getBalance(safeInteger(realm.entity_id), resource, tick, store).balance);
+    knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, store).balance);
   for (const { row, category, word } of FIRST_TIERS) {
     // The castle's own workshop is not a building of the type.
     const own =
@@ -311,7 +311,7 @@ const canAffordNextCastleLevel = (store: NativeFactStore, realm: NativeRows["Str
   if (!costs?.length) return false;
   return costs.every((cost) => {
     // Recipe costs are in display units, as the castle panel shows them.
-    const balance = knownBalance(getBalance(safeInteger(realm.entity_id), cost.resource, tick, store).balance);
+    const balance = knownAmount(getBalance(safeInteger(realm.entity_id), cost.resource, tick, store).balance);
     return balance !== undefined && balance >= cost.amount;
   });
 };

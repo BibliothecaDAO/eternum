@@ -1,7 +1,6 @@
 import { knownAmount } from "@/ui/utils/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { divideByPrecision } from "@bibliothecadao/eternum";
-import { formatAmount, formatCharge, resourceName } from "@bibliothecadao/types";
+import { formatCharge, resourceName, formatHeldAgainst } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 const SIZES = ["xs", "sm", "md", "lg"] as const;
@@ -34,8 +33,10 @@ export const ResourceCost = ({
   size = "md",
 }: ResourceCostProps) => {
   const name = resourceName(resourceId);
-  const hasSufficientBalance = balance !== undefined && amount !== undefined && divideByPrecision(balance) >= amount;
+  const held = knownAmount(balance);
+  const hasSufficientBalance = held !== undefined && amount !== undefined && held >= amount;
   const showBalance = balance !== undefined && !isNaN(balance);
+  const pair = amount === undefined ? undefined : formatHeldAgainst(held, amount);
 
   return (
     <div
@@ -48,10 +49,10 @@ export const ResourceCost = ({
       <ResourceIcon className="self-center" withTooltip={withTooltip} resource={resourceId} size={size} />
       <div className={cn("flex shrink-0 flex-col self-center", type === "horizontal" ? "text-left" : "items-center")}>
         <div onClick={onClick} className="text-hud-strong text-hud-ink tabular-nums">
-          {formatCharge(amount)}
-          {showBalance && (
+          {pair ? pair.need : formatCharge(amount)}
+          {showBalance && pair && (
             <span className={cn("text-hud-body", hasSufficientBalance ? "text-hud-good" : "text-hud-bad")}>
-              {` (${formatAmount(knownAmount(balance))})`}
+              {` (${pair.held})`}
             </span>
           )}
         </div>

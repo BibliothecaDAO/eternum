@@ -18,7 +18,7 @@ import {
   XP,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { type ExpeditionRules, getBalance } from "@bibliothecadao/eternum";
 import {
@@ -59,7 +59,7 @@ export const FrontierResearch = ({ rules, realm }: { rules: ExpeditionRules; rea
   const isResearching = (row: number) => researching.has(researchKey(realm, row));
   const shrineXp = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id })?.fixed_xp;
   const castle = plan ? castleNodes(plan, shrineXp) : [];
-  const labor = knownBalance(getBalance(safeInteger(realm.entity_id), ResourcesIds.Labor, tick, setup.store).balance);
+  const labor = knownAmount(getBalance(safeInteger(realm.entity_id), ResourcesIds.Labor, tick, setup.store).balance);
   const chosen = castle.find((node) => node.node.key === open);
 
   const research = async (node: ResearchNodeView) => {

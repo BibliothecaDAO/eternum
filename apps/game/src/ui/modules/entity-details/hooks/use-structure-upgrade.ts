@@ -1,5 +1,5 @@
 import { inTime } from "@/ui/design-system/kit/words";
-import { knownBalance } from "@/ui/utils/utils";
+import { knownAmount } from "@/ui/utils/utils";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { configManager, divideByPrecision, getBalance, getRealmInfo, isViewerOwner } from "@bibliothecadao/eternum";
 import { useArrivalsByStructure } from "@/hooks/helpers/use-resource-arrivals";
@@ -109,7 +109,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
   const requirements = useMemo<UpgradeRequirement[]>(() => {
     if (!structureInfo || !nextLevel || !structureEntityId || !rawCosts) return [];
     return rawCosts.map((cost) => {
-      const current = knownBalance(
+      const current = knownAmount(
         getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.store).balance,
       );
       const incoming = incomingByResource.get(cost.resource) ?? null;

@@ -8,6 +8,7 @@ import {
   formatCharge,
   formatExact,
   formatFigure,
+  formatHeldAgainst,
   formatOrdinal,
   formatPercent,
   formatPoints,
@@ -237,6 +238,26 @@ describe("amounts", () => {
       "0",
     ]);
     expect(formatCharge(undefined)).toBe("—");
+  });
+
+  it("writes what is held against what is needed so a shortfall never reads as met", () => {
+    // Short, on both sides of a fractional boundary: never an equal pair.
+    expect(formatHeldAgainst(28, 28.15)).toEqual({ held: "28", need: "28.2" });
+    expect(formatHeldAgainst(28.1, 28.15)).toEqual({ held: "28.1", need: "28.2" });
+    expect(formatHeldAgainst(28.149, 28.15)).toEqual({ held: "28.1", need: "28.2" });
+    // Covered, at and above the boundary: rounded as every charge reads.
+    expect(formatHeldAgainst(28.15, 28.15)).toEqual({ held: "28", need: "28" });
+    expect(formatHeldAgainst(28.2, 28.15)).toEqual({ held: "28", need: "28" });
+    expect(formatHeldAgainst(28.99, 28.15)).toEqual({ held: "29", need: "28" });
+    // A compact rounding boundary, short and covered.
+    expect(formatHeldAgainst(12_440, 12_449)).toEqual({ held: "12,440", need: "12,449" });
+    expect(formatHeldAgainst(12_449, 12_449)).toEqual({ held: "12.4K", need: "12.4K" });
+    expect(formatHeldAgainst(9_640, 15_000)).toEqual({ held: "9,640", need: "15K" });
+    // Under a unit.
+    expect(formatHeldAgainst(0.555, 0.556)).toEqual({ held: "0.555", need: "0.556" });
+    expect(formatHeldAgainst(0.5, 0.6)).toEqual({ held: "0.5", need: "0.6" });
+    expect(formatHeldAgainst(0, 0.6)).toEqual({ held: "0", need: "0.6" });
+    expect(formatHeldAgainst(undefined, 30)).toEqual({ held: "—", need: "30" });
   });
 
   it("writes an amount field's number exactly, as typed", () => {
