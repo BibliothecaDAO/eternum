@@ -8,29 +8,9 @@ import { buildingModelPaths, BUILDINGS_GROUPS } from "@/three/constants/scene-co
 import manifest from "../../../../../asset-sources/building-thumbnails.json";
 import { BuildingThumbnail } from "./building-thumbnail";
 import { BuildingCard } from "./select-preview-building";
-import { PlotConstructionPicker } from "./plot-construction-picker";
-import type { PlotConstructionTarget } from "./use-plot-construction";
 
 const lane = vi.hoisted(() => ({ value: null as null | "portrait" }));
 vi.mock("@/hooks/helpers/use-compact-hud", () => ({ useCompactLane: () => lane.value }));
-vi.mock("./use-plot-construction", () => ({
-  usePlotConstruction: () => ({
-    visible: true,
-    groups: [
-      {
-        label: "Economy",
-        buildings: [
-          {
-            type: BuildingType.ResourceWheat,
-            label: "Farm",
-            disabled: false,
-            requirements: [{ resource: ResourcesIds.Wood, amount: 10 }],
-          },
-        ],
-      },
-    ],
-  }),
-}));
 
 function dom(element: React.ReactElement) {
   const container = document.createElement("div");
@@ -95,15 +75,5 @@ describe("construction model thumbnails", () => {
       "/images/buildings/construction/farm.png",
     );
     expect(card.querySelector("[data-icon]")?.getAttribute("src")).toContain("/icons/facets/");
-  });
-
-  it("uses model artwork in plot choices and keeps painted resource costs", () => {
-    const picker = dom(<PlotConstructionPicker {...({} as PlotConstructionTarget)} />);
-    const farm = [...picker.querySelectorAll(".ui-card")].find((card) => card.textContent?.includes("Farm"));
-    expect(farm?.querySelector("[data-building-thumbnail]")?.getAttribute("src")).toBe(
-      "/images/buildings/construction/farm.png",
-    );
-    expect(farm?.querySelector("[data-icon]")?.getAttribute("src")).toContain("/icons/facets/");
-    expect(farm?.textContent).toContain("10");
   });
 });

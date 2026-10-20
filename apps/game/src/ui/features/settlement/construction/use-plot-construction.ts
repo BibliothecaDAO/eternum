@@ -18,6 +18,7 @@ import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { plotKey, sendBuilding, useStillShowing } from "./send-building";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
+import { describeBuildingGives } from "./building-gives";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
@@ -72,14 +73,20 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
       targetSpot: target.spot,
       tileManager: target.tileManager,
     });
+  const structure = store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: target.entityId });
+  // Each group keeps the game's own order and its fixed grid: nothing is re-sorted by what can rise now.
   const groups = getConstructionBuildingGroups(mode, realm?.resources ?? []).map((group) => ({
     label: group.label,
+    grid: group.grid,
     buildings: group.buildings.map((type) => {
       const state = buildability(type);
       return {
         type,
         label: buildingName(type, mode.id === "frontier"),
         requirements: resolveBuildingRequirements(target.entityId, store, type, useSimpleCost, currentDefaultTick),
+        gives:
+          structure &&
+          describeBuildingGives(store, structure, type, configManager.getBuildingCategoryConfig(type).capacity_grant),
         reason: state.reason,
         disabled: !state.canSubmit || pending,
       };

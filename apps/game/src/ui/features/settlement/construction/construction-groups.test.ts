@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, getResourceTiers, ResourcesIds } from "@bibliothecadao/types";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 import type { GameModeConfig } from "@/config/game-modes";
 
@@ -8,16 +8,52 @@ import { configManager } from "@bibliothecadao/eternum";
 
 afterEach(() => vi.restoreAllMocks());
 
-const mode = { rules: { isBuildingTypeAllowed: (name: string) => name !== "ResourceKnightT3" } } as GameModeConfig;
+const mode = {
+  rules: { isBuildingTypeAllowed: (name: string) => name !== "ResourceKnightT3" },
+  resources: { getTiers: () => getResourceTiers(false) },
+} as GameModeConfig;
+const blitz = { ...mode, resources: { getTiers: () => getResourceTiers(true) } } as GameModeConfig;
 describe("construction groups", () => {
   it("deduplicates realm resources and omits resources unavailable on this realm", () => {
     const groups = getConstructionBuildingGroups(mode, [ResourcesIds.Wood, ResourcesIds.Wood, ResourcesIds.Stone]);
     expect(groups[0]).toEqual({
       label: "Resources",
       buildings: [BuildingType.ResourceWood, BuildingType.ResourceStone],
+      // A mode whose resources run in no lines keeps the realm's own order, never re-sorted.
+      grid: undefined,
     });
     expect(groups.flatMap((group) => group.buildings)).not.toContain(BuildingType.ResourceGold);
   });
+  it("lays Blitz's resources in their lines, a tier a row, leaving a resource the realm lacks an empty cell", () => {
+    const groups = getConstructionBuildingGroups(blitz, [
+      ResourcesIds.Dragonhide,
+      ResourcesIds.Wood,
+      ResourcesIds.Gold,
+      ResourcesIds.Copper,
+      ResourcesIds.Ironwood,
+    ]);
+    expect(groups[0].grid).toEqual({
+      rows: [
+        [BuildingType.ResourceWood, null, BuildingType.ResourceCopper],
+        [BuildingType.ResourceIronwood, null, BuildingType.ResourceGold],
+        [null, null, BuildingType.ResourceDragonhide],
+      ],
+    });
+  });
+
+  it("lays the army in a grid, a troop type a column (Paladin, Knight, Crossbowman) and a tier a row", () => {
+    const military = getConstructionBuildingGroups(mode, []).find((group) => group.label === "Military")!;
+    expect(military.grid).toEqual({
+      heads: ["Stable", "Barracks", "Archery"],
+      rows: [
+        [BuildingType.ResourcePaladinT1, BuildingType.ResourceKnightT1, BuildingType.ResourceCrossbowmanT1],
+        [BuildingType.ResourcePaladinT2, BuildingType.ResourceKnightT2, BuildingType.ResourceCrossbowmanT2],
+        // The mode excludes the Knight T3: its cell stays empty, nothing moves into it.
+        [BuildingType.ResourcePaladinT3, null, BuildingType.ResourceCrossbowmanT3],
+      ],
+    });
+  });
+
   it("keeps food first, one army ordered by troop then tier, and the game mode's exclusions", () => {
     const groups = getConstructionBuildingGroups(mode, []);
     expect(groups.map((group) => group.label)).toEqual(["Economic", "Military"]);
