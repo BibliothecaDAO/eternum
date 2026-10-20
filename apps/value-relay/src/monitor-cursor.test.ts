@@ -102,10 +102,11 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
   const pause = vi.fn(() => Effect.void);
   ports.ledger.pause = pause;
   await Effect.runPromise(runMonitor(ports, store));
-  // The rewind rereads the stream from row 0; both rows were cleared by the operator, so neither faults again.
+  // The rewind rereads the stream from row 0 and observes both rows again; each still shows what the operator cleared,
+  // so neither faults again.
   expect(progress).toMatchObject({ halted: null, fault: null });
   expect(pause).not.toHaveBeenCalled();
-  expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef"]);
+  expect(checked.mock.calls.map((call) => call[1])).toEqual(["0xabc", "0xdef", "0xabc", "0xdef"]);
 });
 
 it("keeps every cleared conservation row cleared, not only the last one", async () => {

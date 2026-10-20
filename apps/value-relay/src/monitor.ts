@@ -20,7 +20,8 @@ interface AuditCursor {
 interface FaultRow {
   row: string;
   /**
-   * Exactly what the failed check compared; the operator's reset clears this fact, never the row's identity. A fault
+   * Exactly what the failed check saw: the ledger row, the failure and its independent evidence. The operator's reset
+   * clears this observation, never the row's identity: the same row showing anything else is checked again. A fault
    * with none (a roster check, or one the previous version recorded) waives nothing: its reset re-observes.
    */
   fact?: string;
@@ -98,7 +99,9 @@ const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
     (paid) =>
       Effect.gen(function* () {
         const receipt = yield* ports.shard.withdrawal(paid.chainId, paid.transactionHash);
-        if (!matchesPaidClaim(receipt, paid)) return `paid_claim_mismatch:${paid.transactionHash}`;
+        const evidence = receiptEvidence(receipt);
+        if (!matchesPaidClaim(receipt, paid))
+          return { reason: `paid_claim_mismatch:${paid.transactionHash}`, evidence };
         if (
           !(yield* ports.identity.matchesPayDecision({
             chainId: paid.chainId,
@@ -110,7 +113,7 @@ const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
             amount: paid.amount,
           }))
         )
-          return `paid_wallet_mismatch:${paid.transactionHash}`;
+          return { reason: `paid_wallet_mismatch:${paid.transactionHash}`, evidence };
         return null;
       }),
     store,
@@ -127,7 +130,9 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
         .result(posted.chainId, posted.gameId)
         .pipe(
           Effect.map((result) =>
-            matchesPostedResult(result, posted) ? null : `blitz_result_mismatch:${posted.gameId}`,
+            matchesPostedResult(result, posted)
+              ? null
+              : { reason: `blitz_result_mismatch:${posted.gameId}`, evidence: resultEvidence(result) },
           ),
         ),
     store,
@@ -139,7 +144,7 @@ const checkLedgerPage = <A>(
   read: (cursor: string | null, fromBlock?: number, anchor?: LedgerAnchor) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   fact: (row: A) => string,
-  check: (row: A) => RelayEffect<string | null>,
+  check: (row: A) => RelayEffect<Mismatch | null>,
   store: MonitorStore,
 ) =>
   Effect.gen(function* () {
@@ -157,13 +162,15 @@ const checkLedgerPage = <A>(
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
     for (let index = page.rewind ? 0 : (cursor.offset ?? 0); index < page.rows.length; index++) {
       const row = page.rows[index]!;
-      if (isCleared(progress, fact(row))) continue;
+      // The check always runs: a clearance waives the observation the operator saw, never the row whatever it shows.
       const observation = yield* Effect.result(check(row));
       if (Result.isFailure(observation)) return yield* Effect.fail(observation.failure);
       if (observation.success) {
+        const observed = observedFact(fact(row), observation.success);
+        if (isCleared(progress, observed)) continue;
         yield* recordFault(store, {
           row: key(row),
-          fact: fact(row),
+          fact: observed,
           stream,
           cursor: {
             fromBlock,
@@ -175,7 +182,7 @@ const checkLedgerPage = <A>(
           },
           offset: index,
         });
-        return observation.success;
+        return observation.success.reason;
       }
     }
     const next =
@@ -211,12 +218,26 @@ const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment
 
 const hex = (value: string) => `0x${BigInt(value).toString(16)}`;
 
-/** Every field the paid-claim check compares, and nothing block-dependent, so a replay at a new anchor is the same fact. */
+/** The paid claim's ledger fields, and nothing block-dependent, so a replay at a new anchor is the same fact. */
 const paidClaimFact = (paid: PaidClaim) =>
   `paidClaims:${hex(paid.chainId)}:${hex(paid.transactionHash)}:${paid.seasonId}:${BigInt(paid.amount)}:${hex(paid.wallet)}:${hex(paid.paymentTransactionHash)}`;
-/** Every field the posted-result check compares. */
+/** The posted result's ledger fields. */
 const postedResultFact = (posted: BlitzCommitment) =>
   `postedResults:${hex(posted.chainId)}:${posted.gameId}:${hex(posted.commitment)}`;
+
+/** What a failed check saw: why the ledger row disagrees, and the independent evidence it was compared with. */
+interface Mismatch {
+  reason: string;
+  evidence: string;
+}
+/** A fault as observed: the ledger row's fact, the failure, and its evidence. A changed side is a different fault. */
+const observedFact = (ledger: string, mismatch: Mismatch) => `${ledger}|${mismatch.reason}|${mismatch.evidence}`;
+const receiptEvidence = (receipt: Withdrawal | null) =>
+  receipt === null
+    ? "receipt:none"
+    : `receipt:${hex(receipt.chainId)}:${hex(receipt.transactionHash)}:${receipt.seasonId}:${BigInt(receipt.amount)}:${hex(receipt.realmsId)}`;
+const resultEvidence = (result: BlitzResult | null) =>
+  result === null ? "result:none" : `result:${hex(result.chainId)}:${result.gameId}:${hex(result.commitment)}`;
 
 const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?.includes(fact) ?? false;
 
