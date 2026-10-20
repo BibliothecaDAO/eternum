@@ -5,10 +5,9 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
-import { sendOnce, useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
+import { useAllInFlight, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getPlayerName } from "@/services/identity/player-profiles";
-import { requireActiveGameClient } from "@/sync/active-game-client";
 
 import type { PriceKind } from "@/ui/design-system/kit/price-faces";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
@@ -30,6 +29,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { knownBalance } from "@/ui/utils/utils";
+import { plotKey, sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import {
@@ -141,18 +141,16 @@ export const BuildSheet = ({
 
   /** The sheet closes as the building leaves; its ghost stays on the plot until the build's own outcome. */
   const build = async () => {
-    const building = { type: option.category, plot: { col: plot.col, row: plot.row } };
     try {
-      await sendOnce("plot", plotKey(realmId, plot), building, async () => {
-        const sent = await requireActiveGameClient().actions.placeBuilding({
-          structureId: realmId,
-          buildingType: option.category,
-          hex: plot,
-          useSimpleCost,
-        });
-        AudioManager.getInstance().play("ui.build_place");
-        onClose();
-        return sent;
+      await sendBuilding({
+        realmId,
+        type: option.category,
+        plot,
+        useSimpleCost,
+        onSent: () => {
+          AudioManager.getInstance().play("ui.build_place");
+          onClose();
+        },
       });
     } catch (error) {
       toast.failed(error, "The building could not be placed.");
@@ -349,7 +347,6 @@ const buildGains = (option: BuildOption): BuildGain[] => {
 };
 
 /** A realm's plot, as the actions in flight name it. */
-const plotKey = (realmId: number, plot: HexPosition): string => `${realmId}:${plot.col},${plot.row}`;
 
 /**
  * A building sent and not yet known keeps standing on its plot as the scene's ghost, which is where the player looks

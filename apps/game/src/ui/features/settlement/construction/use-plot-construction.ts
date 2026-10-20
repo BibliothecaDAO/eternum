@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import {
@@ -13,7 +13,8 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
-import { requireActiveGameClient } from "@/sync/active-game-client";
+import { useInFlight } from "@/hooks/store/use-actions-in-flight";
+import { plotKey, sendBuilding } from "./send-building";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
@@ -51,8 +52,8 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   const realm = getRealmInfo(target.entityId, store, getPlayerName);
   const isOwner = isViewerOwner(realm?.owner, viewer);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const submitting = useRef(false);
+  // The plot's building in flight, sent from here or any other surface: one at a time until its outcome.
+  const pending = useInFlight("plot", plotKey(target.entityId, target.spot)) !== undefined;
   useEffect(() => {
     setError(null);
   }, [target.spot.col, target.spot.row, useSimpleCost]);
@@ -81,28 +82,23 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     }),
   }));
   const build = async (type: BuildingType) => {
-    if (!canIssueOrders() || !isOwner || !target.isCurrentTarget() || submitting.current) return;
+    if (!canIssueOrders() || !isOwner || !target.isCurrentTarget() || pending) return;
     const state = buildability(type);
     if (!state.canSubmit) {
       setError(state.reason ?? "Building cannot be submitted.");
       return;
     }
-    submitting.current = true;
-    setPending(true);
     try {
-      await requireActiveGameClient().actions.placeBuilding({
-        structureId: target.entityId,
-        buildingType: type,
-        hex: target.spot,
+      await sendBuilding({
+        realmId: target.entityId,
+        type,
+        plot: target.spot,
         useSimpleCost,
+        onSent: () => usePopoverStore.getState().close("plot-construction"),
       });
-      usePopoverStore.getState().close("plot-construction");
     } catch (reason) {
       console.error("[Plot construction] placement failed", reason);
       setError("Building could not be placed. Try again.");
-    } finally {
-      submitting.current = false;
-      setPending(false);
     }
   };
   return {

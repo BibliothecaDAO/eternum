@@ -98,6 +98,7 @@ import { IS_FLAT_MODE } from "@/ui/config";
 import { ProductionModal } from "@/ui/features/settlement";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { requireActiveGameClient } from "@/sync/active-game-client";
+import { sendBuilding } from "@/ui/features/settlement/construction/send-building";
 import { playerStructuresView, readFactView, watchFactView } from "@/sync/fact-views";
 import {
   safeInteger,
@@ -914,13 +915,13 @@ export default class HexceptionScene extends HexagonScene {
 
       this.clearBuildingMode();
       try {
-        await requireActiveGameClient().actions.placeBuilding({
-          structureId: structureEntityId,
-          buildingType: buildingType.type,
-          hex: normalizedCoords,
+        await sendBuilding({
+          realmId: structureEntityId,
+          type: buildingType.type,
+          plot: normalizedCoords,
           useSimpleCost,
+          onSent: () => AudioManager.getInstance().play("ui.build_place"),
         });
-        AudioManager.getInstance().play("ui.build_place");
       } catch (error) {
         console.error("[Hexception] building placement failed", error);
       }

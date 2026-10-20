@@ -2,9 +2,10 @@ import * as Effect from "effect/Effect";
 import * as Semaphore from "effect/Semaphore";
 import { generateBuildablePositions } from "@bibliothecadao/eternum/automation";
 import { BUILDINGS_CENTER, BuildingType, ResourcesIds } from "@bibliothecadao/types";
-import { buildableRadius, OccupiedSpaceError, type BuildingTiles, type GameClient } from "@bibliothecadao/eternum";
+import { buildableRadius, type BuildingTiles, type GameClient } from "@bibliothecadao/eternum";
 import { toast } from "@/ui/features/event-feed/notify";
 import { gameTaskScope } from "@/ui/features/infrastructure/automation/model/game-task-scope";
+import { isPlotInFlight, sendBuilding } from "./send-building";
 import { getActiveGameStore, requireActiveGameClient } from "@/sync/active-game-client";
 import {
   resolveConstructionBuildability,
@@ -113,91 +114,54 @@ const hasBuildableCandidate = ({ entityId, realmPosition }: RealmAvailableTileOp
 export const resolveRealmHasAvailableBuildingTile = (options: RealmAvailableTileOptions) =>
   hasBuildableCandidate(options);
 
+/**
+ * Builds on the first free plot the building can stand on and sends it once. A plot is free when nothing stands on it in
+ * the store and no building of ours is on its way to it; the realm's lock holds until this build's own outcome, so the
+ * next quick build reads a board that holds it. One press sends one build: a refusal is reported, never retried on
+ * another plot.
+ */
 const submitRealmBuilding = async (
   client: GameClient,
   isCurrentGame: () => boolean,
   { entityId, realm, mode, target, useSimpleCost, onBuildSuccess, signal }: RealmBuildActionOptions,
 ) => {
-  const { setup, actions } = client;
-  const baseBuildability = resolveConstructionBuildability({
-    entityId,
-    buildingType: target.type,
-    useSimpleCost,
-    store: setup.store,
-    realm,
-    mode,
-  });
+  const { setup } = client;
+  const buildability = (targetSpot?: BuildSpot, tileManager?: BuildingTiles) =>
+    resolveConstructionBuildability({
+      entityId,
+      buildingType: target.type,
+      useSimpleCost,
+      store: setup.store,
+      realm,
+      mode,
+      targetSpot,
+      tileManager,
+    });
 
-  if (!baseBuildability.canSubmit) {
-    toast.error(baseBuildability.reason ?? "Building cannot be submitted.");
+  const base = buildability();
+  if (!base.canSubmit) {
+    toast.error(base.reason ?? "Building cannot be submitted.");
     return false;
   }
 
   const { tileManager, buildRadiusResolver } = readRealmTiles(client, entityId);
-  const buildRadius = buildRadiusResolver();
-  const candidates = generateBuildablePositions(buildRadius);
-  const availableSpots = resolveAvailableBuildSpots(tileManager, candidates);
-
-  if (availableSpots.length === 0) {
+  const plot = resolveAvailableBuildSpots(tileManager, generateBuildablePositions(buildRadiusResolver())).find(
+    (spot) => !isPlotInFlight(entityId, spot) && buildability(spot, tileManager).canSubmit,
+  );
+  if (!plot) {
     toast.error("No empty building tiles available.");
     return false;
   }
-
-  let occupiedTileFailures = 0;
+  if (signal?.aborted || !isCurrentGame()) return false;
 
   try {
-    for (const availableSpot of availableSpots) {
-      if (signal?.aborted || !isCurrentGame()) return false;
-      const spotBuildability = resolveConstructionBuildability({
-        entityId,
-        buildingType: target.type,
-        useSimpleCost,
-        store: setup.store,
-        realm,
-        mode,
-        targetSpot: availableSpot,
-        tileManager,
-      });
-
-      if (!spotBuildability.canSubmit) {
-        continue;
-      }
-
-      try {
-        await actions.placeBuilding({
-          structureId: entityId,
-          buildingType: target.type,
-          hex: { col: availableSpot.col, row: availableSpot.row },
-          useSimpleCost,
-        });
-
-        if (!signal?.aborted && isCurrentGame())
-          onBuildSuccess?.({
-            structureId: entityId,
-            innerCol: availableSpot.col,
-            innerRow: availableSpot.row,
-          });
-        return true;
-      } catch (error) {
-        if (error instanceof OccupiedSpaceError) {
-          occupiedTileFailures += 1;
-          continue;
-        }
-
-        throw error;
-      }
-    }
-
-    if (occupiedTileFailures > 0) {
-      toast.error("All auto-selected tiles became occupied. Please try again.");
-      return false;
-    }
-
-    toast.error("No empty building tiles available.");
-    return false;
+    const sent = await sendBuilding({ realmId: entityId, type: target.type, plot, useSimpleCost });
+    if (sent === null) return false;
+    if (!signal?.aborted && isCurrentGame())
+      onBuildSuccess?.({ structureId: entityId, innerCol: plot.col, innerRow: plot.row });
+    return true;
   } catch (error) {
     if (signal?.aborted || !isCurrentGame()) return false;
-    console.error("Failed to auto-build", error);
     toast.failed(error, "Building failed. Please try again.");
     return false;
   }
