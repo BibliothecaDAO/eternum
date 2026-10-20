@@ -1,3 +1,4 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
@@ -30,34 +31,44 @@ export const GuidedRail = ({
   const setChatOpen = useCallback((open: boolean) => setFocus(open ? "chat" : "none"), []);
   const { isMapView } = useQuery();
   return (
-    <RailFrame>
+    <RailFrame chat={<HudChatWindow open={focus === "chat"} onOpenChange={setChatOpen} />} chatOpen={focus === "chat"}>
       {lead}
       {buildOrder}
       <EventsCard logOpen={focus === "log"} onLogToggle={toggleLog} />
       {picked && (isMapView ? <PickedMapTile /> : <PickedBuilding />)}
-      <HudChatWindow open={focus === "chat"} onOpenChange={setChatOpen} />
     </RailFrame>
   );
 };
 
 /**
- * The rail's frame: the right column, from under the top bar down to the base band. Its stacking rule: the panels that
- * are always on keep their height; the picked tile's details and the open chat share the room left, each giving up
- * room in proportion to its height, down to its least height (`details-least`, `chat-least`). On a screen too short
- * for those, the column scrolls as a whole inside its own box, so nothing in it reaches the base band. The scroller
- * reaches past the column's sides so the panels' shadows show; the column's own box, which the map's labels keep clear
- * of, stays the column.
+ * The rail's frame: the right column, from under the top bar down to the base band, in two parts. Its panels stack at
+ * the top; chat stands at its foot, outside their scroll, so its strip and an open chat's composer are always inside
+ * the column, whatever its height and however it changes. Chat takes the room left under the panels, its strip at the
+ * bottom. When there is not room for both, the panels (the picked tile's details first, down to `details-least`) and
+ * the open chat give up room in proportion to their height, the chat never below `chat-least`; past that, the panels
+ * scroll inside their own box. The scroller reaches past the column's sides so the panels' shadows show; the column's
+ * own box, which the map's labels keep clear of, stays the column.
  */
-export const RailFrame = ({ children }: { children: ReactNode }) => (
+export const RailFrame = ({
+  children,
+  chat,
+  chatOpen,
+}: {
+  children: ReactNode;
+  chat: ReactNode;
+  chatOpen: boolean;
+}) => (
   <aside
     {...HUD_COLUMN_MARK}
     aria-label="Guided rail"
     data-hud-rail
-    className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex w-hud-column flex-col"
+    className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex w-hud-column flex-col gap-2"
   >
-    <div className="no-scrollbar -mx-6 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden px-6">
+    <div className="no-scrollbar -mx-6 flex min-h-0 flex-col gap-2 overflow-y-auto overflow-x-hidden px-6">
       {children}
     </div>
+    {/* Open, the chat's least height is its floor here, not the pane's own height, so the two can share. */}
+    <div className={cn("flex grow flex-col justify-end", chatOpen && "min-h-hud-chat-least")}>{chat}</div>
   </aside>
 );
 

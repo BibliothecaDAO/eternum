@@ -37,7 +37,7 @@ it("recognises the unified HUD without the retired Day ends words, only on its m
   window.history.replaceState({}, "", "/g/0x1/2/map");
   document.body.innerHTML =
     '<canvas id="main-canvas"></canvas>' +
-    renderToStaticMarkup(createElement(RailFrame, { children: "Day 1 · 15h 46m left" }));
+    renderToStaticMarkup(createElement(RailFrame, { children: "Day 1 · 15h 46m left", chat: null, chatOpen: false }));
   try {
     expect(frontierChestRouteReady()).toBe(true);
     window.history.replaceState({}, "", "/g/0x1/2/hex");
