@@ -28,6 +28,13 @@ const takenName = (specifier) => {
   return taken?.type === "Identifier" ? taken.name : taken?.value;
 };
 
+/** A module path written as a plain string or a backtick string with nothing interpolated; null when built at run time. */
+const staticPath = (source) => {
+  if (source.type === "Literal" && typeof source.value === "string") return source.value;
+  if (source.type === "TemplateLiteral" && source.expressions.length === 0) return source.quasis[0].value.cooked;
+  return null;
+};
+
 /** An import, a re-export or a dynamic import of the readers' module that can reach an imperative reader. */
 const noImperativeNames = {
   meta: { type: "problem", schema: [] },
@@ -51,9 +58,19 @@ const noImperativeNames = {
           );
         if (reads) report(node);
       },
-      // A dynamic import hands over the whole module.
+      // A dynamic import hands over the whole module. Its path is read as a plain or backtick string; one built at
+      // run time cannot be resolved here, so it is refused outside the imperative consumers.
       ImportExpression(node) {
-        if (node.source.type === "Literal" && reaches(node.source.value)) report(node);
+        const path = staticPath(node.source);
+        if (path === null) {
+          context.report({
+            node,
+            message:
+              "A dynamic import here must name its module as a fixed string, so the name readers' boundary can resolve it.",
+          });
+          return;
+        }
+        if (reaches(path)) report(node);
       },
     };
   },

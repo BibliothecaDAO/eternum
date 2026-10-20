@@ -44,6 +44,16 @@ describe("only the imperative consumers reach an imperative name reader, by reso
     ["a renamed re-export", `export { getPlayerDisplayName as nameOf } from "../identity/player-profiles";`],
     ["a re-export of the whole module", `export * from "../identity/player-profiles";`],
     ["a dynamic import", `export const later = () => import("../identity/player-profiles");`],
+    ["a backtick dynamic import (review 5)", "export const later = () => import(`../identity/player-profiles`);"],
+    [
+      "a backtick dynamic import by the alias (review 5)",
+      "export const later = () => import(`@/services/identity/player-profiles`);",
+    ],
+    [
+      "a dynamic import whose path is built at run time",
+      "export const later = (m: string) => import(`../identity/${m}`);",
+    ],
+    ["a dynamic import of a variable", "export const later = (m: string) => import(m);"],
   ])("rejects %s", async (_, source) => {
     expect(await hits(SERVICE, source)).toHaveLength(1);
   });
