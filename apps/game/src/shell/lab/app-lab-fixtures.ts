@@ -154,6 +154,9 @@ export const LAB_SCREENS = {
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
   "long-name": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // A player with no finished game yet (qa-app-1 P3-9), and a session that has claimed no name (qa-blitz-1 #3).
+  "no-games": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  unnamed: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   // The seat's Blitz leads, and the next slot's entry closes hours away: its row reads the longer clock QA met on dev
@@ -193,6 +196,8 @@ export const LAB_SCREENS = {
 /** The player's name on each screen whose player is not Maelis. */
 export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
   "long-name": "WWWWWWWWWWWWWWWWWWWW",
+  // Identity names a new account by its id until a name is claimed.
+  unnamed: LAB_SESSION.user.id,
 };
 
 /** The payout wallet linked on each screen's session; a screen not named here has none. */

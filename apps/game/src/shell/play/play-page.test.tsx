@@ -181,3 +181,16 @@ it("opens a seated game still being prepared on its lobby from Play, and offers 
   expect(ready.text()).toContain("Enter");
   expect(ready.text()).not.toContain("Lobby");
 });
+
+it.each([
+  [1, "1 player"],
+  [14, "14 players"],
+])("counts a season's %i players in the right number on its card (qa-app-2 P3-12)", async (count, says) => {
+  reads.directory = answered({ games: [game({ player_count: count })] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  const chips = [...page.container.querySelectorAll(".app-chip")].map((chip) => chip.textContent);
+  expect(chips).toContain(says);
+  expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
+});

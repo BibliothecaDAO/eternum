@@ -14,8 +14,9 @@ const RINGS = { lit: "border-kit-peach", line: "border-kit-line2" } as const;
 const isKnownSize = (size: number | string): size is KnownSize => size in SIZES;
 
 /**
- * A player's portrait, round on its ring: their chosen one, else the stock portrait their account resolves to. A size
- * off the list (a tab's icon) is set in pixels; none leaves the box to the host (a grid's square cell).
+ * A player's portrait, round on its ring: their chosen one, else the stock portrait their account resolves to; while
+ * their profile is not known yet (`pending`), the ring alone, never a stock face that is not theirs. A size off the list
+ * (a tab's icon) is set in pixels; none leaves the box to the host (a grid's square cell).
  */
 export const Portrait = ({
   account = null,
@@ -23,10 +24,13 @@ export const Portrait = ({
   size,
   ring = "line",
   weight,
+  pending = false,
   className,
 }: {
   account?: string | bigint | null;
   portrait?: string | null;
+  /** The player's profile is still being asked for: draw the ring and nothing in it. */
+  pending?: boolean;
   size?: KnownSize | number;
   ring?: keyof typeof RINGS;
   /** The ring's width; none where the host draws the ring and clips the round itself (a choice's button). */
@@ -36,6 +40,19 @@ export const Portrait = ({
   const known = size !== undefined && isKnownSize(size);
   const style: CSSProperties | undefined =
     typeof size === "number" && !known ? { width: size, height: size } : undefined;
+  if (pending)
+    return (
+      <span
+        aria-hidden
+        style={style}
+        className={cn(
+          "block bg-kit-plate2",
+          known && SIZES[size],
+          weight !== undefined && ["rounded-full", WEIGHTS[weight], RINGS[ring]],
+          className,
+        )}
+      />
+    );
   return (
     <img
       src={playerPortraitUrl(account, portrait)}

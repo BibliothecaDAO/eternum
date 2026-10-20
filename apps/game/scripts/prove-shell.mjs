@@ -79,8 +79,8 @@ const END = {
   market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://market.realms.world/" && a.target === "_blank")`,
   // What's new under its place, a section's tab chosen and that section's changes shown under its name.
   news: `location.pathname === "/scroll" && ${placeLit("What's new")} && [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].some((tab) => tab.innerText.trim() === "Blitz") && [...document.querySelectorAll(".app-panel h2")].some((name) => name.innerText.trim() === "Blitz")`,
-  // The terms, read from the footer, under What's new's place.
-  terms: `location.pathname === "/terms" && ${placeLit("What's new")}`,
+  // The terms, read from the footer: a page no place holds, so none is lit (qa-app-1 P3-3).
+  terms: `location.pathname === "/terms" && document.querySelectorAll('[data-role="tab"][aria-current="page"]').length === 0`,
   signIn: `location.pathname === "/sign-in" && new URLSearchParams(location.search).get("next") === "/profile"`,
   lobby: `location.pathname.startsWith("/blitz/") && document.querySelector('[data-band="body"]')`,
   lobbySignIn: `location.pathname === "/sign-in" && (new URLSearchParams(location.search).get("next") ?? "").startsWith("/blitz/")`,

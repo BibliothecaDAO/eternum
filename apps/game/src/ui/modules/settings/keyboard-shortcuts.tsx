@@ -42,7 +42,10 @@ export const KeyboardShortcutsSetting = ({ onShow }: { onShow: () => void }) => 
   </HudSetting>
 );
 
-/** The keys, read-only, one line each, under Back to Settings. */
+/**
+ * The keys, read-only, under Back to Settings: each key with every meaning it has, a line each, wrapped to be read whole
+ * (qa-app-1 P3-2: Tab's and Esc's meanings were cut off behind "…").
+ */
 export const KeyboardShortcuts = ({ onBack }: { onBack: () => void }) => (
   <section aria-label={SETTINGS_WORDS.shortcuts} className="flex flex-col gap-3 p-1">
     <header className="flex items-center gap-2">
@@ -51,11 +54,15 @@ export const KeyboardShortcuts = ({ onBack }: { onBack: () => void }) => (
     </header>
     <dl className="flex flex-col gap-1">
       {shortcutBindings().map(([key, meanings]) => (
-        <div key={key} className="flex items-center gap-3">
+        <div key={key} className="flex items-start gap-3">
           <dt>
             <HudChip>{key}</HudChip>
           </dt>
-          <dd className="min-w-0 truncate text-hud-body text-hud-ink">{meanings.join(" · ")}</dd>
+          <dd className="flex min-w-0 flex-col text-hud-body text-hud-ink">
+            {meanings.map((meaning) => (
+              <span key={meaning}>{meaning}</span>
+            ))}
+          </dd>
         </div>
       ))}
     </dl>

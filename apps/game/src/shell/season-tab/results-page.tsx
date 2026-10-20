@@ -1,5 +1,5 @@
 import { formatAmount, formatOrdinal, formatPoints } from "@bibliothecadao/types";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import { displayPlayerName } from "@bibliothecadao/eternum";
@@ -54,25 +54,24 @@ import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
 import { FrontierRow } from "./frontier-row";
 import { gameTitle } from "./history-row";
-import { gameOfResults } from "./results-link";
+import { gameOfResults, resultsHref } from "./results-link";
 import { type RewardSeat, useSealedChest } from "./reward";
 import { RewardPanel } from "./reward-panel";
-
-/** The post-game score and share cards; heavy, so they load only when a player taps Share. */
-const GameReviewModal = lazy(() =>
-  import("@/ui/features/game-review/game-review-modal").then((module) => ({ default: module.GameReviewModal })),
-);
 
 /** How many of the board's rows a result shows: the top three on a phone, the final top five on desktop. */
 const ROWS = { phone: 3, desktop: 5 } as const;
 
-/** A finished game's record, from the directory (ended) or the player's history (settled), when either holds it. */
+/**
+ * A finished game's record: from the directory (ended), the player's history (settled), or every player's recent
+ * history, which holds a game the reader had no seat in (a shared Results; qa-app-2 P3-13).
+ */
 const useFinishedGame = (ref: GameRef | null) => {
   const { data: player } = useRealmsPlayer();
   const directory = useDirectory();
   const history = useRecentResults(50, player);
+  const everyone = useRecentResults(50);
   const matches = (game: DirectoryGame) => ref !== null && game.chainId === ref.chainId && game.game_id === ref.gameId;
-  return directory.data?.games.find(matches) ?? history.data?.games.find(matches);
+  return directory.data?.games.find(matches) ?? history.data?.games.find(matches) ?? everyone.data?.games.find(matches);
 };
 
 /**
@@ -164,6 +163,56 @@ const EndMapButton = ({ gameRef }: { gameRef: GameRef }) => (
   </AppButton>
 );
 
+/**
+ * What Share says: the result as this page tells it, "Blitz 02:18 · 1st of 2 · 0 points", or the game alone for a reader
+ * who did not play. One story: Share sends this page's own line and its address, never another account of the game.
+ */
+const shareLine = (game: DirectoryGame | undefined, own: HeraldLeaderboardEntry | undefined, field: number): string =>
+  [
+    game ? gameTitle(game) : WORDS.results,
+    ...(own
+      ? [
+          `${formatOrdinal(own.rank)} ${SEASON_WORDS.of} ${formatAmount(field)}`,
+          formatPoints(Math.round(own.totalPoints)),
+        ]
+      : []),
+  ].join(" · ");
+
+/**
+ * Share: this page's line and its address, through the device's share sheet where it has one (a phone), else copied,
+ * the button then saying so. A share the player closes is no failure; a sheet the browser refuses falls back to the
+ * copy, and a copy the browser refuses shows the line and the address to select, never nothing.
+ */
+const ShareButton = ({ gameRef, line }: { gameRef: GameRef; line: string }) => {
+  const [done, setDone] = useState<"copied" | "shown" | null>(null);
+  const url = new URL(resultsHref({ chainId: gameRef.chainId, game_id: gameRef.gameId }), window.location.origin).href;
+  const share = async () => {
+    if (navigator.share) {
+      const shared = await navigator.share({ title: WORDS.results, text: line, url }).then(
+        () => true,
+        (error: unknown) => error instanceof DOMException && error.name === "AbortError",
+      );
+      if (shared) return;
+    }
+    setDone(
+      await (navigator.clipboard?.writeText(`${line} ${url}`) ?? Promise.reject(new Error("no clipboard"))).then(
+        () => "copied" as const,
+        () => "shown" as const,
+      ),
+    );
+  };
+  return (
+    <>
+      <AppButton kind="quiet" icon="share" onClick={() => void share()}>
+        {done === "copied" ? RESULT_WORDS.copied : SEASON_WORDS.share}
+      </AppButton>
+      {done === "shown" && (
+        <output className="basis-full select-all text-app-label text-app-muted">{`${line} ${url}`}</output>
+      )}
+    </>
+  );
+};
+
 /** Continue to Play after a match: the step, unless a sealed chest's Open is the page's. */
 const ContinueButton = ({ fromList, chestToOpen = false }: { fromList: boolean; chestToOpen?: boolean }) =>
   fromList ? null : (
@@ -191,7 +240,6 @@ const BlitzResult = ({
   player: string | null;
   fromList: boolean;
 }) => {
-  const [sharing, setSharing] = useState(false);
   const layout = useLayout();
   const own = player ? entries.find((entry) => isSameStarknetAddress(entry.address, player)) : undefined;
   const chestToOpen = useSealedChest(game ? rewardSeatOf(game) : null);
@@ -199,21 +247,9 @@ const BlitzResult = ({
   const rows = own && !top.includes(own) ? [...top, own] : top;
   const buttons = (
     <span className="flex flex-wrap gap-2">
-      <AppButton kind="quiet" icon="share" onClick={() => setSharing(true)}>
-        {SEASON_WORDS.share}
-      </AppButton>
+      <ShareButton gameRef={gameRef} line={shareLine(game, own, entries.length)} />
       <EndMapButton gameRef={gameRef} />
       <ContinueButton fromList={fromList} chestToOpen={chestToOpen} />
-      {sharing && (
-        <Suspense fallback={null}>
-          <GameReviewModal
-            isOpen
-            world={{ chainId: gameRef.chainId, gameId: gameRef.gameId, name: game?.name ?? "" }}
-            nextGame={null}
-            onClose={() => setSharing(false)}
-          />
-        </Suspense>
-      )}
     </span>
   );
   const reward = game && <GameReward game={game} />;
@@ -221,7 +257,14 @@ const BlitzResult = ({
     <ResultsFrame fromList={fromList} painting="blitz-aftermath" buttons={buttons}>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <AppPanel className="lg:col-span-8">
-          {own ? <BlitzOutcome own={own} field={entries.length} game={game} /> : <GameLine game={game} />}
+          {own ? (
+            <BlitzOutcome own={own} field={entries.length} game={game} gameRef={gameRef} />
+          ) : (
+            <div className="flex flex-col gap-2">
+              <GameLine game={game} gameRef={gameRef} />
+              {player && <p className="text-app-body text-app-ink">{RESULT_WORDS.noSeat}</p>}
+            </div>
+          )}
         </AppPanel>
         {reward && <div className="flex flex-col gap-6 lg:col-span-4 lg:row-span-2">{reward}</div>}
         <AppPanel title={RESULT_WORDS.theGame} icon="leaderboard" flush className="lg:col-span-4">
@@ -253,15 +296,17 @@ const BlitzOutcome = ({
   own,
   field,
   game,
+  gameRef,
 }: {
   own: HeraldLeaderboardEntry;
   field: number;
   game: DirectoryGame | undefined;
+  gameRef: GameRef;
 }) => (
   <div className="flex flex-wrap items-center gap-8">
     <PlayerPortrait account={own.address} />
     <div className="flex flex-col gap-3">
-      <GameLine game={game} />
+      <GameLine game={game} gameRef={gameRef} />
       <span className="text-app-display text-app-ink">{`${formatOrdinal(own.rank)} ${SEASON_WORDS.of} ${formatAmount(field)}`}</span>
       <AppFigure icon="star" tone="gold" value={formatPoints(Math.round(own.totalPoints))} />
     </div>
@@ -302,29 +347,32 @@ const PointsBreakdown = ({ own }: { own: HeraldLeaderboardEntry }) => {
       points: entry.hyperstructuresHeldPoints,
     },
   ] as const;
+  const scored = kinds.filter((kind) => (kind.points ?? 0) > 0);
+  // None scored: the panel says so, never an empty plate (qa-app-1 P3-11).
+  if (scored.length === 0) return <p className="px-4 py-3 text-app-body text-app-muted">{RESULT_WORDS.noPoints}</p>;
   return (
     <div>
-      {kinds
-        .filter((kind) => (kind.points ?? 0) > 0)
-        .map((kind) => (
-          <AppRow
-            key={kind.word}
-            lead={<SemanticIcon name={kind.icon} size={28} />}
-            title={kind.word}
-            detail={kind.count ? `× ${formatAmount(kind.count)}` : undefined}
-            trail={<AppChip icon="star">{formatPoints(kind.points ?? 0)}</AppChip>}
-          />
-        ))}
+      {scored.map((kind) => (
+        <AppRow
+          key={kind.word}
+          lead={<SemanticIcon name={kind.icon} size={28} />}
+          title={kind.word}
+          detail={kind.count ? `× ${formatAmount(kind.count)}` : undefined}
+          trail={<AppChip icon="star">{formatPoints(kind.points ?? 0)}</AppChip>}
+        />
+      ))}
     </div>
   );
 };
 
-/** Which game it was, and when it ended. */
-const GameLine = ({ game }: { game: DirectoryGame | undefined }) => {
+/** Which game it was, and when it ended; a game no list the page reads still holds, by its number. */
+const GameLine = ({ game, gameRef }: { game: DirectoryGame | undefined; gameRef: GameRef }) => {
   const now = useNowSeconds();
   return (
     <p className="text-app-label text-app-age">
-      {game ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}` : "—"}
+      {game
+        ? `${gameTitle(game)} · ${clockLine(null, game.clock.end_at, now)}`
+        : RESULT_WORDS.blitzGame(gameRef.gameId)}
     </p>
   );
 };

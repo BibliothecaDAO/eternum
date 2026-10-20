@@ -143,7 +143,7 @@ export const PlayerPage = () => {
 
 /**
  * The page for a signed-in player, the player's account known from the session; else the card that says why not
- * (signed out, a name still to claim, or this device removed), placed by the page.
+ * (signed out, a name still to claim with Sign out under it, or this device removed), placed by the page.
  */
 const SignedInOnly = ({
   fallback,
@@ -158,8 +158,15 @@ const SignedInOnly = ({
   if (status === "loading") return <Loading />;
   if (!session) return fallback(<SignInCard line={null} verb={WORDS.signIn} />);
   if (removed) return fallback(<SignInCard line={PROFILE_WORDS.deviceRemoved} verb={WORDS.signIn} />);
-  // The flow opens on its name step for a session that has not claimed one.
-  if (identityUsername(session) === null) return fallback(<SignInCard line={null} verb={SIGN_IN_WORDS.claimName} />);
+  // The flow opens on its name step for a session that has not claimed one; such a session can still sign out
+  // (qa-blitz-1 #3: it had no way to).
+  if (identityUsername(session) === null)
+    return fallback(
+      <div className="flex flex-col gap-4">
+        <SignInCard line={null} verb={SIGN_IN_WORDS.claimName} />
+        <SignOut />
+      </div>,
+    );
   return account ? children(account) : <Loading />;
 };
 
@@ -204,7 +211,7 @@ const OwnProfile = ({ account }: { account: string }) => {
         <PlayerCard account={account} own />
         <Rows />
       </div>
-      <RecentGames account={account} />
+      <RecentGames account={account} own />
     </div>
   );
 };

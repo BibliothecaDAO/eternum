@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { AppChip, AppRank, AppRow } from "@/ui/design-system/kit/app-elements";
 import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { SEASON_WORDS } from "@/ui/design-system/kit/words";
 import { wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { openedFrom } from "../frame/opened-from";
@@ -28,8 +29,10 @@ export const FrontierRow = ({ entry, own }: { entry: HeraldFrontierLeaderboardEn
       title={<PlayerName account={entry.address} you={own} portrait />}
       trail={
         <>
-          <AppChip icon="explore">{formatAmount(entry.sites_cleared.total)}</AppChip>
-          <AppChip icon="lords" tone="gold">
+          <AppChip icon="explore" label={SEASON_WORDS.sitesCleared}>
+            {formatAmount(entry.sites_cleared.total)}
+          </AppChip>
+          <AppChip icon="lords" tone="gold" label="LORDS">
             {formatAmount(wholeLords(entry.rewards.lords))}
           </AppChip>
         </>

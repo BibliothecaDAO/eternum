@@ -39,6 +39,16 @@ const readDevices = async (address: string) => {
   };
 };
 
+/**
+ * The account's devices with this one among them: a device signed in is the account's, whether or not its
+ * registration has reached the shards' events yet (right after sign-in it may not have: qa-app-1 P3-5 read an empty
+ * list). A device removed elsewhere never reaches this list; the page says it was removed instead.
+ */
+const withThisDevice = (devices: Device[], thisDevice: string): Device[] =>
+  devices.some((device) => BigInt(device.key) === BigInt(thisDevice))
+    ? devices
+    : [{ key: thisDevice, shards: [] }, ...devices];
+
 /** A device's name until the identity Worker stores names at registration: "Device" and its key's last four. */
 const deviceName = (key: string) => PROFILE_WORDS.device(BigInt(key).toString(16).slice(-4));
 
@@ -59,12 +69,12 @@ export const DevicesCard = ({ realmsId }: { realmsId: string }) => {
     if (!address) return;
     readDevices(address).then(
       ({ devices, partial }) => {
-        setDevices(devices);
+        setDevices(withThisDevice(devices, thisDevice));
         setFailed(partial ? "partial" : null);
       },
       (cause: unknown) => setFailed(cause),
     );
-  }, [address]);
+  }, [address, thisDevice]);
   useEffect(load, [load]);
 
   const remove = async (device: Device) => {

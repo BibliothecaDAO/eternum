@@ -297,6 +297,14 @@ export const RESULT_WORDS = {
   deepest: "Deepest",
   /** A finished game's map, opened as a spectator: how it ended, to scout. */
   endMap: "See the end map",
+  /** Results read by a signed-in player who had no seat in the game. */
+  noSeat: "You had no seat in this game.",
+  /** A Blitz's Results whose game no list read holds: named by its number. */
+  blitzGame: (gameId: number) => `Blitz · game ${gameId}`,
+  /** Your points, for a game the player scored nothing in. */
+  noPoints: "No points scored.",
+  /** Share, once the result's line and address are on the clipboard. */
+  copied: "Link copied",
 } as const;
 export const YOU_PLACED = "You placed";
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
@@ -394,7 +402,8 @@ export const FOOTER_WORDS = {
 /** Play: what is under way now, and each mode's next and finished games behind its switch. */
 export const PLAY_WORDS = {
   ended: "Ended",
-  players: "Players",
+  /** A season's players, counted by the one plural rule (formatCount): "1 player", "14 players". */
+  player: "player",
 } as const;
 
 /** The lore's line, on the first visit's painting and on sign-in (approved 25 September). */
@@ -477,6 +486,8 @@ export const DOORWAY_WORDS = {
 export const SEASON_WORDS = {
   /** The view switch's name, for assistive technology. */
   views: "Season views",
+  /** What a board row's explore count is, read after it. */
+  sitesCleared: "sites cleared",
   share: "Share",
   /** Between a place and the field: "3rd of 24". */
   of: "of",
@@ -511,6 +522,9 @@ export const PROFILE_WORDS = {
   /** Music outside a match, on this device. */
   music: "Music",
   recentGames: "Recent games",
+  /** Recent games with none finished yet: the player's own, and another player's. */
+  noGamesOwn: "Your finished games will show here.",
+  noGames: "No finished games yet.",
   name: "Name",
   portrait: "Portrait",
   signInMethods: "Sign-in",

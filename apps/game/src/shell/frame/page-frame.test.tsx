@@ -157,3 +157,23 @@ describe("a page's notice", () => {
     expect(bandOrder(container)).toEqual(["top", "body", "footer", "notice", "tabs"]);
   });
 });
+
+describe.each(SIZES)("the current place at %i × %i", (width) => {
+  const current = (container: HTMLElement) =>
+    [...container.querySelectorAll<HTMLElement>('[data-role="tab"][aria-current="page"]')].map(
+      (tab) => tab.textContent,
+    );
+
+  it.each(["/terms", "/privacy", "/credits"])(
+    "marks no place current on %s, read from the footer (qa-app-1 P3-3)",
+    async (path) => {
+      setViewportWidth(width);
+      expect(current(await renderPath(path))).toEqual([]);
+    },
+  );
+
+  it("marks What's new current on the patch notes", async () => {
+    setViewportWidth(width);
+    expect(current(await renderPath("/scroll")).join()).toMatch(/What.s new/);
+  });
+});

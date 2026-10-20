@@ -6,7 +6,7 @@ const { goTo } = vi.hoisted(() => ({ goTo: vi.fn() }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useGoToStructure: () => goTo }));
 vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerDisplayName: () => "Rival",
-  usePlayerProfile: () => ({ name: "Rival", portrait: null }),
+  usePlayerProfile: () => ({ name: "Rival", portrait: null, known: true }),
 }));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),

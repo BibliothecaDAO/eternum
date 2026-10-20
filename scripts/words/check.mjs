@@ -30,7 +30,7 @@ const CATEGORIES = {
   "number.grouping": "thousands grouped by hand (a regex over digit triples)",
   "number.points": "points written by the compact amount rule (formatAmount(points)): points are exact",
   "number.plural":
-    'a noun\'s number picked by hand (n === 1 ? "army" : "armies"), or a count before a fixed plural (`${max} slots`): formatCount picks it',
+    'a noun\'s number picked by hand (n === 1 ? "army" : "armies"), or a count before a fixed plural (`${max} slots`, `${count} ${WORDS.players}`): formatCount picks it',
   "words.doubled": "a writer's own noun or unit written again after it ({formatPoints(n)} points)",
   "number.floored":
     "a figure floored before it is written (formatAmount(knownBalance(x)), divideByPrecision(x) inside a writer): write knownAmount(x)",
@@ -296,11 +296,17 @@ const handPluralText = (node) =>
 // count is plainly one (a length, a count, a maximum) and the noun is lower case, in text a player reads.
 const COUNT_NAME = /(?:^|\.)(?:length|\w*[cC]ount|max[A-Z]\w*)$/;
 const PLURAL_NOUN = /^ (?:[a-z]+ )*[a-z]+[^s\W]s\b/;
-const fixedPlural = (span) => {
+// A plural noun from a words table, written after a count: `${count} ${PLAY_WORDS.players}` reads "1 Players".
+const PLURAL_WORD = /\.[a-z]+[^s\W]s$/i;
+const fixedPlural = (span, next) => {
   let expression = span.expression;
   if (ts.isCallExpression(expression) && /^format(?:Exact|Amount)$/.test(calleeName(expression)))
     expression = expression.arguments[0] ?? expression;
-  return COUNT_NAME.test(expression.getText()) && PLURAL_NOUN.test(span.literal.text);
+  if (!COUNT_NAME.test(expression.getText())) return false;
+  return (
+    PLURAL_NOUN.test(span.literal.text) ||
+    (span.literal.text === " " && next !== undefined && PLURAL_WORD.test(next.expression.getText()))
+  );
 };
 
 // A figure is written for a player and read from the number it was written from, never parsed back: a compact or
@@ -461,7 +467,9 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
     if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))
-      for (const span of node.templateSpans) if (fixedPlural(span)) hit("number.plural", span);
+      node.templateSpans.forEach((span, index) => {
+        if (fixedPlural(span, node.templateSpans[index + 1])) hit("number.plural", span);
+      });
     if (
       ts.isCallExpression(node) &&
       // The writers that keep a fraction or say "<1"; formatExact writes whole counts.

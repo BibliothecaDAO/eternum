@@ -93,3 +93,43 @@ it("shows the linked payout wallet by its address, changed only with a code, and
     await unlinked.unmount();
   }
 });
+
+it("offers Claim name only once the name differs from the one held (qa-app-1 P3-6)", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    const nameRow = [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Maelis"))!;
+    await act(async () => nameRow.click());
+    const claim = () =>
+      [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Claim name",
+      )!;
+    const field = document.querySelector<HTMLInputElement>("form input")!;
+    expect(field.value).toBe("Maelis");
+    expect(claim().disabled).toBe(true);
+    // A new name to claim: the step lights.
+    const type = (value: string) =>
+      act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, value);
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    await type("Maelis2");
+    expect(claim().disabled).toBe(false);
+    // Back to the name held: nothing to claim again.
+    await type("Maelis");
+    expect(claim().disabled).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});

@@ -20,6 +20,8 @@ interface IdentityProfilesDeps {
 const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
   const profiles = new Map<string, IdentityProfile>();
   const requested = new Set<string>();
+  /** Addresses identity has answered for (a profile, or none to give), or whose ask failed: what they show is known. */
+  const answered = new Set<string>();
   const listeners = new Set<Listener>();
   const pending: string[] = [];
   let version = 0;
@@ -39,16 +41,19 @@ const createIdentityProfiles = (deps: IdentityProfilesDeps) => {
         Object.entries(await deps.fetchProfiles(batch)).forEach(([account, profile]) =>
           profiles.set(normalize(account), profile),
         );
-        landed = true;
       } catch (error) {
         console.error("identity_profiles_load_failed", error);
       }
+      batch.forEach((account) => answered.add(account));
+      landed = true;
     }
     if (landed) notify();
   };
 
   return {
     get: (account: string | bigint): IdentityProfile | undefined => profiles.get(normalize(account)),
+    /** Whether identity answered for this address (or its ask failed): until then its name is not known, not absent. */
+    isAnswered: (account: string | bigint): boolean => answered.has(normalize(account)),
     /** Asks identity for every address not asked before, in one batch per task; the listeners fire when an answer lands. */
     request: (accounts: Iterable<string | bigint>): void => {
       const fresh = [...accounts].map(normalize).filter((account) => !requested.has(account));
@@ -78,6 +83,16 @@ export const identityProfiles = createIdentityProfiles({
  * identity's answer for it was cached before the claim), else the player's Realms profile, asked for on first read. A
  * name written on chain is never read.
  */
+/**
+ * Whether a player's name and portrait are known: an internal account's, the signed-in player's own, or one identity
+ * answered for. Until then a surface shows that it is waiting, never the address's stand-in name and stock face
+ * (qa-app-1 P3-4).
+ */
+export const isPlayerProfileKnown = (address: string | bigint): boolean =>
+  getInternalAddressName(address.toString()) !== undefined ||
+  readOwnProfile(address) !== null ||
+  identityProfiles.isAnswered(address);
+
 export const readPlayerProfile = (address: string | bigint): IdentityProfile => {
   const internalName = getInternalAddressName(address.toString());
   if (internalName) return { name: internalName, portrait: null };

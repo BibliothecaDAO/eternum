@@ -1,7 +1,12 @@
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { getPlayerDisplayName, identityProfiles, readPlayerProfile } from "@/services/identity/player-profiles";
+import {
+  getPlayerDisplayName,
+  identityProfiles,
+  isPlayerProfileKnown,
+  readPlayerProfile,
+} from "@/services/identity/player-profiles";
 import { readPlayers } from "@/sync/fact-views";
 import { displayPlayerName } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
@@ -9,10 +14,13 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { ContractAddress, Player } from "@bibliothecadao/types";
 import { useMemo, useSyncExternalStore } from "react";
 
-/** What every surface shows for a player: the resolved name (or nothing) and the portrait. */
-type PlayerProfile = Pick<Player, "name" | "portrait">;
+/**
+ * What every surface shows for a player: the resolved name (or nothing) and the portrait, and whether they are known
+ * yet: until identity answers, a surface shows it is waiting rather than the address's stand-in name and face.
+ */
+type PlayerProfile = Pick<Player, "name" | "portrait"> & { known: boolean };
 
-const NO_PROFILE: PlayerProfile = { name: null, portrait: null };
+const NO_PROFILE: PlayerProfile = { name: null, portrait: null, known: true };
 const PLAYER_FACTS = ["PlayerEntry"] as const;
 
 const toAddress = (address: string | bigint): ContractAddress => BigInt(address);
@@ -56,7 +64,10 @@ export const usePlayers = (): Player[] => {
 export const usePlayerProfile = (address: string | bigint | null | undefined): PlayerProfile => {
   const names = usePlayerNamesRevision();
   const owner = address === null || address === undefined ? null : toAddress(address);
-  return useMemo(() => (owner === null ? NO_PROFILE : readPlayerProfile(owner)), [owner, ...names]);
+  return useMemo(
+    () => (owner === null ? NO_PROFILE : { ...readPlayerProfile(owner), known: isPlayerProfileKnown(owner) }),
+    [owner, ...names],
+  );
 };
 
 export const usePlayerDisplayName = (address: string | bigint | null | undefined): string | null => {
@@ -67,7 +78,7 @@ export const usePlayerDisplayName = (address: string | bigint | null | undefined
 /** The chosen portrait, else one of the stock portraits picked from the address so it stays stable. */
 export const playerAvatarUrl = (
   address: string | bigint,
-  profile: PlayerProfile = readPlayerProfile(address),
+  profile: Pick<PlayerProfile, "name" | "portrait"> = readPlayerProfile(address),
 ): string => playerPortraitUrl(address, profile.portrait);
 
 const isStarknetAddress = (value: string): boolean => /^0x[0-9a-fA-F]+$/.test(value);

@@ -10,7 +10,7 @@ enum AssetType {
   RealmTitle = "Realm Title",
 }
 
-export enum AssetRarity {
+enum AssetRarity {
   Legendary = "legendary",
   Epic = "epic",
   Rare = "rare",

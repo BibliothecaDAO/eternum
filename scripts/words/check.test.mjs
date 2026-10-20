@@ -62,6 +62,8 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     'const exchanges = (count: number) => (count === 1 ? "1 exchange" : `${count} exchanges`);', // 42
     "const bonusLabel = `${bonusPercent > 0 ? '+' : ''}${bonusPercent}%`;", // 43: words held in a named value
     "const row = <Row detail={`${rows.length} buildings`} />;", // 44
+    // 45: the Play card as it shipped in 26932d66b75 (play-item.tsx), which read "1 Players" (qa-app-2 P3-12)
+    "const chip = <Chip>{`${formatAmount(game.player_count)} ${PLAY_WORDS.players}`}</Chip>;",
   ].join("\n");
   assert.deepEqual(scan(source), [
     "1 formatter",
@@ -109,6 +111,7 @@ test("finds each kind of number, time and naming work a player reads, and the fu
     "42 number.plural",
     "43 number.percent",
     "44 number.plural",
+    "45 number.plural",
   ]);
 });
 

@@ -3,7 +3,9 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
-vi.mock("@/hooks/use-player-profile", () => ({ usePlayerProfile: () => ({ name: null, portrait: null }) }));
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
+}));
 vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));

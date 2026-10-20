@@ -27,8 +27,9 @@ const MARKET_TAB: Place = { to: "https://market.realms.world/", word: WORDS.mark
 
 /**
  * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
- * now, Season where the player stands, What's new the patch notes (and the legal pages, read from the footer), Market
+ * now, Season where the player stands, What's new the patch notes, Market
  * the trading of Realms' items on its own site, You the player, their finished games and everything about the account.
+ * The legal pages, read from the footer, are none of these places: no tab is current there (qa-app-1 P3-3).
  */
 const TABS: readonly Place[] = [
   { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },
@@ -37,7 +38,7 @@ const TABS: readonly Place[] = [
     to: WHATS_NEW_PATH,
     word: WORDS.whatsNew,
     icon: "chronicles",
-    matches: [WHATS_NEW_PATH, "/terms", "/privacy", "/credits"],
+    matches: [WHATS_NEW_PATH],
   },
   MARKET_TAB,
   YOU_TAB,

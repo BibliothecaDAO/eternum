@@ -401,18 +401,25 @@ export const AppChip = ({
   tone,
   icon,
   live = false,
+  label,
   children,
 }: {
   tone?: Tone | "gold";
   icon?: IconMeaning;
   /** A game under way: a dot that breathes before the word. */
   live?: boolean;
+  /**
+   * What a bare count means ("sites cleared"), where the icon alone says it: shown on hover, and read after the count,
+   * so a column of numbers is never read as "0 0" (qa-app-1 P3-7).
+   */
+  label?: string;
   children: ReactNode;
 }) => (
-  <span className="app-chip" data-tone={tone}>
+  <span className="app-chip" data-tone={tone} title={label}>
     {live && <i className="app-chip__live" aria-hidden />}
     {icon && <Icon name={icon} size={18} />}
     {children}
+    {label && <span className="sr-only">{` ${label}`}</span>}
   </span>
 );
 

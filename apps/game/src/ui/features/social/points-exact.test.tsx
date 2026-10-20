@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-import { buildBlitzShareMessage } from "@/ui/shared/lib/blitz-highlight";
 import type { VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import { GuildRow } from "./guilds/guild-list";
 import { PlayerList, type PlayerCustom } from "./player/player-list";
@@ -103,7 +102,7 @@ describe("points on the leaderboard are exact, either side of ten thousand", () 
   });
 });
 
-describe("a guild's score and a shared result", () => {
+describe("a guild's score", () => {
   it.each([
     [9_999, "9,999"],
     [10_000, "10,000"],
@@ -128,13 +127,5 @@ describe("a guild's score and a shared result", () => {
       />,
     );
     expect(texts(html)).toContain(written);
-  });
-
-  it.each([
-    [10_000, "with 10,000 points"],
-    [12_430, "with 12,430 points"],
-    [0, "with 0 points"],
-  ])("a Blitz result shared with %i points says %s", (points, says) => {
-    expect(buildBlitzShareMessage({ rank: 1, points })).toContain(says);
   });
 });

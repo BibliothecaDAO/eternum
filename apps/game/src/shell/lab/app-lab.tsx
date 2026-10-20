@@ -186,7 +186,7 @@ const answerAppReads = (screen: LabScreen) => {
       }),
     "/api/directory/history": () =>
       json({
-        games: [LAB_FINISHED_BLITZ],
+        games: screen === "no-games" ? [] : [LAB_FINISHED_BLITZ],
         next: null,
         failures: [],
       }),

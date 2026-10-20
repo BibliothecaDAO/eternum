@@ -155,6 +155,8 @@ const NameSheet = ({ current, onDone }: { current: string; onDone: () => void })
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const valid = nameRuleViolation(name.trim()) === null;
+  // Nothing to claim until the name changes: the one held is already the player's (qa-app-1 P3-6).
+  const changed = name.trim() !== current;
   const claim = async (event: FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -184,7 +186,7 @@ const NameSheet = ({ current, onDone }: { current: string; onDone: () => void })
         type="submit"
         word={SIGN_IN_WORDS.claimName}
         icon="check"
-        disabled={!valid}
+        disabled={!valid || !changed}
         loading={saving ? SIGN_IN_WORDS.saving : undefined}
       />
     </form>

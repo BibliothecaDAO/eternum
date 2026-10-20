@@ -1,4 +1,4 @@
-import { formatAmount, formatClockTime, formatDuration } from "@bibliothecadao/types";
+import { formatClockTime, formatCount, formatDuration } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
 import { AppButton, AppChip, AppGameCard, AppRow } from "@/ui/design-system/kit/app-elements";
@@ -124,7 +124,7 @@ const SeasonDay = ({ game, now, withPlayers }: { game: DirectoryGame; now: numbe
         <span role="timer">{`${DAY_ENDS} ${formatClockTime(day.endsAt)} · ${formatDuration(day.secondsLeft, { days: false })} ${LEFT}`}</span>
       </AppChip>
       <AppChip icon="sun">{`${TOMORROW_LASTS} ${formatDuration(day.tomorrowSeconds, { days: false })}`}</AppChip>
-      {withPlayers && <AppChip icon="people">{`${formatAmount(game.player_count)} ${PLAY_WORDS.players}`}</AppChip>}
+      {withPlayers && <AppChip icon="people">{formatCount(game.player_count, PLAY_WORDS.player)}</AppChip>}
     </>
   );
 };

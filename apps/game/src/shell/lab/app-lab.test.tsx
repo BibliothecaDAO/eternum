@@ -118,9 +118,10 @@ it("draws a new account's refused name as refused", async () => {
   expect(lab.querySelector('input[aria-invalid="true"]')).not.toBeNull();
 });
 
-// The pages this file draws for real: a reading page under What's new, and an unknown path, which no place holds.
+// The pages this file draws for real: a reading page and an unknown path, neither one any place holds (qa-app-1 P3-3:
+// the legal pages lit What's new).
 it.each([
-  ["terms", ["What's new"]],
+  ["terms", []],
   ["no-such-page", []],
 ])("lights the place of the page it draws at %s, as the app does", async (page, lit) => {
   vi.stubGlobal(

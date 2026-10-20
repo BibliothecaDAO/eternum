@@ -39,12 +39,16 @@ const asRead = (note: (typeof patchNotes)[number]) => ({
   ]),
 });
 
+// jsdom lays nothing out, so it has no scrolling to do; the tests watch the page ask for it.
+Element.prototype.scrollIntoView ??= () => {};
+
 const Where = () => <output data-where>{useLocation().pathname}</output>;
 
 const open = async (width: number) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(width);
   const container = document.createElement("div");
+  document.body.append(container);
   const root = createRoot(container);
   await act(async () =>
     root.render(
@@ -57,7 +61,10 @@ const open = async (width: number) => {
       </MemoryRouter>,
     ),
   );
-  unmount = () => act(async () => root.unmount());
+  unmount = async () => {
+    await act(async () => root.unmount());
+    container.remove();
+  };
   return container;
 };
 
@@ -123,7 +130,17 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
     expect(releases.map((release) => release.querySelector(".app-row__title")?.textContent)).toEqual(
       patchNotes.map((note) => note.title),
     );
+    // Picked from the list below, the release is shown from its head: scrolled to and focused (qa-app-1 P3-1).
+    const scrolled: Element[] = [];
+    const scrollIntoView = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(function (this: Element) {
+      scrolled.push(this);
+    });
     await act(async () => releases.at(-1)!.click());
+    scrollIntoView.mockRestore();
+    const head = panel(page, "Patch notes");
+    expect(scrolled).toHaveLength(1);
+    expect(scrolled[0].contains(head)).toBe(true);
+    expect(document.activeElement).toBe(scrolled[0]);
     expect(await readAll()).toEqual(asRead(patchNotes.at(-1)!));
   });
 

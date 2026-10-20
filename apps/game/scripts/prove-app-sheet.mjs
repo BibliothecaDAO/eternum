@@ -4,7 +4,9 @@
  * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; the
  * app's other pages are shot on the desktop, under the same frame.
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet|end-map] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet|end-map|qa1] [--state <signed-in.json>]
+ *
+ * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *
  * `end-map` runs on the live stack the client is served against, alone: the newest finished game's Results, its "See
  * the end map" pressed, and the map it opens held until its scene is ready, watched and never played.
@@ -122,7 +124,7 @@ const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
   const record = { name, ready: await waitFor(b, DRAWN, READY_MS), presses: [], checks: [] };
   if (!record.ready) return record;
   await sleep(SETTLE_MS);
-  await act?.(b);
+  await act?.(b, record);
   b.run("screenshot", join(out, `${name}.png`));
   record.checks.push(...pageChecks(b), ...(more?.(b) ?? []));
   return record;
@@ -412,6 +414,227 @@ const proveEndMap = async (b, baseUrl, out, state) => {
   return record;
 };
 
+/** Marks the first control whose first line is `words` (a row's name over its value) for the browser's click. */
+const markPress = (words, name) => `(() => {
+  const control = [...document.querySelectorAll("button, a")].find((candidate) => candidate.innerText.trim().split("\\n")[0].trim() === ${JSON.stringify(words)});
+  control?.setAttribute("data-proof-press", ${JSON.stringify(name)});
+  return control !== undefined;
+})()`;
+
+/** Presses a control by its words as a player does: scrolled to and clicked by the browser. */
+const press = async (b, record, words) => {
+  const name = words.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  if (!b.evaluate(markPress(words, name))) {
+    record.presses.push({ press: words, status: "not on the page" });
+    return false;
+  }
+  const refused = clickAsPlayer(b, `[data-proof-press="${name}"]`);
+  record.presses.push({ press: words, status: refused ?? "led" });
+  await sleep(600);
+  return refused === null;
+};
+
+/** Every button on the page, its words: a page's buttons stand in the body, its head's end (desktop) or its foot (phone). */
+const buttonsSaid = `[...document.querySelectorAll("[data-band] button")].map((button) => button.innerText.trim())`;
+
+/**
+ * qa-app-1's findings, each pressed on the real pages over the app lab's fixtures as a player presses them, at the
+ * desktop and on a phone where the finding is a phone's (reports/qa1-app.md).
+ */
+const QA1_CASES = [
+  {
+    name: "play-season-players",
+    path: "no-realm",
+    more: (b) => {
+      const chips = b.evaluate(
+        `[...document.querySelectorAll(".app-chip")].map((chip) => chip.innerText.trim()).filter((text) => /\\bplayers?\\b/i.test(text))`,
+      );
+      return [
+        {
+          check: "a season's players are counted in the right number (qa-app-2 P3-12)",
+          ok: chips.length > 0 && chips.every((chip) => /^(1 player|[\d,]+ players)$/.test(chip)),
+          chips,
+        },
+      ];
+    },
+  },
+  {
+    name: "share-results",
+    path: "reward-sealed/results/0x5245414c4d53-7",
+    act: (b, record) => press(b, record, "Share"),
+    more: (b) => {
+      const seen = b.evaluate(`({
+        text: document.body.innerText,
+        dialog: document.querySelector('[role="dialog"]') !== null,
+        buttons: ${buttonsSaid},
+        shown: document.querySelector("output")?.innerText ?? null,
+      })`);
+      return [
+        {
+          check: "no old 'Game In Review' walkthrough opens (P2-1)",
+          ok: !/game in review/i.test(seen.text) && !seen.dialog,
+        },
+        {
+          check: "Share hands on the page's own line and address: copied, or shown to select (P2-1)",
+          ok: seen.buttons.includes("Link copied") || /\/results\/0x5245414c4d53-7$/.test(seen.shown ?? ""),
+          seen: { buttons: seen.buttons, shown: seen.shown },
+        },
+      ];
+    },
+  },
+  {
+    name: "whats-new-release",
+    path: "home/scroll",
+    act: async (b, record) => {
+      const oldest = b.evaluate(
+        `[...document.querySelectorAll(".app-panel")].find((panel) => panel.querySelector("h2")?.textContent === "Releases")?.querySelectorAll(".app-row__title").length ?? 0`,
+      );
+      record.releases = oldest;
+      b.evaluate(`(() => {
+        const rows = [...[...document.querySelectorAll(".app-panel")].find((panel) => panel.querySelector("h2")?.textContent === "Releases").querySelectorAll(".app-row button")];
+        rows.at(-1).setAttribute("data-proof-press", "oldest-release");
+      })()`);
+      const refused = clickAsPlayer(b, '[data-proof-press="oldest-release"]');
+      record.presses.push({ press: "the oldest release", status: refused ?? "led" });
+      await sleep(800);
+    },
+    more: (b) => {
+      const head = b.evaluate(`(() => {
+        const panel = [...document.querySelectorAll(".app-panel")].find((each) => each.querySelector("h2")?.textContent === "Patch notes");
+        const box = panel.getBoundingClientRect();
+        return { top: Math.round(box.top), bottom: Math.round(box.bottom), height: innerHeight, focused: document.activeElement?.contains(panel) ?? false };
+      })()`);
+      return [
+        { check: "the picked release's notes are in view (P3-1)", ok: head.top >= 0 && head.top < head.height, head },
+        { check: "and hold the focus (P3-1)", ok: head.focused },
+      ];
+    },
+  },
+  {
+    name: "terms-no-place",
+    path: "home/terms",
+    more: (b) => [
+      {
+        check: "no place is current on a legal page (P3-3)",
+        ok: b.evaluate(`document.querySelectorAll('[data-role="tab"][aria-current="page"]').length === 0`),
+      },
+    ],
+  },
+  {
+    name: "season-chips",
+    path: "season-running/season",
+    more: (b) => {
+      const chips = b.evaluate(
+        `[...document.querySelectorAll(".app-row .app-chip")].slice(0, 2).map((chip) => [chip.innerText.trim(), chip.title, chip.textContent])`,
+      );
+      return [
+        {
+          check: "a board row's counts say what they count, on hover and when read (P3-7)",
+          ok:
+            chips.length === 2 &&
+            chips[0][1] === "sites cleared" &&
+            chips[1][1] === "LORDS" &&
+            /sites cleared$/.test(chips[0][2]),
+          chips,
+        },
+      ];
+    },
+  },
+  {
+    name: "settings-name",
+    path: "home/profile/settings",
+    act: (b, record) => press(b, record, "Name"),
+    more: (b) => {
+      const claim = b.evaluate(
+        `[...document.querySelectorAll("button")].find((button) => button.innerText.trim() === "Claim name")?.disabled ?? null`,
+      );
+      return [{ check: "Claim name is off for the name already held (P3-6)", ok: claim === true, claim }];
+    },
+  },
+  {
+    name: "you-no-games",
+    path: "no-games/profile",
+    // The desktop's: its right half holds the games; a phone lists them under the card, and none yet shows nothing.
+    desktopOnly: true,
+    more: (b) => [
+      {
+        check: "with no finished game, the right half says where they will show (P3-9)",
+        ok: b.evaluate(`document.body.innerText.includes("Your finished games will show here.")`),
+      },
+    ],
+  },
+  {
+    name: "you-unnamed",
+    path: "unnamed/profile",
+    more: (b) => {
+      const buttons = b.evaluate(buttonsSaid);
+      return [
+        {
+          check: "a session with no name has Sign out (qa-blitz-1 #3)",
+          ok: buttons.includes("Sign out") && buttons.includes("Claim name"),
+          buttons,
+        },
+      ];
+    },
+  },
+  {
+    name: "settings-unnamed",
+    path: "unnamed/profile/settings",
+    more: (b) => {
+      const buttons = b.evaluate(buttonsSaid);
+      return [
+        {
+          check: "and in Settings too (qa-blitz-1 #3)",
+          ok: buttons.includes("Sign out") && buttons.includes("Claim name"),
+          buttons,
+        },
+      ];
+    },
+  },
+];
+
+/** The phone's: the card says what the desktop's says, and a board's row is one line. */
+const QA1_PHONE_CASES = [
+  {
+    name: "phone-you",
+    path: "home/profile",
+    more: (b) => [
+      {
+        check: "the phone's own card says how a rating is carried (P3-10)",
+        ok: b.evaluate(`document.body.innerText.includes("Link a wallet in Settings to carry a rating.")`),
+      },
+      {
+        check: "the card opens on the player's name, never a stand-in (P3-4)",
+        ok: b.evaluate(`!/\\bLord [0-9a-f]{4}\\b/.test(document.querySelector('[data-band="body"]').innerText)`),
+      },
+    ],
+  },
+  {
+    name: "phone-results-rows",
+    path: "reward-sealed/results/0x5245414c4d53-7",
+    more: (b) => {
+      const rows = b.evaluate(`(() => {
+        const panel = [...document.querySelectorAll(".app-panel")].find((each) => each.querySelector("h2")?.textContent === "The game");
+        return [...panel.querySelectorAll(".app-row")].map((row) => {
+          const words = row.querySelector(".app-row__words").getBoundingClientRect();
+          const trail = row.querySelector(".app-row__trail").getBoundingClientRect();
+          return { text: row.innerText.replace(/\\s+/g, " "), oneLine: trail.top < words.bottom };
+        });
+      })()`);
+      return [
+        {
+          check: "each board row's points stay on its line (P3-11)",
+          ok: rows.length > 0 && rows.every((row) => row.oneLine),
+          rows,
+        },
+      ];
+    },
+  },
+];
+
+const qa1 = (cases) =>
+  cases.map(({ name, path, act, more }) => ({ name: `qa1-${name}`, path: `/lab/app/${path}?capture=1`, act, more }));
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
   const parts = process.argv[4]?.split(",") ?? ["pages", "others", "sheet"];
@@ -431,6 +654,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       if (parts.includes("others")) for (const page of otherPages()) records.push(await shoot(b, baseUrl, out, page));
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
       if (parts.includes("end-map")) records.push(await proveEndMap(b, baseUrl, out, state));
+      if (parts.includes("qa1")) {
+        for (const page of qa1(QA1_CASES)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...PHONE);
+        for (const page of qa1([...QA1_CASES.filter((qa) => !qa.desktopOnly), ...QA1_PHONE_CASES]))
+          records.push(await shoot(b, baseUrl, out, { ...page, name: `${page.name}-phone` }));
+        b.run("set", "viewport", ...VIEWPORT);
+      }
       if (parts.includes("pages")) {
         for (const bar of barCases()) {
           b.run("set", "viewport", ...bar.viewport);

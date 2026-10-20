@@ -538,6 +538,11 @@
   align-items: flex-start;
   text-align: left;
 }
+/* A trail of one (a board row's points): it keeps its place on the row and the words give way, so a phone's board is a
+   line a row, never a name over its points (qa-app-1 P3-11). */
+.app-row:has(> .app-row__trail > :only-child) > .app-row__words {
+  flex-basis: 6rem;
+}
 .app-row__title {
   overflow: hidden;
   max-width: 100%;

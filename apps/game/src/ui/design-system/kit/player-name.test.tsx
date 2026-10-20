@@ -2,8 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 const profiles = vi.hoisted(() => new Map<string, { name: string | null; portrait: string | null }>());
+// Identity has answered for every account here: what each shows is known.
 vi.mock("@/hooks/use-player-profile", () => ({
-  usePlayerProfile: (account: string) => profiles.get(account) ?? { name: null, portrait: null },
+  usePlayerProfile: (account: string) => ({
+    ...(profiles.get(account) ?? { name: null, portrait: null }),
+    known: true,
+  }),
 }));
 
 import { unclaimedPlayerName } from "@bibliothecadao/eternum";

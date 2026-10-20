@@ -6,6 +6,11 @@ vi.mock("react-router-dom", async (original) => ({
   ...(await original<typeof import("react-router-dom")>()),
   useParams: () => ({ address: "0x111" }),
 }));
+// Identity has answered for the player: no portrait chosen.
+vi.mock("@/hooks/use-player-profile", async (original) => ({
+  ...(await original<typeof import("@/hooks/use-player-profile")>()),
+  usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
+}));
 vi.mock("./herald", () => ({
   useDirectory: () => ({ data: { games: [] } }),
   useRecentResults: () => ({ data: { games: [] }, isSuccess: true }),
