@@ -378,6 +378,12 @@ export const LEAVE = "Leave";
 
 /** Filling an army's stamina for LORDS, a full refill only. */
 export const REFILL = "Refill";
+/**
+ * A refill the realm cannot pay yet, as its chip's name says it: what the LORDS held count against, and why that is the
+ * price ("Refill to full: 20 LORDS, one a missing stamina point. The realm holds 0.").
+ */
+export const refillShort = (held: string, price: string) =>
+  `Refill to full: ${price} LORDS, one a missing stamina point. The realm holds ${held}.`;
 export const REFILLING = "Refilling…";
 
 /** LORDS leaving the game for the wallet linked to the account. */
