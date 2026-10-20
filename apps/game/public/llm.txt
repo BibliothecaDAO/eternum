@@ -10,8 +10,6 @@ import { HomePage } from "vocs/components";
     <img src="/images/covers/twilight-tundra.png" alt="" />
   </div>
 
-  {" "}
-
   <img src="/images/logos/realms-world-white.svg" alt="Realms Logo" />
 
   <HomePage.Description>
@@ -166,8 +164,8 @@ divided into six 'phases'.
   Resources cannot be discovered through exploration.
 * **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
 * **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +{staminaOf("blitz").perPhase} per Phase,
-  +{staminaOf("blitz").perDay} per Eternum Day), with costs varying by biome and troop type.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +30 per Phase,
+  +180 per Eternum Day), with costs varying by biome and troop type.
 
 ### Military
 
@@ -177,8 +175,8 @@ divided into six 'phases'.
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +{staminaOf("blitz").perPhase} stamina each Phase (6 phases per Eternum Day,
-  totaling +{staminaOf("blitz").perDay} stamina per day).
+* **Stamina System**: Armies recover +30 stamina each Phase (6 phases per Eternum Day,
+  totaling +180 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Reinforcements**: Lords can transport troops by donkey to any Realm, Hyperstructure, Camp or Essence Rift that they
@@ -920,10 +918,10 @@ This section outlines the core mechanics and systems that form the foundation of
   adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
 * **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
   movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +{staminaOf("eternum").perPhase} per Phase,
-  +{staminaOf("eternum").perDay} per Eternum Day), with costs varying by biome and troop type; Knights, Crossbowmen, and
+* **Movement & Stamina**: Armies move using stamina (regenerating at +20 per Phase,
+  +120 per Eternum Day), with costs varying by biome and troop type; Knights, Crossbowmen, and
   Paladins each have different maximum stamina capacities.
-* **Exploration Mechanics**: Exploring costs {staminaOf("eternum").explore} stamina per hex and reveals that area
+* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area
   permanently to all Lords; exploring armies may discover resources or encounter world structures and agent armies.
 
 ## Military
@@ -936,8 +934,8 @@ This section outlines the core mechanics and systems that form the foundation of
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +{staminaOf("eternum").perPhase} stamina per Phase (6 phases per Eternum Day,
-  totaling +{staminaOf("eternum").perDay} stamina per day).
+* **Stamina System**: Armies recover +20 stamina per Phase (6 phases per Eternum Day,
+  totaling +120 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
@@ -1163,8 +1161,7 @@ Hyperstructures is the decisive path that ultimately closes the chapter on each 
 ## Activating Foundations
 
 Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
-a Hyperstructure Foundation, all **{
-  formatNumberWithCommas(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
+a Hyperstructure Foundation, all **20,000,000 Ancient
 Fragments** must be deposited into the structures's balance, and then the owner of the mine must explicitly activate the
 foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
 within predefined minimum and maximum ranges shown below:
@@ -1181,14 +1178,14 @@ complete construction.*
 The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
 or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
 requiring donkeys for transport. As Lords contribute to the Hyperstructure, they are awarded with a proportional
-allocation of Victory Points. A total of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())}** are
+allocation of Victory Points. A total of **499,836** are
 available to claim throughout the construction process.
 
 ## Accumulation Victory Points
 
 Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
 accumulate
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+**0
 victory points** for every second the structure remains under their control. These accumulating victory points can be
 shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
 cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
@@ -1198,7 +1195,7 @@ owner, who may similarly decide on sharing arrangements.
 
 Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
 to reach
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG("eternum").hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+**0
 total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
 
 <HyperstructurePointsTable />
@@ -1392,33 +1389,33 @@ the rare chest a reveal turns up.
 
 Clearing a ruin pays its chest. Its tier is rolled when the ruin is found, by the ground it stands on:
 
-| Ground                    | Common                        | Uncommon                      | Rare                          | Epic                          | Legendary                     |
-| ------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].chest[0]} | {FRONTIER.depths[0].chest[1]} | {FRONTIER.depths[0].chest[2]} | {FRONTIER.depths[0].chest[3]} | {FRONTIER.depths[0].chest[4]} |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].chest[0]} | {FRONTIER.depths[1].chest[1]} | {FRONTIER.depths[1].chest[2]} | {FRONTIER.depths[1].chest[3]} | {FRONTIER.depths[1].chest[4]} |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].chest[0]} | {FRONTIER.depths[2].chest[1]} | {FRONTIER.depths[2].chest[2]} | {FRONTIER.depths[2].chest[3]} | {FRONTIER.depths[2].chest[4]} |
-| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].chest[0]} | {FRONTIER.depths[3].chest[1]} | {FRONTIER.depths[3].chest[2]} | {FRONTIER.depths[3].chest[3]} | {FRONTIER.depths[3].chest[4]} |
+| Ground       | Common | Uncommon | Rare | Epic | Legendary |
+| ------------ | ------ | -------- | ---- | ---- | --------- |
+| Surface      | 50%    | 27%      | 14%  | 6%   | 3%        |
+| Ethereal I   | 40%    | 30%      | 17%  | 9%   | 4%        |
+| Ethereal II  | 30%    | 30%      | 22%  | 12%  | 6%        |
+| Ethereal III | 20%    | 30%      | 25%  | 16%  | 9%        |
 
 A chest is worth its tier's shares at the day's price:
 
-| Tier   | Common                      | Uncommon                    | Rare                        | Epic                        | Legendary                   |
-| ------ | --------------------------- | --------------------------- | --------------------------- | --------------------------- | --------------------------- |
-| Shares | {FRONTIER.chests.shares[0]} | {FRONTIER.chests.shares[1]} | {FRONTIER.chests.shares[2]} | {FRONTIER.chests.shares[3]} | {FRONTIER.chests.shares[4]} |
+| Tier   | Common | Uncommon | Rare | Epic | Legendary |
+| ------ | ------ | -------- | ---- | ---- | --------- |
+| Shares | 1      | 2        | 4    | 10   | 20        |
 
-The price of a share is set each day from the season's pool, and never exceeds{" "} {FRONTIER.chests.priceCeiling}
+The price of a share is set each day from the season's pool, and never exceeds  50
 LORDS. The Season page shows the pool, today's price and its ceiling. A chest's LORDS are set aside from the pool as the
 ruin is found, so a ruin found today pays at today's price.
 
 ## A chest in the wild
 
-Each newly revealed surface tile has a 1 in {FRONTIER.discovery.exploreChestOneIn} chance of a chest, found only while
+Each newly revealed surface tile has a 1 in 10,000 chance of a chest, found only while
 the season's pool can fund it. It is worth one common share at today's price, set aside as it is found. Open it with one
 of your armies beside it before the day ends; its LORDS go to that army's realm.
 
 ## Your LORDS
 
 Your realm's LORDS pay for Refill, and you can withdraw them to your payout wallet until the season's claim window
-closes, {FRONTIER.claimWindow.graceHours} hour short of {FRONTIER.claimWindow.days} days after the season ends.
+closes, 1 hour short of 7 days after the season ends.
 
 
 
@@ -1437,46 +1434,47 @@ import { FRONTIER } from "@/utils/frontier";
 ## Today's map
 
 Every day starts on fresh fog. Your realm is raised in its own stretch of the new map, and its six neighbouring tiles
-start the day explored. Walking over known ground costs {FRONTIER.stamina.step} stamina a step and finds nothing.
+start the day explored. Walking over known ground costs 10 stamina a step and finds nothing.
 
 ## What a reveal pays
 
 Every tile an army reveals sends Essence or labor home to the realm, as likely as each other: a share of the army's
-troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.reveal} XP.
+troops, larger the deeper it is. Each reveal also gives the army 2 XP.
 
-| Ground                    | Reveal pays, of the army's troops  | Entering costs                            |
-| ------------------------- | ---------------------------------- | ----------------------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].revealPercent} | —                                         |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].revealPercent} | {FRONTIER.depths[1].entryStamina} stamina |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].revealPercent} | {FRONTIER.depths[2].entryStamina} stamina |
-| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].revealPercent} | {FRONTIER.depths[3].entryStamina} stamina |
+| Ground       | Reveal pays, of the army's troops | Entering costs |
+| ------------ | --------------------------------- | -------------- |
+| Surface      | 10%                               | —              |
+| Ethereal I   | 15%                               | 30 stamina     |
+| Ethereal II  | 20%                               | 40 stamina     |
+| Ethereal III | 25%                               | 50 stamina     |
 
 ## What a reveal can find
 
-| Find   | Chance                                      | What it is                                                                                             |
-| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                           |
-| Camp   | {FRONTIER.discovery.camp}                   | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                           |
-| Rift   | {FRONTIER.discovery.rift}                   | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                  |
-| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm. |
-| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: grants an army {FRONTIER.xp.shrine} XP, then is gone.                                 |
-| Well   | {FRONTIER.discovery.well}                   | Once researched: gives an army {FRONTIER.stamina.well} stamina, then is gone.                          |
-| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the season's pool can fund it ([Chests](/frontier/chests)).                 |
+| Find   | Chance      | What it is                                                                                                                                                                                               |
+| ------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beasts | 6%          | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                             |
+| Camp   | 4%          | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                                                                                                                             |
+| Rift   | 4%          | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                                                                                                                    |
+| Ruin   | 1%          | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, and only while the season's pool can fund its chest: a ruin it cannot fund leaves the tile empty. |
+| Shrine | 3%          | Once researched: grants an army 200 XP, then is gone.                                                                                                                                                    |
+| Well   | 3%          | Once researched: gives an army 60 stamina, then is gone.                                                                                                                                                 |
+| Chest  | 1 in 10,000 | On the surface only, while the season's pool can fund it ([Chests](/frontier/chests)).                                                                                                                   |
 
-After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal always finds something. Scouting
-makes the kinds you pick for it more likely.
+After 7 empty reveals in a row, the next reveal draws only among the sites, shrines
+and wells above, so it finds one unless it draws a ruin the pool cannot fund. Scouting makes the kinds you pick for it
+more likely.
 
 ## Guards
 
 Every guard is shown before you attack. Guards grow with depth, so what counts as a safe fight moves as your realm
 grows.
 
-| Ground                    | Camps and rifts                | Ruins                          | Minotaur (beasts)              | Cyclops (beasts)                 |
-| ------------------------- | ------------------------------ | ------------------------------ | ------------------------------ | -------------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].siteGuard} | {FRONTIER.depths[0].ruinGuard} | {FRONTIER.depths[0].beastWeak} | {FRONTIER.depths[0].beastStrong} |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].siteGuard} | {FRONTIER.depths[1].ruinGuard} | {FRONTIER.depths[1].beastWeak} | {FRONTIER.depths[1].beastStrong} |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].siteGuard} | {FRONTIER.depths[2].ruinGuard} | {FRONTIER.depths[2].beastWeak} | {FRONTIER.depths[2].beastStrong} |
-| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].siteGuard} | {FRONTIER.depths[3].ruinGuard} | {FRONTIER.depths[3].beastWeak} | {FRONTIER.depths[3].beastStrong} |
+| Ground       | Camps and rifts | Ruins         | Minotaur (beasts) | Cyclops (beasts) |
+| ------------ | --------------- | ------------- | ----------------- | ---------------- |
+| Surface      | 1,000–1,600     | 2,000–4,000   | 300–350           | 450–550          |
+| Ethereal I   | 3,000–5,000     | 6,000–10,500  | 900–1,050         | 1,350–1,650      |
+| Ethereal II  | 8,000–12,000    | 18,000–22,500 | 2,400–2,800       | 3,600–4,400      |
+| Ethereal III | 20,000–30,000   | 52,500–76,000 | 6,000–7,000       | 9,000–11,000     |
 
 A band of beasts is a Minotaur's or a stronger Cyclops's, as likely as each other. Camps, rifts and ruins show their
 depth's beast: a Troll on the surface, then a Wyvern, then a Hydra. A clear gives the army XP by the guard's starting
@@ -1492,8 +1490,8 @@ spire, paying the entry stamina above; the trip is one way for the day.
 ## The day's end
 
 When the day ends, the map and its fog, every site and every army you sent out are gone. An army with Homecoming first
-sends a share of its survivors home: {FRONTIER.homecoming[0]} at uncommon, {FRONTIER.homecoming[1]} at rare,
-{FRONTIER.homecoming[2]} at epic and {FRONTIER.homecoming[3]} at legendary. Your realm is raised on the next map with
+sends a share of its survivors home: 3% at uncommon, 9% at rare,
+18% at epic and 30% at legendary. Your realm is raised on the next map with
 its buildings, research, troops and stores, and the game takes you to it.
 
 
@@ -1518,18 +1516,18 @@ fight the wilds and never other players, and the map is new every day while your
 
 ## One day, one map
 
-A day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. The lengths are drawn for the whole
-season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.day.bagHours} hours a bag; no bag opens
+A day lasts 8 to 24 hours. The lengths are drawn for the whole
+season in bags of 5 days, one of each length, 80 hours a bag; no bag opens
 with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how long
 tomorrow lasts.
 
 1. **Deploy.** Barracks train troops at your realm. Deploying puts them on a tile beside it as an army, at
-   {FRONTIER.stamina.start} stamina. A new realm fields {FRONTIER.realm.armies[0]} armies at once; its castle raises
-   that to {FRONTIER.realm.armies[3]}.
+   120 stamina. A new realm fields 3 armies at once; its castle raises
+   that to 6.
 2. **Explore.** The map is hidden until you walk it. What sits on a tile is decided the moment an army reveals it, so
    nobody can scout ahead.
 3. **Clear.** Camps, rifts, ruins and beasts are guarded. A site shows its exact guard and its payout before you attack,
-   and an attack needs {FRONTIER.stamina.attack} stamina.
+   and an attack needs 30 stamina.
 4. **Bring it home.** Everything found goes straight to the realm. An army never carries anything worth losing.
 
 When the day ends, the map and every army on it are gone. Your realm is raised again on the next map with everything it
@@ -1547,15 +1545,15 @@ An army with Homecoming sends some of its survivors home as the day ends ([The E
 
 ## Stamina sets the pace
 
-An army holds {FRONTIER.stamina.max} stamina and recovers {FRONTIER.stamina.perTick} every{" "}
-{FRONTIER.stamina.tickMinutes} minutes, so an empty bar fills in {FRONTIER.stamina.fullHours} hours. Revealing a tile
-costs {FRONTIER.stamina.reveal}, a step over known ground {FRONTIER.stamina.step}, and an attack needs{" "}
-{FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
+An army holds 120 stamina and recovers 1 every
+2 minutes, so an empty bar fills in 4 hours. Revealing a tile
+costs 20, a step over known ground 10, and an attack needs
+30\. Every step and every reveal also costs 0.02 wheat per troop, so a
 big army needs farms behind it.
 
-Refill tops an army's stamina up at once for {FRONTIER.stamina.refillLords} LORDS a missing point, paid from your
-realm's LORDS. A well gives {FRONTIER.stamina.well} stamina, buying an attribute tier gives{" "}
-{FRONTIER.stamina.tierBought}, and Logistics raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
+Refill tops an army's stamina up at once for 1 LORDS a missing point, paid from your
+realm's LORDS. A well gives 60 stamina, buying an attribute tier gives
+30, and Logistics raises an army's maximum by up to 150.
 
 ## Fights roll dice
 
@@ -1570,7 +1568,7 @@ disband loses its troops; Frontier asks first.
 
 ## What you are given
 
-Each Realm in your payout wallet gives your Frontier realm {FRONTIER.labor.perRealm} labor once a day: add it by its
+Each Realm in your payout wallet gives your Frontier realm 1,000 labor once a day: add it by its
 number, then Claim all. Everything else is what you cleared and what you were lucky enough to walk into. Frontier has no
 trade, market, bridge, guilds, faith, hyperstructures or automation.
 
@@ -1594,71 +1592,71 @@ Your realm is founded the first time you enter the Frontier season, and from the
 map, in its own stretch of wilderness. Entry is free and open for the whole season, so a player who arrives late starts
 the same way as one who arrived on day one.
 
-A new realm starts with {FRONTIER.realm.troops} troops, {FRONTIER.realm.wheat} wheat and {FRONTIER.realm.labor} labor.
+A new realm starts with 1,500 troops, 4,500 wheat and 2,000 labor.
 
 ## Buildings
 
 Tap an open plot to build there. Buildings are paid in labor:
 
-| Building                     | Makes                         | Labor                         | Population                         |
-| ---------------------------- | ----------------------------- | ----------------------------- | ---------------------------------- |
-| {FRONTIER.buildings[0].name} | {FRONTIER.buildings[0].makes} | {FRONTIER.buildings[0].labor} | {FRONTIER.buildings[0].population} |
-| {FRONTIER.buildings[1].name} | {FRONTIER.buildings[1].makes} | {FRONTIER.buildings[1].labor} | {FRONTIER.buildings[1].population} |
-| {FRONTIER.buildings[2].name} | {FRONTIER.buildings[2].makes} | {FRONTIER.buildings[2].labor} | {FRONTIER.buildings[2].population} |
-| {FRONTIER.buildings[3].name} | {FRONTIER.buildings[3].makes} | {FRONTIER.buildings[3].labor} | {FRONTIER.buildings[3].population} |
-| {FRONTIER.buildings[4].name} | {FRONTIER.buildings[4].makes} | {FRONTIER.buildings[4].labor} | {FRONTIER.buildings[4].population} |
+| Building                                     | Makes                     | Labor | Population |
+| -------------------------------------------- | ------------------------- | ----- | ---------- |
+| Farm                                         | Wheat                     | 400   | 1          |
+| Barracks                                     | Troops                    | 400   | 3          |
+| Workshop                                     | Labor                     | 2,000 | 2          |
+| Workers' hut                                 | Population                | 300   | 0          |
+| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 3,000 | 2          |
 
-Each workers' hut houses {FRONTIER.realm.hutHouses}, and every other building takes the population shown. Each further
-copy of a building costs more than the last, and pulling one down returns {FRONTIER.realm.demolitionRefund} of its
-price. Barracks train for free; deploying costs {FRONTIER.realm.deployWheat} wheat a troop.
+Each workers' hut houses 6, and every other building takes the population shown. Each further
+copy of a building costs more than the last, and pulling one down returns 50% of its
+price. Barracks train for free; deploying costs 2 wheat a troop.
 
 ## The castle
 
-Raise the castle for {FRONTIER.realm.castleLabor[0]}, {FRONTIER.realm.castleLabor[1]}, then{" "}
-{FRONTIER.realm.castleLabor[2]} labor. Each level opens another ring of plots, fields one more army and deploys more
+Raise the castle for 4,000, 15,000, then
+40,000 labor. Each level opens another ring of plots, fields one more army and deploys more
 troops at once:
 
-| Castle level | Armies in the field        | Troops per deploy              |
-| ------------ | -------------------------- | ------------------------------ |
-| 1            | {FRONTIER.realm.armies[0]} | {FRONTIER.realm.deployCaps[0]} |
-| 2            | {FRONTIER.realm.armies[1]} | {FRONTIER.realm.deployCaps[1]} |
-| 3            | {FRONTIER.realm.armies[2]} | {FRONTIER.realm.deployCaps[2]} |
-| 4            | {FRONTIER.realm.armies[3]} | {FRONTIER.realm.deployCaps[3]} |
+| Castle level | Armies in the field | Troops per deploy |
+| ------------ | ------------------- | ----------------- |
+| 1            | 3                   | 3,000             |
+| 2            | 4                   | 9,000             |
+| 3            | 5                   | 25,000            |
+| 4            | 6                   | 60,000            |
 
 ## Research
 
 At the castle, each building type climbs from common to legendary, paid in Essence and labor. A tier lifts every
-building of its type at once, and the choice a tier asks for is final for the season: farms and workshops make{" "}
-{FRONTIER.research.outputStep} more or store more, barracks train {FRONTIER.research.outputStep} more or deploy for{" "}
-{FRONTIER.research.rationStep} less wheat, and each hut tier houses {FRONTIER.research.populationStep} more.
+building of its type at once, and the choice a tier asks for is final for the season: farms and workshops make
+25% more or store more, barracks train 25% more or deploy for
+25% less wheat, and each hut tier houses 25% more.
 
-| Type                   | Uncommon                                                                                     | Rare                                                                                         | Epic                                                                                         | Legendary                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Farm                   | {FRONTIER.research.farm[0].essence} Essence, {FRONTIER.research.farm[0].labor} labor         | {FRONTIER.research.farm[1].essence} Essence, {FRONTIER.research.farm[1].labor} labor         | {FRONTIER.research.farm[2].essence} Essence, {FRONTIER.research.farm[2].labor} labor         | {FRONTIER.research.farm[3].essence} Essence, {FRONTIER.research.farm[3].labor} labor         |
-| Workshop               | {FRONTIER.research.workshop[0].essence} Essence, {FRONTIER.research.workshop[0].labor} labor | {FRONTIER.research.workshop[1].essence} Essence, {FRONTIER.research.workshop[1].labor} labor | {FRONTIER.research.workshop[2].essence} Essence, {FRONTIER.research.workshop[2].labor} labor | {FRONTIER.research.workshop[3].essence} Essence, {FRONTIER.research.workshop[3].labor} labor |
-| Barracks               | {FRONTIER.research.barracks[0].essence} Essence, {FRONTIER.research.barracks[0].labor} labor | {FRONTIER.research.barracks[1].essence} Essence, {FRONTIER.research.barracks[1].labor} labor | {FRONTIER.research.barracks[2].essence} Essence, {FRONTIER.research.barracks[2].labor} labor | {FRONTIER.research.barracks[3].essence} Essence, {FRONTIER.research.barracks[3].labor} labor |
-| Workers' hut           | {FRONTIER.research.hut[0].essence} Essence, {FRONTIER.research.hut[0].labor} labor           | {FRONTIER.research.hut[1].essence} Essence, {FRONTIER.research.hut[1].labor} labor           | {FRONTIER.research.hut[2].essence} Essence, {FRONTIER.research.hut[2].labor} labor           | {FRONTIER.research.hut[3].essence} Essence, {FRONTIER.research.hut[3].labor} labor           |
-| Each training building | {FRONTIER.research.training[0].essence} Essence, {FRONTIER.research.training[0].labor} labor | {FRONTIER.research.training[1].essence} Essence, {FRONTIER.research.training[1].labor} labor | {FRONTIER.research.training[2].essence} Essence, {FRONTIER.research.training[2].labor} labor | {FRONTIER.research.training[3].essence} Essence, {FRONTIER.research.training[3].labor} labor |
+| Type                   | Uncommon                    | Rare                        | Epic                          | Legendary                     |
+| ---------------------- | --------------------------- | --------------------------- | ----------------------------- | ----------------------------- |
+| Farm                   | 1,000 Essence, 1,000 labor  | 4,000 Essence, 3,000 labor  | 12,000 Essence, 8,000 labor   | 30,000 Essence, 20,000 labor  |
+| Workshop               | 2,000 Essence, 2,000 labor  | 8,000 Essence, 6,000 labor  | 24,000 Essence, 16,000 labor  | 60,000 Essence, 40,000 labor  |
+| Barracks               | 4,000 Essence, 3,000 labor  | 16,000 Essence, 9,000 labor | 48,000 Essence, 24,000 labor  | 120,000 Essence, 60,000 labor |
+| Workers' hut           | 500 Essence, 500 labor      | 2,000 Essence, 1,500 labor  | 6,000 Essence, 4,000 labor    | 15,000 Essence, 10,000 labor  |
+| Each training building | 12,000 Essence, 3,000 labor | 48,000 Essence, 9,000 labor | 144,000 Essence, 24,000 labor | 360,000 Essence, 60,000 labor |
 
-**Training buildings.** Once your barracks reach {FRONTIER.research.trainingGate}, raise a War hall, a Supply yard, a
+**Training buildings.** Once your barracks reach rare, raise a War hall, a Supply yard, a
 Scouts' lodge and a Hearth. Each of their tiers starts every new army a tier higher in Battle, Logistics, Scouting or
 Homecoming.
 
-**Shrines and wells.** Research them ({FRONTIER.research.shrine.essence} and {FRONTIER.research.well.essence} Essence)
+**Shrines and wells.** Research them (2,000 and 6,000 Essence)
 before reveals can find them.
 
-**The Ethereal depths.** Research opens them one at a time, for {FRONTIER.research.depths[0].essence},{" "}
-{FRONTIER.research.depths[1].essence}, then {FRONTIER.research.depths[2].essence} Essence.
+**The Ethereal depths.** Research opens them one at a time, for 160,000,
+400,000, then 900,000 Essence.
 
 ## Armies learn
 
 An army earns XP from reveals, clears and shrines, and spends it on the attribute tiers you choose, up to legendary:
-{FRONTIER.xp.tierPrices[0]}, {FRONTIER.xp.tierPrices[1]}, {FRONTIER.xp.tierPrices[2]}, then{" "}
-{FRONTIER.xp.tierPrices[3]} XP for each next tier. Battle hits up to {FRONTIER.attributes.battleMax} harder, Logistics
-carries up to{" "} {FRONTIER.stamina.logisticsMax} more stamina, and each Scouting tier adds
-{FRONTIER.attributes.scouting[0]},{" "} {FRONTIER.attributes.scouting[1]}, {FRONTIER.attributes.scouting[2]}, then
-{FRONTIER.attributes.scouting[3]} to the find rate of the camps, rifts or beasts you pick for it, so all four on one
-kind add{" "} {FRONTIER.attributes.scoutingOneKind}. Homecoming sends survivors home when the day ends
+100, 200, 400, then
+800 XP for each next tier. Battle hits up to 100% harder, Logistics
+carries up to  150 more stamina, and each Scouting tier adds
+10%,  20%, 30%, then
+40% to the find rate of the camps, rifts or beasts you pick for it, so all four on one
+kind add  100%. Homecoming sends survivors home when the day ends
 ([The Expedition](/frontier/expedition)).
 
 
@@ -2541,28 +2539,28 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 
 **Blitz Stamina System:**
 
-* **Day Length**: {staminaOf("blitz").dayMinutes} minutes ({staminaOf("blitz").phaseMinutes} minute per phase)
-* **Stamina Regeneration per Phase**: {staminaOf("blitz").perPhase} stamina
-* **Total Stamina Regeneration per Day**: {staminaOf("blitz").perDay} stamina
+* **Day Length**: 6 minutes (1 minute per phase)
+* **Stamina Regeneration per Phase**: 30 stamina
+* **Total Stamina Regeneration per Day**: 180 stamina
 
 ## Combat Stamina Mechanics
 
 ### Attacking Army
 
 The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend
-**{staminaOf("blitz").attack} stamina**. If the attacker does not have the full stamina cost, the attack command is
+**50 stamina**. If the attacker does not have the full stamina cost, the attack command is
 rejected and no combat occurs.
 
 ### Defending Army
 
 The defending army is the army being attacked in an instance of combat. The defender simultaneously spends
-**{staminaOf("blitz").defense} stamina**. If the defender's current stamina is below this required threshold, they
+**40 stamina**. If the defender's current stamina is below this required threshold, they
 receive a **30% damage penalty** during that combat round.
 
 ### Crossbowman Range-2 Attacks
 
 Crossbowmen can also attack targets from 2 hexes away. These ranged attacks still require the attacking army to spend
-**{staminaOf("blitz").attack} stamina**, but the target only spends **20 stamina** and deals no counter-damage. Ranged
+**50 stamina**, but the target only spends **20 stamina** and deals no counter-damage. Ranged
 attacks use shorter battle timers, ignore biome damage modifiers, and deal reduced damage: **70%** against field armies
 and **30%** against structure guards. Adjacent Crossbowman attacks remain normal range-1 combat.
 
@@ -3672,8 +3670,8 @@ import { ExplorationRewards } from "@/components/blitz-components/ExplorationRew
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +{staminaOf("blitz").perPhase}
-stamina per Phase ({staminaOf("blitz").phaseMinutes} minute), totaling +{staminaOf("blitz").perDay} stamina per Eternum
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +30
+stamina per Phase (1 minute), totaling +180 stamina per Eternum
 Day. Each troop type possesses different maximum stamina capacities, outlined in the table below:
 
 <BlitzTroopMovementTable />
@@ -3711,7 +3709,7 @@ Exploring your surroundings is a necessary part of Blitz as it allows Lords to r
 Essence or other bonuses, and uncover beneficial world structures.
 
 When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs {staminaOf("blitz").explore} stamina and will reveal that hex to all
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all
 Lords, permanently expanding the known boundaries of the world. If the newly explored hex contains a World Structure,
 the exploring army will automatically be pushed back to the hex from which they started without any additional stamina
 penalty.
@@ -3825,7 +3823,7 @@ hexes, there is a chance that a Relic Crate will be revealed on a different near
 crates can contain powerful boosts that can accelerate the production of your Realms, improve the stamina regeneration
 of your armies, or even give them combat damage boosts to give you an edge over your foes. The first army to reach and
 open the crate receives its pack of **three** Relics (War, Explore, Produce or Fortress, revealed only as it opens)
-directly into its inventory and **{victoryPointsOf("blitz", "pointsForRelicDiscovery")} victory points** for its Lord,
+directly into its inventory and **250 victory points** for its Lord,
 so be sure to secure them before your enemies do!
 
 <img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />
@@ -3855,7 +3853,7 @@ engagement opportunities.
 Each Realm and Village has a limited number of guard and field armies The number of armies can be increased by upgrading
 the Realm / Village level as explained in the [Realms](/eternum/realm-and-villages/realm) section. Each military
 building constructed on a Realm or Village also increases total field armies by 1 (up to a maximum of
-**+{ETERNUM_CONFIG("eternum").troop.limit.explorerMaxPartyCount-4}**). Lords can deploy armies from the Military tab in
+**+NaN**). Lords can deploy armies from the Military tab in
 the Local view. The maximum size of an army is **30,000**
 
 ### Field Armies
@@ -3893,7 +3891,7 @@ Unlike Realms and Villages, world structures have a static number of defense slo
 
 When attacked, guard armies are targeted sequentially starting from the outermost occupied slot. If a guard army is
 destroyed, the slot that it occupied becomes unavailable for reinforcement for
-**{Math.floor(ETERNUM_CONFIG("eternum").troop.limit.guardResurrectionDelay / 3600)} hours**. Once all guard armies are
+**0 hours**. Once all guard armies are
 defeated, the structure becomes vulnerable to being claimed by an adjacent field army (with the exception of Villages,
 which cannot be claimed). Lords can also direct their guard armies to launch attacks against adjacent hexes by selecting
 their structure on the worldmap, then right-clicking the target hex.
@@ -4001,7 +3999,7 @@ the 'raid' action when attacking an enemy structure.
 
 Before attempting a raid, your army must meet the following requirements:
 
-* Have at least **{ETERNUM_CONFIG("eternum").troop.stamina.staminaAttackReq}** stamina
+* Have at least **50** stamina
 * Be adjacent to the target structure
 * Structure must contain raidable resources
 
@@ -4037,7 +4035,7 @@ only be stolen from another player by claiming a Realm into which tokens have be
 At the conclusion of a raid, regardless of whether it was successful or not, damage is calculated for both the raiding
 army and the guard armies. This damage is significantly reduced by a raid damage modifier, simulating the concept of a
 pillaging and looting event as opposed to a full-scale battle. The raid damage modifier reduces damage to
-**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of that which would be applied in an attack
+**10%** of that which would be applied in an attack
 action.
 
 Damage from a raiding action is calculated according to the following rules:
@@ -4061,9 +4059,9 @@ calculations result in the following:
 
 Applying the raid damage modifier, actual losses become:
 
-* Guards: Slot 1 loses **36** troops (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of 180),
-  Slot 2 loses **30** troops (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of 150).
-* Raiders: Lose **64** troops total (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of 320).
+* Guards: Slot 1 loses **36** troops (**10%** of 180),
+  Slot 2 loses **30** troops (**10%** of 150).
+* Raiders: Lose **64** troops total (**10%** of 320).
 
 ## Raid Outcomes
 
@@ -4072,15 +4070,15 @@ After a raid attempt, one of two outcomes will occur:
 1. **Successful Raid**
    * Resources are transferred to your army's inventory
    * Resources are limited by your army's carrying capacity
-   * Both armies suffer reduced casualties (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%** of
+   * Both armies suffer reduced casualties (**10%** of
      normal combat damage)
-   * Your army's stamina is reduced by **{ETERNUM_CONFIG("eternum").troop.stamina.staminaAttackReq}**
+   * Your army's stamina is reduced by **50**
 
 2. **Failed Raid**
    * No resources are stolen
-   * Both armies still suffer reduced casualties (**{ETERNUM_CONFIG("eternum").troop.damage.damageRaidPercentNum/100}%**
+   * Both armies still suffer reduced casualties (**10%**
      of normal combat damage)
-   * Your army's stamina is still reduced by **{ETERNUM_CONFIG("eternum").troop.stamina.staminaAttackReq}**
+   * Your army's stamina is still reduced by **50**
 
 The outcome is determined by comparing your army's total damage output against the combined damage output of all guard
 armies present. If no guard armies are present, the raid automatically succeeds.
@@ -4111,22 +4109,22 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 
 **Eternum Stamina System:**
 
-* **Day Length**: {staminaOf("eternum").dayMinutes} minutes ({staminaOf("eternum").phaseMinutes} minute per phase)
-* **Stamina Regeneration per Phase**: {staminaOf("eternum").perPhase} stamina
-* **Total Stamina Regeneration per Day**: {staminaOf("eternum").perDay} stamina
+* **Day Length**: 6 minutes (1 minute per phase)
+* **Stamina Regeneration per Phase**: 20 stamina
+* **Total Stamina Regeneration per Day**: 120 stamina
 
 ## Combat Stamina Mechanics
 
 ### Attacking Army
 
 The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend
-**{staminaOf("eternum").attack} stamina**. If the attacker does not have the full stamina cost, the attack command is
+**50 stamina**. If the attacker does not have the full stamina cost, the attack command is
 rejected and no combat occurs.
 
 ### Defending Army
 
 The defending army is the army being attacked in an instance of combat. The defender simultaneously spends
-**{staminaOf("eternum").defense} stamina**. If the defender's current stamina is below this required threshold, they
+**40 stamina**. If the defender's current stamina is below this required threshold, they
 receive a **30% damage penalty** during that combat round.
 
 ## Biomes (Combat Effects)
@@ -5476,7 +5474,7 @@ import { ETERNUM_CONFIG } from "@/utils/config";
 
 Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
 storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
-**{formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse]/1000)} kg**. You'll
+**0 kg**. You'll
 need to construct storehouses to expand your storage capabilities.
 
 ## Material Weights
@@ -5490,7 +5488,7 @@ Materials in Eternum have different weights that affect storage:
 Expand your storage capacity to support your growing realm:
 
 * **Capacity**: Each storehouse adds
-  {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.Storehouse]/1000 )}kg of storage
+  0kg of storage
   capacity.
 
 * **Expansion**: Build additional storehouses to increase total storage.
@@ -5502,11 +5500,11 @@ Expand your storage capacity to support your growing realm:
 All world structures have set storage capacities **(that cannot be expanded through the use of storehouses)**. These
 capacities are as follows:
 
-| Structure Type | Storage Capacity                                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Hyperstructure | {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.HyperstructureStructure]/1000)} kg |
-| Bank           | {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.BankStructure]/1000)} kg           |
-| Fragment Mine  | {formatNumberWithCommas(ETERNUM_CONFIG("eternum").carryCapacityGram[CapacityConfig.FragmentMineStructure]/1000)} kg   |
+| Structure Type | Storage Capacity          |
+| -------------- | ------------------------- |
+| Hyperstructure | 18,446,744,073,709,550 kg |
+| Bank           | 18,446,744,073,709,550 kg |
+| Fragment Mine  | 18,446,744,073,709,550 kg |
 
 ## Storage Management Tips
 
@@ -5621,8 +5619,8 @@ stamina, a critical resource Lords must carefully manage.
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +{staminaOf("eternum").perPhase}
-stamina per Phase ({staminaOf("eternum").phaseMinutes} minute), totaling +{staminaOf("eternum").perDay} stamina per
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20
+stamina per Phase (1 minute), totaling +120 stamina per
 Eternum Day. Each troop type possesses different maximum stamina capacities, outlined in the table below:
 
 <TroopMovementTable />
@@ -5651,7 +5649,7 @@ within the army. The table below details biome-specific stamina costs for each t
 ## Exploring
 
 When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs {staminaOf("eternum").explore} stamina and will reveal that hex to all
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all
 Lords, permanently expanding the known boundaries of the world.
 
 If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed

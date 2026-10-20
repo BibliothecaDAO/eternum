@@ -1,18 +1,15 @@
-import path from "path";
 import { defineConfig } from "vocs";
+import { docsAliases, publicDir } from "./docs/utils/paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 
 export default defineConfig({
   vite: {
-    publicDir: path.resolve(__dirname, "../game/public"),
+    publicDir,
     server: {
       allowedHosts: true,
     },
     resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./docs"),
-        "@config": path.resolve(__dirname, "../../config/utils/utils"),
-      },
+      alias: docsAliases,
     },
     plugins: [llmTxtPlugin()],
     css: {

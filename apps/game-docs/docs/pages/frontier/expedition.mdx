@@ -26,18 +26,19 @@ troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.re
 
 ## What a reveal can find
 
-| Find   | Chance                                      | What it is                                                                                             |
-| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                           |
-| Camp   | {FRONTIER.discovery.camp}                   | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                           |
-| Rift   | {FRONTIER.discovery.rift}                   | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                  |
-| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm. |
-| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: grants an army {FRONTIER.xp.shrine} XP, then is gone.                                 |
-| Well   | {FRONTIER.discovery.well}                   | Once researched: gives an army {FRONTIER.stamina.well} stamina, then is gone.                          |
-| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the season's pool can fund it ([Chests](/frontier/chests)).                 |
+| Find   | Chance                                      | What it is                                                                                                                                                                                               |
+| ------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beasts | {FRONTIER.discovery.beasts}                 | A roaming band, the weakest guard. Clearing it pays XP only.                                                                                                                                             |
+| Camp   | {FRONTIER.discovery.camp}                   | A guarded outpost. Clearing it pays labor: half its guard's starting troops.                                                                                                                             |
+| Rift   | {FRONTIER.discovery.rift}                   | A guarded fissure. Clearing it pays Essence: three times its guard's starting troops.                                                                                                                    |
+| Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. At most one a day per realm, and only while the season's pool can fund its chest: a ruin it cannot fund leaves the tile empty. |
+| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: grants an army {FRONTIER.xp.shrine} XP, then is gone.                                                                                                                                   |
+| Well   | {FRONTIER.discovery.well}                   | Once researched: gives an army {FRONTIER.stamina.well} stamina, then is gone.                                                                                                                            |
+| Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | On the surface only, while the season's pool can fund it ([Chests](/frontier/chests)).                                                                                                                   |
 
-After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal always finds something. Scouting
-makes the kinds you pick for it more likely.
+After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal draws only among the sites, shrines
+and wells above, so it finds one unless it draws a ruin the pool cannot fund. Scouting makes the kinds you pick for it
+more likely.
 
 ## Guards
 

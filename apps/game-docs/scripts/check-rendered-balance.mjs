@@ -3,7 +3,8 @@
  * Checks the built docs show each mode's own balance: on a page, a label must be followed by the value its mode's
  * generated config holds, and the relic page each relic's cost as the Blitz preset's relic rules set it. Blitz and
  * Eternum differ on these values, so a Blitz component that reads Eternum's config (or a hard-coded number that
- * drifted) fails the build. Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
+ * drifted) fails the build. The text export (llm.txt) must state the same numbers, with no expression left as code.
+ * Run after `vocs build`: node scripts/check-rendered-balance.mjs <dist>
  */
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -166,7 +167,10 @@ export const expectedPhrases = (blitz, eternum, frontier, frontierPreset) => [
   ...frontierPhrases(frontier, frontierPreset),
 ];
 
-/** The relic table, the Blitz preset's relic rules and Frontier's native preset, read from their TypeScript sources through Vite. */
+/**
+ * The relic table, the Blitz preset's relic rules, Frontier's native preset and the text export's path, read from
+ * their TypeScript sources through Vite.
+ */
 const loadBalanceSources = async () => {
   const { createServer } = await import("vite");
   const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
@@ -176,7 +180,14 @@ const loadBalanceSources = async () => {
     );
     const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
     const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
-    return { relics: RELICS, rules: blitzPreset.relics, firstRelicId: ResourcesIds.StaminaRelic1, frontierPreset };
+    const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
+    return {
+      relics: RELICS,
+      rules: blitzPreset.relics,
+      firstRelicId: ResourcesIds.StaminaRelic1,
+      frontierPreset,
+      llmTxtFile,
+    };
   } finally {
     await server.close();
   }
@@ -215,6 +226,36 @@ export const missingPhrases = (dist, pages) =>
     return phrases.filter((phrase) => !line.includes(phrase)).map((phrase) => ({ page, run: [phrase] }));
   });
 
+/** The text export's page sections, each as one line with its markdown marks dropped, keyed like the built pages. */
+export const exportPages = (llm) =>
+  new Map(
+    llm.split("\n\n---\n\n").map((section) => [
+      section.match(/^file: docs\/pages\/(\S+)\.mdx/)?.[1],
+      section
+        .replace(/\*\*|\||\\/g, " ")
+        .replace(/\s+/g, " ")
+        .replace(/ ([:,.;)%])/g, "$1"),
+    ]),
+  );
+
+/** An expression the export would ship as code instead of the number it stands for. */
+const UNEVALUATED = /\{(?:FRONTIER\.|staminaOf\(|victoryPointsOf\(|ETERNUM_CONFIG\()/g;
+
+/** The phrases the text export does not show, and every expression it ships unevaluated, each with its page. */
+export const exportProblems = (llm, pages) => {
+  const sections = exportPages(llm);
+  const missing = pages.flatMap(({ page, phrases }) =>
+    phrases
+      .filter((phrase) => !(sections.get(page) ?? "").includes(phrase))
+      .map((phrase) => ({ page: `llm.txt ${page}`, run: [phrase] })),
+  );
+  const unevaluated = [...llm.matchAll(UNEVALUATED)].map((match) => ({
+    page: "llm.txt",
+    run: [`unevaluated ${llm.slice(match.index, match.index + 60).split("\n")[0]}`],
+  }));
+  return [...missing, ...unevaluated];
+};
+
 /** The runs a built site does not show, each with its page. */
 export const missingRuns = (dist, pages) =>
   pages.flatMap(({ page, runs }) => {
@@ -224,18 +265,17 @@ export const missingRuns = (dist, pages) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const { relics, rules, firstRelicId, frontierPreset } = await loadBalanceSources();
+  const { relics, rules, firstRelicId, frontierPreset, llmTxtFile } = await loadBalanceSources();
+  const phrases = expectedPhrases(configOf("blitz"), configOf("eternum"), configOf("frontier"), frontierPreset);
   const missing = [
     ...missingRuns(dist, [
       ...expectedRuns(configOf("blitz"), configOf("eternum")),
       ...relicRuns(relics, rules, firstRelicId),
     ]),
-    ...missingPhrases(
-      dist,
-      expectedPhrases(configOf("blitz"), configOf("eternum"), configOf("frontier"), frontierPreset),
-    ),
+    ...missingPhrases(dist, phrases),
+    ...exportProblems(readFileSync(llmTxtFile, "utf8"), phrases),
   ];
   for (const { page, run } of missing) console.error(`${page}: expected "${run.join(" | ")}"`);
   if (missing.length) process.exit(1);
-  console.log("Rendered balance matches each mode's config.");
+  console.log("Rendered balance and the text export match each mode's config.");
 }
