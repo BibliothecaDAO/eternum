@@ -148,8 +148,14 @@ const openList = async () => {
   return [...document.querySelectorAll(".ui-select__layer .ui-menu__item")];
 };
 
+const focus = HTMLElement.prototype.focus;
+
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  // As a browser does: a list still hidden (not yet placed) can't take focus.
+  vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (this: HTMLElement, options?: FocusOptions) {
+    if (!this.closest('.ui-select__layer[data-placed="false"]')) focus.call(this, options);
+  });
 });
 
 afterEach(async () => {
@@ -158,6 +164,7 @@ afterEach(async () => {
   usePopoverStore.getState().close();
   document.body.innerHTML = "";
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe.each(Object.entries(SCREENS))("on a %s", (_, screen) => {
@@ -173,9 +180,14 @@ describe.each(Object.entries(SCREENS))("on a %s", (_, screen) => {
     await tap(crossbow);
     expect([chosen.mock.calls, closed.mock.calls.length, surface.isOpen()]).toEqual([[["crossbowman-t1"]], 0, true]);
 
-    // Escape on the open list closes the list, not the surface.
-    const [first] = await openList();
-    await act(async () => first.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    // The open list holds the keys, so Escape closes the list, not the surface.
+    await openList();
+    expect(document.activeElement?.closest(".ui-select__layer")).not.toBeNull();
+    await act(async () =>
+      (document.activeElement ?? document.body).dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      ),
+    );
     expect([document.querySelector(".ui-select__layer"), closed.mock.calls.length, surface.isOpen()]).toEqual([
       null,
       0,

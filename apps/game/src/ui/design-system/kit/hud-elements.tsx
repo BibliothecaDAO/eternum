@@ -1436,8 +1436,6 @@ export const HudSelect = <K extends string | number>({
   useEffect(() => {
     if (!open || !trigger.current) return;
     setPlace(menuPlace(trigger.current, menu.current));
-    const items = reachableItems(menu.current);
-    (items.find((item) => item.getAttribute("aria-checked") === "true") ?? items[0])?.focus({ preventScroll: true });
     const dismiss = () => {
       setOpen(false);
       setPlace(null);
@@ -1459,6 +1457,14 @@ export const HudSelect = <K extends string | number>({
       window.removeEventListener("resize", dismiss);
     };
   }, [open]);
+
+  // The list takes the keys once it is shown: hidden until placed, it can't hold focus before.
+  const shown = open && place !== null;
+  useEffect(() => {
+    if (!shown) return;
+    const items = reachableItems(menu.current);
+    (items.find((item) => item.getAttribute("aria-checked") === "true") ?? items[0])?.focus({ preventScroll: true });
+  }, [shown]);
 
   const onTriggerKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
