@@ -3,8 +3,9 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const facts = vi.hoisted(() => ({ structures: [] as unknown[] }));
+const facts = vi.hoisted(() => ({ structures: [] as unknown[], mode: "blitz" }));
 
+vi.mock("@/config/game-modes/use-game-mode-config", () => ({ useGameModeConfig: () => ({ id: facts.mode }) }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useGoToStructure: () => vi.fn() }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
@@ -68,11 +69,26 @@ const type = (text: string) =>
 describe("the holdings search", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    facts.mode = "blitz";
     useUIStore.getState().setLeftListFilter("all");
     host = document.createElement("div");
     root = createRoot(host);
   });
   afterEach(() => act(() => root.unmount()));
+
+  it.each([
+    ["frontier", "Trolls"],
+    ["blitz", "Camps"],
+  ])("names the %s list by its encounter", (mode, plural) => {
+    facts.mode = mode;
+    facts.structures = [...realms(1), holding(50, StructureType.Camp, plural === "Trolls" ? "Troll" : "Camp")];
+    render();
+    const tab = host.querySelector<HTMLButtonElement>(`[role="tab"][aria-label="${plural}, 1"]`);
+    expect(tab).not.toBeNull();
+    act(() => tab!.click());
+    expect(shownNames()).toEqual([mode === "frontier" ? "Troll" : "Camp"]);
+    if (mode === "frontier") expect(host.textContent).not.toMatch(/\bcamps?\b/i);
+  });
 
   it("filters only the kind it was typed in: another kind's tab shows all its holdings", () => {
     facts.structures = [...realms(12), holding(50, StructureType.Mine, "Copper Mine")];

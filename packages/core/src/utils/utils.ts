@@ -97,5 +97,3 @@ export function divideWithPrecision(
 }
 
 export const getGameMode = () => nativeGameModeOf(configManager.getPresetId());
-
-export const getIsBlitz = () => [2, 4].includes(configManager.getPresetId());

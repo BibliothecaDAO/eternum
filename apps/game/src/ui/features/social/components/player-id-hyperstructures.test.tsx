@@ -22,7 +22,7 @@ vi.mock("../player/use-in-game-leaderboard", () => ({
 vi.mock("@/ui/design-system/icon", () => ({ Icon: () => null }));
 vi.mock("@bibliothecadao/eternum", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/eternum")>()),
-  getIsBlitz: () => true,
+  getGameMode: () => "blitz",
   getEntityName: (id: number) => `Tower ${id}`,
 }));
 
