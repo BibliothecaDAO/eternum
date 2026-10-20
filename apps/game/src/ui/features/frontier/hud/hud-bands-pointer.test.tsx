@@ -4,8 +4,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import { ARMY } from "@/ui/design-system/kit/words";
-import { ArmyStatusBar } from "./action-bar";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { CANCEL } from "@/ui/design-system/kit/words";
 import { HudBands } from "./hud-bands";
 
 let host: HTMLDivElement;
@@ -52,19 +52,23 @@ afterEach(() => {
   sheet.remove();
 });
 
-it("lets the selected army's bar take the pointer in the HUD's bands, which pass it to the map", () => {
-  const onOpen = vi.fn();
+it("lets a control in the action band take the pointer in the HUD's bands, which pass it to the map", () => {
+  const onPress = vi.fn();
   act(() =>
     root.render(
       <HudBands
         strip={null}
-        action={<ArmyStatusBar stamina={31} secondsToFull={178} revealYield={75} onOpen={onOpen} />}
+        action={
+          <HudButton kind="quiet" onClick={onPress}>
+            {CANCEL}
+          </HudButton>
+        }
       />,
     ),
   );
-  const bar = host.querySelector<HTMLButtonElement>(`button[aria-label="${ARMY}"]`)!;
+  const bar = [...host.querySelectorAll("button")].find((button) => button.textContent === CANCEL)!;
   expect(getComputedStyle(bar.closest("[aria-label='Frontier HUD']")!).pointerEvents).toBe("none");
   expect(getComputedStyle(bar).pointerEvents).toBe("auto");
   act(() => bar.click());
-  expect(onOpen).toHaveBeenCalledOnce();
+  expect(onPress).toHaveBeenCalledOnce();
 });
