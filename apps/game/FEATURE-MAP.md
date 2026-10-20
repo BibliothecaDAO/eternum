@@ -671,13 +671,20 @@ Beasts show Cyclops for the lowly encounter and Wraith for the stronger encounte
 T1 combat and immutable initial-count classification are unchanged. Camps show Troll alone at every depth. Rifts show
 Dark fey hovering and moving its wings above the rift. Ruins show Ammit / Basilisk / Wyvern / Hydra from surface through
 depth III. All beasts have subtle GPU idle motion: planted breathing, a drifting Wraith shroud and the fey's
-hover/wings. Instance phases differ; clearing a site removes its guard and standing effects.
+hover/wings. Instance phases differ; clearing a site removes its guard and standing effects. All standing beasts and
+their landmarks share the settlements' south-facing orientation, toward the fixed map camera at every hex and zoom. The
+idle motion remains in model-local coordinates.
 
 `/lab/models?family=beasts&group=site-map` opens the final eight encounter contexts on their tiles. View focuses a tile;
 Turn and Light inspect it. The sidebar shows the selected concepts and a recorded screenshot of the previous production
 lineup, so retired deliveries need not remain in the app. Ground mist toggles the production effect for comparison. The
 original ruin masonry remains; low animated mist replaces the removed violet residue surfaces. Beast idle toggles
 between the real animated shader and an undeformed shader without changing placements or mist.
+
+Scene → Facing · before / after (`/lab/models?family=beasts&group=site-map&population=facing`) pairs all eight species
+against their former tile rotations on the same canvas. Map zoom selects the production default and far camera
+distances, pitch and field of view. `pnpm --dir apps/game prove:beasts <local-url> <fresh-evidence-directory> facing`
+drives both zooms, records the rendered headings and camera, and captures the comparisons with idle and mist enabled.
 
 `/lab/models?family=beasts` shows all eight production species, all four ruin depths, standing site compositions and
 both roaming beasts. Site, Depth and Beast strength control the real plate and selected card. Select site opens that

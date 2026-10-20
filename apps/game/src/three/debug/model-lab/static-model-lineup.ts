@@ -11,10 +11,16 @@ import { ModelLabEnvironment } from "./model-lab-environment";
 import { readModelLabSettings } from "./model-lab-settings";
 import { FrontierModel, frontierModelKind } from "../../structures/frontier-model";
 import { RewardTileModel } from "../../rewards/reward-tile-model";
+import {
+  resolveWorldmapCameraFieldOfViewDegrees,
+  resolveWorldmapCameraPitchRadians,
+  WORLDMAP_CAMERA_ZOOM,
+} from "../../scenes/worldmap-camera-view-profile";
 
 export interface LineupAsset {
   label: string;
   position?: { x: number; z: number };
+  rotationY?: number;
   parts: readonly { path: string; scale?: number; z?: number; y?: number }[];
 }
 export interface LineupSettings {
@@ -22,6 +28,7 @@ export interface LineupSettings {
   focus: "lineup" | number;
   yaw: number;
   lighting: "day" | "sunset";
+  camera?: "worldmap";
 }
 
 /** The same instancing, materials, terrain and lighting as the game, at scale one. */
@@ -44,7 +51,7 @@ export async function mountStaticLineup(
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.minDistance = 3;
-  controls.maxDistance = 35;
+  controls.maxDistance = settings.camera === "worldmap" ? WORLDMAP_CAMERA_ZOOM.maxDistance : 35;
   const models: Array<InstancedModel | RewardTileModel> = [];
   const batches = new Map<string, { model: InstancedModel | RewardTileModel; count: number; parts: number[] }>();
   const positions: Vector3[] = [];
@@ -128,7 +135,7 @@ export async function mountStaticLineup(
     current = next;
     capturePending = true;
     parts.forEach((part) => {
-      const matrix = new Matrix4().makeRotationY((next.yaw * Math.PI) / 180);
+      const matrix = new Matrix4().makeRotationY((lineup[part.slot].rotationY ?? 0) + (next.yaw * Math.PI) / 180);
       matrix.setPosition(positions[part.slot]);
       matrix.multiply(new Matrix4().makeTranslation(0, part.y, part.z));
       matrix.scale(new Vector3(part.scale, part.scale, part.scale));
@@ -138,7 +145,10 @@ export async function mountStaticLineup(
     const z = next.focus === "lineup" ? 0 : positions[next.focus].z;
     const height = next.focus === "lineup" ? 0.8 : heights[next.focus];
     controls.target.set(x, environment.terrain.sampleSurface(x, z).height + height / 2, z);
-    const pitch = LOCAL_CAMERA_ZOOM.pitchRadians;
+    const pitch =
+      next.camera === "worldmap" ? resolveWorldmapCameraPitchRadians(next.distance) : LOCAL_CAMERA_ZOOM.pitchRadians;
+    camera.fov = next.camera === "worldmap" ? resolveWorldmapCameraFieldOfViewDegrees() : CAMERA_CONFIG.fov;
+    camera.updateProjectionMatrix();
     camera.position
       .copy(controls.target)
       .add(new Vector3(0, Math.sin(pitch), Math.cos(pitch)).multiplyScalar(next.distance));
@@ -242,6 +252,10 @@ export async function mountStaticLineup(
           drawnAssets: [...drawnAssets],
           drawnParts: [...drawnParts],
           cameraDistance: camera.position.distanceTo(controls.target),
+          cameraPosition: camera.position.toArray(),
+          cameraTarget: controls.target.toArray(),
+          fieldOfView: camera.fov,
+          rotations: lineup.map((asset) => (asset.rotationY ?? 0) + (current.yaw * Math.PI) / 180),
           calls: renderer.info.render.drawCalls ?? renderer.info.render.calls,
         });
         capturePending = false;

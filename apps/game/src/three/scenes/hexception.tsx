@@ -34,7 +34,7 @@ import { actNowRefusal, canIssueOrders, refusedBeforePlay } from "@/utils/can-is
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolveStoredLocalCameraDistance, useCameraZoomStore } from "@/hooks/store/use-camera-zoom-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { resolveSettlementRotationY } from "@/three/structures/settlement-orientation";
+import { resolveStructureRotationY } from "@/three/structures/structure-orientation";
 import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { RealmGridBuilds } from "./hexception-grid-builds";
 import { awaitLocalScenePresentable } from "./local-scene-presentation";
@@ -1512,7 +1512,11 @@ export default class HexceptionScene extends HexagonScene {
     instance.applyMatrix4(building.matrix);
     if (selection.group === BUILDINGS_GROUPS.REALMS || selection.group === BUILDINGS_GROUPS.VILLAGE) {
       // Apply after the template and tile transforms so neither can turn the entrance away.
-      instance.rotation.set(0, resolveSettlementRotationY(this.tileManager.structureType(), instance.rotation.y), 0);
+      instance.rotation.set(
+        0,
+        resolveStructureRotationY({ structureType: this.tileManager.structureType() }, instance.rotation.y),
+        0,
+      );
     }
     if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
       const aura = new RealmLivingAura(buildingData.model);

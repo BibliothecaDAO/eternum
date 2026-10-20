@@ -2,7 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { mountStaticLineup, type LineupSettings } from "@/three/debug/model-lab/static-model-lineup";
 import { BEAST_NAMES, RUIN } from "@/ui/design-system/kit/words";
-import { SITE_CONCEPTS, SITE_STUDIES, MIST_STRESS_SITES, BEAST_STRESS_SITES } from "./frontier-site-studies";
+import {
+  SITE_CONCEPTS,
+  SITE_STUDIES,
+  MIST_STRESS_SITES,
+  BEAST_STRESS_SITES,
+  FACING_SITES,
+} from "./frontier-site-studies";
+import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import "./workshop-model-lab.css";
 import "./frontier-site-lab.css";
 
@@ -10,15 +17,25 @@ import "./frontier-site-lab.css";
 export function FrontierSiteLab() {
   const [params, setParams] = useSearchParams();
   const population = params.get("population");
+  const facing = population === "facing";
   const idleStress = population === "128";
   const stress = idleStress || population === "100";
-  const lineup = idleStress ? BEAST_STRESS_SITES : stress ? MIST_STRESS_SITES : SITE_STUDIES;
+  const lineup = facing ? FACING_SITES : idleStress ? BEAST_STRESS_SITES : stress ? MIST_STRESS_SITES : SITE_STUDIES;
   const index = Number(params.get("focus"));
   const focus =
     params.has("focus") && Number.isInteger(index) && index >= 0 && index < lineup.length ? index : "lineup";
   const settings: LineupSettings = {
     focus,
-    distance: focus === "lineup" ? (stress ? 32 : 16) : 3.5,
+    distance: facing
+      ? params.get("zoom") === "far"
+        ? WORLDMAP_CAMERA_ZOOM.maxDistance
+        : WORLDMAP_CAMERA_ZOOM.defaultDistance
+      : focus === "lineup"
+        ? stress
+          ? 32
+          : 16
+        : 3.5,
+    camera: facing ? "worldmap" : undefined,
     yaw: Number(params.get("yaw") ?? 0),
     lighting: params.get("lighting") === "sunset" ? "sunset" : "day",
   };
@@ -59,7 +76,7 @@ export function FrontierSiteLab() {
   }, [lineup]);
   useEffect(() => {
     renderer.current?.update(latest.current);
-  }, [settings.focus, settings.yaw, settings.lighting]);
+  }, [settings.focus, settings.yaw, settings.lighting, settings.distance, settings.camera]);
   useEffect(() => {
     renderer.current?.setMistVisible(mist);
   }, [mist, ready]);
@@ -114,15 +131,29 @@ export function FrontierSiteLab() {
           Scene{" "}
           <select
             aria-label="Scene"
-            value={idleStress ? "128" : stress ? "100" : "8"}
+            value={facing ? "facing" : idleStress ? "128" : stress ? "100" : "8"}
             disabled={measuring}
             onChange={(e) => change("population", e.target.value)}
           >
             <option value="8">Final map</option>
+            <option value="facing">Facing · before / after</option>
             <option value="100">100 ruins · mist check</option>
             <option value="128">128 beasts · idle check</option>
           </select>
         </label>
+        {facing && (
+          <label>
+            Zoom{" "}
+            <select
+              aria-label="Map zoom"
+              value={params.get("zoom") ?? "default"}
+              onChange={(e) => change("zoom", e.target.value)}
+            >
+              <option value="default">Default</option>
+              <option value="far">Far</option>
+            </select>
+          </label>
+        )}
         <label>
           View{" "}
           <select
@@ -193,47 +224,50 @@ export function FrontierSiteLab() {
         )}
       </header>
       <p role="status">{status}</p>
-      <div className="frontier-site-lab-body">
+      <div className="frontier-site-lab-body" data-facing-comparison={facing || undefined}>
         <div ref={host} className="workshop-lab-canvas" />
-        <aside aria-label="Production comparison">
-          <figure>
-            <a
-              className="frontier-site-baseline"
-              href="/lab/frontier-beasts/production-before.png"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <img
-                src="/lab/frontier-beasts/production-before.png"
-                alt="Previous five production beasts captured in the game renderer"
-              />
-            </a>
-            <figcaption>Before · recorded production lineup</figcaption>
-          </figure>
-          <p>
-            Current models are live on their tiles. The image above records the previous deliveries before replacement.
-          </p>
-          {SITE_CONCEPTS.map((species) => (
-            <figure key={species} data-site-concept={species}>
-              <a href={`/lab/frontier-beasts/${species}-concept.png`} target="_blank" rel="noreferrer">
+        {!facing && (
+          <aside aria-label="Production comparison">
+            <figure>
+              <a
+                className="frontier-site-baseline"
+                href="/lab/frontier-beasts/production-before.png"
+                target="_blank"
+                rel="noreferrer"
+              >
                 <img
-                  src={`/lab/frontier-beasts/${species}-concept.png`}
-                  alt={`${BEAST_NAMES[species]} selected concept`}
+                  src="/lab/frontier-beasts/production-before.png"
+                  alt="Previous five production beasts captured in the game renderer"
                 />
               </a>
-              <figcaption>
-                <strong>{BEAST_NAMES[species]}</strong>
-                <button
-                  disabled={stress || measuring}
-                  onClick={() => change("focus", String(SITE_STUDIES.findIndex(({ id }) => id === species)))}
-                >
-                  Show on tile
-                </button>
-              </figcaption>
+              <figcaption>Before · recorded production lineup</figcaption>
             </figure>
-          ))}
-          {measurement !== null && <pre data-effect-measurement>{JSON.stringify(measurement)}</pre>}
-        </aside>
+            <p>
+              Current models are live on their tiles. The image above records the previous deliveries before
+              replacement.
+            </p>
+            {SITE_CONCEPTS.map((species) => (
+              <figure key={species} data-site-concept={species}>
+                <a href={`/lab/frontier-beasts/${species}-concept.png`} target="_blank" rel="noreferrer">
+                  <img
+                    src={`/lab/frontier-beasts/${species}-concept.png`}
+                    alt={`${BEAST_NAMES[species]} selected concept`}
+                  />
+                </a>
+                <figcaption>
+                  <strong>{BEAST_NAMES[species]}</strong>
+                  <button
+                    disabled={stress || measuring}
+                    onClick={() => change("focus", String(SITE_STUDIES.findIndex(({ id }) => id === species)))}
+                  >
+                    Show on tile
+                  </button>
+                </figcaption>
+              </figure>
+            ))}
+            {measurement !== null && <pre data-effect-measurement>{JSON.stringify(measurement)}</pre>}
+          </aside>
+        )}
       </div>
       <footer>
         Two roaming beasts. {BEAST_NAMES.troll} at every depth. {BEAST_NAMES["dark-fey"]} above rifts. Four ruin

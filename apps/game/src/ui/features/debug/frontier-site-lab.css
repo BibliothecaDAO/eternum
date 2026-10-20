@@ -10,6 +10,9 @@
   padding: 12px;
   border-left: 1px solid #394942;
 }
+.frontier-site-lab-body[data-facing-comparison] {
+  grid-template-columns: 1fr;
+}
 .frontier-site-lab aside > label {
   display: grid;
   gap: 8px;

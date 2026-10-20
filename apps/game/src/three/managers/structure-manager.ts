@@ -16,7 +16,7 @@ import { getPlayerDisplayName } from "@/services/identity/player-profiles";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { resolveSettlementRotationY } from "../structures/settlement-orientation";
+import { resolveStructureRotationY } from "../structures/structure-orientation";
 import { SettlementModel } from "../structures/settlement-model";
 import { resolveSettlementRelationship } from "../structures/settlement-appearance";
 import { RiftModelPath, isRealmModelPath, isSettlementModelPath } from "../constants/scene-constants";
@@ -1443,7 +1443,7 @@ export class StructureManager {
 
     const rotationSeed = hashCoordinates(structure.hexCoords.col, structure.hexCoords.row);
     const rotationIndex = Math.floor(rotationSeed * 6);
-    return resolveSettlementRotationY(structure.structureType, (rotationIndex * Math.PI) / 3);
+    return resolveStructureRotationY(structure, (rotationIndex * Math.PI) / 3);
   }
 
   private syncVisibleStructurePresentation(

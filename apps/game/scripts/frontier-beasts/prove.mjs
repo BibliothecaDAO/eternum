@@ -2,6 +2,7 @@ import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runProof, waitFor } from "../prove-run.mjs";
 import { proveSiteStudies, proveEffectCost } from "./prove-site-studies.mjs";
+import { proveBeastFacing } from "./prove-facing.mjs";
 
 /** Drive the visible model and site controls, capture their drawn result, and release the WebGL page. */
 export async function proveBeasts(b, out, records, baseUrl, only, rendererMode = "webgpu-force-webgl") {
@@ -13,6 +14,7 @@ export async function proveBeasts(b, out, records, baseUrl, only, rendererMode =
     "--ignore-gpu-blocklist,--enable-gpu,--use-angle=vulkan,--enable-features=Vulkan,--enable-unsafe-webgpu",
   );
   await b.run("set", "viewport", "1600", "1000");
+  if (only === "facing") return proveBeastFacing(b, out, records, baseUrl, rendererMode);
   if (only === "mist" || only === "idle") return proveEffectCost(b, out, records, baseUrl, only);
   if (!only || only === "site-map") await proveSiteStudies(b, out, records, baseUrl, rendererMode);
   for (const scenario of [
