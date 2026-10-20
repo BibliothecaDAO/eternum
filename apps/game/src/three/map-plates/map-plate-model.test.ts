@@ -126,10 +126,10 @@ describe("a map plate's facts", () => {
   });
 });
 
-it("marks a cleared site with a flag and never calls it undefended", () => {
+it("marks a cleared site with a flag, never calls it undefended, and keeps the name every list reads it by", () => {
   expect(
     buildStructurePlate(structure({ structureType: StructureType.Camp, clearedSite: true, guardArmies: [] })),
-  ).toMatchObject({ icon: "flag", name: "Camp · Cleared", guards: null, place: undefined });
+  ).toMatchObject({ icon: "flag", name: "Camp · Cleared", guards: null, place: siteName(29) });
 });
 
 it("names a Frontier guard by its beast while retaining its combat stack and site lore", () => {

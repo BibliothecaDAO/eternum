@@ -143,7 +143,7 @@ export const buildStructurePlate = (
         ? structure.structureName.trim()
         : structureName(structure.structureType, structure.mineKind ?? undefined),
     named,
-    place: named || structure.clearedSite ? undefined : siteName(Number(structure.entityId)),
+    place: named ? undefined : siteName(Number(structure.entityId)),
     reward: reward && reward.amount > 0 ? `${formatExact(reward.amount)} ${reward.unit}` : undefined,
     holding: reward && reward.amount > 0 ? reward : undefined,
     icon: structure.clearedSite
