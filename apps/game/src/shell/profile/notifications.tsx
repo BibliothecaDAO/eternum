@@ -4,13 +4,10 @@ import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identit
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { Pill } from "@/ui/design-system/kit/pill";
-import { Switch } from "@/ui/design-system/kit/switch";
-import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
+import { AppChip, AppSetting, AppSwitch, AppTabs } from "@/ui/design-system/kit/app-elements";
 import type { NotificationLevel } from "@bibliothecadao/notifications";
 
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 
 /**
@@ -22,11 +19,13 @@ type Level = keyof typeof LEVEL_WORDS;
 const LEVELS: Level[] = ["off", "important", "all"];
 const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
   saved === "standard" ? undefined : saved;
+/** No tab chosen: a stored Standard, or the level still loading. */
+const NO_LEVEL = "" as Level;
 
 /**
- * Notifications (spec 12): one bell, three levels with the chosen one's meaning in one line (Important carries the
- * reminder an hour before a Frontier day closes), and This device as one switch. Signed out, the level is kept on this
- * browser and moves to the account at sign-in. A switch that failed turns back with the reason.
+ * Notifications (spec 12): three levels with the chosen one's meaning in one line (Important carries the reminder an
+ * hour before a Frontier day closes), and This device as one switch. Signed out, the level is kept on this browser and
+ * moves to the account at sign-in. A switch that failed turns back with the reason.
  */
 export const NotificationsCard = () => {
   const { session } = useIdentitySession();
@@ -37,28 +36,23 @@ export const NotificationsCard = () => {
   const waiting = preferences.status !== "ready";
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex justify-center">
-        <SemanticIcon name="notifications" size={44} />
-      </div>
       <div className={cn(waiting && "pointer-events-none opacity-50")}>
-        <ViewSwitch
+        <AppTabs
           label={PROFILE_WORDS.notifications}
-          views={LEVELS.map((id) => ({ id, word: LEVEL_WORDS[id].word }))}
-          lit={level}
+          tabs={LEVELS.map((key) => ({ key, label: LEVEL_WORDS[key].word }))}
+          value={level ?? NO_LEVEL}
           onChange={(next) => void preferences.save(next)}
         />
       </div>
-      <p className="min-h-6 text-center text-base text-kit-muted">{level ? LEVEL_WORDS[level].line : "—"}</p>
-      <SettingRows>
-        <SettingRow
+      <p className="min-h-6 text-app-body text-app-muted">{level ? LEVEL_WORDS[level].line : "—"}</p>
+      <div className="-mx-5">
+        <AppSetting
           icon="monitor"
           name={PROFILE_WORDS.thisDevice}
-          end={<DeviceEnd state={device.state} onToggle={device.toggle} />}
+          control={<DeviceEnd state={device.state} onToggle={device.toggle} />}
         />
-      </SettingRows>
-      {device.state === "blocked" && (
-        <p className="text-center text-base text-kit-amber">{PROFILE_WORDS.blockedLine}</p>
-      )}
+      </div>
+      {device.state === "blocked" && <p className="text-app-body text-app-warn">{PROFILE_WORDS.blockedLine}</p>}
       {preferences.status === "error" && (
         <ServiceFailure service="notifications" error={preferences.error} retry={() => void preferences.reload()} />
       )}
@@ -71,14 +65,18 @@ export const NotificationsCard = () => {
 const DeviceEnd = ({ state, onToggle }: { state: ThisDeviceState; onToggle: () => Promise<void> }) => {
   switch (state) {
     case "install":
-      return <Pill icon="monitor">{PROFILE_WORDS.install}</Pill>;
+      return <AppChip icon="monitor">{PROFILE_WORDS.install}</AppChip>;
     case "blocked":
-      return <Pill icon="lock">{PROFILE_WORDS.blocked}</Pill>;
+      return (
+        <AppChip tone="warn" icon="lock">
+          {PROFILE_WORDS.blocked}
+        </AppChip>
+      );
     case "unavailable":
-      return <Pill icon="lock" />;
+      return <AppSwitch label={PROFILE_WORDS.thisDevice} checked={false} disabled />;
     case "saving":
       return <SemanticIcon name="refresh" size={24} className="animate-spin" />;
     default:
-      return <Switch on={state === "on"} label={PROFILE_WORDS.thisDevice} onToggle={() => void onToggle()} />;
+      return <AppSwitch label={PROFILE_WORDS.thisDevice} checked={state === "on"} onChange={() => void onToggle()} />;
   }
 };

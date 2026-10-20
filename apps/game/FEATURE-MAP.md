@@ -57,26 +57,27 @@ each tier, sealed and opened, among them), and links to the real pages on the sh
 (nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the painting
 and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install notice
 at 1024 and 1440 px (`/lab/app/long-name`), the phone's five places at 360 px, the lobby's entry with every choice taken
-at 1920, 1024 and 390 px, then the app's other pages and every element of the sheet;
-`prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses **See the
-end map** and holds the map to its scene being ready, watched and finished. `prove:app <base-url> <out-dir> qa1` presses
-qa-app-1's findings on the real pages over the fixtures, desktop and phone: Share on Results, a release picked on What's
-new, a legal page's places, a Season row's chips, Settings' Name, You with no finished game (`/lab/app/no-games`) and a
-session with no name (`/lab/app/unnamed`), the phone's own card and a Results board row on one line. The pages: Play
-(`/`) the lead widest and each age as a painted column; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat
-side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results (`/results/:id`, with
-**See the end map**) the player's place and points, the game's board, points by kind and the chest at its tier; What's
-new (`/scroll`) a release's patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and
-selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game desktop HUD every
-mode shares, as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab
-realm, which has nothing to build now), `blitz-attack` (the lab army's attack forecast on an enemy army beside it,
-opened as the map opens it), `frontier`, `frontier-army` (an army out whose XP buys a tier; Upgrade's buy_tier is
-recorded on the page as `window.__labTierBought`), `blitz-spectator`, `blitz-finished`;
-`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
-1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
-region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
-outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer, the panel as built (phase 1), a
-player's imported orders and the import as proposed (phase 2), and the default order as written.
+at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You signed in, out
+and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), and every element of the
+sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses
+**See the end map** and holds the map to its scene being ready, watched and finished.
+`prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone:
+Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
+no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
+Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column; a Blitz lobby
+(`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's figures over Frontier's
+and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and points, the game's board,
+points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per section, and every
+release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's game: `blitz`
+(the Build order panel under Next up, read from the lab realm, which has nothing to build now), `blitz-attack` (the lab
+army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out
+whose XP buys a tier; Upgrade's buy_tier is recorded on the page as `window.__labTierBought`), `blitz-spectator`,
+`blitz-finished`; `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and
+Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, every control
+reachable, at most seven parts a region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next
+up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer, the panel
+as built (phase 1), a player's imported orders and the import as proposed (phase 2), and the default order as written.
 `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate, Renderer or Shadows
 change shows **Applies after a reload** with **Reload** under them, in game as here);
 `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
@@ -179,9 +180,10 @@ the foot.
   the game (by its name and date, else its number) and the board, and, signed in, that they had no seat.
 - **Settings**: **Name** offers **Claim name** once the name differs from the one held; **Devices** lists this device as
   soon as you are signed in. It opens the payout wallet directly when a page sent you to link one
-  (`/profile/settings?next=…`) and returns you there once it is linked. Each setting is one row of the kit
-  (`SettingRow`, `ui/design-system/kit/setting-row.tsx`), and a destructive step (sign out, remove a device) asks first
-  in the kit's `Confirm` (`ui/design-system/kit/confirm.tsx`).
+  (`/profile/settings?next=…`) and returns you there once it is linked. Its groups are the app sheet's panels and each
+  setting one of their rows (`AppPanel`, `AppSetting`, `ui/design-system/kit/app-elements.tsx`); a row's step (Name,
+  Portrait, Payout wallet) opens in a panel under the rows, and a destructive step (sign out, remove a device) asks
+  first in the sheet's dialog over the page (`AppDialog`), Keep or Escape its way out.
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
   lobby's title names the start time).
 

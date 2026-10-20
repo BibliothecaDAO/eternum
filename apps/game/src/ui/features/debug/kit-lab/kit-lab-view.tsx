@@ -1,31 +1,19 @@
 import { formatCountdown } from "@bibliothecadao/types";
 import { Button } from "@/ui/design-system/kit/button";
-import { Chip } from "@/ui/design-system/kit/chip";
-import { Confirm } from "@/ui/design-system/kit/confirm";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 import { ClockLine } from "@/ui/design-system/kit/clock-line";
 import { DayDial } from "@/ui/design-system/kit/day-dial";
-import { Field } from "@/ui/design-system/kit/field";
-import { Figure } from "@/ui/design-system/kit/figure";
-import { IconLine } from "@/ui/design-system/kit/icon-line";
 import { Kbd } from "@/ui/design-system/kit/kbd";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { Notice } from "@/ui/design-system/kit/notice";
-import { Panel, PanelTitle } from "@/ui/design-system/kit/panel";
-import { PaintedCard } from "@/ui/design-system/kit/painted-card";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { Portrait } from "@/ui/design-system/kit/portrait";
 import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
 import { SeasonRow } from "@/ui/design-system/kit/season-row";
-import { SectionLabel } from "@/ui/design-system/kit/section-label";
-import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
-import { StateCard } from "@/ui/design-system/kit/state-card";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
-import { Switch } from "@/ui/design-system/kit/switch";
 import { TierChip } from "@/ui/design-system/kit/tier-chip";
 import { Title } from "@/ui/design-system/kit/title";
-import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { OFFLINE, TRY_AGAIN, YOU } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 import { Route, Routes } from "react-router-dom";
@@ -100,26 +88,16 @@ const Components = () => {
         <ClockSection />
         <StoresSection />
         <ButtonsSection />
-        <FieldsSection />
-        <ControlsSection />
-        <LinesSection />
         <PillsSection />
-        <SwitchesSection />
-        <LabelsSection />
-        <PanelsSection />
-        <StateCardsSection />
         <ReasonsSection />
         <NoticesSection />
         <TiersSection />
         <SeasonSection />
         <SheetSection />
         <TitlesSection />
-        <FiguresSection />
         <PortraitsSection />
-        <PaintedCardsSection />
         <ClockChipsSection />
         <ListRowsSection />
-        <ConfirmSection />
       </div>
     </main>
   );
@@ -163,28 +141,6 @@ const TitlesSection = () => (
   </Section>
 );
 
-const FiguresSection = () => (
-  <Section title="Figure">
-    <div className="flex flex-wrap items-baseline gap-4">
-      <Figure size="figure" tone="gold" weight="extrabold" className="leading-none">
-        #12
-      </Figure>
-      <Figure size="figure" tone="cream">
-        412
-      </Figure>
-      <Figure size="title-lg" tone="cream">
-        412
-      </Figure>
-      <Figure size="title" tone="cream">
-        1,840
-      </Figure>
-      <Figure size="heading" tone="gold2">
-        +24
-      </Figure>
-    </div>
-  </Section>
-);
-
 const PortraitsSection = () => (
   <Section title="Portrait · Portrait.Empty">
     <div className="flex flex-wrap items-center gap-3">
@@ -202,38 +158,6 @@ const PortraitsSection = () => (
       <span className="w-16 overflow-hidden rounded-full border-[3px] border-kit-line opacity-80">
         <Portrait portrait="07" className="aspect-square w-full" />
       </span>
-    </div>
-  </Section>
-);
-
-const PaintedCardsSection = () => (
-  <Section title="PaintedCard">
-    <PaintedCard painting="blitz-spires" sizes="390px" grade="side" className="flex flex-col gap-3 p-4">
-      <Title level="card" as="p">
-        Blitz 1630
-      </Title>
-      <Pill icon="hourglass">Starts 16:30 · in 2h 4m</Pill>
-    </PaintedCard>
-    <PaintedCard painting="frontier-mist" sizes="390px" grade="cover" className="flex flex-col gap-2 p-8">
-      <span className="font-body text-base text-kit-gold">News</span>
-      <Title level="hero" as="p">
-        The mist lifted
-      </Title>
-    </PaintedCard>
-    <PaintedCard painting="winter-fortress" sizes="390px" grade="top" className="flex min-h-44 flex-col gap-3 p-3.5">
-      <Button role="primary" word="Sign in" icon="person" />
-    </PaintedCard>
-    <PaintedCard painting="frontier-mist" sizes="390px" grade="top-deep" className="flex h-40 items-start gap-3 p-3">
-      <Portrait portrait="03" size={80} weight={3} ring="lit" />
-    </PaintedCard>
-    <div className="plate overflow-hidden pb-5">
-      <PaintedCard
-        as="span"
-        painting="frontier-mist"
-        sizes="390px"
-        grade="none"
-        className="block h-28 w-full rounded-none border-0"
-      />
     </div>
   </Section>
 );
@@ -290,32 +214,8 @@ const ListRowsSection = () => (
         <span className="min-w-0 flex-1">{YOU}</span>
       </ListRow>
     </ol>
-    <SettingRows>
-      <SettingRow icon="person" name="Settings" onOpen={() => undefined} />
-      <SettingRow icon="guide" name="How to play" href="/lab/kit/tokens" />
-      <SettingRow icon="music" name="Music" end={<Pill icon="check" />} />
-      <SettingRow icon="chronicles" name="The mist lifted" value="13 Jan 2025" onOpen={() => undefined} />
-    </SettingRows>
   </Section>
 );
-
-const ConfirmSection = () => {
-  const [open, setOpen] = useState(false);
-  return (
-    <Section title="Confirm">
-      <Button role="outline" word="Remove" onClick={() => setOpen(true)} />
-      {open && (
-        <Confirm
-          question="Remove this device?"
-          cost="It signs out and forgets its key."
-          verb="Remove"
-          onConfirm={() => setOpen(false)}
-          onKeep={() => setOpen(false)}
-        />
-      )}
-    </Section>
-  );
-};
 
 const ClockSection = () => (
   <Section title="DayDial · ClockLine">
@@ -362,61 +262,6 @@ const ButtonsSection = () => (
   </Section>
 );
 
-const FieldsSection = () => {
-  const [draft, setDraft] = useState("");
-  return (
-    <Section title="Field">
-      <Field
-        size="md"
-        aria-label="Message"
-        placeholder="Message"
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        trailing={<Kbd keyName="Enter" className="pointer-events-none max-lg:hidden" />}
-      />
-      <Field size="lg" icon="mail" type="email" aria-label="Email" placeholder="you@mail.com" />
-      <Field size="lg" valid aria-label="Name" defaultValue="Maelis" className="font-body text-xl font-bold" />
-      <Field size="lg" invalid aria-label="Name" defaultValue="Ma" className="font-body text-xl font-bold" />
-    </Section>
-  );
-};
-
-const ControlsSection = () => {
-  const [music, setMusic] = useState(true);
-  const [guide, setGuide] = useState(false);
-  return (
-    <Section title="Switch · Kbd">
-      <div className="flex items-center gap-3">
-        <span className="flex-1 text-base">Music</span>
-        <Switch on={music} label="Music" onToggle={() => setMusic(!music)} />
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="flex-1 text-base">Guide</span>
-        <Switch on={guide} label="Guide" onToggle={() => setGuide(!guide)} />
-      </div>
-      <div className="flex items-center gap-2">
-        {["1", "2", "3", "Esc", "Enter"].map((key) => (
-          <Kbd key={key} keyName={key} />
-        ))}
-      </div>
-    </Section>
-  );
-};
-
-const LinesSection = () => (
-  <Section title="IconLine">
-    <IconLine tone="cream" icon="lock">
-      Your keys stay with you.
-    </IconLine>
-    <IconLine tone="muted" icon="hourglass">
-      Arrives when the season closes.
-    </IconLine>
-    <IconLine tone="cream" iconSize={22} icon="check">
-      Claimed.
-    </IconLine>
-  </Section>
-);
-
 const PillsSection = () => (
   <Section title="Pill">
     {/* On a painting: a state, a clock, the icon alone, a game under way. */}
@@ -447,93 +292,6 @@ const PillsSection = () => (
         No LORDS
       </Pill>
     </div>
-    {/* The HUD's amounts stay on its chip token: Chip. */}
-    <div className="flex flex-wrap gap-2">
-      <Chip icons={["person"]} value="17/24" label="Seats" />
-    </div>
-  </Section>
-);
-
-const SwitchesSection = () => {
-  const [board, setBoard] = useState<"frontier" | "blitz">("frontier");
-  const [mode, setMode] = useState<"blitz" | "eternum">("blitz");
-  return (
-    <Section title="ViewSwitch · joined, split">
-      <ViewSwitch
-        label="Boards"
-        views={[
-          { id: "frontier", word: "Frontier", icon: "crown" },
-          { id: "blitz", word: "Blitz", icon: "attack" },
-        ]}
-        lit={board}
-        onChange={setBoard}
-      />
-      <ViewSwitch
-        label="Modes"
-        variant="split"
-        semantics="tab"
-        views={[
-          { id: "blitz", word: "Blitz" },
-          { id: "eternum", word: "Eternum" },
-        ]}
-        lit={mode}
-        onChange={setMode}
-        marked={["blitz", "eternum"]}
-        markWord="Yours"
-      />
-    </Section>
-  );
-};
-
-const LabelsSection = () => (
-  <Section title="SectionLabel">
-    <SectionLabel>Now</SectionLabel>
-    <SectionLabel tone="gold" size="body" className="px-2">
-      Notifications
-    </SectionLabel>
-  </Section>
-);
-
-const PanelsSection = () => (
-  <Section title="Panel · PanelTitle">
-    <Panel icon="crown" title="Frontier" aside={<span className="text-kit-gold">12th</span>}>
-      <p className="px-1 text-base text-kit-muted">Gilded, on a plate, small padding.</p>
-    </Panel>
-    <Panel rule="line" pad="lg" icon="reward-chest" title="Chest">
-      <p className="text-base text-kit-muted">Line, on a plate, large padding.</p>
-    </Panel>
-    <div className="plate p-5">
-      <Panel
-        rule="line"
-        surface="bare"
-        icon="lords"
-        title="Entry"
-        aside={
-          <Pill tone="muted" icon="backpack">
-            0x04a1…9c2e
-          </Pill>
-        }
-      >
-        <p className="text-base text-kit-muted">Line, bare, inside a plate.</p>
-      </Panel>
-    </div>
-    <PanelTitle rule="line" icon="backpack">
-      Payout wallet
-    </PanelTitle>
-  </Section>
-);
-
-const StateCardsSection = () => (
-  <Section title="StateCard">
-    <StateCard painting="brooding-plains">
-      <p className="font-body text-lg font-bold text-kit-cream">No season running</p>
-    </StateCard>
-    <StateCard painting="brooding-plains" image="md" pad="4" sizes="50vw">
-      <p className="font-body text-xl font-bold text-kit-cream">No season running</p>
-    </StateCard>
-    <StateCard painting="stormy" image="lg" sizes="100vw">
-      <p className="font-body text-lg font-bold text-kit-cream">Nothing here</p>
-    </StateCard>
   </Section>
 );
 
@@ -568,27 +326,15 @@ const NoticesSection = () => {
   );
 };
 
-const TiersSection = () => {
-  const [view, setView] = useState<"tiers" | "frames">("tiers");
-  return (
-    <Section title="TierChip · ViewSwitch">
-      <ViewSwitch
-        label="Tiers"
-        views={[
-          { id: "tiers", word: "Words" },
-          { id: "frames", word: "Frames" },
-        ]}
-        lit={view}
-        onChange={setView}
-      />
-      <div className="flex flex-wrap gap-2">
-        {([1, 2, 3, 4, 5] as const).map((tier) => (
-          <TierChip key={tier} tier={tier} showWord={view === "tiers"} />
-        ))}
-      </div>
-    </Section>
-  );
-};
+const TiersSection = () => (
+  <Section title="TierChip">
+    <div className="flex flex-wrap gap-2">
+      {([1, 2, 3, 4, 5] as const).map((tier) => (
+        <TierChip key={tier} tier={tier} showWord />
+      ))}
+    </div>
+  </Section>
+);
 
 const STANDINGS = [
   { name: "Ysabeau", order: 1, sites: 148, lords: 704 },

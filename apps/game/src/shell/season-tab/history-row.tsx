@@ -1,11 +1,11 @@
 import { formatAmount, formatClockTime, formatOrdinal } from "@bibliothecadao/types";
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { clockLine } from "@/ui/design-system/kit/clock-chip";
-import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
+import { AppChip, AppRow } from "@/ui/design-system/kit/app-elements";
+import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { openedFrom } from "../frame/opened-from";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { type DirectoryGame, useLeaderboard } from "../herald";
@@ -36,27 +36,25 @@ const usePlace = (game: DirectoryGame, player: string) => {
 export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player: string; now: number }) => {
   const { rank, lords } = usePlace(game, player);
   const here = useLocation();
+  const navigate = useNavigate();
   return (
-    <ListRow
-      as="li"
-      to={resultsHref(game)}
-      state={openedFrom(here)}
-      height={14}
-      gap={3}
+    <AppRow
       lead={<RowThumb painting={ageOf(ageOfGame(game)).painting} size={10} />}
       title={gameTitle(game)}
-      line={<span className="text-sm text-kit-muted">{clockLine(null, game.clock.end_at, now)}</span>}
-      className="px-1 py-2"
-    >
-      {lords !== undefined && (
-        <span className="flex items-center gap-1 font-body text-base font-bold tabular-nums text-kit-gold">
-          <SemanticIcon name="lords" size={18} />
-          {formatAmount(lords)}
-        </span>
-      )}
-      <span className="w-12 text-right font-body text-base font-extrabold tabular-nums text-kit-cream">
-        {rank === undefined ? "—" : formatOrdinal(rank)}
-      </span>
-    </ListRow>
+      detail={clockLine(null, game.clock.end_at, now)}
+      onClick={() => navigate(resultsHref(game), { state: openedFrom(here) })}
+      trail={
+        <>
+          {lords !== undefined && (
+            <AppChip tone="gold" icon="lords">
+              {formatAmount(lords)}
+            </AppChip>
+          )}
+          <span className="w-12 text-right text-app-strong tabular-nums text-app-ink">
+            {rank === undefined ? "—" : formatOrdinal(rank)}
+          </span>
+        </>
+      }
+    />
   );
 };

@@ -4,6 +4,7 @@ import {
   AppButton,
   AppChip,
   AppChoice,
+  AppCode,
   AppDialog,
   AppEmpty,
   AppField,
@@ -22,19 +23,11 @@ import {
   AppTopBar,
 } from "@/ui/design-system/kit/app-elements";
 import { Button } from "@/ui/design-system/kit/button";
-import { Field } from "@/ui/design-system/kit/field";
-import { Figure } from "@/ui/design-system/kit/figure";
 import { Kbd } from "@/ui/design-system/kit/kbd";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { Notice } from "@/ui/design-system/kit/notice";
-import { PaintedCard } from "@/ui/design-system/kit/painted-card";
-import { Panel } from "@/ui/design-system/kit/panel";
-import { Pill } from "@/ui/design-system/kit/pill";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { SettingRow, SettingRows } from "@/ui/design-system/kit/setting-row";
-import { Switch } from "@/ui/design-system/kit/switch";
 import { Title } from "@/ui/design-system/kit/title";
-import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { APP_SHEET, APP_TYPE, HUD_MODES, TYPE } from "@/tokens";
 import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
@@ -75,6 +68,7 @@ export const AppSheetLab = () => (
       <ColourSection />
       <ButtonSection />
       <FieldSection />
+      <CodeSection />
       <TopBarSection />
       <TabsSection />
       <PanelSection />
@@ -337,10 +331,23 @@ const ButtonSection = () => (
   />
 );
 
+const CodeSection = () => (
+  <Element
+    name="Code"
+    rule="A code sent by email: six boxes over one real input, the next box lit; a refused code in the bad tone until the player types again."
+    sheet={
+      <div className="flex flex-col items-start gap-4">
+        <AppCode label="Sign-in code" code="48" length={6} refused={false} disabled={false} onType={() => undefined} />
+        <AppCode label="Sign-in code" code="" length={6} refused disabled={false} onType={() => undefined} />
+        <AppCode label="Sign-in code" code="481927" length={6} refused={false} disabled onType={() => undefined} />
+      </div>
+    }
+  />
+);
+
 const FieldSection = () => (
   <Element
     name="Field"
-    todayLabel={TODAY}
     rule="Its label above, its value in the well, one line under it: a hint, or what is wrong in the bad tone."
     sheet={
       <div className="grid grid-cols-2 gap-4">
@@ -348,12 +355,6 @@ const FieldSection = () => (
         <AppField label="Email" icon="mail" defaultValue="maelis@" error="That is not an email address." />
         <AppField label="Name" defaultValue="Maelis" />
         <AppField label="Name" defaultValue="Maelis" disabled />
-      </div>
-    }
-    today={
-      <div className="flex w-full flex-col gap-2">
-        <Field size="lg" icon="mail" placeholder="you@mail.com" />
-        <Field size="lg" icon="mail" defaultValue="maelis@" invalid />
       </div>
     }
   />
@@ -395,7 +396,6 @@ const TabsSection = () => {
   return (
     <Element
       name="Tabs"
-      todayLabel={TODAY}
       rule="Views of one thing, the chosen one raised; a dot where something of the player's waits."
       sheet={
         <div className="flex flex-col items-start gap-3">
@@ -420,20 +420,6 @@ const TabsSection = () => {
           />
         </div>
       }
-      today={
-        <div className="w-full">
-          <ViewSwitch
-            label="Ages"
-            views={[
-              { id: "blitz", word: "Blitz" },
-              { id: "eternum", word: "Eternum" },
-            ]}
-            lit="blitz"
-            onChange={() => undefined}
-            variant="split"
-          />
-        </div>
-      }
     />
   );
 };
@@ -441,7 +427,6 @@ const TabsSection = () => {
 const PanelSection = () => (
   <Element
     name="Panel"
-    todayLabel={TODAY}
     rule="The app's one surface, translucent over the page's painting: its icon and name over a rule, a cue at its end, then its body; a list runs to its edges. A panel about one game or mode carries that mode's painting in its head."
     sheet={
       <div className="grid grid-cols-2 gap-4">
@@ -453,13 +438,6 @@ const PanelSection = () => (
         </AppPanel>
       </div>
     }
-    today={
-      <div className="w-full">
-        <Panel icon="victory" title="Frontier" aside={<span className="text-sm">Day 12</span>}>
-          <p className="text-sm">Twelve rows of the season's board.</p>
-        </Panel>
-      </div>
-    }
   />
 );
 
@@ -467,7 +445,6 @@ const GameCardSection = () => (
   <Element
     name="Game card"
     wide
-    todayLabel={TODAY}
     rule="A game on its age's painting and in its age's accent: its title, what stands, its one verb. The lead carries the page's gold verb; the rest sit among others."
     sheet={
       <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-4">
@@ -505,17 +482,6 @@ const GameCardSection = () => (
           title="Eternum"
           facts={<AppChip>Opens in 6 days</AppChip>}
         />
-      </div>
-    }
-    today={
-      <div className="w-[34rem]">
-        <PaintedCard painting="frontier-mist" sizes="34rem" grade="side" className="flex flex-col gap-3 p-4">
-          <Title level="card" as="p">
-            Frontier
-          </Title>
-          <Pill icon="hourglass">Day ends 21:12 · 7h 14m left</Pill>
-          <Button role="primary" word="Resume" icon="play" />
-        </PaintedCard>
       </div>
     }
   />
@@ -602,7 +568,6 @@ const RowSection = () => (
 const ChipFigureSection = () => (
   <Element
     name="Chip and figure"
-    todayLabel={TODAY}
     rule="A chip is a state in its tone, a count, or an amount with its icon; a figure is the point of its panel with what it counts under it. Whatever names a resource, a troop or a rank takes its icon: never a bare number."
     sheet={
       <div className="flex flex-col gap-5">
@@ -628,18 +593,6 @@ const ChipFigureSection = () => (
           <AppFigure icon="lords" value="6,878" label="LORDS" tone="gold" />
         </div>
       </div>
-    }
-    today={
-      <>
-        <Pill icon="hourglass">Starts 16:30 · in 2h 4m</Pill>
-        <Pill tone="sage">Live</Pill>
-        <Figure size="figure" tone="gold" weight="extrabold" className="leading-none">
-          31
-        </Figure>
-        <Title level="countdown" as="p">
-          2:03:57
-        </Title>
-      </>
     }
   />
 );
@@ -676,7 +629,6 @@ const SettingSection = () => {
   return (
     <Element
       name="Setting and switch"
-      todayLabel={TODAY}
       rule="A setting: its icon, its name, what it holds, then its control: a switch, or a chevron that opens it."
       sheet={
         <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
@@ -688,18 +640,6 @@ const SettingSection = () => {
             control={<AppSwitch label="Music" checked={music} onChange={setMusic} />}
           />
           <AppSetting icon="monitor" name="This device" control={<AppSwitch label="This device" checked disabled />} />
-        </div>
-      }
-      today={
-        <div className="w-full">
-          <SettingRows>
-            <SettingRow icon="person" name="Name" value="Maelis" onOpen={() => undefined} />
-            <SettingRow
-              icon="music"
-              name="Music"
-              end={<Switch on={false} label="Music" onToggle={() => undefined} />}
-            />
-          </SettingRows>
         </div>
       }
     />

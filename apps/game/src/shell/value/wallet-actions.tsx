@@ -2,7 +2,7 @@ import { VALUE_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { Button } from "@/ui/design-system/kit/button";
+import { AppButton } from "@/ui/design-system/kit/app-elements";
 
 import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
@@ -91,24 +91,25 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
   return (
     <div className="flex w-full flex-col gap-2.5">
       {outcome?.kind === "no-strk" && <NoStrkLine />}
-      {outcome?.kind === "refused" && <span className="font-body text-sm text-kit-red">{outcome.reason}</span>}
+      {outcome?.kind === "refused" && <span className="text-app-label text-app-bad">{outcome.reason}</span>}
       {holder === null && !confirming ? (
         <>
-          <span className="font-body text-sm text-kit-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
+          <span className="text-app-label text-app-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
           <WalletRows wallet={wallet} />
         </>
       ) : (
         <>
-          {wallet.error && <span className="font-body text-sm text-kit-red">{wallet.error}</span>}
-          <Button
-            role="outline"
-            word={WALLET_WORDS.tryAgain}
+          {wallet.error && <span className="text-app-label text-app-bad">{wallet.error}</span>}
+          <AppButton
+            kind="secondary"
             icon="refresh"
-            loading={
+            busy={
               confirming ? VALUE_WORDS.confirming : wallet.pending === null ? undefined : WALLET_WORDS.confirmInWallet
             }
             onClick={() => holder && void wallet.open(holder)}
-          />
+          >
+            {WALLET_WORDS.tryAgain}
+          </AppButton>
         </>
       )}
     </div>
@@ -173,18 +174,18 @@ const WalletRows = ({
           type="button"
           disabled={wallet.pending !== null}
           onClick={() => void wallet.open(connector)}
-          className="flex h-[62px] items-center gap-3 rounded-well border-2 border-kit-line bg-kit-ground/60 px-3.5 text-left disabled:opacity-60"
+          className="flex h-[62px] items-center gap-3 rounded-xl border border-app-line-strong bg-app-well px-3.5 text-left transition-colors hover:border-app-gold disabled:opacity-60"
         >
           <SemanticIcon name="backpack" size={34} />
-          <span className="font-body text-xl text-kit-cream">{choice.name}</span>
-          {choice.note && <span className="font-body text-sm font-semibold text-kit-muted">{choice.note}</span>}
-          <span className="ml-auto font-body text-sm text-kit-muted">
+          <span className="text-app-heading text-app-ink">{choice.name}</span>
+          {choice.note && <span className="text-app-label text-app-muted">{choice.note}</span>}
+          <span className="ml-auto text-app-label text-app-muted">
             {wallet.pending === choice.id ? WALLET_WORDS.opening : <SemanticIcon name="arrow-right" size={22} />}
           </span>
         </button>
       ))}
-      {rows.length === 0 && <span className="font-body text-base text-kit-muted">{WALLET_WORDS.noneHere}</span>}
-      {wallet.error && <span className="font-body text-sm text-kit-red">{wallet.error}</span>}
+      {rows.length === 0 && <span className="text-app-body text-app-muted">{WALLET_WORDS.noneHere}</span>}
+      {wallet.error && <span className="text-app-label text-app-bad">{wallet.error}</span>}
     </div>
   );
 };

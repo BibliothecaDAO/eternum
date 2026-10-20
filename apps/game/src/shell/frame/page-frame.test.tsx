@@ -28,9 +28,6 @@ const TAB_PATHS = new Set(["/", "/season", "/scroll", "/profile", "/nothing-here
 const STEP_PATHS = ["/sign-in", "/blitz/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
-// jsdom lays nothing out, so it has no scrolling to do (the Scroll's address scrolls Play to its band).
-Element.prototype.scrollIntoView = () => {};
-
 /**
  * The app shell's pages (the route without a path), each with a sample for its parameters. Play's former addresses
  * only lead to Play (app-hosting.test.ts holds them), so they draw no page of their own.

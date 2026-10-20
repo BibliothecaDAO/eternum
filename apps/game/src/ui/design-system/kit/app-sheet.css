@@ -132,6 +132,46 @@
   color: var(--app-bad);
 }
 
+/* ── Code: a code sent by email, its boxes over one real input; the next box lit, a refused code in the bad tone. ── */
+.app-code {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: theme(spacing.2);
+}
+.app-code > input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  cursor: text;
+  opacity: 0;
+}
+.app-code__box {
+  display: flex;
+  width: 48px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--app-radius-control);
+  background: var(--app-well);
+  color: var(--app-ink);
+  font-family: var(--app-face-strong);
+  font-size: var(--app-text-title);
+  font-weight: var(--app-weight-strong);
+  transition: border-color var(--app-fast) var(--app-ease);
+}
+.app-code__box[data-at] {
+  border-color: rgb(var(--app-accent));
+}
+.app-code[data-refused] .app-code__box {
+  border-color: var(--app-bad);
+}
+.app-code:has(> input:disabled) .app-code__box {
+  opacity: 0.5;
+}
+
 /* ── Frame (the desktop's PageFrame): the painting, the bar across the top, then the page, no wider than a page runs. ── */
 .app-frame {
   position: relative;
@@ -517,7 +557,7 @@
 .app-row + .app-row {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-line) 70%, transparent);
 }
-.app-row:has(> button.app-row__words):is(:hover, [data-state="hover"]) {
+.app-row:has(> :is(button, a).app-row__words):is(:hover, [data-state="hover"]) {
   background: var(--app-hover);
 }
 .app-row[data-own] {
@@ -538,9 +578,10 @@
   align-items: flex-start;
   text-align: left;
 }
-/* A trail of one (a board row's points): it keeps its place on the row and the words give way, so a phone's board is a
-   line a row, never a name over its points (qa-app-1 P3-11). */
-.app-row:has(> .app-row__trail > :only-child) > .app-row__words {
+/* A trail of one (a board row's points), or a setting's value: it keeps its place on the row and the words give way, so
+   a phone's board or setting is a line a row, never a name over its points or its value (qa-app-1 P3-11). */
+.app-row:has(> .app-row__trail > :only-child) > .app-row__words,
+.app-row:has(> .app-row__trail > .app-setting__value) > .app-row__words {
   flex-basis: 6rem;
 }
 .app-row__title {
@@ -833,6 +874,12 @@
   height: 96px;
   font-size: var(--app-text-title);
 }
+/* A portrait that fills its cell: a picker's square. */
+.app-portrait[data-size="fill"] {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
 .app-portrait[data-own] {
   border-color: rgb(var(--app-accent));
 }
@@ -933,6 +980,17 @@
   display: flex;
   justify-content: flex-end;
   gap: theme(spacing.2);
+}
+/* A dialog over the page: the page dimmed behind it, the dialog in its middle. */
+.app-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: theme(spacing.4);
+  background: rgb(0 0 0 / 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

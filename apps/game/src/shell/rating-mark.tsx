@@ -15,7 +15,7 @@ const TierMark = ({ rating, size = 18 }: { rating: string; size?: number }) => {
 
 /** A rating on a row: its tier's mark and its whole points. */
 export const RatingFigure = ({ rating }: { rating: string }) => (
-  <span className="inline-flex items-center gap-1.5 font-body text-base font-bold tabular-nums text-kit-cream">
+  <span className="inline-flex items-center gap-1.5 text-app-strong tabular-nums text-app-ink">
     <TierMark rating={rating} size={16} />
     {formatExact(ratingPoints(rating))}
   </span>

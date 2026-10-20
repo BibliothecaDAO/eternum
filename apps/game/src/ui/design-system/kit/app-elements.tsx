@@ -1,6 +1,13 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { type AnchorHTMLAttributes, type ButtonHTMLAttributes, type KeyboardEvent, type ReactNode, useId } from "react";
+import {
+  type AnchorHTMLAttributes,
+  type ButtonHTMLAttributes,
+  type KeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useId,
+} from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
 
 import { BACK } from "./words";
@@ -116,6 +123,47 @@ export const AppField = ({
     </label>
   );
 };
+
+/**
+ * A code sent by email: its boxes over one real one-time-code input, so a pasted or autofilled code, a phone's code
+ * suggestion and backspace all behave as in any code field. The box to type in next is lit; a refused code turns the
+ * boxes bad until the player types again.
+ */
+export const AppCode = ({
+  label,
+  code,
+  length,
+  refused,
+  disabled,
+  onType,
+}: {
+  label: string;
+  code: string;
+  length: number;
+  refused: boolean;
+  disabled: boolean;
+  onType: (value: string) => void;
+}) => (
+  <label className="app-code" data-refused={refused || undefined}>
+    <span className="sr-only">{label}</span>
+    <input
+      type="text"
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      autoFocus
+      maxLength={length}
+      value={code}
+      disabled={disabled}
+      aria-invalid={refused}
+      onChange={(event) => onType(event.target.value)}
+    />
+    {Array.from({ length }, (_, index) => (
+      <span key={index} aria-hidden className="app-code__box" data-at={index === code.length || undefined}>
+        {code[index] ?? ""}
+      </span>
+    ))}
+  </label>
+);
 
 /** A link from the app: the app's own pages (a path) open in place, another site (its address) in a new tab. */
 export const AppLink = ({ to, ...rest }: { to: string } & Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href">) =>
@@ -351,7 +399,8 @@ export const AppGameCard = ({
 
 /**
  * One thing of a list: what leads it (a rank, a portrait, an icon), what it is and what it says, then what follows
- * (figures, its own button). The player's own row is lit. With `onClick` the row's words are the button that opens it.
+ * (figures, its own button). The player's own row is lit. With `onClick` the row's words are the button that opens it;
+ * with `href`, the link to another site, in a new tab.
  */
 export const AppRow = ({
   lead,
@@ -360,6 +409,7 @@ export const AppRow = ({
   trail,
   own = false,
   onClick,
+  href,
 }: {
   lead?: ReactNode;
   title: ReactNode;
@@ -367,6 +417,7 @@ export const AppRow = ({
   trail?: ReactNode;
   own?: boolean;
   onClick?: () => void;
+  href?: string;
 }) => {
   const words = (
     <>
@@ -377,7 +428,11 @@ export const AppRow = ({
   return (
     <div className="app-row" data-own={own || undefined}>
       {lead !== undefined && <span className="app-row__lead">{lead}</span>}
-      {onClick ? (
+      {href ? (
+        <a className="app-row__words" href={href} target="_blank" rel="noopener noreferrer">
+          {words}
+        </a>
+      ) : onClick ? (
         <button type="button" className="app-row__words" onClick={onClick}>
           {words}
         </button>
@@ -497,19 +552,24 @@ export const AppSwitch = ({
   </button>
 );
 
-/** A setting: its icon, its name and what it holds now, then its control (a switch, a chevron to open it). */
+/**
+ * A setting: its icon, its name and what it holds now, then its control (a switch, a chevron to open it, or to another
+ * site with `href`).
+ */
 export const AppSetting = ({
   icon,
   name,
   value,
   control,
   onClick,
+  href,
 }: {
   icon: IconMeaning;
   name: string;
   value?: ReactNode;
   control?: ReactNode;
   onClick?: () => void;
+  href?: string;
 }) => (
   <AppRow
     lead={<Icon name={icon} size={26} />}
@@ -517,10 +577,11 @@ export const AppSetting = ({
     trail={
       <>
         {value !== undefined && <span className="app-setting__value">{value}</span>}
-        {control ?? (onClick && <Icon name="arrow-right" size={18} />)}
+        {control ?? ((onClick || href) && <Icon name="arrow-right" size={18} />)}
       </>
     }
     onClick={onClick}
+    href={href}
   />
 );
 
@@ -560,7 +621,8 @@ export const AppPortrait = ({
 }: {
   src?: string;
   name: string;
-  size?: "sm" | "md" | "lg";
+  /** fill: as wide as its cell (a picker's square). */
+  size?: "sm" | "md" | "lg" | "fill";
   own?: boolean;
 }) => (
   <span className="app-portrait" data-size={size} data-own={own || undefined} title={name}>
@@ -600,19 +662,39 @@ export const AppSkeleton = ({ rows = 3 }: { rows?: number }) => (
   </span>
 );
 
-/** A question before something that cannot be undone: its title, what it costs, and its way out and its verb. */
+/**
+ * A question before something that cannot be undone: its title, what it costs, and its way out and its verb. Given
+ * `onClose` it asks over the page, which it dims: a press beside it or Escape takes the way out.
+ */
 export const AppDialog = ({
   title,
   children,
   actions,
+  onClose,
 }: {
   title: string;
   children?: ReactNode;
   actions: ReactNode;
-}) => (
-  <section role="dialog" aria-label={title} className="app-dialog">
-    <h2>{title}</h2>
-    {children && <div className="app-dialog__body">{children}</div>}
-    <footer className="app-dialog__foot">{actions}</footer>
-  </section>
-);
+  onClose?: () => void;
+}) => {
+  useEffect(() => {
+    if (!onClose) return;
+    const closeOnEscape = (event: globalThis.KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+  const dialog = (
+    <section role="dialog" aria-label={title} aria-modal={onClose ? true : undefined} className="app-dialog">
+      <h2>{title}</h2>
+      {children && <div className="app-dialog__body">{children}</div>}
+      <footer className="app-dialog__foot">{actions}</footer>
+    </section>
+  );
+  return onClose ? (
+    <div className="app-scrim" onClick={(event) => event.target === event.currentTarget && onClose()}>
+      {dialog}
+    </div>
+  ) : (
+    dialog
+  );
+};

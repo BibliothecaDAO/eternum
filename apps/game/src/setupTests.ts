@@ -14,3 +14,8 @@ if (typeof window !== "undefined" && !window.matchMedia) {
       removeListener: () => {},
     }) as unknown as MediaQueryList;
 }
+
+// jsdom lays nothing out, so it has no scrolling: a page that brings a panel into view asks for it anyway.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}

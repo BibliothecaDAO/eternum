@@ -1,10 +1,10 @@
 /**
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
  * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
- * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; the
- * app's other pages are shot on the desktop, under the same frame.
+ * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
+ * the account's pages (`account`: sign-in's steps, You, Settings and what its rows open).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|others|sheet|end-map|qa1] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|sheet|end-map|qa1] [--state <signed-in.json>]
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *
@@ -102,12 +102,25 @@ const entryChecks = (b) => {
   ];
 };
 
-/** The app's other pages: still drawn with the shell kit inside the sheet's frame. */
-const OTHER_PAGES = {
-  "first-visit": "first-visit",
-  you: "home/profile",
-  settings: "home/profile/settings",
-  "sign-in": "first-visit/sign-in/start",
+/**
+ * The account's pages (sign-in's steps, You, Settings), each at its fixture state and, where a row opens a step, with
+ * that row pressed as a player presses it: shot on the desktop and on a phone, and checked as a page on the app sheet.
+ * Sign-in is a full-screen step, with no places.
+ */
+const ACCOUNT_PAGES = {
+  you: { path: "home/profile", place: "You" },
+  "you-signed-out": { path: "first-visit/profile", place: "You" },
+  "you-unnamed": { path: "unnamed/profile", place: "You" },
+  settings: { path: "home/profile/settings", place: "You" },
+  "settings-name": { path: "home/profile/settings", place: "You", press: "Name" },
+  "settings-portrait": { path: "home/profile/settings", place: "You", press: "Portrait" },
+  "settings-wallet-none": { path: "wallet-none/profile/settings", place: "You", press: "Payout wallet" },
+  "settings-wallet-linked": { path: "wallet-ready/profile/settings", place: "You", press: "Payout wallet" },
+  "settings-sign-out": { path: "home/profile/settings", place: "You", press: "Sign out" },
+  "sign-in-start": { path: "first-visit/sign-in/start", place: null },
+  "sign-in-code": { path: "first-visit/sign-in/code", place: null },
+  "sign-in-name": { path: "first-visit/sign-in/name", place: null },
+  "sign-in-name-refused": { path: "first-visit/sign-in/name-refused", place: null },
 };
 
 /** What holds for a page drawn whole: it did not fall to the error boundary, and it does not scroll sideways. */
@@ -132,8 +145,13 @@ const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
 
 const DRAWN = `document.querySelector("[data-layout]") !== null`;
 
-const otherPages = () =>
-  Object.entries(OTHER_PAGES).map(([page, path]) => ({ name: `other-${page}`, path: `/lab/app/${path}?capture=1` }));
+const accountPages = (desktop) =>
+  Object.entries(ACCOUNT_PAGES).map(([page, { path, place, press: words }]) => ({
+    name: `${desktop ? "account" : "phone-account"}-${page}`,
+    path: `/lab/app/${path}?capture=1`,
+    act: words === undefined ? undefined : (b, record) => press(b, record, words),
+    more: sheetPageChecks({ desktop, place }),
+  }));
 
 /**
  * What holds for each page on the app sheet: nothing drawn spills out of its block, every picture on it loaded (the
@@ -145,12 +163,13 @@ const sheetPageChecks = (page) => (b) => {
   const { desktop, place } = page;
   const measure = b.evaluate(`(() => {
     // How far anything a block shows runs past the block's foot or its right side. Decoration (aria-hidden: a stage's
-    // rays) may run past and be cut; content that is cut is the defect this catches, so it counts whole.
+    // rays) may run past and be cut, and a dialog's scrim covers the page by design; content that is cut is the defect
+    // this catches, so it counts whole.
     const rectOf = (element) => element.getBoundingClientRect();
     const spillOf = (block) => {
       const box = rectOf(block);
       const inside = [...block.querySelectorAll("*")]
-        .filter((element) => !element.closest('[aria-hidden="true"]'))
+        .filter((element) => !element.closest('[aria-hidden="true"], .app-scrim'))
         .map(rectOf)
         .filter((rect) => rect.width > 0 && rect.height > 0);
       return Math.max(0, ...inside.map((rect) => Math.max(rect.bottom - box.bottom, rect.right - box.right)));
@@ -637,7 +656,7 @@ const qa1 = (cases) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
-  const parts = process.argv[4]?.split(",") ?? ["pages", "others", "sheet"];
+  const parts = process.argv[4]?.split(",") ?? ["pages", "account", "sheet"];
   const stateAt = process.argv.indexOf("--state");
   const state = stateAt === -1 ? null : process.argv[stateAt + 1];
   await runProof(
@@ -651,7 +670,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       b.run("set", "viewport", ...VIEWPORT);
       if (parts.includes("pages"))
         for (const page of sheetPages(true)) records.push(await shoot(b, baseUrl, out, page));
-      if (parts.includes("others")) for (const page of otherPages()) records.push(await shoot(b, baseUrl, out, page));
+      if (parts.includes("account")) {
+        for (const page of accountPages(true)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...PHONE);
+        for (const page of accountPages(false)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...VIEWPORT);
+      }
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
       if (parts.includes("end-map")) records.push(await proveEndMap(b, baseUrl, out, state));
       if (parts.includes("qa1")) {

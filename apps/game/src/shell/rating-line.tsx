@@ -11,7 +11,7 @@ import { ratingPoints, tierOf, useRatings } from "./ratings";
  * change: rating stays read-only (the owner, 8 October).
  */
 export const RatingLine = ({ wallet }: { wallet: string | null }) => {
-  if (wallet === null) return <p className="text-sm text-kit-muted">{RATING_WORDS.unlinked}</p>;
+  if (wallet === null) return <p className="text-app-label text-app-muted">{RATING_WORDS.unlinked}</p>;
   return <WalletRating wallet={wallet} />;
 };
 
@@ -24,14 +24,14 @@ export const OwnRatingLine = () => {
 const WalletRating = ({ wallet }: { wallet: string }) => {
   const answer = useRatings([wallet]).data?.ratings[wallet];
   return (
-    <p className="flex items-center gap-2 text-sm text-kit-muted">
+    <p className="flex items-center gap-2 text-app-label text-app-muted">
       {answer ? (
         <>
           <RatingFigure rating={answer.rating} />
           {tierOf(ratingPoints(answer.rating)).name}
         </>
       ) : (
-        <b className="text-kit-cream">—</b>
+        <b className="text-app-ink">—</b>
       )}
       <span>· {RATING_WORDS.blitzRating}</span>
     </p>

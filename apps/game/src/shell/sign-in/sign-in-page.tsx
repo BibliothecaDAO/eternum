@@ -1,6 +1,5 @@
 import { LORE_LINE, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError } from "@realms-world/identity";
-import { Title } from "@/ui/design-system/kit/title";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -179,8 +178,8 @@ const PhoneHero = () => (
       alt=""
       className="absolute inset-0 -z-10 size-full object-cover"
     />
-    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-kit-ground via-transparent to-transparent" />
-    <p className="font-body text-xl leading-snug text-kit-cream">{LORE_LINE}</p>
+    <span className="absolute inset-0 -z-10 bg-gradient-to-b from-app-ground via-transparent to-transparent" />
+    <p className="text-app-heading text-app-ink">{LORE_LINE}</p>
   </section>
 );
 
@@ -192,23 +191,18 @@ const DesktopSplit = ({ title, children }: { title: string; children?: ReactNode
     {/* No stacking context of its own: the fixed painting must sit behind the frame's title row (Back), not over it. */}
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
       <img {...paintingSources(PAINTING)} sizes="70vw" alt="" className="size-full object-cover object-[35%_50%]" />
-      <span className="absolute inset-0 bg-gradient-to-t from-kit-ground/80 via-transparent to-transparent" />
+      <span className="absolute inset-0 bg-gradient-to-t from-app-ground via-transparent to-transparent" />
     </div>
-    <Title
-      level="hero"
-      as="p"
-      shadow="title-flat"
-      className="fixed bottom-10 left-gutter-desk max-w-tagline leading-[1.1] wide:left-gutter-wide"
-    >
+    <p className="fixed bottom-10 left-gutter-desk max-w-tagline text-app-display text-app-ink drop-shadow-lg wide:left-gutter-wide">
       {LORE_LINE}
-    </Title>
+    </p>
     <section
       className={cn(
-        "leather fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l bg-kit-plate px-10 pb-10 pt-12",
+        "fixed bottom-0 right-0 top-[68px] z-10 flex flex-col gap-5 overflow-y-auto border-l border-app-line bg-app-surface px-10 pb-10 pt-12",
         PANEL,
       )}
     >
-      <Title level="plate">{title}</Title>
+      <h1 className="text-app-title text-app-ink">{title}</h1>
       {children}
     </section>
   </>

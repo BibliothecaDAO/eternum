@@ -29,7 +29,6 @@ beforeEach(() => {
     "fetch",
     vi.fn(async () => new Response("{}", { status: 404 })),
   );
-  Element.prototype.scrollIntoView = () => {};
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);

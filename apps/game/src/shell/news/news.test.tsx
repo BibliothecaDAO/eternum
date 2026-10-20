@@ -40,9 +40,6 @@ const asRead = (note: (typeof patchNotes)[number]) => ({
   ]),
 });
 
-// jsdom lays nothing out, so it has no scrolling to do; the tests watch the page ask for it.
-Element.prototype.scrollIntoView ??= () => {};
-
 const Where = () => <output data-where>{useLocation().pathname}</output>;
 
 const open = async (width: number) => {

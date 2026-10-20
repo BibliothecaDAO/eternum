@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 
-import { Button } from "@/ui/design-system/kit/button";
-import { ReasonPlate } from "@/ui/design-system/kit/reason-plate";
-import { TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { AppNotice } from "./app-elements";
 import { failureLine, type Service } from "./failure-lines";
 
 /**
@@ -13,10 +11,5 @@ export const ServiceFailure = ({ service, error, retry }: { service: Service; er
   useEffect(() => {
     console.error("shell_read_failed", { service, error });
   }, [error, service]);
-  return (
-    <ReasonPlate
-      reason={{ kind: "failed", line: failureLine(service) }}
-      step={retry && <Button role="outline" word={TRY_AGAIN} onClick={retry} />}
-    />
-  );
+  return <AppNotice tone="bad" line={failureLine(service)} retry={retry} />;
 };

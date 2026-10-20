@@ -4,7 +4,10 @@ export type Device = "desktop" | "phone";
 /** Which device the lab draws the sheet for: on a phone, the sheet's column alone, at a phone's width and sizes. */
 export const DeviceContext = createContext<Device>("desktop");
 
-/** One element of the style sheet: its name and rule, the sheet's version, and the game's today beside it. */
+/**
+ * One element of the style sheet: its name and rule, the sheet's version, and beside it what the game or the app drew
+ * before, where something still does.
+ */
 export const Element = ({
   name,
   rule,
@@ -16,7 +19,7 @@ export const Element = ({
   name: string;
   rule: string;
   sheet: ReactNode;
-  today: ReactNode;
+  today?: ReactNode;
   /** A study too wide for two columns: the sheet takes the width, today follows under it. */
   wide?: boolean;
   /** What the right-hand column shows: the game's elements today, or the app's. */
@@ -29,7 +32,7 @@ export const Element = ({
         <h2 className="text-lg font-bold text-white">{name}</h2>
         <p className="text-sm text-white/60">{rule}</p>
       </header>
-      {phone ? (
+      {phone || today === undefined ? (
         <div className="overflow-x-auto">{sheet}</div>
       ) : wide ? (
         <div className="flex flex-col gap-4">

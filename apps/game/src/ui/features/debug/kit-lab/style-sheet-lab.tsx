@@ -13,7 +13,6 @@ import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { ViewSwitch } from "@/ui/design-system/kit/view-switch";
 import { SurfaceFrame } from "@/ui/design-system/molecules/popover";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
@@ -61,9 +60,7 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { Checkbox } from "@/ui/design-system/atoms/checkbox";
-import { Confirm } from "@/ui/design-system/kit/confirm";
 import { Notice } from "@/ui/design-system/kit/notice";
-import { Switch } from "@/ui/design-system/kit/switch";
 import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
@@ -683,7 +680,6 @@ const SettingsSection = () => {
       }
       today={
         <div className="flex flex-col gap-3">
-          <Switch on={tips} label="Next up tips" onToggle={() => setTips(!tips)} />
           <Checkbox enabled={checked} onClick={() => setChecked(!checked)} text="Show armies" />
         </div>
       }
@@ -732,17 +728,6 @@ const ConfirmSection = () => (
         >
           <span className="ui-row__detail">Its 300 Paladins are lost; a deployed army never goes home.</span>
         </HudConfirm>
-      </div>
-    }
-    today={
-      <div className="relative h-96 w-[36rem] overflow-hidden [transform:translateZ(0)]">
-        <Confirm
-          question="Level up Egonal?"
-          cost="1,200 wheat"
-          verb="Level up"
-          onConfirm={() => undefined}
-          onKeep={() => undefined}
-        />
       </div>
     }
   />
@@ -975,7 +960,6 @@ const PanelSection = () => (
 
 const TabsSection = () => {
   const [tab, setTab] = useState<"realms" | "camps" | "rifts">("realms");
-  const [view, setView] = useState<"realm" | "world">("world");
   return (
     <Element
       name="Tabs"
@@ -1043,15 +1027,6 @@ const TabsSection = () => {
               <AtomTabs.Tab>History</AtomTabs.Tab>
             </AtomTabs.List>
           </AtomTabs>
-          <ViewSwitch
-            label="View"
-            views={[
-              { id: "realm", word: "Realm" },
-              { id: "world", word: "World" },
-            ]}
-            lit={view}
-            onChange={setView}
-          />
         </div>
       }
     />

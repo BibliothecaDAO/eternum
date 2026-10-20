@@ -312,7 +312,7 @@ const RATINGS_DOWN = { isError: true, isPending: false, isSuccess: false, error:
 const RATINGS_WAITING = { isError: false, isPending: true, isSuccess: false };
 
 it.each([
-  ["fails", RATINGS_DOWN, "Ratings did not answer."],
+  ["fails", RATINGS_DOWN, "Ratings did not answer.Try again"],
   ["is still on its way", RATINGS_WAITING, ""],
 ])("keeps a share to claim claimable while the rating %s", async (_, rating, line) => {
   ratings.current = rating;
@@ -324,7 +324,9 @@ it.each([
   expect(claim.textContent).toContain("4,000Your share");
   // The rating's rows are its own: absent, with their one wait or failure in their place.
   expect(claim.querySelectorAll("li")).toHaveLength(0);
-  expect([...claim.querySelectorAll('[role="status"]')].map((status) => status.textContent)).toEqual([line]);
+  expect([...claim.querySelectorAll('[role="status"], [role="alert"]')].map((status) => status.textContent)).toEqual([
+    line,
+  ]);
   await act(async () =>
     [...claim.querySelectorAll("button")].find((button) => button.textContent === "Claim")!.click(),
   );

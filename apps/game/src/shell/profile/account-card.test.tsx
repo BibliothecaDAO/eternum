@@ -37,10 +37,12 @@ it("asks before signing out, with Keep as the safe choice", async () => {
     expect(container.querySelector('[data-icon="discord"]')).toBeNull();
     expect(container.querySelector('[data-icon="lock"]')).not.toBeNull();
     await act(async () => button("Sign out")!.click());
-    expect(document.body.textContent).toContain("Sign out?");
-    // The question opens in the kit's sheet, which docks as a panel on a desktop: never a modal of its own.
-    expect(document.querySelector('[data-kit-sheet][aria-label="Sign out?"]')).not.toBeNull();
+    // The question is the app's dialog over the page: Keep is its way out, and so is Escape.
+    expect(document.querySelector('[role="dialog"][aria-label="Sign out?"]')).not.toBeNull();
     await act(async () => button("Keep")!.click());
+    expect(document.body.textContent).not.toContain("Sign out?");
+    await act(async () => button("Sign out")!.click());
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(document.body.textContent).not.toContain("Sign out?");
   } finally {
     await act(async () => root.unmount());
@@ -72,13 +74,15 @@ it("shows the linked payout wallet by its address, changed only with a code, and
     };
   };
   const payoutRow = (container: HTMLElement) =>
-    [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Payout wallet"))!;
+    [...container.querySelectorAll<HTMLElement>(".app-row")].find((row) =>
+      row.textContent?.startsWith("Payout wallet"),
+    )!;
 
   const account = await mount(linked);
   try {
     // The wallet receives at once: its row is its address, never a time to wait for.
     expect(payoutRow(account.container).textContent).toContain("0x04a1…9f3c");
-    await act(async () => payoutRow(account.container).click());
+    await act(async () => payoutRow(account.container).querySelector("button")!.click());
     const words = [...document.querySelectorAll("button")].map((button) => button.textContent);
     expect(words).toContain("Replace");
     expect(words).toContain("Unlink");
@@ -108,8 +112,8 @@ it("offers Claim name only once the name differs from the one held (qa-app-1 P3-
     ),
   );
   try {
-    const nameRow = [...container.querySelectorAll("button")].find((button) => button.textContent?.includes("Maelis"))!;
-    await act(async () => nameRow.click());
+    const nameRow = [...container.querySelectorAll(".app-row")].find((row) => row.textContent === "NameMaelis")!;
+    await act(async () => nameRow.querySelector("button")!.click());
     const claim = () =>
       [...document.querySelectorAll<HTMLButtonElement>("button")].find(
         (button) => button.textContent === "Claim name",
