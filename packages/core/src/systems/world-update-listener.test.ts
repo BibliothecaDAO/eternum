@@ -170,7 +170,10 @@ describe("native scene updates", () => {
     );
     battle("0xe", 13);
     story("0x10", 11, StructureType.Rift, { resource_type: 29, amount: "1" });
-    story("0x11", 13, StructureType.Camp, { resource_type: 23, amount: "1" });
+    expectReported(
+      () => story("0x11", 13, StructureType.Camp, { resource_type: 23, amount: "1" }),
+      "Site payout 11 arrived without its winning battle",
+    );
     battle("0x11", 13);
     expect(payout).toHaveBeenCalledTimes(4);
     expectReported(() => story("0x12", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
@@ -180,6 +183,86 @@ describe("native scene updates", () => {
     battle("0x13", 12);
     expect(payout).toHaveBeenCalledTimes(4);
   });
+
+  it.each([
+    { category: StructureType.Camp, kind: "Camp", resourceId: ResourcesIds.Labor },
+    { category: StructureType.Rift, kind: "Rift", resourceId: ResourcesIds.Essence },
+    { category: StructureType.Beasts, kind: "Beasts", resourceId: null },
+  ])(
+    "reports an unpaired private $kind payout once without losing the following clear",
+    ({ category, kind, resourceId }) => {
+      const { store, listener } = fixture();
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      const delivered = vi.fn();
+      const stop = listener.SitePayouts.onSitePayout(delivered);
+      const at = (transaction_hash: string, event_index: number) => ({
+        event_position: { block_number: 9, transaction_hash, transaction_index: 0, event_index },
+      });
+      const payout = (tx: string, site_id: number) =>
+        store.applyEvent({
+          model: "StoryEvent",
+          key: `story-${tx}`,
+          value: {
+            game_id: 1,
+            owner: "0xa",
+            timestamp: 100,
+            ...at(tx, 4),
+            story: {
+              SitePayout: {
+                structure_id: 3,
+                explorer_id: 7,
+                site_id,
+                category,
+                reward: resourceId === null ? null : { resource_type: resourceId, amount: String(RESOURCE_PRECISION) },
+              },
+            },
+          },
+        });
+      const battle = (tx: string, defender_id: number) =>
+        store.applyEvent({
+          model: "BattleEvent",
+          key: `battle-${tx}`,
+          value: {
+            game_id: 1,
+            defender_id,
+            coord: { x: 40, y: 12 },
+            attacker: { before: "1000000000000", after: "900000000000" },
+            defender: { before: "100000000000", after: "0" },
+            ...at(tx, 5),
+          },
+        });
+      try {
+        // A private receipt without its battle, then another action: report the lost clear once.
+        payout("0xaa", 9);
+        battle("0xbb", 5);
+        expect(delivered).not.toHaveBeenCalled();
+        expect(errors).toHaveBeenCalledTimes(1);
+        expect(String(errors.mock.calls[0])).toContain("Site payout 9 arrived without its winning battle");
+        payout("0xcc", 8);
+        battle("0xcc", 8);
+        // A payout can itself end the prior transaction: report the fault after retaining the new receipt.
+        payout("0xdd", 10);
+        payout("0xee", 11);
+        battle("0xee", 11);
+        expect(errors).toHaveBeenCalledTimes(2);
+        expect(String(errors.mock.calls[1])).toContain("Site payout 10 arrived without its winning battle");
+        expect(delivered.mock.calls.map(([clear]) => clear)).toEqual(
+          [8, 11].map((siteId) => ({
+            explorerId: 7,
+            siteId,
+            ownerAddress: 0xan,
+            kind,
+            reward: resourceId === null ? null : { resourceId, amount: 1 },
+            coord: { x: 40, y: 12 },
+            troopsLost: 100,
+          })),
+        );
+      } finally {
+        stop();
+        errors.mockRestore();
+      }
+    },
+  );
 
   it("quietly leaves a peer's ruin receipt unpaired when its transaction ends, then delivers the viewer's clear", () => {
     const { store, listener } = fixture();

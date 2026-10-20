@@ -75,7 +75,7 @@ export function gameSyncRegion(coord: Record<string, unknown>, spacing: number):
 const SYNC_SETS = ["owners", "entities", "realms", "realmTraits"] as const;
 
 /** Chest receipts reach the whole game; other stories keep the schema's owner scope. */
-function isSharedChestStory(row: Record<string, unknown>): boolean {
+export function isSharedChestStory(row: Record<string, unknown>): boolean {
   const story = row.story;
   if (typeof story !== "object" || story === null) return false;
   if (Object.hasOwn(story, "RewardChestOpened")) return true;

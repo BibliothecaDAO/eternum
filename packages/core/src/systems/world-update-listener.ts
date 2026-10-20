@@ -2,6 +2,7 @@ import { safeInteger } from "../utils/safe-integer";
 import { BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import type { GameClientSetup } from "../client/game-client";
 import { configManager } from "../managers/config-manager";
+import { isSharedChestStory } from "../sync/model-manifest";
 import { divideByPrecision } from "../utils/utils";
 import { siteKindOf } from "../utils/expeditions";
 import { describeRelicChestOpening, describeRewardChestOpening } from "./story-event-formatter";
@@ -131,30 +132,32 @@ export class WorldUpdateListener {
     return {
       /**
        * The contract pays a site before emitting its winning battle. Pair them within that transaction only:
-       * a shared peer payout may arrive without its scoped battle, and ends quietly when the transaction changes.
+       * only shared receipts may legitimately end without their scoped battle. Other unpaired payouts are errors.
        */
       onSitePayout: (callback: (value: SitePayoutSystemUpdate) => void) => {
-        let waiting: { transaction: string; clear: PaidSite } | undefined;
+        let waiting: { transaction: string; clear: PaidSite; shared: boolean } | undefined;
         return this.setup.store.subscribeEvents((event) => {
           const value = event.value;
           if (integer(value.game_id) !== configManager.getActiveGameId()) return;
           const transaction = transactionOf(value);
-          if (waiting?.transaction !== transaction) waiting = undefined;
+          const unpaired = waiting?.transaction !== transaction ? waiting : undefined;
+          if (unpaired) waiting = undefined;
           const payload = event.model === "StoryEvent" ? fields(fields(value.story)?.SitePayout) : undefined;
           if (payload) {
             const unanswered = waiting;
             waiting = undefined;
-            waiting = { transaction, clear: paidSite(payload, value) };
+            waiting = { transaction, clear: paidSite(payload, value), shared: isSharedChestStory(value) };
             if (unanswered)
               throw new Error(`Site payout ${unanswered.clear.siteId} arrived without its winning battle`);
-            return;
+          } else if (event.model === "BattleEvent" && waiting) {
+            const payout = waiting;
+            waiting = undefined;
+            if (payout.clear.siteId !== integer(value.defender_id))
+              throw new Error(`Site payout ${payout.clear.siteId} arrived without its winning battle`);
+            callback({ ...payout.clear, ...wonExchange(value) });
           }
-          if (event.model !== "BattleEvent" || !waiting) return;
-          const payout = waiting;
-          waiting = undefined;
-          if (payout.clear.siteId !== integer(value.defender_id))
-            throw new Error(`Site payout ${payout.clear.siteId} arrived without its winning battle`);
-          callback({ ...payout.clear, ...wonExchange(value) });
+          if (unpaired && !unpaired.shared)
+            throw new Error(`Site payout ${unpaired.clear.siteId} arrived without its winning battle`);
         });
       },
     };
