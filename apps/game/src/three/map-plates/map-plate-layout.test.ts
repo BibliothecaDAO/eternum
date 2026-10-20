@@ -129,14 +129,39 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
   });
 
   it("never moves a resting token for a hover or a selection: what an opened plate covers steps aside", () => {
-    const things = [thing("r", 200, 230, 2), thing("s", 200, 300, 1), thing("far", 600, 300, 0)];
+    // s between r above and q below: standing on its foot it covers r, hung from its top it would cover q.
+    const things = [
+      thing("r", 200, 230, 2),
+      thing("s", 200, 300, 1),
+      thing("q", 200, 370, 0),
+      thing("far", 600, 300, 0),
+    ];
     const before = placePlates(things, SCREEN).spots;
-    const opened = [things[0], { ...things[1], opened: OPEN, openRank: 2 }, things[2]];
+    const opened = things.map((one) => (one.id === "s" ? { ...one, opened: OPEN, openRank: 2 } : one));
     const after = placePlates(opened, SCREEN).spots;
     // s opens in place of its token, growing up from its foot (300 + 46 / 2), over r: r stays put and steps aside.
     expect(after.get("s")).toEqual({ shape: "plate", x: 110, y: 323 - 78 });
     expect(after.get("r")).toEqual({ ...before.get("r"), yields: true });
+    expect(after.get("q")).toEqual(before.get("q"));
     expect(after.get("far")).toEqual(before.get("far"));
+  });
+
+  it("slides an opened plate off a neighbour's token where a step keeps both in view (qa-blitz-4 #4)", () => {
+    // The retest's pair at drawn sizes: the player's two armies side by side, the first selected (its plate "T1 500 ·
+    // 41/120", 113 × 56); the second's token stood within the gap of where that plate opens in place.
+    const plate = { width: 113, height: 56 };
+    const things = [
+      thing("selected", 670, 337, 1, { token: DRAWN.armyToken, opened: plate, openRank: 2 }),
+      thing("beside", 752, 372, 1, { token: DRAWN.armyToken }),
+    ];
+    const placed = placePlates(things, SCREEN);
+    // The second army keeps its token, drawn where it rested.
+    expect(placed.spots.get("beside")).toEqual({
+      ...placePlates(atRest(things), SCREEN).spots.get("beside"),
+      yields: false,
+    });
+    // The selected plate still stands in its token's place, clear of its neighbour.
+    expectInPlaceAndClear(things, placed, { opened: 1 });
   });
 
   describe("an opened plate replaces the token drawn for its thing (owner, 2026-10-19: 'why is the hover so far')", () => {

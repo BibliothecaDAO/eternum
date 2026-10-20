@@ -62,6 +62,12 @@ const SCREEN_EDGE = 8;
 const IN_PLACE_MARGIN = 12;
 /** What a plate hung from its token's top (over its thing, not standing on the token's foot) costs, in pixels slid. */
 const HANG_COST = 40;
+/**
+ * What hiding another thing's resting token costs an opened plate's place, in pixels slid: a plate slides or hangs
+ * before it hides a neighbour's label (qa-blitz-4 #4: a selected army's plate hid the army beside it, which a slide of
+ * 18 px would have kept in view). Where every place hides one, the cheapest still stands, and the token steps aside.
+ */
+const HIDE_COST = 60;
 /** The selected plate is moved this much less willingly than the hovered one: it is the one the player is reading. */
 const RANK_WEIGHT = 2;
 
@@ -135,9 +141,14 @@ const obstaclesFor = (token: Rect, screen: PlateScreen): Rect[] => {
  * structure/army and replace it by the hover/selected modal when i'm on it"): standing on the token's foot, its middle
  * over the token's; else slid aside, or hung from the token's top over its thing, never so far that it stops covering
  * where its token was drawn (`inPlaceOf`). On screen and clear of the HUD, except as far as covering its token needs.
- * Cheapest first: pixels slid, and a hung plate costs `HANG_COST` more.
+ * Cheapest first: pixels slid, a hung plate `HANG_COST` more, and `HIDE_COST` for each resting token it would hide.
  */
-const placesInPlaceOf = (token: Rect, size: Size, screen: PlateScreen): { rect: Rect; cost: number }[] => {
+const placesInPlaceOf = (
+  token: Rect,
+  size: Size,
+  screen: PlateScreen,
+  others: readonly Rect[],
+): { rect: Rect; cost: number }[] => {
   const middle = token.x + token.width / 2;
   const reach = size.width / 2 - IN_PLACE_MARGIN;
   const shifts = [0];
@@ -164,6 +175,7 @@ const placesInPlaceOf = (token: Rect, size: Size, screen: PlateScreen): { rect: 
         inPlaceOf(rect, token) &&
         obstacles.every((obstacle) => clear(rect, obstacle)),
     )
+    .map(({ rect, cost }) => ({ rect, cost: cost + HIDE_COST * others.filter((other) => !clear(rect, other)).length }))
     .toSorted((a, b) => a.cost - b.cost);
 };
 
@@ -200,7 +212,12 @@ export const placePlates = (
     .map((thing, index, all) => ({
       id: thing.id,
       weight: index < all.length - 1 ? RANK_WEIGHT : 1,
-      places: placesInPlaceOf(resting.get(thing.id)!, thing.opened!, screen),
+      places: placesInPlaceOf(
+        resting.get(thing.id)!,
+        thing.opened!,
+        screen,
+        kept.filter((box) => box !== resting.get(thing.id)),
+      ),
     }));
   let open = asked;
   let arranged = arrange(open, orderLine, screen);
