@@ -12,7 +12,6 @@ import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-le
 import { HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
 import { YOU } from "@/ui/design-system/kit/words";
 import { useRealmsPlayer } from "@/shell/herald";
-import { isSameStarknetAddress } from "@realms-world/identity";
 import { useGameFinished } from "./top-header/game-clock";
 import { selectSpectatorStandings } from "./spectator-standings-model";
 
@@ -43,11 +42,9 @@ function StandingsRows() {
   const selectedId = useUIStore((state) => state.structureEntityId);
   const navigate = useNavigateToMapView();
   const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
-  const rows = selectSpectatorStandings(standings, selectedOwner);
-  const finished = useGameFinished();
-  // The viewer's own row says You, as Results does: a seat-holder watching their game finds themselves, whoever shares
-  // their rank and whichever structure is selected (qa-app-1 P3-11). The light stays the selection's.
   const viewer = useRealmsPlayer().data;
+  const rows = selectSpectatorStandings(standings, { viewer, selected: selectedOwner });
+  const finished = useGameFinished();
 
   return (
     <>
@@ -58,9 +55,8 @@ function StandingsRows() {
       </HudTableHead>
       {rows.map((row) => {
         const address = BigInt(row.address);
-        const own = viewer !== null && viewer !== undefined && isSameStarknetAddress(row.address, viewer);
         const name = displayPlayerName(address, players.find((player) => player.address === address)?.name);
-        const shown = own ? YOU : name;
+        const shown = row.own ? YOU : name;
         const capital = structures
           .filter((structure) => structure.owner === address && structure.base.category === StructureType.Realm)
           .toSorted((a, b) => (a.entity_id < b.entity_id ? -1 : 1))[0];
@@ -70,7 +66,7 @@ function StandingsRows() {
             cols={STANDINGS_COLS}
             label={`${shown}: ${formatExact(Math.floor(row.totalPoints))} points`}
             title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
-            selected={row.pinned}
+            selected={row.own}
             disabled={!capital}
             onClick={() => {
               const site = capital && structureMapPosition(store, capital);

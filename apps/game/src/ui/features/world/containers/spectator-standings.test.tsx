@@ -26,7 +26,7 @@ import { configManager } from "@bibliothecadao/eternum";
 
 import { SpectatorStandingsBody } from "./spectator-standings";
 
-it("names the watching player's own row You, whoever shares their rank and whatever is selected", async () => {
+it("lights only the watching player's row in a tie, as Results does, whatever is selected", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   useUIStore.setState({ structureEntityId: 9 });
@@ -35,10 +35,15 @@ it("names the watching player's own row You, whoever shares their rank and whate
   await act(async () => root.render(<SpectatorStandingsBody />));
   try {
     const rows = [...container.querySelectorAll<HTMLButtonElement>("button.ui-table-row")];
-    const read = rows.map((row) => [row.getAttribute("aria-label"), row.getAttribute("aria-current")]);
-    expect(read).toContainEqual(["You: 0 points", null]);
-    // The light is the selection's: the selected realm's owner.
-    expect(read).toContainEqual(["clientlane: 0 points", "true"]);
+    const read = rows.map((row) => [
+      row.firstElementChild?.textContent,
+      row.getAttribute("aria-label"),
+      row.getAttribute("aria-current"),
+    ]);
+    expect(read).toEqual([
+      ["1", "clientlane: 0 points", null],
+      ["1", "You: 0 points", "true"],
+    ]);
   } finally {
     await act(async () => root.unmount());
   }
