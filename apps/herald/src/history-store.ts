@@ -416,6 +416,10 @@ export class HistoryStore {
       );
 
     const where = filters.join(" AND ");
+    // The marker first, then the rows: a writer appends a block's stories and its progress in one transaction, so every
+    // story through the marker read here is already committed when the rows are read. Read after, it could certify
+    // stories committed between the two reads that the rows never saw.
+    const completeThroughBlock = await this.historyProgress();
     const countResult = await this.pool.query<{ total: string }>(
       `SELECT COUNT(*) AS total FROM herald_history_events WHERE ${where}`,
       values,
@@ -439,7 +443,7 @@ export class HistoryStore {
     );
 
     return {
-      complete_through_block: await this.historyProgress(),
+      complete_through_block: completeThroughBlock,
       items: rows.rows.map((row) => ({
         ...row,
         block_number: Number(row.block_number),
