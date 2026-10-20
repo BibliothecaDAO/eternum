@@ -31,28 +31,40 @@ export const withdrawalRefusal = ({
   return paused ? PAYOUTS_PAUSED : null;
 };
 
-/** A withdrawal the shard took: its whole LORDS, and the transaction there that is its claim on the ledger. */
+/** A withdrawal the shard applied: its whole LORDS, and the transaction there that is its claim on the ledger. */
 export type SentWithdrawal = { amount: number; claimId: string; fromBlock: number };
 
 /**
- * Where a withdrawal stands: being sent to the shard, sent and on its way (the LORDS have left the game's count), held
- * while payouts are paused, or paid on Starknet with the transaction that paid it.
+ * What the game made of a withdrawal: applied (the LORDS left the realm, and the ledger now pays its claim), not
+ * applied with the reason (refused by the game, or never sent), or unknown: no answer, so it may still apply.
+ */
+export type WithdrawalOutcome =
+  | ({ kind: "applied" } & SentWithdrawal)
+  | { kind: "not-applied"; reason: string }
+  | { kind: "unknown"; amount: number };
+
+/**
+ * Where a withdrawal stands: being sent to the shard and applied, then on its way to the wallet, held while payouts are
+ * paused, or paid on Starknet with the transaction that paid it. A withdrawal the game did not apply returns to the
+ * amount's choice with the reason; one with no answer says so and offers no second send.
  */
 export const withdrawStepOf = ({
   sending,
-  sent,
+  outcome,
   paidIn,
   paused,
 }: {
-  /** The amount on its way to the shard, before the shard answers. */
+  /** The amount on its way to the shard, until the game's outcome. */
   sending: number | null;
-  sent: SentWithdrawal | null;
+  outcome: WithdrawalOutcome | null;
   /** The Starknet transaction's address on the explorer, once the ledger paid the claim. */
   paidIn: string | undefined;
   paused: boolean | undefined;
 }): WithdrawStep => {
   if (sending !== null) return { kind: "sending", amount: sending };
-  if (!sent) return { kind: "pick" };
-  if (paidIn) return { kind: "paid", amount: sent.amount, transactionUrl: paidIn };
-  return paused ? { kind: "waiting", amount: sent.amount } : { kind: "sending", amount: sent.amount };
+  if (!outcome) return { kind: "pick" };
+  if (outcome.kind === "not-applied") return { kind: "pick", notApplied: outcome.reason };
+  if (outcome.kind === "unknown") return { kind: "unknown", amount: outcome.amount };
+  if (paidIn) return { kind: "paid", amount: outcome.amount, transactionUrl: paidIn };
+  return paused ? { kind: "waiting", amount: outcome.amount } : { kind: "sending", amount: outcome.amount };
 };

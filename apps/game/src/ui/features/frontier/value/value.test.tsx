@@ -95,17 +95,26 @@ describe("a withdrawal's rules", () => {
     expect(withdrawalRefusal({ ...open, closesAt: undefined, paused: undefined })).toBeNull();
   });
 
-  it("follows a withdrawal from the shard to its payment on Starknet", () => {
-    const sent = { amount: 500, claimId: "0x7f3a", fromBlock: 812_000 };
-    const none = { sending: null, sent: null, paidIn: undefined, paused: false };
+  it("follows a withdrawal from the shard's outcome to its payment on Starknet", () => {
+    const applied = { kind: "applied", amount: 500, claimId: "0x7f3a", fromBlock: 812_000 } as const;
+    const none = { sending: null, outcome: null, paidIn: undefined, paused: false };
     expect(withdrawStepOf(none)).toEqual({ kind: "pick" });
     expect(withdrawStepOf({ ...none, sending: 500 })).toEqual({ kind: "sending", amount: 500 });
-    expect(withdrawStepOf({ ...none, sent })).toEqual({ kind: "sending", amount: 500 });
-    expect(withdrawStepOf({ ...none, sent, paused: true })).toEqual({ kind: "waiting", amount: 500 });
-    expect(withdrawStepOf({ ...none, sent, paused: true, paidIn: "https://x/tx/0x1" })).toEqual({
+    expect(withdrawStepOf({ ...none, outcome: applied })).toEqual({ kind: "sending", amount: 500 });
+    expect(withdrawStepOf({ ...none, outcome: applied, paused: true })).toEqual({ kind: "waiting", amount: 500 });
+    expect(withdrawStepOf({ ...none, outcome: applied, paused: true, paidIn: "https://x/tx/0x1" })).toEqual({
       kind: "paid",
       amount: 500,
       transactionUrl: "https://x/tx/0x1",
+    });
+    // Not applied: back to the choice, with the game's reason. No answer: said so, with nothing to send again.
+    expect(withdrawStepOf({ ...none, outcome: { kind: "not-applied", reason: "Insufficient LORDS" } })).toEqual({
+      kind: "pick",
+      notApplied: "Insufficient LORDS",
+    });
+    expect(withdrawStepOf({ ...none, outcome: { kind: "unknown", amount: 500 } })).toEqual({
+      kind: "unknown",
+      amount: 500,
     });
   });
 });

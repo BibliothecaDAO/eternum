@@ -353,6 +353,9 @@ export const WITHDRAWALS_CLOSED = "Withdrawals have closed for this season.";
 /** After the season, on its last card: the moment its withdrawals close. */
 export const withdrawUntil = (moment: string) => `Withdraw until ${moment}`;
 export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now. Your LORDS stay here.";
+/** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
+export const withdrawalUnknown = (amount: string) =>
+  `No answer yet for these ${amount}: the withdrawal may still apply. Your LORDS show it once it does.`;
 
 /** The labor a player's Realms give once a game day. */
 export const REALMS = "Realms";
