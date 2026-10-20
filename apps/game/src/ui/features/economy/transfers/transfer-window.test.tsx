@@ -17,7 +17,7 @@ const world = vi.hoisted(() => ({
   applied: [] as Array<{ to: bigint; resources: Array<{ resource_type: number; amount: bigint }> }>,
   scheduled: vi.fn(),
   notices: { success: vi.fn(), warning: vi.fn(), failed: vi.fn() },
-  sides: { wheat: 100, donkeys: 10, knights: 0, to: "realm", listeners: new Set<() => void>() },
+  sides: { wheat: 100, donkeys: 10, knights: 0, essenceUnweighed: 0, to: "realm", listeners: new Set<() => void>() },
   /** While set, the game's answers wait for it: a shipment the player can act around before its outcome. */
   hold: null as Promise<void> | null,
   /** Chain time the window reads. */
@@ -160,6 +160,10 @@ vi.mock("./use-transfer-sides", () => ({
         { resource: ResourcesIds.Donkey, have: donkeys, weightKg: 0 },
         ...(world.sides.knights > 0 ? [{ resource: ResourcesIds.Knight, have: world.sides.knights, weightKg: 0 }] : []),
       ],
+      unweighed:
+        world.sides.essenceUnweighed > 0
+          ? [{ resource: ResourcesIds.Essence, have: world.sides.essenceUnweighed }]
+          : [],
       donkeysHave: donkeys,
       donkeyCapacityKg: 50,
     };
@@ -183,6 +187,7 @@ beforeEach(() => {
   world.sides.wheat = 100;
   world.sides.donkeys = 10;
   world.sides.knights = 0;
+  world.sides.essenceUnweighed = 0;
   world.sides.to = "realm";
   world.hold = null;
   world.now = NOW;
@@ -227,6 +232,20 @@ const wheatSent = () =>
   ]);
 
 describe("the transfer window's amounts", () => {
+  it("shows a good with no weight rule as held but not sendable, with no control that could plan it", async () => {
+    world.sides.essenceUnweighed = 300;
+    await open();
+    const row = [...host.querySelectorAll(".ui-transfer__row")].find((element) =>
+      element.textContent?.includes("Essence"),
+    )!;
+    expect(row.textContent).toContain("300 held");
+    expect(row.textContent).toContain("Weight unknown: cannot be sent");
+    expect(row.getAttribute("aria-disabled")).toBe("true");
+    expect(row.querySelector("input, button")).toBeNull();
+    // The goods that do have a weight still plan and send as before.
+    expect(field("Wheat: total to send")).not.toBeNull();
+  });
+
   it("never sends more than the total shown: lowering it below a hand-set share splits it evenly again", async () => {
     await open();
     await type("Wheat: total to send", "100");

@@ -1227,6 +1227,10 @@ button.ui-relic:focus-visible {
   display: flex;
   gap: theme(spacing.1);
 }
+/* A row that cannot be sent: why, across the controls' place. */
+.ui-transfer__why {
+  grid-column: 2 / -1;
+}
 .ui-transfer .ui-field input {
   width: 100%;
   text-align: right;

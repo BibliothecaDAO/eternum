@@ -433,19 +433,32 @@ export const HudSlider = ({
 
 /**
  * What a transfer moves: one row per resource, its painting and name, what is held, a slider, quick steps taking a share
- * of what is held, and the amount typed.
+ * of what is held, and the amount typed. A row that cannot be sent says why in place of its controls.
  */
 export const HudTransfer = ({
   rows,
   onChange,
 }: {
-  /** `focus`: the row the window opened for, its total ready to type. */
-  rows: readonly { icon: IconMeaning; name: string; held: number; value: number; focus?: boolean; state?: string }[];
+  /** `focus`: the row the window opened for, its total ready to type. `blocked`: why it cannot be sent. */
+  rows: readonly {
+    icon: IconMeaning;
+    name: string;
+    held: number;
+    value: number;
+    focus?: boolean;
+    state?: string;
+    blocked?: string;
+  }[];
   onChange: (index: number, amount: number) => void;
 }) => (
   <div className="ui-transfer">
     {rows.map((row, index) => (
-      <div key={row.name} className="ui-transfer__row" data-state={row.state}>
+      <div
+        key={row.name}
+        className="ui-transfer__row"
+        data-state={row.state}
+        aria-disabled={row.blocked ? true : undefined}
+      >
         <span className="ui-transfer__what">
           <Icon name={row.icon} size={24} />
           <span className="flex flex-col">
@@ -453,36 +466,48 @@ export const HudTransfer = ({
             <span className="ui-transfer__held">{formatExact(row.held)} held</span>
           </span>
         </span>
-        <HudSlider
-          label={`${row.name}: share to send`}
-          value={row.value}
-          max={row.held}
-          onChange={(amount) => onChange(index, amount)}
-        />
-        <span className="ui-transfer__steps">
-          {TRANSFER_STEPS.map((step) => (
-            <HudButton
-              key={step}
-              kind="secondary"
-              size="sm"
-              disabled={row.held === 0}
-              aria-pressed={row.held > 0 && row.value === Math.round(row.held * step)}
-              onClick={() => onChange(index, Math.round(row.held * step))}
-            >
-              {step === 1 ? "Max" : formatPercent(step)}
-            </HudButton>
-          ))}
-        </span>
-        <AmountInput
-          label={`${row.name}: total to send`}
-          value={row.value}
-          max={row.held}
-          autoFocus={row.focus}
-          onChange={(amount) => onChange(index, amount)}
-        />
+        {row.blocked ? (
+          <span className="ui-transfer__held ui-transfer__why">{row.blocked}</span>
+        ) : (
+          <TransferControls row={row} onChange={(amount) => onChange(index, amount)} />
+        )}
       </div>
     ))}
   </div>
+);
+
+/** A sendable row's controls: a slider, quick steps taking a share of what is held, and the amount typed. */
+const TransferControls = ({
+  row,
+  onChange,
+}: {
+  row: { name: string; held: number; value: number; focus?: boolean };
+  onChange: (amount: number) => void;
+}) => (
+  <>
+    <HudSlider label={`${row.name}: share to send`} value={row.value} max={row.held} onChange={onChange} />
+    <span className="ui-transfer__steps">
+      {TRANSFER_STEPS.map((step) => (
+        <HudButton
+          key={step}
+          kind="secondary"
+          size="sm"
+          disabled={row.held === 0}
+          aria-pressed={row.held > 0 && row.value === Math.round(row.held * step)}
+          onClick={() => onChange(Math.round(row.held * step))}
+        >
+          {step === 1 ? "Max" : formatPercent(step)}
+        </HudButton>
+      ))}
+    </span>
+    <AmountInput
+      label={`${row.name}: total to send`}
+      value={row.value}
+      max={row.held}
+      autoFocus={row.focus}
+      onChange={onChange}
+    />
+  </>
 );
 
 /**

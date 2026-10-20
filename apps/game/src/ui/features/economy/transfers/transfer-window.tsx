@@ -17,6 +17,7 @@ import {
   HudTransfer,
   HudWindow,
 } from "@/ui/design-system/kit/hud-elements";
+import { WEIGHT_UNKNOWN } from "@/ui/design-system/kit/words";
 import { iconDefinition, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -43,7 +44,7 @@ import {
   withShare,
   withTotal,
 } from "./transfer-plan";
-import { type TransferSides, useTransferSides } from "./use-transfer-sides";
+import { type TransferSides, type Unweighed, useTransferSides } from "./use-transfer-sides";
 
 interface TransferEnds {
   sourceId: number | null;
@@ -349,6 +350,7 @@ const Goods = ({
       </p>
       <GoodsGrid
         goods={sides.goods}
+        unweighed={sides.unweighed}
         plans={plans}
         destinationIds={destinationIds}
         destinationNames={sides.destinationNames}
@@ -534,6 +536,7 @@ const scheduleRepeats = (
  */
 const GoodsGrid = ({
   goods,
+  unweighed,
   plans,
   destinationIds,
   destinationNames,
@@ -541,6 +544,8 @@ const GoodsGrid = ({
   onPlan,
 }: {
   goods: Good[];
+  /** Held goods with no weight rule: shown after the rest, each saying why it cannot be sent. */
+  unweighed: Unweighed[];
   plans: Plans;
   destinationIds: number[];
   destinationNames: string[];
@@ -555,13 +560,22 @@ const GoodsGrid = ({
   return (
     <div className="flex min-h-0 flex-col gap-3 overflow-auto">
       <HudTransfer
-        rows={sorted.map((good) => ({
-          icon: resourceMeaning(good.resource),
-          name: resourceName(good.resource),
-          held: good.have,
-          value: sentTotal(plans.get(good.resource), good.have),
-          focus: good.resource === focus,
-        }))}
+        rows={[
+          ...sorted.map((good) => ({
+            icon: resourceMeaning(good.resource),
+            name: resourceName(good.resource),
+            held: good.have,
+            value: sentTotal(plans.get(good.resource), good.have),
+            focus: good.resource === focus,
+          })),
+          ...unweighed.map((good) => ({
+            icon: resourceMeaning(good.resource),
+            name: resourceName(good.resource),
+            held: good.have,
+            value: 0,
+            blocked: WEIGHT_UNKNOWN,
+          })),
+        ]}
         onChange={(index, amount) => {
           const good = sorted[index];
           onPlan(good.resource, withTotal(plans.get(good.resource), amount, good.have));

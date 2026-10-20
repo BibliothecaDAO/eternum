@@ -20,8 +20,19 @@ export interface TransferSides {
   destinationRoles: HoldingRole[];
   /** What the source can send to every chosen destination: troops only where the mode lets them travel. */
   goods: Good[];
+  /**
+   * What the source holds but cannot send: a good whose weight rule the game has not given, so its donkeys cannot be
+   * counted. It shows, held, and is never weighed as zero.
+   */
+  unweighed: Unweighed[];
   donkeysHave: number;
   donkeyCapacityKg: number;
+}
+
+/** A good held whose weight is unknown. */
+export interface Unweighed {
+  resource: number;
+  have: number;
 }
 
 const whole = (amount: number) => Math.floor(amount / RESOURCE_PRECISION);
@@ -57,6 +68,13 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
           }),
       );
     const held = new ResourceManager(setup.store, source.entityId).balances(tick) ?? [];
+    const carried = held
+      .filter(({ resourceId }) => troopsTravel || !isMilitaryResource(resourceId))
+      .map(({ resourceId, amount }) => ({
+        resource: resourceId,
+        have: whole(amount),
+        weightKg: configManager.getResourceWeightKg(resourceId),
+      }));
     return {
       sourceName: mode.structure.getName(source.structure).name,
       destinationNames: destinations.map((destination, index) =>
@@ -64,13 +82,8 @@ export const useTransferSides = (sourceId: number | null, destinationIds: number
       ),
       sourceRole: roleOf(source),
       destinationRoles: destinations.map(roleOf),
-      goods: held
-        .filter(({ resourceId }) => troopsTravel || !isMilitaryResource(resourceId))
-        .map(({ resourceId, amount }) => ({
-          resource: resourceId,
-          have: whole(amount),
-          weightKg: configManager.getResourceWeightKg(resourceId) ?? 0,
-        })),
+      goods: carried.flatMap(({ weightKg, ...good }) => (weightKg === undefined ? [] : [{ ...good, weightKg }])),
+      unweighed: carried.flatMap(({ weightKg, ...good }) => (weightKg === undefined ? [good] : [])),
       donkeysHave: whole(held.find(({ resourceId }) => resourceId === ResourcesIds.Donkey)?.amount ?? 0),
       donkeyCapacityKg: configManager.getCapacityConfigKg(CapacityConfig.Donkey),
     };

@@ -126,6 +126,8 @@ export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
 export const TRANSFER = "Transfer";
+/** A good held whose weight the game has not given: its donkeys cannot be counted, so it cannot be sent. */
+export const WEIGHT_UNKNOWN = "Weight unknown: cannot be sent";
 
 /** A realm's room for buildings: every building takes some, a Hut gives some. */
 export const POPULATION = "population";
