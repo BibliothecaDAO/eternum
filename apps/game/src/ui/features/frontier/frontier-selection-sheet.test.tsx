@@ -269,14 +269,17 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
   }
 });
 
-it("selects a Frontier chest, follows missing metadata and expiry, opens through the world bridge and retains its receipt", async () => {
+it("selects a Frontier chest, follows missing metadata and expiry across clock ticks, opens through the world bridge and retains its receipt", async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   const { store } = campBeside();
   const chestHex = { col: 4, row: 5 };
   const chestTile = { occupierType: TileOccupier.Chest, occupierId: 900, hexCoords: { ...chestHex, alt: false } };
   tiles.current = [chestTile];
   useAccountStore.setState({ account: { address: "0x111" } as never });
-  useChainTimeStore.setState({ nowMs: 350_000 });
+  const previousClock = useChainTimeStore.getState();
+  let elapsedMs = 0;
+  const performanceNow = vi.spyOn(performance, "now").mockImplementation(() => elapsedMs);
+  useChainTimeStore.getState().anchor({ timestamp: 350_000, source: "herald-head" });
   useChestOpeningStore.setState({ openings: {} });
   useUIStore.getState().selectOnMap({ kind: "hex", hex: chestHex });
   const host = document.createElement("div");
@@ -333,10 +336,27 @@ it("selects a Frontier chest, follows missing metadata and expiry, opens through
     );
     expect(host.textContent).toContain("17 LORDS");
     expect(host.textContent).toContain("Expires at day rollover");
-    await act(async () => useChainTimeStore.setState({ nowMs: 400_000 }));
+    await act(async () => {
+      elapsedMs = 1_000;
+      useChainTimeStore.getState().tick();
+    });
+    expect(useChainTimeStore.getState().nowMs).toBe(351_000);
+    expect(host.textContent).toContain("17 LORDS");
+    expect(host.textContent).toContain("Expires at day rollover");
+    expect(host.textContent).not.toContain("Chain time is not known yet");
+    await act(async () => {
+      elapsedMs = 49_999;
+      useChainTimeStore.getState().tick();
+    });
+    expect(host.textContent).toContain("17 LORDS");
+    await act(async () => {
+      elapsedMs = 50_000;
+      useChainTimeStore.getState().tick();
+    });
+    expect(useChainTimeStore.getState().nowMs).toBe(400_000);
     expect(host.textContent).toContain("0 LORDS");
     expect(host.textContent).toContain("Reservation expired");
-    await act(async () => useChainTimeStore.setState({ nowMs: 350_000 }));
+    await act(async () => useChainTimeStore.getState().anchor({ timestamp: 350_000, source: "herald-head" }));
     const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Open")!;
     expect(open.disabled).toBe(false);
     await act(async () => open.click());
@@ -356,6 +376,8 @@ it("selects a Frontier chest, follows missing metadata and expiry, opens through
     useUIStore.getState().selectOnMap(null);
     useUIStore.getState().setMapLayer(false);
     useAccountStore.setState({ account: null });
+    performanceNow.mockRestore();
+    useChainTimeStore.setState(previousClock);
   }
 });
 

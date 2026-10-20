@@ -392,7 +392,7 @@ describe("native directory and leaderboard", () => {
     expect(result.entries.every((entry) => !("name" in entry))).toBe(true);
   });
 
-  // The dev incident: a clear deletes the site's TileOccupancy (clear_expedition_site) and the player takes the site.
+  // The old-state dev incident: a clear deleted the site's TileOccupancy and the player took the site.
   // The player's directory still answers; the tile-less site is listed without a position and reported.
   it("answers a player who cleared a Frontier site, through the season's close", () => {
     const { fold, native, decoder } = world();
@@ -409,7 +409,14 @@ describe("native directory and leaderboard", () => {
     );
     const RIFT = "9";
     const site = (clear: CairoOption<unknown>) =>
-      rowEvent("ExpeditionSite", ["1", "6"], { initial_guard_count: 1000n, alt: false, col: 1764n, row: 50n, clear });
+      rowEvent("ExpeditionSite", ["1", "6"], {
+        category: RIFT,
+        initial_guard_count: 1000n,
+        alt: false,
+        col: 1764n,
+        row: 50n,
+        clear,
+      });
     const none = () => new CairoOption(CairoOptionVariant.None);
     native.applyReceipt(
       fold,
