@@ -9,6 +9,7 @@ import { setWorldOrigin } from "@/three/world-origin";
 
 import { HexagonScene } from "./hexagon-scene";
 import WorldmapScene from "./worldmap";
+import { shouldClearEntitySelectionForChunkSwitch } from "./worldmap-chunk-transition";
 
 /** The real map centre: a contract hex and its scene hex differ by it, about 2^31. */
 export const MAP_CENTER = 2147483646;
@@ -17,9 +18,20 @@ export const MAP_CENTER = 2147483646;
  * The world map's camera, read as a player's eye: every hex the scene moves or frames the camera onto, as scene
  * (normalized) hexes. The scene's own methods run; only drawing, chunk loading and the army's own selection are left
  * out. The player's army stands on `army` (a scene hex), as the map draws it.
+ *
+ * Each framing is taken as a move into another chunk, whose switch lets the selection go by the scene's own rule unless
+ * a shortcut selection holds it (shouldClearEntitySelectionForChunkSwitch).
  */
 export const worldMapCamera = (army: HexPosition) => {
   const aimed: HexPosition[] = [];
+  let selectionHeld = false;
+  const switchChunk = () => {
+    if (
+      !shouldClearEntitySelectionForChunkSwitch({ reason: "default", isShortcutArmySelectionInFlight: selectionHeld })
+    )
+      return;
+    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: null } }));
+  };
   setWorldOrigin({ col: 0, row: 0 });
   useAccountStore.setState({ account: { address: "0x7d79" } as never });
   vi.spyOn(
@@ -33,9 +45,19 @@ export const worldMapCamera = (army: HexPosition) => {
   const scene = Object.assign(Object.create(WorldmapScene.prototype), {
     worldOriginLocked: false,
     camera,
-    moveCameraToXYZ: (x: number, y: number, z: number) => aimed.push(WORLD_HEX_SPACE.hexForPosition({ x, y, z })),
+    moveCameraToXYZ: (x: number, y: number, z: number) => {
+      aimed.push(WORLD_HEX_SPACE.hexForPosition({ x, y, z }));
+      switchChunk();
+    },
     getArmyDisplayPosition: () => army,
-    runShortcutArmySelection: async (select: () => Promise<void>) => select(),
+    runShortcutArmySelection: async (select: () => Promise<void>) => {
+      selectionHeld = true;
+      try {
+        await select();
+      } finally {
+        selectionHeld = false;
+      }
+    },
     focusAndSelectArmy: async (entityId: number) =>
       useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: entityId } })),
     openTargetCardForSelectedArmy: (site: HexPosition) => openedCards.push(site),

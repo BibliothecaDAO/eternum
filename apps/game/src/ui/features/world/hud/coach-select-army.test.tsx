@@ -36,6 +36,7 @@ vi.mock("./coach", () => ({
 }));
 
 import { configManager } from "@bibliothecadao/eternum";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { hexesApart, worldMapCamera } from "@/three/scenes/worldmap-camera.test-support";
 import { useCoachSteps } from "./use-coach-steps";
@@ -126,5 +127,17 @@ it("Show the crate frames the camera on the army and its crate, and opens the cr
     expect(hexesApart(hex, armyOnScreen)).toBeLessThanOrEqual(8);
     expect(hexesApart(hex, crateOnScreen)).toBeLessThanOrEqual(8);
   }
+  expect(openedCards).toEqual([CRATE_TILE]);
+});
+
+it("Show the crate keeps the army selected through the framing, when the crate is far enough to switch chunks", async () => {
+  window.history.replaceState({}, "", "/g/0xa1/1/map");
+  worldMap.shown = true;
+  await pressStep();
+  const [request] = worldMap.taken;
+  const { openedCards, scene } = worldMapCamera({ col: 4, row: 5 });
+  await scene.selectRequestedArmy(request!.entityId, request!.forSite);
+
+  expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   expect(openedCards).toEqual([CRATE_TILE]);
 });

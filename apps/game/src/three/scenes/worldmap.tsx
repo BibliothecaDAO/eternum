@@ -8323,22 +8323,25 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  /** The HUD's army dock picked this army: frame it and select it the way the Tab shortcut does. */
   /**
-   * Selects the army the HUD asked for. Asked from a site's card, the card stays open on that site with the army as
-   * its actor: the attack's preview, or what the army lacks.
+   * Selects the army the HUD asked for, framed in the map's open area, the way the Tab shortcut does. Asked from a
+   * site's card or Next up, the card stays open on that site with the army as its actor: the attack's preview, or what
+   * the army lacks. The framing moves the camera, into another chunk when the site is far, so it runs inside the
+   * selection's protection, where a chunk switch keeps the selection.
    */
   private async selectRequestedArmy(entityId: number, forSite: Position | null): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
-    await this.runShortcutArmySelection(() => this.focusAndSelectArmy(entityId, position, account));
-    if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
-    const army = Position.fromNormalized({ x: position.col, y: position.row });
-    this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
-    if (!forSite) return;
-    const site = forSite.getContract();
-    this.openTargetCardForSelectedArmy({ col: site.x, row: site.y });
+    await this.runShortcutArmySelection(async () => {
+      await this.focusAndSelectArmy(entityId, position, account);
+      if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
+      const army = Position.fromNormalized({ x: position.col, y: position.row });
+      this.frameOnOpenMap(forSite ? [army, forSite] : [army]);
+      if (!forSite) return;
+      const site = forSite.getContract();
+      this.openTargetCardForSelectedArmy({ col: site.x, row: site.y });
+    });
   }
 
   /**
