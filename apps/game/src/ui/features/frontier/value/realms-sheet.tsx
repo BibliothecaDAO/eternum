@@ -1,4 +1,4 @@
-import { formatAmount, formatExact, formatDuration } from "@bibliothecadao/types";
+import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { type FormEvent, type ReactNode, useState } from "react";
@@ -19,8 +19,10 @@ import {
   REALM_NUMBER,
   REALMS,
   REALMS_ELSEWHERE,
+  dayLeft,
   fitOf,
   realmsADay,
+  realmsGiveLabor,
 } from "@/ui/design-system/kit/words";
 
 import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
@@ -67,6 +69,7 @@ export const RealmsSheet = ({
   onClose: () => void;
 }) => (
   <HudSheet label={REALMS} onClose={onClose}>
+    <p className="text-center">{realmsGiveLabor(perRealm, cap)}</p>
     {wallet !== null && (
       <span className="flex justify-end">
         <HudChip icons={["backpack"]} label={REALMS}>
@@ -128,7 +131,7 @@ const ClaimStep = ({
           <HudNotice line={CLAIMED_TODAY} />
         </span>
         <HudChip icons={["hourglass"]} label={CLAIMED_TODAY}>
-          {formatDuration(secondsLeft)}
+          {dayLeft(secondsLeft).reading}
         </HudChip>
       </span>
     ) : null;

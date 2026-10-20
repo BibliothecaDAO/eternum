@@ -811,6 +811,14 @@ const STATES = {
     purse: { lords: 1_240 },
     realms: { wallet: WALLET_ADDRESS, realms: [], labor: 9_640, limit: 18_000 },
   },
+  /** No wallet linked: the sheet says what Realms are for, then asks for the wallet (live-qa-night-1 P3-3). */
+  "realms-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240 },
+    realms: { wallet: null, realms: [], labor: 9_640, limit: 18_000 },
+  },
 } as const;
 
 type LabState = {

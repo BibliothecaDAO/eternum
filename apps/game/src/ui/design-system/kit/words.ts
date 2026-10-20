@@ -9,7 +9,9 @@ import {
   buildingName,
   formatAmount,
   formatCount,
+  formatClockTime,
   formatDuration,
+  formatExact,
   getRelicInfo,
   relicEffect,
   type ResourcesIds,
@@ -28,11 +30,32 @@ export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as
 export { BEAST_NAMES } from "@bibliothecadao/types";
 export const BEAST = "Beast";
 
-/** The clock line: "Day ends 21:40 · 7h 14m left · Tomorrow lasts 12h". */
-export const DAY_ENDS = "Day ends";
 export const LEFT = "left";
-export const TOMORROW_LASTS = "Tomorrow lasts";
 export const DAY = "Day";
+
+/**
+ * The day's clock, written here once (live-qa-night-1 P3-8: the HUD said "Tomorrow lasts 1d" where Play said "24h"):
+ * when today ends in local clock time, the time left, and how long tomorrow lasts. A day runs 8 to 24 hours, so its
+ * lengths read in hours, never days. Each phrase is its words and its reading, for a surface that sets the reading
+ * apart; `phraseText` writes it whole: "Day ends 21:40", "7h 14m left", "Tomorrow lasts 24h".
+ */
+export type ClockPhrase = { words: string; reading: string; readingFirst?: boolean };
+const dayLength = (seconds: number | undefined) => formatDuration(seconds, { days: false });
+export const dayEnds = (endsAt: number | undefined): ClockPhrase => ({
+  words: "Day ends",
+  reading: formatClockTime(endsAt),
+});
+export const dayLeft = (secondsLeft: number | undefined): ClockPhrase => ({
+  words: LEFT,
+  reading: dayLength(secondsLeft),
+  readingFirst: true,
+});
+export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
+  words: "Tomorrow lasts",
+  reading: dayLength(seconds),
+});
+export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): string =>
+  readingFirst ? `${reading} ${words}` : `${words} ${reading}`;
 
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {
@@ -376,6 +399,12 @@ export const withdrawalUnknown = (amount: string) =>
 
 /** The labor a player's Realms give once a game day. */
 export const REALMS = "Realms";
+/**
+ * What the Realms sheet is for, at its head whatever it holds (live-qa-night-1 P3-3: with no wallet linked it said only
+ * "No wallet linked"): each Realm the linked wallet holds gives labor once a game day, up to the day's cap (0: none).
+ */
+export const realmsGiveLabor = (perRealm: number, cap: number) =>
+  `Each Realm in your Starknet wallet gives ${formatExact(perRealm)} ${LABOR} a day${cap > 0 ? `, up to ${formatCount(cap, "Realm")}` : ""}.`;
 export const CLAIM = "Claim";
 export const CLAIM_ALL = "Claim all";
 export const CLAIMED_TODAY = "Claimed today";
@@ -470,6 +499,11 @@ export const SIGN_IN_WORDS = {
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
+  /**
+   * Blitz's column with no Blitz at all (live-qa-night-1 P3-12: it vanished once an ended one's results were seen). An
+   * operator opens each slot; none is set ahead, so the next one shows here when it opens.
+   */
+  noneScheduled: "No Blitz scheduled. The next one shows here when it opens.",
   preparing: "Preparing…",
   /** Shown only to assistive technology; the seats are drawn. */
   seats: "Seats",

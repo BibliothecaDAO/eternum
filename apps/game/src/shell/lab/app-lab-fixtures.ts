@@ -157,6 +157,9 @@ export const LAB_SCREENS = {
   "long-name": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // A player with no finished game yet (qa-app-1 P3-9), and a session that has claimed no name (qa-blitz-1 #3).
   "no-games": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // No Blitz anywhere, no slot open and no result left to open: Blitz's column says none is scheduled (live-qa-night-1
+  // P3-12: it vanished from Play).
+  "no-blitz": { signedIn: true, games: [frontier(true), eternum] },
   unnamed: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
@@ -298,6 +301,7 @@ export type LabScreen = keyof typeof LAB_SCREENS;
 
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
 export const labSlots = (screen: LabScreen) => {
+  if (screen === "no-blitz") return { slots: [] };
   const closed = CLOSED_SLOT_SCREENS.includes(screen);
   const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
   return {

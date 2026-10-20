@@ -1,7 +1,7 @@
-import { formatExact, formatDuration } from "@bibliothecadao/types";
+import { formatExact } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter } from "@/ui/design-system/kit/hud-elements";
-import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TOMORROW_LASTS, TROOPS } from "@/ui/design-system/kit/words";
+import { CONTINUE, DAY, DAY_DONE, DAY_OPEN, REALM_KEPT, TROOPS, tomorrowLasts } from "@/ui/design-system/kit/words";
 
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
@@ -55,8 +55,8 @@ export const DayDoneCard = ({
     <DayEnds endsAt={clock.endsAt} secondsLeft={clock.secondsLeft} tone={clock.tone} />
     <p className="flex items-center justify-center gap-1 text-hud-strong">
       <SemanticIcon name="hourglass" size={18} />
-      <span>{TOMORROW_LASTS}</span>
-      <b className="tabular-nums">{formatDuration(clock.tomorrowSeconds)}</b>
+      <span>{tomorrowLasts(clock.tomorrowSeconds).words}</span>
+      <b className="tabular-nums">{tomorrowLasts(clock.tomorrowSeconds).reading}</b>
     </p>
     <div className="w-full max-w-sm">
       <DayTotalsGrid totals={totals} />

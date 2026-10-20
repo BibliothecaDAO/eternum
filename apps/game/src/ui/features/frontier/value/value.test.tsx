@@ -203,6 +203,39 @@ describe("the Realm holder's labor", () => {
     ).toBe("claimed");
   });
 
+  it("says what Realms are for before anything else, with no wallet linked too (live-qa-night-1 P3-3)", () => {
+    const onLinkWallet = vi.fn();
+    const show = (wallet: string | null, cap: number) =>
+      act(() =>
+        root.render(
+          <RealmsSheet
+            wallet={wallet}
+            plan={planRealmLabor({ realms: [], perRealm: 1_000, cap, labor: { held: 0, limit: 18_000 } })}
+            perRealm={1_000}
+            cap={cap}
+            labor={0}
+            secondsLeft={3_600}
+            sending={false}
+            adding={false}
+            onClaim={() => undefined}
+            onAdd={() => undefined}
+            onRealm={() => undefined}
+            onLinkWallet={onLinkWallet}
+            onClose={() => undefined}
+          />,
+        ),
+      );
+    show(null, 3);
+    expect(host.textContent).toContain("Each Realm in your Starknet wallet gives 1,000 labor a day, up to 3 Realms.");
+    expect(host.textContent).toContain("No wallet linked");
+    act(() => button("Link wallet")!.click());
+    expect(onLinkWallet).toHaveBeenCalledTimes(1);
+    // With no cap on the day's Realms, the line says none; a linked wallet reads the same line at its head.
+    show(ADDRESS, 0);
+    expect(host.textContent).toContain("Each Realm in your Starknet wallet gives 1,000 labor a day.");
+    expect(host.textContent).not.toContain("No wallet linked");
+  });
+
   it("adds a Realm by its number, its first claim, and offers nothing to add once the day's cap is spent", () => {
     const onAdd = vi.fn();
     const show = (realms: HeldRealm[], cap: number) =>

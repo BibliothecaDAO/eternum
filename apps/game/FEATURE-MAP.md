@@ -66,28 +66,30 @@ sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the ne
 `prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone:
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
 no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
-Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column; a Blitz lobby
-(`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's figures over Frontier's
-and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and points, the game's board,
-points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per section, and every
-release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
-`/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's game: `blitz`
-(the Build order panel under Next up, read from the lab realm, which has nothing to build now), `blitz-attack` (the lab
-army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out
-whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page as `window.__labTierBought`),
-`blitz-spectator`, `blitz-finished`; `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>`
-holds it and Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, every
-control reachable, at most seven parts a region). `/lab/kit/guidance` the points-first guidance (the goal in the top
-bar, Next up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer
-(no build steps), the panel as built (phase 1), a player's imported orders and the import as proposed (phase 2), and the
-default order as written. `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the
-game's own panels on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`);
-`?part=research|army` one alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's
-width (a Quality, Frame rate, Renderer or Shadows change is saved at once and shows **Applies after a reload** with
-**Reload** under them, in game as here; a game loads the address's `rendererMode`, else the saved renderer, else the
-build's); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and
-opens its keys with Show and leaves with Back. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and
-window body, Combat and crate panel as the game draws them, on the deploy fixture's realm; capture them with
+Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
+with no Blitz anywhere it says none is scheduled and that the next shows there when it opens (`/lab/app/no-blitz`); a
+Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's figures over
+Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and points, the
+game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per
+section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a
+fixture realm. `/lab/kit/unified/<view>` the in-game desktop HUD every mode shares, as the game mounts it on the lab's
+game: `blitz` (the Build order panel under Next up, read from the lab realm, which has nothing to build now),
+`blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`,
+`frontier-army` (an army out whose XP buys a level; its panel's Level up sends buy_tier, recorded on the page as
+`window.__labTierBought`), `blitz-spectator`, `blitz-finished`;
+`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
+1280, 1440 and 1920 px (every part whole on the page, none over another, every control reachable, at most seven parts a
+region). `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's route, Events rows with
+outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build steps), the panel as built
+(phase 1), a player's imported orders and the import as proposed (phase 2), and the default order as written.
+`/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels on the
+Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a
+phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate, Renderer
+or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a
+game loads the address's `rendererMode`, else the saved renderer, else the build's);
+`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
+keys with Show and leaves with Back. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body,
+Combat and crate panel as the game draws them, on the deploy fixture's realm; capture them with
 `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
 number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
 text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
@@ -331,7 +333,7 @@ and its Back returns to the page. Dev: `/lab/kit/unified/frontier`, and Frontier
 | Chat                                                                                                                                                                                                                                                                                                                            | Place bar, **Chat**                                                                      | Tap. Desktop: the rail's chat strip, as in Blitz                                                                                                                                                                                                                                                                  |
 | Next up: what the day calls for now (alerts first: the last hour, a full store, no population; then barracks, Deploy, a guard in reach, the army's tier, the castle, research, exploring, today's camp, rest), one at a time, with its button                                                                                   | Desktop: the rail's top; phone: over the dock                                            | Always shown in your own realm; its button goes there, and in the realm view a realm step (barracks, a Hut, the castle) says what to click there instead; **1 of n ›** pages to the rest. Settings → Next up → **Tips** off leaves the alerts. Dev: `/lab/kit/hud/next-up-deploy` (`-barracks`, `-rest`, `-camp`) |
 | Today, Season, Production, Realms, Settings, Exit                                                                                                                                                                                                                                                                               | Place bar, **Menu**                                                                      | Tap, then a row; Today reads the realm's day, a spectator's the watched realm's. Desktop: Today, Season and Production at the foot, Realms the realm panel's chip, Settings and Leave game the top bar's gear                                                                                                     |
-| LORDS purse: withdraw, your realms                                                                                                                                                                                                                                                                                              | Under the strip                                                                          | Tap the purse. Desktop: the realm panel's LORDS ring, and its Realms chip (always there; it wears the labor waiting)                                                                                                                                                                                              |
+| LORDS purse: withdraw, your realms                                                                                                                                                                                                                                   | Under the strip                                                                          | Tap the purse. Desktop: the realm panel's LORDS ring, and its Realms chip (always there; it wears the labor waiting). Realms first says what it is for: each Realm in the linked wallet gives labor once a day, up to the day's cap (`/lab/kit/hud/realms-no-wallet` with no wallet)                              |
 | Deploy an army: how many (field, +500, Max, slider), the stamina it starts on (its army slot's bar: full when the slot is fresh today, else what the slot's last army left; each open slot on the dock shows it too, said when hovered or held), the tile beside the realm, Deploy with its wheat price and the march it leaves | Dock, **+ Deploy**                                                                       | Tap the open slot; a deploy order on a tile beside the realm opens it aimed there. Dev: `/lab/kit/hud/deploy` (`-wheat`, `-scout`, `-empty`)                                                                                                                                                                      |
 | An army's panel: its troops and stamina (when it is full again, what each tile explored sends home), its figures (damage, max stamina, sites found, troops back), its XP and how XP is earned, then Level-ups: each attribute's next level, what it gives and its XP                                                            | The army's panel                                                                         | Select the army: on the map, from its row (desktop) or its token (phone). **Level up** (or **Level-ups**) shows the choices, Scouting's kind, then **Level up** sends buy_tier. Dev: `/lab/kit/progression`, `/lab/kit/hud/selected`, `/lab/kit/unified/frontier-army`                                            |
 | Research the castle's tree: Economy, Army and Castle branches, each node's state (can research, saving up, researched, locked), the picked node's gain, sides, needs and fix                                                                                                                                                    | **Research** (place bar or foot); a building tapped on the realm board opens its own row | Tap a node: its detail opens under the tree in the same panel; **Research …** sends research with the side picked. Dev: `/lab/kit/progression`, `/lab/kit/hud/research`                                                                                                                                           |

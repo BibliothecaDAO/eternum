@@ -93,6 +93,14 @@ it("says the day and the time left in the top bar, and when the day ends and how
   expect(pill.getAttribute("data-tip")).toMatch(/^Day ends \d\d:\d\d · Tomorrow lasts /);
 });
 
+it("reads a 24-hour day in hours on the top bar and its hover, as Play does (live-qa-night-1 P3-8)", () => {
+  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+  act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
+  const pill = host.querySelector('[aria-label="Day clock"]')!;
+  expect(pill.textContent).toContain("24h left");
+  expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
+});
+
 it("offers a desktop's places, Research, Production, Today and Season, with no Menu", () => {
   act(() => root.render(<FrontierPlaces surface={null} onSurface={vi.fn()} research={false} />));
   expect([...host.querySelectorAll("nav button")].map((button) => button.getAttribute("aria-label"))).toEqual([
