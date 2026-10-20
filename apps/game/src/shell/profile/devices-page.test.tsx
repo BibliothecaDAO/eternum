@@ -42,3 +42,39 @@ it("lists this device once, and the others with Remove, once the shards record i
   expect(text?.match(/This device/g)).toHaveLength(1);
   expect(text).toContain("Remove");
 });
+
+it("closes the question before removing a device on the system back, staying on Settings", async () => {
+  read.devices = new Map([
+    [THIS_DEVICE, []],
+    ["0xbeef", []],
+  ]);
+  const previous = window.location.href;
+  window.history.replaceState({}, "", "/profile");
+  window.history.pushState({}, "", "/profile/settings");
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const asking = () => container.querySelector('[role="dialog"]') !== null;
+  try {
+    await act(async () => root.render(<DevicesCard realmsId="0x7" />));
+    await settle();
+    await act(async () =>
+      [...container.querySelectorAll("button")].find((button) => button.textContent === "Remove")!.click(),
+    );
+    await settle();
+    expect(asking()).toBe(true);
+    await act(async () => window.history.back());
+    await settle();
+    expect([window.location.pathname, asking()]).toEqual(["/profile/settings", false]);
+    // Nothing was removed, and the page's own back leads to the page before.
+    expect(container.textContent).toContain("Remove");
+    await act(async () => window.history.back());
+    await settle();
+    expect(window.location.pathname).toBe("/profile");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    window.history.replaceState({}, "", previous);
+  }
+});

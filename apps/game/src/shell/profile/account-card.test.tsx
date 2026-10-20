@@ -137,3 +137,50 @@ it("offers Claim name only once the name differs from the one held (qa-app-1 P3-
     container.remove();
   }
 });
+
+/** History moves a moment after it is asked to. */
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+
+it("closes Sign out's question on the system back without leaving Settings, and leaves no step behind when kept", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const previous = window.location.href;
+  window.history.replaceState({}, "", "/profile");
+  window.history.pushState({}, "", "/profile/settings");
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  const signOut = () =>
+    act(async () =>
+      [...container.querySelectorAll("button")].find((button) => button.textContent === "Sign out")!.click(),
+    );
+  const asking = () => container.querySelector('[role="dialog"][aria-label="Sign out?"]') !== null;
+  try {
+    await act(async () => root.render(<SignOut />));
+    await signOut();
+    await settle();
+    expect(asking()).toBe(true);
+    await act(async () => window.history.back());
+    await settle();
+    expect([window.location.pathname, asking()]).toEqual(["/profile/settings", false]);
+
+    // Kept with its button, then with Escape: each time the page's own back still leads to the page before.
+    await signOut();
+    await settle();
+    await act(async () =>
+      [...container.querySelectorAll("button")].find((button) => button.textContent === "Keep")!.click(),
+    );
+    await settle();
+    await signOut();
+    await settle();
+    await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    await settle();
+    expect([window.location.pathname, asking()]).toEqual(["/profile/settings", false]);
+    await act(async () => window.history.back());
+    await settle();
+    expect(window.location.pathname).toBe("/profile");
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+    window.history.replaceState({}, "", previous);
+  }
+});

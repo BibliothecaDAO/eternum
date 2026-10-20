@@ -1,18 +1,12 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import {
-  type AnchorHTMLAttributes,
-  type ButtonHTMLAttributes,
-  type KeyboardEvent,
-  type ReactNode,
-  useEffect,
-  useId,
-} from "react";
+import { type AnchorHTMLAttributes, type ButtonHTMLAttributes, type KeyboardEvent, type ReactNode, useId } from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
 
 import { BACK } from "./words";
 
 import { paintingSources, type Painting } from "./paintings";
+import { useSheetCloses } from "./sheet-closes";
 
 /**
  * The app's elements: every page outside a game, each built only from the app scope of the token file (src/tokens.ts:
@@ -664,7 +658,8 @@ export const AppSkeleton = ({ rows = 3 }: { rows?: number }) => (
 
 /**
  * A question before something that cannot be undone: its title, what it costs, and its way out and its verb. Given
- * `onClose` it asks over the page, which it dims: a press beside it or Escape takes the way out.
+ * `onClose` it asks over the page, which it dims, and closes as a sheet does: a press beside it, Escape, or the system
+ * back, which closes the question rather than the page under it.
  */
 export const AppDialog = ({
   title,
@@ -677,12 +672,6 @@ export const AppDialog = ({
   actions: ReactNode;
   onClose?: () => void;
 }) => {
-  useEffect(() => {
-    if (!onClose) return;
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
   const dialog = (
     <section role="dialog" aria-label={title} aria-modal={onClose ? true : undefined} className="app-dialog">
       <h2>{title}</h2>
@@ -690,11 +679,14 @@ export const AppDialog = ({
       <footer className="app-dialog__foot">{actions}</footer>
     </section>
   );
-  return onClose ? (
+  return onClose ? <OverThePage onClose={onClose}>{dialog}</OverThePage> : dialog;
+};
+
+const OverThePage = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+  useSheetCloses(onClose);
+  return (
     <div className="app-scrim" onClick={(event) => event.target === event.currentTarget && onClose()}>
-      {dialog}
+      {children}
     </div>
-  ) : (
-    dialog
   );
 };
