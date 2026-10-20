@@ -9,6 +9,11 @@
   line-height: var(--hud-line-body);
   font-weight: var(--hud-weight-body);
 }
+/* Every control of the sheet takes the pointer wherever it stands. The HUD's bands and columns let the pointer through
+   to the map, so a control placed straight in one, outside a panel, would otherwise never be pressed. */
+button[class^="ui"] {
+  pointer-events: auto;
+}
 
 /* ── Panel: the HUD's one panel, a header band naming it over a divider, then its body; a section is a part of one. ── */
 /* A panel is a column: given a height, its body takes what the head leaves and may shrink below its content, so a
