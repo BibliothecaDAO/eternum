@@ -23,8 +23,13 @@ import { onChestOpenRequest } from "@/three/scenes/worldmap-chest-open-request";
 import { ChestOpenings } from "@/ui/features/military/chest/chest-openings";
 import { campBeside, reloadSiteFacts, SITE, SITE_TILE } from "./sites/site-fixture";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { expeditionSpireTile, readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { getNeighborHexes, TileOccupier } from "@bibliothecadao/types";
+import {
+  expeditionSpireTile,
+  readExpeditionRules,
+  setBlockTimestampSource,
+  setEntityNameLocalStorage,
+} from "@bibliothecadao/eternum";
+import { getNeighborHexes, siteName, TileOccupier } from "@bibliothecadao/types";
 import { FrontierSelectionSheet } from "./frontier-selection-sheet";
 import { fightEnded } from "./sites/fight-result";
 
@@ -63,13 +68,14 @@ const sheetFor = (occupierType: number | null) => {
 
 describe("Frontier's selection sheet", () => {
   it.each([
-    { reload: false, occupied: false },
-    { reload: false, occupied: true },
-    { reload: true, occupied: false },
-    { reload: true, occupied: true },
+    { reload: false, occupied: false, renamed: false },
+    { reload: false, occupied: true, renamed: false },
+    { reload: true, occupied: false, renamed: false },
+    { reload: true, occupied: true, renamed: false },
+    { reload: true, occupied: true, renamed: true },
   ])(
-    "opens the cleared receipt after deletion (reload: $reload, own army: $occupied)",
-    async ({ reload, occupied }) => {
+    "opens the cleared receipt after deletion (reload: $reload, own army: $occupied, renamed: $renamed)",
+    async ({ reload, occupied, renamed }) => {
       Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
       const fixture = campBeside();
       fixture.store.applyFacts([
@@ -112,6 +118,8 @@ describe("Frontier's selection sheet", () => {
           },
         ]);
       const store = reload ? reloadSiteFacts(fixture.store) : fixture.store;
+      const expectedName = renamed ? "North Watch" : siteName(SITE);
+      if (renamed) setEntityNameLocalStorage(SITE, expectedName);
       expect(store.get("Structure", { game_id: 1, entity_id: SITE })).toBeUndefined();
       expect(store.get("Guard", { game_id: 1, structure_id: SITE, slot: 0 })).toBeUndefined();
       expect(store.entityOccupancy(1, SITE)).toBeUndefined();
@@ -139,7 +147,7 @@ describe("Frontier's selection sheet", () => {
             </GameProvider>,
           ),
         );
-        expect(host.querySelector('[data-kit-sheet][aria-label="Camp"]')).not.toBeNull();
+        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(expectedName);
         expect(host.textContent).toContain("Cleared · Camp");
         expect(host.textContent).toContain("550 Labor");
         expect(host.textContent).toContain("82 XP");
@@ -148,13 +156,14 @@ describe("Frontier's selection sheet", () => {
         await act(async () => close!.click());
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-        expect(host.querySelector('[data-kit-sheet][aria-label="Camp"]')).not.toBeNull();
+        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(expectedName);
         expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor82 XP");
       } finally {
         act(() => root.unmount());
         useUIStore.getState().selectOnMap(null);
         useAccountStore.setState({ account: null });
         tiles.current = [];
+        localStorage.removeItem(`entity-name-${SITE}`);
       }
     },
   );

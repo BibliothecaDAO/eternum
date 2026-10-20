@@ -25,7 +25,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { ResourcesIds, siteName } from "@bibliothecadao/types";
 import { closeFightResult, useFightResult } from "./fight-result";
 import { FightResultCard } from "./fight-result-card";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
@@ -143,10 +143,12 @@ const renderCard = (army: "beside" | "far") => {
 };
 
 describe("the tile card", () => {
-  it("names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
+  it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
     const { host, attack, button, unmount } = renderCard("beside");
     try {
-      expect(host.querySelector('section[aria-label="Camp"]')).not.toBeNull();
+      const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
+      expect(card).not.toBeNull();
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toContain("Camp");
       expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 

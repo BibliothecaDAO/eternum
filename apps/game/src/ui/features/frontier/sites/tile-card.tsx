@@ -14,7 +14,14 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, entityMapPosition, isViewerOwner, Position } from "@bibliothecadao/eternum";
+import {
+  biomeTypeOf,
+  configManager,
+  entityMapPosition,
+  getStructureName,
+  isViewerOwner,
+  Position,
+} from "@bibliothecadao/eternum";
 import {
   safeInteger,
   type GameClientSetup,
@@ -178,6 +185,7 @@ export const TileCard = ({
     <SiteCardView
       receipt={receipt}
       site={plan.kind}
+      name={selected.kind === "site" ? getStructureName(selected.structure, false).name : undefined}
       beast={plan.beast && plan.guard ? { ...plan.beast, combatClass: plan.guard.type } : undefined}
       army={actor && { art: armyArt(actor.army.troops), troops: wholeTroops(actor.army) }}
       guard={plan.guard === undefined ? undefined : (plan.guard?.count ?? null)}

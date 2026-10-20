@@ -74,6 +74,7 @@ export type SiteChoice = {
  */
 export const SiteCardView = ({
   site,
+  name,
   beast,
   army,
   guard,
@@ -88,6 +89,8 @@ export const SiteCardView = ({
   onClose,
 }: {
   site: AttackTargetKind;
+  /** The site's own name, the one its map plate and every list give it: the card's title, its kind beneath. */
+  name?: string;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   army: { art: IconMeaning; troops: number } | null;
   guard: number | null | undefined;
@@ -110,9 +113,12 @@ export const SiteCardView = ({
   // With no army selected the realm's armies are the choices, and the guard moves up beside the kind.
   const picking = choices !== undefined && choices.length > 0;
   return (
-    <HudSheet label={word} onClose={onClose}>
+    <HudSheet label={name ?? word} onClose={onClose}>
       <header className="flex items-center justify-between gap-3">
-        <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
+        <span className="flex items-center gap-2">
+          <SiteMark icon={beast ? beastMeaning(beast.beast) : icon} />
+          {name && <span className="text-hud-label text-hud-muted">{kind}</span>}
+        </span>
         {picking && <BeastGuard beast={beast} guard={guard} />}
       </header>
       {picking && choices ? (

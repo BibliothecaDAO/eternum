@@ -1,12 +1,11 @@
 import { SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
-import { structureName } from "@bibliothecadao/types";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
 import { formatTilePanelTitle } from "@/ui/features/world/components/bottom-right-panel/tile-panel-title";
 import { FrontierSpireSheet } from "./frontier-spire-sheet";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import type { ExpeditionRules } from "@bibliothecadao/eternum";
+import { siteDisplayName, type ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
@@ -73,7 +72,7 @@ export const FrontierSelectionSheet = ({
     );
   if (cleared)
     return (
-      <HudSheet label={structureName(cleared.site.category)} onClose={close}>
+      <HudSheet label={siteDisplayName(Number(cleared.site.entity_id))} onClose={close}>
         <SiteReceipt selected={cleared} />
       </HudSheet>
     );
