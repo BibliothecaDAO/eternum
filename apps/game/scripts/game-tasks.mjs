@@ -2,7 +2,7 @@
  * The tasks a game's proof drives (`prove:play --game … --tasks <task,task>`), each as a player does it on the HUD as it
  * stands: the view it starts from at rest, the presses in order, and the end state that must show. A press is a control
  * whose words match `text` (inside `within`), a `word` clicked where it shows, a `key`, a field `fill`ed with `value`,
- * for `tile` the map tile whose tooltip names that order (`button: "right"` sends it at once), or for `holdingTile`
+ * for `tile` the map tile whose tooltip matches that pattern (`button: "right"` sends it at once), or for `holdingTile`
  * another of the player's holdings on the map than the one selected; a press with a `layout` is made at that size only.
  *
  * A task that changes the game names a `reading` of what its order changes, read where the order is given just before
@@ -139,6 +139,32 @@ const REFUSED_BEFORE_PLAY = {
   expect: (before, after) => after === before,
   done: `document.body.innerText.includes("Starts in")`,
 };
+
+/** The map's tooltip on a tile the selected army can attack: the order, then its stamina. */
+const ATTACK_TILE = "(^|\\n)Attack\\n[\\d,]+ stamina";
+
+/**
+ * Inside `within` (a row of actions, or a card's body), the button whose words match `verb` ends at the right edge and
+ * every other button on its line starts at the left edge: one rule for every row of actions, the verb alone at the
+ * right, the way out and the rest at the left.
+ */
+const verbAloneAtRight = (within, verb) => `(() => {
+  const scope = document.querySelector(${JSON.stringify(within)});
+  const buttons = [...(scope?.querySelectorAll("button") ?? [])];
+  const verb = buttons.find((el) => new RegExp(${JSON.stringify(verb)}).test(el.innerText.trim()));
+  if (!verb) return false;
+  const style = getComputedStyle(scope);
+  const box = scope.getBoundingClientRect();
+  const left = box.left + parseFloat(style.paddingLeft);
+  const right = box.right - parseFloat(style.paddingRight);
+  const at = verb.getBoundingClientRect();
+  const others = buttons
+    .filter((el) => el !== verb)
+    .map((el) => el.getBoundingClientRect())
+    .filter((other) => Math.abs(other.top + other.height / 2 - (at.top + at.height / 2)) < at.height / 2);
+  return Math.abs(right - at.right) <= 1 && others.every((other) => other.right < at.left) &&
+    (others.length === 0 || Math.abs(Math.min(...others.map((other) => other.left)) - left) <= 1);
+})()`;
 
 export const GAME_TASKS = {
   // The boot smoke: a signed-in player enters, the HUD and its lazy chat load, and the page raises no error (every
@@ -347,6 +373,16 @@ export const GAME_TASKS = {
     ],
     done: `/${ORDER_REFUSAL}/.test(document.body.innerText)`,
   },
+  "blitz-attack-forecast": {
+    goal: "Blitz: an army's attack forecast, Details at the left and the verb alone at the right, nothing sent",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "the next army", key: "Tab" },
+      { name: "a tile it can attack, right-clicked", tile: ATTACK_TILE, button: "right" },
+    ],
+    done: verbAloneAtRight(`${panel("quick-attack")} .ui-actions`, "^(Attack|Claim)$"),
+  },
   "blitz-standings": {
     goal: "Blitz: see the standings, in a window as large as its table and rows, each column header in two rows",
     layouts: [...PHONE_AND_DESKTOP, "wide"],
@@ -400,6 +436,16 @@ export const GAME_TASKS = {
     changes: "one open slot fewer",
     expect: (before, after) => after === before - 1,
     done: `!document.querySelector("[data-kit-sheet]")`,
+  },
+  "attack-forecast": {
+    goal: "An army's attack forecast on its target's card, Attack alone at the right, nothing sent",
+    layouts: ["desktop"],
+    view: "map",
+    presses: [
+      { name: "the army", within: '[aria-label="Armies"]', text: "^Army" },
+      { name: "a tile it can attack, right-clicked", tile: ATTACK_TILE, button: "right" },
+    ],
+    done: verbAloneAtRight("[data-kit-sheet] .ui-sheet__body", "^Attack$"),
   },
   explore: {
     goal: "Explore a tile with an army",

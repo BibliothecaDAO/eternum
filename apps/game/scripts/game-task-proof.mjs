@@ -26,8 +26,8 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
 
 /**
  * Presses the first visible control inside `within` (or matched by it) whose words match `text`, scrolled to and clicked as a player
- * would; for `tile`, moves the pointer out from the screen's centre until the map's tooltip names that order, and
- * clicks there (with `button`, right for an order sent at once); for `hover`, moves it out until the page shows words
+ * would; for `tile`, moves the pointer out from the screen's centre until the page's words match that pattern (the
+ * map's tooltip naming an order), and clicks there (with `button`, right for an order sent at once); for `hover`, moves it out until the page shows words
  * matching that pattern and stops there, clicking nothing; for `holdingTile`, moves it out until it rests on
  * another of the player's holdings than the one selected, and clicks there; for `fill`, types `value` into that
  * field; for `key`, presses that key; for `word`, clicks the element showing that word, as agent-browser finds it.
@@ -56,7 +56,7 @@ const pressStep = async (b, press, layout) => {
       layout,
       CRATE_SEARCH,
       press.button,
-      `document.body.innerText.includes(${JSON.stringify(press.tile)})`,
+      `new RegExp(${JSON.stringify(press.tile)}).test(document.body.innerText)`,
     );
   if (press.holdingTile) return clickTileWhere(b, layout, HOLDING_SEARCH, press.button, ANOTHER_HOLDING_HOVERED);
   if (press.hover)

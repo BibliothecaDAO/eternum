@@ -1,32 +1,39 @@
+import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { useHudMode } from "@/hooks/use-hud-mode";
+import { SurfaceHost } from "@/ui/design-system/molecules/popover";
 import { FrontierHud } from "@/ui/features/frontier/frontier-hud";
+import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { TopHeader } from "@/ui/features/world/containers/top-header/top-header";
 import { DesktopHud } from "@/ui/features/world/hud/desktop-hud";
 import { readExpeditionRules, structureMapPosition } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { ActorType } from "@bibliothecadao/types";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import ROW_SET from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { LabGame } from "./lab-game";
 
 /**
- * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm; Frontier's,
- * and with an army out whose XP buys a tier), and a spectator of a game running and of one finished.
+ * The views the lab draws: each mode's player (Blitz's, its Build order panel read from the lab realm, and its army's
+ * attack forecast on an enemy army beside it; Frontier's, and with an army out whose XP buys a tier), and a spectator
+ * of a game running and of one finished.
  */
 const VIEWS = {
-  blitz: { preset: 2, spectating: false, finished: false, army: false },
-  frontier: { preset: 5, spectating: false, finished: false, army: false },
-  "frontier-army": { preset: 5, spectating: false, finished: false, army: true },
-  "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false },
-  "blitz-finished": { preset: 2, spectating: true, finished: true, army: false },
+  blitz: { preset: 2, spectating: false, finished: false, army: false, attack: false },
+  "blitz-attack": { preset: 2, spectating: false, finished: false, army: true, attack: true },
+  frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
+  "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
+  "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
+  "blitz-finished": { preset: 2, spectating: true, finished: true, army: false, attack: false },
 } as const;
 
 type View = keyof typeof VIEWS;
 
 /**
  * Dev only: the in-game HUD on a desktop as the game mounts it, every mode's, on the lab's game, at
- * /lab/kit/unified/<view>: blitz, frontier, frontier-army, blitz-spectator, blitz-finished. Frontier's states on the same
+ * /lab/kit/unified/<view>: blitz, blitz-attack, frontier, frontier-army, blitz-spectator, blitz-finished. Frontier's states on the same
  * HUD are the Frontier HUD lab's, /lab/kit/hud/<state>.
  */
 export const UnifiedHudLab = () => {
@@ -36,7 +43,7 @@ export const UnifiedHudLab = () => {
 };
 
 const ViewLab = ({ view }: { view: View }) => {
-  const { preset, spectating, finished, army } = VIEWS[view];
+  const { preset, spectating, finished, army, attack } = VIEWS[view];
   const frontier = preset === VIEWS.frontier.preset;
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(frontier ? "frontier" : "blitz");
@@ -50,7 +57,7 @@ const ViewLab = ({ view }: { view: View }) => {
         preset={preset}
         spectating={spectating}
         finished={finished}
-        facts={army ? armyOut : undefined}
+        facts={army ? (store) => [...armyOut(store), ...(attack ? enemyArmyBeside(store) : [])] : undefined}
         systemCalls={army ? (store) => ({ buy_tier: recordTierBought(store) }) : undefined}
       >
         {(store) => {
@@ -61,6 +68,7 @@ const ViewLab = ({ view }: { view: View }) => {
             <>
               <TopHeader />
               <DesktopHud />
+              {attack && <AttackForecast store={store} />}
             </>
           );
         }}
@@ -106,6 +114,64 @@ const armyOut = (store: NativeFactStore): unknown[] => {
     { model: "ArmyProgress", key: "0x9a2", value: { ...LAB_PROGRESS, explorer_id: ARMY_ID } },
     { model: "ArmyProgressionRules", key: "0x9a3", value: LAB_PROGRESSION_RULES },
   ];
+};
+
+/** An enemy army of 3,000 beside the lab army, sent out by an enemy realm. */
+const ENEMY_ARMY_ID = 91;
+const ENEMY_REALM_ID = 8;
+
+const enemyArmyBeside = (store: NativeFactStore): unknown[] => {
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+  const site = structureMapPosition(store, realm)!;
+  return [
+    { model: "Structure", key: "0x9b0", value: { ...realm, entity_id: ENEMY_REALM_ID, owner: ENEMY } },
+    {
+      model: "ExplorerTroops",
+      key: "0x9b1",
+      value: {
+        game_id: 1,
+        explorer_id: ENEMY_ARMY_ID,
+        owner: ENEMY_REALM_ID,
+        troops: {
+          ...ROW_SET.expected.value.troops,
+          count: String(3_000n * 1_000_000_000n),
+          stamina: { Inline: { amount: "90", settled_at: "350000", remainder: "0" } },
+        },
+      },
+    },
+    {
+      model: "TileOccupancy",
+      key: "0x9b2",
+      value: {
+        game_id: 1,
+        alt: false,
+        col: site.x + 2,
+        row: site.y,
+        entity_id: ENEMY_ARMY_ID,
+        category: 15,
+        is_structure: false,
+      },
+    },
+  ];
+};
+const ENEMY = "0xe1";
+
+/** The lab army's attack on the enemy army, opened as the map opens it: the forecast surface over the HUD. */
+const AttackForecast = ({ store }: { store: NativeFactStore }) => {
+  useEffect(() => {
+    const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: 7 }))!;
+    const on = (id: number, col: number) => ({ id, hex: { x: col, y: site.y }, alt: false });
+    usePopoverStore.getState().openSurface({
+      id: "quick-attack",
+      content: (
+        <QuickAttackPreview
+          attacker={{ type: ActorType.Explorer, ...on(ARMY_ID, site.x + 1) }}
+          target={{ type: ActorType.Explorer, ...on(ENEMY_ARMY_ID, site.x + 2) }}
+        />
+      ),
+    });
+  }, [store]);
+  return <SurfaceHost />;
 };
 
 const LAB_PROGRESS = { game_id: 1, xp: 260, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, homecoming: 1 };
