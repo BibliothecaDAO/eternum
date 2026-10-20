@@ -91,8 +91,9 @@ export const SETTINGS = "Settings";
 /** The Build order panel: its name, and what it says when no realm has a step it can take now. */
 export const BUILD_ORDER_WORDS = {
   title: "Build order",
-  /** A step's verb: the row's reason already names what it builds. */
+  /** A step's verb: the row's reason already names what it builds, or the level it reaches. */
   build: "Build",
+  levelUp: "Level up",
   nothingNow: "Nothing to build now",
 } as const;
 export const SETTINGS_WORDS = {

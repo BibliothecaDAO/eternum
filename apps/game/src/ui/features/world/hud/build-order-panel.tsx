@@ -53,14 +53,18 @@ const PlayersBuildOrder = () => {
   );
 };
 
-/** A realm's level-up, read and sent by the realm's own step, as every surface that offers it does. */
+/**
+ * A realm's level-up, read and sent by the realm's own step, as every surface that offers it does. The level it reaches
+ * is in the row's line, so its verb is as short as a build's and the line keeps its width.
+ */
 const LevelUpRow = ({ step }: { step: EmpireSuggestion }) => {
   const levelUp = useRealmLevelUp(step.realmId);
   if (!levelUp) return null;
+  const named = levelUp.mode === "level-up" && levelUp.nextLevelName !== null;
   return (
     <BuildOrderRow
-      step={step}
-      verb={levelUp.word}
+      step={named ? { ...step, reason: `It can level up to ${levelUp.nextLevelName} now.` } : step}
+      verb={named ? BUILD_ORDER_WORDS.levelUp : levelUp.word}
       busy={levelUp.loading}
       refusal={levelUp.ready ? null : levelUp.refusal}
       onPress={levelUp.run}

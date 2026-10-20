@@ -144,9 +144,9 @@ const PHASE_ONE_STEPS = [
   {
     realmName: "Stolsli",
     label: "Level up realm",
-    reason: "It can level up now.",
+    reason: "It can level up to Kingdom now.",
     icon: "upgrade",
-    verb: "Level up to Kingdom",
+    verb: "Level up",
   },
   {
     realmName: "Grimwatch",

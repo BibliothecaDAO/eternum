@@ -23,7 +23,9 @@ vi.mock("@/ui/features/world/containers/left-facets/use-suggestion-actions", () 
 }));
 vi.mock("@/ui/modules/entity-details/hooks/use-realm-level-up", () => ({
   useRealmLevelUp: () => ({
+    mode: "level-up",
     word: "Level up to Kingdom",
+    nextLevelName: "Kingdom",
     ready: true,
     loading: false,
     refusal: null,
@@ -76,13 +78,13 @@ const rows = () =>
     row.querySelector("button")?.textContent,
   ]);
 
-it("shows each realm's next step under the default order, and each verb takes it", async () => {
+it("shows each realm's next step under the default order, the level a level-up reaches in its line, and each verb takes it", async () => {
   await draw();
   expect(host.querySelector("section")?.getAttribute("aria-label")).toBe("Build order");
   expect(host.textContent).toContain("Default");
   expect(rows()).toEqual([
     ["Egonal", "Wood camps: 1 of 2 built.", "Build"],
-    ["Stolsli", "It can level up now.", "Level up to Kingdom"],
+    ["Stolsli", "It can level up to Kingdom now.", "Level up"],
   ]);
   const [build, levelUp] = [...host.querySelectorAll<HTMLButtonElement>(".ui-row button")];
   await act(async () => build.click());
