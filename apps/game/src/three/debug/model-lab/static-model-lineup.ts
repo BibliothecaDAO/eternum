@@ -205,7 +205,7 @@ export async function mountStaticLineup(
           const extension = sampling.gl.getExtension("WEBGL_debug_renderer_info");
           sampling.resolve({
             frames: sampling.frames,
-            calls: renderer.info.render.drawCalls,
+            calls: renderer.info.render.drawCalls ?? renderer.info.render.calls,
             triangles: renderer.info.render.triangles,
             gpu: String(sampling.gl.getParameter(extension?.UNMASKED_RENDERER_WEBGL ?? sampling.gl.RENDERER)),
           });
@@ -224,7 +224,7 @@ export async function mountStaticLineup(
           drawnAssets: [...drawnAssets],
           drawnParts: [...drawnParts],
           cameraDistance: camera.position.distanceTo(controls.target),
-          calls: renderer.info.render.drawCalls,
+          calls: renderer.info.render.drawCalls ?? renderer.info.render.calls,
         });
         capturePending = false;
       }
