@@ -266,6 +266,14 @@ export const marchLine = (tiles: number) =>
     ? `Leaves no ${WHEAT} to march`
     : `Leaves wheat to march ${tiles === 1 ? "1 tile" : `${formatAmount(tiles)} tiles`}`;
 
+/**
+ * The stamina a new army starts on, which its army slot holds (the owner, 20 October 2026: "stamina is slot tied"):
+ * full when the slot is fresh today, else the bar the slot's last army left. `bar` is "7/150".
+ */
+export const startsOn = (army: string, bar: string, fresh: boolean) =>
+  fresh ? `${army} starts full: ${bar} ${STAMINA}` : `${army} starts on ${bar} ${STAMINA}`;
+export const slotBarWhy = (fresh: boolean) => (fresh ? "Its slot is fresh today" : "The bar its slot's last army left");
+
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";

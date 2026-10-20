@@ -2,6 +2,7 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudCost,
+  HudMeter,
   HudNotice,
   HudPortrait,
   HudSheet,
@@ -10,18 +11,21 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
-import { BUILD, DEPLOY, DEPLOYING, marchLine, NO_TROOPS_AT_HOME, TROOPS } from "@/ui/design-system/kit/words";
+import { BUILD, DEPLOY, DEPLOYING, marchLine, NO_TROOPS_AT_HOME, STAMINA, TROOPS } from "@/ui/design-system/kit/words";
 import {
   type DeployTile,
   RealmHexDeployMap,
 } from "@/ui/features/military/components/unified-army-creation-modal/realm-hex-deploy-map";
 import type { Direction } from "@bibliothecadao/types";
 
+import type { SlotStart } from "./deploy-plan";
+import { slotStartWords } from "./slot-start";
+
 /**
  * Deploy, from its props: the two choices a deploy makes and its one verb. How many troops go (the count typed, +500
- * and Max beside it, out of how many can, a slider under them), onto which tile beside the realm (the map selector), then Deploy in the foot
- * with its wheat price and how far the wheat left lets the army march: the trade the count makes. With no troops at
- * home, Build is the step.
+ * and Max beside it, out of how many can, a slider under them), the stamina the army starts on (its slot's bar),
+ * onto which tile beside the realm (the map selector), then Deploy in the foot with its wheat price and how far the
+ * wheat left lets the army march: the trade the count makes. With no troops at home, Build is the step.
  */
 export const DeployView = ({
   art,
@@ -29,6 +33,7 @@ export const DeployView = ({
   count,
   amount,
   onCount,
+  start,
   wheatCost,
   march,
   ring,
@@ -45,6 +50,8 @@ export const DeployView = ({
   /** The most that can go, and the troops it is counted from: more than the most reads "that fit". */
   amount: { most: number; held: number };
   onCount: (count: number) => void;
+  /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
+  start: SlotStart | undefined;
   wheatCost: number | undefined;
   /** The tiles the wheat left at home lets the army march; unknown is undefined. */
   march: number | undefined;
@@ -76,6 +83,7 @@ export const DeployView = ({
         onChange={onCount}
       />
     </div>
+    {start && troopsAtHome !== 0 && <SlotStartReading start={start} />}
     {troopsAtHome === 0 ? (
       <>
         <HudNotice tone="warn" line={NO_TROOPS_AT_HOME} />
@@ -104,6 +112,19 @@ export const DeployView = ({
     )}
   </HudSheet>
 );
+
+/** The stamina the new army starts on: its slot's bar, as its card will show it once out, and why it is that bar. */
+const SlotStartReading = ({ start }: { start: SlotStart }) => {
+  const words = slotStartWords(start);
+  if (!words || !start.start) return null;
+  return (
+    <section aria-label={words.line} className="flex flex-col gap-1">
+      <span>{words.line}</span>
+      <HudMeter amount={start.start} tone="good" label={STAMINA} />
+      <span className="text-hud-muted">{words.why}</span>
+    </section>
+  );
+};
 
 /** The wheat Deploy takes, and under it how far the wheat left lets the army march (none reads as a warning). */
 const DeployPrice = ({ wheatCost, march }: { wheatCost: number; march: number | undefined }) => (

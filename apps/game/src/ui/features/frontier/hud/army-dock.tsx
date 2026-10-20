@@ -9,7 +9,9 @@ import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-clien
 import { DEPLOY, DEPLOYING } from "@/ui/design-system/kit/words";
 
 import { attributeBadgeTarget } from "../attributes/attributes";
-import { useOpenArmySlots } from "../deploy/open-slots";
+import type { SlotStart } from "../deploy/deploy-plan";
+import { slotStartWords } from "../deploy/slot-start";
+import { useDeployPlan } from "../deploy/use-deploy-plan";
 import { useWellRefill } from "../sites/well-refill";
 import { ArmyList, ArmyRow } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
@@ -35,7 +37,7 @@ export const ArmyDock = ({
   const actor = useAccountStore((state) => state.account?.address ?? null);
   // Only the actor's own armies are pan targets: a visited realm's army regions are not streamed.
   const own = actor !== null && BigInt(realm.owner) === BigInt(actor);
-  const openSlots = useOpenArmySlots(realm);
+  const openSlots = useDeployPlan(realm)?.open;
   const openCount = ordersAllowed
     ? (openSlots?.length ?? Math.max(0, realm.base.troop_max_explorer_count - armies.length))
     : 0;
@@ -47,7 +49,7 @@ export const ArmyDock = ({
         {armies.map((army) => (
           <DockArmyRow key={army.explorerId} army={army} pickable={own} onOpenArmy={own ? onOpenArmy : undefined} />
         ))}
-        {openCount > 0 && <DeploySlot realm={realm} pulse={armies.length === 0} wide />}
+        {openCount > 0 && <DeploySlot realm={realm} slot={openSlots?.[0]} pulse={armies.length === 0} wide />}
       </ArmyList>
     );
   return (
@@ -58,6 +60,7 @@ export const ArmyDock = ({
       {Array.from({ length: openCount }, (_, index) => (
         <DeploySlot
           realm={realm}
+          slot={openSlots?.[index]}
           key={openSlots?.[index]?.slot ?? `open-${index}`}
           first={index === 0}
           pulse={index === 0 && armies.length === 0}
@@ -143,27 +146,32 @@ const useWellRefillShown = (army: DockArmy) => {
 };
 
 /**
- * An open slot; the first one carries the wait of the army being deployed once the Deploy sheet has closed. A desktop's
- * list shows one, as a row.
+ * An open slot, with the bar it starts its army on; the first one carries the wait of the army being deployed once the
+ * Deploy sheet has closed. A desktop's list shows one, the next to fill, as a row.
  */
 const DeploySlot = ({
   realm,
+  slot,
   first = true,
   pulse,
   wide = false,
 }: {
   realm: NativeRows["Structure"];
+  /** The slot and its start, as the deploy plan reads it; unknown while the plan is. */
+  slot: SlotStart | undefined;
   first?: boolean;
   pulse: boolean;
   wide?: boolean;
 }) => {
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
+  const words = slot && slotStartWords(slot);
   return (
     <OpenSlot
       label={DEPLOY}
       filling={first && deploying ? DEPLOYING : undefined}
       pulse={pulse}
       wide={wide}
+      start={slot?.start && words ? { bar: slot.start, words: `${words.line}. ${words.why}.` } : undefined}
       onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
     />
   );

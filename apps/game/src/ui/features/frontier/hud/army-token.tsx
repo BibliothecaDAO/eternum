@@ -100,13 +100,15 @@ export const ArmyToken = ({
 };
 
 /**
- * An open army slot: a plus in a dashed ring that opens Deploy; the first one pulses while no army is out.
+ * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
+ * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
  */
 export const OpenSlot = ({
   label,
   pulse,
   filling,
   wide = false,
+  start,
   onDeploy,
 }: {
   label: string;
@@ -115,6 +117,8 @@ export const OpenSlot = ({
   filling?: string;
   /** Desktop's full card: the plus with Deploy beside it. */
   wide?: boolean;
+  /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
+  start?: { bar: { current: number; max: number }; words: string };
   onDeploy: () => void;
 }) => (
   <button
@@ -122,6 +126,7 @@ export const OpenSlot = ({
     aria-label={filling ?? label}
     aria-busy={filling !== undefined}
     disabled={filling !== undefined}
+    data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
     className={cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface")}
   >
@@ -134,6 +139,7 @@ export const OpenSlot = ({
       {filling === undefined ? "+" : "…"}
     </span>
     {wide && <span className="text-hud-strong text-hud-ink">{filling ?? label}</span>}
+    {start && filling === undefined && <StaminaSegments stamina={start.bar} />}
   </button>
 );
 

@@ -7,21 +7,43 @@ import {
   getTroopResourceId,
   readTroopRaiseCost,
   realmLearned,
+  researchTier,
 } from "@bibliothecadao/eternum";
-import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
-import { type Direction, RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  nativeResearchConstants as research,
+  safeInteger,
+  type NativeFactStore,
+  type NativeRows,
+} from "@bibliothecadao/eternum/game-client";
+import { musterStamina, type OpenArmySlot, openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
+import { type Direction, RESOURCE_PRECISION, ResourcesIds, TickIds, TroopTier, TroopType } from "@bibliothecadao/types";
 
 import { stocksAtNextDeploy } from "../frontier-home";
 
 /**
- * What Deploy needs, read from facts with no UI of its own: the next open slot, the troops at home, the wheat each
- * troop costs and the wheat the realm holds. Troops are one count; the troop resource they are drawn from is the
- * realm's own, never shown.
+ * An open army slot and the stamina a new army starts on in it (the owner, 20 October 2026: "stamina is slot tied"):
+ * full at its own maximum when the slot is fresh today, else the bar the slot's last army left, recovering since.
+ * Its army's number is the slot's, counted from one, as the dock and the map plate number armies.
+ */
+export interface SlotStart {
+  slot: number;
+  number: number;
+  /** Whether the slot's bar was left by an army today; a fresh slot starts full. */
+  inherited: boolean;
+  /** The bar the army starts on, under the game's rules; unknown while the troops it would take are. */
+  start: { current: number; max: number } | undefined;
+}
+
+/**
+ * What Deploy needs, read from facts with no UI of its own: the open slots and the bar each would start an army on,
+ * the troops at home, the wheat each troop costs and the wheat the realm holds. Troops are one count; the troop
+ * resource they are drawn from is the realm's own, never shown.
  */
 interface DeployPlan {
+  /** Today's open slots, lowest first, as the contract fills them. */
+  open: SlotStart[];
   /** The slot the next army fills, or null when every slot today holds an army. */
-  next: OpenArmySlot | null;
+  next: SlotStart | null;
   /** The troops at home the next army draws from; null when the realm holds none. */
   troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
   /** Whole wheat a troop costs to deploy (0 where deploying costs nothing). */
@@ -55,14 +77,38 @@ export const readDeployPlan = (
   if (!open || wheat === undefined || learned === undefined) return undefined;
   const troops = readTroopsAtHome(store, realm, rules, clock);
   if (troops === undefined) return undefined;
+  // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
+  const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
+  const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick));
   return {
-    next: open[0] ?? null,
+    open: starts,
+    next: starts[0] ?? null,
     troops,
     wheatPerTroop: troops ? wheatToDeploy(store, realm, troops, 1, defaultTick) : 0,
     wheatPerTroopTile: troops
       ? Math.abs(computeTravelFoodCosts({ category: troops.type, count: PRECISION }).wheatPayAmount)
       : 0,
     wheat: Number(BigInt(wheat) / PRECISION),
+  };
+};
+
+/** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
+const slotStart = (slot: OpenArmySlot, troops: DeployPlan["troops"], trained: number, timestamp: number): SlotStart => {
+  const bar =
+    troops &&
+    musterStamina(
+      slot,
+      { category: troops.type, tier: troops.tier },
+      timestamp,
+      configManager.getTroopStaminaRules(),
+      trained,
+      Number(configManager.getTick(TickIds.Armies)),
+    );
+  return {
+    slot: slot.slot,
+    number: slot.slot + 1,
+    inherited: slot.inherited !== null,
+    start: bar ? { current: bar.amount, max: bar.max } : undefined,
   };
 };
 

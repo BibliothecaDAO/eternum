@@ -1055,6 +1055,8 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
+      // The next army fills a slot whose army was released today with 40 stamina left.
+      start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150 } }}
       wheatCost={count * 2}
       march={count > 0 ? Math.floor(wheatLeft / (count * 0.02)) : 0}
       ring={{ center: { col: 10, row: 10 }, tiles: DEPLOY_RING, chosen, onPick: setChosen }}

@@ -104,7 +104,9 @@ describe("the Deploy sheet", () => {
       "420",
       "120",
     ]);
-    expect(host.textContent).not.toMatch(/stamina|Day ends/i);
+    // The day's clock is the top bar's; the stamina the army starts on is the sheet's (the owner: "Show it").
+    expect(host.textContent).not.toMatch(/Day ends/i);
+    expect(host.textContent).toContain("Army 2 starts full: 150/150 stamina");
     await act(async () => deployButton(host)!.click());
     expect(createExplorerArmy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -171,6 +173,65 @@ describe("the Deploy sheet", () => {
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
     expect(foot(host)).toBe("100 wheatLeaves no wheat to marchDeploy");
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  /** What the sheet says the new army starts on, in words and on its meter. */
+  const startReading = (host: HTMLElement) => {
+    const meter = host.querySelector<HTMLElement>('section[aria-label$="stamina"] [role="meter"]');
+    return {
+      words: host.querySelector('section[aria-label$="stamina"]')?.textContent ?? null,
+      meter: meter && [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))],
+    };
+  };
+
+  it.each([
+    {
+      case: "a slot fresh today starts its army full",
+      facts: [],
+      words: "Army 2 starts full: 150/150 staminaIts slot is fresh today",
+      meter: [150, 150],
+    },
+    {
+      case: "a slot whose army was released starts the new one on the bar it left",
+      facts: [
+        {
+          model: "ArmySlot",
+          key: "0x91",
+          value: {
+            game_id: 1,
+            structure_id: 7,
+            epoch: "0",
+            slot: 1,
+            explorer_id: 0,
+            // Left this second, as the sheet reads it: nothing has recovered yet.
+            stamina: { amount: "7", settled_at: "3", remainder: 0 },
+          },
+        },
+      ],
+      words: "Army 2 starts on 7/150 staminaThe bar its slot's last army left",
+      meter: [7, 150],
+    },
+    {
+      case: "a realm's trained Logistics (an uncommon Supply yard) raises the full bar of a fresh slot",
+      facts: [
+        {
+          model: "RealmKnowledge",
+          key: "0xd",
+          value: { game_id: 1, structure_id: 7, learned: String(1n << 27n) },
+        },
+      ],
+      words: "Army 2 starts full: 170/170 staminaIts slot is fresh today",
+      meter: [170, 170],
+    },
+  ])("says the stamina the new army starts on, its slot's bar: $case", ({ facts, words, meter }) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    store.applyFacts(facts as never);
+    const { host, root } = render(store, row);
+    // Slot 1 (Army 1) holds an army: the next army fills slot 2, as the contract fills the lowest free slot.
+    expect(startReading(host)).toEqual({ words, meter });
     act(() => root.unmount());
     host.remove();
   });
