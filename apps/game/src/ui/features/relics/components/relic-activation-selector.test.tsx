@@ -304,15 +304,22 @@ it("heads the window with every holder's whole relics, and gives each target row
   expect(text.match(/×(\d+|<1)/g)).toEqual(["×3", "×1", "×2"]);
 });
 
-/** The game, its relic activations sent through the real system call while the game does not take actions yet. */
-const refusingGame = () => {
+/**
+ * The game, its relic activations sent through the real system call: refused while the game does not take actions yet
+ * ("Starts in 2m 33s") until `open()`, then sent to a provider that answers with `answer`.
+ */
+const refusingGame = (answer: () => Promise<unknown> = async () => undefined) => {
   const state = game();
-  const sent = vi.fn();
+  const sent = vi.fn(answer);
+  let refusal: string | null = "Starts in 2m 33s";
   const systemCalls = createSystemCalls({
     provider: { apply_relic: sent },
-    authHandler: { refuseNow: () => "Starts in 2m 33s", onError: (error) => console.error(error) },
+    authHandler: { refuseNow: () => refusal, onError: (error) => console.error(error) },
   });
-  return { ...state, setup: { ...state.setup, systemCalls } as GameClientSetup, sent };
+  const open = () => {
+    refusal = null;
+  };
+  return { ...state, setup: { ...state.setup, systemCalls } as GameClientSetup, sent, open };
 };
 
 const renderPopup = (state: ReturnType<typeof refusingGame>) =>
@@ -331,7 +338,8 @@ const renderPopup = (state: ReturnType<typeof refusingGame>) =>
     ),
   );
 
-it.each([
+/** Both relic controls, each opened to its Activate button. */
+const CONTROLS = [
   ["the inventory's selector", (state: ReturnType<typeof refusingGame>) => openInventory(state)],
   [
     "the resource controls' popup",
@@ -340,30 +348,46 @@ it.each([
       return button("Activate Relic");
     },
   ],
-])("%s: a refused activation keeps the game's reason and logs nothing", async (_, open) => {
-  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
-  const state = refusingGame();
-  const confirm = await open(state);
+] as const;
+
+/** The lines the window says as news (a status) and as errors (an alert). */
+const said = (role: "status" | "alert") =>
+  [...document.querySelectorAll(`[role="${role}"]`)].map((line) => line.textContent);
+
+it.each(CONTROLS)(
+  "%s: a refused activation is told as news, logs nothing, and goes through once play opens",
+  async (_, openControl) => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const state = refusingGame();
+    const confirm = await openControl(state);
+    await act(async () => confirm.click());
+    expect(state.sent).not.toHaveBeenCalled();
+    expect(said("status")).toContain("Starts in 2m 33s");
+    expect(said("alert")).toEqual([]);
+    expect(document.body.textContent).not.toContain("Failed to activate relic");
+    expect(logged).not.toHaveBeenCalled();
+
+    state.open();
+    expect(confirm.disabled).toBe(false);
+    await act(async () => confirm.click());
+    expect(state.sent).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each(CONTROLS)("%s: a failed activation is told as an error, with the game's reason", async (_, openControl) => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const state = refusingGame(() => Promise.reject(new Error("Not enough essence")));
+  state.open();
+  const confirm = await openControl(state);
   await act(async () => confirm.click());
-  expect(state.sent).not.toHaveBeenCalled();
-  expect(document.body.textContent).toContain("Starts in 2m 33s");
-  expect(document.body.textContent).not.toContain("Failed to activate relic");
-  expect(logged).not.toHaveBeenCalled();
+  expect(state.sent).toHaveBeenCalledTimes(1);
+  expect(said("alert")).toEqual(["Not enough essence"]);
 });
 
-it.each([
-  ["the inventory's selector", (state: ReturnType<typeof refusingGame>) => openInventory(state)],
-  [
-    "the resource controls' popup",
-    async (state: ReturnType<typeof refusingGame>) => {
-      await renderPopup(state);
-      return button("Activate Relic");
-    },
-  ],
-])("%s: before play opens, Activate is shut and says why before the click", async (_, open) => {
+it.each(CONTROLS)("%s: before play opens, Activate is shut and says why before the click", async (_, openControl) => {
   gate.refusal = "Starts in 2m 33s";
   const state = refusingGame();
-  const confirm = await open(state);
+  const confirm = await openControl(state);
   expect(confirm.disabled).toBe(true);
   expect(document.body.textContent).toContain("Starts in 2m 33s");
 });

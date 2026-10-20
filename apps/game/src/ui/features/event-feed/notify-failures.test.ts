@@ -67,4 +67,18 @@ describe("failure notices", () => {
     );
     expect(offenders).toEqual([]);
   });
+
+  it("keep a refusal a refusal where they show it: no caller takes actionFailure's reason alone", () => {
+    // Reading `.reason` alone turns "Starts in 2m 33s" back into an error line; ActionFailureNotice tells it as news.
+    const REASON_ALONE = /actionFailure\([^;]*\)\s*\.reason\b|\{\s*reason\s*\}\s*=\s*actionFailure\(/;
+    const offenders = sources(SRC).flatMap((path) => {
+      const lines = readFileSync(path, "utf8").split("\n");
+      return lines.flatMap((line, index) =>
+        line.includes("actionFailure(") && REASON_ALONE.test(lines.slice(index, index + 2).join(" "))
+          ? [`${relative(SRC, path)}:${index + 1}`]
+          : [],
+      );
+    });
+    expect(offenders).toEqual([]);
+  });
 });

@@ -20,7 +20,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
 import { getConstructionBuildingGroups, resolveBuildingRequirements } from "./construction-groups";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
-import { actionFailure } from "@/ui/features/event-feed/notify";
+import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
 
 export interface PlotConstructionTarget {
   entityId: number;
@@ -54,7 +54,8 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
   const names = usePlayerNames();
   const realm = getRealmInfo(target.entityId, store, names.text);
   const isOwner = isViewerOwner(realm?.owner, viewer);
-  const [error, setError] = useState<string | null>(null);
+  // Why the last build did not happen: told until the next build, or another plot or cost.
+  const [error, setError] = useState<ActionFailure | null>(null);
   // The plot's building in flight, sent from here or any other surface: one at a time until its outcome.
   const pending = useInFlight("plot", plotKey(target.entityId, target.spot)) !== undefined;
   useEffect(() => {
@@ -88,9 +89,10 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
     if (!canIssueOrders() || !isOwner || !target.isCurrentTarget() || pending) return;
     const state = buildability(type);
     if (!state.canSubmit) {
-      setError(state.reason ?? "Building cannot be submitted.");
+      setError({ refused: false, reason: state.reason ?? "Building cannot be submitted." });
       return;
     }
+    setError(null);
     try {
       await sendBuilding({
         realmId: target.entityId,
@@ -103,7 +105,7 @@ export function usePlotConstruction(target: PlotConstructionTarget) {
         },
       });
     } catch (failure) {
-      setError(actionFailure(failure, "Building could not be placed. Try again.").reason);
+      setError(actionFailure(failure, "Building could not be placed. Try again."));
     }
   };
   return {

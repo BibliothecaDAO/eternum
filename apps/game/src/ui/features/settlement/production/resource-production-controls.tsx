@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
-import { actionFailure } from "@/ui/features/event-feed/notify";
+import { ActionFailureNotice } from "@/ui/features/event-feed/action-failure-notice";
+import { type ActionFailure, actionFailure } from "@/ui/features/event-feed/notify";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { AmountInput, HudButton, HudNotice, HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules";
@@ -59,7 +60,8 @@ export const ResourceProductionControls = ({
   } = useGame();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Why the last start did not happen: told until the next one.
+  const [failure, setFailure] = useState<ActionFailure | null>(null);
   const ordersAllowed = useUIStore(canIssueOrders);
   const refusal = useActNowRefusal();
   const currentDefaultTick = useCurrentDefaultTick();
@@ -92,7 +94,7 @@ export const ResourceProductionControls = ({
 
   const produce = async () => {
     if (!run || isDisabled || !canIssueOrders() || isLoading) return;
-    setError(null);
+    setFailure(null);
     setIsLoading(true);
     const send = useRawResources ? burn_resource_for_resource_production : burn_labor_for_resource_production;
     try {
@@ -103,7 +105,7 @@ export const ResourceProductionControls = ({
         signer: account,
       });
     } catch (error) {
-      setError(actionFailure(error, "Production could not start. Try again.").reason);
+      setFailure(actionFailure(error, "Production could not start. Try again."));
     } finally {
       setIsLoading(false);
     }
@@ -150,8 +152,10 @@ export const ResourceProductionControls = ({
                 .map((input) => `${formatCharge(fromUnits(input.units))} ${resourceName(input.resource)}`)
                 .join(" · ")}`}
         </p>
-        {(error || verdict || refusal) && (
-          <HudNotice tone={error ? "bad" : undefined} line={error ?? refusal ?? verdict ?? ""} />
+        {failure ? (
+          <ActionFailureNotice failure={failure} />
+        ) : (
+          (refusal ?? verdict) && <HudNotice line={refusal ?? verdict ?? ""} />
         )}
         <HudButton
           kind="primary"
@@ -227,7 +231,7 @@ export const ResourceProductionControls = ({
           )}
         </div>
 
-        {error && <HudNotice tone="bad" line={error} />}
+        {failure && <ActionFailureNotice failure={failure} />}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hud-divider pt-3">
           <span className="flex items-center gap-1.5 text-hud-strong">
             {run ? runOutputLine(run, selectedResource) : "—"}

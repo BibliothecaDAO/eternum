@@ -5,9 +5,10 @@ import { resourceName, formatCharge, ResourcesIds } from "@bibliothecadao/types"
 import { useEffect } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
-import { HudCard, HudNotice, HudPanel, HudSwitch } from "@/ui/design-system/kit/hud-elements";
+import { HudCard, HudPanel, HudSwitch } from "@/ui/design-system/kit/hud-elements";
 import { RequirementChips } from "@/ui/design-system/molecules/requirement-chips";
 import { usePlotConstruction, type PlotConstructionTarget } from "./use-plot-construction";
+import { ActionFailureNotice } from "@/ui/features/event-feed/action-failure-notice";
 
 /** A choice's cost, each resource painted with its amount, as the Build window's cards name theirs. */
 const PaintedCost = ({ requirements }: { requirements: { resource: ResourcesIds; amount: number }[] | undefined }) => (
@@ -40,7 +41,7 @@ export function PlotConstructionPicker(target: PlotConstructionTarget) {
           </span>
         )}
       </div>
-      {form.error && <HudNotice tone="bad" line={form.error} />}
+      {form.error && <ActionFailureNotice failure={form.error} />}
       {form.groups.map((group) => (
         <HudPanel key={group.label} kind="section" title={group.label} label={group.label} collapsible={false}>
           <div className="grid grid-cols-3 gap-2">

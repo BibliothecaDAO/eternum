@@ -15,7 +15,13 @@ import { GameProvider } from "@/hooks/context/game-context";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds, StructureType, type RealmInfo } from "@bibliothecadao/types";
+import {
+  ActionRefusedError,
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  StructureType,
+  type RealmInfo,
+} from "@bibliothecadao/types";
 import { ProductionControls } from "./production-controls";
 import { ProductionWorkflows } from "./production-workflows";
 
@@ -345,3 +351,31 @@ it("starts a fresh form when the phone's Resource picks another output, never si
     view.unmount();
   }
 });
+
+it.each([false, true])(
+  "tells a start the game refused as news and a failed one as an error, compact %s",
+  async (compact) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const view = mount({ copper: 20 }, { compact });
+    const said = (role: "status" | "alert") =>
+      [...view.host.querySelectorAll(`[role="${role}"]`)].map((line) => line.textContent);
+    try {
+      view.type("Amount of Crossbowman T1", "1");
+      view.burnResources.mockRejectedValueOnce(new ActionRefusedError("Starts in 2m 33s"));
+      await view.press(view.start());
+      expect(said("status")).toContain("Starts in 2m 33s");
+      expect(said("alert")).toEqual([]);
+
+      view.burnResources.mockRejectedValueOnce(new Error("Insufficient wheat"));
+      await view.press(view.start());
+      expect(said("alert")).toEqual(["Insufficient wheat"]);
+      expect(said("status")).not.toContain("Starts in 2m 33s");
+
+      await view.press(view.start());
+      expect(view.burnResources).toHaveBeenCalledTimes(3);
+      expect(said("alert")).toEqual([]);
+    } finally {
+      view.unmount();
+    }
+  },
+);

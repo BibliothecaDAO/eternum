@@ -20,13 +20,19 @@ const push = (kind: FeedNoticeKind, title: string, options?: NoticeOptions): str
     location: options?.location,
   });
 
+/** An action that did not happen, as the player is told: `refused` (the game takes no action yet: news) or failed. */
+export interface ActionFailure {
+  refused: boolean;
+  reason: string;
+}
+
 /**
  * What an action's failure says, the one reading every failure handler makes: an action the game does not take yet
  * (ActionRefusedError: "Starts in 2m 33s") is `refused`, its reason kept and never logged; any other failure gives the
  * reason its error names (the shard's refusal, the game's revert), `fallback` when it names none. A failure is logged
  * once: the system call logs its own (with its report), and this logs only one that never reached it.
  */
-export const actionFailure = (error: unknown, fallback: string): { refused: boolean; reason: string } => {
+export const actionFailure = (error: unknown, fallback: string): ActionFailure => {
   if (error instanceof ActionRefusedError) return { refused: true, reason: error.message };
   if (!wasReported(error)) console.error(fallback, error);
   return { refused: false, reason: extractReadableErrorMessage(error, fallback) };
