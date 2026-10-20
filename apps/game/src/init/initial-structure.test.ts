@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const ui = {
   structureEntityId: 0,
@@ -12,6 +12,19 @@ const ui = {
 vi.mock("@/hooks/store/use-ui-store", () => ({ useUIStore: { getState: () => ui } }));
 const spectateSession = vi.fn(() => false);
 vi.mock("@/utils/spectator-session", () => ({ isExplicitSpectateSession: () => spectateSession() }));
+// The signed-in player as the session and the guardian name them: none until a test signs one in.
+const signedIn = { player: null as string | null, listeners: new Set<() => void>() };
+const signIn = (player: string | null) => {
+  signedIn.player = player;
+  signedIn.listeners.forEach((listener) => listener());
+};
+vi.mock("@/shell/herald", () => ({
+  readRealmsPlayer: () => signedIn.player,
+  followRealmsPlayer: (listener: () => void) => {
+    signedIn.listeners.add(listener);
+    return () => signedIn.listeners.delete(listener);
+  },
+}));
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   Position: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).Position,
   // The real map centre: a site's contract hex and the hex the map shows differ by it.
@@ -94,7 +107,7 @@ describe("initial structure", () => {
     stop();
   });
 
-  it("keeps a session entered to spectate off the signed-in player's realm", () => {
+  it("keeps a session entered to spectate a spectator, with an account held and no player signed in", () => {
     Object.assign(ui, { structureEntityId: 0, isSpectating: false });
     spectateSession.mockReturnValue(true);
     setAccount({ address: PLAYER });
@@ -105,6 +118,59 @@ describe("initial structure", () => {
     expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
     stop();
     spectateSession.mockReturnValue(false);
+  });
+
+  describe("a signed-in player watching a game they played (Results, See the end map; live-qa-night P3-10)", () => {
+    let stopFollowing = () => {};
+    const enterToSpectate = () => {
+      Object.assign(ui, { structureEntityId: 0, isSpectating: false });
+      spectateSession.mockReturnValue(true);
+      setAccount(null);
+      const store = factStore();
+      stopFollowing = followInitialStructure({ store } as never);
+      return { store };
+    };
+    afterEach(() => {
+      stopFollowing();
+      signIn(null);
+      spectateSession.mockReturnValue(false);
+    });
+
+    it("opens on their own realm, still a spectator", () => {
+      signIn(PLAYER);
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+
+      expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: true });
+    });
+
+    it("moves the first realm it opened to their own once the session names them", () => {
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+      expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+
+      signIn(PLAYER);
+
+      expect(ui).toMatchObject({ structureEntityId: 2790, isSpectating: true });
+    });
+
+    it("keeps a realm they chose", () => {
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(9, "0x98"), structure(2790, PLAYER)]);
+      ui.setStructureEntityId(9, { spectator: true });
+
+      signIn(PLAYER);
+
+      expect(ui).toMatchObject({ structureEntityId: 9, isSpectating: true });
+    });
+
+    it("opens on the first realm for a player with none here", () => {
+      signIn("0x5555");
+      const { store } = enterToSpectate();
+      store.land([structure(5, "0x99"), structure(2790, PLAYER)]);
+
+      expect(ui).toMatchObject({ structureEntityId: 5, isSpectating: true });
+    });
   });
 
   describe("the map's entry destination", () => {

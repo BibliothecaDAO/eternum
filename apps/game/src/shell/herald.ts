@@ -1,8 +1,9 @@
 import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { hashKey, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useIdentitySession } from "@/hooks/context/identity-session";
+import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { appQueryClient } from "@/runtime/query-client";
 
 import {
   canEnterGame,
@@ -61,6 +62,33 @@ export const useRealmsPlayer = () => {
   const { session } = useIdentitySession();
   const guardian = useQuery({ ...GUARDIAN_QUERY, enabled: session !== null });
   return { ...guardian, data: realmsPlayerOf(session?.user.realmsId, guardian.data) };
+};
+
+/** The signed-in player's account address outside React, as `useRealmsPlayer` reads it: null until both have answered. */
+export const readRealmsPlayer = (): string | null =>
+  realmsPlayerOf(
+    useIdentitySessionStore.getState().session?.user.realmsId,
+    appQueryClient.getQueryData<GuardianIdentity>(GUARDIAN_QUERY.queryKey),
+  );
+
+/** Calls back whenever the signed-in player may have changed: the session, or the guardian, asked once a session exists. */
+export const followRealmsPlayer = (onChange: () => void): (() => void) => {
+  const askGuardian = () => {
+    if (useIdentitySessionStore.getState().session) void appQueryClient.prefetchQuery(GUARDIAN_QUERY);
+  };
+  askGuardian();
+  const guardianHash = hashKey(GUARDIAN_QUERY.queryKey);
+  const stopSession = useIdentitySessionStore.subscribe(() => {
+    askGuardian();
+    onChange();
+  });
+  const stopGuardian = appQueryClient.getQueryCache().subscribe(({ query }) => {
+    if (query.queryHash === guardianHash) onChange();
+  });
+  return () => {
+    stopSession();
+    stopGuardian();
+  };
 };
 
 /**
