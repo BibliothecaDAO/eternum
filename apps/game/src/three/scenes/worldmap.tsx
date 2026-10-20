@@ -2,7 +2,7 @@ import { gameEndIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
-import { publishCameraView } from "./worldmap-camera-view";
+import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
@@ -937,8 +937,8 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     // The flight tween is leaving this scene: no target-hex, terrain-window or chunk-refresh churn on its way out.
     if (this.cameraOwnedByFlight) return;
-    // The minimap draws what the camera sees in this same frame.
-    publishCameraView(this.camera, this.controls.target);
+    // The minimap follows the camera in this same frame.
+    publishCameraView(this.controls.target, this.getCurrentCameraDistance());
     // The line follows its tile across the screen.
     this.pointerOrderTip.refresh();
     this.updateCameraTargetHexThrottled?.();
@@ -1860,7 +1860,7 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
-    publishCameraView(this.camera, this.controls.target);
+    publishCameraView(this.controls.target, this.getCurrentCameraDistance());
     this.updateCameraTargetHexThrottled();
     this.refreshVisualTerrainWindowThrottled();
   }
@@ -8298,6 +8298,7 @@ export default class WorldmapScene extends WarpTravel {
     this.refreshVisualTerrainWindowThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();
     this.controls.removeEventListener("change", this.handleWorldmapControlsChange);
+    forgetCameraView();
     window.removeEventListener("resize", this.handleTerrainViewportResize);
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);

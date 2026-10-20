@@ -1,6 +1,5 @@
 import { act, Profiler } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { PerspectiveCamera, Vector3 } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import type { MinimapTile } from "./hex-minimap";
@@ -15,6 +14,7 @@ vi.mock("@/ui/config", async (importOriginal) => ({
 /** Each test meets a world map that has not drawn yet: fresh modules, so no camera view is left from another. */
 let HexMinimap: typeof import("./hex-minimap").HexMinimap;
 let publishCameraView: typeof import("@/three/scenes/worldmap-camera-view").publishCameraView;
+let forgetCameraView: typeof import("@/three/scenes/worldmap-camera-view").forgetCameraView;
 let setWorldOrigin: typeof import("@/three/world-origin").setWorldOrigin;
 let host: HTMLDivElement;
 let root: Root;
@@ -24,7 +24,7 @@ beforeEach(async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   vi.resetModules();
   ({ HexMinimap } = await import("./hex-minimap"));
-  ({ publishCameraView } = await import("@/three/scenes/worldmap-camera-view"));
+  ({ publishCameraView, forgetCameraView } = await import("@/three/scenes/worldmap-camera-view"));
   ({ setWorldOrigin } = await import("@/three/world-origin"));
   commits = 0;
   host = document.createElement("div");
@@ -47,80 +47,50 @@ const show = (tiles: MinimapTile[], look: "badges" | "classic" = "badges") =>
     ),
   );
 
-/** The world map's camera as it stands: a 38 degree view looking down at 49 degrees on `target`, `distance` away. */
-const PITCH = (49 * Math.PI) / 180;
-const HALF_FOV = (19 * Math.PI) / 180;
-const camera = new PerspectiveCamera(38, 16 / 9, 0.1, 1000);
-const look = (distance: number, target = { x: 0, z: 9 }) => {
-  camera.position.set(target.x, distance * Math.sin(PITCH), target.z + distance * Math.cos(PITCH));
-  camera.lookAt(new Vector3(target.x, 0, target.z));
-  camera.updateProjectionMatrix();
-  publishCameraView(camera, target);
-};
+/** The world map's camera looking at `target` from `distance` away, as its controls tell it. */
+const look = (target = { x: 0, z: 9 }, distance = 20) => publishCameraView(target, distance);
 
 const svg = () => host.querySelector("svg")!;
 const shown = () => {
   const [minX, minY, width, height] = svg().getAttribute("viewBox")!.split(" ").map(Number);
   return { x: minX + width / 2, y: minY + height / 2, width, height };
 };
-/** The view marker's corners (top left, then clockwise), in minimap pixels, and how wide it stands. */
-const marker = () => {
-  const polygon = svg().querySelector("g[pointer-events='none'] polygon")!;
-  const corners = (polygon.getAttribute("points") ?? "").split(" ").map((pair) => pair.split(",").map(Number));
-  const xs = corners.map(([x]) => x);
-  return { corners, width: Math.max(...xs) - Math.min(...xs), shown: polygon.getAttribute("display") !== "none" };
-};
 
 const revealed = (cols: number[], row = 0): MinimapTile[] => cols.map((col) => ({ col, row, biome: 11 }));
 const EXPLORED = revealed([-6, -4, -2, 0, 2, 4, 6]);
 
-it("draws what the camera sees, the moment the camera tells it, at its true size", async () => {
+it("frames the point the camera looks at and zooms with it, the moment the camera tells it, with only tiles drawn", async () => {
   await show(EXPLORED);
-  expect(marker().shown).toBe(false);
-
-  look(20);
-  // No frame and no render in between: the camera's own change has drawn it. The screen's top edge meets the ground
-  // along the ray 30 degrees under the horizon, its bottom edge along the one 68 degrees under it: 7 pixels a unit.
-  const seen = marker();
-  const height = 20 * Math.sin(PITCH);
-  const cameraZ = 9 + 20 * Math.cos(PITCH);
-  expect(seen.shown).toBe(true);
-  expect(seen.corners[0][1] / 7).toBeCloseTo(cameraZ - height / Math.tan(PITCH - HALF_FOV), 2);
-  expect(seen.corners[3][1] / 7).toBeCloseTo(cameraZ - height / Math.tan(PITCH + HALF_FOV), 2);
+  look({ x: 4, z: 9 }, 20);
+  // 7 minimap pixels a unit; a 320 px minimap at the badges' scale, 1.4 x 20 / distance x 1.75: 2.45 at the default.
+  expect(shown()).toEqual({ x: 28, y: 63, width: 320 / 2.45, height: 320 / 2.45 });
 
   const commitsBefore = commits;
-  look(16);
-  // Closer, the view marker narrows in the same call, and the tiles were not drawn again for it.
-  expect(marker().width).toBeLessThan(seen.width);
+  // Drawn back to the farthest, it shows more ground; close in, it holds at its closest (3.5). Each in the same call.
+  look({ x: 6, z: 7 }, 45);
+  expect([shown().x, shown().y, shown().width]).toEqual([42, 49, 320 / (((1.4 * 20) / 45) * 1.75)]);
+  look({ x: 6, z: 7 }, 10);
+  expect(shown().width).toBe(320 / 3.5);
   expect(commits).toBe(commitsBefore);
+  // Nothing over the tiles: every element the minimap holds is a tile's.
+  const children = [...svg().children];
+  expect(children.length).toBeGreaterThan(0);
+  expect(children.every((child) => child.tagName === "g" && child.querySelector("polygon[fill]") !== null)).toBe(true);
 });
 
-it("frames more of the world than the camera sees, and holds at its closest while the camera comes closer", async () => {
+it("opens on its own game's place once the last world map is gone, not where that one's camera looked", async () => {
+  look({ x: 40, z: 40 }, 45);
+  forgetCameraView();
   await show(EXPLORED);
-  look(30);
-  const far = { shown: shown(), marker: marker() };
-  // Centred on the view, which it shows whole inside a wider frame.
-  expect(far.shown.width).toBeGreaterThan(far.marker.width * 1.15);
-  expect(far.shown.x).toBeCloseTo(
-    (Math.max(...far.marker.corners.map(([x]) => x)) + Math.min(...far.marker.corners.map(([x]) => x))) / 2,
-    3,
-  );
-  look(20);
-  expect(shown().width).toBeLessThan(far.shown.width);
-
-  // Close in, the frame stops narrowing at its closest; the marker keeps shrinking with the camera.
-  look(3);
-  const close = { shown: shown(), marker: marker() };
-  look(2);
-  expect(shown().width).toBe(close.shown.width);
-  expect(marker().width).toBeLessThan(close.marker.width);
+  // No camera yet: the tiles' own middle, at the default distance's scale.
+  expect(shown()).toEqual({ x: 0, y: 0, width: 320 / 2.45, height: 320 / 2.45 });
 });
 
-it("places the view and the tiles about the same origin when the world origin moves", async () => {
+it("places the framing and the tiles about the same origin when the world origin moves", async () => {
   await show(revealed([64, 66]));
   setWorldOrigin({ col: 64, row: 0 });
   // A new origin rebuilds where the tiles stand: one render, as a jump across the map is one.
-  await act(async () => look(10, { x: 0, z: 0 }));
+  await act(async () => look({ x: 0, z: 0 }));
   // The tile at column 64 is now drawn about the origin, where the camera looks.
   const tiles = [...svg().querySelectorAll("g:not([pointer-events]) > polygon")];
   const near = tiles.filter((polygon) =>
@@ -135,7 +105,7 @@ it("places the view and the tiles about the same origin when the world origin mo
 
 it("keeps the camera's framing when remote terrain is revealed", async () => {
   await show(EXPLORED);
-  look(12);
+  look({ x: 0, z: 9 });
   const before = shown();
   await show([...EXPLORED, ...revealed([-400, 400])]);
   expect(shown()).toEqual(before);
@@ -152,7 +122,7 @@ it("moves the camera's target with a drag, and the minimap follows the camera", 
   window.addEventListener("minimapCameraMove", listen);
   try {
     await show(EXPLORED, "classic");
-    look(12, { x: 0, z: 0 });
+    look({ x: 0, z: 0 });
     const target = svg();
     target.setPointerCapture = () => {};
     target.releasePointerCapture = () => {};

@@ -8,7 +8,7 @@ import { HudBubble, HudMenu, HudMinimapFrame, HudTierChip } from "@/ui/design-sy
 import { LabTip } from "./lab-tip";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
-import { type MouseEvent, type ReactNode, useState } from "react";
+import { type ReactNode } from "react";
 
 import { Element } from "./sheet-element";
 
@@ -174,35 +174,23 @@ const EdgeMarker = ({ x, y, angle, side }: { x: number; y: number; angle: number
 
 /**
  * The minimap as the sheet draws it: its frame, the walked land and the fog, whose things stand where (a dot for a
- * thing, a marker for a place), the camera's view as a circle, arrows on the edge for what is off view. A click flies
- * the camera there; a drag pans the minimap and the camera follows.
+ * thing, a marker for a place), arrows on the edge for what is off view. It is centred on the camera and zooms with it,
+ * with no mark of the camera's view; a drag pans the minimap and the camera follows.
  */
 const Minimap = () => {
-  const [camera, setCamera] = useState(at(9, 6));
-  const fly = (event: MouseEvent<SVGSVGElement>) => {
-    const svg = event.currentTarget;
-    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(svg.getScreenCTM()!.inverse());
-    setCamera({ x: point.x, y: point.y });
-  };
   const legend: readonly [string, string][] = [
     ["Frame", "the panel with no header, its map in a well (HudMinimapFrame)"],
     ["Walked land and fog", "what the player has revealed in the surface's light, the rest in the well's dark"],
     ["Dots", "a thing where it stands, in its side's colour: yours, an ally's, an enemy's, nobody's"],
     ["Markers", "a place (realm, camp, rift, hyperstructure) as its painting in a hex ringed in its side's colour"],
-    ["Camera", "the view the world camera shows, as a circle in the accent; it follows the camera"],
+    ["Camera", "the minimap is centred on the camera and zooms with it; no mark of its view is drawn"],
     ["Edge arrows", "what is past the edge: the chosen army in the accent, an enemy closing in in red"],
-    ["Click", "a click flies the camera there (try it); a drag pans the minimap and the camera follows"],
+    ["Drag", "a drag pans the minimap and the camera follows"],
   ];
   return (
     <figure data-map-context="Minimap" className="grid grid-cols-[22rem_minmax(0,1fr)] items-start gap-6">
       <HudMinimapFrame>
-        <svg
-          viewBox="0 0 330 185"
-          className="block w-full cursor-crosshair"
-          onClick={fly}
-          role="img"
-          aria-label="Minimap"
-        >
+        <svg viewBox="0 0 330 185" className="block w-full" role="img" aria-label="Minimap">
           {Array.from({ length: COLS * ROWS }, (_, index) => {
             const col = index % COLS;
             const row = Math.floor(index / COLS);
@@ -224,14 +212,6 @@ const Minimap = () => {
           {MARKERS.map((marker) => (
             <MinimapMarker key={marker.name} {...marker} />
           ))}
-          <circle
-            cx={camera.x}
-            cy={camera.y}
-            r={30}
-            fill="rgb(var(--hud-accent) / 0.08)"
-            stroke="rgb(var(--hud-accent))"
-            strokeWidth={1.5}
-          />
           <EdgeMarker x={322} y={60} angle={90} side="enemy" />
           <EdgeMarker x={170} y={8} angle={0} side="accent" />
         </svg>
@@ -329,8 +309,7 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
         (three/scenes/worldmap-order-tip.tsx), the structure menu (three/scenes/context-menu, its own look), the deploy
         picker (military/components/army-deployment-picker.tsx), arrivals only inside panels (incoming-caravans.tsx).
         The minimap (world/components/bottom-right-panel/hex-minimap.tsx) draws biome colours, cyan and orange dots,
-        HexMarker's own side colours (yours green, an ally blue) and its camera circle. Each is styled on its own; here
-        they share the sheet.
+        HexMarker's own side colours (yours green, an ally blue). Each is styled on its own; here they share the sheet.
       </span>
     }
   />

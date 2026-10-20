@@ -3,6 +3,7 @@ import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
 import { fromRenderHex, toRenderHex, worldOrigin } from "@/three/world-origin";
+import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
 import {
   readCameraView,
   subscribeCameraView,
@@ -100,7 +101,7 @@ const normalizeEntityId = (value: unknown): string | null => {
 
 const HEX_SIZE = 7;
 const TILE_WINDOW_STEP = HEX_SIZE * 8;
-/** The scale before the camera first tells what it sees. */
+/** The minimap's scale at the camera's default distance, for the classic look: the rule below scales it by the zoom. */
 const MINIMAP_SCALE_REFERENCE = 1.4;
 
 /**
@@ -252,45 +253,40 @@ const resolveTileMarker = (tile: MinimapTile, markers: ReadonlyMap<string, Minim
 type MinimapLook = "classic" | "badges";
 
 /**
- * `closest` is the largest scale, where a minimap about 320 px wide still shows some seven hexes across: closer than
- * that the framing holds and the view marker shrinks with the camera. "badges" dims its terrain behind the badges.
+ * `zoom` scales the minimap against the camera ("badges" draws closer, so each badge fills its hex at a readable size);
+ * `closest` is the largest scale, where a minimap about 320 px wide still shows some seven hexes across, more than the
+ * closest camera. "badges" dims its terrain behind the badges.
  */
-const LOOKS: Record<MinimapLook, { closest: number; terrainOpacity: number }> = {
-  classic: { closest: 4, terrainOpacity: 0.92 },
-  badges: { closest: 3.5, terrainOpacity: 0.5 },
+const LOOKS: Record<MinimapLook, { zoom: number; closest: number; terrainOpacity: number }> = {
+  classic: { zoom: 1, closest: 4, terrainOpacity: 0.92 },
+  badges: { zoom: 1.75, closest: 3.5, terrainOpacity: 0.5 },
 };
-
-/**
- * How much of the world the minimap shows around what the camera sees: this many times the view's extent, so the view
- * marker stands whole in its surroundings at its true size, with the hexes as large as that leaves them.
- */
-const CONTEXT = 1.2;
 
 type Framing = { x: number; y: number; scale: number };
 
 /** Minimap pixels for a ground point of the camera's view (world units around the same origin as the tiles). */
 const groundToPixel = (point: GroundPoint) => ({ x: point.x * HEX_SIZE, y: point.z * HEX_SIZE });
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 /**
- * The minimap's framing for a camera view: centred on what the camera sees, CONTEXT times its extent on the minimap's
- * tighter side, never closer than the look's closest.
+ * The minimap's scale at a camera distance: it draws back as the camera does, so it shows more ground the farther the
+ * camera stands, scaled by the look and held at its closest.
  */
-const framingFor = (
-  footprint: readonly GroundPoint[],
-  viewport: { width: number; height: number },
-  look: MinimapLook,
-): Framing => {
-  const pixels = footprint.map(groundToPixel);
-  const xs = pixels.map((point) => point.x);
-  const ys = pixels.map((point) => point.y);
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-  const scale = Math.min(
-    LOOKS[look].closest,
-    viewport.width / Math.max(1, (maxX - minX) * CONTEXT),
-    viewport.height / Math.max(1, (maxY - minY) * CONTEXT),
+const scaleAt = (distance: number, look: MinimapLook) => {
+  const { zoom, closest } = LOOKS[look];
+  return clamp(
+    ((MINIMAP_SCALE_REFERENCE * WORLDMAP_CAMERA_ZOOM.defaultDistance) / distance) * zoom,
+    0.4 * zoom,
+    closest,
   );
-  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2, scale };
 };
+
+/** The minimap's framing for a camera view: on the point the camera looks at, at the scale of its distance. */
+const framingFor = (view: CameraView, look: MinimapLook): Framing => ({
+  ...groundToPixel(view.target),
+  scale: scaleAt(view.distance, look),
+});
 
 /** The minimap pixels a framing shows on a viewport. */
 const boxOf = (framing: Framing, viewport: { width: number; height: number }) => {
@@ -331,7 +327,6 @@ export const HexMinimap = ({
 }: HexMinimapProps) => {
   const { terrainOpacity } = LOOKS[look];
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const markerRef = useRef<SVGPolygonElement | null>(null);
   const markers = useFactView(minimapMarkersView);
   const viewportRef = useRef({ width: 320, height: 320 });
   // The origin the camera's view is drawn around: the tiles are placed about the same one.
@@ -343,11 +338,15 @@ export const HexMinimap = ({
     const targetHex = cameraTargetHex ?? navigationTarget ?? selectedHex;
     if (targetHex) {
       const center = offsetToPixel(targetHex.col - FELT_CENTER(), targetHex.row - FELT_CENTER());
-      return { ...center, scale: MINIMAP_SCALE_REFERENCE };
+      return { ...center, scale: scaleAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, look) };
     }
     const { bounds } = centeredIndex;
-    return { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2, scale: MINIMAP_SCALE_REFERENCE };
-  }, [cameraTargetHex, navigationTarget, selectedHex, centeredIndex]);
+    return {
+      x: (bounds.minX + bounds.maxX) / 2,
+      y: (bounds.minY + bounds.maxY) / 2,
+      scale: scaleAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, look),
+    };
+  }, [cameraTargetHex, navigationTarget, selectedHex, centeredIndex, look]);
   const fallbackRef = useRef(fallback);
   fallbackRef.current = fallback;
 
@@ -355,40 +354,23 @@ export const HexMinimap = ({
   // The first render already draws the tiles about the camera's view (or the fallback), before any layout.
   const [tileWindow, setTileWindow] = useState<TileWindow>(() => {
     const view = readCameraView();
-    return windowAround(
-      boxOf(view ? framingFor(view.footprint, viewportRef.current, look) : fallback, viewportRef.current),
-    );
+    return windowAround(boxOf(view ? framingFor(view, look) : fallback, viewportRef.current));
   });
   const tileWindowRef = useRef(tileWindow);
 
   /**
-   * Draws the camera's view into the minimap: its framing and the view marker, written straight to the SVG so they
-   * change in the frame the camera does; the tiles render again only once the view leaves their window.
+   * Frames the minimap on the camera, written straight to the SVG so it moves in the frame the camera does; the tiles
+   * render again only once the framing leaves their window.
    */
   const draw = useCallback(() => {
     const svg = svgRef.current;
     if (!svg) return;
     const view = readCameraView();
     const viewport = viewportRef.current;
-    const framing = view ? framingFor(view.footprint, viewport, look) : fallbackRef.current;
+    const framing = view ? framingFor(view, look) : fallbackRef.current;
     framingRef.current = framing;
     const box = boxOf(framing, viewport);
     svg.setAttribute("viewBox", `${box.minX} ${box.minY} ${box.width} ${box.height}`);
-    const marker = markerRef.current;
-    if (marker) {
-      if (view) {
-        marker.setAttribute(
-          "points",
-          view.footprint
-            .map(groundToPixel)
-            .map((point) => `${point.x},${point.y}`)
-            .join(" "),
-        );
-        marker.removeAttribute("display");
-      } else {
-        marker.setAttribute("display", "none");
-      }
-    }
     if (!windowHolds(tileWindowRef.current, box)) {
       const next = windowAround(box);
       tileWindowRef.current = next;
@@ -590,16 +572,6 @@ export const HexMinimap = ({
       onPointerLeave={endDrag}
     >
       {tileElements}
-      <g pointerEvents="none">
-        <polygon
-          ref={markerRef}
-          display="none"
-          fill="rgba(255,255,255,0.06)"
-          stroke="rgba(255,255,255,0.9)"
-          strokeWidth={1}
-          vectorEffect="non-scaling-stroke"
-        />
-      </g>
     </svg>
   );
 };

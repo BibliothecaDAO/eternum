@@ -146,17 +146,6 @@ function WorldComparison() {
                   {(["you", "ally", "enemy", "neutral"] as const).map((owner, i) => (
                     <HexMarker key={owner} name="map-realm-1" owner={owner} x={26 + i * 55} y={25} radius={16} />
                   ))}
-                  <circle
-                    cx={278}
-                    cy={25}
-                    r={19}
-                    fill="rgba(255,255,255,0.06)"
-                    stroke={age === "today" ? "rgba(255,255,255,0.9)" : mapAgeAccent(age)}
-                    strokeOpacity={age === "today" ? 1 : 0.9}
-                    strokeWidth={1}
-                  >
-                    <title>Camera footprint</title>
-                  </circle>
                   {Object.values(BiomeType).map((biome, i) => (
                     <rect
                       key={biome}
