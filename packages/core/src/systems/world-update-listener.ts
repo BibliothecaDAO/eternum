@@ -242,7 +242,7 @@ type PaidSite = Omit<SitePayoutSystemUpdate, "coord" | "troopsLost">;
 const paidSite = (payload: Fields, story: Fields): PaidSite => {
   const kind = siteKindOf(integer(payload.category));
   const reward = siteReward(payload.reward);
-  if ((kind === "Ruin" || kind === "Beasts") !== (reward === null))
+  if ((kind === "Beasts") !== (reward === null))
     throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
   return {
     explorerId: integer(payload.explorer_id),
@@ -264,7 +264,7 @@ const wonExchange = (battle: Fields): Pick<SitePayoutSystemUpdate, "coord" | "tr
   };
 };
 
-/** A camp or rift pays a resource; beasts pay none, and a ruin its closed chest. */
+/** The receipt carries what was paid: a ruin's LORDS included, even when its chest expired and paid zero. */
 const siteReward = (value: unknown): SitePayoutSystemUpdate["reward"] => {
   if (value === null) return null;
   const reward = fields(value);

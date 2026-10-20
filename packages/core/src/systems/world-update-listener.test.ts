@@ -1,4 +1,4 @@
-import { StructureType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it, vi } from "vitest";
 import { WorldUpdateListener } from "./world-update-listener";
 import { NativeFactStore } from "../client/native-fact-store";
@@ -20,6 +20,64 @@ function fixture() {
 }
 
 describe("native scene updates", () => {
+  it.each([5, 0])("delivers a ruin's actual %s LORDS payout with its winning battle", (amount) => {
+    const { store, listener } = fixture();
+    const delivered = vi.fn();
+    const stop = listener.SitePayouts.onSitePayout(delivered);
+    const position = (event_index: number) => ({
+      block_number: 9,
+      transaction_hash: "0xab",
+      transaction_index: 0,
+      event_index,
+    });
+    store.applyEvent({
+      model: "StoryEvent",
+      key: "payout",
+      value: {
+        game_id: 1,
+        owner: "0x111",
+        timestamp: 100,
+        event_position: position(4),
+        story: {
+          SitePayout: {
+            structure_id: 3,
+            explorer_id: 7,
+            site_id: 9,
+            category: StructureType.Ruin,
+            reward: { resource_type: ResourcesIds.Lords, amount: String(BigInt(amount) * BigInt(RESOURCE_PRECISION)) },
+          },
+        },
+      },
+    });
+    expect(delivered).not.toHaveBeenCalled();
+    store.applyEvent({
+      model: "BattleEvent",
+      key: "battle",
+      value: {
+        game_id: 1,
+        defender_id: 9,
+        coord: { x: 40, y: 12 },
+        attacker: { before: "1000000000000", after: "900000000000" },
+        defender: { before: "100000000000", after: "0" },
+        event_position: position(5),
+      },
+    });
+    expect(delivered.mock.calls).toEqual([
+      [
+        {
+          explorerId: 7,
+          siteId: 9,
+          ownerAddress: 0x111n,
+          kind: "Ruin",
+          reward: { resourceId: ResourcesIds.Lords, amount },
+          coord: { x: 40, y: 12 },
+          troopsLost: 100,
+        },
+      ],
+    ]);
+    stop();
+  });
+
   it("reads an army's Upgrade in either enum form, and refuses one it cannot name", () => {
     const { store, listener } = fixture();
     const chosen = vi.fn();
