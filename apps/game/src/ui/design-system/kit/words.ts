@@ -172,8 +172,6 @@ export const priceRaised = (base: string, noun: string, times: string, standing:
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
 export const startsNewArmies = (attribute: string, tier: string) => `new armies start with ${attribute} at ${tier}`;
-/** A store on its tooltip: what is free of it, "Population 2 free of 6". */
-export const freeOf = (noun: string, free: string, total: string) => `${noun} ${free} free of ${total}`;
 /** The fix for a short store that the map can fill: "Explore for labor". */
 export const exploreFor = (noun: string) => `${EXPLORE} for ${noun}`;
 
@@ -249,7 +247,6 @@ export const BUILDING_FIGURES = {
   held: (noun: string) => `${noun} held of its store's limit`,
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
-  free: `${POPULATION} free of all`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
 } as const;
 

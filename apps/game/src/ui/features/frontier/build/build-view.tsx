@@ -1,4 +1,4 @@
-import { formatExact, formatCharge } from "@bibliothecadao/types";
+import { formatCharge, formatPopulation, formatPopulationInWords } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
@@ -12,10 +12,11 @@ import {
 } from "@/ui/design-system/kit/hud-elements";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
 import type { Tier } from "@/ui/design-system/kit/tier-chip";
-import { BUILD, BUILDING, freeOf, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
+import { BUILD, BUILDING, POPULATION, PRICE_UP } from "@/ui/design-system/kit/words";
 
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import { shortfallLine } from "@/ui/design-system/kit/reasons";
+import type { RealmPopulation } from "../realm/realm-population";
 
 /**
  * One building on the build sheet: its icon and name, then its labor price (ember when short), a tick when the realm
@@ -59,8 +60,8 @@ export const BuildView = ({
   onBuild,
   onClose,
 }: {
-  /** The realm's population: what is free of all it can hold; unknown is a dash. */
-  population: { free: number | undefined; total: number | undefined };
+  /** The realm's population, used of all it can hold; unknown is left out. */
+  population: RealmPopulation | undefined;
   tiles: BuildTile[];
   chosen: number;
   onChoose: (index: number) => void;
@@ -72,15 +73,13 @@ export const BuildView = ({
   onClose: () => void;
 }) => (
   <HudSheet label={BUILD} onClose={onClose}>
-    <header className="flex items-center justify-end">
-      <HudChip
-        icons={["person"]}
-        label={POPULATION}
-        tip={freeOf(POPULATION, formatExact(population.free), formatExact(population.total))}
-      >
-        {`${formatExact(population.free)} / ${formatExact(population.total)}`}
-      </HudChip>
-    </header>
+    {population && (
+      <header className="flex items-center justify-end">
+        <HudChip icons={["person"]} label={POPULATION} tip={formatPopulationInWords(population.used, population.total)}>
+          {formatPopulation(population.used, population.total)}
+        </HudChip>
+      </header>
+    )}
     <div className="grid grid-cols-3 gap-1.5">
       {tiles.map((tile, index) => (
         <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />

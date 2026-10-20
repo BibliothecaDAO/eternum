@@ -31,7 +31,7 @@ describe("the build sheet", () => {
     act(() =>
       root.render(
         <BuildView
-          population={{ free: 2, total: 6 }}
+          population={{ used: 4, total: 6 }}
           tiles={[
             { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 6_800, short: false } },
             {
@@ -59,9 +59,9 @@ describe("the build sheet", () => {
       [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
         (card) => card.querySelector(".ui-card__title")?.textContent === name,
       )!;
-    // The head holds what is free of the realm's population, and says so in words on its tooltip.
-    const population = host.querySelector('[aria-label="population 2 / 6"]')!;
-    expect(population.getAttribute("data-tip")).toBe("population 2 free of 6");
+    // The head holds the realm's population as every screen reads it, used of all it can hold, in words on its hover.
+    const population = host.querySelector('[aria-label="population 4/6"]')!;
+    expect(population.getAttribute("data-tip")).toBe("Population 4 of 6");
     expect(tile("Workshop").textContent).toBe("Workshop10K");
     // A locked building shows its lock and gate on its foot, no labor price.
     expect(tile("War hall").textContent).not.toMatch(/\d/);
@@ -82,7 +82,7 @@ describe("the build sheet", () => {
     act(() =>
       root.render(
         <BuildView
-          population={{ free: 2, total: 6 }}
+          population={{ used: 4, total: 6 }}
           tiles={[
             { key: "farm", icon: "farm", name: "Farm", tip: "", foot: { kind: "price", labor: 15_000, short: true } },
           ]}

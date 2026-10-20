@@ -134,3 +134,17 @@ export const formatOrdinal = (place: number | undefined): string =>
 /** Points, always exact: a player counts them to the unit against the one above. "1 point", "1,250 points". */
 export const formatPoints = (points: number | undefined): string =>
   points === undefined ? `— ${POINTS}` : formatCount(points, POINT, POINTS);
+
+/** A count read off the chain or a holding's metadata, written whole: unknown or below zero is none. */
+const wholeCount = (value: number) => exact.format(Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0);
+
+/**
+ * A realm's population, the one way every screen writes it, Blitz's and Frontier's alike: what its buildings take of
+ * all it can hold, "5/6". Never what is free; a shortfall says that in its own line.
+ */
+export const formatPopulation = (used: number, capacity: number): string =>
+  `${wholeCount(used)}/${wholeCount(capacity)}`;
+
+/** The same in words, on a hover or in a line: "Population 5 of 6". */
+export const formatPopulationInWords = (used: number, capacity: number): string =>
+  `Population ${wholeCount(used)} of ${wholeCount(capacity)}`;

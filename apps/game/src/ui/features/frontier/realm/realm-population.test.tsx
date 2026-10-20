@@ -15,6 +15,23 @@ const Panel = ({ realm }: { realm: NativeRows["Structure"] }) => (
   <RealmPanel name="Duskbite" level={1} population={useRealmPopulation(realm)} stores={[]} />
 );
 
+/** The realm's buildings row, its buildings taking `current` of the population its Huts give. */
+const buildingsTaking = (current: number) =>
+  [
+    {
+      model: "StructureBuildings",
+      key: "0x72",
+      value: {
+        game_id: 1,
+        entity_id: 7,
+        packed_counts_1: "0",
+        packed_counts_2: "0",
+        packed_counts_3: "0",
+        population: { current, max: 6 },
+      },
+    },
+  ] as never;
+
 it("reads the realm's population on its panel as Blitz reads a holding's: used of all its castle and Huts give", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, realm } = realmBoard();
@@ -33,22 +50,7 @@ it("reads the realm's population on its panel as Blitz reads a holding's: used o
   expect([population()?.textContent, population()?.getAttribute("data-tip")]).toEqual(["0/12", "Population 0 of 12"]);
 
   // A farm stands: it takes its population, and the panel reads it.
-  act(() =>
-    store.applyFacts([
-      {
-        model: "StructureBuildings",
-        key: "0x72",
-        value: {
-          game_id: 1,
-          entity_id: 7,
-          packed_counts_1: "0",
-          packed_counts_2: "0",
-          packed_counts_3: "0",
-          population: { current: 3, max: 6 },
-        },
-      },
-    ] as never),
-  );
+  act(() => store.applyFacts(buildingsTaking(3)));
   expect(population()?.textContent).toBe("3/12");
 
   act(() => root.unmount());

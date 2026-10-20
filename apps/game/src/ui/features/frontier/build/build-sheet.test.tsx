@@ -204,12 +204,12 @@ describe("the build sheet", () => {
     return { host, card, button, close };
   };
 
-  it("keeps the realm's free population in its head", () => {
+  it("keeps the realm's population in its head, used of all it can hold", () => {
     const { store, realm } = realmBoard();
     const total = 6 + configManager.getBasePopulationCapacity();
     population(store, 4);
     const sheet = open(store, realm);
-    expect(sheet.host.querySelector(`[aria-label="population ${total - 4} / ${total}"]`)).not.toBeNull();
+    expect(sheet.host.querySelector(`[aria-label="population 4/${total}"]`)).not.toBeNull();
     sheet.close();
   });
 

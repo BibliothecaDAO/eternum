@@ -55,7 +55,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
-import { type RealmPopulation, readRealmPopulation } from "../realm/realm-population";
+import { readRealmPopulation } from "../realm/realm-population";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
@@ -158,7 +158,7 @@ export const BuildSheet = ({
 
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-  const population = freePopulation(readRealmPopulation(setup.store, realmId));
+  const population = readRealmPopulation(setup.store, realmId);
   const choose = (category: BuildingType) =>
     setChosen(options.findIndex((candidate) => candidate.category === category));
   const priceOf = (category: BuildingType) =>
@@ -203,7 +203,7 @@ export const BuildSheet = ({
         kind: "short",
         of: "population",
         counted: "free",
-        held: population.free,
+        held: population && population.total - population.used,
         need: option.populationCost,
       },
       fix: {
@@ -245,14 +245,6 @@ export const BuildSheet = ({
     />
   );
 };
-
-/** What is free of the realm's population, and all it can hold. */
-const freePopulation = (
-  population: RealmPopulation | undefined,
-): { free: number | undefined; total: number | undefined } =>
-  population
-    ? { free: population.total - population.used, total: population.total }
-    : { free: undefined, total: undefined };
 
 /** Each attribute's mark, as a training building's gain shows it. */
 const ATTRIBUTE_MARKS: Record<Extract<BuildOption["effect"], { kind: "trains" }>["attribute"], IconMeaning> = {

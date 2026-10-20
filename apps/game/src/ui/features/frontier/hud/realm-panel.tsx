@@ -1,9 +1,15 @@
-import { formatAmount, formatExact, LORDS, rankName } from "@bibliothecadao/types";
+import {
+  formatAmount,
+  formatExact,
+  formatPopulation,
+  formatPopulationInWords,
+  LORDS,
+  rankName,
+} from "@bibliothecadao/types";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
 import { REALM } from "@/ui/design-system/kit/words";
-import { formatPopulationStatusLabel } from "@/ui/features/world/containers/structure-status";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
 
@@ -76,12 +82,9 @@ export const RealmPanel = ({
 
 /** The realm's population as Blitz's realm card reads a holding's: used of all it can hold, the whole line on hover. */
 const PopulationReading = ({ population: { used, total } }: { population: RealmPopulation }) => (
-  <span
-    className="flex items-center gap-1.5 tabular-nums"
-    data-tip={`Population ${formatExact(used)} of ${formatExact(total)}`}
-  >
+  <span className="flex items-center gap-1.5 tabular-nums" data-tip={formatPopulationInWords(used, total)}>
     <SemanticIcon name="people" size={16} />
-    {formatPopulationStatusLabel(used, total)}
+    {formatPopulation(used, total)}
   </span>
 );
 

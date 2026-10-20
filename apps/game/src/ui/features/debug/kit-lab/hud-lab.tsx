@@ -971,7 +971,7 @@ export const HudLab = () => {
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
-            population={lab.realmView === "build" ? { free: 3, total: 12 } : { free: 6, total: 6 }}
+            population={lab.realmView === "build" ? LAB_POPULATION : { used: 0, total: 6 }}
             tiles={lab.realmView === "build" ? BUILD_TILES : EARLY_TILES}
             chosen={lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
