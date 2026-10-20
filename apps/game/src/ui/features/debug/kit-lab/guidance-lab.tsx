@@ -16,7 +16,7 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { type CoachArmy, type CoachStep, type CoachTarget, coachSteps } from "@/ui/features/world/hud/coach";
 import { buildStoryEventPresentation, configManager } from "@bibliothecadao/eternum";
-import { relicChestRelics, ResourcesIds } from "@bibliothecadao/types";
+import { relicChestRelics, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
@@ -167,7 +167,11 @@ const HYPERSTRUCTURE: CoachTarget = {
   name: "Obsidian Hyperstructure",
   hex: { col: 18, row: 10 },
 };
-const TROOPS = { realmId: 7, realmName: "'oak Leukue", troops: 1_000 };
+const TROOPS = {
+  realmId: 7,
+  realmName: "'oak Leukue",
+  stack: { type: TroopType.Knight, tier: TroopTier.T1, count: 1_000 },
+};
 
 /** The coach's steps for a state, as Next up shows them (their buttons do nothing here). */
 const coached = (state: Partial<Parameters<typeof coachSteps>[0]>): NextStep[] =>

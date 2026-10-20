@@ -1,4 +1,4 @@
-import { getHexDistance, formatExact } from "@bibliothecadao/types";
+import { getHexDistance, formatCount, formatExact } from "@bibliothecadao/types";
 import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 import type { PointsGrants } from "./points-goal";
 
@@ -93,7 +93,7 @@ export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHa
   troopsOnHand
     ? {
         key: "coach:raise",
-        line: `Raise an army at ${troopsOnHand.realmName} (${formatExact(troopsOnHand.stack.count)} troops on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
+        line: `Raise an army at ${troopsOnHand.realmName} (${formatCount(troopsOnHand.stack.count, "troop")} on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
         verb: "Raise an army",
         act: { kind: "raise", realmId: troopsOnHand.realmId, troops: troopsOnHand.stack },
       }

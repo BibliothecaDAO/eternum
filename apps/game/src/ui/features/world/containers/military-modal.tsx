@@ -13,6 +13,7 @@ import { StructureSidebar } from "@/ui/features/world/containers/structure-sideb
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { Direction, type ID } from "@bibliothecadao/types";
+import type { TroopStack } from "@/ui/features/military/components/unified-army-creation-modal/types";
 
 import { memo, useCallback, useEffect, useState } from "react";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
