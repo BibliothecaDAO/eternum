@@ -16,5 +16,5 @@ export function InlineProduction({ entityId, resource }: { entityId: number; res
   useNativeRevision(["Structure", "StructureBuildings", "ResourceWeight"]);
   const realm = getRealmInfo(entityId, store, getPlayerName);
   if (!ordersAllowed || !realm || !account?.address || realm.owner !== ContractAddress(account.address)) return null;
-  return <ProductionControls key={`${entityId}:${resource}`} realm={realm} selectedResource={resource} compact />;
+  return <ProductionControls realm={realm} selectedResource={resource} compact />;
 }

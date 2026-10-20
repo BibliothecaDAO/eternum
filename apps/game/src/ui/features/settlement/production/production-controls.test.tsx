@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -17,6 +17,23 @@ import { configManager, setBlockTimestampSource } from "@bibliothecadao/eternum"
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType, type RealmInfo } from "@bibliothecadao/types";
 import { ProductionControls } from "./production-controls";
+import { ProductionWorkflows } from "./production-workflows";
+
+/** The Production window's manual workflow as a phone shows it: its Resource selector picks the output. */
+const Workflow = ({ realm }: { realm: RealmInfo }) => {
+  const [selectedResource, onSelectResource] = useState<ResourcesIds | null>(ResourcesIds.Crossbowman);
+  return (
+    <ProductionWorkflows
+      realm={realm}
+      realmDisplayName="Egonal"
+      producedResources={[ResourcesIds.Crossbowman, ResourcesIds.Donkey]}
+      productionBuildings={[]}
+      selectedResource={selectedResource}
+      onSelectResource={onSelectResource}
+      realmEntityId="7"
+    />
+  );
+};
 
 const units = (amount: number) => String(BigInt(Math.round(amount * RESOURCE_PRECISION)));
 const balance = (key: string, resource_type: number, amount: number) => ({
@@ -74,7 +91,10 @@ const egonal = ({ copper, labor = 0, troopBonus = 0 }: { copper: number; labor?:
 
 const realm = { entityId: 7, category: StructureType.Realm } as RealmInfo;
 
-const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false, compact = false } = {}) => {
+const mount = (
+  holdings: Parameters<typeof egonal>[0],
+  { laborEnabled = false, compact = false, workflow = false } = {},
+) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const store = egonal(holdings);
   const isCommandEnabled = configManager.isCommandEnabled.bind(configManager);
@@ -96,7 +116,11 @@ const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false, c
   act(() =>
     root.render(
       <GameProvider value={setup} account={{ address: "0x111" } as never}>
-        <ProductionControls selectedResource={ResourcesIds.Crossbowman} realm={realm} compact={compact} />
+        {workflow ? (
+          <Workflow realm={realm} />
+        ) : (
+          <ProductionControls selectedResource={ResourcesIds.Crossbowman} realm={realm} compact={compact} />
+        )}
       </GameProvider>,
     ),
   );
@@ -116,7 +140,7 @@ const mount = (holdings: Parameters<typeof egonal>[0], { laborEnabled = false, c
     act(() => root.unmount());
     host.remove();
   };
-  return { host, burnResources, burnLabor, button, input, start, type, press, unmount };
+  return { host, store, burnResources, burnLabor, button, input, start, type, press, unmount };
 };
 
 afterEach(() => {
@@ -282,6 +306,41 @@ it("refuses an amount of nothing in the compact form, saying why", async () => {
     await view.press(view.start());
     expect(view.burnResources).not.toHaveBeenCalled();
     expect(view.burnLabor).not.toHaveBeenCalled();
+  } finally {
+    view.unmount();
+  }
+});
+
+// whole-review-3-ui's reproduction: on a phone the Resource selector swaps the output under a mounted form.
+it("starts a fresh form when the phone's Resource picks another output, never sizing it by the last recipe's input", async () => {
+  const view = mount({ copper: 100 }, { workflow: true });
+  try {
+    // Blitz's Donkey: three a cycle from 3 wheat, no copper.
+    act(() =>
+      view.store.applyFacts([
+        {
+          model: "ProductionRecipe",
+          key: "0xfeed20",
+          value: {
+            game_id: 1,
+            resource_type: ResourcesIds.Donkey,
+            simple_output: units(0),
+            simple_inputs: [],
+            complex_output: units(3),
+            complex_inputs: [{ resource_type: ResourcesIds.Wheat, amount: units(3) }],
+          },
+        },
+      ] as never),
+    );
+    view.type("Copper to spend", "8");
+    expect(view.start().disabled).toBe(false);
+    await view.press(view.host.querySelector('button[aria-label="Resource"]')!);
+    const donkey = [...document.querySelectorAll("button.ui-menu__item")].find((item) => item.textContent === "Donkey");
+    await view.press(donkey!);
+    expect(view.host.textContent).not.toContain("Spend at least");
+    expect(view.host.textContent).toContain("3 Donkey");
+    expect(view.start().textContent).toBe("Start production");
+    expect(view.start().disabled).toBe(false);
   } finally {
     view.unmount();
   }
