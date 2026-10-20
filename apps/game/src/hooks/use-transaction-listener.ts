@@ -35,6 +35,8 @@ interface TransactionCompletePayload extends TransactionLifecycleMeta {
   type: TransactionType;
 }
 
+const NOT_SENT = "The action was not sent.";
+
 /**
  * A refusal, by the game or before the send, is said on screen here, the one place every action's failure passes, so no
  * handler can leave one in the console. A handler that names it too in the same words shares its row. An outcome the
@@ -172,7 +174,8 @@ export const useTransactionListener = () => {
       });
 
       const status = statusAfterFailure(payload);
-      if (isRefusal(status)) toast.failed(payload.error ?? payload.message, "The action was not sent.");
+      // Reported just above, so the notice alone: the words a handler's toast.failed gives, so the two share a row.
+      if (isRefusal(status)) toast.error(extractReadableErrorMessage(payload.error ?? payload.message, NOT_SENT));
       if (payload.transactionHash) {
         // Try to update existing transaction
         const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === payload.transactionHash);

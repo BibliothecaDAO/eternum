@@ -1,4 +1,4 @@
-import { ActionRefusedError } from "@bibliothecadao/types";
+import { ActionRefusedError, wasReported } from "@bibliothecadao/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { type FeedNoticeKind, useEventFeedStore } from "./event-feed-store";
@@ -21,6 +21,18 @@ const push = (kind: FeedNoticeKind, title: string, options?: NoticeOptions): str
   });
 
 /**
+ * What an action's failure says, the one reading every failure handler makes: an action the game does not take yet
+ * (ActionRefusedError: "Starts in 2m 33s") is `refused`, its reason kept and never logged; any other failure gives the
+ * reason its error names (the shard's refusal, the game's revert), `fallback` when it names none. A failure is logged
+ * once: the system call logs its own (with its report), and this logs only one that never reached it.
+ */
+export const actionFailure = (error: unknown, fallback: string): { refused: boolean; reason: string } => {
+  if (error instanceof ActionRefusedError) return { refused: true, reason: error.message };
+  if (!wasReported(error)) console.error(fallback, error);
+  return { refused: false, reason: extractReadableErrorMessage(error, fallback) };
+};
+
+/**
  * The one way to say something happened: a notice in the event feed (ticker + panel), in words. The call shape follows
  * the toast library it replaced so every call site reads the same; nothing renders outside the feed.
  */
@@ -32,16 +44,10 @@ export const toast = Object.assign((title: string, options?: NoticeOptions) => p
    */
   success: (title: string, options?: NoticeOptions) => push("success", title, options),
   error: (title: string, options?: NoticeOptions) => push("error", title, options),
-  /**
-   * An action that failed, the one way every failure handler says so: the reason its error names (the shard's refusal,
-   * the game's revert), and `fallback` only when it names none. It logs the failure once, so its callers don't. An
-   * action the game does not take yet (ActionRefusedError: "Starts in 2m 33s") did not fail: its reason is told as
-   * news, never logged as an error.
-   */
+  /** An action that failed, as actionFailure reads it: a refusal told as news, a failure as an error. */
   failed: (error: unknown, fallback: string, options?: NoticeOptions) => {
-    if (error instanceof ActionRefusedError) return toast.info(error.message, options);
-    console.error(fallback, error);
-    return toast.error(extractReadableErrorMessage(error, fallback), options);
+    const { refused, reason } = actionFailure(error, fallback);
+    return refused ? toast.info(reason, options) : toast.error(reason, options);
   },
   warning: (title: string, options?: NoticeOptions) => push("warning", title, options),
   dismiss: (id?: string) => useEventFeedStore.getState().dismiss(id),

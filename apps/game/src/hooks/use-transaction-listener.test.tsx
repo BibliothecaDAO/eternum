@@ -47,7 +47,8 @@ const fail = (payload: Record<string, unknown>) =>
     provider.emitter!.emit("transactionFailed", { type: TransactionType.TRAVEL_HEX, ...payload });
   });
 
-it("says on screen why the game refused an action, whichever handler sent it", async () => {
+it("says on screen why the game refused an action, whichever handler sent it, and leaves its report to the reporter", async () => {
+  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
   await fail({
     transactionHash: "0x476f",
     stage: "revert",
@@ -55,6 +56,8 @@ it("says on screen why the game refused an action, whichever handler sent it", a
     error: new Error("movement tile occupied"),
   });
   expect(shownNotices()).toEqual(["movement tile occupied"]);
+  expect(logged).not.toHaveBeenCalled();
+  logged.mockRestore();
 });
 
 it("says on screen an action the shard refused before sending it, in the refusal's words", async () => {

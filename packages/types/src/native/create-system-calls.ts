@@ -20,6 +20,13 @@ export class ActionRefusedError extends Error {
   }
 }
 
+/** Failures the system call already handed to its error handler, so a caller that tells the player logs nothing more. */
+const reportedFailures = new WeakSet<object>();
+
+/** Whether a system call already reported this failure to its error handler (the one that logs it). */
+export const wasReported = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && reportedFailures.has(error);
+
 export type BatchTransactionReceipt = GetTransactionReceiptResponse & { remaining: bigint };
 
 export type SystemCalls = ReturnType<typeof createSystemCalls>;
@@ -41,7 +48,10 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
 
         return await fn(...args);
       } catch (error) {
-        authHandler?.onError?.(error as Error);
+        if (authHandler?.onError && !wasReported(error)) {
+          authHandler.onError(error as Error);
+          if (typeof error === "object" && error !== null) reportedFailures.add(error);
+        }
         throw error;
       }
     }) as T;
