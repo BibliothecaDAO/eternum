@@ -12,7 +12,6 @@ import { TransferAutomationAdvancedModal } from "@/ui/features/economy/transfers
 import { openTransfer } from "@/ui/features/economy/transfers/transfer-window";
 import { RealmNumberPicker } from "@/ui/features/game-entry/realm-number-picker";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
-import { HintModal } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionModal } from "@/ui/features/settlement/production/production-modal-content";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
@@ -71,7 +70,6 @@ const SURFACES: Record<string, { name: string; draw: () => ReactNode }> = {
     name: "Transfer",
     draw: () => <Opened open={() => openTransfer({ sourceId: REALM, destinationIds: [] })} />,
   },
-  lordpedia: { name: "Lordpedia", draw: () => <HintModal /> },
   "structure-edit": {
     name: "Edit structure",
     draw: () => (

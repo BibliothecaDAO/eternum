@@ -1176,8 +1176,9 @@ export const HudBanner = ({
 );
 
 /**
- * How big a window is, by what it holds: one task (a name, a relic, a confirmation), a page to read (the Lordpedia), or a
- * workspace (Build, Production, Transfer, the market) that fills the desk on desktop and the sheet on a phone.
+ * How big a window is, by what it holds: one task (a name, a relic, a confirmation), a page to read (a Wonder's
+ * faith), or a workspace (Build, Production, Transfer, the market) that fills the desk on desktop and the sheet on a
+ * phone.
  */
 type WindowSize = "task" | "page" | "workspace" | "fit";
 

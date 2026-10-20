@@ -1,4 +1,3 @@
-export * from "./headline";
 export * from "./loading-animation";
 export * from "./resource-cost";
 export * from "./resource-icon";

@@ -97,7 +97,6 @@ const AREAS = {
     "ui/features/game-entry/realm-number-picker.tsx",
     "ui/motion",
     "ui/design-system/hex-marker.tsx",
-    "ui/design-system/molecules/headline.tsx",
     "ui/design-system/molecules/popover.tsx",
     "ui/design-system/molecules/requirement-chips.tsx",
     "ui/design-system/molecules/resource-cost.tsx",
@@ -108,7 +107,6 @@ const AREAS = {
   "B. Windows and modals": [
     "ui/features/settlement",
     "ui/features/relics",
-    "ui/features/progression/hints",
     "ui/features/economy/trading",
     "ui/features/economy/banking",
     "ui/features/event-feed",

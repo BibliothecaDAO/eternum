@@ -1385,7 +1385,7 @@ const RowsSection = () => (
           <span className="text-right text-hud-strong">0</span>
         </HudTableRow>
         <span data-lab-chrome className="mt-3 text-xs text-white/50">
-          A row only read, in a reference table (the Lordpedia&apos;s): no hover, no cursor:
+          A row only read, in a reference table: no hover, no cursor:
         </span>
         <div role="table" aria-label="Exploration rewards">
           <HudTableRow cols="1fr 64px" label="Essence: 30 percent" state="hover">
