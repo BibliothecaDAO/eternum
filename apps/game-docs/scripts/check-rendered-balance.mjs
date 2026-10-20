@@ -160,6 +160,19 @@ const frontierPhrases = (config, preset) => {
   ];
 };
 
+/**
+ * The entry page says a sword and a shield each cost one entry: true only while both registered prices equal the entry
+ * fee. Otherwise the page must state the prices themselves, which it does not, so the check fails.
+ */
+const flagPrices = (ledger) => {
+  const entry = lordsOf(ledger.entry_fee);
+  const sword = lordsOf(ledger.sword_price);
+  const shield = lordsOf(ledger.shield_price);
+  return sword === entry && shield === entry
+    ? "Each costs one entry."
+    : `A sword costs ${sword} LORDS and a shield ${shield} LORDS.`;
+};
+
 const CHEST_BANDS = ["Top 20%", "20–40%", "40–60%", "60–80%", "Bottom 20%"];
 const lordsOf = (amount) => n(Number(BigInt(amount.low) + (BigInt(amount.high) << 128n)) / 1e18);
 
@@ -173,7 +186,7 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
   return [
     {
       page: "blitz/game-entry",
-      phrases: [`at the season's entry fee (${lordsOf(ledger.entry_fee)} LORDS this season)`],
+      phrases: [`at the season's entry fee (${lordsOf(ledger.entry_fee)} LORDS this season)`, flagPrices(ledger)],
     },
     {
       page: "blitz/prize-pool",
@@ -184,7 +197,8 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
             ? `${CHEST_BANDS[index]} none —`
             : `${CHEST_BANDS[index]} ${pct(band.odds.lords)} ${band.lords_shares}`,
         ),
-        `Ratings average ${n(ledger.mmr.mean)} and move at most ${ledger.mmr.max_delta} in a game`,
+        `Ratings are measured against a reference mean of ${n(ledger.mmr.mean)}`,
+        `A game's base rating change is capped at ${ledger.mmr.max_delta}, less in a small game; then a sword doubles a gain and a shield halves a loss`,
         `The best ${pct(ledger.paid_fraction_bps)} of the season's players`,
         `each place after it ${pct(ledger.decay_bps)} of the share above`,
       ],

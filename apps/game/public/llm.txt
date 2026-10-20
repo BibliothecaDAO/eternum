@@ -72,8 +72,8 @@ refund** on the slot in Play once it shows.
 
 ## The lobby
 
-Registered players write in their slot's lobby chat; anyone can read it. On a desktop, the roster shows each seat's
-Blitz rating.
+Registered players write in their slot's lobby chat; any signed-in player can read it. On a desktop, the roster shows
+each seat's Blitz rating.
 
 ## Sword and shield
 
@@ -263,10 +263,11 @@ joins the prize pool.
 
 ## Ratings
 
-Every Blitz game is rated, however many play; only a game of one leaves ratings as they were. Ratings average 1,500 and
-move at most 45 in a game, less in a small game. A sword doubles your gain and a shield halves your loss, in the game
-you bought them for. In a rated game, the leaderboard shows each player's rating change if the game ended now, worked
-out as the result will be.
+Every Blitz game is rated, however many play; only a game of one leaves ratings as they were. Ratings are measured
+against a reference mean of 1,500. A game's base rating change is capped at 45, less in a small game; then a sword
+doubles a gain and a shield halves a loss, in the game you bought them for, so a sword's gain can reach twice the cap.
+In a rated game, the leaderboard shows each player's rating change if the game ended now, worked out as the result will
+be.
 
 ## The season prize
 
@@ -2146,7 +2147,8 @@ drawn for you. Each starts with **1,000** T1 troops of its type garrisoned and
 ## Merging armies
 
 Select an army, then an adjacent army or realm of yours: the transfer panel moves troops between them, across your
-realms too. Both sides must hold the same troop type and tier.
+realms too. An army, or a guard slot that holds troops, takes only its own troop type and tier; an empty guard slot
+takes any type and tier, and only from an army.
 
 ## Structure Guards and Claims
 
