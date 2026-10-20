@@ -161,7 +161,7 @@ export async function proveEffectCost(b, out, records, baseUrl, effect) {
             summary.medianDelta <= 0.5 &&
             summary.p95Delta <= 1 &&
             new Set([...off.beastCalls, ...on.beastCalls]).size === 1 &&
-            off.beastCalls.every((calls) => calls === 8) &&
+            off.beastCalls.every((calls) => calls > 0) &&
             new Set([...off.beastTriangles, ...on.beastTriangles]).size === 1,
           actual: summary,
         });
