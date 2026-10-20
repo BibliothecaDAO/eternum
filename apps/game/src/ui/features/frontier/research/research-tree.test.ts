@@ -62,10 +62,27 @@ describe("the castle's tree as the contract rules it", () => {
     ]);
     // The lodge's uncommon went to rifts (+10%); its rare adds 20% more to the kind picked.
     expect(node(MID_REALM, "row-6").sides?.map(({ name, now, next }) => [name, now, next])).toEqual([
-      ["Camps", "0%", "+20%"],
+      ["Trolls", "0%", "+20%"],
       ["Rifts", "+10%", "+30%"],
       ["Beasts", "0%", "+20%"],
     ]);
+  });
+});
+
+describe("Frontier's camp is its Troll on the progression views (the shared structure naming rule)", () => {
+  it("names the Scouts' lodge's camp kind Trolls, and nothing in the tree Camp", () => {
+    const lodge = node(MID_REALM, "row-6");
+    expect(lodge.sides?.[0]?.name).toBe("Trolls");
+    expect(lodge.sides?.[0]?.line).toBe("Trolls found by new armies");
+    // Internal keys and icons stay "camp"; no word a player reads says Camp.
+    expect(JSON.stringify(readResearchTree(MID_REALM))).not.toMatch(/Camp/);
+  });
+
+  it("names the army's camp clear and its Scouting kind by the Troll", () => {
+    const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
+    expect(army.earn.map(({ line }) => line)).toContain("Clear a Troll: more for a stronger guard");
+    expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% Trolls");
+    expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });
 });
 

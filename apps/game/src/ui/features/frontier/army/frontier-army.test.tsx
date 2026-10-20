@@ -92,8 +92,13 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
   expect(host.textContent).toContain("Damage dealt");
   expect(host.textContent).toContain("Max stamina");
+  // Frontier's camp is its Troll, on the panel as everywhere (the shared structure naming rule).
+  expect(host.textContent).toContain("Clear a Troll: more for a stronger guard");
+  expect(host.textContent).not.toMatch(/Camp/);
   act(() => button(/Level up · 4 ready/)!.click());
   act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-attribute='scouting']")][0]!.click());
+  expect(button(/^Trolls$/)).toBeDefined();
+  expect(host.textContent).not.toMatch(/Camp/);
   act(() => button(/^Rifts$/)!.click());
   await act(async () => button(/^Level up$/)!.click());
   expect(game.buyTier).toHaveBeenCalledWith({

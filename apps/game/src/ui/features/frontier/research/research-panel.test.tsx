@@ -67,3 +67,9 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
   act(() => button(/Level up the castle/)!.click());
   expect(onFix).toHaveBeenCalledOnce();
 });
+
+it("shows the Scouts' lodge's camp kind as Trolls, never Camp", () => {
+  draw("row-6");
+  expect(host.textContent).toContain("Trolls found by new armies");
+  expect(host.textContent).not.toMatch(/Camp/);
+});

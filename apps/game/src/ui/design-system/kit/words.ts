@@ -16,6 +16,7 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
+  structureName,
   structurePlural,
   StructureType,
 } from "@bibliothecadao/types";
@@ -987,7 +988,8 @@ export const RESEARCH_TREE = {
     drill: ["Drill", "Troops from every Barracks"],
     rations: ["Rations", "Wheat a deployed troop costs"],
   },
-  kinds: { camp: "Camps", rift: "Rifts", beasts: "Beasts" },
+  /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
+  kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
   sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
   sideKept: "The side is kept for the season.",
@@ -1038,7 +1040,7 @@ export const ARMY_DETAIL = {
   earn: {
     explore: "Explore a tile",
     shrine: "Visit a Shrine",
-    clear: "Clear a camp: more for a stronger guard",
+    clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}: more for a stronger guard`,
   },
   ready: (count: number) => `${formatCount(count, "level-up")} ready`,
   toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
