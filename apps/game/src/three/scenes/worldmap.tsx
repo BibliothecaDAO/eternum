@@ -2625,18 +2625,6 @@ export default class WorldmapScene extends WarpTravel {
     return position;
   }
 
-  /** A click on a resting map token selects its thing: the army's or structure's own tile, never the tile behind it. */
-  protected resolveLabelClick(event: MouseEvent): HexPosition | null {
-    const key = this.mapPlates?.tokenAt(event.clientX, event.clientY);
-    if (!key) return null;
-    const [kind, id] = key.split(":");
-    if (kind === "army") {
-      const hex = this.armyManager.getArmy(Number(id))?.hexCoords.getNormalized();
-      return hex ? { col: hex.x, row: hex.y } : null;
-    }
-    return kind === "structure" ? (this.structureManager.getStructureHex(Number(id)) ?? null) : null;
-  }
-
   // hexcoords is normalized
   protected onHexagonClick(hexCoords: HexPosition | null) {
     if (

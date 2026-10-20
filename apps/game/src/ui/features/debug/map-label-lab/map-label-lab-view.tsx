@@ -72,9 +72,8 @@ export const MapLabelLabView = () => {
           setPointerHover(tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
         }
         onPointerLeave={() => setPointerHover(null)}
-        // A click on a resting token selects its thing, as the world map resolves it (`MapPlateLayer.tokenAt`); anywhere
-        // else (an open plate included), the tile under the pointer.
-        onClick={(event) => set("select", layer?.tokenAt(event.clientX, event.clientY)?.split(":")[1] ?? pointerHover)}
+        // A click selects the tile under the pointer: the labels take none (owner, 2026-10-20: "we click the tile").
+        onClick={() => set("select", pointerHover)}
       />
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
       <Tooltip />

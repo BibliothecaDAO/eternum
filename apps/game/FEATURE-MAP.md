@@ -380,37 +380,36 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   just over the model's top, never on the thing, at every zoom (`src/three/map-plates/map-plate-token.tsx`): a disk in
   its side's colour, then the tier chip and count of its troops or guard (a camp's or rift's guard alone: what it holds
   is on its plate), an army's stamina bar; an undefended one shows a dashed ring. No label element takes the pointer
-  (`map-plates.css`): a hover lands on the tile beneath, and so does a click on an open plate, but a click on a resting
-  token selects its thing, as a click on its tile does (the scene's one click resolver asks the layer,
-  `MapPlateLayer.tokenAt`). Hover a tile and its full plate opens where its token was drawn: on the token's foot (hung
-  from the top bar's edge only where it would reach under the bar), slid aside but always covering the token's middle
-  (`map-plate-layout.ts`). Select it and it goes back to rest, its token ringed in gold: its detail is the HUD's panel;
-  selected while hovered, it rests until the pointer leaves it, and opens again when it comes back. The open plate and
-  the order line are placed together, clear of each other, the screen's edges and the HUD; where the hovered plate
-  cannot fit beside the line, it stays its token. The plate, on the HUD panel's surface, has at most three rows
-  (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its realm's plate writes them, then its
-  troops, then its stamina bar and exact "84/150". A realm or hyperstructure: "player | name", its guard slots in the
-  order an attacker meets them, each with its stamina bar under it (read at the chain's tick, following regeneration),
-  or "Undefended"; in Frontier, whose realms have no guard slots and are never attacked, "player | name" alone; then the
-  troops on their way, each time before its troops ("Arriving 13m T2 300"). A camp or rift: its owner (the Vanguard for
-  nobody's), its lore name, read off its id on every client (`site-name.ts`), and kind ("Grimtear Camp"), and what it
-  holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). With a thing selected,
-  the hovered tile's order line stands beside the tile, clear of the opened plates and of every token kept in view, or
-  is not drawn; the tokens under it step aside. Crowded tokens slide aside only as far as keeps their thing's label
-  point under them, else are not drawn; the selected thing, the player's own armies and anything in battle (on its
-  battle cooldown) always stay in view: placed first, together (`placeKept`), each on its own point, slid while
-  attached, or a row or two straight up, in the arrangement that rises least, the same whatever order they arrive in,
-  and the others yield to them. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
-  (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture
-  world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `game=frontier`,
-  `panel=0` in the address; with a thing selected, the hovered tile shows the order line). In a live game,
-  `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
+  (`map-plates.css`): a hover or a click, on a token or an open plate, lands on the tile under the pointer, on desktop
+  and phone (owner, 2026-10-20: "we click the tile and that's it"). Hover a tile and its full plate opens where its
+  token was drawn: on the token's foot (hung from the top bar's edge only where it would reach under the bar), slid
+  aside but always covering the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token
+  ringed in gold: its detail is the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens
+  again when it comes back. The open plate and the order line are placed together, clear of each other, the screen's
+  edges and the HUD; where the hovered plate cannot fit beside the line, it stays its token. The plate, on the HUD
+  panel's surface, has at most three rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its
+  realm's plate writes them, then its troops, then its stamina bar and exact "84/150". A realm or hyperstructure:
+  "player | name", its guard slots in the order an attacker meets them, each with its stamina bar under it (read at the
+  chain's tick, following regeneration), or "Undefended"; in Frontier, whose realms have no guard slots and are never
+  attacked, "player | name" alone; then the troops on their way, each time before its troops ("Arriving 13m T2 300"). A
+  camp or rift: its owner (the Vanguard for nobody's), its lore name, read off its id on every client (`site-name.ts`),
+  and kind ("Grimtear Camp"), and what it holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier
+  site's payout). With a thing selected, the hovered tile's order line stands beside the tile, clear of the opened
+  plates and of every token kept in view, or is not drawn; the tokens under it step aside. Crowded tokens slide aside
+  only as far as keeps their thing's label point under them, else are not drawn; the selected thing, the player's own
+  armies and anything in battle (on its battle cooldown) always stay in view: placed first, together (`placeKept`), each
+  on its own point, slid while attached, or a row or two straight up, in the arrangement that rises least, the same
+  whatever order they arrive in, and the others yield to them. Elsewhere an unnamed army or structure is called by its
+  kind, never by its entity id (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the
+  same labels over a fixture world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`,
+  `busy=1`, `game=frontier`, `panel=0` in the address; with a thing selected, the hovered tile shows the order line). In
+  a live game, `playtest --steps blitz-plates` or `frontier-plates` (a spectator), or `blitz-plates-player` or
   `frontier-plates-player` (a seated player, the readiest army selected), reads every drawn token, plate and order line
   at the map's zoom, the farthest and the closest, the tiles round the centre hovered one by one, clicks at the labels
-  in view, and fails on any label that takes a pointer, a click on a token that does not select its thing's tile, a
-  click on an open plate that selects another tile than with the labels hidden, a label on its thing or off it, any pair
-  that overlaps or stands closer than 4px, or an opened plate that does not cover the token read for its thing before
-  the hover (`scripts/client-playtest/plates.mjs`).
+  in view, and fails on any label that takes a pointer, a click at a token or an open plate that selects another tile
+  than the same click with the labels hidden, a label on its thing or off it, any pair that overlaps or stands closer
+  than 4px, or an opened plate that does not cover the token read for its thing before the hover
+  (`scripts/client-playtest/plates.mjs`).
 
 ## Outposts
 

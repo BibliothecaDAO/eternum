@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
@@ -522,29 +522,62 @@ describe("the plate steps (a live Blitz's map plates, read as drawn)", () => {
     );
   });
 
-  it("passes a click on a token only where it selects its thing's tile, and on a plate only where it lands beneath", () => {
+  it("clicks each label, token or plate, and the same point with the labels hidden: labels never take a click", async () => {
+    // The owner, 2026-10-20: "I wanna remove the clicking the label select the structure/army [...] we click the tile
+    // and that's it". A token's thing is measured (`over`), but its click must still land on the tile under the pointer.
+    const step = STEP_SETS["frontier-plates"].steps.find((one) => one.name === "labels-click-through-far");
+    const token = { kind: "token", text: "T1 500", x: 950, y: 480, w: 60, h: 40, over: { tile: { x: 980, y: 600 } } };
+    const plate = { kind: "plate", text: "Own B", x: 1100, y: 300, w: 180, h: 80 };
+    const line = { kind: "order line", text: "Attack", x: 700, y: 700, w: 90, h: 50 };
+    const taps = [];
+    const hidden = [];
+    let layer = "";
+    const browser = {
+      read: (expression) =>
+        expression === "JSON.stringify({ width: innerWidth, height: innerHeight })"
+          ? { width: 1920, height: 1080 }
+          : { things: [token, plate, line] },
+      run: ([, script]) => {
+        layer = script.includes('"hidden"') ? "hidden" : "";
+      },
+      press: () => undefined,
+      tap: (offset) => {
+        taps.push(offset);
+        hidden.push(layer === "hidden");
+      },
+      observe: () => ({ selection: { hex: { col: 4, row: 7 } } }),
+    };
+    vi.useFakeTimers();
+    try {
+      const playing = step.play({ browser, extraScreenshot: () => undefined });
+      await vi.runAllTimersAsync();
+      const played = await playing;
+      // The token's middle (980, 500) and the plate's (1190, 340), each clicked shown then hidden; the order line never.
+      expect(taps).toEqual([
+        [20, -40],
+        [20, -40],
+        [230, -200],
+        [230, -200],
+      ]);
+      expect(hidden).toEqual([false, true, false, true]);
+      expect(played.clicks.map((click) => [click.kind, click.at])).toEqual([
+        ["token", [20, -40]],
+        ["plate", [230, -200]],
+      ]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("fails any click at a label that selected another tile than the same click with the labels hidden", () => {
     const click = STEP_SETS["frontier-plates"].steps.find((step) => step.name === "labels-click-through-far").verify;
     const hex = (col, row) => ({ col, row });
-    const token = {
-      label: "T1 500",
-      kind: "token",
-      at: [10, -40],
-      expectedAt: [12, 8],
-      shown: hex(4, 7),
-      expected: hex(4, 7),
-    };
-    const plate = {
-      label: "Own B",
-      kind: "plate",
-      at: [60, -40],
-      expectedAt: [60, -40],
-      shown: hex(5, 6),
-      expected: hex(5, 6),
-    };
+    const token = { label: "T1 500", kind: "token", at: [10, -40], shown: hex(4, 7), expected: hex(4, 7) };
+    const plate = { label: "Own B", kind: "plate", at: [60, -40], shown: hex(5, 6), expected: hex(5, 6) };
     expect(click({ played: { clicks: [token, plate] } }).status).toBe("completed");
-    // The token's click selected the tile behind it, not its thing's (qa-fresh-chain-frontier-1 #1).
+    // The token's click selected its own thing's tile, not the tile under the pointer.
     expect(click({ played: { clicks: [{ ...token, shown: hex(4, 6) }] } }).reason).toBe(
-      "1 clicks at a label did not select its thing's tile, or the tile beneath a plate",
+      "1 clicks at a label did not select the tile beneath it",
     );
     expect(click({ played: { clicks: [{ ...plate, shown: null }] } }).status).toBe("failed");
     expect(click({ played: { clicks: [] } }).status).toBe("blocked");
