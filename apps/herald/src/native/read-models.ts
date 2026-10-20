@@ -23,8 +23,6 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "SettlementProgress",
   "Structure",
   "TileOccupancy",
-  // A cleared site's position: its clear vacated the tile, so TileOccupancy no longer holds it.
-  "ExpeditionSite",
   "PlayerEntry",
   "BlitzRoster",
   "BlitzResult",
@@ -40,8 +38,6 @@ import { integer, number, address, record, gameRows, required, type Row } from "
 interface DirectoryRows {
   structures: FoldRow[];
   position: DirectoryInput["fold"]["structurePosition"];
-  /** An expedition site's discovery tile, which it keeps once its clear vacates TileOccupancy; read only when needed. */
-  site: (gameId: unknown, entityId: unknown) => Row | undefined;
   rules: FoldRow[];
   settlementRules: FoldRow[];
   progress: FoldRow[];
@@ -89,8 +85,6 @@ function directoryRows(input: DirectoryInput): DirectoryRows {
   return {
     structures: rows("Structure"),
     position: (gameId, entityId) => input.fold.structurePosition(gameId, entityId),
-    site: (gameId, entityId) =>
-      gameRows(rows("ExpeditionSite"), gameId).find((site) => integer(site.entity_id) === integer(entityId)),
     rules: rows("SliceRules"),
     settlementRules: rows("SettlementRules"),
     progress: rows("SettlementProgress"),
@@ -266,13 +260,10 @@ function structurePosition(
       timestamp,
     );
   }
-  // One rule for a structure off the day's realm sites: its tile, else its expedition site's discovery tile (a clear
-  // deletes the site's TileOccupancy so armies can walk onto it), as the client's map places it.
   const tile = facts.position(integer(row.game_id).toString(), integer(row.entity_id).toString());
   if (tile) return { col: number(tile.col), row: number(tile.row) };
-  const site = facts.site(row.game_id, row.entity_id);
-  if (site) return { col: number(site.col), row: number(site.row) };
-  // A structure no rule places keeps its row without a position, never the player's whole directory; it is reported.
+  // A structure with no tile keeps its row without a position, never failing the player's whole directory; it is
+  // reported with its game and entity.
   console.warn(
     JSON.stringify({
       event: "herald_directory_structure_unplaced",

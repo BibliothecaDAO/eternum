@@ -317,9 +317,9 @@ describe("native directory and leaderboard", () => {
     expect(result.entries.every((entry) => !("name" in entry))).toBe(true);
   });
 
-  // A clear deletes the site's TileOccupancy so armies can walk onto it (clear_expedition_site), and the player takes
-  // the site. Its directory row must still answer, at the tile the site was discovered on.
-  it("answers a player who cleared a Frontier site, placing the site on its discovery tile", () => {
+  // The dev incident: a clear deletes the site's TileOccupancy (clear_expedition_site) and the player takes the site.
+  // The player's directory still answers; the tile-less site is listed without a position and reported.
+  it("answers a player who cleared a Frontier site, through the season's close", () => {
     const { fold, native, decoder } = world();
     native.applyReceipt(
       fold,
@@ -367,21 +367,25 @@ describe("native directory and leaderboard", () => {
       0,
     );
 
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const input = { chain: "madara", confirmedBlock: 13, timestamp: 30, fold, playerAddress: "0x111" };
     const entry = buildNativeDirectory(input).games.find((game) => game.game_id === 1)!;
     expect(entry.player_state?.structures).toContainEqual(
-      expect.objectContaining({ entity_id: 6, category: 9, coord_x: 1764, coord_y: 50 }),
+      expect.objectContaining({ entity_id: 6, category: 9, coord_x: null, coord_y: null }),
     );
     expect(entry.player_state?.settled).toBe(true);
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ event: "herald_directory_structure_unplaced", game_id: "1", entity_id: "6", category: 9 }),
+    );
 
-    // The season closes: its rows beyond the directory are evicted, and the cleared site must still answer.
+    // The season closes and its rows beyond the directory are evicted: the player's directory still answers.
     native.applyReceipt(fold, receipt([gameEvent("1", "1", "0", "101")]), 14, 0);
     expect(fold.finalizedGameIds()).toContain("1");
     fold.evictFinalizedGames();
     const closed = buildNativeDirectory({ ...input, confirmedBlock: 14 }).games.find((game) => game.game_id === 1)!;
-    expect(closed.player_state?.structures).toContainEqual(
-      expect.objectContaining({ entity_id: 6, coord_x: 1764, coord_y: 50 }),
-    );
+    expect(closed.player_state?.settled).toBe(true);
+    expect(closed.player_state?.structures).toContainEqual(expect.objectContaining({ entity_id: 6, coord_x: null }));
+    warn.mockRestore();
   });
 
   it("fails loudly for missing native rules instead of publishing guessed scores", () => {
@@ -606,18 +610,10 @@ describe("the player directory over HTTP", () => {
       nodeHealth: () => null,
     });
   const RIFT = "9";
-  const site = (id: string, col: bigint, row: bigint) =>
-    rowEvent("ExpeditionSite", ["1", id], {
-      initial_guard_count: 1000n,
-      alt: false,
-      col,
-      row,
-      clear: new CairoOption(CairoOptionVariant.None),
-    });
 
-  // Every owned structure off the realm sites takes its tile, else its site's discovery tile; one no rule places
-  // keeps its row without a position and is reported, and the rest of the player's directory still answers.
-  it("places each owned structure by one rule and isolates one it cannot place", async () => {
+  // A structure with no tile keeps its row without a position and is reported; the rest of the player's directory,
+  // other structures and other games, still answers.
+  it("isolates an owned structure it cannot place and answers the rest", async () => {
     const { fold, native, decoder } = world();
     native.applyReceipt(
       fold,
@@ -629,10 +625,7 @@ describe("the player directory over HTTP", () => {
       fold,
       receipt([
         structure("1", "1", "0x111"),
-        structure("6", RIFT, "0x111"),
-        site("6", 1764n, 50n),
         structure("7", RIFT, "0x111"),
-        site("7", 1764n, 51n),
         rowEvent("TileOccupancy", ["1", "0", "1800", "60"], { entity_id: "7", category: RIFT, is_structure: true }),
         structure("8", RIFT, "0x111"),
       ]),
@@ -653,7 +646,6 @@ describe("the player directory over HTTP", () => {
     expect(state.settled).toBe(true);
     expect(state.structures).toEqual([
       expect.objectContaining({ entity_id: 1, category: 1 }),
-      expect.objectContaining({ entity_id: 6, coord_x: 1764, coord_y: 50 }),
       expect.objectContaining({ entity_id: 7, coord_x: 1800, coord_y: 60 }),
       expect.objectContaining({ entity_id: 8, coord_x: null, coord_y: null }),
     ]);
