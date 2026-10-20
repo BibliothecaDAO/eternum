@@ -2,13 +2,17 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+/** The renderer this page load asked for, as the boot resolved it. */
+const boot = vi.hoisted(() => ({ mode: "webgpu-auto" }));
 vi.mock("@/ui/debug/renderer-debug-control", () => ({
   RENDERER_MODES: [
     { label: "WebGPU", mode: "webgpu-auto" },
     { label: "WebGL2", mode: "webgpu-force-webgl" },
   ],
-  requestedRendererMode: () => "webgpu-auto",
+  requestedRendererMode: () => boot.mode,
 }));
+
+import { writeRendererPreference } from "@/three/renderer-build-mode";
 
 import { VideoSettings } from "./video-settings";
 
@@ -19,6 +23,7 @@ const page = window.location.href;
 beforeEach(async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.clear();
+  boot.mode = "webgpu-auto";
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -131,4 +136,44 @@ it("reloads the page as it is when no renderer choice waits", async () => {
   );
   location.mockRestore();
   expect([assign.mock.calls.length, reload.mock.calls.length]).toEqual([0, 1]);
+});
+
+it("keeps a recovery's or a trial's renderer on an unrelated reload, and reloads onto a renderer chosen since", async () => {
+  // WebGPU was saved in an earlier session; this page loaded on WebGL2 from its address (a recovery after a lost device).
+  await act(async () => root.unmount());
+  writeRendererPreference(localStorage, "webgpu-auto");
+  window.history.replaceState(null, "", "/g/0x1/6/map?spectate=true&col=4&rendererMode=webgpu-force-webgl#world");
+  boot.mode = "webgpu-force-webgl";
+  root = createRoot(host);
+  await act(async () => root.render(<VideoSettings />));
+  expect(host.querySelector(".ui-select[aria-label='Renderer']")!.textContent).toBe("WebGL2");
+  expect(reloadRow()).toBe(false);
+
+  const press = async () => {
+    const assign = vi.fn();
+    const reload = vi.fn();
+    const location = vi
+      .spyOn(window, "location", "get")
+      .mockReturnValue({ href: window.location.href, assign, reload } as unknown as Location);
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((button) => button.textContent === "Reload")!.click(),
+    );
+    location.mockRestore();
+    return {
+      assigned: assign.mock.calls.map(([url]) => new URL(url).searchParams.get("rendererMode")),
+      reloads: reload.mock.calls.length,
+    };
+  };
+  // Only Quality changed: the page reloads as it is, its recovery kept.
+  await choose("Quality", "Balanced");
+  expect(await press()).toEqual({ assigned: [], reloads: 1 });
+
+  // The player now picks WebGPU: that choice waits, through closing Settings, and the reload asks for it.
+  await choose("Renderer", "WebGPU");
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  await act(async () => root.render(<VideoSettings />));
+  expect(host.querySelector(".ui-select[aria-label='Renderer']")!.textContent).toBe("WebGPU");
+  expect(await press()).toEqual({ assigned: ["webgpu-auto"], reloads: 0 });
+  window.history.replaceState(null, "", page);
 });

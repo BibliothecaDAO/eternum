@@ -28,14 +28,27 @@ const QUALITY_OPTIONS = [
 ] as const;
 
 /**
+ * The renderer chosen in Settings since this page loaded, with the renderer it loaded with. Settings closes and opens
+ * again within one load; a saved renderer the page did not load with (an address's trial or recovery won) is not a
+ * choice waiting for a reload.
+ */
+let chosenSinceLoad: { loaded: RendererBuildMode; mode: RendererBuildMode } | null = null;
+
+/** The renderer a reload asks for: the one chosen since this load while it is still the saved one, else the loaded. */
+const rendererToReloadOnto = (loaded: RendererBuildMode): RendererBuildMode =>
+  chosenSinceLoad?.loaded === loaded && readRendererPreference(localStorage) === chosenSinceLoad.mode
+    ? chosenSinceLoad.mode
+    : loaded;
+
+/**
  * Video & Graphics' rows. Quality, Frame rate, Renderer and Shadows are saved at once, but the game reads them when it
- * loads: while one differs from what this page loaded with, one row says so and reloads on asking, onto the saved
- * renderer with the page's own address kept.
+ * loads: while one differs from what this page loaded with, one row says so and reloads on asking, onto a renderer
+ * chosen since this load with the page's own address kept.
  */
 export function VideoSettings() {
   const [preferences, setPreferences] = useState(() => readGraphicsPreferences(localStorage));
   const [renderMode, setRenderMode] = useState(() => readRenderMode(localStorage));
-  const [renderer, setRenderer] = useState(() => readRendererPreference(localStorage) ?? requestedRendererMode());
+  const [renderer, setRenderer] = useState(() => rendererToReloadOnto(requestedRendererMode()));
   const { reducedMotion, setReducedMotion, haptics, setHaptics } = useWorldAppearanceStore();
   const changeGraphics = (change: Partial<GraphicsPreferences>) => {
     const next = { ...preferences, ...change };
@@ -48,6 +61,7 @@ export function VideoSettings() {
   };
   const changeRenderer = (mode: RendererBuildMode) => {
     writeRendererPreference(localStorage, mode);
+    chosenSinceLoad = { loaded: requestedRendererMode(), mode };
     setRenderer(mode);
   };
   const rendererChanged = renderer !== requestedRendererMode();
