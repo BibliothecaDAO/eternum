@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * The docs' images, videos and icons live in the game's public folder, which the docs build does not copy. After
- * `vocs build`, this ships exactly the files the built pages reference, from there into the build, and fails on any
- * reference that exists in neither: a renamed or deleted asset shows as a broken image on the site, never silently.
+ * The docs' images, videos and icons live in the game's public folder, which `vocs build` does not copy (`vocs dev`
+ * serves it through `vite.publicDir`). After the build, this ships exactly the files the built pages reference, from
+ * there into the build, and fails on any local link or file that resolves to nothing: a renamed page or a deleted asset
+ * shows as a failed build, never as a broken link or image on the site.
  * Run after `vocs build`: node scripts/ship-referenced-assets.mjs <dist>
  */
 import fg from "fast-glob";
@@ -12,20 +13,21 @@ import { fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const GAME_PUBLIC = join(here, "../../game/public");
-const ASSET = /\.(png|jpe?g|webp|gif|svg|avif|mp4|webm|ico)$/i;
+const SITE = "https://docs.local";
 
 /**
- * Every site-relative file a built page loads: each src, poster, srcset candidate and CSS url(), whatever its
- * extension, plus links to an image or video. A file name may hold spaces; only a srcset candidate has a descriptor.
+ * Every same-site path a built page names, resolved against the page: each href, src, poster, srcset candidate and
+ * CSS url(). Other sites, mailto and data URLs are left out. A file name may hold spaces; only a srcset candidate has
+ * a descriptor.
  */
-export const referencedAssets = (html) => {
+export const localReferences = (html, page = "index.html") => {
+  const base = new URL(`/${dirname(page)}/`.replace(/^\/\.\//, "/"), SITE);
   const paths = new Set();
   const add = (value) => {
-    const path = decodeURI(value.trim().split(/[?#]/)[0]);
-    if (path.startsWith("/") && !path.startsWith("//")) paths.add(path);
+    const url = new URL(value.trim().replaceAll("&amp;", "&"), base);
+    if (url.origin === base.origin) paths.add(decodeURI(url.pathname));
   };
-  for (const [, value] of html.matchAll(/\b(?:src|poster)="([^"]+)"/g)) add(value);
-  for (const [, value] of html.matchAll(/\bhref="([^"]+)"/g)) if (ASSET.test(value.split(/[?#]/)[0])) add(value);
+  for (const [, value] of html.matchAll(/\b(?:href|src|poster)="([^"]+)"/g)) add(value);
   for (const [, value] of html.matchAll(/\bsrcset="([^"]+)"/g)) {
     for (const candidate of value.split(",")) add(candidate.trim().replace(/\s+[\d.]+[wx]$/, ""));
   }
@@ -37,7 +39,7 @@ export const referencedAssets = (html) => {
 const referencesIn = (dist) => {
   const pages = new Map();
   for (const file of fg.sync("**/*.html", { cwd: dist })) {
-    for (const path of referencedAssets(readFileSync(join(dist, file), "utf8"))) {
+    for (const path of localReferences(readFileSync(join(dist, file), "utf8"), file)) {
       pages.set(path, [...(pages.get(path) ?? []), file]);
     }
   }
@@ -46,12 +48,16 @@ const referencesIn = (dist) => {
 
 const isFile = (path) => existsSync(path) && statSync(path).isFile();
 
+/** A path the built site serves: a file, or a page as `<path>.html` or `<path>/index.html`. */
+const isServedBy = (dist, path) =>
+  isFile(join(dist, path)) || isFile(join(dist, `${path}.html`)) || isFile(join(dist, path, "index.html"));
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
   const broken = [];
   let shipped = 0;
   for (const [path, pages] of referencesIn(dist)) {
-    if (isFile(join(dist, path))) continue;
+    if (isServedBy(dist, path)) continue;
     const source = join(GAME_PUBLIC, path);
     if (!isFile(source)) {
       broken.push({ path, pages });
@@ -61,7 +67,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     copyFileSync(source, join(dist, path));
     shipped += 1;
   }
-  for (const { path, pages } of broken) console.error(`${path}: no such asset, named by ${pages.join(", ")}`);
+  for (const { path, pages } of broken) console.error(`${path}: no such page or file, named by ${pages.join(", ")}`);
   if (broken.length) process.exit(1);
-  console.log(`Shipped ${shipped} referenced assets; every image reference resolves.`);
+  console.log(`Shipped ${shipped} referenced files; every local link and image resolves.`);
 }

@@ -4,6 +4,8 @@ import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 
 export default defineConfig({
   vite: {
+    // `vocs dev` serves the pages' images from here; `vocs build` ignores it, and scripts/ship-referenced-assets.mjs
+    // ships the files the built pages name.
     publicDir,
     server: {
       allowedHosts: true,
