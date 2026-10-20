@@ -16,7 +16,6 @@ export const ProductionControls = ({
   const bonuses = useProductionBonuses(realm.entityId);
   const [useRawResources, setUseRawResources] = useState(true);
   const [productionAmount, setProductionAmount] = useState(1);
-  const [ticks, setTicks] = useState<number | undefined>();
 
   if (!bonuses) return <p>Loading production…</p>;
   const { laborBonus, productionBonus, troopsBonus } = bonuses;
@@ -36,8 +35,6 @@ export const ProductionControls = ({
       productionAmount={productionAmount}
       setProductionAmount={setProductionAmount}
       realm={realm}
-      ticks={ticks}
-      setTicks={setTicks}
       bonus={resourceProductionBonus}
     />
   );
