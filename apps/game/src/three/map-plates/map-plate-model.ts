@@ -1,8 +1,7 @@
 import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { displayPlayerName } from "@bibliothecadao/eternum";
-import { StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
+import { NEUTRAL_OWNER_NAME, StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
 
 import type { ArmyData, StructureInfo } from "../types";
 
@@ -77,9 +76,12 @@ export interface PlateReward {
 
 export type MapPlate = ArmyPlate | StructurePlate;
 
-/** An owner as every surface names it: the Vanguard for nobody's thing (`displayPlayerName`). */
+/**
+ * An owner as the manager names it, through the one name rule (readPlayerName); nobody's thing is the neutral side's.
+ * The plate never makes a player's name.
+ */
 const ownerOf = (owner: { address: bigint; ownerName: string }) =>
-  displayPlayerName(owner.address.toString(), owner.ownerName.trim() || null);
+  owner.address === 0n ? NEUTRAL_OWNER_NAME : owner.ownerName.trim();
 
 const relationOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): PlateRelation =>
   thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";

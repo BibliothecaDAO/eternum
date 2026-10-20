@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
 import { expect, it, vi } from "vitest";
 
 /**
@@ -131,4 +133,21 @@ it("names a player one way on every reader: waiting, then their name, the unclai
     await act(async () => root.unmount());
     host.remove();
   }
+});
+
+/** Every client source, tests aside. */
+const sources = (directory: string): string[] =>
+  readdirSync(directory).flatMap((name) => {
+    const path = join(directory, name);
+    if (statSync(path).isDirectory()) return sources(path);
+    return /\.tsx?$/.test(name) && !/\.(d|test)\.tsx?$/.test(name) ? [path] : [];
+  });
+
+it("leaves the one rule as the only place in the client that turns a profile into a displayed name", () => {
+  const root = join(__dirname, "../..");
+  // A reader that formats a name itself (displayPlayerName over a profile it read) is how the stand-in came back.
+  const formatters = sources(root)
+    .filter((path) => /\bdisplayPlayerName\s*\(/.test(readFileSync(path, "utf8")))
+    .map((path) => relative(root, path));
+  expect(formatters).toEqual(["services/identity/player-profiles.ts"]);
 });
