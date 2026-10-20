@@ -4,7 +4,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../blitz-slot";
 import { YOU, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import type { WorldChatMessage } from "@bibliothecadao/types";
-import { resolveChatSenderName } from "@/hooks/use-player-profile";
+import { resolveChatSenderName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { AppField, AppPanel } from "@/ui/design-system/kit/app-elements";
@@ -63,6 +63,8 @@ export const LobbyChatPanel = ({
 /** The messages, kept scrolled to the newest as they arrive. */
 const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
   const { session } = useIdentitySession();
+  // A sender's name is read as the list draws; this redraws it when one lands.
+  usePlayerNamesRevision();
   const list = useRef<HTMLOListElement>(null);
   useEffect(() => {
     list.current?.scrollTo({ top: list.current.scrollHeight });

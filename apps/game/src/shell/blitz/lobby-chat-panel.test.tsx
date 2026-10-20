@@ -3,8 +3,17 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+// Identity answers 0x65 with no claimed name: the one rule names them by the unclaimed rule once it has.
+vi.mock("@realms-world/identity", async (original) => ({
+  ...(await original<typeof import("@realms-world/identity")>()),
+  fetchIdentityProfiles: async (_origin: string, accounts: string[]) =>
+    Object.fromEntries(accounts.map((account) => [account, { name: null, portrait: null }])),
+}));
 const session = vi.hoisted(() => ({ current: { user: { realmsId: "0x7" } } as { user: { realmsId: string } } | null }));
-vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ session: session.current }) }));
+vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/context/identity-session")>()),
+  useIdentitySession: () => ({ session: session.current }),
+}));
 
 import { LobbyChatPanel } from "./lobby-chat-panel";
 
@@ -86,6 +95,8 @@ it("reads the history and the room as one list, oldest first, each message once,
     FakeRoom.last!.deliver({ type: "world:message", message: message("b", "0x7", "on my way", 2) }),
   );
   await act(async () => FakeRoom.last!.deliver({ type: "world:message", message: message("c", "0x65", "ready", 3) }));
+  // Its sender's name was asked as the row drew; the list redraws with the answer (the unclaimed rule here).
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   expect(chat.lines()).toEqual(["Aldricgl hf", "Youon my way", "Lord 0065ready"]);
 });
 

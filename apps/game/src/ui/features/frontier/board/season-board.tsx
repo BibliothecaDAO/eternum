@@ -2,7 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName, usePlayerNamesRevision } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { LordName } from "./realm-marks";
@@ -125,6 +125,8 @@ const useSeasonListRows = (
   length: number,
 ): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
   const own = findOwnEntry(entries ?? [], useViewer());
+  // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
+  usePlayerNamesRevision();
   const top = (entries ?? []).slice(0, length);
   return {
     rows: top.map((entry) => listRow(entry, entry === own)),

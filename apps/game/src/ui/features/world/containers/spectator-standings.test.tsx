@@ -16,7 +16,11 @@ vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
 vi.mock("@/hooks/use-fact-view", () => ({
   useFactView: () => [{ entity_id: 9n, owner: 0xc1n, base: { category: 1 } }],
 }));
-vi.mock("@/hooks/use-player-profile", () => ({ usePlayers: () => [{ address: 0xc1n, name: "clientlane" }] }));
+// The one name rule, as identity answered: 0xc1 claimed "clientlane".
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerNamesRevision: () => [],
+  getPlayerDisplayName: (address: bigint) => (address === 0xc1n ? "clientlane" : "Lord 0000"),
+}));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
 vi.mock("@/hooks/helpers/use-navigate", () => ({ useNavigateToMapView: () => () => {} }));
 vi.mock("./top-header/game-clock", () => ({ useGameFinished: () => true }));
