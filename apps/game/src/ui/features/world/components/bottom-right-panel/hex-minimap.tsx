@@ -398,15 +398,13 @@ export const HexMinimap = ({
 
   useLayoutEffect(draw);
 
-  useEffect(
-    () =>
-      subscribeCameraView((view) => {
-        const key = originKey(view);
-        setOrigin((current) => (current === key ? current : key));
-        draw();
-      }),
-    [draw],
-  );
+  useEffect(() => {
+    return subscribeCameraView((view) => {
+      const key = originKey(view);
+      setOrigin((current) => (current === key ? current : key));
+      draw();
+    });
+  }, [draw]);
 
   useEffect(() => {
     const svg = svgRef.current;

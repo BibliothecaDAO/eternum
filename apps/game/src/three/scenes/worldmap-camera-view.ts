@@ -22,7 +22,7 @@ const ray = new Raycaster();
 const hit = new Vector3();
 
 /** Where the camera's screen corners meet the ground; null while a corner looks above the horizon. */
-export const groundFootprint = (camera: Camera): GroundPoint[] | null => {
+const groundFootprint = (camera: Camera): GroundPoint[] | null => {
   camera.updateMatrixWorld();
   const footprint: GroundPoint[] = [];
   for (const corner of CORNERS) {
