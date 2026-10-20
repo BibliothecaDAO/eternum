@@ -71,7 +71,10 @@ export const LabDoorway = () => {
       title="Frontier"
       painting={gamePainting({ mode: "frontier" })}
       onRetry={noop}
+      onOpenRealm={noop}
       onSignIn={noop}
+      onSpectate={noop}
+      results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}

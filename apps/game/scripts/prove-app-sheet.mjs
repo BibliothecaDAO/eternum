@@ -2,9 +2,10 @@
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
  * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
  * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
- * the account's pages (`account`: sign-in's steps, You, Settings and what its rows open).
+ * the account's pages (`account`: sign-in's steps, You, Settings and what its rows open) and the doorway into a game at
+ * each of its holds (`doorway`).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|sheet|end-map|qa1] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1] [--state <signed-in.json>]
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *
@@ -144,6 +145,16 @@ const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
 };
 
 const DRAWN = `document.querySelector("[data-layout]") !== null`;
+
+/** The doorway into a game at each of its holds (the app lab's fixtures), a full-screen step with no places. */
+const DOORWAY_STATES = ["map", "sign-in", "waiting", "preparing", "map-failed", "devices", "watch", "ended"];
+
+const doorwayPages = (desktop) =>
+  DOORWAY_STATES.map((state) => ({
+    name: `${desktop ? "doorway" : "phone-doorway"}-${state}`,
+    path: `/lab/app/home/doorway/${state}?capture=1`,
+    more: sheetPageChecks({ desktop, place: null }),
+  }));
 
 const accountPages = (desktop) =>
   Object.entries(ACCOUNT_PAGES).map(([page, { path, place, press: words }]) => ({
@@ -657,7 +668,7 @@ const qa1 = (cases) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
-  const parts = process.argv[4]?.split(",") ?? ["pages", "account", "sheet"];
+  const parts = process.argv[4]?.split(",") ?? ["pages", "account", "doorway", "sheet"];
   const stateAt = process.argv.indexOf("--state");
   const state = stateAt === -1 ? null : process.argv[stateAt + 1];
   await runProof(
@@ -671,6 +682,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       b.run("set", "viewport", ...VIEWPORT);
       if (parts.includes("pages"))
         for (const page of sheetPages(true)) records.push(await shoot(b, baseUrl, out, page));
+      if (parts.includes("doorway")) {
+        for (const page of doorwayPages(true)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...PHONE);
+        for (const page of doorwayPages(false)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...VIEWPORT);
+      }
       if (parts.includes("account")) {
         for (const page of accountPages(true)) records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...PHONE);

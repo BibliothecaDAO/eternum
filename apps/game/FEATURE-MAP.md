@@ -58,7 +58,9 @@ each tier, sealed and opened, among them), and links to the real pages on the sh
 and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install notice
 at 1024 and 1440 px (`/lab/app/long-name`), the phone's five places at 360 px, the lobby's entry with every choice taken
 at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You signed in, out
-and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), and every element of the
+and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), the doorway into a game at
+each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season awaited, a roster
+filling, the map failed with the realm to open, the device limit, a Blitz to watch, one ended), and every element of the
 sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses
 **See the end map** and holds the map to its scene being ready, watched and finished.
 `prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone:

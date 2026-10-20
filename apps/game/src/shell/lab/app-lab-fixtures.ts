@@ -6,6 +6,7 @@ import type { Session } from "@realms-world/identity";
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { type DoorwayView, doorwayView } from "@/ui/features/game-entry/doorway/doorway-view";
+import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
 
 import type { DirectoryGame } from "../herald";
 
@@ -588,6 +589,28 @@ export const LAB_DOORWAYS = {
   },
   preparing: {
     view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  // The holds with a step: the map failed with the realm to open, the device limit, a Blitz to watch, one ended.
+  "map-failed": {
+    view: doorwayView({ source: "boot", phase: "error", audience: "player", failedScene: "map", realmCanOpen: true }),
+    realm: { name: "Stolsli", emblem: orderEmblem(1) },
+  },
+  devices: {
+    view: doorwayView({
+      source: "boot",
+      phase: "reconnect_required",
+      audience: "player",
+      accountError: DEVICE_LIMIT_REACHED,
+    }),
+    realm: null,
+  },
+  watch: {
+    view: doorwayView({ source: "entry", phase: "spectate", audience: "player", signedIn: true }),
+    realm: null,
+  },
+  ended: {
+    view: doorwayView({ source: "boot", phase: "ready", audience: "player", ended: true }),
     realm: null,
   },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;
