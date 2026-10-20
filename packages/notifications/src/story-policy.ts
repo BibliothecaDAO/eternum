@@ -1,48 +1,153 @@
 import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
+import {
+  bankLiquidityCopy,
+  bankSwapCopy,
+  battleCopy,
+  buildingStoryCopy,
+  captureStoryCopy,
+  hyperstructurePointsCopy,
+  levelUpCopy,
+  raidStoryCopy,
+  rewardChestCopy,
+  says,
+  type StoryCopy,
+  transferStoryCopy,
+} from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
 type RecipientSource = "capture" | "owner" | "transfer" | "nativeBattle" | "raid";
-type StoryRule = { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource } | { excluded: string };
+/** A delivered story's level, who it is for, and what its alert says; a story is delivered with its words or not at all. */
+type StoryRule =
+  | { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource; copy: StoryCopy }
+  | { excluded: string };
 
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
 const STORY_RULES = {
-  BitcoinAwardStory: { level: "all", recipients: "owner" },
-  TradeCreated: { level: "all", recipients: "owner" },
-  TradeAccepted: { level: "all", recipients: "owner" },
-  TradeCancelled: { level: "all", recipients: "owner" },
-  BankSwap: { level: "all", recipients: "owner" },
-  BankLiquidity: { level: "all", recipients: "owner" },
-  HyperstructurePoints: { level: "all", recipients: "owner" },
-  SitePayout: { level: "all", recipients: "owner" },
-  TierBought: { level: "all", recipients: "owner" },
-  ExplorationReward: { level: "all", recipients: "owner" },
-  SeasonEnded: { level: "all", recipients: "owner" },
-  FaithPledged: { level: "all", recipients: "owner" },
-  FaithRemoved: { level: "all", recipients: "owner" },
-  BlitzFinalized: { level: "all", recipients: "owner" },
-  RelicCrafted: { level: "all", recipients: "owner" },
-  RelicActivated: { level: "all", recipients: "owner" },
+  BitcoinAwardStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("The Bitcoin mine paid out", "Your share has reached your realm."),
+  },
+  TradeCreated: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Your trade is listed", "Merchants can now take your offer."),
+  },
+  TradeAccepted: {
+    level: "all",
+    recipients: "owner",
+    copy: says("A trade was filled", "The goods have changed hands."),
+  },
+  TradeCancelled: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Your trade was withdrawn", "The offer is off the market."),
+  },
+  BankSwap: { level: "all", recipients: "owner", copy: bankSwapCopy },
+  BankLiquidity: { level: "all", recipients: "owner", copy: bankLiquidityCopy },
+  HyperstructurePoints: { level: "all", recipients: "owner", copy: hyperstructurePointsCopy },
+  SitePayout: { level: "all", recipients: "owner", copy: says("A site is cleared", "Your army took what it held.") },
+  TierBought: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Your army rose a tier", "It spent its XP on a new tier."),
+  },
+  ExplorationReward: {
+    level: "all",
+    recipients: "owner",
+    copy: says("A find on the trail", "Your army turned up resources; they are on their way home."),
+  },
+  SeasonEnded: { level: "all", recipients: "owner", copy: says("The season has ended", "The final standings are in.") },
+  FaithPledged: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Faith pledged", "A realm's faith now flows to a wonder."),
+  },
+  FaithRemoved: { level: "all", recipients: "owner", copy: says("Faith withdrawn", "A pledge to a wonder has ended.") },
+  BlitzFinalized: {
+    level: "all",
+    recipients: "owner",
+    copy: says("The Blitz is settled", "The final results are in."),
+  },
+  RelicCrafted: { level: "all", recipients: "owner", copy: says("A relic is forged", "It waits in your stores.") },
+  RelicActivated: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Relic activated", "Your relic's effect was applied."),
+  },
 
-  BattleEvent: { level: "important", recipients: "nativeBattle" },
-  StructureCapturedStory: { level: "important", recipients: "capture" },
-  RaidEvent: { level: "important", recipients: "raid" },
-  RealmCreatedStory: { level: "standard", recipients: "owner" },
-  SpireDiscovered: { level: "standard", recipients: "owner" },
-  BuildingPlacementStory: { level: "standard", recipients: "owner" },
-  StructureLevelUpStory: { level: "standard", recipients: "owner" },
-  ResourceReceiveArrivalStory: { level: "standard", recipients: "owner" },
-  RelicChestOpened: { level: "standard", recipients: "owner" },
-  RewardChestOpened: { level: "standard", recipients: "owner" },
-  ProductionStory: { level: "all", recipients: "owner" },
-  BuildingPaymentStory: { level: "all", recipients: "owner" },
-  ResourceTransferStory: { level: "all", recipients: "transfer" },
-  ResourceBurnStory: { level: "all", recipients: "owner" },
-  ExplorerCreateStory: { level: "all", recipients: "owner" },
-  ExplorerAddStory: { level: "all", recipients: "owner" },
-  ExplorerDeleteStory: { level: "all", recipients: "owner" },
-  GuardAddStory: { level: "all", recipients: "owner" },
-  GuardDeleteStory: { level: "all", recipients: "owner" },
-  TroopsTransferred: { level: "all", recipients: "owner" },
+  BattleEvent: { level: "important", recipients: "nativeBattle", copy: battleCopy },
+  StructureCapturedStory: { level: "important", recipients: "capture", copy: captureStoryCopy },
+  RaidEvent: { level: "important", recipients: "raid", copy: raidStoryCopy },
+  RealmCreatedStory: {
+    level: "standard",
+    recipients: "owner",
+    copy: says("A new realm rises", "Your banner now flies over fresh lands."),
+  },
+  SpireDiscovered: {
+    level: "standard",
+    recipients: "owner",
+    copy: says("A dormant spire is found", "Your army found a spire; its Essence is on its way home."),
+  },
+  BuildingPlacementStory: { level: "standard", recipients: "owner", copy: buildingStoryCopy },
+  StructureLevelUpStory: { level: "standard", recipients: "owner", copy: levelUpCopy },
+  ResourceReceiveArrivalStory: {
+    level: "standard",
+    recipients: "owner",
+    copy: says("The caravan has arrived", "Fresh supplies have reached their destination."),
+  },
+  RelicChestOpened: {
+    level: "standard",
+    recipients: "owner",
+    copy: says("A crate is open", "Your army has pulled relics from the fog."),
+  },
+  RewardChestOpened: { level: "standard", recipients: "owner", copy: rewardChestCopy },
+  ProductionStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("The workshops are humming", "A new batch of resources is ready."),
+  },
+  BuildingPaymentStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Construction is underway", "The builders have their materials and their orders."),
+  },
+  ResourceTransferStory: { level: "all", recipients: "transfer", copy: transferStoryCopy },
+  ResourceBurnStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Resources committed", "The realm has paid its due."),
+  },
+  ExplorerCreateStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("An army answers the call", "New troops stand ready beyond the walls."),
+  },
+  ExplorerAddStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Reinforcements have arrived", "Fresh troops have joined your army."),
+  },
+  ExplorerDeleteStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("The banners return home", "An army has stood down."),
+  },
+  GuardAddStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("The walls are reinforced", "Fresh defenders have taken their posts."),
+  },
+  GuardDeleteStory: {
+    level: "all",
+    recipients: "owner",
+    copy: says("A guard post is clear", "Those troops are ready for new orders."),
+  },
+  TroopsTransferred: {
+    level: "all",
+    recipients: "owner",
+    copy: says("Troops have moved", "Your troops have joined their new post."),
+  },
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
 } satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", StoryRule>;
