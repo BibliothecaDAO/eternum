@@ -29,8 +29,8 @@ Open `/lab/models?family=cleared-sites` through **Models & motion → Cleared si
 or beasts with the production standard. **View** uses the world camera at gameplay distance 20 or detail distance 8.
 Click a model or its selection button to open the reward panel; Close site dismisses it. The selected standard uses the
 production receipt component over native clear-result facts, with the Structure and guard removed. In the game a clear
-leaves the biome and a walkable tile; the standard and its reward receipt survive an army walking across it and a reload.
-The site never becomes a player holding.
+leaves the biome and a walkable tile; the standard and its reward receipt survive an army walking across it and a
+reload. The site never becomes a player holding.
 
 Proof: serve the client, open that URL with `&evidence=/absolute/new/capture/directory`, then run
 `scripts/frontier/prove-cleared-site.playwright.js` through the browser connection with the page as its argument. It
