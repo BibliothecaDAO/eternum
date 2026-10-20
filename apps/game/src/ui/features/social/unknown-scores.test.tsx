@@ -34,7 +34,7 @@ const player: PlayerCustom = {
   isInvited: false,
   guild: undefined,
   activityBreakdown: null,
-  includesLiveShareholderPoints: false,
+  accruingHoldPoints: 0,
   mmrDelta: null,
 };
 

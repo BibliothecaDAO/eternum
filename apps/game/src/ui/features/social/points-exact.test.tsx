@@ -50,7 +50,7 @@ const player = (name: string, points: number, rank: number, breakdown = activity
   isInvited: false,
   guild: undefined,
   activityBreakdown: breakdown,
-  includesLiveShareholderPoints: false,
+  accruingHoldPoints: 0,
   mmrDelta: null,
 });
 

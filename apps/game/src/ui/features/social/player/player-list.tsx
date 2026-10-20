@@ -29,7 +29,8 @@ export interface PlayerCustom extends PlayerInfo {
   isInvited: boolean;
   guild: GuildInfo | undefined;
   activityBreakdown: PlayerActivityBreakdown | null;
-  includesLiveShareholderPoints: boolean;
+  /** Hold points the total counts that are not registered yet (use-in-game-leaderboard), shown under HS held. */
+  accruingHoldPoints: number;
   /** The MMR the player would gain or lose if the game ended now; null where the ledger gave none. */
   mmrDelta: number | null;
 }
@@ -124,7 +125,8 @@ const resolvePlayerActivityStats = (player: PlayerCustom): PlayerWithActivitySta
     hyperstructuresTaken: activity?.hyperStructureBanditsDefeat.count ?? 0,
     hyperstructuresTakenPoints: activity?.hyperStructureBanditsDefeat.points ?? 0,
     hyperstructuresHeld: player.hyperstructures,
-    hyperstructuresHeldPoints: activity?.hyperstructureShare.points ?? 0,
+    // What holding earned: the points registered at checkpoints, and those accruing since, which Points counts too.
+    hyperstructuresHeldPoints: (activity?.hyperstructureShare.points ?? 0) + player.accruingHoldPoints,
   };
 };
 
@@ -415,7 +417,7 @@ const PlayerRow = ({
   const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
   const hyperstructuresTakenLabel = formatActivityValue(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
   const hyperstructuresHeldLabel = formatActivityValue(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
-  const hasShareholderPoints = Boolean(player.includesLiveShareholderPoints);
+  const hasShareholderPoints = player.accruingHoldPoints > 0;
   const activitySummary = summarizeActivity(player);
 
   // Determine row glow based on effect

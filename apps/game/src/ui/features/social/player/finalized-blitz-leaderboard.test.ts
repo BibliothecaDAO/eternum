@@ -109,7 +109,7 @@ describe("finalized blitz leaderboard helpers", () => {
     expect(resolveFinalizedBlitzStanding(null, true)).toEqual({
       rankOverride: Number.MAX_SAFE_INTEGER,
       pointsOverride: 0,
-      includesLiveShareholderPoints: false,
+      accruingHoldPoints: 0,
     });
   });
 
@@ -117,7 +117,7 @@ describe("finalized blitz leaderboard helpers", () => {
     expect(resolveFinalizedBlitzStanding({ rank: 3, points: 44 }, true)).toEqual({
       rankOverride: 3,
       pointsOverride: 44,
-      includesLiveShareholderPoints: false,
+      accruingHoldPoints: 0,
     });
   });
 });

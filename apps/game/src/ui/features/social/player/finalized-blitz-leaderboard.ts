@@ -9,7 +9,7 @@ interface FinalizedBlitzStanding {
 }
 
 interface ResolvedFinalizedBlitzStanding {
-  includesLiveShareholderPoints: boolean;
+  accruingHoldPoints: number;
   pointsOverride: number;
   rankOverride: number;
 }
@@ -104,13 +104,13 @@ export const resolveFinalizedBlitzStanding = (
     return {
       rankOverride: UNRANKED_LEADERBOARD_POSITION,
       pointsOverride: 0,
-      includesLiveShareholderPoints: false,
+      accruingHoldPoints: 0,
     };
   }
 
   return {
     rankOverride: finalizedStanding.rank,
     pointsOverride: finalizedStanding.points,
-    includesLiveShareholderPoints: false,
+    accruingHoldPoints: 0,
   };
 };

@@ -13,7 +13,11 @@ interface InGameLeaderboardStanding {
   address: ContractAddress;
   rank: number;
   points: number;
-  includesLiveShareholderPoints: boolean;
+  /**
+   * Hold points earned since the hyperstructure's last checkpoint: counted in `points` already, and registered on chain
+   * only at the next checkpoint (a capture or a reallocation).
+   */
+  accruingHoldPoints: number;
 }
 
 interface InGameLeaderboard {
@@ -32,7 +36,7 @@ const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
       address,
       rank,
       points,
-      includesLiveShareholderPoints: manager.getPlayerHyperstructureUnregisteredShareholderPoints(address) > 0,
+      accruingHoldPoints: manager.getPlayerHyperstructureUnregisteredShareholderPoints(address),
     });
   });
 
@@ -52,7 +56,7 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
           address: ContractAddress(account),
           rank,
           points: wholePoints(points),
-          includesLiveShareholderPoints: false,
+          accruingHoldPoints: 0,
         },
       ]),
     ),

@@ -64,19 +64,15 @@ export const PlayersPanel = ({
         const standing = standingsByAddress.get(normalizeLeaderboardAddress(player.address));
         const activityEntry = activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ?? null;
 
-        // Finalized games rank by the on-chain final standings. Live games rank
-        // by Herald’s prepared history total — the same source as the breakdown
-        // columns, so POINTS is always the sum of what the row displays (owner
-        // ruling). The native store standing is only the pre-fetch fallback.
+        // Finalized games rank by the on-chain final standings; live games by the native store's standing: registered
+        // points plus the hold points accruing since each hyperstructure's last checkpoint. The row's columns are the
+        // registered points by activity (Herald's breakdown) with those accruing hold points under HS held, so POINTS
+        // is the sum of what the row displays.
         const liveRank = standing?.rank ?? player.rank;
         const livePoints = standing?.points ?? player.points;
         const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;
         const points = isFinalized ? (standing?.points ?? null) : livePoints;
-        const includesLiveShareholderPoints = isFinalized
-          ? false
-          : activityEntry
-            ? activityEntry.activityBreakdown.hyperstructureShare.points > 0
-            : (standing?.includesLiveShareholderPoints ?? false);
+        const accruingHoldPoints = isFinalized ? 0 : (standing?.accruingHoldPoints ?? 0);
 
         return {
           ...player,
@@ -86,7 +82,7 @@ export const PlayersPanel = ({
           isInvited,
           guild,
           activityBreakdown: activityEntry?.activityBreakdown ?? null,
-          includesLiveShareholderPoints,
+          accruingHoldPoints,
           mmrDelta:
             mmr.status === "ready"
               ? (mmr.deltaByAccount.get(normalizeLeaderboardAddress(player.address)) ?? null)
