@@ -148,7 +148,7 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toContain("Camp");
+      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toContain("Troll");
       expect(host.querySelector('[aria-label="Beast 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 

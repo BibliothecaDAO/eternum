@@ -150,7 +150,7 @@ describe("Frontier's selection sheet", () => {
           ),
         );
         expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(expectedName);
-        expect(host.textContent).toContain("Cleared · Camp");
+        expect(host.textContent).toContain("Cleared · Troll");
         expect(host.textContent).toContain("550 Labor");
         expect(host.textContent).toContain("82 XP");
         const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');

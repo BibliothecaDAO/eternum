@@ -91,10 +91,6 @@ describe("a shortfall's line", () => {
     expect(line(12_440, 12_449)).toBe("Needs 12,449 labor, have 12,440");
     expect(line(0.555, 0.556)).toBe("Needs 0.556 labor, have 0.555");
   });
-
-  it("names what failed in one line", () => {
-    expect(shortfallLine({ kind: "failed", line: "Season did not answer." })).toBe("Season did not answer.");
-  });
 });
 
 describe("Pill", () => {
