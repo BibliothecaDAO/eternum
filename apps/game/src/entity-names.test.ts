@@ -177,7 +177,8 @@ describe("one name for each thing, read by every list, picker, event and panel",
     expect(built(frontierCamp())).toMatch(/^Barracks built at /);
     expect(buildingName(BuildingType.ResourceKnightT1, true)).toBe("Barracks");
     vi.restoreAllMocks();
-    expect(built()).toMatch(/^Knight T1 built at /);
+    // With no store to name the realm, its player tells the line.
+    expect(built()).toBe("Lord 0123 built a Knight T1");
   });
 
   it("names a fight's site by its one name and its beast guard's forces by species, never as a troop", () => {

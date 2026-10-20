@@ -1,4 +1,5 @@
 import {
+  CHEST_EARNED,
   frontierSiteName,
   StructureType,
   fightVerdict,
@@ -73,17 +74,24 @@ type StoryEventModel = "BattleEvent" | "RaidEvent";
  * variant is a type error here until it has its line, so no story ever reaches the feed as raw fields.
  */
 const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> = {
-  ExplorationReward: (_event, payload, components) => {
+  ExplorationReward: (event, payload, components, resolvePlayerName) => {
     const site = discoveredSite(payload, components);
     return {
       title: findLine(site ? `${siteDisplayName(site.id)} found` : "Explored", payload),
-      description: joinPieces([site?.kind, describeExplorer(payload.explorer_id, components), "Reveal"]),
+      description: joinPieces([
+        site?.kind,
+        describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+        "Reveal",
+      ]),
       icon: "resource",
     };
   },
-  SpireDiscovered: (_event, payload, components) => ({
+  SpireDiscovered: (event, payload, components, resolvePlayerName) => ({
     title: findLine("Dormant spire found", payload),
-    description: joinPieces([describeExplorer(payload.explorer_id, components), "Reveal"]),
+    description: joinPieces([
+      describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+      "Reveal",
+    ]),
     icon: "prize",
   }),
   RelicChestOpened: (_event, payload, components) => ({
@@ -93,11 +101,14 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       .join(", "),
     icon: "prize",
   }),
-  RewardChestOpened: (_event, payload, components) => ({
-    title: describeRewardChestOpening(payload, components),
-    description: describeExplorer(payload.explorer_id, components),
-    icon: "prize",
-  }),
+  RewardChestOpened: (event, payload, components, resolvePlayerName) => {
+    const player = playerOf(event, components, resolvePlayerName);
+    return {
+      title: describeRewardChestOpening(payload, components, player),
+      description: describeExplorer(payload.explorer_id, components, player),
+      icon: "prize",
+    };
+  },
   RelicCrafted: (_event, payload) => ({
     title: "Relic crafted",
     description: resourceName(Number(payload.value)),
@@ -198,7 +209,7 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     icon: "scroll",
   }),
   BlitzFinalized: () => ({ title: "Blitz finalized", icon: "scroll" }),
-  SitePayout: (_event, payload, components) => {
+  SitePayout: (event, payload, components, resolvePlayerName) => {
     const category = toNumber(payload.category);
     if (category === null || payload.reward === undefined) throw new Error("Incomplete site payout story");
     const label = frontierSiteName(category);
@@ -206,14 +217,19 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     if (!reward) throw new Error("Incomplete site resource reward");
     const siteId = toNumber(payload.site_id);
     if (siteId === null) throw new Error("Site payout story names no site");
-    // The site's Structure goes with its clear; its id names it, as the receipt and the map do.
+    const player = playerOf(event, components, resolvePlayerName);
+    // The site's Structure goes with its clear; its id names it, as the receipt and the map do. Another player's clear
+    // names them; a ruin's clear earns its chest.
+    const cleared = isViewer(event.ownerAddress, event.viewerAddress ?? null)
+      ? `${siteDisplayName(siteId)} cleared`
+      : `${player} cleared ${siteDisplayName(siteId)}`;
     return {
-      title: `${siteDisplayName(siteId)} cleared`,
-      description: joinPieces([label, describeExplorer(payload.explorer_id, components), reward]),
+      title: category === StructureType.Ruin ? `${cleared}: ${CHEST_EARNED}` : cleared,
+      description: joinPieces([label, describeExplorer(payload.explorer_id, components, player), reward]),
       icon: "prize",
     };
   },
-  TierBought: (_event, payload, components) => {
+  TierBought: (event, payload, components, resolvePlayerName) => {
     const attribute = formatEnum(payload.attribute);
     const tierIndex = toNumber(payload.tier);
     const tier = tierIndex === null ? undefined : ATTRIBUTE_TIER_LABELS[tierIndex];
@@ -221,7 +237,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
     if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
     return {
       title: `${attribute} ${tier}`,
-      description: joinPieces([describeExplorer(payload.explorer_id, components), `${price} XP`]),
+      description: joinPieces([
+        describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+        `${price} XP`,
+      ]),
       icon: "scroll",
     };
   },
@@ -242,34 +261,53 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "realm",
     };
   },
-  BuildingPlacementStory: (event, payload, components) => ({
-    title: `${formatBuildingCategory(payload.category, components) ?? "Building"} ${describeBuildingStatus(payload)} at ${subjectOf(event.entityId, components)}`,
-    icon: "building",
-  }),
-  // Paid in the same transaction as the building it pays for: the same action, told by the same title.
-  BuildingPaymentStory: (event, payload, components) => {
-    const cost = formatResourceList(payload.cost);
+  BuildingPlacementStory: (event, payload, components, resolvePlayerName) => {
+    const building = formatBuildingCategory(payload.category, components) ?? "Building";
+    const status = describeBuildingStatus(payload);
+    const at = describeEntity(event.entityId, components);
+    const player = playerOf(event, components, resolvePlayerName);
     return {
-      title: `${formatBuildingCategory(payload.category, components) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
+      title: at
+        ? `${building} ${status} at ${at}`
+        : status === "built"
+          ? `${player} built ${withArticle(building)}`
+          : `${player}'s ${building} ${status}`,
+      icon: "building",
+    };
+  },
+  // Paid in the same transaction as the building it pays for: the same action, told by the same title.
+  BuildingPaymentStory: (event, payload, components, resolvePlayerName) => {
+    const cost = formatResourceList(payload.cost);
+    const building = formatBuildingCategory(payload.category, components) ?? "Building";
+    const at = describeEntity(event.entityId, components);
+    return {
+      title: at
+        ? `${building} built at ${at}`
+        : `${playerOf(event, components, resolvePlayerName)} built ${withArticle(building)}`,
       description: cost ? `Paid ${cost}` : undefined,
       icon: "building",
     };
   },
-  ProductionStory: (event, payload, components) => {
+  ProductionStory: (event, payload, components, resolvePlayerName) => {
     const receivedId = toNumber(payload.received_resource_type);
     const amount = formatResourceAmount(payload.received_amount);
     const cost = formatResourceList(payload.cost);
     const made = receivedId !== null ? resourceName(receivedId) : "Resource";
+    const at = describeEntity(event.entityId, components);
     return {
-      title: `${made} production started at ${subjectOf(event.entityId, components)}`,
+      title: at
+        ? `${made} production started at ${at}`
+        : `${playerOf(event, components, resolvePlayerName)} started ${made} production`,
       description: joinPieces([amount ? `${amount} ${made}` : undefined, cost ? `for ${cost}` : undefined]),
       icon: "production",
     };
   },
-  StructureLevelUpStory: (event, payload, components) => {
+  StructureLevelUpStory: (event, payload, components, resolvePlayerName) => {
     const level = toNumber(payload.new_level);
+    const realm =
+      describeEntity(event.entityId, components) ?? `${playerOf(event, components, resolvePlayerName)}'s realm`;
     return {
-      title: `${subjectOf(event.entityId, components)} became ${level !== null ? describeLevel(level) : "stronger"}`,
+      title: `${realm} became ${level !== null ? describeLevel(level) : "stronger"}`,
       icon: "building",
     };
   },
@@ -338,43 +376,83 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
       icon: "resource",
     };
   },
-  ResourceBurnStory: (event, payload, components) => ({
-    title: `Resources spent at ${subjectOf(event.entityId, components)}`,
-    description: formatResourceList(payload.resources),
+  ResourceBurnStory: (event, payload, components, resolvePlayerName) => {
+    const at = describeEntity(event.entityId, components);
+    return {
+      title: at ? `Resources spent at ${at}` : `${playerOf(event, components, resolvePlayerName)} spent resources`,
+      description: formatResourceList(payload.resources),
+      icon: "resource",
+    };
+  },
+  ResourceReceiveArrivalStory: (event, payload, components, resolvePlayerName) => ({
+    title: `${formatResourceList(payload.resources) ?? "Resources"} arrived at ${
+      describeEntity(event.entityId, components) ?? `${playerOf(event, components, resolvePlayerName)}'s realm`
+    }`,
     icon: "resource",
   }),
-  ResourceReceiveArrivalStory: (event, payload, components) => ({
-    title: `${formatResourceList(payload.resources) ?? "Resources"} arrived at ${subjectOf(event.entityId, components)}`,
-    icon: "resource",
-  }),
-  GuardAddStory: (event, payload, components) => ({
-    title: `${subjectOf(payload.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(payload.slot) ?? "guard"} reinforced`,
-    description: describeTroops(payload, "+"),
-    icon: "troop",
-  }),
-  GuardDeleteStory: (event, payload, components) => ({
-    title: `${subjectOf(payload.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(payload.slot) ?? "guard"} dismissed`,
-    icon: "troop",
-  }),
-  ExplorerCreateStory: (event, payload, components) => ({
-    title: `Army raised at ${subjectOf(payload.structure_id ?? event.entityId, components)}`,
-    description: describeTroops(payload, ""),
-    icon: "troop",
-  }),
-  ExplorerAddStory: (_, payload, components) => ({
-    title: `${describeExplorer(payload.explorer_id, components)} reinforced`,
-    description: describeTroops(payload, "+"),
-    icon: "troop",
-  }),
-  ExplorerDeleteStory: (_, payload, components) => ({
-    title: `${describeExplorer(payload.explorer_id, components)} disbanded`,
-    icon: "troop",
-  }),
-  TroopsTransferred: (event, payload, components) => ({
-    title: `Troops moved: ${describeArmy(payload.source, event, components)} → ${describeArmy(payload.target, event, components)}`,
-    description: troopCount(payload.amount),
-    icon: "troop",
-  }),
+  GuardAddStory: (event, payload, components, resolvePlayerName) => {
+    const at = describeEntity(payload.structure_id ?? event.entityId, components);
+    return {
+      title: at
+        ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} reinforced`
+        : `${playerOf(event, components, resolvePlayerName)} reinforced the ${formatSlotLabel(payload.slot) ?? "guard"}`,
+      description: describeTroops(payload, "+"),
+      icon: "troop",
+    };
+  },
+  GuardDeleteStory: (event, payload, components, resolvePlayerName) => {
+    const at = describeEntity(payload.structure_id ?? event.entityId, components);
+    return {
+      title: at
+        ? `${at}'s ${formatSlotLabel(payload.slot) ?? "guard"} dismissed`
+        : `${playerOf(event, components, resolvePlayerName)} dismissed the ${formatSlotLabel(payload.slot) ?? "guard"}`,
+      icon: "troop",
+    };
+  },
+  ExplorerCreateStory: (event, payload, components, resolvePlayerName) => {
+    const at = describeEntity(payload.structure_id ?? event.entityId, components);
+    return {
+      title: at ? `Army raised at ${at}` : `${playerOf(event, components, resolvePlayerName)} raised an army`,
+      description: describeTroops(payload, ""),
+      icon: "troop",
+    };
+  },
+  ExplorerAddStory: (event, payload, components, resolvePlayerName) => {
+    const army = nameArmy(payload.explorer_id, components);
+    return {
+      title: army ? `${army} reinforced` : `${playerOf(event, components, resolvePlayerName)} reinforced an army`,
+      description: describeTroops(payload, "+"),
+      icon: "troop",
+    };
+  },
+  ExplorerDeleteStory: (event, payload, components, resolvePlayerName) => {
+    const army = nameArmy(payload.explorer_id, components);
+    return {
+      title: army ? `${army} disbanded` : `${playerOf(event, components, resolvePlayerName)} disbanded an army`,
+      icon: "troop",
+    };
+  },
+  TroopsTransferred: (event, payload, components, resolvePlayerName) => {
+    const source = describeArmy(payload.source, event, components);
+    const target = describeArmy(payload.target, event, components);
+    if (source.name && target.name)
+      return {
+        title: `Troops moved: ${source.name} → ${target.name}`,
+        description: troopCount(payload.amount),
+        icon: "troop",
+      };
+    // An army or a structure this client never synced is told by its player: what moved, and between what.
+    const side = ({ name, guard }: { name: string | null; guard: string | null }) =>
+      name ?? (guard ? `the ${guard}` : "an army");
+    const between =
+      !source.guard && !target.guard && !source.name && !target.name
+        ? "between armies"
+        : `from ${side(source)} to ${side(target)}`;
+    return {
+      title: `${playerOf(event, components, resolvePlayerName)} moved ${troopCount(payload.amount).toLowerCase()} ${between}`,
+      icon: "troop",
+    };
+  },
 };
 
 /** Whether a story has its line; one that does not (a variant retired from the enum) is never presented raw. */
@@ -440,13 +518,37 @@ function describeBuildingStatus(payload: Record<string, unknown>) {
   return status;
 }
 
-function describeArmy(value: unknown, event: StoryEventSystemUpdate, components?: NativeFactStore): string {
+/** A troop transfer's side: its guard slot's word for a guard, and its name when this client can name it. */
+function describeArmy(
+  value: unknown,
+  event: StoryEventSystemUpdate,
+  components?: NativeFactStore,
+): { guard: string | null; name: string | null } {
   if (!value || typeof value !== "object") throw new Error("Missing troop transfer participant");
   const army = value as Record<string, unknown>;
-  if (army.Explorer !== undefined) return describeExplorer(army.Explorer, components);
+  if (army.Explorer !== undefined) return { guard: null, name: nameArmy(army.Explorer, components) };
   if (!army.Guard || typeof army.Guard !== "object") throw new Error("Unknown troop transfer participant");
   const guard = army.Guard as Record<string, unknown>;
-  return `${subjectOf(guard.structure_id ?? event.entityId, components)}'s ${formatSlotLabel(guard.slot) ?? "guard"}`;
+  const slot = formatSlotLabel(guard.slot) ?? "guard";
+  const home = describeEntity(guard.structure_id ?? event.entityId, components);
+  return { guard: slot, name: home ? `${home}'s ${slot}` : null };
+}
+
+/**
+ * The player a story belongs to, by the client's one name rule: what names a structure or an army this client never
+ * synced (another player's, in a game whose sync is scoped to the viewer's own ground).
+ */
+function playerOf(
+  event: StoryEventSystemUpdate,
+  components?: NativeFactStore,
+  resolvePlayerName?: PlayerNameResolver,
+): string {
+  return nameOwner(event.ownerAddress, components, resolvePlayerName) ?? "Someone";
+}
+
+/** "a Hut", "an Archery range". */
+function withArticle(noun: string): string {
+  return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
 }
 
 type StructureRow = NonNullable<ReturnType<typeof readStructure>>;
@@ -485,14 +587,19 @@ function structureDisplayName(components: NativeFactStore, structure: StructureR
 }
 
 /**
- * The explorer as a player reads it: its home structure's name and its tier ("Stormhold T2 army"). A retired
- * explorer has no row, so the home structure from the payload stands in; with nothing to read it is "Army".
+ * The explorer as a player reads it: its home structure's name and its tier ("Stormhold T2 army"); with nothing this
+ * client can read, its player's ("djizus's army") when the story names one, else "Army".
  */
-function describeExplorer(explorerId: unknown, components?: NativeFactStore, homeStructureId?: unknown): string {
-  const name = describeArmyName(explorerId, components, homeStructureId);
+function describeExplorer(explorerId: unknown, components?: NativeFactStore, player?: string): string {
+  return nameArmy(explorerId, components) ?? (player ? `${player}'s army` : "Army");
+}
+
+/** The explorer by its home and tier, or its home alone once the explorer is gone; null when neither is read. */
+function nameArmy(explorerId: unknown, components?: NativeFactStore): string | null {
+  const name = describeArmyName(explorerId, components);
   if (name) return `${name} army`;
-  const home = describeStructureName(readExplorer(explorerId, components)?.owner ?? homeStructureId, components);
-  return home ? `${home} army` : "Army";
+  const home = describeStructureName(readExplorer(explorerId, components)?.owner, components);
+  return home ? `${home} army` : null;
 }
 
 /** An army's name, its home and tier ("Stolsli T1"); null without both. */
@@ -522,11 +629,23 @@ export function describeRelicChestOpening(payload: Record<string, unknown>, comp
   return `Crate opened: ${delivery}`;
 }
 
-export function describeRewardChestOpening(payload: Record<string, unknown>, components?: NativeFactStore): string {
+/**
+ * An opened chest: the LORDS it paid and the realm they went to; another player's realm, which this client never
+ * synced, is told by its player ("djizus opened a chest: 50 LORDS").
+ */
+export function describeRewardChestOpening(
+  payload: Record<string, unknown>,
+  components?: NativeFactStore,
+  player?: string,
+): string {
   const amount = BigInt(payload.amount as string | number | bigint);
+  const home = describeStructureName(payload.structure_id, components);
+  if (!home && player)
+    return amount === 0n
+      ? `${player}'s chest expired: no LORDS paid`
+      : `${player} opened a chest: ${formatExact(amount)} LORDS`;
   if (amount === 0n) return "Chest expired: no LORDS paid";
-  const home = describeStructureName(payload.structure_id, components) ?? "its realm";
-  return `Chest opened: ${formatExact(amount)} LORDS to ${home}`;
+  return `Chest opened: ${formatExact(amount)} LORDS to ${home ?? "its realm"}`;
 }
 
 /** A structure by name, else an explorer by home and tier, else nothing. */
