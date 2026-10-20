@@ -22,7 +22,6 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
-import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { formatAcross, survivalOf, type SideRange } from "./battle-range";
 import { CombatModal } from "./combat-modal";
 import { combatTitle, describeFightCost, forecastAttack, wholeTroops } from "./fight-forecast";
@@ -258,10 +257,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // so a swap into it inherits the explorer's category/tier).
   const garrisonGuardSlot = useMemo(() => {
     if (!willCaptureStructure || !targetData) return null;
-    const slotLimit =
-      targetData.guardSlotLimit ??
-      getStructureDefenseSlotLimit(targetData.structureCategory ?? undefined, targetData.structureLevel ?? null);
-    const [firstSlot] = getUnlockedGuardSlots(slotLimit);
+    const [firstSlot] = targetData.guardSlots ?? [];
     return firstSlot ?? null;
   }, [willCaptureStructure, targetData]);
 

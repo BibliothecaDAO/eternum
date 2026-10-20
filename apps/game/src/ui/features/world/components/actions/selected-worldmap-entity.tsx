@@ -145,13 +145,9 @@ const SelectedWorldmapEntityContent = ({
       occupant: (
         <StructureBannerEntityDetail
           structureEntityId={occupierEntityId}
-          maxInventory={14}
-          showButtons={false}
           className={scrollableEntityDetailClass}
           coordsLabel={title("Structure Tile")}
           headerAction={headerAction}
-          compact
-          layoutVariant="banner"
         />
       ),
       biome: <StructureBiomeCard structureEntityId={occupierEntityId} biomeCard={biomeCard} />,

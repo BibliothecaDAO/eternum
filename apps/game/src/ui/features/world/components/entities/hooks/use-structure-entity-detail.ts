@@ -24,6 +24,7 @@ import { useCallback, useMemo } from "react";
 import { useAccountAddress } from "@/hooks/store/use-account-store";
 import { presentedMineKind } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { structureGuardSlots } from "@/ui/features/military/utils/defense-slot-utils";
 
 interface UseStructureEntityDetailOptions {
   structureEntityId: ID;
@@ -101,9 +102,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     );
   }, [structure]);
 
-  const guardSlotsUsed = structure && guards ? guards.filter((guard) => guard.troops.count > 0n).length : undefined;
-  const guardSlotsMax =
-    structure?.base.troop_max_guard_count !== undefined ? Number(structure?.base?.troop_max_guard_count) : undefined;
+  const guardSlots = structureGuardSlots(structure);
 
   const progress = useMemo(() => {
     return isHyperstructure && structure
@@ -129,8 +128,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     relicEffects,
     playerGuild,
     guards,
-    guardSlotsUsed,
-    guardSlotsMax,
+    guardSlots,
     ownerDisplayName,
     isMine,
     isAlly,

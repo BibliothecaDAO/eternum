@@ -22,7 +22,6 @@ import { LeftView } from "@/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
-import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
 import { BitcoinMiningActionPanel } from "../../actions/bitcoin-mining-action-panel";
@@ -31,10 +30,6 @@ import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-pa
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
   className?: string;
-  compact?: boolean;
-  maxInventory?: number;
-  showButtons?: boolean;
-  layoutVariant?: EntityDetailLayoutVariant;
   /**
    * Skip the owner bubble (avatar / player name / structure name / transfer
    * shortcut). Used on the LeftStructureColumn where the picker pill already
@@ -56,10 +51,6 @@ interface StructureBannerEntityDetailProps {
   headerAction?: React.ReactNode;
 }
 
-interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEntityDetailProps, "layoutVariant"> {
-  variant: EntityDetailLayoutVariant;
-}
-
 const VillageTimerChip = ({ label, value, title }: { label: string; value: string; title?: string }) => (
   <div className="rounded border border-hud-divider bg-hud-well px-1.5 py-1" title={title}>
     <div className="text-hud-label text-hud-muted">{label}</div>
@@ -67,16 +58,14 @@ const VillageTimerChip = ({ label, value, title }: { label: string; value: strin
   </div>
 );
 
-const StructureBannerEntityDetailContent = memo(
+export const StructureBannerEntityDetail = memo(
   ({
     structureEntityId,
     className,
-    compact = true,
-    variant,
     hideOwner = false,
     coordsLabel,
     headerAction,
-  }: StructureBannerEntityDetailContentProps) => {
+  }: StructureBannerEntityDetailProps) => {
     const {
       structure,
       ownerDisplayName,
@@ -84,8 +73,7 @@ const StructureBannerEntityDetailContent = memo(
       resources,
       relicEffects,
       guards,
-      guardSlotsUsed,
-      guardSlotsMax,
+      guardSlots,
       isMine,
       hyperstructureRate,
       isHyperstructure,
@@ -119,7 +107,6 @@ const StructureBannerEntityDetailContent = memo(
     }
 
     if (!structure || !structureDetails) return null;
-    const defenseDisplayVariant: EntityDetailLayoutVariant = variant === "banner" || compact ? "banner" : "default";
     const structureName = mode.structure.getName(structure).name;
     const structureCategory =
       rawCategory === undefined || rawCategory === null ? undefined : (Number(rawCategory) as StructureType);
@@ -159,13 +146,8 @@ const StructureBannerEntityDetailContent = memo(
       typeof structure.entity_id !== "undefined";
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const showHyperstructureVP = isHyperstructure && hyperstructureRate !== undefined;
-    const occupiedGuardSlots = guards?.filter((guard) => guard.troops.count > 0n).length;
     const guardCue =
-      occupiedGuardSlots === undefined
-        ? "—"
-        : guardSlotsMax !== undefined
-          ? `${occupiedGuardSlots}/${guardSlotsMax}`
-          : `${occupiedGuardSlots}`;
+      guards === undefined ? "—" : `${guards.filter((guard) => guard.troops.count > 0n).length}/${guardSlots.length}`;
     const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
@@ -230,19 +212,16 @@ const StructureBannerEntityDetailContent = memo(
           </HudPanel>
         )}
 
-        {/* Guards — always shown for structures that can hold defenders. */}
+        {/* Guards: every slot the structure has, an empty one opening the deploy picker for its owner. */}
         <HudPanel kind="section" title="Guards" icon={"defend" as const} cue={guardCue}>
           {guards === undefined ? (
             <p className="text-hud-body text-hud-muted">Loading guards…</p>
-          ) : guards.length > 0 ? (
+          ) : guardSlots.length > 0 ? (
             <CompactDefenseDisplay
-              troops={guards}
-              slotsUsed={guardSlotsUsed}
-              slotsMax={guardSlotsMax}
+              guards={guards}
+              slots={guardSlots}
               structureId={safeInteger(structure.entity_id)}
               canManageDefense={isMine}
-              variant={defenseDisplayVariant}
-              hideSlotSummary
             />
           ) : (
             <p className="text-hud-body text-hud-muted">No defenders stationed.</p>
@@ -293,36 +272,4 @@ const StructureBannerEntityDetailContent = memo(
     );
   },
 );
-StructureBannerEntityDetailContent.displayName = "StructureBannerEntityDetailContent";
-
-export const StructureBannerEntityDetail = memo(
-  ({
-    structureEntityId,
-    className,
-    compact = true,
-    maxInventory = Infinity,
-    showButtons = false,
-    layoutVariant,
-    hideOwner = false,
-    coordsLabel,
-    headerAction,
-  }: StructureBannerEntityDetailProps) => {
-    const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
-
-    return (
-      <StructureBannerEntityDetailContent
-        structureEntityId={structureEntityId}
-        className={className}
-        maxInventory={maxInventory}
-        showButtons={showButtons}
-        compact={compact}
-        variant={resolvedVariant}
-        hideOwner={hideOwner}
-        coordsLabel={coordsLabel}
-        headerAction={headerAction}
-      />
-    );
-  },
-);
-
 StructureBannerEntityDetail.displayName = "StructureBannerEntityDetail";
