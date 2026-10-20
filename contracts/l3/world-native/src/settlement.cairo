@@ -85,6 +85,7 @@ pub trait ISettlementViews<T> {
 pub trait ISettlementPool<T> {
     #[cfg(test)]
     fn settlement_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
+    #[cfg(test)]
     fn village_pool(self: @T, game_id: u32, center: Coord) -> SettlementPool;
     fn claim_village(ref self: T, game_id: u32, registered: u16, seed: u256, center: Coord) -> Coord;
     #[cfg(test)]

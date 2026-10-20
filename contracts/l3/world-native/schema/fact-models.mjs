@@ -3,6 +3,29 @@
 export const factWireTypes = [
   {
     type: "struct",
+    name: "world_native::settlement::SettlementPool",
+    members: [
+      { name: "opened", type: "core::integer::u32" },
+      { name: "available", type: "core::array::Span::<world_native::settlement::SettlementLocation>" },
+    ],
+  },
+  {
+    type: "struct",
+    name: "core::array::Span::<world_native::settlement::SettlementLocation>",
+    members: [{ name: "snapshot", type: "@core::array::Array::<world_native::settlement::SettlementLocation>" }],
+  },
+  {
+    type: "struct",
+    name: "world_native::settlement::SettlementLocation",
+    members: [{ name: "coords", type: "core::array::Span::<world_native::troops::Coord>" }],
+  },
+  {
+    type: "struct",
+    name: "core::array::Span::<world_native::troops::Coord>",
+    members: [{ name: "snapshot", type: "@core::array::Array::<world_native::troops::Coord>" }],
+  },
+  {
+    type: "struct",
     name: "world_native::troops::ArmySlotKey",
     members: [
       { name: "game_id", type: "core::integer::u32" },

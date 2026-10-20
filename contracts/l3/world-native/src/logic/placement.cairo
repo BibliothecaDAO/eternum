@@ -7,6 +7,7 @@ pub mod PlacementLogic {
     use crate::logic::release::ReleaseState;
     use crate::logic::settlement::SettlementPoolState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE};
+    #[cfg(test)]
     use crate::settlement::SettlementPool;
     use crate::troops::Coord;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -63,7 +64,6 @@ pub mod PlacementLogic {
         MapEvent: MapState::Event,
         SettlementEvent: SettlementPoolState::Event,
         RowSet: crate::events::RowSet,
-        StoryEvent: crate::ownership::StoryEvent,
     }
     #[abi(embed_v0)]
     impl Spires of crate::spires::ISpires<ContractState> {
@@ -112,6 +112,7 @@ pub mod PlacementLogic {
         fn settlement_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
+        #[cfg(test)]
         fn village_pool(self: @ContractState, game_id: u32, center: Coord) -> SettlementPool {
             self.settlements.village_pool(game_id, center, crate::logic::settlement::rules(game_id))
         }
