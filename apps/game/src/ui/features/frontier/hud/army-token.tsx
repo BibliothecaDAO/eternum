@@ -1,6 +1,7 @@
 import { formatAmount, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HudMeter } from "@/ui/design-system/kit/hud-elements";
 
 import { STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
 import { STAMINA_SEGMENTS, staminaFill } from "@/lib/army-stamina/segments";
@@ -139,8 +140,20 @@ export const OpenSlot = ({
       {filling === undefined ? "+" : "…"}
     </span>
     {wide && <span className="text-hud-strong text-hud-ink">{filling ?? label}</span>}
-    {start && filling === undefined && <StaminaSegments stamina={start.bar} />}
+    {start &&
+      filling === undefined &&
+      (wide ? <StaminaReading stamina={start.bar} /> : <StaminaSegments stamina={start.bar} />)}
   </button>
+);
+
+/** A desktop row's stamina: the bar, and its exact count beside it ("58/120"), as an army's row and an open slot read it. */
+export const StaminaReading = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => (
+  <span className="flex flex-1 items-center gap-2">
+    <span className="min-w-8 flex-1">
+      <HudMeter amount={stamina} tone="good" label={STAMINA} />
+    </span>
+    <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
+  </span>
 );
 
 const StaminaSegments = ({ stamina }: { stamina: { current: number; max: number } | undefined }) => {
