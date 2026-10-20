@@ -72,8 +72,11 @@ export const MapLabelLabView = () => {
           setPointerHover(tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
         }
         onPointerLeave={() => setPointerHover(null)}
-        // A click selects the tile under the pointer: the labels take none (owner, 2026-10-20: "we click the tile").
-        onClick={() => set("select", pointerHover)}
+        // A click or a tap selects the tile under it, read from the event itself (a tap brings no pointer move before
+        // it); the labels take none (owner, 2026-10-20: "we click the tile").
+        onClick={(event) =>
+          set("select", tileUnder(world, canvasRef.current, event.nativeEvent.offsetX, event.nativeEvent.offsetY))
+        }
       />
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-[2] overflow-hidden" />
       <Tooltip />
