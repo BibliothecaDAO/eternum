@@ -9,7 +9,8 @@ import type {
   PayableClaim,
   ClaimOutcome,
 } from "./ports";
-import { RelayFailure, relayOperation, SHARD_PAGE_BLOCKS } from "./ports";
+import { RelayFailure, relayOperation } from "./ports";
+import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import type { RelayProgress, RelayStore } from "./state";
 
 /** Only confirmed blocks produce value obligations. A rewritten observed block stops this cursor permanently. */

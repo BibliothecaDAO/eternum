@@ -1,6 +1,6 @@
 import { normalizeStarknetAddress, isSameStarknetAddress } from "../../../packages/identity/src/address";
 import { RelayFailure } from "./failure";
-import { SHARD_PAGE_BLOCKS } from "./ports";
+import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { hash, shortString, type RpcProvider } from "starknet";
 import { readClassAbi, readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { rpcAt, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS } from "../../../packages/value-ledger/src/rpc";

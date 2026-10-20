@@ -5,7 +5,8 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ShardReader } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
-import { RelayFailure, SHARD_PAGE_BLOCKS } from "./ports";
+import { RelayFailure } from "./ports";
+import { SHARD_PAGE_BLOCKS } from "./shard-page";
 import { frontierPayment } from "./adapters";
 
 const rpc = vi.hoisted(() => ({
