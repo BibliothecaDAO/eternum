@@ -28,7 +28,7 @@ export const ArmyDock = ({
 }: {
   realm: NativeRows["Structure"];
   armies: DockArmy[];
-  /** An army's sheet, where its XP buys a tier. */
+  /** An army's panel: its figures, its XP and its level-ups. */
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -107,8 +107,13 @@ const DockArmyRow = ({
   onOpenArmy?: (explorerId: number) => void;
 }) => {
   const { selected, stamina, onPick } = useDockArmy(army, pickable);
-  // Upgrade opens the army's sheet, where the tier is chosen and bought.
-  const onUpgrade = onOpenArmy && (() => onOpenArmy(army.explorerId));
+  // The row picks the army on the map and opens its panel: its figures, its XP and its level-ups.
+  const open =
+    onPick &&
+    (() => {
+      onPick();
+      onOpenArmy?.(army.explorerId);
+    });
   return (
     <ArmyRow
       label={army.label}
@@ -121,8 +126,7 @@ const DockArmyRow = ({
       canBuyTier={army.canBuyTier}
       selected={selected}
       flyTarget={attributeBadgeTarget(army.explorerId)}
-      onPick={onPick}
-      onUpgrade={onUpgrade}
+      onPick={open}
     />
   );
 };

@@ -4,8 +4,8 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /** An army's XP and attribute tiers, and the game's XP rules, exactly as the native store carries them. */
 export type ArmyProgressFacts = NativeRows["ArmyProgress"];
-export type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
-export type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
+type Attribute = "Battle" | "Logistics" | "Scouting" | "Homecoming";
+type ProgressionRulesFacts = NativeRows["ArmyProgressionRules"];
 
 const ATTRIBUTES: readonly Attribute[] = ["Battle", "Logistics", "Scouting", "Homecoming"];
 
@@ -62,7 +62,7 @@ export const attributeBadgeTarget = (explorerId: number): string => `attributes-
  * stamina from their tier tables, the chosen kind's find rate in percent of its base, and the share of surviving troops
  * returned home at the day's end in percent.
  */
-export const ATTRIBUTE_LOOK: Record<Attribute, { atTier: (tier: number) => number; unit: "%" | "" }> = {
+const ATTRIBUTE_LOOK: Record<Attribute, { atTier: (tier: number) => number; unit: "%" | "" }> = {
   Battle: { atTier: (tier) => battleBonusBps(tier) / 100, unit: "%" },
   Logistics: { atTier: logisticsStamina, unit: "" },
   Scouting: {

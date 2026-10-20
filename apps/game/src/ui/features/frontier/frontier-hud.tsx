@@ -9,7 +9,7 @@ import { SettingsPanel } from "@/ui/modules/settings/settings";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useVisitedRealm } from "./board/realm-visit";
 import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
@@ -25,8 +25,9 @@ import { type ArmyOrder, useArmyOrder } from "./hud/army-order";
 import { ArmyDock } from "./hud/army-dock";
 import { useChatKey } from "./hud/chat-key";
 import { FrontierDesktop, FrontierPlaces } from "./hud/frontier-desktop";
-import { canResearchNow } from "./research/research-plan";
-import { useResearchPlan } from "./research/research-reader";
+import { useResearchTree } from "./research/research-facts";
+import { useSelectedBuildingRow } from "./research/selected-building";
+import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
@@ -78,11 +79,22 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A spectator has no realm of their own: they watch the season's leader, and the strip reads the watched realm.
   useSpectatorWatchesTheLeader();
   // What the map has selected opens its card; the one panel decides which of it, a surface and a deploy order stands.
-  const card = useSelectionCard({ rules, realm, onResearch: () => setSurface("research") });
+  const card = useSelectionCard({ realm, onResearch: () => setSurface("research") });
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null);
   const realmLabor = useRealmLabor(rules, realm);
   const desktop = useLayout() === "desktop";
-  const researchPlan = useResearchPlan(realm);
+  const research = useResearchTree(realm);
+  // A building tapped on the realm's board opens Research on its own row: one panel, whichever way the player came.
+  const tappedRow = useSelectedBuildingRow(realm);
+  const [researchPick, setResearchPick] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (tappedRow === null) return;
+    setResearchPick(`row-${tappedRow}`);
+    setSurface("research");
+  }, [tappedRow]);
+  useEffect(() => {
+    if (surface !== "research") setResearchPick(undefined);
+  }, [surface]);
   const seasonRank = useSeasonRank();
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
@@ -109,7 +121,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   );
   const page =
     surface === "research" && realm ? (
-      <FrontierResearch rules={rules} realm={realm} />
+      <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onBack={close} />
     ) : undefined;
@@ -194,7 +206,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           <FrontierPlaces
             surface={surface}
             onSurface={setSurface}
-            research={realm ? canResearchNow(researchPlan) : undefined}
+            research={realm ? canResearchNow(research?.nodes) : undefined}
           />
         )
       }

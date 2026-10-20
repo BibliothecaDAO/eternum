@@ -5,15 +5,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
 
-import { ArmyRow } from "../hud/army-row";
-
 const game = vi.hoisted(() => ({
-  buyTier: vi.fn(() => Promise.resolve()),
+  buyTier: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
+  select: vi.fn(),
   signer: { address: "0x111" },
   progress: {
     game_id: 1,
     explorer_id: 12n,
-    xp: 260,
+    xp: 12,
     battle: 1,
     logistics: 1,
     scouting: 1,
@@ -22,6 +21,17 @@ const game = vi.hoisted(() => ({
   },
   rules: { game_id: 1, reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800 },
 }));
+const army = {
+  explorerId: 12,
+  number: 1,
+  label: "Army 1",
+  art: "knight-t1",
+  xp: 12,
+  troops: 1_500,
+  stamina: { current: 4, max: 120 },
+  secondsToFull: 232,
+  canBuyTier: false,
+};
 
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
@@ -32,23 +42,21 @@ vi.mock("@/hooks/context/game-context", () => ({
     account: { account: game.signer },
   }),
 }));
+vi.mock("@/sync/action-outcome", () => ({ untilApplied: async (sent: Promise<unknown>) => (await sent, "0x7") }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
-vi.mock("../hud/dock-armies", () => ({
-  useDockArmies: () => [
-    {
-      explorerId: 12,
-      label: "Army 1",
-      art: "knight-t1",
-      troops: 5_000,
-      stamina: { current: 90, max: 150 },
-      secondsToFull: 7_200,
-      canBuyTier: true,
-    },
-  ],
+vi.mock("@/hooks/helpers/use-navigate", () => ({ useSelectArmyOnMap: () => game.select }));
+vi.mock("@/hooks/store/use-account-store", () => ({
+  useAccountStore: (pick: (state: unknown) => unknown) => pick({ account: { address: "0x111" } }),
 }));
+vi.mock("@/shell/frame/layout", () => ({ useLayout: () => "desktop" }));
+vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
+vi.mock("../deploy/open-slots", () => ({ useOpenArmySlots: () => [] }));
+vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
+vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
 
 const { FrontierArmy } = await import("./frontier-army");
+const { ArmyDock } = await import("../hud/army-dock");
 
 let host: HTMLDivElement;
 let root: Root;
@@ -59,6 +67,7 @@ beforeEach(() => {
   document.body.append(host);
   root = createRoot(host);
   vi.clearAllMocks();
+  game.progress.xp = 12;
 });
 
 afterEach(() => {
@@ -66,48 +75,39 @@ afterEach(() => {
   host.remove();
 });
 
-const buttons = () => [...host.querySelectorAll("button")];
+const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
 
-it("offers Upgrade on a desktop army row whose XP buys a tier, and it opens the army's sheet", () => {
-  const onUpgrade = vi.fn();
-  const row = (props: { canBuyTier: boolean; onUpgrade?: () => void }) =>
-    act(() =>
-      root.render(
-        <ArmyRow
-          label="Army 1"
-          number={1}
-          art="knight-t1"
-          troops={5_000}
-          stamina={{ current: 90, max: 150 }}
-          xp={260}
-          selected={false}
-          onPick={vi.fn()}
-          {...props}
-        />,
-      ),
-    );
-  row({ canBuyTier: true, onUpgrade });
-  act(() =>
-    buttons()
-      .find((button) => button.getAttribute("aria-label") === "Upgrade Army 1")!
-      .click(),
-  );
-  expect(onUpgrade).toHaveBeenCalledTimes(1);
-
-  row({ canBuyTier: false, onUpgrade });
-  expect(buttons().some((button) => button.getAttribute("aria-label") === "Upgrade Army 1")).toBe(false);
+it("opens the army's panel from its row on a desktop, whatever its XP buys", () => {
+  const onOpenArmy = vi.fn();
+  const realm = { owner: "0x111", base: { troop_max_explorer_count: 3 } };
+  act(() => root.render(<ArmyDock realm={realm as never} armies={[army as never]} onOpenArmy={onOpenArmy} />));
+  act(() => button(/Army 1/)!.click());
+  expect(game.select).toHaveBeenCalledWith(12);
+  expect(onOpenArmy).toHaveBeenCalledWith(12);
 });
 
-it("buys the chosen tier from the army's sheet: buy_tier for the selected army and its attribute, signed by the player", async () => {
+it("shows the army's figures, then its level-ups one step on, and buys the chosen level with buy_tier", async () => {
+  game.progress.xp = 260;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
-  const upgrade = buttons().find((button) => button.textContent?.startsWith("Upgrade"));
-  expect(upgrade).toBeDefined();
-  await act(async () => upgrade!.click());
+  expect(host.textContent).toContain("Damage dealt");
+  expect(host.textContent).toContain("Max stamina");
+  act(() => button(/Level up · 4 ready/)!.click());
+  act(() => [...host.querySelectorAll<HTMLButtonElement>("[data-attribute='scouting']")][0]!.click());
+  act(() => button(/^Rifts$/)!.click());
+  await act(async () => button(/^Level up$/)!.click());
   expect(game.buyTier).toHaveBeenCalledWith({
     signer: game.signer,
     explorerId: 12,
-    attribute: "Battle",
-    scoutingKind: undefined,
+    attribute: "Scouting",
+    scoutingKind: "Rift",
   });
+});
+
+it("lets an army short of XP see its level-ups, and holds the verb with what is missing", () => {
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} onClose={vi.fn()} />));
+  act(() => button(/^Level-ups$/)!.click());
+  expect(host.textContent).toContain("100 XP · 88 XP short");
+  expect(button(/^Level up$/)!.disabled).toBe(true);
 });

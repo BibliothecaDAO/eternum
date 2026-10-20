@@ -7,7 +7,20 @@ import type { Refusal } from "@/ui/design-system/kit/refusal";
 import { CASTLE, TROOPS, UPGRADE, UPGRADING } from "@/ui/design-system/kit/words";
 
 import { RefusedVerb } from "../refused-verb";
-import { type Figure, Figures } from "./type-upgrade-sheet";
+
+/** One figure of the castle as it stands: its icons, its number, and the name its tooltip says. */
+export type Figure = { icons: IconMeaning[]; label: string; value: string };
+
+/** What the castle is doing now, as chips: icons and numbers on the surface, each named when asked. */
+const Figures = ({ figures }: { figures: readonly Figure[] }) => (
+  <div className="flex flex-wrap items-center justify-center gap-1.5">
+    {figures.map((figure) => (
+      <HudChip key={figure.label} icons={figure.icons} label={figure.label}>
+        {figure.value}
+      </HudChip>
+    ))}
+  </div>
+);
 
 /** The castle at one level: its art and level, the plots it opens, its army slots, each store's limit, the deploy cap. */
 export type CastleSide = {

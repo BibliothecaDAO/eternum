@@ -38,8 +38,6 @@ import { fightEnded } from "./sites/fight-result";
 const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
   useSelectionCard(props)?.sheet ?? null;
 
-/** Rules for the sheets that never read them here. */
-const RULES = { dayUnitSeconds: 100, spacing: 10, startMainAt: 100, seed: 1n };
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -61,7 +59,7 @@ const sheetFor = (occupierType: number | null) => {
   act(() =>
     root.render(
       <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-        <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+        <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
       </GameProvider>,
     ),
   );
@@ -148,7 +146,7 @@ describe("Frontier's selection sheet", () => {
         await act(async () =>
           root.render(
             <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-              <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+              <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
             </GameProvider>,
           ),
         );
@@ -259,7 +257,7 @@ it("offers depth entry from Frontier for an own army at the computed spire", asy
         account={{ address: "0x111" } as never}
       >
         <FrontierSelectionSheet
-          rules={readExpeditionRules(store, 1)!}
+
           realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
           onResearch={() => undefined}
         />
@@ -286,7 +284,7 @@ it("stands Research alone over the spire card of an army selected with no tile, 
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   /** The HUD's card and surface, both through the one panel; Research and its close as their buttons. */
   const Hud = () => {
-    const card = useSelectionCard({ rules: readExpeditionRules(store, 1)!, realm, onResearch: () => undefined });
+    const card = useSelectionCard({ realm, onResearch: () => undefined });
     const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
     return (
       <>
@@ -382,7 +380,7 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
       root.render(
         <GameProvider value={setup} account={{ address: "0x111" } as never}>
           <ChestOpenings />
-          <FrontierSelectionSheet rules={readExpeditionRules(store, 1)!} realm={null} onResearch={() => undefined} />
+          <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
         </GameProvider>,
       ),
     );
@@ -473,7 +471,7 @@ it.each([
   act(() =>
     root.render(
       <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-        <FrontierSelectionSheet rules={RULES} realm={null} onResearch={() => undefined} />
+        <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
       </GameProvider>,
     ),
   );

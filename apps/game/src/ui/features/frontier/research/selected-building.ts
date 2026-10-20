@@ -3,39 +3,29 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canIssueOrders } from "@/utils/can-issue-orders";
+import { researchRowOf } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
-
-import type { TypeRowView } from "./research-plan";
-import { useResearchPlan } from "./research-reader";
+import { BUILDINGS_CENTER } from "@bibliothecadao/types";
 
 /**
- * The standing building of the player's realm they tapped in the realm view, as its type's research row, with the
- * Essence the realm holds: one Upgrade sheet whichever way the player came, the board or the castle's tree.
+ * The research row of the standing building the player tapped in their realm's view: Research opens on it, one panel
+ * whichever way the player came, the board or the tree. None for a building without a row, elsewhere, or for a viewer.
  */
-export const useSelectedBuildingRow = (
-  realm: NativeRows["Structure"] | null,
-): { view: TypeRowView; essence: number | undefined } | null => {
+export const useSelectedBuildingRow = (realm: NativeRows["Structure"] | null): number | null => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const selected = useUIStore((state) => state.selectedBuildingHex);
   const ordersAllowed = useUIStore(canIssueOrders);
-  const plan = useResearchPlan(realm);
   useNativeRevision(["Building"]);
-  if (
-    isMapView ||
-    !ordersAllowed ||
-    !realm ||
-    !plan ||
-    !selected ||
-    selected.structureId !== safeInteger(realm.entity_id)
-  )
+  if (isMapView || !ordersAllowed || !realm || !selected || selected.structureId !== safeInteger(realm.entity_id))
     return null;
+  // The keep stands on the centre plot and has its own sheet.
+  if (selected.innerCol === BUILDINGS_CENTER[0] && selected.innerRow === BUILDINGS_CENTER[1]) return null;
   const building = setup.store.get("Building", {
     game_id: realm.game_id,
     structure_id: realm.entity_id,
     inner_col: selected.innerCol,
     inner_row: selected.innerRow,
   });
-  const view = building && plan.types.find(({ category }) => category === Number(building.category));
-  return view ? { view, essence: plan.essence } : null;
+  return (building && researchRowOf(Number(building.category))) ?? null;
 };

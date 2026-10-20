@@ -4,8 +4,8 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { realmDot, useRealmStores } from "../realm-stores";
-import { canResearchNow } from "../research/research-plan";
-import { useResearchPlan } from "../research/research-reader";
+import { useResearchTree } from "../research/research-facts";
+import { canResearchNow } from "../research/research-tree";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
@@ -54,7 +54,7 @@ export const FrontierNav = ({
           ? "map"
           : "realm";
   const goToPlace = useGoToFrontierPlace(board);
-  const researchDot = canResearchNow(useResearchPlan(realm));
+  const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
   const stores = useRealmStores(realm, rules);
   const go = (to: Place) => {
     if (to === "map" || to === "realm") {

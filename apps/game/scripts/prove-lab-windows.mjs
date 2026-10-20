@@ -16,14 +16,13 @@ const READY_MS = 60_000;
 const SETTLE_MS = 2_000;
 
 /**
- * Frontier's windows of the same area (its castle and training, the season board, Next up), as the Frontier HUD's lab
+ * Frontier's windows of the same area (its castle and research, the season board, Next up), as the Frontier HUD's lab
  * draws them at /lab/kit/hud/<state>.
  */
 const FRONTIER_STATES = [
   "castle",
   "castle-short",
-  "train-battle",
-  "train-short",
+  "research",
   "season",
   "season-detail",
   "season-over",

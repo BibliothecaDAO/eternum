@@ -152,15 +152,6 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/** A tier that is a choice of two sides waits for one: "Choose Drill or Rations". */
-export const chooseOne = (first: string, second: string) => `Choose ${first} or ${second}`;
-/** A castle row waits for the one before it: "Needs Ethereal I". */
-export const needsFirst = (what: string) => `Needs ${what}`;
-/** What a castle row opens, on its tooltip: "Shrine: your armies find Shrines, +200 XP each". */
-export const armiesFind = (site: string, gain: string) => `${site}: your armies find ${site}s, ${gain} each`;
-export const armiesEnter = (reach: string) => `${reach}: your armies may enter it at the spire`;
-/** A training building's tier on its row's tooltip: "Battle +0% → +10% for every new army". */
-export const forNewArmies = (attribute: string, effect: string) => `${attribute} ${effect} for every new army`;
 /** A training building waits for the Barracks' tier: "Needs Barracks at Rare". */
 export const needsAt = (building: string, tier: string) => `Needs ${building} at ${tier}`;
 /** A training building already standing: a realm holds one of each. */
@@ -187,12 +178,6 @@ export const xpToward = (held: string, price: string, tier: string) =>
   `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
 /** The four attributes, each wearing its Aspect's mark. */
 export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
-/** Scouting's choice at each tier: the kind it lifts (the screen shows icons; these are their names). */
-export const FIND_KINDS = [
-  `Find ${structurePlural(StructureType.Camp, undefined, "frontier")}`,
-  "Find rifts",
-  "Find beasts",
-] as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = "Rift";
@@ -986,3 +971,84 @@ export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): st
   if (!hydrated) return "Loading the realm's automation";
   return null;
 };
+
+/**
+ * The castle's tree, read as a tree (the owner's pick, 20 October: "Branches"): its branches, how each node stands,
+ * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
+ */
+export const RESEARCH_TREE = {
+  branches: { economy: "Economy", army: ARMY, castle: CASTLE },
+  states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
+  sides: {
+    fields: ["Fields", "Wheat from every Farm"],
+    granary: ["Granary", "The castle's wheat store"],
+    tools: ["Tools", "Labor from every Workshop"],
+    storeroom: ["Storeroom", "The castle's labor store"],
+    drill: ["Drill", "Troops from every Barracks"],
+    rations: ["Rations", "Wheat a deployed troop costs"],
+  },
+  kinds: { camp: "Camps", rift: "Rifts", beasts: "Beasts" },
+  foundByNewArmies: (kind: string) => `${kind} found by new armies`,
+  sidesLine: (made: string) => `Each tier picks a side for the season: more ${made}, or store more`,
+  sideKept: "The side is kept for the season.",
+  hutLine: "Population from every Hut",
+  gateLine: (tier: string) => `${tier} opens the four training buildings`,
+  gateOpen: "The four training buildings are open",
+  gate: (tier: string) => `${tier} opens`,
+  newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
+  /** A level and what it gives: "Uncommon · +10% damage". */
+  at: (tier: string, effect: string) => `${tier} · ${effect}`,
+  effects: {
+    battle: (value: string) => `${value} damage`,
+    logistics: (value: string) => `${value} max stamina`,
+    scouting: (value: string) => `${value} sites found`,
+    homecoming: (value: string) => `${value} of troops back home`,
+  },
+  nouns: { essence: ESSENCE, labor: "Labor" },
+  armiesFind: (site: string) => `Armies find ${site}s`,
+  each: (gain: string) => `${gain} each`,
+  enters: (reach: string) => `Armies enter ${reach} at the spire`,
+  reach: (numeral: string) => `${ETHEREAL} ${numeral}`,
+  opens: "Open",
+  build: (building: string) => `Build a ${building}`,
+  stands: (building: string) => `${building} stands`,
+  first: (what: string) => `${what} first`,
+  store: (limit: string, need: string, level: string) => `Labor store ${limit} / ${need} · a ${level} holds it`,
+  held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
+  research: (what: string) => `Research ${what}`,
+  levelUpCastle: "Level up the castle",
+  complete: "Legendary · complete",
+  step: (from: string, to: string) => `${from} → ${to}`,
+  price: (essence: string) => `${essence} ${ESSENCE}`,
+} as const;
+
+/**
+ * An army's detail (the owner's pick, 20 October: "For the army C is best"): its figures, its XP and how it is earned,
+ * then its level-ups, one step on.
+ */
+export const ARMY_DETAIL = {
+  stats: {
+    battle: "Damage dealt",
+    logistics: "Max stamina",
+    scouting: "Sites found",
+    homecoming: "Troops back at the day's end",
+  },
+  onKind: (value: string, kind: string) => `${value} ${kind}`,
+  scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
+  earn: {
+    explore: "Explore a tile",
+    shrine: "Visit a Shrine",
+    clear: "Clear a camp: more for a stronger guard",
+  },
+  ready: (count: number) => `${formatCount(count, "level-up")} ready`,
+  toNext: (xp: string) => `${xp} ${XP} to the next level-up`,
+  allLegendary: "Every attribute is legendary",
+  levelUp: "Level up",
+  levelUps: "Level-ups",
+  levelUpReady: (count: number) => `Level up · ${count} ready`,
+  price: (xp: string) => `${xp} ${XP}`,
+  short: (xp: string, short: string) => `${xp} ${XP} · ${short} ${XP} short`,
+  refills: (xp: string, stamina: string) => `${xp} ${XP} · refills ${stamina} ${STAMINA}`,
+  legendary: (attribute: string) => `${attribute} is legendary`,
+  from: (attribute: string, from: string, to: string) => `${attribute} ${from} → ${to}`,
+} as const;

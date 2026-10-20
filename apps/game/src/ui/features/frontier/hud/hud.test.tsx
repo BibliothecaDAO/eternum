@@ -7,7 +7,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { dayOf } from "@bibliothecadao/eternum";
 
-import { canResearchNow } from "../research/research-plan";
+import { EARLY_REALM, MID_REALM } from "../research/progression-fixture";
+import { canResearchNow, readResearchTree } from "../research/research-tree";
 import { secondsUntilHeld } from "./army-order";
 import { ArmyRow } from "./army-row";
 import { ArmyToken, OpenSlot, xpLine } from "./army-token";
@@ -234,17 +235,10 @@ describe("the place bar", () => {
     expect(slots).toEqual(["Map", "Realm", "Chat", "Menu"]);
   });
 
-  it("dots Research only when an open node's Essence is held", () => {
-    const node = (state: "open" | "locked" | "learned", price: number) => ({
-      node: 1,
-      row: 10,
-      state,
-      price,
-      effect: { kind: "depth" as const, depth: 1 as const },
-    });
-    expect(canResearchNow({ essence: 500, types: [], nodes: [node("open", 400)] })).toBe(true);
-    expect(canResearchNow({ essence: 300, types: [], nodes: [node("open", 400), node("locked", 100)] })).toBe(false);
-    expect(canResearchNow({ essence: undefined, types: [], nodes: [node("open", 0)] })).toBe(false);
+  it("dots Research only while a node can be researched now", () => {
+    // The owner's realm is short of every price; some days in, a Farm tier, the War hall and the Well are in reach.
+    expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(false);
+    expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
     expect(canResearchNow(undefined)).toBe(false);
   });
 });

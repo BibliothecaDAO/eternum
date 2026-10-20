@@ -1,5 +1,5 @@
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudChip, HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   BARRACKS,
   CASTLE,
@@ -37,13 +37,13 @@ import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { LastHourBubble } from "@/ui/features/frontier/rollover/last-hour";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
-import { type AttributeKey, ArmySheet } from "@/ui/features/frontier/army/army-sheet";
 import { BuildingsRow } from "@/ui/features/frontier/realm/buildings-row";
 import { CastleView } from "@/ui/features/frontier/upgrade/castle-view";
-import { TypeUpgradeSheet } from "@/ui/features/frontier/upgrade/type-upgrade-sheet";
-import { TrainingGives } from "@/ui/features/frontier/upgrade/training-gives";
-import { KindChoice } from "@/ui/features/frontier/army/army-sheet";
-import { CastleNodeSheet, TreePage, type TreeRow } from "@/ui/features/frontier/research/tree-page";
+import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
+import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
+import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
+import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
+import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { type ProductionLine, ProductionSheet } from "@/ui/features/frontier/production/production-sheet";
 import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
@@ -281,23 +281,8 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
   deployCap: [3_000, 9_000, 25_000, 50_000][level],
 });
 
-/** Army 1: 5,000 troops, 260 XP, Battle rare, Logistics and Scouting common, Homecoming rare (the realm trained two). */
-type LabArmySheet = {
-  chosen: AttributeKey;
-  /** The realm's LORDS against the refill; with `confirm`, the refill's confirm is open. */
-  lords?: number;
-  confirm?: boolean;
-  xp?: number;
-  stamina?: number;
-  max?: number;
-  tiers?: readonly [1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5, 1 | 2 | 3 | 4 | 5];
-};
-const EFFECTS = {
-  battle: ["+0%", "+10%", "+30%", "+60%", "+100%"],
-  logistics: ["150", "170", "200", "240", "300"],
-  scouting: ["+0%", "+10%", "+30%", "+60%", "+100%"],
-  homecoming: ["0%", "3%", "9%", "18%", "30%"],
-} as const;
+/** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
+type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
 const line = (overrides: Partial<ProductionLine> & Pick<ProductionLine, "icon" | "spentAt">): ProductionLine => ({
@@ -313,77 +298,6 @@ const PRODUCTION_LINES: ProductionLine[] = [
   line({ icon: "wheat", spentAt: "deploy", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
   line({ icon: "labor", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
   line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
-];
-
-/** A city's tree: farm uncommon (Fields), workshop common, barracks rare (Drill twice), hut common, two training buildings. */
-const TREE_ROWS: TreeRow[] = [
-  {
-    key: "farm",
-    icon: "farm",
-    name: FARM,
-    tier: 2,
-    sides: ["fields"],
-    next: { essence: 4_000, labor: 3_000 },
-    choice: true,
-    tip: "",
-  },
-  {
-    key: "workshop",
-    icon: "workshop",
-    name: WORKSHOP,
-    tier: 1,
-    sides: [],
-    next: { essence: 2_000, labor: 2_000 },
-    choice: true,
-    tip: "",
-  },
-  {
-    key: "barracks",
-    icon: "barracks",
-    name: BARRACKS,
-    tier: 3,
-    sides: ["drill", "drill"],
-    next: { essence: 48_000, labor: 24_000 },
-    choice: true,
-    tip: "",
-  },
-  {
-    key: "hut",
-    icon: "workers-hut",
-    name: HUT,
-    tier: 1,
-    sides: [],
-    next: { essence: 500, labor: 500 },
-    choice: false,
-    tip: "",
-  },
-  {
-    key: "war",
-    icon: "war-hall",
-    name: TRAINING_BUILDINGS[0],
-    tier: 2,
-    sides: [],
-    next: { essence: 48_000, labor: 9_000 },
-    choice: false,
-    tip: "",
-  },
-  {
-    key: "hearth",
-    icon: "hearth",
-    name: TRAINING_BUILDINGS[3],
-    tier: 2,
-    sides: [],
-    next: { essence: 48_000, labor: 9_000 },
-    choice: false,
-    tip: "",
-  },
-];
-const CASTLE_NODES = [
-  { key: "shrine", icon: "shrine" as const, label: "Shrine", tip: "", essence: 2_000, state: "open" as const },
-  { key: "well", icon: "well" as const, label: "Well", tip: "", essence: 6_000, state: "open" as const },
-  { key: "d1", icon: "depth-1" as const, label: "I", tip: "", essence: 160_000, state: "open" as const },
-  { key: "d2", icon: "depth-2" as const, label: "II", tip: "", essence: 400_000, state: "locked" as const },
-  { key: "d3", icon: "depth-3" as const, label: "III", tip: "", essence: 900_000, state: "locked" as const },
 ];
 
 const TODAY_LOG = [
@@ -686,36 +600,20 @@ const STATES = {
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
-  "army-cheap": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: { chosen: "logistics" } },
-  "army-dear": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: { chosen: "battle" } },
-  "army-nearly-full": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    selected: 0,
-    army: { chosen: "logistics", stamina: 140 },
-  },
-  "army-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: { chosen: "scouting" } },
-  "army-legendary": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    selected: 0,
-    army: { chosen: "battle", xp: 520, stamina: 240, max: 240, tiers: [5, 4, 3, 4] },
-  },
+  "army-cheap": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
   "army-refill": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { chosen: "logistics", stamina: 20, lords: 1_240, confirm: true },
+    army: { stamina: 20, lords: 1_240, confirm: true },
   },
   "army-refill-short": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     selected: 0,
-    army: { chosen: "logistics", stamina: 20, lords: 40 },
+    army: { stamina: 20, lords: 40 },
   },
   "move-refill": {
     clock: CLOCK,
@@ -747,15 +645,7 @@ const STATES = {
       line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
     ],
   },
-  research: { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "page" },
-  "tree-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "farm" },
-  "tree-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "barracks" },
-  "tree-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "hut" },
-  "tree-shrine": { clock: CLOCK, stores: STORES, armies: ARMIES, tree: "shrine" },
-  "train-battle": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "battle" },
-  "train-hearth": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "hearth" },
-  "train-scouts": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "scouts" },
-  "train-short": { clock: CLOCK, stores: STORES, armies: ARMIES, training: "short" },
+  research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   today: { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today" },
   "today-earlier": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-earlier" },
   "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },
@@ -912,8 +802,8 @@ type LabState = {
   seasonLords?: "open" | "closed";
   season?: "list" | "detail" | "unpublished" | "loading" | "failed";
   visiting?: boolean;
-  training?: "battle" | "hearth" | "scouts" | "short";
-  tree?: "page" | "farm" | "barracks" | "hut" | "shrine";
+  /** Research's page: the tree on the realm some days in. */
+  research?: boolean;
   production?: readonly ProductionLine[];
   army?: LabArmySheet;
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
@@ -983,20 +873,8 @@ export const HudLab = () => {
         page={
           chat && !desktop ? (
             chat
-          ) : lab.tree ? (
-            // A row's sheet stands in the page's place, as FrontierResearch shows it.
-            lab.tree === "page" ? (
-              <TreePage
-                essence={18_250}
-                labor={9_640}
-                rows={TREE_ROWS}
-                castle={CASTLE_NODES}
-                onRow={noop}
-                onCastle={noop}
-              />
-            ) : (
-              <LabTreeSheet tree={lab.tree} />
-            )
+          ) : lab.research ? (
+            <LabResearch />
           ) : lab.season ? (
             // A realm's detail stands in the list's place, as FrontierSeason shows it.
             lab.season === "detail" ? (
@@ -1072,7 +950,7 @@ export const HudLab = () => {
                   ? "chat"
                   : lab.menu || lab.season
                     ? "menu"
-                    : lab.tree
+                    : lab.research
                       ? "research"
                       : lab.realmView
                         ? "realm"
@@ -1090,7 +968,6 @@ export const HudLab = () => {
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <DayDoneCard {...lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {lab.training && <LabTraining training={lab.training} />}
         {lab.production && <ProductionSheet lines={lab.production} onSpend={noop} onBuild={noop} onClose={noop} />}
         {(lab.realmView === "build" || lab.realmView === "build-early") && (
           <BuildView
@@ -1191,171 +1068,41 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
   );
 };
 
-/** The army sheet on the fiction: tier prices 100, 200, 400, 800 XP; a purchase refills up to 30. */
+/** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
-  const [battle, logistics, scouting, homecoming] = army.tiers ?? [3, 1, 1, 3];
+  const stamina = { current: army.stamina ?? 96, max: 170 };
   if (army.confirm)
-    return (
-      <RefillConfirm
-        stamina={{ current: army.stamina ?? 90, max: army.max ?? 150 }}
-        held={army.lords}
-        sending={false}
-        onRefill={noop}
-        onCancel={noop}
-      />
-    );
+    return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
   return (
-    <ArmySheet
-      name="Army 1"
-      art="knight-t1"
-      troops={army.tiers ? 60_000 : 5_000}
-      xp={army.xp ?? 260}
-      stamina={{ current: army.stamina ?? 90, max: army.max ?? 150, secondsToFull: 2 * HOUR }}
-      refill={
-        army.lords === undefined ? undefined : (
-          <RefillButton price={(army.max ?? 150) - (army.stamina ?? 90)} held={army.lords} onRefill={noop} />
-        )
-      }
-      attributes={{
-        battle: { tier: battle },
-        logistics: { tier: logistics },
-        scouting: { tier: scouting, kinds: army.tiers ? ["rift", "rift"] : [] },
-        homecoming: { tier: homecoming },
-      }}
-      tierPrices={{ 2: 100, 3: 200, 4: 400, 5: 800 }}
-      effects={EFFECTS}
-      refillOnBuy={30}
-      chosen={army.chosen}
-      onChoose={noop}
-      kindRates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], beasts: ["6%", "6.6%"] }}
-      kind="rift"
-      onKind={noop}
-      sending={false}
-      onUpgrade={noop}
-      onClose={noop}
-    />
+    <HudSheet label={VETERAN_ARMY.name} onClose={noop}>
+      <ArmyDetail
+        army={readArmyDetail({ ...VETERAN_ARMY, stamina })}
+        refill={
+          army.lords === undefined ? undefined : (
+            <RefillButton price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
+          )
+        }
+        sending={false}
+        onLevelUp={noop}
+      />
+    </HudSheet>
   );
 };
 
-/** The tree's sheets on the fiction: a farm's two sides, barracks above the labor limit, a hut, the shrine row. */
-const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }) => {
-  if (tree === "shrine")
-    return (
-      <CastleNodeSheet
-        node={CASTLE_NODES[0]}
-        gives={
-          <HudChip icons={["shrine"]} label="XP">
-            +200 XP
-          </HudChip>
-        }
-        sending={false}
-        onResearch={noop}
-        onClose={noop}
-      />
-    );
-  if (tree === "hut")
-    return (
-      <TypeUpgradeSheet
-        icon="workers-hut"
-        name={HUT}
-        tier={1}
-        gives={
-          <span className="flex justify-center">
-            <HudChip icons={["person"]} label="population">
-              30 → 36
-            </HudChip>
-          </span>
-        }
-        prices={[
-          { of: "essence", amount: 500 },
-          { of: "labor", amount: 500 },
-        ]}
-        sending={false}
-        onUpgrade={noop}
-        onClose={noop}
-      />
-    );
-  const farm = tree === "farm";
+/** Research's page on the realm some days in: the game's tree, the picked node under it. */
+const LabResearch = () => {
+  const nodes = readResearchTree(MID_REALM);
+  const [picked, setPicked] = useState(nodes[0]!.key);
   return (
-    <TypeUpgradeSheet
-      icon={farm ? "farm" : "barracks"}
-      name={farm ? FARM : BARRACKS}
-      tier={farm ? 2 : 3}
-      sides={
-        farm
-          ? [
-              { icon: "fields", name: "Fields", gain: { icon: "wheat", label: "wheat", value: "1,500 → 1,800/h" } },
-              { icon: "granary", name: "Granary", gain: { icon: "resources", label: "limit", value: "18K → 27K" } },
-            ]
-          : [
-              { icon: "drill", name: "Drill", gain: { icon: "troops", label: "troops", value: "600 → 700/h" } },
-              { icon: "rations", name: "Rations", gain: { icon: "wheat", label: "wheat", value: "2 → 1.75" } },
-            ]
-      }
-      lifted={1}
-      onLift={noop}
-      prices={[
-        { of: "essence", amount: farm ? 4_000 : 48_000 },
-        { of: "labor", amount: farm ? 3_000 : 24_000 },
-      ]}
-      refusal={
-        farm
-          ? undefined
-          : {
-              reason: { kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 },
-              fix: { icon: "realm", word: CASTLE, onFix: noop },
-            }
-      }
-      sending={false}
-      onUpgrade={noop}
-      onClose={noop}
-    />
-  );
-};
-
-/** A training building's sheet on the fiction: the War hall to rare, the Hearth to rare, the Scouts' lodge's kind. */
-const LabTraining = ({ training }: { training: "battle" | "hearth" | "scouts" | "short" }) => {
-  const hearth = training === "hearth";
-  const scouts = training === "scouts";
-  return (
-    <TypeUpgradeSheet
-      icon={hearth ? "hearth" : scouts ? "scout-lodge" : "war-hall"}
-      name={TRAINING_BUILDINGS[hearth ? 3 : scouts ? 2 : 0]}
-      tier={scouts ? 1 : 2}
-      gives={
-        <TrainingGives
-          mark={hearth ? "order-enlightenment" : scouts ? "order-detection" : "order-rage"}
-          attribute={hearth ? "Homecoming" : scouts ? "Scouting" : "Battle"}
-          effect={hearth ? "3% → 9%" : scouts ? "+10%" : "+10% → +30%"}
-          xpSaved={scouts ? 100 : 300}
-          tier={scouts ? 1 : 2}
-          armyArt="knight-t1"
-          kinds={
-            scouts ? (
-              <KindChoice
-                rates={{ camp: ["4%", "4.4%"], rift: ["4%", "4.4%"], beasts: ["6%", "6.6%"] }}
-                lifted="rift"
-                onKind={noop}
-              />
-            ) : undefined
-          }
-        />
-      }
-      prices={[
-        { of: "essence", amount: scouts ? 12_000 : 48_000 },
-        { of: "labor", amount: scouts ? 3_000 : 9_000 },
-      ]}
-      refusal={
-        training === "short"
-          ? {
-              reason: { kind: "short", of: "essence", held: 18_250, need: 48_000 },
-              fix: { icon: "map", word: "Explore for Essence", onFix: noop },
-            }
-          : undefined
-      }
-      sending={false}
-      onUpgrade={noop}
-      onClose={noop}
+    <ResearchPanel
+      nodes={nodes}
+      essence={MID_REALM.essence}
+      labor={MID_REALM.labor}
+      picked={picked}
+      onPick={setPicked}
+      sending={new Set()}
+      fixFor={() => undefined}
+      onResearch={noop}
     />
   );
 };
@@ -1442,7 +1189,7 @@ const LAB_POPULATION = { used: 9, total: 18 };
 const labSurface = (lab: LabState): HudSurface | null =>
   lab.season
     ? "season"
-    : lab.tree
+    : lab.research
       ? "research"
       : lab.production
         ? "production"
@@ -1472,8 +1219,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             xp={army.xp}
             canBuyTier={army.tier === true}
             selected={lab.selected === index}
-            onPick={noop}
-            onUpgrade={lab.visiting ? undefined : noop}
+            onPick={lab.visiting ? undefined : noop}
           />
         ))}
         {open > 0 && <OpenSlot label="Deploy" pulse={lab.armies.length === 0} wide onDeploy={noop} />}

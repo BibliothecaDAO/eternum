@@ -23,7 +23,7 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { type CastleSide, CastleView } from "./castle-view";
-import type { Figure } from "./type-upgrade-sheet";
+import type { Figure } from "./castle-view";
 
 /** Whether the player tapped their own realm's keep in the realm view. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
