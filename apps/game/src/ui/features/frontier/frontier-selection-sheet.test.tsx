@@ -4,10 +4,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { tiles } = vi.hoisted(() => ({
   tiles: {
-    current: [] as { occupierType: number; occupierId?: number; occupierIsStructure?: boolean; hexCoords: object }[],
+    current: [] as {
+      occupierType: number;
+      occupierId?: number;
+      occupierIsStructure?: boolean;
+      hexCoords: { col: number; row: number; alt?: boolean };
+    }[],
   },
 }));
-vi.mock("@/hooks/use-world-spatial-tiles", () => ({ useWorldSpatialTiles: () => tiles.current }));
+// The world's tiles at the hexes asked, as the spatial reader answers: none once nothing is selected.
+vi.mock("@/hooks/use-world-spatial-tiles", () => ({
+  useWorldSpatialTiles: (hexes: Array<{ col: number; row: number }>) =>
+    tiles.current.filter((tile) =>
+      hexes.some((hex) => hex.col === tile.hexCoords.col && hex.row === tile.hexCoords.row),
+    ),
+}));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("./build/build-sheet", () => ({ BuildSheet: () => null, useOpenPlot: () => null }));
 vi.mock("./sites/map-site-card", () => ({ MapSiteCard: () => null, useSelectedMapSite: () => null }));
@@ -70,14 +81,19 @@ const sheetFor = (occupierType: number | null) => {
 
 describe("Frontier's selection sheet", () => {
   it.each([
-    { reload: false, occupied: false, renamed: false },
-    { reload: false, occupied: true, renamed: false },
-    { reload: true, occupied: false, renamed: false },
-    { reload: true, occupied: true, renamed: false },
-    { reload: true, occupied: true, renamed: true },
+    { reload: false, occupied: false, foreign: false, renamed: false },
+    { reload: false, occupied: true, foreign: false, renamed: false },
+    { reload: true, occupied: false, foreign: false, renamed: false },
+    { reload: true, occupied: true, foreign: false, renamed: false },
+    { reload: true, occupied: true, foreign: false, renamed: true },
+    { reload: false, occupied: true, foreign: true, renamed: false },
+    { reload: true, occupied: true, foreign: true, renamed: false },
+    { reload: true, occupied: true, foreign: true, renamed: true },
   ])(
-    "opens the cleared receipt after deletion (reload: $reload, own army: $occupied, renamed: $renamed)",
-    async ({ reload, occupied, renamed }) => {
+    "opens the cleared receipt, named once by its site, after deletion (reload: $reload, army on it: $occupied, another player's: $foreign, renamed: $renamed)",
+    async ({ reload, occupied, foreign, renamed }) => {
+      // The army on the tile is the viewer's own, or, seen from another account, someone else's.
+      const viewer = foreign ? "0x222" : "0x111";
       Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
       const fixture = campBeside();
       fixture.store.applyFacts([
@@ -136,7 +152,7 @@ describe("Frontier's selection sheet", () => {
             },
           ]
         : [];
-      useAccountStore.setState({ account: { address: "0x111" } as never });
+      useAccountStore.setState({ account: { address: viewer } as never });
       useUIStore.getState().setMapLayer(false);
       useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE });
       const host = document.createElement("div");
@@ -144,12 +160,16 @@ describe("Frontier's selection sheet", () => {
       try {
         await act(async () =>
           root.render(
-            <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
+            <GameProvider value={{ store } as never} account={{ address: viewer } as never}>
               <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
             </GameProvider>,
           ),
         );
-        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(expectedName);
+        // Another player's army keeps its own card, titled as an army; the receipt in it names its site. Otherwise the
+        // receipt is the sheet, titled by the site. Either way the site's name shows exactly once.
+        const sheet = host.querySelector("[data-kit-sheet]")!;
+        expect(sheet.getAttribute("aria-label")).toBe(foreign ? "Army" : expectedName);
+        expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Troll");
         expect(host.textContent).toContain("550 Labor");
         expect(host.textContent).toContain("82 XP");
@@ -158,7 +178,10 @@ describe("Frontier's selection sheet", () => {
         await act(async () => close!.click());
         expect(host.querySelector("[data-kit-sheet]")).toBeNull();
         await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: SITE_TILE }));
-        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(expectedName);
+        expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(
+          foreign ? "Army" : expectedName,
+        );
+        expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
         expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor82 XP");
       } finally {
         act(() => root.unmount());

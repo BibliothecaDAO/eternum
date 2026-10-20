@@ -1,4 +1,4 @@
-import { SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
+import { ClearedSiteSheet, SiteReceipt, useSelectedClearedSite } from "./sites/site-receipt";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useChestOpening } from "@/hooks/store/use-chest-opening-store";
 import { ChestTilePanel } from "@/ui/features/military/chest/chest-tile-panel";
@@ -79,13 +79,7 @@ export const useSelectionCard = ({
       "target",
       <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />,
     );
-  if (cleared)
-    return card(
-      "cleared",
-      <HudSheet label={siteDisplayName(Number(cleared.site.entity_id))} onClose={close}>
-        <SiteReceipt selected={cleared} />
-      </HudSheet>,
-    );
+  if (cleared) return card("cleared", <ClearedSiteSheet selected={cleared} onClose={close} />);
   if (mapSite) return card("site", <MapSiteCard selected={mapSite} onClose={close} />);
   if (selectedHex && isMapView && !mapLayer && (tileObject?.kind === "chest" || opening?.kind === "lords"))
     return card(
