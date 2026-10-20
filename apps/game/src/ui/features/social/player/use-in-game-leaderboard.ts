@@ -2,22 +2,16 @@ import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
-import { configManager, LeaderboardManager } from "@bibliothecadao/eternum";
+import { configManager, LeaderboardManager, type PlayerStanding } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, wholePoints } from "@bibliothecadao/types";
 import { useMemo } from "react";
 import { normalizeLeaderboardAddress, readFinalBlitzResult } from "./finalized-blitz-leaderboard";
 
-interface InGameLeaderboardStanding {
-  address: ContractAddress;
+/** A standing as the manager reads it, ranked; a finalized one's points are all registered. */
+interface InGameLeaderboardStanding extends PlayerStanding {
   rank: number;
-  points: number;
-  /**
-   * Hold points earned since the hyperstructure's last checkpoint: counted in `points` already, and registered on chain
-   * only at the next checkpoint (a capture or a reallocation).
-   */
-  accruingHoldPoints: number;
 }
 
 interface InGameLeaderboard {
@@ -26,18 +20,11 @@ interface InGameLeaderboard {
 }
 
 const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
-  const manager = LeaderboardManager.instance(store);
-
   const standingsByAddress = new Map<string, InGameLeaderboardStanding>();
   let rank = 0;
-  manager.playersByRank.forEach(([address, points], index) => {
-    if (index === 0 || points !== manager.playersByRank[index - 1][1]) rank = index + 1;
-    standingsByAddress.set(normalizeLeaderboardAddress(address), {
-      address,
-      rank,
-      points,
-      accruingHoldPoints: manager.getPlayerHyperstructureUnregisteredShareholderPoints(address),
-    });
+  LeaderboardManager.instance(store).playersByRank.forEach((standing, index, ranked) => {
+    if (index === 0 || standing.points !== ranked[index - 1].points) rank = index + 1;
+    standingsByAddress.set(normalizeLeaderboardAddress(standing.address), { ...standing, rank });
   });
 
   return { isFinalized: false, standingsByAddress };
@@ -55,8 +42,9 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
         {
           address: ContractAddress(account),
           rank,
-          points: wholePoints(points),
+          registeredPoints: wholePoints(points),
           accruingHoldPoints: 0,
+          points: wholePoints(points),
         },
       ]),
     ),

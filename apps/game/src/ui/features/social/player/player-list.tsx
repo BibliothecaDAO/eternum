@@ -28,6 +28,7 @@ export interface PlayerCustom extends PlayerInfo {
   isUser: boolean;
   isInvited: boolean;
   guild: GuildInfo | undefined;
+  /** The player's registered points by activity; null while none is known that adds up to their standing. */
   activityBreakdown: PlayerActivityBreakdown | null;
   /** Hold points the total counts that are not registered yet (use-in-game-leaderboard), shown under HS held. */
   accruingHoldPoints: number;
@@ -412,13 +413,16 @@ const PlayerRow = ({
   const setTooltip = useTooltipStore((state) => state.setTooltip);
 
   const isUnranked = player.points === null || player.rank === Number.MAX_SAFE_INTEGER;
-  const tilesLabel = formatActivityValue(player.tilesExplored, player.tilesExploredPoints);
-  const cratesLabel = formatActivityValue(player.cratesOpened, player.cratesOpenedPoints);
-  const riftsLabel = formatActivityValue(player.riftsTaken, player.riftsTakenPoints);
-  const hyperstructuresTakenLabel = formatActivityValue(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
-  const hyperstructuresHeldLabel = formatActivityValue(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
+  // Without a breakdown of this standing's points (players-panel), every activity cell says it is on its way.
+  const breakdownKnown = player.activityBreakdown !== null;
+  const activityLabel = (count: number, points: number) => (breakdownKnown ? formatActivityValue(count, points) : "…");
+  const tilesLabel = activityLabel(player.tilesExplored, player.tilesExploredPoints);
+  const cratesLabel = activityLabel(player.cratesOpened, player.cratesOpenedPoints);
+  const riftsLabel = activityLabel(player.riftsTaken, player.riftsTakenPoints);
+  const hyperstructuresTakenLabel = activityLabel(player.hyperstructuresTaken, player.hyperstructuresTakenPoints);
+  const hyperstructuresHeldLabel = activityLabel(player.hyperstructuresHeld, player.hyperstructuresHeldPoints);
   const hasShareholderPoints = player.accruingHoldPoints > 0;
-  const activitySummary = summarizeActivity(player);
+  const activitySummary = breakdownKnown ? summarizeActivity(player) : "…";
 
   // Determine row glow based on effect
   const hasRankUp = effect && effect.rankChange < 0;

@@ -26,7 +26,9 @@ describe("native leaderboard", () => {
     const manager = new LeaderboardManager(store);
     configManager.setActiveGame(23, 1);
     expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(17332);
-    expect(manager.playersByRank).toEqual([[PLAYER, 17332]]);
+    expect(manager.playersByRank).toEqual([
+      { address: PLAYER, registeredPoints: 17332, accruingHoldPoints: 0, points: 17332 },
+    ]);
     configManager.setActiveGame(15, 1);
     expect(manager.getPlayerRegisteredPoints(PLAYER)).toBe(5275);
     expect(() => configManager.setActiveGame(0, 1)).toThrow("positive game");
@@ -92,9 +94,14 @@ describe("native leaderboard", () => {
       },
     ]);
     expect(observed).toEqual([100]);
-    expect(manager.getPlayerHyperstructureUnregisteredShareholderPoints(PLAYER)).toBe(0);
+    expect(manager.playersByRank).toEqual([
+      { address: PLAYER, registeredPoints: 100, accruingHoldPoints: 0, points: 100 },
+    ]);
     setBlockTimestampSource(() => 250);
     expect(manager.pointsPerPlayer.get(PLAYER)).toBe(200);
+    expect(manager.playersByRank).toEqual([
+      { address: PLAYER, registeredPoints: 100, accruingHoldPoints: 100, points: 200 },
+    ]);
     expect(manager.getCurrentCoOwners(7)).toEqual({
       coOwners: [{ address: PLAYER, percentage: 10000 }],
       timestamp: 150,

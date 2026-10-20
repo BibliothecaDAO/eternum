@@ -239,11 +239,11 @@ const renderLeaderboard = (game: RunnerGame): string => {
   const viewer = game.viewer();
   const ranked = leaderboard.playersByRank;
   if (ranked.length === 0) return "No points registered yet.";
-  const mine = ranked.findIndex(([address]) => address === viewer);
+  const mine = ranked.findIndex(({ address }) => address === viewer);
   const rows = ranked
     .slice(0, 10)
     .map(
-      ([address, points], index) =>
+      ({ address, points }, index) =>
         `${index + 1}. ${playerName(address)} ${points} pts${address === viewer ? " (me)" : ""}`,
     );
   const myLine = mine >= 0 ? `My rank: ${mine + 1} of ${ranked.length}` : "I am not ranked yet.";

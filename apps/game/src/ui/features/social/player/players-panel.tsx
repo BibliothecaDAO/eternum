@@ -1,7 +1,10 @@
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type PlayerLeaderboardActivityEntry } from "@/services/leaderboard/player-activity-breakdown-service";
+import {
+  type PlayerActivityBreakdown,
+  type PlayerLeaderboardActivityEntry,
+} from "@/services/leaderboard/player-activity-breakdown-service";
 import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
 import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
@@ -10,11 +13,26 @@ import { useMmrForecast } from "./mmr-forecast";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
-import { ContractAddress, PlayerInfo } from "@bibliothecadao/types";
+import { createEmptyActivityBreakdown } from "@bibliothecadao/eternum/game-sync";
+import { ContractAddress, PlayerInfo, samePoints } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
-  new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry]));
+  new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry.activityBreakdown]));
+
+/**
+ * Herald's breakdown is history, read at some confirmed head; the standing is the native store now. The row shows the
+ * breakdown only when it adds up to exactly the points the standing has registered, so a row's columns and its Points
+ * are always one snapshot. Until history catches up (after an award or a checkpoint), the row has no breakdown.
+ */
+const breakdownOfStanding = (
+  breakdown: PlayerActivityBreakdown | undefined,
+  registeredPoints: number | undefined,
+): PlayerActivityBreakdown | null => {
+  if (!breakdown || registeredPoints === undefined) return null;
+  const points = Object.values(breakdown).reduce((sum, activity) => sum + activity.points, 0);
+  return samePoints(points, registeredPoints) ? breakdown : null;
+};
 
 export const PlayersPanel = ({
   players,
@@ -42,7 +60,7 @@ export const PlayersPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const { data: activityEntries, error: activityError } = useLeaderboardActivity();
   const activityBreakdownsByAddress = useMemo(
-    () => buildActivityBreakdownLookup(activityEntries ?? []),
+    () => (activityEntries ? buildActivityBreakdownLookup(activityEntries) : null),
     [activityEntries],
   );
   const mode = useGameModeConfig();
@@ -62,17 +80,19 @@ export const PlayersPanel = ({
             })?.allowed ?? false)
           : false;
         const standing = standingsByAddress.get(normalizeLeaderboardAddress(player.address));
-        const activityEntry = activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ?? null;
+        // Once Herald has answered, a player without an entry has registered nothing yet.
+        const breakdown = activityBreakdownsByAddress
+          ? (activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ??
+            createEmptyActivityBreakdown())
+          : undefined;
 
         // Finalized games rank by the on-chain final standings; live games by the native store's standing: registered
         // points plus the hold points accruing since each hyperstructure's last checkpoint. The row's columns are the
-        // registered points by activity (Herald's breakdown) with those accruing hold points under HS held, so POINTS
-        // is the sum of what the row displays.
+        // registered points by activity with those accruing hold points under HS held, so Points is their sum.
         const liveRank = standing?.rank ?? player.rank;
         const livePoints = standing?.points ?? player.points;
         const rank = isFinalized ? (standing?.rank ?? Number.MAX_SAFE_INTEGER) : liveRank;
         const points = isFinalized ? (standing?.points ?? null) : livePoints;
-        const accruingHoldPoints = isFinalized ? 0 : (standing?.accruingHoldPoints ?? 0);
 
         return {
           ...player,
@@ -81,8 +101,8 @@ export const PlayersPanel = ({
           rank,
           isInvited,
           guild,
-          activityBreakdown: activityEntry?.activityBreakdown ?? null,
-          accruingHoldPoints,
+          activityBreakdown: breakdownOfStanding(breakdown, standing?.registeredPoints),
+          accruingHoldPoints: standing?.accruingHoldPoints ?? 0,
           mmrDelta:
             mmr.status === "ready"
               ? (mmr.deltaByAccount.get(normalizeLeaderboardAddress(player.address)) ?? null)

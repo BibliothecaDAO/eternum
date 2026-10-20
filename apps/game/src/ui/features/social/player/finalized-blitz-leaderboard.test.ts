@@ -1,7 +1,7 @@
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it, vi } from "vitest";
 
-import { readFinalBlitzResult, resolveFinalizedBlitzStanding } from "./finalized-blitz-leaderboard";
+import { readFinalBlitzResult } from "./finalized-blitz-leaderboard";
 
 const GAME = 1;
 
@@ -103,21 +103,5 @@ describe("finalized blitz leaderboard helpers", () => {
     expect(reported).toHaveBeenCalledOnce();
     expect(String(reported.mock.calls[0])).toContain("outside game 1's roster");
     reported.mockRestore();
-  });
-
-  it("marks players outside the finalized roster as unranked when finalized standings are active", () => {
-    expect(resolveFinalizedBlitzStanding(null, true)).toEqual({
-      rankOverride: Number.MAX_SAFE_INTEGER,
-      pointsOverride: 0,
-      accruingHoldPoints: 0,
-    });
-  });
-
-  it("returns finalized rank and points overrides when a standing exists", () => {
-    expect(resolveFinalizedBlitzStanding({ rank: 3, points: 44 }, true)).toEqual({
-      rankOverride: 3,
-      pointsOverride: 44,
-      accruingHoldPoints: 0,
-    });
   });
 });

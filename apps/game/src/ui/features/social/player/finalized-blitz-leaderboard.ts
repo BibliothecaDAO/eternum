@@ -1,19 +1,6 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import * as Sentry from "@sentry/react";
 
-const UNRANKED_LEADERBOARD_POSITION = Number.MAX_SAFE_INTEGER;
-
-interface FinalizedBlitzStanding {
-  points: number;
-  rank: number;
-}
-
-interface ResolvedFinalizedBlitzStanding {
-  accruingHoldPoints: number;
-  pointsOverride: number;
-  rankOverride: number;
-}
-
 export const normalizeLeaderboardAddress = (address: bigint | string): string => {
   const addressBigInt = typeof address === "string" ? BigInt(address) : address;
   const canonicalHex = `0x${addressBigInt.toString(16)}`.toLowerCase().replace(/^0x/, "");
@@ -90,27 +77,4 @@ const reportBrokenResult = (error: unknown): void => {
   lastReportedBrokenResult = message;
   console.error(`[blitz result] ${message}`);
   Sentry.captureException(error);
-};
-
-export const resolveFinalizedBlitzStanding = (
-  finalizedStanding: FinalizedBlitzStanding | null,
-  shouldUseFinalizedStandings: boolean,
-): ResolvedFinalizedBlitzStanding | null => {
-  if (!shouldUseFinalizedStandings) {
-    return null;
-  }
-
-  if (!finalizedStanding) {
-    return {
-      rankOverride: UNRANKED_LEADERBOARD_POSITION,
-      pointsOverride: 0,
-      accruingHoldPoints: 0,
-    };
-  }
-
-  return {
-    rankOverride: finalizedStanding.rank,
-    pointsOverride: finalizedStanding.points,
-    accruingHoldPoints: 0,
-  };
 };
