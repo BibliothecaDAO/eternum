@@ -3,7 +3,7 @@ import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Account, hash, num, type RpcProvider } from "starknet";
+import { Account, CallData, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
 import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs } from "./settings";
@@ -21,6 +21,11 @@ import { Platform, workerSecrets, workers, type Secrets } from "./platform";
 import { preparationSteps, type Deployment } from "./main";
 import { validateDates } from "./dates";
 import { artifactFiles } from "./box";
+import { buildLordsChestPreset, buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import {
+  buildLedgerEconomicPreset,
+  buildRegisterLedgerPresetCalldata,
+} from "../../config/deployer/clean/ledger/economics";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -338,13 +343,65 @@ test("setup keeps only missing role calls and uses the environment's two preset 
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["2", "5"]);
-  // Production's own collections get the same roles and metadata as dev's.
-  expect(production.map((call) => call.entrypoint)).toEqual(dev.map((call) => call.entrypoint));
-  expect(production.filter((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid").length).toBeGreaterThan(0);
   const provider = { callContract: async () => ["0x1"] } as unknown as RpcProvider;
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(true);
   provider.callContract = async () => ["0x0"];
   expect(await setupPresenceReader(provider)(dev[0]!, 10)).toBe(false);
+});
+
+const setupOf = (target: typeof environments.dev, entrypoint: string) =>
+  setupCalls(target, assets, "0x33", 4000, 9000, 1).filter((call) => call.entrypoint === entrypoint);
+const registered = (call: { calldata: unknown }) => call.calldata as string[];
+
+test("dev registers its mystery chests and their cosmetics metadata exactly as before", () => {
+  const mystery = buildMysteryChestPreset();
+  expect(setupOf(environments.dev, "register_preset").map(registered)).toEqual([
+    buildRegisterLedgerPresetCalldata(1, buildLedgerEconomicPreset("blitz", { environment: "dev" }), mystery),
+    buildRegisterLedgerPresetCalldata(2, buildLedgerEconomicPreset("frontier"), mystery),
+  ]);
+  const cosmetics = setupOf(environments.dev, "set_attrs_raw_to_ipfs_cid").filter(
+    (call) => call.contractAddress === assets.cosmetics,
+  );
+  expect(cosmetics.map((call) => BigInt(registered(call)[0]!))).toEqual(mystery.items.flat().map(BigInt));
+});
+
+test("production's chests pay one entry of LORDS from a 90% reserve and award no cosmetic", () => {
+  const [blitz, frontier] = setupOf(environments.production, "register_preset").map(registered);
+  const lords = buildLordsChestPreset();
+  for (const band of lords.bands) {
+    expect(band.lords_shares).toBe(1);
+    expect([band.odds.common, band.odds.uncommon, band.odds.rare, band.odds.epic, band.odds.legendary]).toEqual([
+      0, 0, 0, 0, 0,
+    ]);
+    expect(band.odds.lords + band.odds.sword + band.odds.shield).toBe(10000);
+  }
+  const economics = buildLedgerEconomicPreset("blitz", { environment: "production", chests: lords });
+  expect(economics.chest_lords_bps).toBe(9000);
+  // The ledger pays the reserve out of the pool left after its protocol cut; more would fail every result.
+  expect(economics.chest_lords_bps + economics.protocol_cut_bps).toBeLessThanOrEqual(10000);
+  expect(blitz).toEqual(buildRegisterLedgerPresetCalldata(2, economics, lords));
+  expect(frontier).toEqual(
+    buildRegisterLedgerPresetCalldata(5, buildLedgerEconomicPreset("frontier", { chests: lords }), lords),
+  );
+  const metadata = setupOf(environments.production, "set_attrs_raw_to_ipfs_cid");
+  expect(metadata.every((call) => call.contractAddress === assets.chests)).toBe(true);
+  expect(metadata).toHaveLength(5);
+});
+
+test("setup reads registered chest rewards back against its own call; mystery chests on production's ledger refuse", async () => {
+  const [call] = setupOf(environments.production, "register_preset");
+  const readsBack = (chests: ReturnType<typeof buildMysteryChestPreset>) =>
+    ({
+      callContract: async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+        if (entrypoint === "get_preset") return registered(call!).slice(1, 19);
+        if (entrypoint === "get_chest_band") return CallData.compile(chests.bands[Number(calldata[1])]!);
+        return CallData.compile([chests.items[Number(calldata[1])]!]);
+      },
+    }) as unknown as RpcProvider;
+  expect(await setupPresenceReader(readsBack(buildLordsChestPreset()))(call!, 10)).toBe(true);
+  await expect(setupPresenceReader(readsBack(buildMysteryChestPreset()))(call!, 10)).rejects.toThrow(
+    "Registered chest rewards differ",
+  );
 });
 
 test("metadata presence follows all confirmed event pages; differing metadata refuses", async () => {

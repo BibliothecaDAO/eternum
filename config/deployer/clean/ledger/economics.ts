@@ -35,6 +35,8 @@ export function buildLedgerEconomicPreset(
   options: {
     presetId?: number;
     environment?: keyof typeof environments;
+    /** The chest preset registered beside it; its reserve share becomes `chest_lords_bps`. */
+    chests?: ReturnType<typeof buildMysteryChestPreset>;
   } = {},
 ): LedgerEconomicPreset {
   const native = nativePresetForId(options.presetId ?? nativePresetIdFor(gameType));
@@ -45,7 +47,7 @@ export function buildLedgerEconomicPreset(
   return {
     entry_fee: lords(BigInt(price)),
     protocol_cut_bps: gameType === "frontier" ? 0 : balance.protocolCutBps,
-    chest_lords_bps: 1000,
+    chest_lords_bps: (options.chests ?? buildMysteryChestPreset()).chestLordsBps,
     paid_fraction_bps: 2_000,
     decay_bps: 9_600,
     sword_price: lords(BigInt(price)),

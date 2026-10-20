@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
-import { buildMysteryChestPreset } from "../../contracts/l2/ledger/scripts/chest-preset.js";
+import { awardableCosmetics, chestPresets } from "../../contracts/l2/ledger/scripts/chest-preset.js";
 import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
 import { seconds } from "./dates";
@@ -158,6 +158,12 @@ const call = (contractAddress: string, entrypoint: string, values: Parameters<ty
   entrypoint,
   calldata: CallData.compile(values),
 });
+/** The chest rewards an environment registers; an unknown name refuses rather than falling back. */
+function chestPresetOf(target: Target) {
+  const build = chestPresets[target.chests as keyof typeof chestPresets];
+  if (!build) throw new PublicError(`Unknown chest preset ${target.chests}`);
+  return build();
+}
 export function setupCalls(
   target: Target,
   assets: Assets,
@@ -166,39 +172,27 @@ export function setupCalls(
   end: number,
   seasonId: number,
 ) {
-  const preset = buildMysteryChestPreset();
+  const chests = chestPresetOf(target);
+  const metadata = (collection: string, attributes: number) =>
+    call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
     call(assets.mmr, "grant_role", [hash.getSelectorFromName("UPDATER_ROLE"), assets.ledger]),
     call(assets.chests, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.cosmetics, "grant_role", [hash.getSelectorFromName("MINTER_ROLE"), assets.ledger]),
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
-    ...preset.bands.map((band: { metadata: number }) =>
-      call(assets.chests, "set_attrs_raw_to_ipfs_cid", [
-        band.metadata,
-        byteArray.byteArrayFromString(target.picture),
-        false,
-      ]),
-    ),
-    ...preset.items.flatMap((items: number[]) =>
-      items.map((item) =>
-        call(assets.cosmetics, "set_attrs_raw_to_ipfs_cid", [
-          item,
-          byteArray.byteArrayFromString(target.picture),
-          false,
-        ]),
-      ),
-    ),
+    ...chests.bands.map((band) => metadata(assets.chests, band.metadata)),
+    ...awardableCosmetics(chests).map((item: number) => metadata(assets.cosmetics, item)),
     call(assets.ledger, "register_preset", [
       target.blitzPreset,
-      buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment }),
-      preset.bands,
-      preset.items,
+      buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
+      chests.bands,
+      chests.items,
     ]),
     call(assets.ledger, "register_preset", [
       target.frontierPreset,
-      buildLedgerEconomicPreset("frontier"),
-      preset.bands,
-      preset.items,
+      buildLedgerEconomicPreset("frontier", { chests }),
+      chests.bands,
+      chests.items,
     ]),
     call(assets.ledger, "open_season", [seasonId, target.blitzPreset, start, end]),
   ];
@@ -262,6 +256,27 @@ async function metadataPresent(provider: RpcProvider, operation: Call, head: num
   } while (continuation_token);
   return found;
 }
+/**
+ * The ledger stores a preset's five chest bands, then its five cosmetic rarities, in the order register_preset's
+ * calldata carries them after the 18 economic fields; each read must match the next fields of that same call.
+ */
+async function assertRegisteredChestRewards(provider: RpcProvider, operation: Call, head: number) {
+  const args = operation.calldata as string[];
+  let next = 20;
+  for (const entrypoint of ["get_chest_band", "get_cosmetic_items"]) {
+    for (let index = 0; index < 5; index++) {
+      const fields = await provider.callContract(
+        { contractAddress: operation.contractAddress, entrypoint, calldata: [args[0]!, String(index)] },
+        head,
+      );
+      const expected = args.slice(next, next + fields.length);
+      if (expected.length !== fields.length || fields.some((felt, at) => BigInt(felt) !== BigInt(expected[at]!)))
+        throw new PublicError("Registered chest rewards differ");
+      next += fields.length;
+    }
+    next += 1;
+  }
+}
 async function setupPresent(provider: RpcProvider, operation: Call, head: number) {
   const args = operation.calldata as string[];
   const entrypoint =
@@ -290,23 +305,7 @@ async function setupPresent(provider: RpcProvider, operation: Call, head: number
         result.slice(0, economics.length).some((felt, index) => BigInt(felt) !== BigInt(economics[index]!))
       )
         throw new PublicError("Registered preset differs");
-      const chest = buildMysteryChestPreset();
-      for (let index = 0; index < 5; index++) {
-        for (const [entrypoint, expected] of [
-          ["get_chest_band", CallData.compile(chest.bands[index]!)],
-          ["get_cosmetic_items", CallData.compile([chest.items[index]!])],
-        ] as const) {
-          const fields = await provider.callContract(
-            { contractAddress: operation.contractAddress, entrypoint, calldata: [args[0]!, String(index)] },
-            head,
-          );
-          if (
-            fields.length !== expected.length ||
-            fields.some((felt, position) => BigInt(felt) !== BigInt(expected[position]!))
-          )
-            throw new PublicError("Registered chest rewards differ");
-        }
-      }
+      await assertRegisteredChestRewards(provider, operation, head);
     }
     if (
       entrypoint === "get_season" &&
