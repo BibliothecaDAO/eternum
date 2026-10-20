@@ -5,7 +5,7 @@ export interface NotificationCopy {
 }
 
 /** What a story's copy reads: its payload, the story's own value, and the account the alert is for. */
-export interface CopyInput {
+interface CopyInput {
   payload: Record<string, unknown>;
   value: Record<string, unknown>;
   /** The account the alert is for, which native battles, raids and captures need to tell one side from the other. */
