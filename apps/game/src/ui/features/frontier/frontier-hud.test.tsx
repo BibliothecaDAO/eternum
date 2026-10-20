@@ -134,7 +134,7 @@ it("keeps one chat connection and its unread count from desktop to phone and bac
   expect(wire.close).not.toHaveBeenCalled();
 });
 
-it("gives a phone the Events' Log on its place bar, with the filter the desktop's Events have, and takes it away", async () => {
+it("gives a phone the Events' Log on its place bar, with the filter the desktop's Events have, and closes it", async () => {
   viewport.set(390);
   await renderHud();
   const log = () =>
@@ -150,6 +150,8 @@ it("gives a phone the Events' Log on its place bar, with the filter the desktop'
     expect.arrayContaining(["Important", "Mine", "All"]),
   );
   expect(log()!.getAttribute("aria-current")).toBe("page");
-  await act(async () => log()!.click());
+  // The Log is a phone's bottom sheet over the place bar: its own close takes it away.
+  await act(async () => window!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
   expect(document.querySelector('[aria-label="Event log"]')).toBeNull();
+  expect(log()!.getAttribute("aria-current")).toBeNull();
 });
