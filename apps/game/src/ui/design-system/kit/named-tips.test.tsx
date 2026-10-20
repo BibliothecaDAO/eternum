@@ -6,7 +6,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
 import { Button } from "./button";
-import { Chip } from "./chip";
+import { HudChip } from "./hud-elements";
 import { TierChip } from "./tier-chip";
 
 let host: HTMLDivElement;
@@ -42,7 +42,9 @@ const mount = (onClick = () => undefined) =>
       <>
         <Tooltip />
         <button type="button" data-testid="army" onClick={onClick}>
-          <Chip icons={["stamina"]} label="stamina" value="150" />
+          <HudChip icons={["stamina"]} label="stamina">
+            150
+          </HudChip>
         </button>
         <TierChip tier={1} showWord />
         <Button role="primary" word="Deploy" />

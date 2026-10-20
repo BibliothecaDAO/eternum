@@ -4,7 +4,8 @@ import { Plate } from "@/three/map-plates/map-plates";
 import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
 import { Icon, SvgIcon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
-import { HudBubble, HudMenu, HudMinimapFrame, HudTierChip, HudTip } from "@/ui/design-system/kit/hud-elements";
+import { HudBubble, HudMenu, HudMinimapFrame, HudTierChip } from "@/ui/design-system/kit/hud-elements";
+import { LabTip } from "./lab-tip";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import { type MouseEvent, type ReactNode, useState } from "react";
@@ -63,7 +64,7 @@ const line = (order: Partial<Parameters<typeof orderTip>[0]>) => {
     staminaWait: undefined,
     ...order,
   });
-  return tip ? <HudTip line={tip.line} cost={tip.cost ?? undefined} /> : null;
+  return tip ? <LabTip line={tip.line} cost={tip.cost ?? undefined} /> : null;
 };
 
 /** A thing as the plate layer draws it, standing in the page: its token, or its plate opened. */
@@ -308,7 +309,7 @@ export const MapContextSection = ({ world }: { world?: ReactNode }) => (
             name="Deploy picker"
             when="A right-click on a tile beside your realm: the Deploy army layout picked above, hung on the tile."
           >
-            <HudTip line="Deploy an army here" how="Right-click" />
+            <LabTip line="Deploy an army here" />
           </OnMap>
           <OnMap
             name="Arrivals"

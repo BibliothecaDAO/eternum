@@ -271,20 +271,6 @@ button.ui-panel__name {
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
-/* Why a thing cannot be done, and when it can: a refusal reads in the warning colour. */
-.ui-tip__why {
-  color: var(--hud-warn);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-label);
-}
-/* How to do it: the gesture, as a cue. */
-.ui-tip__how {
-  color: var(--hud-cue);
-  font-size: var(--hud-text-label);
-  line-height: var(--hud-leading-label);
-  font-weight: var(--hud-weight-label);
-}
 
 /* ── Tabs: a strip of choices; the chosen one in gold over a gold rule. ── */
 .ui-tabs {

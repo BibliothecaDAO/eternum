@@ -1,5 +1,6 @@
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Notice } from "@/ui/design-system/kit/notice";
+import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import {
   BARRACKS,
   CASTLE,
@@ -43,7 +44,6 @@ import { TypeUpgradeSheet } from "@/ui/features/frontier/upgrade/type-upgrade-sh
 import { TrainingGives } from "@/ui/features/frontier/upgrade/training-gives";
 import { KindChoice } from "@/ui/features/frontier/army/army-sheet";
 import { CastleNodeSheet, TreePage, type TreeRow } from "@/ui/features/frontier/research/tree-page";
-import { Chip } from "@/ui/design-system/kit/chip";
 import { type ProductionLine, ProductionSheet } from "@/ui/features/frontier/production/production-sheet";
 import { BuildingType, Direction } from "@bibliothecadao/types";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
@@ -1207,7 +1207,11 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
     return (
       <CastleNodeSheet
         node={CASTLE_NODES[0]}
-        gives={<Chip icons={["shrine"]} label="XP" value="+200" unit="XP" />}
+        gives={
+          <HudChip icons={["shrine"]} label="XP">
+            +200 XP
+          </HudChip>
+        }
         sending={false}
         onResearch={noop}
         onClose={noop}
@@ -1221,7 +1225,9 @@ const LabTreeSheet = ({ tree }: { tree: "farm" | "barracks" | "hut" | "shrine" }
         tier={1}
         gives={
           <span className="flex justify-center">
-            <Chip icons={["person"]} label="population" value="30 → 36" />
+            <HudChip icons={["person"]} label="population">
+              30 → 36
+            </HudChip>
           </span>
         }
         prices={[

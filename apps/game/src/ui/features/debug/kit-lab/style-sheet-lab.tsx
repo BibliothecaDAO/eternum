@@ -3,12 +3,9 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { Icon } from "@/ui/design-system/icon";
 import AtomButton from "@/ui/design-system/atoms/button";
-import { HUD_PILL_BUTTON, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { NumberInput } from "@/ui/design-system/atoms/number-input";
-import { Tabs as AtomTabs } from "@/ui/design-system/atoms/tab";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Button as KitButton } from "@/ui/design-system/kit/button";
-import { Chip as KitChip } from "@/ui/design-system/kit/chip";
 import { TipLine } from "@/ui/design-system/kit/named-tips";
 import { Sheet as KitSheet } from "@/ui/design-system/kit/sheet";
 import { TierChip as KitTierChip } from "@/ui/design-system/kit/tier-chip";
@@ -52,16 +49,13 @@ import {
   HudTableRow,
   HudTabs,
   HudTierChip,
-  HudTip,
   HudTroopAmount,
   HudTransfer,
   HudSheet,
   HudWindow,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { Notice } from "@/ui/design-system/kit/notice";
-import { AmountSlider } from "@/ui/design-system/kit/amount-slider";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { playerReadings } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HUD_DERIVED, HUD_MODES, HUD_SHEET, HUD_TYPE, type HudMode } from "@/tokens";
@@ -76,6 +70,7 @@ import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import "@/three/map-plates/map-plates.css";
 import { AppSurfacesSection } from "./app-surfaces-section";
+import { LabTip } from "./lab-tip";
 import { DeploySection } from "./deploy-section";
 import { GlyphsSection } from "./glyphs-section";
 import { MapContextSection } from "./map-context-section";
@@ -458,9 +453,6 @@ const ButtonsSection = () => (
         <AtomButton variant="gold" disabled>
           gold disabled
         </AtomButton>
-        <button type="button" className={HUD_PILL_BUTTON}>
-          HUD pill
-        </button>
       </>
     }
   />
@@ -484,10 +476,6 @@ const AmountSection = () => {
         <div className="flex w-full flex-col gap-3">
           <HudTroopAmount name="Troops" value={today} most={500} held={500} onChange={setToday} />
           <HudTroopAmount name="Troops" value={500} most={500} held={500} onChange={() => undefined} />
-          <span data-lab-chrome className="text-xs text-white/50">
-            The kit's slider (shell, Frontier):
-          </span>
-          <AmountSlider label="Troops" icon="troops" value={today} max={500} stop={450} onChange={setToday} />
         </div>
       }
     />
@@ -604,7 +592,6 @@ const FieldSection = () => {
           <HudNumberField label="Lords per wheat" value={price} max={Infinity} decimals onChange={setPrice} />
         </div>
       }
-      today={<NumberInput value={200} onChange={() => undefined} className="w-40" />}
     />
   );
 };
@@ -676,11 +663,6 @@ const SettingsSection = () => {
           <HudSetting name="Sound">
             <HudSwitch on={false} label="Sound" disabled onChange={() => undefined} />
           </HudSetting>
-        </div>
-      }
-      today={
-        <div className="flex flex-col gap-3">
-          <Checkbox enabled={checked} onClick={() => setChecked(!checked)} text="Show armies" />
         </div>
       }
     />
@@ -889,10 +871,10 @@ const TooltipSection = () => (
     rule="One tooltip; its words are its own. A line, what it costs on one compact line under it, why not (and when, to the second), and how, as a cue. The order lines are the game's own (orderTip): the action, then its exact cost; a crate is its action alone."
     sheet={
       <div className="flex flex-wrap items-start gap-4">
-        <HudTip line="Wheat, 1,200 held" />
-        <HudTip line="Deploy an army here" how="Right-click" />
+        <LabTip line="Wheat, 1,200 held" />
+        <LabTip line="Deploy an army here" />
         {ORDER_LINES.map((order) => (
-          <HudTip key={order.line} line={order.line} cost={order.cost ?? undefined} />
+          <LabTip key={order.line} line={order.line} cost={order.cost ?? undefined} />
         ))}
       </div>
     }
@@ -1019,16 +1001,6 @@ const TabsSection = () => {
           />
         </div>
       }
-      today={
-        <div className="flex w-full flex-col gap-4">
-          <AtomTabs>
-            <AtomTabs.List>
-              <AtomTabs.Tab>Transfer</AtomTabs.Tab>
-              <AtomTabs.Tab>History</AtomTabs.Tab>
-            </AtomTabs.List>
-          </AtomTabs>
-        </div>
-      }
     />
   );
 };
@@ -1137,7 +1109,6 @@ const ChipsSection = () => (
     }
     today={
       <>
-        <KitChip icons={["wheat"]} value="1,200" label="Wheat" />
         <KitTierChip tier={1} showWord />
         <KitTierChip tier={3} showWord={false} />
       </>

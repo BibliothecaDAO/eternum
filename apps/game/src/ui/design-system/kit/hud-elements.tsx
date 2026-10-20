@@ -493,19 +493,6 @@ export const HudTransfer = ({
 export const HudCost = ({ line }: { line: string }) => (line ? <span className="ui-cost">{line}</span> : null);
 
 /**
- * The app's one tooltip: a line; what it costs, one compact line under it; when the thing cannot be done, why and when
- * it can; how to do it as a cue. The map's order line is one ("Explore" / "30 stamina · 100 wheat").
- */
-export const HudTip = ({ line, cost, why, how }: { line: string; cost?: string; why?: string; how?: string }) => (
-  <span className="ui-tip" role="tooltip">
-    <span className="ui-tip__line">{line}</span>
-    {cost && <HudCost line={cost} />}
-    {why && <span className="ui-tip__why">{why}</span>}
-    {how && <span className="ui-tip__how">{how}</span>}
-  </span>
-);
-
-/**
  * The HUD's one panel: a header band naming it (its icon, its title, a cue at its end) over a divider, then its body.
  * With a `label` it is a named section for assistive technology (a landmark). Its chevron and title fold its body away
  * unless `collapsible` is off; the cue's own controls never fold it. A `section` is a part of a panel: the same header
