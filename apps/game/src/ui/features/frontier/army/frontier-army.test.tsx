@@ -50,7 +50,7 @@ vi.mock("@/hooks/store/use-account-store", () => ({
 }));
 vi.mock("@/shell/frame/layout", () => ({ useLayout: () => "desktop" }));
 vi.mock("@/utils/can-issue-orders", () => ({ canIssueOrders: () => true }));
-vi.mock("../deploy/open-slots", () => ({ useOpenArmySlots: () => [] }));
+vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }) }));
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
 vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
