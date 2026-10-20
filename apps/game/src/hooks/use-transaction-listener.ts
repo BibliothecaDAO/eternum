@@ -11,7 +11,7 @@ import {
   addClientTransactionBreadcrumb,
   reportClientTransactionFailure,
 } from "@/observability/transaction-failure-reporting";
-import { statusAfterFailure, useTransactionStore } from "@/hooks/store/use-transaction-store";
+import { statusAfterFailure, type TransactionStatus, useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { recordAdmissionToVisible } from "@/observability/client-action-latency";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -34,6 +34,13 @@ interface TransactionCompletePayload extends TransactionLifecycleMeta {
   admissionToVisibleMs: number;
   type: TransactionType;
 }
+
+/**
+ * A refusal, by the game or before the send, is said on screen here, the one place every action's failure passes, so no
+ * handler can leave one in the console. A handler that names it too in the same words shares its row. An outcome the
+ * client is still checking is no refusal: it may yet apply.
+ */
+const isRefusal = (status: TransactionStatus): boolean => status === "reverted" || status === "not_sent";
 
 export const useTransactionListener = () => {
   const {
@@ -165,6 +172,7 @@ export const useTransactionListener = () => {
       });
 
       const status = statusAfterFailure(payload);
+      if (isRefusal(status)) toast.failed(payload.error ?? payload.message, "The action was not sent.");
       if (payload.transactionHash) {
         // Try to update existing transaction
         const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === payload.transactionHash);
