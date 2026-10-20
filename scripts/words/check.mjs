@@ -210,28 +210,167 @@ const chargeByOtherWriter = (node) =>
   CHARGE_NAME.test(valueName(node.arguments[0]));
 
 // An amount a player reads always goes through a writer: put in text as it is, 28.15 wheat reads "28.15", 0.1 reads
-// "0.1" and 12000 LORDS reads "12000". A value named for words already written (amountText, costLabel) is text, and so
-// is a words table's entry (PROFILE_WORDS.removeCost). In JSX a bare name is often a node built for its slot ({price});
-// a field read off a record ({resource.amount}) is the figure itself.
+// "0.1" and 12000 LORDS reads "12000". Read here: a value named for an amount, written into text, that its declaration
+// does not show to be text already (a writer's result, a string, a node) — through whatever leaves it unchanged on the
+// way: parentheses, a type assertion, a fallback (amount ?? 0) or a choice (shown ? amount : "—"). A words table's
+// entry (PROFILE_WORDS.removeCost) is text. In JSX a bare name is left out, as it is often a node built for its slot
+// ({price}); a field read off a record ({resource.amount}) is checked.
 const BARE_AMOUNT_NAME =
   /^(?:amount|cost|price|fee|paid|reward|gain|yield)s?$|(?:Amount|Cost|Price|Fee|Paid|Reward|Gain|Yield)s?$/;
 const isWordsTableEntry = (node) =>
   ts.isPropertyAccessExpression(node) &&
   ts.isIdentifier(node.expression) &&
   /^[A-Z][A-Z0-9_]+$/.test(node.expression.text);
-const bareAmount = (node) =>
+
+/** What may be written where an expression stands: itself, or each alternative of a wrapper that passes values on. */
+const writtenAlternatives = (node) => {
+  if (
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isNonNullExpression(node) ||
+    ts.isTypeAssertionExpression(node) ||
+    ts.isSatisfiesExpression(node)
+  )
+    return writtenAlternatives(node.expression);
+  if (
+    ts.isBinaryExpression(node) &&
+    (node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken ||
+      node.operatorToken.kind === ts.SyntaxKind.BarBarToken)
+  )
+    return [...writtenAlternatives(node.left), ...writtenAlternatives(node.right)];
+  if (ts.isConditionalExpression(node))
+    return [...writtenAlternatives(node.whenTrue), ...writtenAlternatives(node.whenFalse)];
+  return [node];
+};
+
+const TEXT_TYPE = /^(?:string|ReactNode|ReactElement|JSX\.Element|React\.ReactNode|React\.ReactElement)$/;
+/** undefined or null in a union: what a value may lack, not what it holds. */
+const holdsNothing = (type) =>
+  type.kind === ts.SyntaxKind.UndefinedKeyword ||
+  (ts.isLiteralTypeNode(type) && type.literal.kind === ts.SyntaxKind.NullKeyword);
+/** What a type annotation holds: "number", "text" (a string or a node), or "unknown". */
+const typeHolds = (type) => {
+  if (!type) return "unknown";
+  if (type.kind === ts.SyntaxKind.NumberKeyword || type.kind === ts.SyntaxKind.BigIntKeyword) return "number";
+  if (type.kind === ts.SyntaxKind.StringKeyword) return "text";
+  if (ts.isLiteralTypeNode(type)) return ts.isStringLiteral(type.literal) ? "text" : "unknown";
+  if (ts.isTypeReferenceNode(type)) return TEXT_TYPE.test(type.typeName.getText()) ? "text" : "unknown";
+  if (ts.isParenthesizedType(type)) return typeHolds(type.type);
+  if (ts.isUnionTypeNode(type)) {
+    const held = type.types.filter((member) => !holdsNothing(member)).map(typeHolds);
+    if (held.includes("number")) return "number";
+    return held.length > 0 && held.every((each) => each === "text") ? "text" : "unknown";
+  }
+  return "unknown";
+};
+/** A member's type in a type literal, or in an interface or type alias the same file declares. */
+const memberType = (type, name, file) => {
+  if (!type) return undefined;
+  let members;
+  if (ts.isTypeLiteralNode(type)) members = type.members;
+  else if (ts.isTypeReferenceNode(type)) {
+    const named = file.statements.find(
+      (statement) =>
+        (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) &&
+        statement.name.text === type.typeName.getText(),
+    );
+    if (named && ts.isInterfaceDeclaration(named)) members = named.members;
+    else if (named && ts.isTypeLiteralNode(named.type)) members = named.type.members;
+  }
+  const member = members?.find((each) => ts.isPropertySignature(each) && each.name.getText() === name);
+  return member?.type;
+};
+/** The declaration a name refers to where it is used: a variable, a parameter or a destructured binding in scope. */
+const declarationOf = (identifier) => {
+  const name = identifier.text;
+  const bindingNamed = (binding) => {
+    if (ts.isIdentifier(binding)) return null;
+    for (const element of binding.elements) {
+      if (ts.isOmittedExpression(element)) continue;
+      if (ts.isIdentifier(element.name) && element.name.text === name) return element;
+      const nested = bindingNamed(element.name);
+      if (nested) return nested;
+    }
+    return null;
+  };
+  const declared = (declaration) =>
+    ts.isIdentifier(declaration.name)
+      ? declaration.name.text === name
+        ? declaration
+        : null
+      : bindingNamed(declaration.name);
+  for (let scope = identifier.parent; scope; scope = scope.parent) {
+    if (ts.isFunctionLike(scope))
+      for (const parameter of scope.parameters ?? []) {
+        const found = declared(parameter);
+        if (found) return found;
+      }
+    const statements = ts.isBlock(scope) || ts.isSourceFile(scope) || ts.isModuleBlock(scope) ? scope.statements : [];
+    for (const statement of statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const declaration of statement.declarationList.declarations) {
+        const found = declared(declaration);
+        if (found) return found;
+      }
+    }
+  }
+  return null;
+};
+/** What a declaration holds, from its type annotation or its value; a destructured name from its owner's type. */
+const declarationHolds = (declaration, file, depth) => {
+  if (!declaration) return "unknown";
+  if (ts.isBindingElement(declaration)) {
+    const owner = declaration.parent.parent;
+    const key = (declaration.propertyName ?? declaration.name).getText();
+    return ts.isObjectBindingPattern(declaration.parent) ? typeHolds(memberType(owner.type, key, file)) : "unknown";
+  }
+  if (declaration.type) return typeHolds(declaration.type);
+  return declaration.initializer ? valueHolds(declaration.initializer, file, depth) : "unknown";
+};
+const TEXT_CALL = /^(?:format[A-Z]\w*|\w+(?:Line|Text|Label|Words))$/;
+/** What an expression holds once written: "text" when every alternative is text, "number" when one is a figure. */
+const valueHolds = (node, file, depth = 0) => {
+  const held = writtenAlternatives(node).map((alternative) => {
+    if (
+      ts.isStringLiteralLike(alternative) ||
+      ts.isTemplateExpression(alternative) ||
+      ts.isJsxElement(alternative) ||
+      ts.isJsxSelfClosingElement(alternative) ||
+      ts.isJsxFragment(alternative)
+    )
+      return "text";
+    if (ts.isNumericLiteral(alternative) || ts.isBigIntLiteral(alternative)) return "number";
+    if (ts.isCallExpression(alternative))
+      return TEXT_CALL.test(calleeName(alternative).replace(/^.*\./, "")) ? "text" : "unknown";
+    if (ts.isIdentifier(alternative) && depth < 4) return declarationHolds(declarationOf(alternative), file, depth + 1);
+    if (ts.isPropertyAccessExpression(alternative) && ts.isIdentifier(alternative.expression)) {
+      const owner = declarationOf(alternative.expression);
+      const ownerType = owner && !ts.isBindingElement(owner) ? owner.type : undefined;
+      return typeHolds(memberType(ownerType, alternative.name.text, file));
+    }
+    return "unknown";
+  });
+  if (held.includes("number")) return "number";
+  return held.every((each) => each === "text") ? "text" : "unknown";
+};
+/** A value named for an amount, which nothing shows to be written already. */
+const bareAmount = (node, file) =>
   (ts.isIdentifier(node) || ts.isPropertyAccessExpression(node)) &&
   !isWordsTableEntry(node) &&
-  BARE_AMOUNT_NAME.test(valueName(node));
-const bareAmountText = (node) => {
+  BARE_AMOUNT_NAME.test(valueName(node)) &&
+  valueHolds(node, file) !== "text";
+const bareAmountText = (node, file) => {
   if (ts.isTemplateExpression(node))
-    return !inDiagnostic(node) && readsAsText(node) && node.templateSpans.some((span) => bareAmount(span.expression));
+    return (
+      !inDiagnostic(node) &&
+      readsAsText(node) &&
+      node.templateSpans.some((span) => writtenAlternatives(span.expression).some((each) => bareAmount(each, file)))
+    );
   return (
     ts.isJsxExpression(node) &&
     node.expression !== undefined &&
     (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent)) &&
-    ts.isPropertyAccessExpression(node.expression) &&
-    bareAmount(node.expression)
+    writtenAlternatives(node.expression).some((each) => ts.isPropertyAccessExpression(each) && bareAmount(each, file))
   );
 };
 
@@ -558,7 +697,7 @@ export function scanSource(source, fileName, { nouns, voiceRules }) {
     if (compactPoints(node)) hit("number.points", node);
     if (chargeByOtherWriter(node)) hit("number.charge", node);
     if (handPair(node)) hit("number.pair", node);
-    if (bareAmountText(node)) hit("number.bare", node);
+    if (bareAmountText(node, file)) hit("number.bare", node);
     if (writtenTwice(node)) hit("words.doubled", node);
     if (handPluralText(node)) hit("number.plural", node);
     if (ts.isTemplateExpression(node) && !inDiagnostic(node) && !handPlural(node.parent) && readsAsText(node))

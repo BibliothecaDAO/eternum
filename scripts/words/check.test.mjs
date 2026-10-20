@@ -201,12 +201,32 @@ test("finds an amount put into text as it is, and passes text, nodes and words t
     '<span className="text-hud-good">{resource.amount}</span>;',
     "const story = { description: `${amount} LORDS to L2` };",
     "const tip = <b title={`Needs ${cost} stamina`} />;", // 3
+    // 4-8: the same raw amounts through a wrapper that passes them on unchanged
+    "const row = <span>{(resource.amount)}</span>;",
+    "const row = <span>{resource.amount ?? 0}</span>;",
+    "const story = { description: `${(amount)} LORDS to L2` };",
+    "const story = { description: `${shown ? amount : '—'} LORDS` };",
+    "const Price = (props: { price: number }) => <span>{props.price}</span>;",
+    // Written already, or a node: passes.
     "const story = { description: `${formatCharge(amount)} LORDS to L2` };",
     "const price = <span>{price}</span>;",
     "const title = <p>{PROFILE_WORDS.removeCost}</p>;",
-    "const story = { description: `Paid ${spent}` };",
     "const tip = <b title={`${amountText} wheat`} />;",
     "const key = `${resource.amount}-${index}`;",
+    "function paid(raw) { const cost = formatCharge(raw); return { description: `Paid ${cost}` }; }",
+    "function paid(payload) { const cost = formatResourceList(payload.cost); return { description: `Paid ${cost}` }; }",
+    "const Price = (props: { price: ReactNode }) => <span>{props.price}</span>;",
+    "const Fee = ({ fee }: { fee: string }) => <b title={`Fee ${fee}`} />;",
+    "const story = { description: `${shown ? formatCharge(amount) : '—'} LORDS` };",
   ].join("\n");
-  assert.deepEqual(scan(source), ["1 number.bare", "2 number.bare", "3 number.bare"]);
+  assert.deepEqual(scan(source), [
+    "1 number.bare",
+    "2 number.bare",
+    "3 number.bare",
+    "4 number.bare",
+    "5 number.bare",
+    "6 number.bare",
+    "7 number.bare",
+    "8 number.bare",
+  ]);
 });

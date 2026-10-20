@@ -243,10 +243,10 @@ const formatters: Record<NativeStoryVariant | StoryEventModel, StoryFormatter> =
   }),
   // Paid in the same transaction as the building it pays for: the same action, told by the same title.
   BuildingPaymentStory: (event, payload, components) => {
-    const spent = formatResourceList(payload.cost);
+    const cost = formatResourceList(payload.cost);
     return {
       title: `${formatBuildingCategory(payload.category, components) ?? "Building"} built at ${subjectOf(event.entityId, components)}`,
-      description: spent ? `Paid ${spent}` : undefined,
+      description: cost ? `Paid ${cost}` : undefined,
       icon: "building",
     };
   },
