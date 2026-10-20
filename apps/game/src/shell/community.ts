@@ -15,3 +15,6 @@ export const COMMUNITY = [
 type Place = (typeof COMMUNITY)[number];
 
 export const communityPlace = (name: Place["name"]): Place => COMMUNITY.find((place) => place.name === name)!;
+
+/** The realm's X account as a post tags it ("@LootRealms"), read from its one link above. */
+export const X_HANDLE = `@${new URL(communityPlace("X").href).pathname.slice(1)}`;

@@ -2034,8 +2034,7 @@ meta: {
 
 * [Realms World](https://realms.world/) - The DAO behind Eternum
 * [Discord](https://discord.gg/realmsworld) - Join our Discord
-* [X (Community)](https://x.com/LootRealms) - Follow the community
-* [X (Realms Games)](https://x.com/realmsgg) - Follow for Realms games updates
+* [X](https://x.com/LootRealms) - Follow Realms
 
 
 

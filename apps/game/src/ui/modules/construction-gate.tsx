@@ -1,4 +1,5 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
+import { communityPlace } from "@/shell/community";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 const open = (url: string) => () => window.open(url, "_blank", "noopener,noreferrer");
@@ -22,10 +23,10 @@ export const ConstructionGate = () => (
           <HudButton kind="primary" onClick={open("https://empire.realms.world/trade")}>
             Buy a Season Pass
           </HudButton>
-          <HudButton kind="secondary" icon="discord" onClick={open("https://discord.gg/uQnjZhZPfu")}>
+          <HudButton kind="secondary" icon="discord" onClick={open(communityPlace("Discord").href)}>
             Discord
           </HudButton>
-          <HudButton kind="secondary" icon="twitter" onClick={open("https://x.com/realmsgg")}>
+          <HudButton kind="secondary" icon="twitter" onClick={open(communityPlace("X").href)}>
             Twitter
           </HudButton>
           <HudButton kind="secondary" onClick={open("https://docs.realms.world/")}>
