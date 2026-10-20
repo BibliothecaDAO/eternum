@@ -3,13 +3,13 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
-import { type PlayerNames, usePlayerNames } from "@/hooks/use-player-profile";
+import { type PlayerNames, usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { useGame } from "@/hooks/context/game-context";
 import { ContractAddress, formatCharge, ID, RESOURCE_PRECISION, resourceName } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AttackTarget } from "./types";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -99,16 +99,18 @@ export const RaidResult = ({
 
   const names = usePlayerNames();
 
-  // The shared text names both sides by the one rule, written again when either name lands.
-  const formattedTweet = useMemo(() => {
-    return getFormattedRaidTweet({
+  // Both names are asked as the sheet draws, so they have landed by the time Share is pressed; the shared line is
+  // written then, from the live name reader: never a cached string.
+  usePlayerName(account.address);
+  usePlayerName(target.addressOwner);
+  const shareLine = () =>
+    getFormattedRaidTweet({
       names,
       accountAddress: account.address,
       targetAddress: target.addressOwner,
       stolenResources: initialStolenResources,
       store,
     });
-  }, [raidResult, account.address, initialStolenResources, store, names]);
 
   // Generate random outcome items for the roulette animation
   const generateOutcomeItems = useCallback(
@@ -427,9 +429,9 @@ export const RaidResult = ({
             )}
 
             {/* Add Twitter Share Button */}
-            {formattedTweet && raidResult.success === true && (
+            {raidResult.success === true && (
               <div className="mt-4 pt-4 border-t border-hud-divider">
-                <TwitterShareButton text={formattedTweet} callToActionText="Share your Raid" />
+                <TwitterShareButton text={shareLine} callToActionText="Share your Raid" />
               </div>
             )}
           </div>

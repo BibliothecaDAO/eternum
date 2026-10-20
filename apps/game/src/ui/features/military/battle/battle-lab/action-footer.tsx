@@ -16,7 +16,8 @@ interface ActionFooterProps {
   loading: boolean;
   onAction: () => void;
   warning?: string | null;
-  tweet?: string;
+  /** Writes the battle's shared line when Share is pressed; none, no Share. */
+  share?: () => string;
   cooldownEnd?: number;
 }
 
@@ -32,7 +33,7 @@ export const ActionFooter = ({
   loading,
   onAction,
   warning,
-  tweet,
+  share,
   cooldownEnd,
 }: ActionFooterProps) => {
   return (
@@ -66,7 +67,7 @@ export const ActionFooter = ({
 
       {warning && <HudNotice tone="bad" line={warning} />}
 
-      {tweet && <TwitterShareButton text={tweet} callToActionText="Share your Battle" />}
+      {share && <TwitterShareButton text={share} callToActionText="Share your Battle" />}
     </div>
   );
 };
